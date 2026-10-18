@@ -6,7 +6,8 @@
 // 3: şablonlar, alan değerleri ve soru cevapları.
 // 4: evrenin takvimi; tarihlerin ekseni gün parçası birimindedir.
 // 5: haritalar ve işaretler.
-export const VERI_BICIMI = 5;
+// 6: editoryal birleştirme ve yönlendirme; inceleme kararları.
+export const VERI_BICIMI = 6;
 
 export interface IslemGirdisi {
   tur: string;

@@ -6,7 +6,7 @@ import type { Sablon, Soru, SoruDurumu } from '../alan/sablon';
 
 export interface KurulumBilgisi { kod: string; ad: string; sqlite: string }
 export interface EvrenOzeti { kod: string; ad: string; olusturma: number; sonAcilis: number | null }
-export interface EvrenBilgisi extends EvrenOzeti { islemSayisi: number; kayitSayisi: number; copSayisi: number; catismaSayisi: number }
+export interface EvrenBilgisi extends EvrenOzeti { islemSayisi: number; kayitSayisi: number; copSayisi: number; catismaSayisi: number; sorunSayisi: number }
 export type GunlukSatiri = Omit<Islem, 'ikili'> & { ikiliBoyut: number };
 
 export interface KayitOzeti {
@@ -26,6 +26,9 @@ export interface Kayit extends KayitOzeti {
   /** Bu kayıt bir sahnenin sahne olayıysa o sahnenin kodu. */
   sahneOlayi: string | null;
   sahneTarihi: EvrenTarihi | null;
+  /** Editoryal birleştirme (§9.5): bu kayıt bir başkasına yönlendiriyorsa o kayıt; bu kayda birleştirilmiş kayıtlar. */
+  birlesti: { kod: string; ad: string } | null;
+  birlesenler: { kod: string; ad: string }[];
 }
 export interface IliskiSatiri {
   kod: string; tur: string; ben: 'a' | 'b'; etiket: string; grup: string;
@@ -80,7 +83,8 @@ export type Catisma =
       alanEtiketi?: string;
       /** yazi: değerin okunur hâli (yer, kayıt adı gibi); yoksa değer doğrudan gösterilir. */
       degerler: { islem: string; deger: unknown; yazi?: string; kurulum: string; zaman: number }[] }
-  | { tur: 'silme'; kayit: string; baslik: string; duzenlemeSayisi: number; zaman: number; kurulumlar: string[] }
+  | { tur: 'silme'; kayit: string; baslik: string; duzenlemeSayisi: number; zaman: number; kurulumlar: string[]; birlesti?: { kod: string; ad: string } }
+  | { tur: 'ters_birlesme'; islem: string; kayit: string; baslik: string; diger: { kod: string; ad: string }; zaman: number }
   | { tur: 'metin'; kayit: string; alan: string; baslik: string; temel: Basliklar;
       a: { basliklar: Basliklar; kurulum: string; zaman: number }; b: { basliklar: Basliklar; kurulum: string; zaman: number } };
 export interface EsitlemeDurumu {
@@ -200,6 +204,20 @@ export interface KayitHaritalari {
   isaretler: { kod: string; harita: string; haritaAd: string; kesinlik: IsaretGirdisi['kesinlik'] }[];
   haritalar: { kod: string; ad: string }[];
 }
+/** Editoryal birleştirme önizlemesi (§9.5). */
+export interface BirlesmeAlani { alan: string; etiket: string; kaynak: string; hedef: string; celiski: boolean }
+export interface BirlesmeOnizlemesi {
+  kaynak: KisaKayit; hedef: KisaKayit; adlar: string[]; alanlar: BirlesmeAlani[];
+  iliskiler: number; aradakiIliskiler: number; durumlar: number; isaretler: number; haritalar: number; degisimler: number;
+  baglantilar: number; gorseller: number; metinVar: boolean;
+}
+/** Sağlık taraması (§9.4) ve inceleme kararları (§9.3). */
+export interface IncelemeKarari { durum: 'kabul' | 'ertelendi'; gerekce: string; zaman: number }
+export interface SaglikBulgusu {
+  anahtar: string; tur: 'kopuk_baglanti' | 'silinmis_baglanti' | 'vazgecilmis_baglanti' | 'eksik_gorsel' | 'kod_sorunu' | 'baglantisiz_fikir' | 'belirsiz_tarih';
+  baslik: string; aciklama: string; kayit: KisaKayit | null; hedef: KisaKayit | null; harita?: { kod: string; ad: string }; dayanak: string; karar: IncelemeKarari | null;
+}
+export interface SaglikTaramasi { acik: SaglikBulgusu[]; ertelenen: SaglikBulgusu[]; kabul: SaglikBulgusu[]; bilgiler: SaglikBulgusu[] | null }
 export interface CizelgeOgesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi; eser: string | null }
 
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
@@ -318,6 +336,13 @@ export interface Istekler {
   isaretDegistir(a: { evren: string; kod: string; alan: 'konum' | 'kayit'; deger: unknown }): void;
   isaretSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   kayitHaritalari(a: { evren: string; kod: string }): KayitHaritalari;
+  birlesmeOnizle(a: { evren: string; kaynak: string; hedef: string }): BirlesmeOnizlemesi;
+  birlestir(a: { evren: string; kaynak: string; hedef: string; secimler: Record<string, 'kaynak' | 'hedef'> }): void;
+  birlesmeyiGeriAl(a: { evren: string; kod: string }): void;
+  tersBirlesmeCoz(a: { evren: string; islem: string }): void;
+  parcadanKayit(a: { evren: string; kaynak: string; ad: string; tur: string; spans: Spans }): { kod: string };
+  saglikTaramasi(a: { evren: string; bilgi?: boolean }): SaglikTaramasi;
+  incelemeKarari(a: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | null; gerekce?: string }): void;
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];
   bahsedilenler(a: { evren: string }): (KayitOzeti & { anilma: number })[];

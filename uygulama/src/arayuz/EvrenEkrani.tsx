@@ -4,11 +4,11 @@ import type { EvrenBilgisi, GunlukSatiri } from '../veri/api';
 import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
 import { git } from './Uygulama';
 import { DriveYedekleri, YedekSekmesi } from './Tasima';
-import { CatismaListesi } from './Catismalar';
 import { Bahsedilenler, CopKutusu, KayitListesi } from './KayitListesi';
 import { Masa } from './Masa';
 import { TakvimSekmesi, ZamanCizelgesi } from './Takvim';
 import { HaritalarSekmesi } from './Harita';
+import { IncelemeKuyrugu } from './Inceleme';
 import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
 
 export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Istemci; kod: string; sekme: string; alt?: string | null }) {
@@ -34,11 +34,11 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
         <p class="soluk kucuk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
         <div class="sekmeler" role="tablist">
           {([['masa', 'Masa'], ['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['meseleler', 'Açık meseleler'], ['sablonlar', 'Şablonlar'], ['haritalar', 'Haritalar'], ['cizelge', 'Zaman çizelgesi'], ['takvim', 'Takvim'], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
-            ...(bilgi.catismaSayisi || sekme === 'inceleme' ? [['inceleme', `İnceleme bekleyen (${bilgi.catismaSayisi})`] as const] : [])] as const).map(([k, ad]) => (
+            ['inceleme', bilgi.catismaSayisi + bilgi.sorunSayisi ? `İnceleme (${bilgi.catismaSayisi + bilgi.sorunSayisi})` : 'İnceleme']] as const).map(([k, ad]) => (
             <button class="sekme" role="tab" aria-selected={sekme === k} onClick={() => git(`/e/${kod}/${k}`)}>{ad}</button>
           ))}
         </div>
-        {sekme === 'inceleme' ? <CatismaListesi istemci={istemci} evren={kod} surum={surum} />
+        {sekme === 'inceleme' ? <IncelemeKuyrugu istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
           : sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
           : sekme === 'bahsedilen' ? <Bahsedilenler istemci={istemci} evren={kod} surum={surum} />

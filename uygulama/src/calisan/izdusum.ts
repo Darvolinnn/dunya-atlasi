@@ -40,7 +40,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 8;
+export const IZDUSUM_SURUMU = 9;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -230,11 +230,61 @@ CREATE TABLE IF NOT EXISTS isaretler(
 );
 CREATE INDEX IF NOT EXISTS isaretler_harita ON isaretler(harita);
 CREATE INDEX IF NOT EXISTS isaretler_kayit ON isaretler(kayit);
+CREATE TABLE IF NOT EXISTS yonlendirmeler(
+  kod TEXT PRIMARY KEY,
+  hedef TEXT NOT NULL,
+  islem TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS yonlendirmeler_hedef ON yonlendirmeler(hedef);
+CREATE TABLE IF NOT EXISTS birlesme_tasinanlar(
+  islem TEXT NOT NULL,
+  tablo TEXT NOT NULL,
+  sutun TEXT NOT NULL,
+  kod TEXT NOT NULL,
+  PRIMARY KEY(islem, tablo, sutun, kod)
+);
+CREATE TABLE IF NOT EXISTS inceleme_kararlari(
+  anahtar TEXT PRIMARY KEY,
+  durum TEXT NOT NULL,
+  gerekce TEXT NOT NULL DEFAULT '',
+  dayanak TEXT NOT NULL DEFAULT '',
+  zaman INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS ters_birlesmeler(
+  islem TEXT PRIMARY KEY,
+  kaynak TEXT NOT NULL,
+  hedef TEXT NOT NULL,
+  zaman INTEGER NOT NULL
+);
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'medya',
-  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler'];
+  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
+
+/** Birleştirilmiş kaydın kodu yeni kayda yönlendirir (§9.5); başka cihazdan gelen eski kodlu işlemler de doğru kayda varır. */
+export function yonlendir<T extends string | null | undefined>(db: Database, kod: T): T {
+  if (!kod) return kod;
+  let k: string = kod;
+  for (let n = 0; n < 20; n++) {
+    const h = db.selectValue('SELECT hedef FROM yonlendirmeler WHERE kod=?', [k]) as string | undefined;
+    if (!h) break;
+    k = h;
+  }
+  return k as T;
+}
+
+/** Birleştirilmiş koda sonradan yazılan satır yönlendirilir ve o birleştirme geri alınırsa eski kayda dönsün diye not edilir. */
+function yonlendirNotla(db: Database, kod: string | null | undefined, tablo: string, sutun: string, satir: string): string | null {
+  if (!kod) return kod ?? null;
+  const y = db.selectValue('SELECT islem FROM yonlendirmeler WHERE kod=?', [kod]) as string | undefined;
+  if (y) db.exec({ sql: 'INSERT OR IGNORE INTO birlesme_tasinanlar(islem, tablo, sutun, kod) VALUES(?,?,?,?)', bind: [y, tablo, sutun, satir] });
+  return yonlendir(db, kod);
+}
+
+/** Birleştirmede kaynak kayda bağlı satırlar hedefe taşınır; geri almak için hangi satırın taşındığı tutulur. */
+const BIRLESME_SUTUNLARI: [string, string][] = [['iliskiler', 'a'], ['iliskiler', 'b'], ['durumlar', 'konu'], ['durumlar', 'hedef'], ['isaretler', 'kayit'],
+  ['haritalar', 'yer'], ['degisimler', 'konu'], ['degisimler', 'olay'], ['kayitlar', 'sahne_olayi'], ['anlati', 'ust'], ['yonlendirmeler', 'hedef']];
 
 export type Kesinlik = 'kesin' | 'yaklasik' | 'bilinmiyor';
 export interface IsaretKonumu { kesinlik: Kesinlik; x: number | null; y: number | null; yaricap: number | null }
@@ -441,6 +491,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   catisma_coz(db, i) {
     const { tur, kayit, alan } = i.veri as { tur: string; kayit: string; alan?: string };
     if (tur === 'silme') silmeCatismalariniKapat(db, i, kayit);
+    if (tur === 'ters_birlesme') db.exec({ sql: 'DELETE FROM ters_birlesmeler WHERE islem=?', bind: [String(i.veri.islem)] });
     if (tur === 'metin') {
       for (const r of db.selectObjects('SELECT a, b, a_kurulum, a_sira, b_kurulum, b_sira FROM metin_catismalari WHERE kayit=? AND alan=?', [kayit, alan ?? 'govde'])) {
         if (gorduMu(i, r.a_kurulum as string, Number(r.a_sira)) && gorduMu(i, r.b_kurulum as string, Number(r.b_sira))) {
@@ -473,7 +524,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const v = i.veri as Record<string, unknown>;
     db.exec({
       sql: `INSERT OR IGNORE INTO iliskiler(kod, tur, a, b, rol, baslangic, bitis, aciklama, karar, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
-      bind: [v.kod as string, v.tur as string, v.a as string, v.b as string, (v.rol as string) ?? null,
+      bind: [v.kod as string, v.tur as string, yonlendirNotla(db, v.a as string, 'iliskiler', 'a', v.kod as string), yonlendirNotla(db, v.b as string, 'iliskiler', 'b', v.kod as string), (v.rol as string) ?? null,
         json(tz(db, v.baslangic)), json(tz(db, v.bitis)), (v.aciklama as string) ?? '', v.karar as string, i.zaman, i.zaman],
     });
   },
@@ -495,7 +546,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const v = i.veri as Record<string, unknown>;
     db.exec({
       sql: 'INSERT OR IGNORE INTO degisimler(kod, olay, sahne, konu, metin, karar, olusturma) VALUES(?,?,?,?,?,?,?)',
-      bind: [v.kod as string, v.olay as string, (v.sahne as string) ?? null, (v.konu as string) ?? null, v.metin as string, v.karar as string, i.zaman],
+      bind: [v.kod as string, yonlendirNotla(db, v.olay as string, 'degisimler', 'olay', v.kod as string), (v.sahne as string) ?? null, yonlendirNotla(db, (v.konu as string) ?? null, 'degisimler', 'konu', v.kod as string), v.metin as string, v.karar as string, i.zaman],
     });
   },
   degisim_sil(db, i) {
@@ -505,7 +556,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   /** Anlatı yapısı (§3.3): bölüm esere, sahne esere ya da bölüme yerleşir; sıra anahtarla tutulur. */
   anlati_yerlestir(db, i) {
     const { kod, ust, konum } = i.veri as { kod: string; ust: string | null; konum: string | null };
-    if (ust && siraGecerli(konum)) db.exec({ sql: 'INSERT INTO anlati(kod, ust, konum) VALUES(?,?,?) ON CONFLICT(kod) DO UPDATE SET ust=excluded.ust, konum=excluded.konum', bind: [kod, ust, konum] });
+    if (ust && siraGecerli(konum)) db.exec({ sql: 'INSERT INTO anlati(kod, ust, konum) VALUES(?,?,?) ON CONFLICT(kod) DO UPDATE SET ust=excluded.ust, konum=excluded.konum', bind: [kod, yonlendir(db, ust), konum] });
     else db.exec({ sql: 'DELETE FROM anlati WHERE kod=?', bind: [kod] });
     alanYaz(db, i, kod, 'anlati', ust && siraGecerli(konum) ? { ust, konum } : null);
   },
@@ -514,14 +565,14 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const v = i.veri as Record<string, unknown>;
     db.exec({
       sql: `INSERT OR IGNORE INTO durumlar(kod, konu, ozellik, deger, hedef, kip, baslangic, bitis, karar, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
-      bind: [v.kod as string, v.konu as string, v.ozellik as string, (v.deger as string) ?? '', (v.hedef as string) ?? null, v.kip as string,
+      bind: [v.kod as string, yonlendirNotla(db, v.konu as string, 'durumlar', 'konu', v.kod as string), v.ozellik as string, (v.deger as string) ?? '', yonlendirNotla(db, (v.hedef as string) ?? null, 'durumlar', 'hedef', v.kod as string), v.kip as string,
         json(sinirTz(db, v.baslangic)), json(sinirTz(db, v.bitis)), v.karar as string, i.zaman, i.zaman],
     });
   },
   durum_degistir(db, i) {
     const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
     if (!['ozellik', 'deger', 'hedef', 'kip', 'baslangic', 'bitis', 'karar'].includes(alan)) return;
-    const d = alan === 'baslangic' || alan === 'bitis' ? json(sinirTz(db, deger)) : (deger ?? (alan === 'hedef' ? null : ''));
+    const d = alan === 'baslangic' || alan === 'bitis' ? json(sinirTz(db, deger)) : alan === 'hedef' ? yonlendir(db, (deger as string) ?? null) : (deger ?? '');
     db.exec({ sql: `UPDATE durumlar SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [d as string | null, i.zaman, kod] });
     alanYaz(db, i, kod, alan, deger ?? null);
   },
@@ -569,12 +620,12 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const v = i.veri as { kod: string; ad: string; yer?: string | null; en: number; boy: number; gorsel: string };
     if (!(v.en > 0 && v.boy > 0) || typeof v.gorsel !== 'string') return;
     db.exec({ sql: 'INSERT OR IGNORE INTO haritalar(kod, ad, yer, en, boy, katmanlar, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?)',
-      bind: [v.kod, String(v.ad), v.yer ?? null, v.en, v.boy, JSON.stringify([{ gorsel: v.gorsel, x: 0, y: 0, olcek: 1 }]), i.zaman, i.zaman] });
+      bind: [v.kod, String(v.ad), yonlendirNotla(db, v.yer ?? null, 'haritalar', 'yer', v.kod), v.en, v.boy, JSON.stringify([{ gorsel: v.gorsel, x: 0, y: 0, olcek: 1 }]), i.zaman, i.zaman] });
   },
   harita_degistir(db, i) {
     const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
     if (alan !== 'ad' && alan !== 'yer') return;
-    db.exec({ sql: `UPDATE haritalar SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [(deger as string | null) ?? (alan === 'ad' ? '' : null), i.zaman, kod] });
+    db.exec({ sql: `UPDATE haritalar SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [alan === 'yer' ? yonlendir(db, (deger as string | null) ?? null) : (deger as string | null) ?? '', i.zaman, kod] });
     alanYaz(db, i, kod, alan, deger ?? null);
   },
   harita_sil(db, i) {
@@ -588,7 +639,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const k = isaretKonumu(db, v.harita, v.konum);
     if (!k) return;
     db.exec({ sql: 'INSERT OR IGNORE INTO isaretler(kod, harita, kayit, kesinlik, x, y, yaricap, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?,?)',
-      bind: [v.kod, v.harita, v.kayit, k.kesinlik, k.x, k.y, k.yaricap, i.zaman, i.zaman] });
+      bind: [v.kod, v.harita, yonlendirNotla(db, v.kayit, 'isaretler', 'kayit', v.kod), k.kesinlik, k.x, k.y, k.yaricap, i.zaman, i.zaman] });
   },
   isaret_degistir(db, i) {
     const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
@@ -600,7 +651,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
       db.exec({ sql: 'UPDATE isaretler SET kesinlik=?, x=?, y=?, yaricap=?, duzenleme=? WHERE kod=?', bind: [k.kesinlik, k.x, k.y, k.yaricap, i.zaman, kod] });
       alanYaz(db, i, kod, alan, k);
     } else if (alan === 'kayit' && typeof deger === 'string') {
-      db.exec({ sql: 'UPDATE isaretler SET kayit=?, duzenleme=? WHERE kod=?', bind: [deger, i.zaman, kod] });
+      db.exec({ sql: 'UPDATE isaretler SET kayit=?, duzenleme=? WHERE kod=?', bind: [yonlendir(db, deger), i.zaman, kod] });
       alanYaz(db, i, kod, alan, deger);
     }
   },
@@ -609,6 +660,55 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   isaret_geri_yukle(db, i) {
     db.exec({ sql: 'UPDATE isaretler SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+
+  /** Editoryal birleştirme (§9.5): kaynak kayıt silinmez, hedefe yönlendirir; bağlı satırlar hedefe taşınır. */
+  kayit_birlestir(db, i) {
+    const { kaynak, hedef } = i.veri as { kaynak: string; hedef: string };
+    const son = yonlendir(db, hedef);
+    // Ters yönde iki birleştirme: önce uygulanan korunur, ikincisi incelemeye düşer (§10.3).
+    if (son === kaynak || kaynak === hedef) {
+      db.exec({ sql: 'INSERT OR IGNORE INTO ters_birlesmeler(islem, kaynak, hedef, zaman) VALUES(?,?,?,?)', bind: [i.kod, kaynak, hedef, i.zaman] });
+      return;
+    }
+    if (db.selectValue('SELECT 1 FROM yonlendirmeler WHERE kod=?', [kaynak]) !== undefined) return;
+    if (db.selectValue('SELECT 1 FROM kayitlar WHERE kod=?', [kaynak]) === undefined) return;
+    for (const [tablo, sutun] of BIRLESME_SUTUNLARI) {
+      for (const r of db.selectObjects(`SELECT kod FROM ${tablo} WHERE ${sutun}=?`, [kaynak])) {
+        db.exec({ sql: 'INSERT OR IGNORE INTO birlesme_tasinanlar(islem, tablo, sutun, kod) VALUES(?,?,?,?)', bind: [i.kod, tablo, sutun, r.kod as string] });
+      }
+      db.exec({ sql: `UPDATE ${tablo} SET ${sutun}=? WHERE ${sutun}=?`, bind: [son, kaynak] });
+    }
+    // İki kayıt arasındaki ilişkiler kendine ilişki olur: kaldırılır, geri alınınca döner.
+    for (const r of db.selectObjects('SELECT kod FROM iliskiler WHERE a=? AND b=? AND silindi IS NULL', [son, son])) {
+      db.exec({ sql: 'INSERT OR IGNORE INTO birlesme_tasinanlar(islem, tablo, sutun, kod) VALUES(?,?,?,?)', bind: [i.kod, 'iliskiler', 'silindi', r.kod as string] });
+      db.exec({ sql: 'UPDATE iliskiler SET silindi=? WHERE kod=?', bind: [i.zaman, r.kod as string] });
+    }
+    db.exec({ sql: 'INSERT INTO yonlendirmeler(kod, hedef, islem) VALUES(?,?,?)', bind: [kaynak, son, i.kod] });
+    db.exec({ sql: 'UPDATE kayitlar SET silindi=?, silen=? WHERE kod=?', bind: [i.zaman, i.kod, kaynak] });
+    db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, son] });
+  },
+  birlesme_geri_al(db, i) {
+    const { kaynak, islem } = i.veri as { kaynak: string; islem: string };
+    if (db.selectValue('SELECT islem FROM yonlendirmeler WHERE kod=?', [kaynak]) !== islem) return;
+    for (const r of db.selectObjects('SELECT tablo, sutun, kod FROM birlesme_tasinanlar WHERE islem=?', [islem])) {
+      const [tablo, sutun] = [r.tablo as string, r.sutun as string];
+      if (sutun === 'silindi') db.exec({ sql: 'UPDATE iliskiler SET silindi=NULL WHERE kod=?', bind: [r.kod as string] });
+      else if (BIRLESME_SUTUNLARI.some(([t, s]) => t === tablo && s === sutun)) db.exec({ sql: `UPDATE ${tablo} SET ${sutun}=? WHERE kod=?`, bind: [kaynak, r.kod as string] });
+    }
+    db.exec({ sql: 'DELETE FROM birlesme_tasinanlar WHERE islem=?', bind: [islem] });
+    db.exec({ sql: 'DELETE FROM yonlendirmeler WHERE kod=?', bind: [kaynak] });
+    db.exec({ sql: 'UPDATE kayitlar SET silindi=NULL, silen=NULL WHERE kod=? AND silen=?', bind: [kaynak, islem] });
+    silmeCatismalariniKapat(db, i, kaynak);
+  },
+
+  /** İnceleme kuyruğu (§9.3): bulgu gerekçeyle kabul edilir ya da ertelenir; null karar kuyruğa geri koyar. */
+  inceleme_karari(db, i) {
+    const { anahtar, durum, gerekce, dayanak } = i.veri as { anahtar: string; durum: string | null; gerekce?: string; dayanak?: string };
+    if (typeof anahtar !== 'string' || !anahtar) return;
+    if (durum === 'kabul' || durum === 'ertelendi') {
+      db.exec({ sql: 'INSERT OR REPLACE INTO inceleme_kararlari(anahtar, durum, gerekce, dayanak, zaman) VALUES(?,?,?,?,?)', bind: [anahtar, durum, gerekce ?? '', dayanak ?? '', i.zaman] });
+    } else db.exec({ sql: 'DELETE FROM inceleme_kararlari WHERE anahtar=?', bind: [anahtar] });
   },
 
   medya_ekle(db, i) {

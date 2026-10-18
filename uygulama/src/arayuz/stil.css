@@ -354,3 +354,18 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .isaret-listesi li { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .isaret-paneli { display: grid; gap: 8px; }
 .kayit-haritalari ul { padding-left: 18px; }
+
+/* Birleştirme (§9.5) */
+.birlesme { margin: 16px 0; display: grid; gap: 10px; }
+.birlesme-yon { border: none; padding: 0; margin: 0; }
+.birlesme-onizleme ul { padding-left: 18px; }
+.birlesme-tablosu { border-collapse: collapse; }
+.birlesme-tablosu th, .birlesme-tablosu td { text-align: left; padding: 4px 12px 4px 0; vertical-align: top; }
+
+/* İnceleme kuyruğu ve sağlık taraması (§9.3, §9.4) */
+.inceleme section { margin-bottom: 24px; }
+.bulgular { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 8px; }
+.bulgu { display: grid; gap: 4px; }
+.bulgu.bilgi { padding: 4px 0; border-bottom: 1px solid var(--cizgi); }
+.bulgu-grubu summary { cursor: pointer; color: var(--metin-2); margin: 8px 0; }
+.ayirma { margin: 8px 20px; }

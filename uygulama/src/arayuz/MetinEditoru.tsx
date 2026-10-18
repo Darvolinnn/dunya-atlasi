@@ -18,6 +18,7 @@ import { katla } from '../alan/turkce';
 import { bagAraligi, baglantiEklentisi, bagTuru, type SeciciIstegi } from './baglanti-eklentisi';
 import { git } from './Uygulama';
 import { useCalisma } from './Calisma';
+import { TurSecici } from './ortak';
 
 const sema = metinSemasi.schema;
 const ARA = 1200;        // yazmaya bu kadar ara verilince kaydedilir
@@ -52,6 +53,8 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   const seciciRef = useRef<AcikSecici | null>(null);
   const tutamak = useRef<SeciciTutamagi | null>(null);
   const setSecici = (x: AcikSecici | null) => { seciciRef.current = x; setSeciciDurumu(x); };
+  /** Bölme (§9.5): seçili parça yeni kayda dönüşür, yerinde ona bağlantı kalır. */
+  const [ayirma, setAyirma] = useState<{ from: number; to: number; belge: PmNode; ad: string; tur: string; hata: string | null } | null>(null);
 
   const konumu = (pos: number) => {
     const k = gorunum.current!.coordsAtPos(pos);
@@ -243,6 +246,31 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     else seciciAc({ from, to, sorgu: v.state.doc.textBetween(from, to, ' '), gorunen: null, isaretle: true });
   }
 
+  function ayirmaAc() {
+    const v = gorunum.current;
+    if (!v || v.state.selection.empty) return;
+    const { from, to } = v.state.selection;
+    const ad = v.state.doc.textBetween(from, to, ' ').replace(/\s+/g, ' ').trim().split(' ').slice(0, 5).join(' ').replace(/[.,;:!?]+$/, '');
+    setAyirma({ from, to, belge: v.state.doc, ad, tur: 'diger', hata: null });
+  }
+  async function ayir(e: Event) {
+    e.preventDefault();
+    const v = gorunum.current;
+    if (!v || !ayirma || !ayirma.ad.trim()) return;
+    if (v.state.doc !== ayirma.belge) { setAyirma({ ...ayirma, hata: 'Metin bu arada değişti; parçayı yeniden seç.' }); return; }
+    const dilim = v.state.doc.slice(ayirma.from, ayirma.to);
+    const ilk = dilim.content.firstChild;
+    const belge = ilk && ilk.isBlock ? sema.node('doc', null, dilim.content) : sema.node('doc', null, [sema.node('paragraph', null, dilim.content)]);
+    try {
+      const ad = ayirma.ad.replace(/\s+/g, ' ').trim();
+      const { kod } = await istemci.iste('parcadanKayit', { evren, kaynak: kayit, ad, tur: ayirma.tur, spans: pmNodeToSpans(metinSemasi, belge) as Spans });
+      const g = gorunum.current;
+      if (g && g.state.doc === ayirma.belge) g.dispatch(g.state.tr.replaceWith(ayirma.from, ayirma.to, sema.text(ad, [bagTuru.create({ hedef: kod })])));
+      setAyirma(null);
+      g?.focus();
+    } catch (x) { setAyirma({ ...ayirma, hata: (x as Error).message }); }
+  }
+
   const uygula = (komut: Command) => {
     const v = gorunum.current;
     if (!v) return;
@@ -281,9 +309,21 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           {calisma && <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => calisma.yanPanelAc(bag.hedef)}>Yan panelde aç</button>}
           <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => uygula((s, d) => { d?.(s.tr.removeMark(bag.from, bag.to, bagTuru)); return true; })}>Bağlantıyı kaldır</button>
         </>}
+        {v && !v.state.selection.empty && alan === 'govde' && <button type="button" class="arac" title="Seçili parçayı yeni bir kayda dönüştür; yerinde ona bağlantı kalır" onMouseDown={(e) => e.preventDefault()} onClick={ayirmaAc}>Yeni kayda ayır</button>}
         <span class="bosluk" />
         <span class="kayit-durumu soluk kucuk" aria-live="polite">{durumYazisi(durum)}</span>
       </div>
+      {ayirma && (
+        <form class="kart ayirma satir" onSubmit={ayir} aria-label="Yeni kayda ayır">
+          <span class="kucuk">Seçili parça yeni kayda taşınacak; burada yerine ona bağlantı kalacak.</span>
+          <input class="girdi" style="flex:1;min-width:180px" lang="tr" aria-label="Yeni kaydın adı" value={ayirma.ad} autoFocus
+            onInput={(e) => setAyirma({ ...ayirma, ad: (e.target as HTMLInputElement).value })} />
+          <span style="min-width:180px"><TurSecici deger={ayirma.tur} etiket="Yeni kaydın türü" onDegis={(t) => setAyirma({ ...ayirma, tur: t })} /></span>
+          <button class="dugme ana kucuk" disabled={!ayirma.ad.trim()}>Ayır</button>
+          <button type="button" class="dugme sade kucuk" onClick={() => setAyirma(null)}>Vazgeç</button>
+          {ayirma.hata && <span class="hata kucuk">{ayirma.hata}</span>}
+        </form>
+      )}
       <p class="soluk" style={{ padding: '0 20px', display: hazir || durum.tur === 'hata' ? 'none' : '' }}>Metin açılıyor…</p>
       <div ref={kap} />
       {secici && <BaglantiSecici key={`${secici.from}-${secici.canli ? '' : secici.sorgu}`} istemci={istemci} evren={evren} sorgu={secici.sorgu} konum={secici.konum}

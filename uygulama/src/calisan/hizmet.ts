@@ -20,11 +20,14 @@ import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
 import { DonemselYedek, donemselDurum, type YedekTasiyici } from './donemsel-yedek';
-import { metinBelgesi, takvimOku } from './izdusum';
+import { metinBelgesi, takvimOku, yonlendir } from './izdusum';
+const yonlendirKod = (e: EvrenVt, k: string) => yonlendir(e.db, k);
 import * as anlati from './anlati';
 import * as durum from './durum';
 import * as sablonlar from './sablon';
 import * as harita from './harita';
+import * as birlesme from './birlesme';
+import * as saglik from './saglik';
 import { yasHesapla } from '../alan/yas';
 import { MESELE_DURUMLARI, type Sablon, type SoruDurumu } from '../alan/sablon';
 import { gecerlilik, DURUM_KIPLERI } from '../alan/durum';
@@ -104,8 +107,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return {
       ...oz, ad: ad ?? oz.ad, islemSayisi: e.islemSayisi(),
       kayitSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NULL')),
-      copSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NOT NULL')),
+      copSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NOT NULL AND kod NOT IN (SELECT kod FROM yonlendirmeler)')),
       catismaSayisi: this.catismaSayisi({ evren }),
+      sorunSayisi: saglik.acikSorunSayisi(e),
     };
   }
 
@@ -368,8 +372,13 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     for (const r of e.db.selectObjects(`SELECT kayit, count(*) n, max(zaman) zaman, group_concat(DISTINCT kurulum) kurulumlar FROM silme_catismalari
         ${kod ? 'WHERE kayit=?' : ''} GROUP BY kayit`, kod ? [kod] : [])) {
+      const b = birlesme.birlesmeBilgisi(e, r.kayit as string).birlesti;
       sonuc.push({ tur: 'silme', kayit: r.kayit as string, baslik: kayitAdi(r.kayit as string), duzenlemeSayisi: Number(r.n), zaman: Number(r.zaman),
-        kurulumlar: String(r.kurulumlar).split(',').map((k) => this.kurulumAdi(k)) });
+        kurulumlar: String(r.kurulumlar).split(',').map((k) => this.kurulumAdi(k)), ...(b ? { birlesti: b } : {}) });
+    }
+    for (const r of e.db.selectObjects(`SELECT * FROM ters_birlesmeler ${kod ? 'WHERE kaynak=?1 OR hedef=?1' : ''} ORDER BY zaman`, kod ? [kod] : [])) {
+      sonuc.push({ tur: 'ters_birlesme', islem: r.islem as string, kayit: yonlendirKod(e, r.hedef as string), baslik: kayitAdi(yonlendirKod(e, r.hedef as string)),
+        diger: { kod: r.kaynak as string, ad: kayitAdi(r.kaynak as string) }, zaman: Number(r.zaman) });
     }
     for (const r of e.db.selectObjects(`SELECT * FROM metin_catismalari ${kod ? 'WHERE kayit=?' : ''} ORDER BY b_zaman`, kod ? [kod] : [])) {
       sonuc.push({ tur: 'metin', kayit: r.kayit as string, alan: r.alan as string, baslik: kayitAdi(r.kayit as string),
@@ -507,7 +516,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       `SELECT k.kod, k.tur, k.ad, k.ozet, k.karar, k.lakaplar, k.duzenleme, k.silindi, k.gorseller,
               coalesce(k.tarih, s.tarih) tarih
        FROM kayitlar k LEFT JOIN kayitlar s ON s.kod=k.sahne_olayi
-       WHERE k.silindi IS ${cop ? 'NOT ' : ''}NULL ORDER BY k.duzenleme DESC`)
+       WHERE k.silindi IS ${cop ? 'NOT ' : ''}NULL ${cop ? 'AND k.kod NOT IN (SELECT kod FROM yonlendirmeler)' : ''} ORDER BY k.duzenleme DESC`)
       .map((r) => ({
         kod: r.kod as string, tur: r.tur as string, ad: r.ad as string, ozet: r.ozet as string, karar: r.karar as string,
         lakaplar: JSON.parse(r.lakaplar as string), duzenleme: Number(r.duzenleme), silindi: r.silindi == null ? null : Number(r.silindi),
@@ -527,6 +536,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       gorseller: JSON.parse(r.gorseller as string), gorsel: (JSON.parse(r.gorseller as string) as string[])[0] ?? null,
       sahneOlayi: (r.sahne_olayi as string) ?? null,
       sahneTarihi: r.sahne_olayi ? this.tarihOku(e, r.sahne_olayi as string) : null,
+      ...birlesme.birlesmeBilgisi(e, kod),
     };
   }
 
@@ -590,6 +600,17 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return { kod };
   }
 
+  /** Bölme (§9.5): bir metin parçası yeni kayda dönüşür; eski yerinde ona bağlantı kalır (bağlantıyı editör yazar). */
+  parcadanKayit({ evren, kaynak, ad, tur, spans }: { evren: string; kaynak: string; ad: string; tur: string; spans: Spans }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kaynak);
+    if (!turGecerli(tur)) throw new Error('Bilinmeyen tür.');
+    if (!Array.isArray(spans) || !spans.length || spans.length > 20000) throw new Error('Ayrılacak metin boş.');
+    const kod = yeniKod();
+    this.yaz(evren, this.kayitGirdileri(kod, { ad: temizle(ad), tur, karar: 'fikir', ozet: '', spans }), [kod, kaynak]);
+    return { kod };
+  }
+
   kayitDegistir({ evren, kod, alan, deger }: { evren: string; kod: string; alan: DegisebilirAlan; deger: string }) {
     const e = this.evren(evren);
     this.kayitVarMi(e, kod);
@@ -648,6 +669,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   kayitGeriYukle({ evren, kod }: { evren: string; kod: string }) {
     const e = this.evren(evren);
     this.kayitVarMi(e, kod);
+    if (e.db.selectValue('SELECT 1 FROM yonlendirmeler WHERE kod=?', [kod]) !== undefined) throw new Error('Bu kayıt başka bir kayıtla birleştirilmiş; geri getirmek için birleştirmeyi geri al.');
     this.yaz(evren, [{ tur: 'kayit_geri_yukle', veri: { kod } }], [kod]);
   }
 
@@ -776,7 +798,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const harita = new Map<string, BaglananKayit>();
     for (const r of e.db.selectObjects(
       `SELECT b.kaynak, b.metin, k.ad, k.tur FROM baglantilar b JOIN kayitlar k ON k.kod=b.kaynak
-       WHERE b.hedef=? AND k.silindi IS NULL ORDER BY k.duzenleme DESC, b.sira`, [kod])) {
+       WHERE (b.hedef=?1 OR b.hedef IN (SELECT kod FROM yonlendirmeler WHERE hedef=?1)) AND k.silindi IS NULL ORDER BY k.duzenleme DESC, b.sira`, [kod])) {
       let x = harita.get(r.kaynak as string);
       if (!x) { x = { kod: r.kaynak as string, ad: r.ad as string, tur: r.tur as string, ifadeler: [] }; harita.set(x.kod, x); }
       if (!x.ifadeler.includes(r.metin as string)) x.ifadeler.push(r.metin as string);
@@ -1264,6 +1286,29 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const e = this.evren(evren);
     this.kayitVarMi(e, kod);
     return harita.kayitHaritalari(e, kod);
+  }
+
+  // ---------- Editoryal birleştirme (§9.5) ----------
+  private birlesmeBaglami(evren: string): birlesme.BirlesmeBaglami {
+    return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } };
+  }
+  birlesmeOnizle({ evren, kaynak, hedef }: { evren: string; kaynak: string; hedef: string }) { return birlesme.onizle(this.evren(evren), kaynak, hedef); }
+  birlestir({ evren, kaynak, hedef, secimler = {} }: { evren: string; kaynak: string; hedef: string; secimler?: Record<string, 'kaynak' | 'hedef'> }) {
+    birlesme.birlestir(this.birlesmeBaglami(evren), kaynak, hedef, secimler && typeof secimler === 'object' ? secimler : {});
+  }
+  birlesmeyiGeriAl({ evren, kod }: { evren: string; kod: string }) { birlesme.geriAl(this.birlesmeBaglami(evren), kod); }
+  /** Ters yönde birleştirme incelendi: önce uygulanan birleştirme kalır. */
+  tersBirlesmeCoz({ evren, islem }: { evren: string; islem: string }) {
+    const e = this.evren(evren);
+    if (e.db.selectValue('SELECT 1 FROM ters_birlesmeler WHERE islem=?', [islem]) === undefined) throw new Error('Bu çatışma artık yok.');
+    this.yaz(evren, [{ tur: 'catisma_coz', veri: { tur: 'ters_birlesme', islem } }]);
+  }
+
+  // ---------- Sağlık taraması (§9.4) ve inceleme kuyruğu (§9.3) ----------
+  saglikTaramasi({ evren, bilgi = false }: { evren: string; bilgi?: boolean }) { return saglik.tarama(this.evren(evren), !!bilgi); }
+  incelemeKarari({ evren, anahtar, durum, gerekce = '' }: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | null; gerekce?: string }) {
+    if (durum !== null && durum !== 'kabul' && durum !== 'ertelendi') throw new Error('Geçersiz karar.');
+    saglik.kararVer({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, String(anahtar), durum, gerekce);
   }
 
   // ---------- Görseller (§10.12) ----------

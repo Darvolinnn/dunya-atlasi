@@ -13,6 +13,7 @@ import { git } from './Uygulama';
 import { CatismaListesi } from './Catismalar';
 import { useCalisma } from './Calisma';
 import { KayitHaritaBolumu } from './Harita';
+import { BirlesmeBilgisi, BirlestirDugmesi } from './Birlesme';
 import { KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
 import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
 
@@ -54,7 +55,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         <button class="dugme sade" aria-expanded={gecmisAcik} onClick={() => setGecmisAcik(!gecmisAcik)}>Sürüm geçmişi</button>
       </header>
       <main class="sayfa kayit-sayfasi">
-        {kayit.silindi && (
+        <BirlesmeBilgisi istemci={istemci} evren={evren} kayit={kayit} />
+        {kayit.silindi && !kayit.birlesti && (
           <div class="uyari satir" style="margin-bottom:16px">
             <span style="flex:1">Bu kayıt {zamanYaz(kayit.silindi)} tarihinde çöp kutusuna taşındı.</span>
             <button class="dugme ana" onClick={() => istemci.iste('kayitGeriYukle', { evren, kod })}>Geri getir</button>
@@ -146,6 +148,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           <span class="soluk kucuk">Oluşturuldu {zamanYaz(kayit.olusturma)} · Son değişiklik {zamanYaz(kayit.duzenleme)}</span>
           <span class="bosluk" />
           {kayit.tur === 'not' && !kayit.silindi && <NotDonustur istemci={istemci} evren={evren} kayit={kayit} />}
+          {!kayit.silindi && <BirlestirDugmesi istemci={istemci} evren={evren} kayit={kayit} onceKaydet={async () => { await denetim.current?.kaydet(); }} />}
           {!kayit.silindi && (
             <button class="dugme tehlikeli" onClick={async () => {
               await denetim.current?.kaydet();
