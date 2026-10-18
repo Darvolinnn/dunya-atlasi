@@ -110,6 +110,20 @@ describe('serbest metin (Automerge)', () => {
     expect(sade(eski.spans)).toEqual(sade(parcalar('ikinci taslak')));
   });
 
+  it('eski sürümü geri getirmek yeni bir sürüm yazar; aradakiler geçmişte kalır', () => {
+    const { h, evren } = kur();
+    const { kod } = h.kayitOlustur({ evren, ad: 'A', tur: 'not' });
+    let temel = h.metinAc({ evren, kayit: kod, alan: 'govde' }).basliklar;
+    const surumler: string[][] = [];
+    for (const t of ['ilk', 'ikinci', 'üçüncü']) { temel = h.metinKaydet({ evren, kayit: kod, alan: 'govde', spans: parcalar(t), temel }).basliklar; surumler.push(temel); }
+    const r = h.metinGeriYukle({ evren, kayit: kod, alan: 'govde', basliklar: surumler[0] });
+    expect(r.degisti).toBe(true);
+    expect(sade(h.metinAc({ evren, kayit: kod, alan: 'govde' }).spans)).toEqual(sade(parcalar('ilk')));
+    const g = h.kayitGecmisi({ evren, kod });
+    expect(g[0].veri.geriYukleme).toBe(true);
+    expect(sade(h.metinSurumu({ evren, kayit: kod, alan: 'govde', basliklar: surumler[2] }).spans)).toEqual(sade(parcalar('üçüncü')));
+  });
+
   it('bir kelime eklemek küçük bir değişiklik yazar (bütün metni yeniden yazmaz)', () => {
     const { h, evren } = kur();
     const { kod } = h.kayitOlustur({ evren, ad: 'A', tur: 'not' });

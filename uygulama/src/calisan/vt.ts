@@ -13,7 +13,7 @@ let hazirlik: Promise<Hizmet> | null = null;
 // Arayüzün çağırabildiği istekler; başka hiçbir yöntem dışarıdan çağrılamaz.
 const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', 'evrenOlustur', 'evrenAdlandir', 'evrenBilgisi', 'islemGunlugu',
   'kayitlar', 'kayit', 'kayitOlustur', 'kayitDegistir', 'kayitListe', 'kayitSil', 'kayitGeriYukle', 'kayitGecmisi',
-  'metinAc', 'metinKaydet', 'metinSurumu']);
+  'metinAc', 'metinKaydet', 'metinSurumu', 'metinGeriYukle']);
 
 function kurulumAdi(): string {
   const ua = navigator.userAgent;

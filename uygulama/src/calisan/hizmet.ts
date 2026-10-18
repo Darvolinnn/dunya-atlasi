@@ -124,7 +124,7 @@ export class Hizmet implements Istekler {
     const kok = A.from({ t: '' }, { actor: this.aktor });
     this.yaz(evren, [
       { tur: 'kayit_olustur', veri: { kod, tur: turGecerli(tur) ? tur : 'diger', ad: temizAd, karar, ozet: temizle(ozet, { bos: true, uzunluk: 500 }) } },
-      { tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(kok) }, ikili: A.save(kok) },
+      { tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(kok), ilk: true }, ikili: A.save(kok) },
     ], [kod]);
     return { kod };
   }
@@ -211,5 +211,18 @@ export class Hizmet implements Istekler {
   metinSurumu({ evren, kayit, alan, basliklar }: { evren: string; kayit: string; alan: string; basliklar: Basliklar }) {
     const d = this.belge(this.evren(evren), kayit, alan);
     return { spans: A.spans(A.view(d, basliklar), ['t']) as Spans };
+  }
+
+  /** Eski bir sürümü geri getirir: o hâl yeni bir değişiklik olarak yazılır; aradaki sürümler geçmişte kalır (§10.8). */
+  metinGeriYukle({ evren, kayit, alan, basliklar }: { evren: string; kayit: string; alan: string; basliklar: Basliklar }) {
+    const d = this.belge(this.evren(evren), kayit, alan);
+    const simdiki = A.getHeads(d);
+    const eski = A.spans(A.view(d, basliklar), ['t']);
+    const calisma = A.clone(d, { actor: this.aktor });
+    const yeni = A.change(calisma, (x) => A.updateSpans(x, ['t'], eski as never, spanAyari()));
+    const sonra = A.getHeads(yeni);
+    if (JSON.stringify(sonra) === JSON.stringify(A.getHeads(calisma))) return { basliklar: simdiki, degisti: false };
+    this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar: sonra, geriYukleme: true }, ikili: A.saveSince(yeni, simdiki) }], [kayit]);
+    return { basliklar: sonra, degisti: true };
   }
 }

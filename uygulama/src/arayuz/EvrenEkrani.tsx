@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { EvrenBilgisi, GunlukSatiri } from '../veri/api';
-import { islemAciklamasi, zamanYaz } from '../alan/islem-metni';
+import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
 import { git } from './Uygulama';
-
-const SEKMELER: [string, string][] = [['genel', 'Genel'], ['gecmis', 'Geçmiş']];
+import { CopKutusu, KayitListesi } from './KayitListesi';
 
 export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: string; sekme: string }) {
   const [bilgi, setBilgi] = useState<EvrenBilgisi | null>(null);
@@ -26,12 +25,15 @@ export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: st
       </header>
       <main class="sayfa">
         <AdBasligi istemci={istemci} bilgi={bilgi} />
+        <p class="soluk kucuk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
         <div class="sekmeler" role="tablist">
-          {SEKMELER.map(([k, ad]) => (
+          {([['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş']] as const).map(([k, ad]) => (
             <button class="sekme" role="tab" aria-selected={sekme === k} onClick={() => git(`/e/${kod}/${k}`)}>{ad}</button>
           ))}
         </div>
-        {sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} /> : <Genel bilgi={bilgi} />}
+        {sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
+          : sekme === 'cop' ? <CopKutusu istemci={istemci} evren={kod} surum={surum} />
+          : <KayitListesi istemci={istemci} evren={kod} surum={surum} />}
       </main>
     </>
   );
@@ -66,29 +68,22 @@ function AdBasligi({ istemci, bilgi }: { istemci: Istemci; bilgi: EvrenBilgisi }
   );
 }
 
-function Genel({ bilgi }: { bilgi: EvrenBilgisi }) {
-  return (
-    <>
-      <p class="soluk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
-      <div class="bos">
-        <p>Bu evrende henüz kayıt yok.</p>
-        <p class="kucuk">Kayıtlar, serbest metin ve bağlantılar bir sonraki adımda ekleniyor.</p>
-      </div>
-    </>
-  );
-}
-
 function Gecmis({ istemci, kod, surum }: { istemci: Istemci; kod: string; surum: number }) {
   const [satirlar, setSatirlar] = useState<GunlukSatiri[] | null>(null);
-  useEffect(() => { istemci.iste('islemGunlugu', { evren: kod, sinir: 200 }).then(setSatirlar); }, [kod, surum]);
+  const [adlar, setAdlar] = useState<Map<string, string>>(new Map());
+  useEffect(() => {
+    istemci.iste('islemGunlugu', { evren: kod, sinir: 200 }).then(setSatirlar);
+    Promise.all([istemci.iste('kayitlar', { evren: kod }), istemci.iste('kayitlar', { evren: kod, cop: true })])
+      .then(([a, b]) => setAdlar(new Map([...a, ...b].map((k) => [k.kod, k.ad]))));
+  }, [kod, surum]);
   if (!satirlar) return null;
   return (
     <>
       <p class="soluk kucuk">Bu evrende yapılan her değişiklik, yapıldığı sırayla burada tutulur. En yenisi en üstte.</p>
       <ul class="gunluk">
-        {satirlar.map((s) => (
+        {satirlar.filter((s) => !gizliAdimMi(s.tur, s.veri)).map((s) => (
           <li key={s.kod}>
-            <span>{islemAciklamasi(s.tur, s.veri)}</span>
+            <span>{islemAciklamasi(s.tur, s.veri, (k) => adlar.get(String(k)) ?? 'Kayıt')}</span>
             <span class="soluk kucuk">{zamanYaz(s.zaman)}</span>
           </li>
         ))}

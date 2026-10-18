@@ -24,6 +24,9 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   metin: (v, ad) => v.geriYukleme ? `${ad(v.kayit)}: metnin eski bir sürümü geri getirildi` : `${ad(v.kayit)}: metin kaydedildi`,
 };
 
+/** Kullanıcının yaptığı bir değişiklik sayılmayan, başka bir işlemin parçası olan adımlar (listelerde gösterilmez). */
+export const gizliAdimMi = (tur: string, veri: Record<string, unknown>) => tur === 'metin' && veri.ilk === true;
+
 /** Bir işlemin açıklaması. `ad`, kayıt kodunu kullanıcının tanıdığı ada çevirir. */
 export function islemAciklamasi(tur: string, veri: Record<string, unknown>, ad: (kod: unknown) => string = () => 'Kayıt'): string {
   return ACIKLAMALAR[tur]?.(veri, ad) ?? 'Bu sürümün tanımadığı bir değişiklik (korunuyor)';
