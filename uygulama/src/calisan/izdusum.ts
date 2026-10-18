@@ -45,7 +45,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 11;
+export const IZDUSUM_SURUMU = 12;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -421,8 +421,7 @@ function silmeDenetle(db: Database, i: Islem) {
 }
 
 /** Silme uygulanırken: bu silmeyi görmemiş ve daha önce uygulanmış düzenlemeler. */
-function silmedenOnceki(db: Database, i: Islem) {
-  const kayit = i.veri.kod as string;
+function silmedenOnceki(db: Database, i: Islem, kayit = i.veri.kod as string) {
   const adaylar = db.selectObjects(
     `SELECT kod, kurulum, sira, tur, zaman, veri FROM islemler
      WHERE (json_extract(veri,'$.kod')=? OR json_extract(veri,'$.kayit')=?)
@@ -752,6 +751,8 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     db.exec({ sql: 'INSERT INTO yonlendirmeler(kod, hedef, islem) VALUES(?,?,?)', bind: [kaynak, son, i.kod] });
     db.exec({ sql: 'UPDATE kayitlar SET silindi=?, silen=? WHERE kod=?', bind: [i.zaman, i.kod, kaynak] });
     db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, son] });
+    // Birleştirmeyi görmeden eski kayda yazılmış ve sıralamada önce gelen düzenlemeler de incelemeye düşer.
+    silmedenOnceki(db, i, kaynak);
   },
   birlesme_geri_al(db, i) {
     const { kaynak, islem } = i.veri as { kaynak: string; islem: string };
