@@ -11,11 +11,13 @@ import { icerikAdi, onizlemeAdi, type GorselIsleyici, type MedyaDeposu } from '.
 import { iceAktarimPlani, type IceDosya } from './ice-aktarim';
 import { zipOku, zipYaz, type ZipDosyasi } from '../alan/zip';
 import { VERI_BICIMI, type Islem } from '../alan/islem';
+import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, kokAdaylari } from '../alan/turkce-ek';
 import { kararGecerli, turGecerli } from '../alan/turler';
-import type { Catisma, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
+import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
 import { metinBelgesi } from './izdusum';
 
@@ -32,7 +34,7 @@ const temizle = (deger: unknown, { bos = false, uzunluk = 200 } = {}) => {
 const aktor = (kurulum: string) => [...new TextEncoder().encode(kurulum)].map((b) => b.toString(16).padStart(2, '0')).join('');
 const METIN_ALANLARI = new Set(['govde']);
 
-export class Hizmet implements Istekler {
+export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   private readonly kurulum: KurulumVt;
   private readonly acik = new Map<string, EvrenVt>();
   private readonly aktor: string;
@@ -138,6 +140,79 @@ export class Hizmet implements Istekler {
     this.kurulum.evrenEkle(kod, ad, Number(e.db.selectValue("SELECT v FROM evren WHERE k='olusturma'")) || Date.now());
     this.acik.set(kod, e);
     return { kod, yeni: true };
+  }
+
+  // ---------- Drive eşitlemesi (§10) ----------
+  private esitleme: Esitleme | null = null;
+  private esitlemeSuruyor: Promise<void> | null = null;
+  private esitlemeHatasi: { mesaj: string; izin: boolean; zaman: number } | null = null;
+
+  private esitlemeErisimi(): EsitlemeErisimi {
+    return {
+      kurulum: this.kurulum, medya: this.medya, evrenVt: (k) => this.evren(k), evrenler: () => this.kurulum.evrenler(),
+      islemleriAl: (evren, islemler) => this.islemleriAl({ evren, islemler }),
+      evreniDisaridanKur: (kod, islemler) => { this.evreniDisaridanKur({ kod, islemler }); },
+    };
+  }
+
+  /** Uzak depoyu bağlar (Google izni gelince) ya da kaldırır. */
+  tasiyiciAyarla(t: Tasiyici | null) {
+    this.esitleme = t ? new Esitleme(this.esitlemeErisimi(), t) : null;
+    if (t && this.esitlemeHatasi?.izin) this.esitlemeHatasi = null;
+  }
+
+  /** Bütün eşitlenen evrenleri eşitler. Aynı anda tek eşitleme çalışır; ikinci çağrı ilkini bekler. */
+  async esitle(): Promise<EsitlemeDurumu> {
+    if (!this.esitleme) return this.esitlemeDurumu();
+    if (!this.esitlemeSuruyor) {
+      const es = this.esitleme;
+      this.esitlemeSuruyor = (async () => {
+        await Promise.resolve(); // gövde, işaret konmadan önce bitmesin
+        try {
+          for (const e of this.kurulum.evrenler()) await es.evreniEsitle(e.kod);
+          this.esitlemeHatasi = null;
+        } catch (err) {
+          const izin = err instanceof IzinHatasi;
+          this.esitlemeHatasi = { mesaj: izin ? 'Google izni yenilenmeli.' : (err as Error).message, izin, zaman: Date.now() };
+          if (izin) this.esitleme = null;
+        } finally { this.esitlemeSuruyor = null; }
+      })();
+    }
+    await this.esitlemeSuruyor;
+    return this.esitlemeDurumu();
+  }
+
+  esitlemeDurumu(): EsitlemeDurumu {
+    const es = this.esitleme ?? new Esitleme(this.esitlemeErisimi(), null);
+    return {
+      bagli: !!this.esitleme, calisiyor: !!this.esitlemeSuruyor, hata: this.esitlemeHatasi,
+      kurulum: { kod: this.kurulum.kod, ad: this.kurulum.ad },
+      evrenler: this.kurulum.evrenler().map((e) => es.durum(e.kod, e.ad)),
+    };
+  }
+
+  async uzakEvrenler() {
+    if (!this.esitleme) throw new Error('Önce Google Drive\'a bağlanın.');
+    return this.esitleme.uzakEvrenler();
+  }
+
+  async evreniIndir({ kod }: { kod: string }) {
+    if (!this.esitleme) throw new Error('Önce Google Drive\'a bağlanın.');
+    await this.esitleme.evreniIndir(kod);
+    return { kod };
+  }
+
+  evrenEsitlemeAyari({ evren, esitlenir }: { evren: string; esitlenir: boolean }) {
+    this.evren(evren);
+    this.kurulum.ayarYaz(`esitle:${evren}`, esitlenir ? '1' : '0');
+  }
+
+  kurulumAdiDegistir({ ad }: { ad: string }) { this.kurulum.adDegistir(temizle(ad, { uzunluk: 80 })); }
+
+  /** Bir kurulumu "artık kullanılmıyor" diye işaretler; geçmişi silinmez (§10.5). */
+  kurulumKullanimDisi({ kod, disi }: { kod: string; disi: boolean }) {
+    if (!kodGecerliMi(kod) || kod === this.kurulum.kod) throw new Error('Bu cihaz kendini kullanım dışı bırakamaz.');
+    new Esitleme(this.esitlemeErisimi(), null).kullanimDisiIsaretle(kod, disi);
   }
 
   // ---------- Çatışmalar (§10.3, §10.6) ----------
@@ -906,16 +981,4 @@ export class Hizmet implements Istekler {
     this.evrenAdlandir({ evren: asil, ad: eski });
     this.evrenAdlandir({ evren: kopya, ad: asilAd });
   }
-}
-
-function b64(b: Uint8Array): string {
-  let s = '';
-  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000));
-  return btoa(s);
-}
-function b64Coz(s: string): Uint8Array {
-  const ham = atob(s);
-  const b = new Uint8Array(ham.length);
-  for (let i = 0; i < ham.length; i++) b[i] = ham.charCodeAt(i);
-  return b;
 }

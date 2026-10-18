@@ -5,12 +5,14 @@ import { EvrenlerEkrani } from './EvrenlerEkrani';
 import { EvrenEkrani } from './EvrenEkrani';
 import { KayitEkrani } from './KayitEkrani';
 import { HizliNot } from './HizliNot';
+import { EsitlemeEkrani, EsitlemeOzeti, EsitlemeSaglayici, EsitlemeSeridi } from './Esitleme';
 
-export type Yol = { ekran: 'evrenler' } | { ekran: 'evren'; kod: string; sekme: string } | { ekran: 'kayit'; evren: string; kod: string };
+export type Yol = { ekran: 'evrenler' } | { ekran: 'esitleme' } | { ekran: 'evren'; kod: string; sekme: string } | { ekran: 'kayit'; evren: string; kod: string };
 
 function yolOku(): Yol {
   const p = location.hash.replace(/^#\/?/, '').split('/');
   if (p[0] === 'e' && p[1] && p[2] === 'k' && p[3]) return { ekran: 'kayit', evren: p[1], kod: p[3] };
+  if (p[0] === 'esitleme') return { ekran: 'esitleme' };
   if (p[0] === 'e' && p[1]) return { ekran: 'evren', kod: p[1], sekme: p[2] || 'kayitlar' };
   return { ekran: 'evrenler' };
 }
@@ -52,8 +54,10 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
   if (!kurulum) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
 
   return (
-    <>
+    <EsitlemeSaglayici istemci={istemci}>
+      <EsitlemeSeridi />
       {yol.ekran === 'evrenler' ? <EvrenlerEkrani istemci={istemci} />
+        : yol.ekran === 'esitleme' ? <EsitlemeEkrani istemci={istemci} />
         : yol.ekran === 'kayit' ? <KayitEkrani key={yol.kod} istemci={istemci} evren={yol.evren} kod={yol.kod} />
         : <EvrenEkrani istemci={istemci} kod={yol.kod} sekme={yol.sekme} />}
       <HizliNot istemci={istemci} evren={yol.ekran === 'evren' ? yol.kod : yol.ekran === 'kayit' ? yol.evren : null} />
@@ -61,9 +65,9 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
         <span>Bu cihaza kaydediliyor</span>
         <span>{kalici === null ? '' : kalici ? 'Tarayıcı verileri kalıcı tutuyor' : 'Tarayıcı kalıcı depolama izni vermedi'}</span>
         <span>Kurulum: {kurulum.ad}</span>
-        <span>Eşitleme: henüz yok (bu sürüm yalnızca bu cihazda)</span>
+        <EsitlemeOzeti />
       </footer>
-    </>
+    </EsitlemeSaglayici>
   );
 }
 

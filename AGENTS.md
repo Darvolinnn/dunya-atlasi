@@ -13,12 +13,12 @@ Bu depo, bir yazarın kurgu evrenlerini kurmasına yardım eden kişisel bir web
 ## Kurallar
 - Depo herkese açıktır. Depoya sır (anahtar, jeton, parola), **gerçek evren içeriği**, dışa aktarılmış veri ya da ekran görüntüsü konmaz; örnekler uydurmadır (§0.3, §17.3).
 - Depoya lisans dosyası eklenmez (K19).
-- Her değişiklik işlem günlüğünden geçer: veritabanına yalnızca `EvrenVt.islemYap()` yazar; görünen tablolar işlemlerden türetilir (§10.1).
+- Her değişiklik işlem günlüğünden geçer: veritabanına yalnızca `EvrenVt.islemYap()` (başka cihazdan gelenler için `disaridanAl()`) yazar; görünen tablolar işlemlerden türetilir (§10.1).
 - Programda yapay zekâ yoktur; serbest metinden anlam çıkarılmaz (K1).
 - Kullanıcıya gösterilen metinde programlama terimi kullanılmaz.
 
 ## Yapı
-- `uygulama/`: Vite + TypeScript + Preact. `npm run dev` (port 5180), `npm test`, `npm run denetle`.
+- `uygulama/`: Vite + TypeScript + Preact. `npm run dev` (port 5173; Google girişine izin verilen adres), `npm test`, `npm run denetle`.
   - `src/alan/`: tarayıcıdan bağımsız alan kuralları (kod, işlem, Türkçe, türler, metin şeması).
   - `src/calisan/`: veritabanı çalışanı (Web Worker), işlemlerin tablolara uygulanması (`izdusum.ts`), istekler (`hizmet.ts`).
   - `src/veri/`: arayüz ile çalışan arasındaki istekler (`api.ts`).

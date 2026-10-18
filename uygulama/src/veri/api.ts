@@ -78,6 +78,15 @@ export type Catisma =
   | { tur: 'silme'; kayit: string; baslik: string; duzenlemeSayisi: number; zaman: number; kurulumlar: string[] }
   | { tur: 'metin'; kayit: string; alan: string; baslik: string; temel: Basliklar;
       a: { basliklar: Basliklar; kurulum: string; zaman: number }; b: { basliklar: Basliklar; kurulum: string; zaman: number } };
+export interface EsitlemeDurumu {
+  bagli: boolean; calisiyor: boolean; hata: { mesaj: string; izin: boolean; zaman: number } | null;
+  kurulum: { kod: string; ad: string };
+  evrenler: EvrenEsitlemeDurumu[];
+}
+export interface EvrenEsitlemeDurumu {
+  kod: string; ad: string; esitlenir: boolean; sonEsitleme: number | null; yalnizBuCihazda: number; bekleyen: number; guncellemeGerekli: boolean;
+  cihazlar: { kod: string; ad: string; sonGorulme: number; kullanimDisi: boolean; bekleyen: number; buCihaz: boolean }[];
+}
 export interface BaglananKayit { kod: string; ad: string; tur: string; ifadeler: string[] }
 export interface AdDuzeltmesi { kaynak: string; kaynakAd: string; sira: number; eski: string; yeni: string }
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
@@ -139,6 +148,18 @@ export interface Istekler {
   islemleriVer(a: { evren: string; gorulen: Record<string, number>; kurulum?: string }): Islem[];
   islemleriAl(a: { evren: string; islemler: Islem[] }): { alinan: number; bekleyen: number };
   evreniDisaridanKur(a: { kod: string; islemler: Islem[] }): { kod: string; yeni: boolean };
+
+  /** Google izni geldi: Drive bağlanır. Hesabın e-postası döner (yalnızca bu cihazda saklanır). */
+  jetonVer(a: { jeton: string; bitis: number }): Promise<{ eposta: string; ad: string }>;
+  /** Drive bağlantısını keser; izni geri almak için anahtarı döner. */
+  baglantiyiKes(): { jeton: string | null };
+  esitle(): Promise<EsitlemeDurumu>;
+  esitlemeDurumu(): EsitlemeDurumu;
+  uzakEvrenler(): Promise<{ kod: string; ad: string; sonGorulme: number }[]>;
+  evreniIndir(a: { kod: string }): Promise<{ kod: string }>;
+  evrenEsitlemeAyari(a: { evren: string; esitlenir: boolean }): void;
+  kurulumAdiDegistir(a: { ad: string }): void;
+  kurulumKullanimDisi(a: { kod: string; disi: boolean }): void;
 
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];

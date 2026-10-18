@@ -6,6 +6,7 @@ import { Hizmet } from './hizmet';
 import { automergeHazirla } from '../alan/automerge';
 import automergeWasm from '@automerge/automerge/automerge.wasm?url';
 import { OpfsDeposu, tarayiciIsleyici } from './medya-tarayici';
+import { DriveTasiyici } from './drive';
 
 let hizmet: Hizmet | null = null;
 let havuz: { getFileCount(): number; getCapacity(): number; addCapacity(n: number): Promise<number> } | null = null;
@@ -18,7 +19,29 @@ const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', '
   'ara', 'baglananlar', 'bahsedilenler', 'adDuzeltmeOnizle', 'adDuzeltmeUygula',
   'kayitTarih', 'alanKarari', 'hizliNot', 'nottanKayit', 'iliskiler', 'iliskiEkle', 'iliskiDegistir', 'iliskiSil', 'iliskiGeriYukle',
   'sahneOlaylari', 'degisimEkle', 'degisimSil', 'kayitDegisimleri', 'gorselEkle', 'kayitGorselCikar', 'gorsel',
-  'iceAktarIncele', 'iceAktar', 'yedekAl', 'yedekIncele', 'yedektenYukle', 'evrenYerineKoy', 'sonYedek']);
+  'iceAktarIncele', 'iceAktar', 'yedekAl', 'yedekIncele', 'yedektenYukle', 'evrenYerineKoy', 'sonYedek',
+  'catismalar', 'catismaSayisi', 'alanCatismasiCoz', 'silmeCatismasiCoz', 'metinCatismasiCoz',
+  'esitle', 'esitlemeDurumu', 'uzakEvrenler', 'evreniIndir', 'evrenEsitlemeAyari', 'kurulumAdiDegistir', 'kurulumKullanimDisi',
+  'jetonVer', 'baglantiyiKes']);
+
+// Drive izni yalnızca bu çalışanın belleğinde durur; hiçbir yere yazılmaz.
+let jeton: string | null = null;
+const ozel = {
+  async jetonVer(h: Hizmet, a: { jeton: string; bitis: number }) {
+    if (typeof a?.jeton !== 'string' || !Number.isFinite(a.bitis)) throw new Error('Geçersiz izin.');
+    const t = new DriveTasiyici(a.jeton, a.bitis);
+    const hesap = await t.hesap();
+    jeton = a.jeton;
+    h.tasiyiciAyarla(t);
+    return hesap;
+  },
+  baglantiyiKes(h: Hizmet) {
+    const j = jeton;
+    jeton = null;
+    h.tasiyiciAyarla(null);
+    return { jeton: j };
+  },
+};
 
 function kurulumAdi(): string {
   const ua = navigator.userAgent;
@@ -44,8 +67,9 @@ onmessage = async (e: MessageEvent<{ no: number; ad: IstekAdi; arg: unknown }>) 
     // Her veritabanı dosyası ve günlüğü havuzda bir yer tutar; yeni evren için yer kalsın.
     if (havuz && havuz.getFileCount() + 6 > havuz.getCapacity()) await havuz.addCapacity(16);
     if (!IZINLI.has(ad)) throw new Error('Bilinmeyen istek: ' + ad);
-    const fn = (hizmet as unknown as Record<string, (a: unknown) => unknown>)[ad];
-    const sonuc = await fn.call(hizmet, arg);
+    const sonuc = ad === 'jetonVer' || ad === 'baglantiyiKes'
+      ? await ozel[ad](hizmet, arg as never)
+      : await (hizmet as unknown as Record<string, (a: unknown) => unknown>)[ad].call(hizmet, arg);
     // Görsel baytları kopyalanmadan aktarılır.
     const aktar = sonuc && typeof sonuc === 'object' && (sonuc as { veri?: unknown }).veri instanceof Uint8Array ? [((sonuc as { veri: Uint8Array }).veri).buffer] : [];
     postMessage({ no, sonuc }, { transfer: aktar as Transferable[] });

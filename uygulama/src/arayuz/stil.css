@@ -207,3 +207,10 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .uc-surum { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 10px; }
 .uc-surum h4 { margin: 0 0 4px; font-size: 0.85rem; }
 .uc-surum > div { border: 1px solid var(--cizgi); border-radius: var(--yaricap); padding: 8px; }
+
+/* Eşitleme */
+.esitleme-seridi { position: sticky; top: 0; z-index: 20; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  background: #f6d860; color: #2b2400; padding: 8px 16px; font-size: 0.95rem; }
+.esitleme-seridi .hata { color: #7a1010; }
+.alt-baglanti { color: inherit; }
+.durum-listesi { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }

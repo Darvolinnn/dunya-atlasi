@@ -13,7 +13,7 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
   const [panel, setPanel] = useState<'yok' | 'yedek' | 'ice'>('yok');
 
   const yukle = () => istemci.iste('evrenler').then(setEvrenler, (e) => setHata(e.message));
-  useEffect(() => { yukle(); }, []);
+  useEffect(() => { yukle(); return istemci.dinle((d) => { if (d.uzaktan) yukle(); }); }, []);
 
   const olustur = async (e: Event) => {
     e.preventDefault();
@@ -27,7 +27,7 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
 
   return (
     <>
-      <header class="ust"><span class="ad">Dünya Atlası</span></header>
+      <header class="ust"><span class="ad">Dünya Atlası</span><span class="bosluk" /><a class="dugme sade" href="#/esitleme">Eşitleme ve cihazlar</a></header>
       <main class="sayfa">
         <div class="satir" style="justify-content:space-between">
           <h1>Evrenler</h1>
