@@ -1,3 +1,5 @@
 # Deneyler depo dışında tutulur (§14.3)
 deneyler/
 node_modules/
+dist/
+.claude/

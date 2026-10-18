@@ -1,0 +1,98 @@
+import { useEffect, useState } from 'preact/hooks';
+import type { Istemci } from '../veri/istemci';
+import type { EvrenBilgisi, GunlukSatiri } from '../veri/api';
+import { islemAciklamasi, zamanYaz } from '../alan/islem-metni';
+import { git } from './Uygulama';
+
+const SEKMELER: [string, string][] = [['genel', 'Genel'], ['gecmis', 'Geçmiş']];
+
+export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: string; sekme: string }) {
+  const [bilgi, setBilgi] = useState<EvrenBilgisi | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  const [surum, setSurum] = useState(0);
+
+  useEffect(() => { istemci.iste('evrenBilgisi', { evren: kod }).then(setBilgi, (e) => setHata(e.message)); }, [kod, surum]);
+  useEffect(() => istemci.dinle((d) => { if (d.evren === kod) setSurum((s) => s + 1); }), [kod]);
+
+  if (hata) return <main class="sayfa"><p class="hata">{hata}</p><a href="#/">Evrenlere dön</a></main>;
+  if (!bilgi) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
+
+  return (
+    <>
+      <header class="ust">
+        <a href="#/" class="dugme sade">← Evrenler</a>
+        <span class="ad">{bilgi.ad}</span>
+        <span class="bosluk" />
+      </header>
+      <main class="sayfa">
+        <AdBasligi istemci={istemci} bilgi={bilgi} />
+        <div class="sekmeler" role="tablist">
+          {SEKMELER.map(([k, ad]) => (
+            <button class="sekme" role="tab" aria-selected={sekme === k} onClick={() => git(`/e/${kod}/${k}`)}>{ad}</button>
+          ))}
+        </div>
+        {sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} /> : <Genel bilgi={bilgi} />}
+      </main>
+    </>
+  );
+}
+
+function AdBasligi({ istemci, bilgi }: { istemci: Istemci; bilgi: EvrenBilgisi }) {
+  const [duzenle, setDuzenle] = useState(false);
+  const [ad, setAd] = useState(bilgi.ad);
+  const [hata, setHata] = useState<string | null>(null);
+  const kaydet = async (e: Event) => {
+    e.preventDefault();
+    if (ad.trim() === bilgi.ad) { setDuzenle(false); return; }
+    try { await istemci.iste('evrenAdlandir', { evren: bilgi.kod, ad }); setDuzenle(false); setHata(null); }
+    catch (err) { setHata((err as Error).message); }
+  };
+  if (!duzenle) {
+    return (
+      <div class="satir">
+        <h1>{bilgi.ad}</h1>
+        <button class="dugme sade" onClick={() => { setAd(bilgi.ad); setDuzenle(true); }}>Adı değiştir</button>
+      </div>
+    );
+  }
+  return (
+    <form class="satir" onSubmit={kaydet}>
+      <label class="soluk" for="evren-adi">Evrenin adı</label>
+      <input id="evren-adi" class="girdi" style="flex:1;min-width:200px" value={ad} autoFocus onInput={(e) => setAd((e.target as HTMLInputElement).value)} />
+      <button class="dugme ana" type="submit" disabled={!ad.trim()}>Kaydet</button>
+      <button class="dugme" type="button" onClick={() => setDuzenle(false)}>Vazgeç</button>
+      {hata && <span class="hata">{hata}</span>}
+    </form>
+  );
+}
+
+function Genel({ bilgi }: { bilgi: EvrenBilgisi }) {
+  return (
+    <>
+      <p class="soluk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
+      <div class="bos">
+        <p>Bu evrende henüz kayıt yok.</p>
+        <p class="kucuk">Kayıtlar, serbest metin ve bağlantılar bir sonraki adımda ekleniyor.</p>
+      </div>
+    </>
+  );
+}
+
+function Gecmis({ istemci, kod, surum }: { istemci: Istemci; kod: string; surum: number }) {
+  const [satirlar, setSatirlar] = useState<GunlukSatiri[] | null>(null);
+  useEffect(() => { istemci.iste('islemGunlugu', { evren: kod, sinir: 200 }).then(setSatirlar); }, [kod, surum]);
+  if (!satirlar) return null;
+  return (
+    <>
+      <p class="soluk kucuk">Bu evrende yapılan her değişiklik, yapıldığı sırayla burada tutulur. En yenisi en üstte.</p>
+      <ul class="gunluk">
+        {satirlar.map((s) => (
+          <li key={s.kod}>
+            <span>{islemAciklamasi(s.tur, s.veri)}</span>
+            <span class="soluk kucuk">{zamanYaz(s.zaman)}</span>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
