@@ -131,6 +131,7 @@ Bölüm numaraları Sürüm 6'ya aittir. Bölüm numaralarında değişiklik yok
 | B10 6, B11 N2, N9, N10 | Süreç ve sıra | K11, K16, K17; §14 yeniden yazıldı (1a yerel, 1b Drive, cihaz sırası, iki haftalık kullanım kapısı); T8–T14 günlük kullanım senaryoları; §17.3 ajan talimat dosyası |
 | B11 N4, N5 | Tek yazar, birden çok evren | K18; §10.1 |
 | B11 N11 | GitHub hesabı | İki hesap da kullanıcının (K7) |
+| Kullanıcı kararı (18 Ekim, kodlama başladıktan sonra) | Deponun görünürlüğü | Depo gizli yerine herkese açık oldu (K7). Cloudflare Pages'in seçilme gerekçesi artık gizli depo değil; kendine ait köken, Cloudflare Access ve HTTP başlıkları (§14) |
 | Alınmayanlar | — | B10 6.2'deki eser için `.docx` dışa aktarımı yeni bir fikir sayıldı (K11). F26'nın ayrıntısı ve 2.2'nin tam birleştirmesi bekliyor. B10 6.2 lisans önerisi yerine K19 |
 
 ---

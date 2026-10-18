@@ -36,7 +36,7 @@ Yeni bir eleştiri, öneri ya da kullanıcı kararı geldiğinde:
 
 ### 0.3 Örnekler
 
-Belgedeki adlar (Velkar, Kaelen, Elin, Kuzey Kalesi…) yalnızca davranışı anlatmak için uydurulmuş örneklerdir. Depo gizlidir (K7), ama belge yazılım ajanlarıyla ve başka araçlarla paylaşılabileceği için kullanıcının gerçek evreninden içerik, sır ya da ekran görüntüsü buraya yine konmaz.
+Belgedeki adlar (Velkar, Kaelen, Elin, Kuzey Kalesi…) yalnızca davranışı anlatmak için uydurulmuş örneklerdir. Depo herkese açıktır (K7); bu yüzden kullanıcının gerçek evreninden içerik, sır ya da ekran görüntüsü buraya konmaz.
 
 ### 0.4 Konu dizini
 
@@ -116,7 +116,7 @@ Aşağıdaki sözcükler belgede yalnızca bu anlamlarda kullanılır. Kodu yaza
 | K4 | **Tasarım, geliştirme maliyeti kaygısıyla daraltılmaz.** Geliştirme sırası (§14) yalnızca sırayı belirler. | 18 Ekim |
 | K5 | **Program yazarlık yöntemi dayatmaz.** Hiçbir alan zorunlu değildir; kullanıcı önce serbestçe yazar, ayrıntıyı ihtiyaç duydukça açar. | 18 Ekim |
 | K6 | **Özellik seçiminin ölçütü:** "Bu özellik evrenimi kurarken hangi işimi kolaylaştırıyor?" Rakiplerden farklılaşmak tek başına gerekçe değildir. | 18 Ekim |
-| K7 | **Kod ve tasarım belgeleri gizli bir GitHub deposunda tutulur:** `Darvolinnn/dunya-atlasi` (Darvolinnn ve TearsFears227 hesaplarının ikisi de kullanıcınındır). Program ana ekrana eklenebilen bir web uygulamasıdır (PWA). Gizli depodan Cloudflare Pages ile, yalnızca kendisine ait bir kökende yayımlanır; adrese yalnızca kullanıcının hesabıyla girilir (Cloudflare Access). Evren verisi depoya ve siteye girmez (§17.3). | 18 Ekim |
+| K7 | **Kod ve tasarım belgeleri herkese açık bir GitHub deposunda tutulur:** `Darvolinnn/dunya-atlasi` (Darvolinnn ve TearsFears227 hesaplarının ikisi de kullanıcınındır). Depo önce gizli olarak düşünülmüştü; kullanıcı 18 Ekim'de herkese açık olmasını seçti. Depoya sır, gerçek evren içeriği ve ekran görüntüsü konmaz. Program ana ekrana eklenebilen bir web uygulamasıdır (PWA). Depodan Cloudflare Pages ile, yalnızca kendisine ait bir kökende yayımlanır; adrese yalnızca kullanıcının hesabıyla girilir (Cloudflare Access). Evren verisi depoya ve siteye girmez (§17.3). | 18 Ekim |
 | K8 | **Görünüm: soft, temiz, narin; sade kartlar.** Parşömen ve arşiv dokusu yalnızca kapakta, wikide ve evren içi belge çıktılarında. Ayrıntı §12. | 18 Ekim |
 | K9 | **Tasarım aşaması kullanıcı "geç" demeden kapanmaz.** O zamana kadar depoya yalnızca tasarım belgeleri girer. Kullanıcının açık onayı olmadan kodlamaya geçilmez. | 18 Ekim |
 | K10 | **Tasarım belgesi yalnızca güncel davranışı anlatır;** geçmiş ayrı tutulur (§0.2). | 18 Ekim |
@@ -140,7 +140,7 @@ Her satırda tasarımın önerisi yazılıdır. Kullanıcı karar verene kadar �
 
 | # | Soru | Öneri | Etkilediği yer |
 |---|---|---|---|
-| A3 | Wiki hiç olacak mı; olursa nerede ve kimin için? | Şimdilik yok (K20). Olursa yazar uygulamasından **ayrı bir kökende**, gizli depodan Cloudflare Pages ile; okurları kullanıcı seçer | §11 |
+| A3 | Wiki hiç olacak mı; olursa nerede ve kimin için? | Şimdilik yok (K20). Olursa yazar uygulamasından **ayrı bir kökende**, Cloudflare Pages ile; okurları kullanıcı seçer | §11 |
 | A4 | Yazar sayfası gerekli mi? | Ayrı modül yerine wiki kapağında isteğe bağlı "Hakkında / Önsöz" alanı | §11 |
 | A5 | Harita çizimi: yalnızca yüklenen görseller mi, çizim aracı da mı? | Önce yükleme ve işaretleme; bölge çizimi aşama 3'te; serbest çizim için F46 değerlendirilir | §8 |
 | A6 | Claude'daki prototipin akıbeti | Program hazır olana kadar karalama defteri; içe aktarımı aşama 1'dedir (§14); aktarım yazılırken sınanır, şimdiden kayıpsız sayılmaz | §14 |
@@ -1218,8 +1218,8 @@ Ayrı Windows, Android ve App Store uygulamaları yazmak gerekmez; App Store yol
 
 ### 17.3 Depo ve barındırma
 
-- Kod ve tasarım belgeleri gizli `Darvolinnn/dunya-atlasi` deposundadır (K7). Depoda lisans dosyası yoktur; kodu başkası kullanamaz (K19).
-- GitHub'ın ücretsiz planında Pages yalnızca herkese açık depodan yayın yapar. Bu yüzden program **Cloudflare Pages** ile gizli depodan yayımlanır. Cloudflare Pages HTTP başlıklarını ayarlamaya izin verir: güvenlik ilkesi ve yerel veritabanının istediği başlıklar verilebilir (TK1).
+- Kod ve tasarım belgeleri herkese açık `Darvolinnn/dunya-atlasi` deposundadır (K7). Depoda lisans dosyası yoktur; kodu başkası kullanamaz (K19).
+- Program **Cloudflare Pages** ile yayımlanır: yalnızca bu projeye ait bir köken verir ve adrese girişi Cloudflare Access ile kullanıcıya sınırlar. Cloudflare Pages ayrıca HTTP başlıklarını ayarlamaya izin verir: güvenlik ilkesi ve yerel veritabanının istediği başlıklar verilebilir (TK1).
 - Uygulamanın adresine **Cloudflare Access** ile yalnızca kullanıcının hesabıyla girilir. Bu, kodun ve uygulamanın görünürlüğünü kısar; evren verisi zaten sitede değildir.
 - Depoda yalnızca program kodu ve tasarım belgeleri olur. **Evren verisi, dışa aktarımlar ve gerçek evrenden ekran görüntüleri depoya girmez**; kullanıcının cihazlarında ve Drive'ında durur. Tasarım örnekleri uydurmadır (§0.3).
 - Kod başlayınca depoya bir ajan talimat dosyası konur: bağlayıcı bölümler §0 ve §18'dir, Öneri kodlanmaz, depoya sır ve evren verisi girmez.
