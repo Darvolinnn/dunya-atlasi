@@ -9,6 +9,7 @@ import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
 import { MetinEditoru, MetinGorunumu, type EditorDenetimi } from './MetinEditoru';
 import { KararSecici, TurSecici } from './ortak';
 import { Gorseller, Iliskiler, KayitDegisimleri, NotDonustur, SahneBolumu, TarihAlani } from './KayitBolumleri';
+import { KayitIzleri } from './Sureklilik';
 import { git } from './Uygulama';
 import { CatismaListesi } from './Catismalar';
 import { useCalisma } from './Calisma';
@@ -140,6 +141,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         <KayitMeseleleri istemci={istemci} evren={evren} kayit={kayit} />
         <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />
         <KayitDegisimleri istemci={istemci} evren={evren} kod={kod} surum={surum} />
+        {!['sahne', 'not', 'eser', 'bolum'].includes(kayit.tur) && <KayitIzleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         <Baglananlar istemci={istemci} evren={evren} kod={kod} surum={surum} />
 
         {gecmisAcik && (

@@ -178,6 +178,17 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .degisim-listesi li { padding: 4px 0; }
 .degisim-formu { margin-top: 8px; }
 .not-donustur { margin-top: 8px; width: 100%; }
+.sureklilik { margin-top: 16px; }
+.iz-karti { margin: 10px 0; padding: 10px 12px; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey); }
+.iz-sutunlar { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 14px; margin-top: 8px; }
+.iz-sutunlar .girdi { width: 100%; }
+.iz-baslik { font-size: 13px; color: var(--metin-2); margin-bottom: 4px; }
+.iz-hesap { margin-top: 4px; }
+.iz-notlar { margin: 8px 0 0; padding-left: 18px; color: var(--metin-2); }
+.iz-adimlari { list-style: none; padding: 0; margin: 6px 0 0; }
+.iz-adimlari li { padding: 3px 0; border-bottom: 1px dashed var(--cizgi); }
+.iz-tarih { min-width: 110px; }
+.iz-formu { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
 .uyari.kucuk { padding: 6px 10px; margin: 6px 0 0; }
 
 /* Görseller */
@@ -535,3 +546,4 @@ label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; 
 .yolculuk-asamasi.plan { border-style: dashed; }
 .yol-bolumu > .dugme, .yol-bolumu > form .dugme { justify-self: start; }
 .yolculuk-asamasi select.girdi, .yol-bolumu input.girdi { width: auto; }
+.rozet.uyari-rozet { border-color: var(--tehlike); color: var(--tehlike); margin-left: 6px; }

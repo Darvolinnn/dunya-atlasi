@@ -13,6 +13,7 @@ import { takvimOrnegi, useTakvim } from './Takvim';
 import { gorseldeIsaretle } from './Harita';
 import { EtkiRaporuPaneli } from './Gorunumler';
 import { GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
+import { SureklilikDefteri } from './Sureklilik';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -374,6 +375,7 @@ export function SahneBolumu({ istemci, evren, kayit, surum }: { istemci: Istemci
         </div>
       ))}
       <DegisimFormu istemci={istemci} evren={evren} sahne={kayit.kod} olaylar={olaylar} />
+      <SureklilikDefteri istemci={istemci} evren={evren} sahne={kayit.kod} olaylar={olaylar} surum={surum} />
     </section>
   );
 }

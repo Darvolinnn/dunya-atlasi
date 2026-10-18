@@ -98,7 +98,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 17;
+export const IZDUSUM_SURUMU = 18;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -147,10 +147,33 @@ CREATE TABLE IF NOT EXISTS degisimler(
   konu TEXT,
   metin TEXT NOT NULL,
   karar TEXT NOT NULL,
+  iz TEXT,
+  miktar REAL,
   olusturma INTEGER NOT NULL,
   silindi INTEGER
 );
 CREATE INDEX IF NOT EXISTS degisimler_olay ON degisimler(olay);
+CREATE INDEX IF NOT EXISTS degisimler_iz ON degisimler(iz);
+CREATE TABLE IF NOT EXISTS izler(
+  kod TEXT PRIMARY KEY,
+  konu TEXT NOT NULL,
+  ad TEXT NOT NULL,
+  model TEXT NOT NULL,
+  birim TEXT NOT NULL DEFAULT '',
+  sure REAL,
+  olusturma INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS izler_konu ON izler(konu);
+CREATE TABLE IF NOT EXISTS iz_gozlemleri(
+  iz TEXT NOT NULL,
+  sahne TEXT NOT NULL,
+  an TEXT NOT NULL,
+  deger TEXT NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  PRIMARY KEY(iz, sahne, an)
+);
+CREATE INDEX IF NOT EXISTS iz_gozlemleri_sahne ON iz_gozlemleri(sahne);
 CREATE INDEX IF NOT EXISTS degisimler_konu ON degisimler(konu);
 CREATE TABLE IF NOT EXISTS medya(
   ad TEXT PRIMARY KEY,
@@ -392,7 +415,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -425,7 +448,7 @@ function yonlendirNotla(db: Database, kod: string | null | undefined, tablo: str
 
 /** Birleştirmede kaynak kayda bağlı satırlar hedefe taşınır; geri almak için hangi satırın taşındığı tutulur. */
 const BIRLESME_SUTUNLARI: [string, string][] = [['iliskiler', 'a'], ['iliskiler', 'b'], ['durumlar', 'konu'], ['durumlar', 'hedef'], ['isaretler', 'kayit'], ['cizimler', 'kayit'], ['rotalar', 'a'], ['rotalar', 'b'],
-  ['haritalar', 'yer'], ['degisimler', 'konu'], ['degisimler', 'olay'], ['kayitlar', 'sahne_olayi'], ['anlati', 'ust'], ['yonlendirmeler', 'hedef'],
+  ['haritalar', 'yer'], ['degisimler', 'konu'], ['degisimler', 'olay'], ['izler', 'konu'], ['kayitlar', 'sahne_olayi'], ['anlati', 'ust'], ['yonlendirmeler', 'hedef'],
   ['iddialar', 'konu'], ['bilgiler', 'bilen'], ['bilgiler', 'kaynak_kayit'], ['bilgiler', 'sahne']];
 
 export type Kesinlik = 'kesin' | 'yaklasik' | 'bilinmiyor';
@@ -720,12 +743,44 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   degisim_ekle(db, i) {
     const v = i.veri as Record<string, unknown>;
     db.exec({
-      sql: 'INSERT OR IGNORE INTO degisimler(kod, olay, sahne, konu, metin, karar, olusturma) VALUES(?,?,?,?,?,?,?)',
-      bind: [v.kod as string, yonlendirNotla(db, v.olay as string, 'degisimler', 'olay', v.kod as string), (v.sahne as string) ?? null, yonlendirNotla(db, (v.konu as string) ?? null, 'degisimler', 'konu', v.kod as string), v.metin as string, v.karar as string, i.zaman],
+      sql: 'INSERT OR IGNORE INTO degisimler(kod, olay, sahne, konu, metin, karar, iz, miktar, olusturma) VALUES(?,?,?,?,?,?,?,?,?)',
+      bind: [v.kod as string, yonlendirNotla(db, v.olay as string, 'degisimler', 'olay', v.kod as string), (v.sahne as string) ?? null, yonlendirNotla(db, (v.konu as string) ?? null, 'degisimler', 'konu', v.kod as string), v.metin as string, v.karar as string,
+        typeof v.iz === 'string' ? v.iz : null, typeof v.miktar === 'number' && Number.isFinite(v.miktar) ? v.miktar : null, i.zaman],
     });
   },
   degisim_sil(db, i) {
     db.exec({ sql: 'UPDATE degisimler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+
+  /** Süreklilik defteri (§5.6): izlenen ayrıntı, sahne başı ve sonunda gözlenen durum. */
+  iz_olustur(db, i) {
+    const v = i.veri as Record<string, unknown>;
+    if (typeof v.kod !== 'string' || typeof v.konu !== 'string') return;
+    const model = ['durum', 'sayi', 'iyilesme'].includes(v.model as string) ? v.model as string : 'durum';
+    db.exec({ sql: 'INSERT OR IGNORE INTO izler(kod, konu, ad, model, birim, sure, olusturma) VALUES(?,?,?,?,?,?,?)',
+      bind: [v.kod, yonlendirNotla(db, v.konu, 'izler', 'konu', v.kod) as string, String(v.ad ?? '').slice(0, 120), model, String(v.birim ?? '').slice(0, 30),
+        typeof v.sure === 'number' && v.sure > 0 ? v.sure : null, i.zaman] });
+  },
+  iz_degistir(db, i) {
+    const { kod, tanim } = i.veri as { kod: string; tanim: { ad?: unknown; birim?: unknown; sure?: unknown } | null };
+    if (typeof kod !== 'string' || !tanim) return;
+    db.exec({ sql: 'UPDATE izler SET ad=?, birim=?, sure=? WHERE kod=?',
+      bind: [String(tanim.ad ?? '').slice(0, 120), String(tanim.birim ?? '').slice(0, 30), typeof tanim.sure === 'number' && tanim.sure > 0 ? tanim.sure : null, kod] });
+    alanYaz(db, i, kod, 'iz', tanim);
+  },
+  iz_sil(db, i) {
+    db.exec({ sql: 'UPDATE izler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  iz_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE izler SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+  iz_gozlem(db, i) {
+    const { iz, sahne, an, deger } = i.veri as { iz: string; sahne: string; an: string; deger: unknown };
+    if (typeof iz !== 'string' || typeof sahne !== 'string' || (an !== 'bas' && an !== 'son')) return;
+    const s = yonlendir(db, sahne);
+    if (typeof deger !== 'string' || !deger) db.exec({ sql: 'DELETE FROM iz_gozlemleri WHERE iz=? AND sahne=? AND an=?', bind: [iz, s, an] });
+    else db.exec({ sql: 'INSERT OR REPLACE INTO iz_gozlemleri(iz, sahne, an, deger, duzenleme) VALUES(?,?,?,?,?)', bind: [iz, s, an, deger.slice(0, 200), i.zaman] });
+    alanYaz(db, i, iz, `gozlem:${s}:${an}`, typeof deger === 'string' && deger ? deger : null);
   },
 
   /** Anlatı yapısı (§3.3): bölüm esere, sahne esere ya da bölüme yerleşir; sıra anahtarla tutulur. */

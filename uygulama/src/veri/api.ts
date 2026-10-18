@@ -50,6 +50,26 @@ export interface DegisimSatiri {
   konu: { kod: string; ad: string; tur: string } | null;
   tarih: EvrenTarihi | null;
 }
+/** Süreklilik defteri (§5.6). Geçiş modeli: serbest durum (hesap yok), sayılabilir kaynak, iyileşme süresi. */
+export type IzModeli = 'durum' | 'sayi' | 'iyilesme';
+export interface IzTanimi { kod: string; konu: KisaKayit; ad: string; model: IzModeli; birim: string; sure: number | null }
+/** Bir izin evren zamanı boyunca adımları: gözlem ya da değişim, ve sayılabilir kaynakta adımdan sonraki hesap. */
+export interface IzAdimi {
+  tur: 'gozlem' | 'degisim'; sahne: { kod: string; ad: string } | null; an: 'bas' | 'son' | null; olay: { kod: string; ad: string } | null;
+  degisim: string | null; deger: string; miktar: number | null; tarih: EvrenTarihi | null;
+  /** Sayılabilir kaynakta bu adımdan önce hesaplanan değer; gözlemle uyuşmazsa ikisi de görünür. */
+  hesap: number | null; uyusmaz: boolean;
+}
+export interface IzGecmisi { iz: IzTanimi; adimlar: IzAdimi[]; tarihsiz: IzAdimi[] }
+export interface SahneIzi {
+  iz: IzTanimi;
+  bas: { gozlenen: string | null; beklenen: string | null; dayanak: string | null };
+  degisimler: { kod: string; olay: { kod: string; ad: string }; metin: string; miktar: number | null; karar: string }[];
+  son: { gozlenen: string | null; hesaplanan: string | null };
+  netFark: number | null;
+  notlar: string[];
+}
+export interface SahneSurekliligi { izler: SahneIzi[]; eklenebilir: IzTanimi[]; tarihli: boolean }
 export interface SahneOlayBilgisi { kod: string; ad: string; sahneOlayi: boolean; tarih: EvrenTarihi | null; degisimler: DegisimSatiri[] }
 export type GorselSonucu =
   | { durum: 'var'; veri: Uint8Array; tur: string; en: number; boy: number; dosyaAdi: string }
@@ -425,7 +445,7 @@ export interface Istekler {
   iliskiGeriYukle(a: { evren: string; kod: string }): void;
 
   sahneOlaylari(a: { evren: string; sahne: string }): SahneOlayBilgisi[];
-  degisimEkle(a: { evren: string; sahne: string; olay?: string | null; konu?: string | null; metin: string; karar?: string }): { kod: string; olay: string };
+  degisimEkle(a: { evren: string; sahne: string; olay?: string | null; konu?: string | null; metin: string; karar?: string; iz?: string | null; miktar?: number | null }): { kod: string; olay: string };
   degisimSil(a: { evren: string; kod: string }): void;
   kayitDegisimleri(a: { evren: string; kod: string }): DegisimSatiri[];
 
@@ -530,6 +550,12 @@ export interface Istekler {
   rotaYaz(a: { evren: string; kod: string; rota: RotaGirdisi }): void;
   yolculuk(a: { evren: string; kod: string }): Yolculuk;
   yolculukYaz(a: { evren: string; kod: string; asamalar: YolculukAsamaGirdisi[] }): void;
+  izOlustur(a: { evren: string; konu: string; ad: string; model: IzModeli; birim?: string; sure?: number | null }): { kod: string };
+  izDegistir(a: { evren: string; kod: string; ad: string; birim?: string; sure?: number | null }): void;
+  izSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  izGozlem(a: { evren: string; iz: string; sahne: string; an: 'bas' | 'son'; deger: string }): void;
+  sahneSurekliligi(a: { evren: string; sahne: string; ek?: string[] }): SahneSurekliligi;
+  kayitIzleri(a: { evren: string; kod: string }): IzGecmisi[];
   haritaYukle(a: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ kod: string }>;
   gorseldenHarita(a: { evren: string; kayit: string; gorsel: string }): { kod: string };
   haritaDegistir(a: { evren: string; kod: string; alan: 'ad' | 'yer'; deger: unknown }): void;
