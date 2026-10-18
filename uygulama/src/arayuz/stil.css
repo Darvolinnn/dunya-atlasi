@@ -339,8 +339,28 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .harita-tuval { overflow: auto; max-height: 75vh; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey-2); }
 .harita-yuzey { position: relative; min-width: 100%; touch-action: pan-x pan-y; }
 .harita-yuzey.isaretleme { cursor: crosshair; }
+.harita-katmanlar { position: absolute; inset: 0; overflow: hidden; }
 .harita-katman { position: absolute; pointer-events: none; }
 .harita-katman img { display: block; width: 100%; height: auto; user-select: none; }
+/* Katmanlar ve hizalama (§8.1, §8.5) */
+.harita-yuzey.hizalama .harita-isaret { pointer-events: none; }
+.harita-katman.hizalanan { outline: 2px dashed var(--odak); }
+.hizalama-noktasi { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 0.7rem; font-weight: 600; pointer-events: none; z-index: 3; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4); }
+.hizalama-noktasi.gorsel { background: #fff; color: #23211d; border: 2px solid var(--tehlike); }
+.hizalama-noktasi.uzay { background: var(--tehlike); color: #fff; border: 2px solid #fff; }
+.hizalama-noktasi.bekleyen { animation: none; border-style: dashed; }
+.katman-listesi { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 10px; }
+.katman-satiri { display: grid; gap: 4px; }
+.katman-satiri > label.satir { flex-wrap: nowrap; }
+.katman-satiri > label.satir .girdi { flex: 1; min-width: 0; }
+.katman-satiri input[type=range] { width: 100%; }
+.katman-turleri { border: none; padding: 0; margin: 8px 0; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.gizli-dosya { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+label.dugme { position: relative; cursor: pointer; }
+label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; }
+.hizalama-ciftleri { padding-left: 18px; margin: 6px 0; }
+.hizalama-paneli { display: grid; gap: 6px; }
 .harita-isaret { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; padding: 0; border-radius: 50%; border: 2px solid #fff; background: var(--vurgu);
   box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4); cursor: pointer; z-index: 2; }
 .harita-isaret.yaklasik { background: var(--yuzey); border-color: var(--vurgu); border-style: dashed; }

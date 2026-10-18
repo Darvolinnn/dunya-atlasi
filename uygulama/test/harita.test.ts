@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { Hizmet } from '../src/calisan/hizmet';
+import { islemAciklamasi } from '../src/alan/islem-metni';
 import { BellekDeposu, type GorselIsleyici } from '../src/calisan/medya';
 
 let sqlite3: Awaited<ReturnType<typeof sqlite3InitModule>>;
@@ -24,7 +25,7 @@ describe('harita: yükle, işaretle, bağla', () => {
     const liman = h.kayitOlustur({ evren, ad: 'Tuzlu Liman', tur: 'sehir' }).kod;
     const kule = h.kayitOlustur({ evren, ad: 'Kayıp Kule', tur: 'mekan' }).kod;
     const { kod: harita } = await h.haritaYukle({ evren, ad: 'Kıta haritası', yer: kita, dosyaAdi: 'kita.png', tur: 'image/png', veri: gorsel(1) });
-    expect(h.harita({ evren, kod: harita })).toMatchObject({ ad: 'Kıta haritası', en: 800, boy: 500, yer: { kod: kita }, katmanlar: [{ x: 0, y: 0, olcek: 1, en: 800, boy: 500 }] });
+    expect(h.harita({ evren, kod: harita })).toMatchObject({ ad: 'Kıta haritası', en: 800, boy: 500, yer: { kod: kita }, katmanlar: [{ kod: 'ana', donusum: [1, 0, 0, 1, 0, 0], en: 800, boy: 500 }] });
 
     const i1 = h.isaretKoy({ evren, harita, kayit: liman, konum: { kesinlik: 'kesin', x: 120, y: 900, yaricap: null } }).kod;
     h.isaretKoy({ evren, harita, kayit: kule, konum: { kesinlik: 'bilinmiyor', x: 5, y: 5, yaricap: 3 } });
@@ -90,5 +91,35 @@ describe('harita: yükle, işaretle, bağla', () => {
     m.alanCatismasiCoz({ evren, nesne: c.nesne, alan: c.alan, islem: c.degerler.find((d) => (d.deger as { x: number }).x === 400)!.islem });
     expect(m.harita({ evren, kod: harita }).isaretler[0].konum.x).toBe(400);
     expect(m.catismalar({ evren })).toEqual([]);
+  });
+
+  it('katmanlar: eklenir, hizalanır, görseli değişince işaretler yerinde kalır; önceki oturtmaya dönülür', async () => {
+    const h = cihaz();
+    const { kod: evren } = h.evrenOlustur({ ad: 'Kuzey' });
+    const liman = h.kayitOlustur({ evren, ad: 'Tuzlu Liman', tur: 'sehir' }).kod;
+    const { kod: harita } = await h.haritaYukle({ evren, ad: 'Kıta', dosyaAdi: 'kita.png', tur: 'image/png', veri: gorsel(1) });
+    h.isaretKoy({ evren, harita, kayit: liman, konum: { kesinlik: 'kesin', x: 400, y: 250, yaricap: null } });
+    const { kod: k } = await h.katmanEkle({ evren, harita, ad: 'Eski harita', dosyaAdi: 'eski.png', tur: 'image/png', veri: gorsel(3) });
+    let a = h.harita({ evren, kod: harita });
+    expect(a.katmanlar.map((x) => x.ad)).toEqual(['Ana görsel', 'Eski harita']);
+    expect(a.katmanlar[1].donusum).toEqual([1, 0, 0, 1, 0, 0]);
+
+    expect(() => h.katmanHizala({ evren, harita, katman: k, noktalar: [{ gorsel: [0, 0], uzay: [0, 0] }] })).toThrow(/iki/);
+    h.katmanHizala({ evren, harita, katman: k, noktalar: [{ gorsel: [0, 0], uzay: [10, 20] }, { gorsel: [100, 0], uzay: [210, 20] }] });
+    a = h.harita({ evren, kod: harita });
+    expect(a.katmanlar[1].donusum.map((x) => Math.round(x * 1000) / 1000)).toEqual([2, 0, 0, 2, 10, 20]);
+    expect(a.isaretler[0].konum).toMatchObject({ x: 400, y: 250 });
+    { const i = h.islemGunlugu({ evren, sinir: 1 })[0]; expect(islemAciklamasi(i.tur, i.veri)).toContain('yeniden oturtuldu'); }
+
+    await h.katmanGorseli({ evren, harita, katman: k, dosyaAdi: 'yeni.png', tur: 'image/png', veri: gorsel(4) });
+    a = h.harita({ evren, kod: harita });
+    expect(a.katmanlar[1].onceki).not.toBeNull();
+    expect(a.isaretler[0].konum).toMatchObject({ x: 400, y: 250 });
+    h.katmanHizala({ evren, harita, katman: k, noktalar: null, donusum: a.katmanlar[1].onceki! });
+
+    expect(() => h.katmanDegistir({ evren, harita, katman: 'ana', alan: 'silindi', deger: true })).not.toThrow();
+    expect(() => h.katmanDegistir({ evren, harita, katman: k, alan: 'silindi', deger: true })).toThrow(/en az bir/);
+    h.katmanDegistir({ evren, harita, katman: 'ana', alan: 'silindi', deger: false });
+    expect(h.haritalar({ evren })[0].gorsel).toBeTruthy();
   });
 });

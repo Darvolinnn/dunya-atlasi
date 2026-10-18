@@ -4,7 +4,8 @@ import { bakisHazirla } from './gorunum';
 import type { IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
 import { turkceKarsilastir } from '../alan/turkce';
-import type { HaritaAyrintisi, HaritaOzeti, IsaretGirdisi, KayitHaritalari } from '../veri/api';
+import type { HaritaAyrintisi, HaritaKatmani, HaritaOzeti, IsaretGirdisi, KayitHaritalari } from '../veri/api';
+import { buyukHatalar, donusumGecerli, hizala, olcektenDonusum, type Donusum, type KontrolCifti } from '../alan/hizalama';
 import type { EvrenVt } from './evren-vt';
 
 export interface HaritaBaglami {
@@ -58,19 +59,29 @@ export function haritalar(e: EvrenVt, silinmis = false): HaritaOzeti[] {
     .map((r) => ({
       kod: r.kod as string, ad: r.ad as string, en: Number(r.en), boy: Number(r.boy),
       yer: r.yer ? { kod: r.yer as string, ad: (r.yer_ad as string) ?? 'Silinmiş kayıt', tur: (r.yer_tur as string) ?? 'diger' } : null,
-      gorsel: (JSON.parse(r.katmanlar as string) as { gorsel: string }[])[0]?.gorsel ?? null, isaretSayisi: Number(r.isaret_sayisi),
+      gorsel: katmanlarOku(r.katmanlar as string).find((k) => !k.silindi)?.gorsel ?? null, isaretSayisi: Number(r.isaret_sayisi),
     }))
     .sort((x, y) => turkceKarsilastir(x.ad, y.ad));
 }
+
+/** Saklanan katman; eski biçim (x, y, ölçek) dönüşüme çevrilerek okunur. */
+interface SakliKatman { kod: string; ad: string; gorsel: string; donusum: Donusum; noktalar?: KontrolCifti[]; onceki?: Donusum; silindi?: number }
+export function katmanlarOku(ham: string): SakliKatman[] {
+  return (JSON.parse(ham) as (Partial<SakliKatman> & { gorsel: string; x?: number; y?: number; olcek?: number })[]).map((k, i) => ({
+    ...k, kod: k.kod ?? (i === 0 ? 'ana' : `k${i}`), ad: k.ad || (i === 0 ? 'Ana görsel' : `Katman ${i + 1}`), gorsel: k.gorsel,
+    donusum: donusumGecerli(k.donusum) ? k.donusum : olcektenDonusum(k.x ?? 0, k.y ?? 0, k.olcek ?? 1),
+  }));
+}
+const medyaBoyu = (e: EvrenVt, gorsel: string) => {
+  const m = e.db.selectObject('SELECT en, boy FROM medya WHERE ad=?', [gorsel]);
+  return m ? { en: Number(m.en), boy: Number(m.boy) } : null;
+};
 
 export function harita(e: EvrenVt, kod: string, bakis: string | null = null): HaritaAyrintisi {
   const h = haritaOku(e, kod);
   const bk = bakisHazirla(e, bakis);
   const r = e.db.selectObject('SELECT katmanlar FROM haritalar WHERE kod=?', [kod])!;
-  const katmanlar = (JSON.parse(r.katmanlar as string) as { gorsel: string; x: number; y: number; olcek: number }[]).map((k) => {
-    const m = e.db.selectObject('SELECT en, boy FROM medya WHERE ad=?', [k.gorsel]);
-    return { ...k, en: Number(m?.en ?? h.en), boy: Number(m?.boy ?? h.boy) };
-  });
+  const sakli = katmanlarOku(r.katmanlar as string);
   const yerAd = h.yer ? (e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [h.yer]) as string | undefined) : undefined;
   const isaretler = e.db.selectObjects(`SELECT i.*, k.ad, k.tur, k.karar, k.gorunurluk,
       (SELECT kod FROM haritalar WHERE yer=i.kayit AND silindi IS NULL AND kod<>i.harita ORDER BY olusturma LIMIT 1) alt_harita
@@ -85,6 +96,19 @@ export function harita(e: EvrenVt, kod: string, bakis: string | null = null): Ha
   // Bu haritanın yerini gösteren başka haritalar (iç içe gezinti, §8.1).
   const ustHaritalar = h.yer ? e.db.selectObjects(`SELECT DISTINCT h.kod, h.ad FROM isaretler i JOIN haritalar h ON h.kod=i.harita
       WHERE i.kayit=? AND i.silindi IS NULL AND h.silindi IS NULL AND h.kod<>?`, [h.yer, kod]).map((x) => ({ kod: x.kod as string, ad: x.ad as string })) : [];
+  // Hizalamada hatası büyük kontrol noktasının çevresi yeniden çizilmiş olabilir: oradaki işaretler gözden geçirilir (§8.5).
+  const uzayBoyu = Math.max(h.en, h.boy);
+  const katmanlar: HaritaKatmani[] = sakli.map((k) => {
+    const boy = medyaBoyu(e, k.gorsel) ?? { en: h.en, boy: h.boy };
+    const hz = k.noktalar && k.noktalar.length >= 2 ? hizala(k.noktalar) : null;
+    const kotu = hz ? buyukHatalar(hz, uzayBoyu) : [];
+    const gozdenGecir = kotu.length ? isaretler.filter((i) => i.konum.x !== null && kotu.some((n) => {
+      const [x, y] = k.noktalar![n].uzay;
+      return Math.hypot(i.konum.x! - x, i.konum.y! - y) <= uzayBoyu * 0.08;
+    })).map((i) => ({ kod: i.kod, ad: i.kayit.ad })) : [];
+    return { kod: k.kod, ad: k.ad, gorsel: k.gorsel, donusum: k.donusum, en: boy.en, boy: boy.boy, silindi: !!k.silindi, onceki: k.onceki ?? null,
+      noktalar: k.noktalar ?? [], hatalar: hz?.hatalar ?? [], gozdenGecir };
+  });
   return { kod, ad: h.ad, en: h.en, boy: h.boy, silindi: h.silindi, yer: h.yer ? { kod: h.yer, ad: yerAd ?? 'Silinmiş kayıt' } : null, katmanlar, isaretler, ustHaritalar, bakis: bk.kisa };
 }
 
@@ -144,6 +168,69 @@ export function kayitHaritalari(e: EvrenVt, kayit: string): KayitHaritalari {
       .map((r) => ({ kod: r.kod as string, harita: r.harita as string, haritaAd: r.ad as string, kesinlik: r.kesinlik as IsaretGirdisi['kesinlik'] })),
     haritalar: e.db.selectObjects('SELECT kod, ad FROM haritalar WHERE yer=? AND silindi IS NULL ORDER BY ad', [kayit]).map((r) => ({ kod: r.kod as string, ad: r.ad as string })),
   };
+}
+
+// ---------- Katmanlar ve hizalama (§8.1, §8.5) ----------
+function katmanBul(e: EvrenVt, harita: string, katman: string) {
+  const h = haritaOku(e, harita);
+  if (h.silindi) throw new Error('Bu harita kaldırılmış.');
+  const l = katmanlarOku(e.db.selectValue('SELECT katmanlar FROM haritalar WHERE kod=?', [harita]) as string);
+  const k = l.find((x) => x.kod === katman);
+  if (!k) throw new Error('Katman bulunamadı.');
+  return { h, l, k };
+}
+
+/** Yeni katman haritanın genişliğine oturtulur; sonra hizalanır. */
+export function katmanEkle(b: HaritaBaglami, harita: string, a: { ad: string; gorsel: string }, girdiler: IslemGirdisi[] = []) {
+  const h = haritaOku(b.e, harita);
+  if (h.silindi) throw new Error('Bu harita kaldırılmış.');
+  const yeni = girdiler.find((g) => g.tur === 'medya_ekle' && g.veri.ad === a.gorsel)?.veri;
+  const en = Number(medyaBoyu(b.e, a.gorsel)?.en ?? yeni?.en);
+  if (!(en > 0)) throw new Error('Görselin boyutu okunamadı.');
+  const kod = yeniKod();
+  const s = h.en / en;
+  b.yaz([...girdiler, { tur: 'harita_katman_ekle', veri: { harita, haritaAd: h.ad, katman: { kod, ad: temizAd(a.ad), gorsel: a.gorsel, donusum: [s, 0, 0, s, 0, 0] } } }], h.yer ? [h.yer] : []);
+  return { kod };
+}
+
+/** Katmanın görseli değişince (yeniden çizim, kırpma) yeni görsel eskisinin kapladığı alana oturtulur; işaretler yerinde kalır. */
+export function katmanGorseli(b: HaritaBaglami, harita: string, katman: string, gorsel: string, girdiler: IslemGirdisi[] = []) {
+  const { h, k } = katmanBul(b.e, harita, katman);
+  const eski = medyaBoyu(b.e, k.gorsel) ?? { en: h.en, boy: h.boy };
+  const yeni = medyaBoyu(b.e, gorsel) ?? (() => { const v = girdiler.find((g) => g.tur === 'medya_ekle' && g.veri.ad === gorsel)?.veri; return v ? { en: Number(v.en), boy: Number(v.boy) } : null; })();
+  if (!yeni || !(yeni.en > 0 && yeni.boy > 0)) throw new Error('Görselin boyutu okunamadı.');
+  const sx = eski.en / yeni.en, sy = eski.boy / yeni.boy, d = k.donusum;
+  const donusum: Donusum = [d[0] * sx, d[1] * sx, d[2] * sy, d[3] * sy, d[4], d[5]];
+  b.yaz([...girdiler, { tur: 'harita_katman', veri: { harita, haritaAd: h.ad, katman, katmanAd: k.ad, alan: 'gorsel', deger: { gorsel, donusum } } }], h.yer ? [h.yer] : []);
+}
+
+export function katmanDegistir(b: HaritaBaglami, harita: string, katman: string, alan: 'ad' | 'silindi', deger: unknown) {
+  const { h, l, k } = katmanBul(b.e, harita, katman);
+  let v: unknown;
+  if (alan === 'ad') { v = temizAd(deger); if (v === k.ad) return; }
+  else if (alan === 'silindi') {
+    v = !!deger;
+    if (v === !!k.silindi) return;
+    if (v && l.filter((x) => !x.silindi).length <= 1) throw new Error('Haritanın en az bir görseli kalmalı.');
+  } else throw new Error('Geçersiz alan.');
+  b.yaz([{ tur: 'harita_katman', veri: { harita, haritaAd: h.ad, katman, katmanAd: k.ad, alan, deger: v } }], h.yer ? [h.yer] : []);
+}
+
+/** Kontrol noktası çiftleriyle oturtma; `donusum` verilirse (önceki oturtmaya dönüş) noktasız yazılır. */
+export function katmanHizala(b: HaritaBaglami, harita: string, katman: string, noktalar: KontrolCifti[] | null, donusum: Donusum | null = null) {
+  const { h, k } = katmanBul(b.e, harita, katman);
+  let deger: { donusum: Donusum; noktalar?: KontrolCifti[] };
+  if (noktalar) {
+    const temiz = noktalar.slice(0, 50).map((n) => ({ gorsel: [Number(n.gorsel[0]), Number(n.gorsel[1])] as [number, number], uzay: [Number(n.uzay[0]), Number(n.uzay[1])] as [number, number] }));
+    if (temiz.some((n) => ![...n.gorsel, ...n.uzay].every(Number.isFinite))) throw new Error('Noktalardan biri geçersiz.');
+    const x = hizala(temiz);
+    if (!x) throw new Error('Bu noktalarla oturtma yapılamıyor. En az iki ayrı nokta çifti gerekir; üç çiftte noktalar aynı doğru üzerinde olmamalı.');
+    deger = { donusum: x.donusum, noktalar: temiz };
+  } else {
+    if (!donusumGecerli(donusum)) throw new Error('Geçersiz oturtma.');
+    deger = { donusum };
+  }
+  b.yaz([{ tur: 'harita_katman', veri: { harita, haritaAd: h.ad, katman, katmanAd: k.ad, alan: 'donusum', deger } }], h.yer ? [h.yer] : []);
 }
 
 /** Bu görsel bu kayıtta zaten işaretleme yüzeyi olarak açılmış mı? */

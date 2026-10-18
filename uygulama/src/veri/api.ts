@@ -233,11 +233,19 @@ export interface TakvimEtkisi {
 }
 /** Harita (§8.1). Koordinatlar haritanın uzayındadır (ilk görselin piksel boyutu). */
 export interface IsaretGirdisi { kesinlik: 'kesin' | 'yaklasik' | 'bilinmiyor'; x: number | null; y: number | null; yaricap: number | null }
+/** Haritanın uzayına oturtulmuş görsel (§8.1, §8.5). Dönüşüm görselin pikselini uzaya taşır: (x, y) → (a·x + c·y + e, b·x + d·y + f). */
+export interface HaritaKatmani {
+  kod: string; ad: string; gorsel: string; donusum: [number, number, number, number, number, number]; en: number; boy: number; silindi: boolean;
+  onceki: [number, number, number, number, number, number] | null;
+  noktalar: { gorsel: [number, number]; uzay: [number, number] }[]; hatalar: number[];
+  /** Hatası büyük kontrol noktalarının çevresindeki işaretler. */
+  gozdenGecir: { kod: string; ad: string }[];
+}
 export interface HaritaOzeti { kod: string; ad: string; en: number; boy: number; yer: KisaKayit | null; gorsel: string | null; isaretSayisi: number }
 export interface HaritaIsareti { kod: string; kayit: KisaKayit; karar: string; konum: IsaretGirdisi; altHarita: string | null; /** Bakış açısında: yalnızca o bilenin inancında var. */ inanc?: boolean }
 export interface HaritaAyrintisi {
   kod: string; ad: string; en: number; boy: number; silindi: boolean; yer: { kod: string; ad: string } | null;
-  katmanlar: { gorsel: string; x: number; y: number; olcek: number; en: number; boy: number }[];
+  katmanlar: HaritaKatmani[];
   isaretler: HaritaIsareti[]; ustHaritalar: { kod: string; ad: string }[];
   bakis: KisaKayit | null;
 }
@@ -491,6 +499,10 @@ export interface Istekler {
   isaretKoy(a: { evren: string; harita: string; kayit: string; konum: IsaretGirdisi }): { kod: string };
   isaretDegistir(a: { evren: string; kod: string; alan: 'konum' | 'kayit'; deger: unknown }): void;
   isaretSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  katmanEkle(a: { evren: string; harita: string; ad: string; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ kod: string }>;
+  katmanGorseli(a: { evren: string; harita: string; katman: string; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<void>;
+  katmanDegistir(a: { evren: string; harita: string; katman: string; alan: 'ad' | 'silindi'; deger: unknown }): void;
+  katmanHizala(a: { evren: string; harita: string; katman: string; noktalar: { gorsel: [number, number]; uzay: [number, number] }[] | null; donusum?: [number, number, number, number, number, number] | null }): void;
   kayitHaritalari(a: { evren: string; kod: string }): KayitHaritalari;
   birlesmeOnizle(a: { evren: string; kaynak: string; hedef: string }): BirlesmeOnizlemesi;
   birlestir(a: { evren: string; kaynak: string; hedef: string; secimler: Record<string, 'kaynak' | 'hedef'> }): void;

@@ -11,6 +11,7 @@ import { etkiAc } from './etki';
 import { gorunurlukGecerli, sadeGercekMi } from '../alan/gorunurluk';
 import { BILGI_ALANLARI, IDDIA_ALANLARI, bilgiDegeri, iddiaDegeri } from '../alan/bilgi';
 import { akisGecerli, kisitGecerli, paralelGecerli, tarihCoz, tarihMi, takvimGecerli, VARSAYILAN_TAKVIM, type EvrenTarihi, type Takvim, type ZamanSeti } from '../alan/tarih';
+import { BIRIM, donusumGecerli } from '../alan/hizalama';
 import { goreliCoz } from '../alan/goreli';
 
 /** Evrenin şu anki takvimi (§3.4). */
@@ -93,7 +94,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 14;
+export const IZDUSUM_SURUMU = 15;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -751,7 +752,40 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const v = i.veri as { kod: string; ad: string; yer?: string | null; en: number; boy: number; gorsel: string };
     if (!(v.en > 0 && v.boy > 0) || typeof v.gorsel !== 'string') return;
     db.exec({ sql: 'INSERT OR IGNORE INTO haritalar(kod, ad, yer, en, boy, katmanlar, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?)',
-      bind: [v.kod, String(v.ad), yonlendirNotla(db, v.yer ?? null, 'haritalar', 'yer', v.kod), v.en, v.boy, JSON.stringify([{ gorsel: v.gorsel, x: 0, y: 0, olcek: 1 }]), i.zaman, i.zaman] });
+      bind: [v.kod, String(v.ad), yonlendirNotla(db, v.yer ?? null, 'haritalar', 'yer', v.kod), v.en, v.boy,
+        JSON.stringify([{ kod: 'ana', ad: 'Ana görsel', gorsel: v.gorsel, donusum: BIRIM }]), i.zaman, i.zaman] });
+  },
+  /** Harita katmanı (§8.1, §8.5): aynı uzaya oturtulmuş başka bir görsel (eski harita, eskiz, yeniden çizim). */
+  harita_katman_ekle(db, i) {
+    const { harita, katman } = i.veri as { harita: string; katman: { kod: string; ad: string; gorsel: string; donusum: unknown } };
+    const ham = db.selectValue('SELECT katmanlar FROM haritalar WHERE kod=?', [harita]) as string | undefined;
+    if (ham === undefined || !katman || typeof katman.kod !== 'string' || typeof katman.gorsel !== 'string' || !donusumGecerli(katman.donusum)) return;
+    const l = JSON.parse(ham) as { kod: string }[];
+    if (l.some((k) => k.kod === katman.kod)) return;
+    l.push({ kod: katman.kod, ad: String(katman.ad ?? ''), gorsel: katman.gorsel, donusum: katman.donusum } as { kod: string });
+    db.exec({ sql: 'UPDATE haritalar SET katmanlar=?, duzenleme=? WHERE kod=?', bind: [JSON.stringify(l), i.zaman, harita] });
+  },
+  harita_katman(db, i) {
+    const { harita, katman, alan, deger } = i.veri as { harita: string; katman: string; alan: string; deger: unknown };
+    const ham = db.selectValue('SELECT katmanlar FROM haritalar WHERE kod=?', [harita]) as string | undefined;
+    if (ham === undefined) return;
+    const l = JSON.parse(ham) as Record<string, unknown>[];
+    const k = l.find((x) => x.kod === katman);
+    if (!k) return;
+    if (alan === 'ad' && typeof deger === 'string') k.ad = deger.slice(0, 200);
+    else if (alan === 'silindi') { if (deger) k.silindi = i.zaman; else delete k.silindi; }
+    else if (alan === 'donusum') {
+      const d = deger as { donusum: unknown; noktalar?: unknown } | null;
+      if (!d || !donusumGecerli(d.donusum)) return;
+      k.onceki = k.donusum; k.donusum = d.donusum;
+      if (Array.isArray(d.noktalar)) k.noktalar = d.noktalar.slice(0, 50); else delete k.noktalar;
+    } else if (alan === 'gorsel') {
+      const d = deger as { gorsel: unknown; donusum: unknown } | null;
+      if (!d || typeof d.gorsel !== 'string' || !donusumGecerli(d.donusum)) return;
+      k.gorsel = d.gorsel; k.onceki = k.donusum; k.donusum = d.donusum; delete k.noktalar;
+    } else return;
+    db.exec({ sql: 'UPDATE haritalar SET katmanlar=?, duzenleme=? WHERE kod=?', bind: [JSON.stringify(l), i.zaman, harita] });
+    alanYaz(db, i, harita, `katman:${katman}:${alan}`, deger ?? null);
   },
   harita_degistir(db, i) {
     const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };

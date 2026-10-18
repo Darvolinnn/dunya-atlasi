@@ -46,6 +46,11 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   durum_geri_yukle: (v, ad) => `${ad(v.konu)}: “${v.ozellik}” durumu geri getirildi`,
   harita_olustur: (v, ad) => `Harita eklendi: “${v.ad}”${v.yer ? ` (${ad(v.yer)})` : ''}`,
   harita_degistir: (v, ad) => v.alan === 'ad' ? `Haritanın adı değişti: “${v.deger}”` : v.deger ? `“${v.haritaAd}” haritası ${ad(v.deger)} kaydına bağlandı` : `“${v.haritaAd}” haritasının bağlı olduğu yer kaldırıldı`,
+  harita_katman_ekle: (v) => `“${v.haritaAd}” haritasına katman eklendi: “${(v.katman as { ad: string }).ad}”`,
+  harita_katman: (v) => v.alan === 'ad' ? `“${v.haritaAd}” haritasında katmanın adı değişti: “${v.deger}”`
+    : v.alan === 'silindi' ? `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” ${v.deger ? 'kaldırıldı' : 'geri getirildi'}`
+      : v.alan === 'gorsel' ? `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” görseli değişti`
+        : `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” yeniden oturtuldu`,
   harita_sil: (v) => `“${v.haritaAd}” haritası kaldırıldı`,
   harita_geri_yukle: (v) => `“${v.haritaAd}” haritası geri getirildi`,
   isaret_koy: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasında işaretlendi`,

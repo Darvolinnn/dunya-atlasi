@@ -2,7 +2,8 @@
 // İşaretler haritanın uzayında durur; görsel bu uzaya oturtulmuş bir katmandır. Kipler görünür biçimde seçilir (§8.7).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { HaritaAyrintisi, HaritaIsareti, HaritaOzeti, IsaretGirdisi, Kayit, KayitHaritalari } from '../veri/api';
+import type { HaritaAyrintisi, HaritaIsareti, HaritaKatmani, HaritaOzeti, IsaretGirdisi, Kayit, KayitHaritalari } from '../veri/api';
+import { hizala, ters, uygula, type Donusum, type KontrolCifti, type Nokta } from '../alan/hizalama';
 import { turBul } from '../alan/turler';
 import { BaglantiSecici } from './BaglantiSecici';
 import { KayitSec } from './KayitBolumleri';
@@ -108,7 +109,14 @@ function HaritaYukle({ istemci, evren, yer = null }: { istemci: Istemci; evren: 
 }
 
 // ---------- Harita görünümü ----------
-type Kip = { tur: 'gez' } | { tur: 'koy'; kesinlik: 'kesin' | 'yaklasik' } | { tur: 'tasi'; isaret: string; kesinlik: 'kesin' | 'yaklasik' };
+type Kip = { tur: 'gez' } | { tur: 'koy'; kesinlik: 'kesin' | 'yaklasik' } | { tur: 'tasi'; isaret: string; kesinlik: 'kesin' | 'yaklasik' }
+  | { tur: 'hizala'; katman: string; ciftler: KontrolCifti[]; bekleyen: Nokta | null };
+
+/** Katmanın CSS dönüşümü: öteleme katmanın kendi boyuna göre yüzde, doğrusal kısım matris (§8.5). */
+const katmanStili = (k: HaritaKatmani, d: Donusum, h: { en: number }, saydamlik: number) => ({
+  left: 0, top: 0, width: `${(k.en / h.en) * 100}%`, opacity: saydamlik, transformOrigin: '0 0',
+  transform: `translate(${(d[4] / k.en) * 100}%, ${(d[5] / k.boy) * 100}%) matrix(${d[0]}, ${d[1]}, ${d[2]}, ${d[3]}, 0, 0)`,
+});
 
 function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
   const n = useYenile(istemci, evren);
@@ -120,10 +128,13 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
   const [yeni, setYeni] = useState<{ x: number; y: number; ekran: { left: number; top: number } } | null>(null);
   const [bilinmeyenEkle, setBilinmeyenEkle] = useState<{ left: number; top: number } | null>(null);
   const [bakis, setBakis] = useState<Secim | null>(null);
+  const [gizli, setGizli] = useState<Set<string>>(new Set());
+  const [saydamlik, setSaydamlik] = useState<Record<string, number>>({});
+  const [gizliTurler, setGizliTurler] = useState<Set<string>>(new Set());
   const yuzey = useRef<HTMLDivElement>(null);
   useEffect(() => { istemci.iste('harita', { evren, kod, bakis: bakis?.kod ?? null }).then((x) => { setH(x); setHata(null); }, (e) => setHata(hataYaz(e))); }, [kod, bakis?.kod, n]);
   useEffect(() => {
-    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { setKip({ tur: 'gez' }); setYeni(null); } };
+    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { setKip((k) => (k.tur === 'hizala' && k.bekleyen ? { ...k, bekleyen: null } : { tur: 'gez' })); setYeni(null); } };
     addEventListener('keydown', tus);
     return () => removeEventListener('keydown', tus);
   }, []);
@@ -138,6 +149,15 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
   const tikla = async (e: MouseEvent) => {
     if (kip.tur === 'gez') { setSecili(null); return; }
     const p = uzayNoktasi(e);
+    if (kip.tur === 'hizala') {
+      const k = h.katmanlar.find((x) => x.kod === kip.katman);
+      if (!k) return;
+      if (!kip.bekleyen) {
+        const t = ters(onizleme(k));
+        if (t) setKip({ ...kip, bekleyen: uygula(t, [p.x, p.y]) });
+      } else setKip({ ...kip, ciftler: [...kip.ciftler, { gorsel: kip.bekleyen, uzay: [p.x, p.y] }], bekleyen: null });
+      return;
+    }
     if (kip.tur === 'koy') { setYeni({ ...p, ekran: { left: e.clientX, top: e.clientY + 8 } }); return; }
     const eski = h.isaretler.find((x) => x.kod === kip.isaret);
     await iste(istemci.iste('isaretDegistir', { evren, kod: kip.isaret, alan: 'konum', deger: { kesinlik: kip.kesinlik, x: p.x, y: p.y, yaricap: eski?.konum.yaricap ?? null } }));
@@ -149,7 +169,11 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
     setYeni(null);
     if (r) setSecili(r.kod);
   };
-  const yerlesen = h.isaretler.filter((i) => i.konum.kesinlik !== 'bilinmiyor');
+  // Hizalanan katman önizlemeyle gösterilir; uygulanana kadar hiçbir şey yazılmaz.
+  const hzSonuc = kip.tur === 'hizala' && kip.ciftler.length >= 2 ? hizala(kip.ciftler) : null;
+  const onizleme = (k: HaritaKatmani): Donusum => (kip.tur === 'hizala' && kip.katman === k.kod && hzSonuc ? hzSonuc.donusum : k.donusum);
+  const turler = [...new Set(h.isaretler.map((i) => i.kayit.tur))];
+  const yerlesen = h.isaretler.filter((i) => i.konum.kesinlik !== 'bilinmiyor' && !gizliTurler.has(i.kayit.tur));
   const bilinmeyen = h.isaretler.filter((i) => i.konum.kesinlik === 'bilinmiyor');
   const sec = h.isaretler.find((i) => i.kod === secili) ?? null;
   const yuzde = (v: number, toplam: number) => `${(v / toplam) * 100}%`;
@@ -174,7 +198,8 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
         <button class="dugme kucuk" aria-label="Yakınlaştır" disabled={yakinlik >= 12} onClick={() => setYakinlik((z) => Math.min(12, z * 1.5))}>+</button>
       </div>
       <p class="soluk kucuk" role="status">
-        {kip.tur === 'koy' ? `Haritada bir yere dokun, sonra bağlanacak kaydı seç. Bitirmek için “Gez ve seç”e bas ya da Esc.`
+        {kip.tur === 'hizala' ? (kip.bekleyen ? 'Şimdi bu noktanın haritada olması gereken yere dokun.' : 'Hizalanan görselde tanıdık bir noktaya dokun (bir kıyı köşesi, bir kale).')
+          : kip.tur === 'koy' ? `Haritada bir yere dokun, sonra bağlanacak kaydı seç. Bitirmek için “Gez ve seç”e bas ya da Esc.`
           : kip.tur === 'tasi' ? `“${h.isaretler.find((x) => x.kod === kip.isaret)?.kayit.ad}” için yeni yere dokun. Vazgeçmek için Esc.`
             : 'Bir işarete dokunarak seç. İşaret koymak için yukarıdan bir kip seç.'}
       </p>
@@ -183,13 +208,26 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
 
       <div class="harita-duzen">
         <div class="harita-tuval">
-          <div ref={yuzey} class={`harita-yuzey${kip.tur !== 'gez' ? ' isaretleme' : ''}`} style={{ width: `${yakinlik * 100}%`, aspectRatio: `${h.en} / ${h.boy}` }}
-            onClick={(e) => { if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.harita-katman')) void tikla(e); }}>
-            {h.katmanlar.map((k, i) => (
-              <div key={i} class="harita-katman" style={{ left: yuzde(k.x, h.en), top: yuzde(k.y, h.boy), width: yuzde(k.olcek * k.en, h.en) }}>
-                <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} onizleme={false} alt={h.ad} />
+          <div ref={yuzey} class={`harita-yuzey${kip.tur !== 'gez' ? ' isaretleme' : ''}${kip.tur === 'hizala' ? ' hizalama' : ''}`} style={{ width: `${yakinlik * 100}%`, aspectRatio: `${h.en} / ${h.boy}` }}
+            onClick={(e) => { if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.harita-katmanlar')) void tikla(e); }}>
+            <div class="harita-katmanlar">{h.katmanlar.filter((k) => !k.silindi && !gizli.has(k.kod)).map((k) => (
+              <div key={k.kod} class={`harita-katman${kip.tur === 'hizala' && kip.katman === k.kod ? ' hizalanan' : ''}`}
+                style={katmanStili(k, onizleme(k), h, kip.tur === 'hizala' && kip.katman === k.kod ? 0.6 : saydamlik[k.kod] ?? 1)}>
+                <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} onizleme={false} alt={k.ad} />
               </div>
-            ))}
+            ))}</div>
+            {kip.tur === 'hizala' && (() => {
+              const k = h.katmanlar.find((x) => x.kod === kip.katman);
+              if (!k) return null;
+              const d = onizleme(k);
+              const nokta = (q: Nokta, sinif: string, etiket: string) => <span class={`hizalama-noktasi ${sinif}`} style={{ left: yuzde(q[0], h.en), top: yuzde(q[1], h.boy) }} aria-hidden="true">{etiket}</span>;
+              return (
+                <>
+                  {kip.ciftler.map((c, i) => <span key={i}>{nokta(uygula(d, c.gorsel), 'gorsel', String(i + 1))}{nokta(c.uzay, 'uzay', String(i + 1))}</span>)}
+                  {kip.bekleyen && nokta(uygula(d, kip.bekleyen), 'gorsel bekleyen', String(kip.ciftler.length + 1))}
+                </>
+              );
+            })()}
             {yerlesen.map((i) => (
               <IsaretGorseli key={i.kod} i={i} h={h} secili={i.kod === secili} sec={() => { if (kip.tur === 'gez') setSecili(i.kod); }} />
             ))}
@@ -197,10 +235,21 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
           </div>
         </div>
         <aside class="harita-yan">
-          {sec ? <IsaretPaneli istemci={istemci} evren={evren} i={sec} enBuyuk={Math.max(h.en, h.boy)} kapat={() => setSecili(null)}
+          {kip.tur === 'hizala' ? <HizalamaPaneli istemci={istemci} evren={evren} h={h} kip={kip} sonuc={hzSonuc} setKip={setKip} hata={setHata} />
+            : sec ? <IsaretPaneli istemci={istemci} evren={evren} i={sec} enBuyuk={Math.max(h.en, h.boy)} kapat={() => setSecili(null)}
             tasi={(k) => setKip({ tur: 'tasi', isaret: sec.kod, kesinlik: k })} hata={setHata} />
             : (
               <>
+                <KatmanPaneli istemci={istemci} evren={evren} h={h} gizli={gizli} setGizli={setGizli} saydamlik={saydamlik} setSaydamlik={setSaydamlik}
+                  hizala={(k) => { setSecili(null); setKip({ tur: 'hizala', katman: k.kod, ciftler: k.noktalar, bekleyen: null }); }} hata={setHata} />
+                {turler.length > 1 && (
+                  <fieldset class="katman-turleri"><legend class="alan-adi">Gösterilen kayıt türleri</legend>
+                    {turler.map((t) => (
+                      <label key={t} class="kucuk"><input type="checkbox" checked={!gizliTurler.has(t)}
+                        onChange={() => setGizliTurler((g) => { const y = new Set(g); if (y.has(t)) y.delete(t); else y.add(t); return y; })} /> {turBul(t).ad}</label>
+                    ))}
+                  </fieldset>
+                )}
                 <h2>İşaretler</h2>
                 {h.isaretler.length === 0 && <p class="soluk kucuk">Henüz işaret yok.</p>}
                 <ul class="isaret-listesi">
@@ -225,6 +274,103 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
       {bilinmeyenEkle && <BaglantiSecici istemci={istemci} evren={evren} sorgu="" konum={bilinmeyenEkle}
         sec={(s) => { setBilinmeyenEkle(null); void iste(istemci.iste('isaretKoy', { evren, harita: kod, kayit: s.kod, konum: { kesinlik: 'bilinmiyor', x: null, y: null, yaricap: null } })); }}
         kapat={() => setBilinmeyenEkle(null)} />}
+    </div>
+  );
+}
+
+function KatmanPaneli({ istemci, evren, h, gizli, setGizli, saydamlik, setSaydamlik, hizala: hizalaBasla, hata }: {
+  istemci: Istemci; evren: string; h: HaritaAyrintisi; gizli: Set<string>; setGizli: (f: (s: Set<string>) => Set<string>) => void;
+  saydamlik: Record<string, number>; setSaydamlik: (f: (s: Record<string, number>) => Record<string, number>) => void;
+  hizala: (k: HaritaKatmani) => void; hata: (s: string | null) => void;
+}) {
+  const [yukleniyor, setYukleniyor] = useState(false);
+  const iste = (p: Promise<unknown>) => p.then(() => hata(null), (e) => hata(hataYaz(e)));
+  const dosyaOku = async (f: File) => ({ dosyaAdi: f.name, tur: f.type, veri: new Uint8Array(await f.arrayBuffer()) });
+  const ekle = async (f: File | undefined) => {
+    if (!f) return;
+    setYukleniyor(true);
+    await iste(istemci.iste('katmanEkle', { evren, harita: h.kod, ad: f.name.replace(/\.[^.]+$/, ''), ...(await dosyaOku(f)) }));
+    setYukleniyor(false);
+  };
+  const acik = h.katmanlar.filter((k) => !k.silindi), kaldirilan = h.katmanlar.filter((k) => k.silindi);
+  return (
+    <section class="katmanlar" aria-label="Katmanlar">
+      <h2>Katmanlar</h2>
+      <ul class="katman-listesi">
+        {acik.map((k) => (
+          <li key={k.kod} class="katman-satiri">
+            <label class="satir"><input type="checkbox" checked={!gizli.has(k.kod)} aria-label={`${k.ad} görünsün`}
+              onChange={() => setGizli((g) => { const y = new Set(g); if (y.has(k.kod)) y.delete(k.kod); else y.add(k.kod); return y; })} />
+              <KatmanAdi istemci={istemci} evren={evren} h={h} k={k} hata={hata} /></label>
+            {acik.length > 1 && <input type="range" min={0.1} max={1} step={0.05} value={saydamlik[k.kod] ?? 1} aria-label={`${k.ad} saydamlığı`}
+              onInput={(e) => { const v = Number((e.target as HTMLInputElement).value); setSaydamlik((x) => ({ ...x, [k.kod]: v })); }} />}
+            {!h.silindi && (
+              <div class="satir">
+                <button class="dugme kucuk" onClick={() => hizalaBasla(k)}>Hizala</button>
+                <label class="dugme sade kucuk">Görseli değiştir
+                  <input type="file" class="gizli-dosya" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" aria-label={`${k.ad}: yeni görsel`}
+                    onChange={async (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) await iste(istemci.iste('katmanGorseli', { evren, harita: h.kod, katman: k.kod, ...(await dosyaOku(f)) })); }} /></label>
+                {acik.length > 1 && <button class="dugme sade kucuk tehlikeli" onClick={() => iste(istemci.iste('katmanDegistir', { evren, harita: h.kod, katman: k.kod, alan: 'silindi', deger: true }))}>Kaldır</button>}
+              </div>
+            )}
+            {k.gozdenGecir.length > 0 && (
+              <p class="uyari kucuk">Hizalamada bazı noktaların hatası büyük; orası yeniden çizilmiş olabilir. Gözden geçir: {k.gozdenGecir.map((i) => i.ad).join(', ')}.</p>
+            )}
+          </li>
+        ))}
+      </ul>
+      {!h.silindi && (
+        <label class="dugme kucuk">{yukleniyor ? 'Yükleniyor…' : 'Katman ekle'}
+          <input type="file" class="gizli-dosya" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" aria-label="Katman görseli"
+            onChange={(e) => void ekle((e.target as HTMLInputElement).files?.[0])} /></label>
+      )}
+      <p class="soluk kucuk">Eski bir harita, bir eskiz ya da yeniden çizilmiş hâli aynı haritanın üstüne bindirilir. İşaretler görsele değil haritaya bağlıdır; görsel değişince yerinden oynamaz.</p>
+      {kaldirilan.length > 0 && (
+        <details><summary class="soluk kucuk">Kaldırılan katmanlar ({kaldirilan.length})</summary>
+          <ul>{kaldirilan.map((k) => <li key={k.kod}>{k.ad} <button class="dugme sade kucuk" onClick={() => iste(istemci.iste('katmanDegistir', { evren, harita: h.kod, katman: k.kod, alan: 'silindi', deger: false }))}>Geri getir</button></li>)}</ul>
+        </details>
+      )}
+    </section>
+  );
+}
+
+function KatmanAdi({ istemci, evren, h, k, hata }: { istemci: Istemci; evren: string; h: HaritaAyrintisi; k: HaritaKatmani; hata: (s: string | null) => void }) {
+  const [ad, setAd] = useState(k.ad);
+  useEffect(() => setAd(k.ad), [k.ad]);
+  return <input class="girdi kucuk" lang="tr" aria-label="Katmanın adı" value={ad} onInput={(e) => setAd((e.target as HTMLInputElement).value)}
+    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+    onBlur={() => { if (ad.trim() && ad.trim() !== k.ad) istemci.iste('katmanDegistir', { evren, harita: h.kod, katman: k.kod, alan: 'ad', deger: ad }).then(() => hata(null), (e) => { hata(hataYaz(e)); setAd(k.ad); }); }} />;
+}
+
+/** Hizalama (§8.5): nokta çiftleri, yöntem ve her çiftin hatası; uygulanana kadar yalnızca önizlemedir. */
+function HizalamaPaneli({ istemci, evren, h, kip, sonuc, setKip, hata }: {
+  istemci: Istemci; evren: string; h: HaritaAyrintisi; kip: Extract<Kip, { tur: 'hizala' }>; sonuc: ReturnType<typeof hizala>;
+  setKip: (k: Kip) => void; hata: (s: string | null) => void;
+}) {
+  const k = h.katmanlar.find((x) => x.kod === kip.katman);
+  if (!k) return null;
+  const birim = Math.max(h.en, h.boy) / 100;
+  const bitir = () => setKip({ tur: 'gez' });
+  const yaz = (p: Promise<unknown>) => p.then(() => { hata(null); bitir(); }, (e) => hata(hataYaz(e)));
+  return (
+    <div class="hizalama-paneli" aria-label="Hizalama">
+      <h2>“{k.ad}” hizalanıyor</h2>
+      <p class="soluk kucuk">Her çift için önce bu görselde bir noktaya, sonra o noktanın haritada olması gereken yere dokun. İki çift taşır, döndürür ve büyütür; üç çift eğik ya da farklı oranlı esnemeyi de düzeltir; daha fazlası her noktanın hatasını gösterir.</p>
+      {kip.ciftler.length === 0 && !kip.bekleyen && <p class="kucuk">Henüz nokta yok.</p>}
+      <ol class="hizalama-ciftleri">
+        {kip.ciftler.map((_, i) => (
+          <li key={i}>{i + 1}. çift{sonuc ? ` · hata ${(sonuc.hatalar[i] / birim).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} birim` : ''}
+            <button class="dugme sade kucuk" aria-label={`${i + 1}. çifti sil`} onClick={() => setKip({ ...kip, ciftler: kip.ciftler.filter((_, j) => j !== i) })}>✕</button></li>
+        ))}
+        {kip.bekleyen && <li class="soluk">{kip.ciftler.length + 1}. çift: haritadaki yeri bekleniyor</li>}
+      </ol>
+      {sonuc && <p class="kucuk">{sonuc.yontem === 'afin' ? 'Genel oturtma (eğme ve esnemeyle)' : 'Taşıma, döndürme ve ölçek'}. Ortalama hata {(sonuc.ortalama / birim).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} birim (haritanın uzun kenarı 100 birim).</p>}
+      {kip.ciftler.length >= 2 && !sonuc && <p class="hata kucuk">Bu noktalarla oturtma yapılamıyor; noktalar birbirinden ayrı olmalı.</p>}
+      <div class="satir">
+        <button class="dugme ana kucuk" disabled={!sonuc} onClick={() => yaz(istemci.iste('katmanHizala', { evren, harita: h.kod, katman: k.kod, noktalar: kip.ciftler }))}>Uygula</button>
+        <button class="dugme sade kucuk" onClick={bitir}>Vazgeç</button>
+      </div>
+      {k.onceki && <button class="dugme sade kucuk" onClick={() => yaz(istemci.iste('katmanHizala', { evren, harita: h.kod, katman: k.kod, noktalar: null, donusum: k.onceki }))}>Önceki oturtmaya dön</button>}
     </div>
   );
 }
