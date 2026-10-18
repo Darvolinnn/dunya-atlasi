@@ -93,7 +93,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 13;
+export const IZDUSUM_SURUMU = 14;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -303,6 +303,7 @@ CREATE TABLE IF NOT EXISTS inceleme_kararlari(
   durum TEXT NOT NULL,
   gerekce TEXT NOT NULL DEFAULT '',
   dayanak TEXT NOT NULL DEFAULT '',
+  istisna TEXT,
   zaman INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS etki_incelemeleri(
@@ -838,10 +839,11 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
 
   /** İnceleme kuyruğu (§9.3): bulgu gerekçeyle kabul edilir ya da ertelenir; null karar kuyruğa geri koyar. */
   inceleme_karari(db, i) {
-    const { anahtar, durum, gerekce, dayanak } = i.veri as { anahtar: string; durum: string | null; gerekce?: string; dayanak?: string };
+    const { anahtar, durum, gerekce, dayanak, istisna } = i.veri as { anahtar: string; durum: string | null; gerekce?: string; dayanak?: string; istisna?: string | null };
     if (typeof anahtar !== 'string' || !anahtar) return;
     if (durum === 'kabul' || durum === 'ertelendi' || durum === 'duzeltildi') {
-      db.exec({ sql: 'INSERT OR REPLACE INTO inceleme_kararlari(anahtar, durum, gerekce, dayanak, zaman) VALUES(?,?,?,?,?)', bind: [anahtar, durum, gerekce ?? '', dayanak ?? '', i.zaman] });
+      const ist = durum === 'kabul' && (istisna === 'tercih' || istisna === 'kapsam') ? istisna : null;
+      db.exec({ sql: 'INSERT OR REPLACE INTO inceleme_kararlari(anahtar, durum, gerekce, dayanak, istisna, zaman) VALUES(?,?,?,?,?,?)', bind: [anahtar, durum, gerekce ?? '', dayanak ?? '', ist, i.zaman] });
     } else db.exec({ sql: 'DELETE FROM inceleme_kararlari WHERE anahtar=?', bind: [anahtar] });
   },
 

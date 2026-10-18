@@ -54,7 +54,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   isaret_geri_yukle: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki işareti geri getirildi`,
   kayit_birlestir: (v, ad) => `“${v.kaynakAd}” kaydı ${ad(v.hedef)} ile birleştirildi`,
   birlesme_geri_al: (v, ad) => `“${v.kaynakAd}” ile ${ad(v.hedef)} birleştirmesi geri alındı`,
-  inceleme_karari: (v) => v.durum === 'kabul' ? `İnceleme: “${v.baslik}” gerekçeyle kabul edildi` : v.durum === 'ertelendi' ? `İnceleme: “${v.baslik}” ertelendi` : v.durum === 'duzeltildi' ? `İnceleme: “${v.baslik}” düzeltildi olarak kapandı` : `İnceleme: “${v.baslik}” yeniden açıldı`,
+  inceleme_karari: (v) => v.durum === 'kabul' ? `İnceleme: “${v.baslik}” ${v.istisna === 'kapsam' ? 'bu kuralın kapsamı dışında sayıldı' : 'gerekçeyle kabul edildi'}` : v.durum === 'ertelendi' ? `İnceleme: “${v.baslik}” ertelendi` : v.durum === 'duzeltildi' ? `İnceleme: “${v.baslik}” düzeltildi olarak kapandı` : `İnceleme: “${v.baslik}” yeniden açıldı`,
   takvim_yaz: (v) => v.kod
     ? (v.takvim ? `“${(v.takvim as { ad: string }).ad}” takvimi ${(v.takvim as { surum: number }).surum === 1 ? 'eklendi' : 'değişti'}` : `“${v.ad ?? 'Paralel'}” takvimi kaldırıldı`)
     : v.takvim ? `Evrenin takvimi değişti (sürüm ${(v.takvim as { surum: number }).surum}); tarihlerin yeri yeniden hesaplandı` : 'Evrenin takvimi varsayılana döndü',

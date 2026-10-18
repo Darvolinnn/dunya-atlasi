@@ -370,6 +370,15 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .bulgu.bilgi { padding: 4px 0; border-bottom: 1px solid var(--cizgi); }
 .bulgu-grubu summary { cursor: pointer; color: var(--metin-2); margin: 8px 0; }
 .ayirma { margin: 8px 20px; }
+/* Tutarlılık denetimleri (§9.1): hüküm rengi yalnızca etikette; metin her zaman okunur. */
+.denetim-kurallari { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+.denetim-sonuc { font-size: 0.85em; padding: 1px 8px; border-radius: 999px; background: var(--yuzey-2); color: var(--metin-2); }
+.denetim-kurali.bulgu_var .denetim-sonuc { background: var(--vurgu-zemin); color: var(--metin); }
+.denetim-kurali.sorun_yok .denetim-sonuc { color: var(--basari); }
+.denetim-hukum { font-size: 0.85em; font-weight: 600; color: var(--metin-2); }
+.bulgu.denetim.celiski .denetim-hukum { color: var(--tehlike); }
+.bulgu.denetim.celiski { border-left: 3px solid var(--tehlike); }
+.denetim-kabul { display: grid; gap: 4px; }
 
 /* ---------- İnceleme görünümleri (§7) ---------- */
 .gorunum > .satir, .ag-suzgec .satir { flex-wrap: wrap; margin-bottom: 8px; }

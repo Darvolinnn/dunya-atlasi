@@ -253,7 +253,28 @@ export interface BirlesmeOnizlemesi {
   baglantilar: number; gorseller: number; metinVar: boolean;
 }
 /** Sağlık taraması (§9.4) ve inceleme kararları (§9.3). */
-export interface IncelemeKarari { durum: 'kabul' | 'ertelendi' | 'duzeltildi'; gerekce: string; zaman: number }
+export interface IncelemeKarari {
+  durum: 'kabul' | 'ertelendi' | 'duzeltildi'; gerekce: string; zaman: number;
+  /** Denetim istisnasının türü (§9.1): bilerek kabul edilen çelişki ya da kuralın burada uygulanmadığı. */
+  istisna?: 'tercih' | 'kapsam' | null;
+}
+/** Kural tabanlı denetimler (§9.1). Hüküm ve kapsam ayrı gösterilir; "sorun yok" yalnızca sayılan kurallar için geçerlidir. */
+export type DenetimKurali = 'yasam' | 'dongu' | 'konum' | 'esya' | 'bilgi' | 'surec';
+export interface DenetimBulgusu {
+  anahtar: string; kural: DenetimKurali; hukum: 'celiski' | 'olasi'; baslik: string;
+  /** Uyarının dayanağı: hangi değerlerden çıktığı, okunur cümleyle. */
+  dayanak: string;
+  kayitlar: KisaKayit[];
+  /** Fikir durumundaki bir değere dayanıyor; ayrı ve sessiz grupta durur (K13). */
+  fikir: boolean;
+  karar: IncelemeKarari | null;
+}
+export interface DenetimOzeti {
+  kural: DenetimKurali; ad: string; tanim: string;
+  sonuc: 'sorun_yok' | 'bulgu_var' | 'konu_degil' | 'denetlenemiyor';
+  denetlenen: number; not: string;
+}
+export interface Denetimler { kurallar: DenetimOzeti[]; acik: DenetimBulgusu[]; ertelenen: DenetimBulgusu[]; kabul: DenetimBulgusu[]; fikir: DenetimBulgusu[] }
 export interface SaglikBulgusu {
   anahtar: string; tur: 'kopuk_baglanti' | 'silinmis_baglanti' | 'vazgecilmis_baglanti' | 'eksik_gorsel' | 'kod_sorunu' | 'baglantisiz_fikir' | 'belirsiz_tarih';
   baslik: string; aciklama: string; kayit: KisaKayit | null; hedef: KisaKayit | null; harita?: { kod: string; ad: string }; dayanak: string; karar: IncelemeKarari | null;
@@ -477,7 +498,8 @@ export interface Istekler {
   tersBirlesmeCoz(a: { evren: string; islem: string }): void;
   parcadanKayit(a: { evren: string; kaynak: string; ad: string; tur: string; spans: Spans }): { kod: string };
   saglikTaramasi(a: { evren: string; bilgi?: boolean }): SaglikTaramasi;
-  incelemeKarari(a: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | null; gerekce?: string }): void;
+  incelemeKarari(a: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | null; gerekce?: string; istisna?: 'tercih' | 'kapsam' | null }): void;
+  denetimler(a: { evren: string }): Denetimler;
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];
   bahsedilenler(a: { evren: string }): (KayitOzeti & { anilma: number })[];

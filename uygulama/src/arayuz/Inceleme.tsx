@@ -3,7 +3,7 @@
 // gerekçeyle kabul edilen, dayanağı değişmedikçe yeniden açılmaz.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { EtkiIncelemeleri, EtkiIncelemesi, SaglikBulgusu, SaglikTaramasi } from '../veri/api';
+import type { DenetimBulgusu, Denetimler, EtkiIncelemeleri, EtkiIncelemesi, SaglikBulgusu, SaglikTaramasi } from '../veri/api';
 import { zamanYaz } from '../alan/islem-metni';
 import { CatismaListesi } from './Catismalar';
 
@@ -24,9 +24,10 @@ export function IncelemeKuyrugu({ istemci, evren, surum }: { istemci: Istemci; e
         <CatismaListesi istemci={istemci} evren={evren} surum={surum} />
       </section>
       <EtkiBolumu istemci={istemci} evren={evren} surum={surum} />
+      <DenetimBolumu istemci={istemci} evren={evren} surum={surum} />
       <section aria-label="Sağlık taraması">
         <h2>Sağlık taraması</h2>
-        <p class="soluk kucuk">Kopuk bağlantılar, çöp kutusundaki ya da vazgeçilmiş kayıtlara giden bağlantılar, eksik görsel dosyaları ve var olmayan kayda bağlı satırlar. Kurgunun kendisini denetlemez.</p>
+        <p class="soluk kucuk">Kopuk bağlantılar, çöp kutusundaki ya da vazgeçilmiş kayıtlara giden bağlantılar, eksik görsel dosyaları ve var olmayan kayda bağlı satırlar. Kurgunun kendisini denetlemez; o yukarıdaki denetimlerin işidir.</p>
         {hata && <p class="hata kucuk">{hata}</p>}
         {t && !t.acik.length && <p class="soluk">Açık sorun yok.</p>}
         {t && t.acik.length > 0 && <ul class="bulgular">{t.acik.map((b) => <Bulgu key={b.anahtar} evren={evren} b={b} karar={karar} />)}</ul>}
@@ -146,6 +147,84 @@ function EtkiSatiri({ evren, b, karar }: { evren: string; b: EtkiIncelemesi; kar
           {b.karar ? <button class="dugme kucuk" onClick={() => karar(b.anahtar, null)}>{b.karar.durum === 'ertelendi' ? 'Kuyruğa geri koy' : 'Yeniden aç'}</button> : <>
             <button class="dugme kucuk" onClick={() => karar(b.anahtar, 'duzeltildi')}>Düzelttim</button>
             <button class="dugme kucuk" onClick={() => setKabulYaz(true)}>Bu hâliyle kabul et…</button>
+            <button class="dugme sade kucuk" onClick={() => karar(b.anahtar, 'ertelendi')}>Ertele</button>
+          </>}
+        </div>
+      )}
+    </li>
+  );
+}
+
+const SONUC_ADI = { sorun_yok: 'Sorun yok', bulgu_var: 'Uyarı var', konu_degil: 'Denetlenecek bir şey yok', denetlenemiyor: 'Denetlenemiyor' } as const;
+type DenetimKarari = (a: string, d: 'kabul' | 'ertelendi' | null, g?: string, i?: 'tercih' | 'kapsam') => Promise<unknown>;
+
+/** Kural tabanlı tutarlılık denetimleri (§9.1): hüküm ve kapsam ayrı; her uyarı dayanağını gösterir. */
+function DenetimBolumu({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
+  const [x, setX] = useState<Denetimler | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  useEffect(() => { istemci.iste('denetimler', { evren }).then((d) => { setX(d); setHata(null); }, (e) => setHata(hataYaz(e))); }, [evren, surum]);
+  const karar: DenetimKarari = (anahtar, durum, gerekce = '', istisna) =>
+    istemci.iste('incelemeKarari', { evren, anahtar, durum, gerekce, istisna: istisna ?? null }).then(() => setHata(null), (e) => { setHata(hataYaz(e)); throw e; });
+  return (
+    <section aria-label="Tutarlılık denetimleri">
+      <h2>Tutarlılık denetimleri</h2>
+      <p class="soluk kucuk">Yalnızca kayıtlı tarihlere, katılım rollerine, sahne yerlerine ve ilişkilere bakar; metindeki mantık hatalarını bulmaz. “Sorun yok” yalnızca o kural ve listelenen kayıtlar için geçerlidir.</p>
+      {hata && <p class="hata kucuk">{hata}</p>}
+      {x && (
+        <ul class="denetim-kurallari">
+          {x.kurallar.map((k) => (
+            <li key={k.kural} class={`denetim-kurali ${k.sonuc}`}>
+              <strong>{k.ad}</strong> <span class="denetim-sonuc">{SONUC_ADI[k.sonuc]}</span>
+              <div class="soluk kucuk">{k.tanim} {k.not}</div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {x && !x.acik.length && <p class="soluk">Açık uyarı yok.</p>}
+      {x && x.acik.length > 0 && <ul class="bulgular">{x.acik.map((b) => <DenetimSatiri key={b.anahtar} evren={evren} b={b} karar={karar} />)}</ul>}
+      {x && x.fikir.length > 0 && (
+        <details class="bulgu-grubu"><summary>Fikirlerdeki uyuşmazlıklar ({x.fikir.length})</summary>
+          <p class="soluk kucuk">Fikir durumundaki değerlere dayanıyor; inceleme sayısına katılmaz.</p>
+          <ul class="bulgular">{x.fikir.map((b) => <DenetimSatiri key={b.anahtar} evren={evren} b={b} karar={karar} />)}</ul></details>
+      )}
+      {x && x.ertelenen.length > 0 && (
+        <details class="bulgu-grubu"><summary>Ertelenenler ({x.ertelenen.length})</summary>
+          <ul class="bulgular">{x.ertelenen.map((b) => <DenetimSatiri key={b.anahtar} evren={evren} b={b} karar={karar} />)}</ul></details>
+      )}
+      {x && x.kabul.length > 0 && (
+        <details class="bulgu-grubu"><summary>Gerekçeli istisnalar ({x.kabul.length})</summary>
+          <ul class="bulgular">{x.kabul.map((b) => <DenetimSatiri key={b.anahtar} evren={evren} b={b} karar={karar} />)}</ul></details>
+      )}
+    </section>
+  );
+}
+
+function DenetimSatiri({ evren, b, karar }: { evren: string; b: DenetimBulgusu; karar: DenetimKarari }) {
+  const [kabulYaz, setKabulYaz] = useState(false);
+  const [gerekce, setGerekce] = useState('');
+  const [istisna, setIstisna] = useState<'tercih' | 'kapsam'>('tercih');
+  return (
+    <li class={`kart bulgu denetim ${b.hukum}`}>
+      <div class="satir"><span class="denetim-hukum">{b.hukum === 'celiski' ? 'Açık çelişki' : 'Olası uyuşmazlık'}</span> <span>{b.baslik}</span></div>
+      <p class="soluk kucuk">{b.dayanak}</p>
+      <p class="kucuk">{b.kayitlar.map((k, i) => <span key={k.kod}>{i > 0 && ' · '}<a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a></span>)}</p>
+      {b.karar?.durum === 'kabul' && <p class="kucuk">{b.karar.istisna === 'kapsam' ? 'Bu kural burada geçerli değil' : 'Bilerek kabul edildi'} ({zamanYaz(b.karar.zaman)}): {b.karar.gerekce}</p>}
+      {b.karar?.durum === 'ertelendi' && <p class="soluk kucuk">Ertelendi ({zamanYaz(b.karar.zaman)}).</p>}
+      {kabulYaz ? (
+        <form class="denetim-kabul" onSubmit={(e) => { e.preventDefault(); void karar(b.anahtar, 'kabul', gerekce, istisna).then(() => setKabulYaz(false)); }}>
+          <label class="kucuk"><input type="radio" name={`ist-${b.anahtar}`} checked={istisna === 'tercih'} onChange={() => setIstisna('tercih')} /> Çelişkiyi bilerek kabul ediyorum</label>
+          <label class="kucuk"><input type="radio" name={`ist-${b.anahtar}`} checked={istisna === 'kapsam'} onChange={() => setIstisna('kapsam')} /> Bu kural burada geçerli değil (hayalet, büyü, başka bir varoluş biçimi…)</label>
+          <div class="satir">
+            <input class="girdi" style="flex:1;min-width:200px" lang="tr" aria-label="Gerekçe" placeholder="Gerekçe" value={gerekce}
+              onInput={(e) => setGerekce((e.target as HTMLInputElement).value)} autoFocus />
+            <button class="dugme ana kucuk" disabled={!gerekce.trim()}>Kaydet</button>
+            <button type="button" class="dugme sade kucuk" onClick={() => setKabulYaz(false)}>Vazgeç</button>
+          </div>
+        </form>
+      ) : (
+        <div class="satir">
+          {b.karar ? <button class="dugme kucuk" onClick={() => karar(b.anahtar, null)}>{b.karar.durum === 'ertelendi' ? 'Kuyruğa geri koy' : 'Yeniden aç'}</button> : <>
+            <button class="dugme kucuk" onClick={() => setKabulYaz(true)}>İstisna olarak kabul et…</button>
             <button class="dugme sade kucuk" onClick={() => karar(b.anahtar, 'ertelendi')}>Ertele</button>
           </>}
         </div>

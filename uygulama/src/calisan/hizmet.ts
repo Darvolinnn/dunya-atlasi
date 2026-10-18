@@ -28,6 +28,7 @@ import * as sablonlar from './sablon';
 import * as harita from './harita';
 import * as birlesme from './birlesme';
 import * as saglik from './saglik';
+import * as denetim from './denetim';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
 import { BILGI_KAYNAKLARI, INANCLAR } from '../alan/bilgi';
@@ -117,7 +118,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       kayitSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NULL')),
       copSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NOT NULL AND kod NOT IN (SELECT kod FROM yonlendirmeler)')),
       catismaSayisi: this.catismaSayisi({ evren }),
-      sorunSayisi: saglik.acikSorunSayisi(e) + gorunum.etkiIncelemeleri(e).acik.length,
+      sorunSayisi: saglik.acikSorunSayisi(e) + gorunum.etkiIncelemeleri(e).acik.length + denetim.acikDenetimSayisi(e),
     };
   }
 
@@ -1620,10 +1621,17 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
 
   // ---------- Sağlık taraması (§9.4) ve inceleme kuyruğu (§9.3) ----------
   saglikTaramasi({ evren, bilgi = false }: { evren: string; bilgi?: boolean }) { return saglik.tarama(this.evren(evren), !!bilgi); }
-  incelemeKarari({ evren, anahtar, durum, gerekce = '' }: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | null; gerekce?: string }) {
+  incelemeKarari({ evren, anahtar, durum, gerekce = '', istisna = null }: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | null; gerekce?: string; istisna?: 'tercih' | 'kapsam' | null }) {
     if (durum !== null && durum !== 'kabul' && durum !== 'ertelendi') throw new Error('Geçersiz karar.');
+    if (String(anahtar).startsWith('denetim:')) {
+      denetim.kararVer({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, String(anahtar), durum, gerekce, istisna);
+      return;
+    }
     saglik.kararVer({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, String(anahtar), durum, gerekce);
   }
+
+  /** Kural tabanlı tutarlılık denetimleri (§9.1). */
+  denetimler({ evren }: { evren: string }) { return denetim.denetimler(this.evren(evren)); }
 
   // ---------- Görseller (§10.12) ----------
   /** Görseli içerik adıyla saklar; medya tablosunda yoksa eklenecek işlemi verir (TK5). */

@@ -22,7 +22,7 @@ const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', '
   'haritalar', 'harita', 'haritaYukle', 'gorseldenHarita', 'haritaDegistir', 'haritaSil', 'isaretKoy', 'isaretDegistir', 'isaretSil', 'kayitHaritalari',
   'soyAgaci', 'ag', 'durumGecmisi', 'kayitDurumGecmisi', 'nedenSonucAgi', 'etkiRaporu', 'etkiIncelemeleri', 'etkiKarari', 'kurguHatlari', 'bolumMatrisi',
   'kayitIddialari', 'iddialar', 'iddiaEkle', 'iddiaDegistir', 'iddiaSil', 'bilenBilgileri', 'bilgiEkle', 'bilgiDegistir', 'bilgiSil', 'gorunurlukYaz',
-  'birlesmeOnizle', 'birlestir', 'birlesmeyiGeriAl', 'tersBirlesmeCoz', 'saglikTaramasi', 'incelemeKarari', 'parcadanKayit',
+  'birlesmeOnizle', 'birlestir', 'birlesmeyiGeriAl', 'tersBirlesmeCoz', 'saglikTaramasi', 'incelemeKarari', 'denetimler', 'parcadanKayit',
   'iceAktarIncele', 'iceAktar', 'yedekAl', 'yedekIncele', 'yedektenYukle', 'evrenYerineKoy', 'sonYedek',
   'catismalar', 'catismaSayisi', 'alanCatismasiCoz', 'silmeCatismasiCoz', 'metinCatismasiCoz',
   'esitle', 'esitlemeDurumu', 'uzakEvrenler', 'evreniIndir', 'evrenEsitlemeAyari', 'kurulumAdiDegistir', 'kurulumKullanimDisi',
