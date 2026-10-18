@@ -92,15 +92,16 @@ export class DriveTasiyici implements Tasiyici {
   }
 
   /** Kullanıcının görebildiği bir klasör (dönemsel yedekler için, drive.file); yoksa oluşturur. */
-  async klasor(ad: string, ozellikler: Record<string, string>): Promise<string> {
+  async klasor(ad: string, ozellikler: Record<string, string>, ust?: string): Promise<string> {
     const kosul = [...Object.entries(ozellikler).map(([k, v]) => `appProperties has { key='${kacis(k)}' and value='${kacis(v)}' }`),
       "mimeType = 'application/vnd.google-apps.folder'", 'trashed = false'];
+    if (ust) kosul.push(`'${kacis(ust)}' in parents`);
     const p = new URLSearchParams({ q: kosul.join(' and '), fields: 'files(id)', pageSize: '10' });
     const j = await (await this.istek(`${API}/files?${p}`)).json() as { files: { id: string }[] };
     if (j.files[0]) return j.files[0].id;
     const r = await this.istek(`${API}/files?fields=id`, {
       method: 'POST', headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-      body: JSON.stringify({ name: ad, mimeType: 'application/vnd.google-apps.folder', appProperties: ozellikler }),
+      body: JSON.stringify({ name: ad, mimeType: 'application/vnd.google-apps.folder', appProperties: ozellikler, ...(ust ? { parents: [ust] } : {}) }),
     });
     return (await r.json() as { id: string }).id;
   }

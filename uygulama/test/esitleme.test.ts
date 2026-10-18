@@ -7,6 +7,7 @@ import { metinSemasi } from '../src/alan/metin-sema';
 import { BellekDeposu, type GorselIsleyici } from '../src/calisan/medya';
 import { BellekTasiyici } from '../src/calisan/bellek-tasiyici';
 import { GORUNTU_ARALIGI } from '../src/calisan/esitleme';
+import { silinecekGunler, gunYaz } from '../src/calisan/donemsel-yedek';
 import type { Spans } from '../src/veri/api';
 
 let sqlite3: Awaited<ReturnType<typeof sqlite3InitModule>>;
@@ -14,12 +15,12 @@ beforeAll(async () => { sqlite3 = await sqlite3InitModule(); });
 
 const sahteIsleyici: GorselIsleyici = async (veri, tur) => ({ veri, tur, en: 10, boy: 20, onizleme: new Uint8Array([7]) });
 
-function cihaz(ad: string, drive: BellekTasiyici) {
+function cihaz(ad: string, drive: BellekTasiyici, yedek: BellekTasiyici | null = null) {
   const dosyalar = new Map<string, Database>();
   const ac = (d: string) => { let x = dosyalar.get(d); if (!x) { x = new sqlite3.oo1.DB(':memory:'); dosyalar.set(d, x); } return x; };
   const medya = new BellekDeposu();
   const h = new Hizmet(ac, ad, 'x', () => {}, medya, sahteIsleyici);
-  h.tasiyiciAyarla(drive);
+  h.tasiyiciAyarla(drive, yedek);
   return { h, medya };
 }
 const metni = (h: Hizmet, evren: string, kayit: string) => {
@@ -184,5 +185,86 @@ describe('eşitleme işareti', () => {
     const { kod: evren } = t.h.evrenOlustur({ ad: 'Yeni' });
     await t.h.esitle();
     expect(t.h.esitlemeDurumu().evrenler.find((e) => e.kod === evren)!.sonEsitleme).not.toBeNull();
+  });
+});
+
+describe('dönemsel yedek (§10.10)', () => {
+  it('saklama: son 30 gün ve son 12 ayın ilk yedekleri kalır; en yeni hiç silinmez', () => {
+    const gunler: string[] = [];
+    for (let t = Date.parse('2025-01-01T12:00:00Z'); t <= Date.parse('2026-10-18T12:00:00Z'); t += 86_400_000) gunler.push(new Date(t).toISOString().slice(0, 10));
+    const sil = new Set(silinecekGunler(gunler, '2026-10-18'));
+    const kalan = gunler.filter((g) => !sil.has(g));
+    const ayIlkleri = kalan.filter((g) => g < '2026-09-18');
+    expect(ayIlkleri).toEqual(['2025-11-01', '2025-12-01', '2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01', '2026-05-01', '2026-06-01', '2026-07-01', '2026-08-01', '2026-09-01']);
+    expect(kalan.filter((g) => g >= '2026-09-18')).toEqual(gunler.filter((g) => g >= '2026-09-19'));
+    expect(silinecekGunler(['2020-01-05'], '2026-10-18')).toEqual([]);
+    // Ay ilk günü değil, ayın ilk yedeği sayılır.
+    expect(silinecekGunler(['2026-03-07', '2026-03-20', '2026-10-18'], '2026-10-18')).toEqual(['2026-03-20']);
+  });
+
+  it('eşitlemede günün yedeği alınır, doğrulanır; görseller bir kez yüklenir; yedekten geri yüklenir', async () => {
+    const drive = new BellekTasiyici();
+    const yedek = new BellekTasiyici();
+    const m = cihaz('Masaüstü', drive, yedek);
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    const v = m.h.kayitOlustur({ evren, ad: 'Velkar', tur: 'karakter' }).kod;
+    yaz(m.h, evren, v, 'Kuzeyde doğdu');
+    await m.h.gorselEkle({ evren, kod: v, dosyaAdi: 'v.png', tur: 'image/png', veri: new Uint8Array([1, 2, 3]) });
+    await m.h.esitle();
+    const d = m.h.donemselYedekDurumu({ evren });
+    expect(d.son).toMatchObject({ gun: gunYaz(Date.now()), dogrulandi: true });
+    expect(d.hata).toBeNull();
+    expect(turler(yedek).sort()).toEqual(['yedek', 'yedek-medya', 'yedek-medya']);
+    // Yedek görünür klasörde, görseller onun "medya" alt klasöründe.
+    const klasorler = [...yedek.klasorler.entries()];
+    const ana = klasorler.find(([, k]) => k.ad === 'Dünya Atlası yedekleri')![0];
+    const medya = klasorler.find(([, k]) => k.ad === 'medya')!;
+    expect(medya[1].ust).toBe(ana);
+    expect([...yedek.dosyalar.values()].find((x) => x.ozellikler.tur === 'yedek')!.ust).toBe(ana);
+    expect([...yedek.dosyalar.values()].filter((x) => x.ozellikler.tur === 'yedek-medya').every((x) => x.ust === medya[0])).toBe(true);
+
+    // Aynı gün yeniden eşitlemek yeni yedek almaz; elle alınan yedek bugünkünün yerine geçer, görseller yeniden yüklenmez.
+    await m.h.esitle();
+    m.h.kayitDegistir({ evren, kod: v, alan: 'ozet', deger: 'Vali' });
+    await m.h.drivedaYedekAl({ evren });
+    expect(turler(yedek).sort()).toEqual(['yedek', 'yedek-medya', 'yedek-medya']);
+    const liste = await m.h.driveYedekleri({ evren });
+    expect(liste.length).toBe(1);
+
+    // Yeni bir cihaz (Drive eşitlemesi olmadan) yedekten geri yükler.
+    const y = cihaz('Yeni bilgisayar', new BellekTasiyici(), yedek);
+    const { kod, ayri } = await y.h.drivedanGeriYukle({ id: liste[0].id });
+    expect({ kod, ayri }).toEqual({ kod: evren, ayri: false });
+    expect(y.h.kayit({ evren, kod: v }).ozet).toBe('Vali');
+    expect(metni(y.h, evren, v)).toBe('Kuzeyde doğdu');
+    const gorsel = y.h.kayit({ evren, kod: v }).gorseller[0];
+    expect(await y.h.gorsel({ evren, ad: gorsel })).toMatchObject({ durum: 'var' });
+    expect(y.medya.dosyalar.size).toBe(2);
+  });
+
+  it('eşitlemeden çıkarılan evren Drive\'a yedeklenmez; yedek hatası eşitlemeyi bozmaz', async () => {
+    const drive = new BellekTasiyici();
+    const yedek = new BellekTasiyici();
+    const m = cihaz('Masaüstü', drive, yedek);
+    const { kod: gizli } = m.h.evrenOlustur({ ad: 'Gizli' });
+    m.h.evrenEsitlemeAyari({ evren: gizli, esitlenir: false });
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    yedek.yukle = async () => { throw new Error('Drive\'da yer kalmadı.'); };
+    const d = await m.h.esitle();
+    expect(d.hata).toBeNull();
+    expect(d.evrenler.find((e) => e.kod === evren)!.yalnizBuCihazda).toBe(0);
+    expect(m.h.donemselYedekDurumu({ evren }).hata).toBe('Drive\'da yer kalmadı.');
+    expect(m.h.donemselYedekDurumu({ evren: gizli }).son).toBeNull();
+    expect([...yedek.dosyalar.values()].some((x) => x.ozellikler.evren === gizli)).toBe(false);
+  });
+
+  it('saklama süresi dolan yedekler silinir', async () => {
+    const yedek = new BellekTasiyici();
+    const m = cihaz('Masaüstü', new BellekTasiyici(), yedek);
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    const ana = await yedek.klasor('Dünya Atlası yedekleri', { uygulama: 'dunya-atlasi', tur: 'yedek-klasoru' });
+    for (const gun of ['2020-01-01', '2020-01-02']) await yedek.yukle('x.zip', { uygulama: 'dunya-atlasi', tur: 'yedek', evren, gun, zaman: '1', kurulum: 'x' }, new Uint8Array([1]), undefined, ana);
+    await m.h.esitle();
+    expect((await m.h.driveYedekleri({ evren })).map((y) => y.gun)).toEqual([gunYaz(Date.now())]);
   });
 });

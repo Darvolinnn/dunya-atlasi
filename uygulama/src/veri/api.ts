@@ -83,6 +83,11 @@ export interface EsitlemeDurumu {
   kurulum: { kod: string; ad: string };
   evrenler: EvrenEsitlemeDurumu[];
 }
+export interface DriveYedegi { id: string; gun: string; zaman: number; ad: string; kurulum: string }
+export interface DonemselYedekDurumu {
+  son: { zaman: number; gun: string; dogrulandi: boolean } | null; gunSayisi: number; aySayisi: number; hata: string | null;
+  bagli: boolean; esitlenir: boolean;
+}
 export interface EvrenEsitlemeDurumu {
   kod: string; ad: string; esitlenir: boolean; sonEsitleme: number | null; yalnizBuCihazda: number; bekleyen: number; guncellemeGerekli: boolean;
   cihazlar: { kod: string; ad: string; sonGorulme: number; kullanimDisi: boolean; bekleyen: number; buCihaz: boolean }[];
@@ -153,6 +158,11 @@ export interface Istekler {
   jetonVer(a: { jeton: string; bitis: number }): Promise<{ eposta: string; ad: string }>;
   /** Drive bağlantısını keser; izni geri almak için anahtarı döner. */
   baglantiyiKes(): { jeton: string | null };
+  donemselYedekDurumu(a: { evren: string }): DonemselYedekDurumu;
+  driveYedekleri(a: { evren: string }): Promise<DriveYedegi[]>;
+  drivedaYedekAl(a: { evren: string }): Promise<DonemselYedekDurumu>;
+  drivedanGeriYukle(a: { id: string }): Promise<{ kod: string; ayri: boolean }>;
+  yedekAyarlari(a: { gunSayisi: number; aySayisi: number }): void;
   esitle(): Promise<EsitlemeDurumu>;
   esitlemeDurumu(): EsitlemeDurumu;
   uzakEvrenler(): Promise<{ kod: string; ad: string; sonGorulme: number }[]>;

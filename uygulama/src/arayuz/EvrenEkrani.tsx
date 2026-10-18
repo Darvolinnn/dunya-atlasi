@@ -3,7 +3,7 @@ import type { Istemci } from '../veri/istemci';
 import type { EvrenBilgisi, GunlukSatiri } from '../veri/api';
 import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
 import { git } from './Uygulama';
-import { YedekSekmesi } from './Tasima';
+import { DriveYedekleri, YedekSekmesi } from './Tasima';
 import { CatismaListesi } from './Catismalar';
 import { Bahsedilenler, CopKutusu, KayitListesi } from './KayitListesi';
 
@@ -35,7 +35,7 @@ export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: st
           ))}
         </div>
         {sekme === 'inceleme' ? <CatismaListesi istemci={istemci} evren={kod} surum={surum} />
-          : sekme === 'yedek' ? <YedekSekmesi istemci={istemci} evren={kod} surum={surum} />
+          : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
           : sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
           : sekme === 'bahsedilen' ? <Bahsedilenler istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'cop' ? <CopKutusu istemci={istemci} evren={kod} surum={surum} />

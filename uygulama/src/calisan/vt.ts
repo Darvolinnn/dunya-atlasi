@@ -22,6 +22,7 @@ const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', '
   'iceAktarIncele', 'iceAktar', 'yedekAl', 'yedekIncele', 'yedektenYukle', 'evrenYerineKoy', 'sonYedek',
   'catismalar', 'catismaSayisi', 'alanCatismasiCoz', 'silmeCatismasiCoz', 'metinCatismasiCoz',
   'esitle', 'esitlemeDurumu', 'uzakEvrenler', 'evreniIndir', 'evrenEsitlemeAyari', 'kurulumAdiDegistir', 'kurulumKullanimDisi',
+  'donemselYedekDurumu', 'driveYedekleri', 'drivedaYedekAl', 'drivedanGeriYukle', 'yedekAyarlari',
   'jetonVer', 'baglantiyiKes']);
 
 // Drive izni yalnızca bu çalışanın belleğinde durur; hiçbir yere yazılmaz.
@@ -32,7 +33,7 @@ const ozel = {
     const t = new DriveTasiyici(a.jeton, a.bitis);
     const hesap = await t.hesap();
     jeton = a.jeton;
-    h.tasiyiciAyarla(t);
+    h.tasiyiciAyarla(t, new DriveTasiyici(a.jeton, a.bitis, 'drive'));
     return hesap;
   },
   baglantiyiKes(h: Hizmet) {

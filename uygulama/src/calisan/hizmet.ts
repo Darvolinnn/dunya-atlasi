@@ -19,6 +19,7 @@ import type { Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltm
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
+import { DonemselYedek, donemselDurum, type YedekTasiyici } from './donemsel-yedek';
 import { metinBelgesi } from './izdusum';
 
 export type DosyaAcici = (ad: string) => Database;
@@ -156,9 +157,60 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   }
 
   /** Uzak depoyu bağlar (Google izni gelince) ya da kaldırır. */
-  tasiyiciAyarla(t: Tasiyici | null) {
+  tasiyiciAyarla(t: Tasiyici | null, yedek: YedekTasiyici | null = null) {
     this.esitleme = t ? new Esitleme(this.esitlemeErisimi(), t) : null;
+    this.donemsel = t && yedek ? new DonemselYedek({
+      kurulum: this.kurulum, medya: this.medya,
+      paketYaz: (evren, medyaDahil) => this.paketYaz(evren, medyaDahil),
+      yedektenYukle: (veri) => this.yedektenYukle({ veri }),
+    }, yedek) : null;
     if (t && this.esitlemeHatasi?.izin) this.esitlemeHatasi = null;
+  }
+
+  // ---------- Dönemsel yedek (§10.10) ----------
+  private donemsel: DonemselYedek | null = null;
+  private donemselYedekle = true;
+
+  private esitlenirMi(evren: string) { return this.kurulum.ayar(`esitle:${evren}`) !== '0'; }
+
+  /** Drive'a eşitlenen evrenlerin bugünkü yedeği yoksa alınır. Yedek hatası eşitlemeyi bozmaz; ayrıca gösterilir. */
+  private async donemselYedekleriAl() {
+    const d = this.donemsel;
+    if (!d || !this.donemselYedekle) return;
+    for (const e of this.kurulum.evrenler()) {
+      if (!this.esitlenirMi(e.kod)) continue;
+      try { await d.al(e.kod); } catch (err) { if (err instanceof IzinHatasi) throw err; }
+    }
+  }
+
+  donemselYedekDurumu({ evren }: { evren: string }) {
+    this.evren(evren);
+    return { ...donemselDurum(this.kurulum, evren), bagli: !!this.donemsel, esitlenir: this.esitlenirMi(evren) };
+  }
+
+  async driveYedekleri({ evren }: { evren: string }) {
+    if (!this.donemsel) throw new Error('Önce Google Drive\'a bağlanın.');
+    return this.donemsel.liste(evren);
+  }
+
+  async drivedaYedekAl({ evren }: { evren: string }) {
+    if (!this.donemsel) throw new Error('Önce Google Drive\'a bağlanın.');
+    this.evren(evren);
+    await this.donemsel.al(evren, true);
+    return this.donemselYedekDurumu({ evren });
+  }
+
+  async drivedanGeriYukle({ id }: { id: string }) {
+    if (!this.donemsel) throw new Error('Önce Google Drive\'a bağlanın.');
+    if (typeof id !== 'string' || !id) throw new Error('Yedek bulunamadı.');
+    return this.donemsel.geriYukle(id);
+  }
+
+  yedekAyarlari({ gunSayisi, aySayisi }: { gunSayisi: number; aySayisi: number }) {
+    if (!Number.isInteger(gunSayisi) || gunSayisi < 1 || gunSayisi > 3650) throw new Error('Gün sayısı 1 ile 3650 arasında olmalı.');
+    if (!Number.isInteger(aySayisi) || aySayisi < 0 || aySayisi > 120) throw new Error('Ay sayısı 0 ile 120 arasında olmalı.');
+    this.kurulum.ayarYaz('yedek_gun', String(gunSayisi));
+    this.kurulum.ayarYaz('yedek_ay', String(aySayisi));
   }
 
   /** Bütün eşitlenen evrenleri eşitler. Aynı anda tek eşitleme çalışır; ikinci çağrı ilkini bekler. */
@@ -170,11 +222,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         await Promise.resolve(); // gövde, işaret konmadan önce bitmesin
         try {
           for (const e of this.kurulum.evrenler()) await es.evreniEsitle(e.kod);
+          await this.donemselYedekleriAl();
           this.esitlemeHatasi = null;
         } catch (err) {
           const izin = err instanceof IzinHatasi;
           this.esitlemeHatasi = { mesaj: izin ? 'Google izni yenilenmeli.' : (err as Error).message, izin, zaman: Date.now() };
-          if (izin) this.esitleme = null;
+          if (izin) { this.esitleme = null; this.donemsel = null; }
         } finally { this.esitlemeSuruyor = null; }
       })();
     }
@@ -862,6 +915,16 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   // ---------- Dosyaya tam yedek ve geri yükleme (§10.11 taşınabilir paket) ----------
   /** Evrenin bütün işlem günlüğü ve görselleri tek bir paket dosyasında. Kayıpsız geri yüklenir. */
   async yedekAl({ evren }: { evren: string }) {
+    const p = await this.paketYaz(evren, true);
+    this.kurulum.ayarYaz(`son_yedek:${evren}`, String(p.zaman));
+    return { dosyaAdi: p.dosyaAdi, veri: p.veri };
+  }
+
+  /**
+   * Taşınabilir paket. Drive'daki dönemsel yedeklerde görseller pakete girmez: yedek klasöründe her görsel
+   * bir kez saklanır (§10.10); paket hangi görselleri kullandığını yazar.
+   */
+  async paketYaz(evren: string, medyaDahil: boolean) {
     const e = this.evren(evren);
     const bilgi = this.evrenBilgisi({ evren });
     const islemler = e.islemler();
@@ -869,7 +932,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const medyaAdlari = (e.db.selectObjects('SELECT ad FROM medya ORDER BY olusturma') as { ad: string }[]).map((r) => r.ad);
     const dosyalar: ZipDosyasi[] = [];
     let eksik = 0;
-    for (const ad of medyaAdlari) {
+    for (const ad of medyaDahil ? medyaAdlari : []) {
       const veri = await this.medya?.oku(ad);
       if (!veri) { eksik++; continue; }
       dosyalar.push({ ad: `medya/${ad}`, veri, sikistirma: false });
@@ -879,7 +942,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const simdi = Date.now();
     const paket = { bicim: 'dunya-atlasi-paket', paketSurumu: 1, veriBicimi: VERI_BICIMI, evren: { kod: evren, ad: bilgi.ad },
       olusturma: simdi, kurulum: { kod: this.kurulum.kod, ad: this.kurulum.ad }, islemSayisi: islemler.length, kayitSayisi: bilgi.kayitSayisi,
-      medya: medyaAdlari.length, eksikMedya: eksik };
+      medya: medyaAdlari.length, eksikMedya: eksik, medyaAyri: !medyaDahil, medyaAdlari };
     const aciklama = [
       'Dünya Atlası evren paketi',
       '',
@@ -887,15 +950,16 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       `Alındığı an: ${new Date(simdi).toISOString()}`,
       `Kayıt: ${bilgi.kayitSayisi} (çöp kutusunda ${bilgi.copSayisi})`,
       `Değişiklik: ${islemler.length}`,
-      `Görsel: ${medyaAdlari.length - eksik}${eksik ? ` (${eksik} görsel bu cihazda olmadığı için pakette yok)` : ''}`,
+      medyaDahil ? `Görsel: ${medyaAdlari.length - eksik}${eksik ? ` (${eksik} görsel bu cihazda olmadığı için pakette yok)` : ''}`
+        : `Görsel: ${medyaAdlari.length} (pakette değil; yedek klasöründeki "medya" klasöründe, her görsel bir kez)`,
       '',
       'İçindekiler:',
       '- paket.json: paketin özeti ve veri biçimi sürümü',
       '- islemler.jsonl: evrende yapılmış bütün değişiklikler, yapıldıkları sırayla (her satır bir değişiklik).',
       '  Kayıtlar, metinler, bağlantılar, ilişkiler, tarihler ve sürüm geçmişi bunlardan yeniden kurulur.',
-      '- medya/: görseller, içerikleriyle adlandırılmış olarak (her görsel bir kez)',
+      medyaDahil ? '- medya/: görseller, içerikleriyle adlandırılmış olarak (her görsel bir kez)' : '- görseller: yedek klasöründeki "medya" klasöründe',
       '',
-      'Geri yüklemek için: Dünya Atlası > Evrenler > Yedekten geri yükle.',
+      medyaDahil ? 'Geri yüklemek için: Dünya Atlası > Evrenler > Yedekten geri yükle.' : 'Geri yüklemek için: Dünya Atlası > evren > Yedek > Drive\'daki yedekler.',
     ].join('\n');
     const zip = await zipYaz([
       { ad: 'aciklama.txt', veri: new TextEncoder().encode(aciklama) },
@@ -903,11 +967,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       { ad: 'islemler.jsonl', veri: new TextEncoder().encode(satirlar.join('\n')) },
       ...dosyalar,
     ]);
-    this.kurulum.ayarYaz(`son_yedek:${evren}`, String(simdi));
     const gun = new Date(simdi).toISOString().slice(0, 10);
     // Dosya adı yalnız İngiliz harfleriyle: bazı tarayıcılar Türkçe harfli indirme adını yok sayıyor.
     const dosyaAdi = `${katla(bilgi.ad).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'evren'}-yedek-${gun}.zip`;
-    return { dosyaAdi, veri: zip };
+    return { dosyaAdi, veri: zip, zaman: simdi, medyaAdlari, ad: bilgi.ad };
   }
 
   sonYedek({ evren }: { evren: string }) {
