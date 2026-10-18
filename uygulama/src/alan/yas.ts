@@ -1,6 +1,6 @@
 // Yaş (§3.4): doğum tarihi biliniyorsa bir andaki yaş hesaplanır ve hangi tarihe bakıldığı yazılır.
 // Hassasiyet korunur: yıl düzeyinde iki tarihten tek yaş değil, olası en küçük ve en büyük yaş çıkar.
-import { karsilastir, VARSAYILAN_TAKVIM, type EvrenTarihi, type Takvim } from './tarih';
+import { karsilastir, VARSAYILAN_TAKVIM, yilParcasi, type EvrenTarihi, type Takvim } from './tarih';
 
 export interface Yas { metin: string; enAz: number | null; enCok: number | null }
 
@@ -10,8 +10,8 @@ export function yasHesapla(dogum: EvrenTarihi | null, an: EvrenTarihi | null, ol
   if (!dogum.eksen || !an.eksen) return bilinmiyor;
   const { enErken: d1, enGec: d2 } = dogum.eksen;
   const { enErken: a1, enGec: a2 } = an.eksen;
-  const enAz = a1 !== null && d2 !== null ? Math.floor((a1 - d2) / t.yilGun) : null;
-  const enCok = a2 !== null && d1 !== null ? Math.floor((a2 - d1) / t.yilGun) : null;
+  const enAz = a1 !== null && d2 !== null ? Math.floor((a1 - d2) / yilParcasi(t)) : null;
+  const enCok = a2 !== null && d1 !== null ? Math.floor((a2 - d1) / yilParcasi(t)) : null;
   const olumSirasi = olum ? karsilastir(olum, an) : null;
   if (olumSirasi === 'once') return { metin: 'Bu tarihte ölmüş', enAz, enCok };
   if (enCok !== null && enCok < 0) return { metin: 'Bu tarihte henüz doğmamış', enAz, enCok };

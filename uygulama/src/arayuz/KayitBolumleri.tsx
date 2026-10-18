@@ -9,6 +9,7 @@ import { BaglantiSecici, type Secim } from './BaglantiSecici';
 import { KararRozeti, KararSecici, TurSecici } from './ortak';
 import { Gorsel, gorselAdresi } from './gorsel';
 import { git } from './Uygulama';
+import { takvimOrnegi, useTakvim } from './Takvim';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -17,7 +18,8 @@ export function TarihAlani({ istemci, evren, kayit }: { istemci: Istemci; evren:
   const [yerel, setYerel] = useState(kayit.tarih?.ifade ?? '');
   const [hata, setHata] = useState<string | null>(null);
   useEffect(() => setYerel(kayit.tarih?.ifade ?? ''), [kayit.tarih?.ifade]);
-  const onizleme = tarihCoz(yerel);
+  const takvim = useTakvim(istemci, evren);
+  const onizleme = tarihCoz(yerel, takvim);
   const bitir = async () => {
     if (yerel.trim() === (kayit.tarih?.ifade ?? '')) return;
     try { await istemci.iste('kayitTarih', { evren, kod: kayit.kod, ifade: yerel }); setHata(null); } catch (e) { setHata(hataYaz(e)); }
@@ -28,12 +30,12 @@ export function TarihAlani({ istemci, evren, kayit }: { istemci: Istemci; evren:
       <span class="alan-adi satir">Evren tarihi
         <KararSecici etiket="Evren tarihi" karar={kayit.alanKararlari.tarih ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod: kayit.kod, alan: 'tarih', karar: k })} />
       </span>
-      <input class="girdi" aria-label="Evren tarihi" value={yerel} lang="tr" placeholder={sahneden ? `${kayit.sahneTarihi!.ifade} (sahneden)` : 'Örn. 412, yaklaşık 300, 410–415'}
+      <input class="girdi" aria-label="Evren tarihi" value={yerel} lang="tr" placeholder={sahneden ? `${kayit.sahneTarihi!.ifade} (sahneden)` : takvimOrnegi(takvim)}
         onInput={(e) => setYerel((e.target as HTMLInputElement).value)} onBlur={bitir}
         onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
       <span class="soluk kucuk">
-        {sahneden ? <>Tarih sahneden geliyor: <a href={`#/e/${evren}/k/${kayit.sahneOlayi}`}>{tarihAciklamasi(kayit.sahneTarihi!)}</a></>
-          : onizleme ? tarihAciklamasi(onizleme) : 'Takvim tanımı sonraki aşamada; şimdilik yıl olarak yazın.'}
+        {sahneden ? <>Tarih sahneden geliyor: <a href={`#/e/${evren}/k/${kayit.sahneOlayi}`}>{tarihAciklamasi(kayit.sahneTarihi!, takvim)}</a></>
+          : onizleme ? tarihAciklamasi(onizleme, takvim) : <>Takvimi evrenin “Takvim” sekmesinden tanımlayabilirsin.</>}
       </span>
       {hata && <span class="hata kucuk">{hata}</span>}
     </div>

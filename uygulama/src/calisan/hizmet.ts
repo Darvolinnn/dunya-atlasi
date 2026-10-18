@@ -5,7 +5,7 @@ import { kodGecerliMi, yeniKod } from '../alan/kod';
 import type { IslemGirdisi } from '../alan/islem';
 import { A } from '../alan/automerge';
 import { baglantilar, duzMetindenSpans, spanAyari } from '../alan/metin-sema';
-import { karsilastir, siraAnahtari, tarihCoz, VARSAYILAN_TAKVIM, type EvrenTarihi } from '../alan/tarih';
+import { karsilastir, siraAnahtari, tarihAciklamasi, tarihCoz, takvimGecerli, yilGunu, type EvrenTarihi, type Takvim } from '../alan/tarih';
 import { iliskiTuruBul, iliskiTuruGecerli, rolAdi } from '../alan/iliski-turleri';
 import { icerikAdi, onizlemeAdi, type GorselIsleyici, type MedyaDeposu } from './medya';
 import { iceAktarimPlani, type IceDosya } from './ice-aktarim';
@@ -20,7 +20,7 @@ import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
 import { DonemselYedek, donemselDurum, type YedekTasiyici } from './donemsel-yedek';
-import { metinBelgesi } from './izdusum';
+import { metinBelgesi, takvimOku } from './izdusum';
 import * as anlati from './anlati';
 import * as durum from './durum';
 import * as sablonlar from './sablon';
@@ -401,6 +401,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       const a = tur ? sablonlar.sablonOku(e, tur).alanlar.find((x) => x.kod === alan.slice(2)) : undefined;
       return a?.secenekler?.find((x) => x.kod === deger)?.ad ?? String(deger);
     }
+    if (nesne === 'evren' && alan === 'takvim') {
+      const t = deger as Takvim | null;
+      return t ? `${t.aylar?.length ?? 0} ay, ${yilGunu(t)} gün, ${t.gunBolumleri?.length ?? 0} gün bölümü` : 'Varsayılan takvim';
+    }
     if (alan === 'anlati') {
       if (!deger) return 'Hiçbir esere yerleşmemiş';
       return `${ad((deger as { ust: string }).ust)} içinde`;
@@ -434,6 +438,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       this.yaz(evren, [{ tur: 'kayit_alan', veri: { kod: nesne, alan: alan.slice(2), ad: this.alanEtiketi(e, nesne, alan), deger, cozum: true } }], [nesne]);
       return;
     }
+    if (nesne === 'evren' && alan === 'takvim') { this.yaz(evren, [{ tur: 'takvim_yaz', veri: { takvim: deger, cozum: true } }]); return; }
     if (nesne === 'evren' && alan === 'ad') { this.yaz(evren, [{ tur: 'evren_adlandir', veri: { ad: String(deger) } }]); this.kurulum.evrenAdi(evren, String(deger)); return; }
     const iliski = e.db.selectObject('SELECT a, b FROM iliskiler WHERE kod=?', [nesne]);
     const dr = iliski ? undefined : e.db.selectObject('SELECT konu, ozellik FROM durumlar WHERE kod=?', [nesne]);
@@ -578,7 +583,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   kayitTarih({ evren, kod, ifade }: { evren: string; kod: string; ifade: string }) {
     const e = this.evren(evren);
     this.kayitVarMi(e, kod);
-    const tarih = tarihCoz(temizle(ifade, { bos: true }), VARSAYILAN_TAKVIM);
+    const tarih = tarihCoz(temizle(ifade, { bos: true }), takvimOku(e.db));
     const onceki = this.tarihOku(e, kod);
     if (JSON.stringify(onceki?.ifade ?? null) === JSON.stringify(tarih?.ifade ?? null)) return { tarih };
     this.yaz(evren, [{ tur: 'kayit_tarih', veri: { kod, tarih, onceki } }], [kod]);
@@ -857,7 +862,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const kod = yeniKod();
     this.yaz(evren, [{ tur: 'iliski_ekle', veri: {
       kod, tur, a, b, ...(rol ? { rol } : {}), karar, aciklama: temizle(aciklama, { bos: true, uzunluk: 500 }),
-      baslangic: tarihCoz(temizle(baslangic, { bos: true })), bitis: tarihCoz(temizle(bitis, { bos: true })),
+      baslangic: tarihCoz(temizle(baslangic, { bos: true }), takvimOku(e.db)), bitis: tarihCoz(temizle(bitis, { bos: true }), takvimOku(e.db)),
     } }], [a, b]);
     return { kod };
   }
@@ -872,7 +877,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const e = this.evren(evren);
     const r = this.iliskiBul(e, kod);
     let yeni: unknown;
-    if (alan === 'baslangic' || alan === 'bitis') yeni = tarihCoz(temizle(deger, { bos: true }));
+    if (alan === 'baslangic' || alan === 'bitis') yeni = tarihCoz(temizle(deger, { bos: true }), takvimOku(e.db));
     else if (alan === 'aciklama') yeni = temizle(deger, { bos: true, uzunluk: 500 });
     else if (alan === 'karar') { if (!kararGecerli(deger)) throw new Error('Geçersiz karar durumu.'); yeni = deger; }
     else if (alan === 'rol') { if (!iliskiTuruBul(r.tur as string).roller?.some((x) => x.kod === deger)) throw new Error('Geçersiz rol.'); yeni = deger; }
@@ -1095,7 +1100,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         .filter((d) => d.sahne?.kod !== sahne)
         .map((d) => ({ ...d, sira: karsilastir(d.tarih, an) }))
         .filter((d) => d.sira !== 'sonra') : [],
-      yas: yasHesapla(sablonlar.tarihDegeri(e, k.kod, 'dogum'), an, sablonlar.tarihDegeri(e, k.kod, 'olum'))?.metin ?? null,
+      yas: yasHesapla(sablonlar.tarihDegeri(e, k.kod, 'dogum'), an, sablonlar.tarihDegeri(e, k.kod, 'olum'), takvimOku(e.db))?.metin ?? null,
     }));
     return {
       tarih: an,
@@ -1131,6 +1136,74 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   }
   yazarKaydiEkle({ evren, tur, ad, bagla = null, onemli = false }: { evren: string; tur: 'acik_mesele' | 'gerekce'; ad: string; bagla?: string | null; onemli?: boolean }) {
     return sablonlar.yazarKaydiEkle(this.sablonBaglami(evren), tur, ad, bagla, onemli);
+  }
+
+  // ---------- Takvim (§3.4) ve zaman çizelgesi (§7) ----------
+  takvim({ evren }: { evren: string }): Takvim { return takvimOku(this.evren(evren).db); }
+
+  /** Yazarın girdiği takvim tanımını temizler ve bir sonraki sürüm numarasını verir. */
+  private takvimHazirla(e: EvrenVt, t: Takvim): Takvim {
+    const eski = takvimOku(e.db);
+    const ad = (x: unknown) => String(x ?? '').replace(/\s+/g, ' ').trim();
+    const yeni: Takvim = {
+      kod: 'ana', surum: eski.surum + 1, ad: ad(t.ad) || 'Yıl', yilGun: Number(t.yilGun) || 365,
+      aylar: (t.aylar ?? []).map((a) => ({ ad: ad(a.ad), gun: Number(a.gun) })),
+      gunBolumleri: (t.gunBolumleri ?? []).map(ad),
+      mevsimler: (t.mevsimler ?? []).map((m) => ({ ad: ad(m.ad), ilkAy: Number(m.ilkAy), sonAy: Number(m.sonAy) })),
+    };
+    if (yeni.aylar!.length) yeni.yilGun = yilGunu(yeni);
+    if (!takvimGecerli(yeni)) throw new Error('Takvimde boş, sayı içeren ya da tekrar eden bir ad, ya da geçersiz bir gün sayısı var.');
+    return yeni;
+  }
+
+  /** Takvim değişirse hangi tarihlerin evrendeki yeri değişir (§3.4): ifadeler korunur, yer yeniden hesaplanır. */
+  takvimEtkisi({ evren, takvim }: { evren: string; takvim: Takvim | null }) {
+    const e = this.evren(evren);
+    const eski = takvimOku(e.db);
+    const yeni = takvim ? this.takvimHazirla(e, takvim) : { ...eski, kod: 'varsayilan', ad: 'Yıl', yilGun: 365, aylar: [], gunBolumleri: [], mevsimler: [] };
+    const ad = (k: string) => (e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [k]) as string | undefined) ?? 'Kayıt';
+    const tarihler: { yer: string; kayit: string; t: EvrenTarihi }[] = [];
+    for (const r of e.db.selectObjects('SELECT kod, ad, tarih FROM kayitlar WHERE tarih IS NOT NULL AND silindi IS NULL')) tarihler.push({ yer: `${r.ad} · evren tarihi`, kayit: r.kod as string, t: JSON.parse(r.tarih as string) });
+    for (const r of e.db.selectObjects('SELECT a, b, baslangic, bitis FROM iliskiler WHERE silindi IS NULL AND (baslangic IS NOT NULL OR bitis IS NOT NULL)')) {
+      for (const [k, n] of [['baslangic', 'başlangıcı'], ['bitis', 'bitişi']] as const) if (r[k]) tarihler.push({ yer: `${ad(r.a as string)} – ${ad(r.b as string)} ilişkisinin ${n}`, kayit: r.a as string, t: JSON.parse(r[k] as string) });
+    }
+    for (const r of e.db.selectObjects('SELECT konu, ozellik, baslangic, bitis FROM durumlar WHERE silindi IS NULL')) {
+      for (const [k, n] of [['baslangic', 'başlangıcı'], ['bitis', 'bitişi']] as const) {
+        const v = r[k] ? JSON.parse(r[k] as string) as { tarih?: EvrenTarihi } : null;
+        if (v?.tarih) tarihler.push({ yer: `${ad(r.konu as string)} · ${r.ozellik} ${n}`, kayit: r.konu as string, t: v.tarih });
+      }
+    }
+    for (const r of e.db.selectObjects('SELECT d.kayit, d.alan, d.deger, k.tur FROM alan_degerleri d JOIN kayitlar k ON k.kod=d.kayit WHERE k.silindi IS NULL')) {
+      const v = JSON.parse(r.deger as string);
+      if (v && typeof v === 'object' && 'ifade' in v) {
+        const alanAd = sablonlar.sablonOku(e, r.tur as string).alanlar.find((a) => a.kod === r.alan)?.ad ?? 'alan';
+        tarihler.push({ yer: `${ad(r.kayit as string)} · ${alanAd}`, kayit: r.kayit as string, t: v });
+      }
+    }
+    const degisen = tarihler.map((x) => {
+      const y = tarihCoz(x.t.ifade, yeni)!;
+      const once = tarihAciklamasi(x.t, eski), sonra = tarihAciklamasi(y, yeni);
+      // Yalnızca yıl düzeyindeki tarihlerin sırası değişmez; okunuşu aynı kalanlar listelenmez.
+      return { yer: x.yer, kayit: x.kayit, ifade: x.t.ifade, once, sonra, cozulemez: !!x.t.eksen && !y.eksen, degisti: once !== sonra || !!x.t.eksen !== !!y.eksen };
+    }).filter((x) => x.degisti);
+    return { toplam: tarihler.length, degisen: degisen.slice(0, 300), degisenSayisi: degisen.length, cozulemezSayisi: degisen.filter((x) => x.cozulemez).length };
+  }
+
+  takvimYaz({ evren, takvim }: { evren: string; takvim: Takvim | null }) {
+    const e = this.evren(evren);
+    const yeni = takvim ? this.takvimHazirla(e, takvim) : null;
+    this.yaz(evren, [{ tur: 'takvim_yaz', veri: { takvim: yeni } }]);
+  }
+
+  /** Zaman çizelgesi: tarihi olan kayıtlar. Sahne olayı, tarihi sahneden geliyorsa sahnenin yerinde gösterilmez (aynı şey). */
+  zamanCizelgesi({ evren }: { evren: string }) {
+    const e = this.evren(evren);
+    const eserOf = new Map<string, string>();
+    for (const r of e.db.selectObjects(`SELECT a.kod, CASE WHEN u.tur='bolum' THEN (SELECT ust FROM anlati WHERE kod=u.kod) ELSE a.ust END eser
+        FROM anlati a JOIN kayitlar u ON u.kod=a.ust`)) if (r.eser) eserOf.set(r.kod as string, r.eser as string);
+    return e.db.selectObjects(`SELECT kod, ad, tur, karar, tarih FROM kayitlar WHERE tarih IS NOT NULL AND silindi IS NULL`)
+      .map((r) => ({ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string, karar: r.karar as string, tarih: JSON.parse(r.tarih as string) as EvrenTarihi, eser: eserOf.get(r.kod as string) ?? null }))
+      .sort((a, b) => siraAnahtari(a.tarih) - siraAnahtari(b.tarih) || turkceKarsilastir(a.ad, b.ad));
   }
 
   // ---------- Görseller (§10.12) ----------

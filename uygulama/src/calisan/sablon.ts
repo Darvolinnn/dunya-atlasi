@@ -9,6 +9,7 @@ import {
 } from '../alan/sablon';
 import type { EvrenSorulari, KayitSablonu, KisaKayit, MeseleListesi, SablonBilgisi, SoruSatiri } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
+import { takvimOku } from './izdusum';
 
 export interface SablonBaglami {
   e: EvrenVt;
@@ -98,7 +99,7 @@ export function kayitSablonu(e: EvrenVt, kod: string): KayitSablonu {
 }
 
 /** Alan değerini türüne göre çözer; boş değer alanı boşaltır. */
-function degerCoz(a: SablonAlani, girdi: unknown): unknown {
+function degerCoz(e: EvrenVt, a: SablonAlani, girdi: unknown): unknown {
   if (girdi === null || girdi === undefined || girdi === '') return null;
   switch (a.tur) {
     case 'metin': case 'uzun': {
@@ -106,7 +107,7 @@ function degerCoz(a: SablonAlani, girdi: unknown): unknown {
       if (s.length > (a.tur === 'metin' ? 300 : 5000)) throw new Error('Metin çok uzun.');
       return s || null;
     }
-    case 'tarih': return tarihCoz(String(girdi).slice(0, 120));
+    case 'tarih': return tarihCoz(String(girdi).slice(0, 120), takvimOku(e.db));
     case 'secim':
       if (!a.secenekler?.some((x) => x.kod === girdi)) throw new Error('Geçersiz seçenek.');
       return girdi;
@@ -125,7 +126,7 @@ export function kayitAlanYaz(b: SablonBaglami, kod: string, alan: string, girdi:
     b.yaz([{ tur: 'kayit_alan', veri: { kod, alan, ad: alan, deger: null, onceki: JSON.parse(ham) } }], [kod]);
     return;
   }
-  const deger = degerCoz(a, girdi);
+  const deger = degerCoz(b.e, a, girdi);
   const onceki = ham === undefined ? null : JSON.parse(ham);
   if (JSON.stringify(onceki) === JSON.stringify(deger)) return;
   b.yaz([{ tur: 'kayit_alan', veri: { kod, alan, ad: a.ad, deger, onceki } }], [kod]);

@@ -1,6 +1,6 @@
 // Arayüz ile veritabanı çalışanı arasındaki istekler. Arayüz veritabanına yalnızca bunlarla erişir.
 import type { Islem } from '../alan/islem';
-import type { EvrenTarihi, Karsilastirma } from '../alan/tarih';
+import type { EvrenTarihi, Karsilastirma, Takvim } from '../alan/tarih';
 import type { DurumKipi, Gecerlilik } from '../alan/durum';
 import type { Sablon, Soru, SoruDurumu } from '../alan/sablon';
 
@@ -182,6 +182,13 @@ export interface MeseleSatiri { kod: string; ad: string; karar: string; duzenlem
 export interface GerekceSatiri { kod: string; ad: string; karar: string; duzenleme: number; soru: string; cozum: string; gerekce: string; etkilenen: KisaKayit[] }
 export interface MeseleListesi { meseleler: MeseleSatiri[]; gerekceler: GerekceSatiri[] }
 
+/** Takvim değişikliğinin önizlemesi (§3.4). */
+export interface TakvimEtkisi {
+  toplam: number; degisenSayisi: number; cozulemezSayisi: number;
+  degisen: { yer: string; kayit: string; ifade: string; once: string; sonra: string; cozulemez: boolean }[];
+}
+export interface CizelgeOgesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi; eser: string | null }
+
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
 
 export interface Istekler {
@@ -284,6 +291,10 @@ export interface Istekler {
   evrenSorulari(a: { evren: string }): EvrenSorulari;
   meseleler(a: { evren: string; kod?: string }): MeseleListesi;
   yazarKaydiEkle(a: { evren: string; tur: 'acik_mesele' | 'gerekce'; ad: string; bagla?: string | null; onemli?: boolean }): { kod: string };
+  takvim(a: { evren: string }): Takvim;
+  takvimEtkisi(a: { evren: string; takvim: Takvim | null }): TakvimEtkisi;
+  takvimYaz(a: { evren: string; takvim: Takvim | null }): void;
+  zamanCizelgesi(a: { evren: string }): CizelgeOgesi[];
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];
   bahsedilenler(a: { evren: string }): (KayitOzeti & { anilma: number })[];

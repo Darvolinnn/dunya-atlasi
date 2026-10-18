@@ -7,9 +7,40 @@ import { baglantilar, duzMetin } from '../alan/metin-sema';
 import { katla } from '../alan/turkce';
 import { siraGecerli } from '../alan/sira';
 import { sablonGecerli } from '../alan/sablon';
+import { tarihCoz, tarihMi, takvimGecerli, VARSAYILAN_TAKVIM, type Takvim } from '../alan/tarih';
+
+/** Evrenin şu anki takvimi (§3.4). */
+export function takvimOku(db: Database): Takvim {
+  const ham = db.selectValue("SELECT v FROM evren WHERE k='takvim'") as string | undefined;
+  return ham ? JSON.parse(ham) : VARSAYILAN_TAKVIM;
+}
+/** Tarihin ekseni her zaman ifadeden ve evrenin o anki takviminden hesaplanır; başka cihazın hesabına güvenilmez. */
+function tz(db: Database, t: unknown): unknown {
+  return tarihMi(t) ? tarihCoz(t.ifade, takvimOku(db)) : t;
+}
+const sinirTz = (db: Database, s: unknown) => (s && typeof s === 'object' && (s as { tarih?: unknown }).tarih ? { ...(s as object), tarih: tz(db, (s as { tarih: unknown }).tarih) } : s);
+const json = (v: unknown) => (v ? JSON.stringify(v) : null);
+
+/** Takvim değişti: bütün tarihlerin ekseni yeniden hesaplanır, ifadeler korunur. */
+function tarihleriYenidenHesapla(db: Database) {
+  const t = takvimOku(db);
+  const yeni = (ham: unknown) => (ham ? JSON.stringify(tarihCoz(JSON.parse(ham as string).ifade, t)) : null);
+  for (const r of db.selectObjects('SELECT kod, tarih FROM kayitlar WHERE tarih IS NOT NULL')) db.exec({ sql: 'UPDATE kayitlar SET tarih=? WHERE kod=?', bind: [yeni(r.tarih), r.kod as string] });
+  for (const r of db.selectObjects('SELECT kod, baslangic, bitis FROM iliskiler WHERE baslangic IS NOT NULL OR bitis IS NOT NULL')) {
+    db.exec({ sql: 'UPDATE iliskiler SET baslangic=?, bitis=? WHERE kod=?', bind: [yeni(r.baslangic), yeni(r.bitis), r.kod as string] });
+  }
+  const sinir = (ham: unknown) => (ham ? JSON.stringify(sinirTz(db, JSON.parse(ham as string))) : null);
+  for (const r of db.selectObjects('SELECT kod, baslangic, bitis FROM durumlar WHERE baslangic IS NOT NULL OR bitis IS NOT NULL')) {
+    db.exec({ sql: 'UPDATE durumlar SET baslangic=?, bitis=? WHERE kod=?', bind: [sinir(r.baslangic), sinir(r.bitis), r.kod as string] });
+  }
+  for (const r of db.selectObjects('SELECT kayit, alan, deger FROM alan_degerleri')) {
+    const d = JSON.parse(r.deger as string);
+    if (tarihMi(d)) db.exec({ sql: 'UPDATE alan_degerleri SET deger=? WHERE kayit=? AND alan=?', bind: [JSON.stringify(tz(db, d)), r.kayit as string, r.alan as string] });
+  }
+}
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 6;
+export const IZDUSUM_SURUMU = 7;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -317,6 +348,15 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     evrenAlani(db, 'ad', i.veri.ad);
     evrenAlani(db, 'olusturma', i.zaman);
   },
+  /** Takvim tanımı (§3.4): bir şema değişikliğidir; bütün tarihler yeni takvimle yeniden hesaplanır. */
+  takvim_yaz(db, i) {
+    const { takvim } = i.veri as { takvim: unknown };
+    if (takvim !== null && !takvimGecerli(takvim)) return;
+    if (takvim) evrenAlani(db, 'takvim', JSON.stringify(takvim));
+    else db.exec("DELETE FROM evren WHERE k='takvim'");
+    tarihleriYenidenHesapla(db);
+    alanYaz(db, i, 'evren', 'takvim', takvim ?? null);
+  },
   evren_adlandir(db, i) {
     evrenAlani(db, 'ad', i.veri.ad);
     alanYaz(db, i, 'evren', 'ad', i.veri.ad);
@@ -372,7 +412,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
 
   kayit_tarih(db, i) {
     const { kod, tarih } = i.veri as { kod: string; tarih: unknown };
-    db.exec({ sql: 'UPDATE kayitlar SET tarih=?, duzenleme=? WHERE kod=?', bind: [tarih ? JSON.stringify(tarih) : null, i.zaman, kod] });
+    db.exec({ sql: 'UPDATE kayitlar SET tarih=?, duzenleme=? WHERE kod=?', bind: [json(tz(db, tarih)), i.zaman, kod] });
     alanYaz(db, i, kod, 'tarih', tarih ?? null);
   },
   kayit_alan_karar(db, i) {
@@ -394,13 +434,13 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     db.exec({
       sql: `INSERT OR IGNORE INTO iliskiler(kod, tur, a, b, rol, baslangic, bitis, aciklama, karar, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
       bind: [v.kod as string, v.tur as string, v.a as string, v.b as string, (v.rol as string) ?? null,
-        v.baslangic ? JSON.stringify(v.baslangic) : null, v.bitis ? JSON.stringify(v.bitis) : null, (v.aciklama as string) ?? '', v.karar as string, i.zaman, i.zaman],
+        json(tz(db, v.baslangic)), json(tz(db, v.bitis)), (v.aciklama as string) ?? '', v.karar as string, i.zaman, i.zaman],
     });
   },
   iliski_degistir(db, i) {
     const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
     if (!['baslangic', 'bitis', 'aciklama', 'karar', 'rol'].includes(alan)) return;
-    const d = alan === 'baslangic' || alan === 'bitis' ? (deger ? JSON.stringify(deger) : null) : deger;
+    const d = alan === 'baslangic' || alan === 'bitis' ? json(tz(db, deger)) : deger;
     db.exec({ sql: `UPDATE iliskiler SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [d as string | null, i.zaman, kod] });
     alanYaz(db, i, kod, alan, deger ?? null);
   },
@@ -435,13 +475,13 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     db.exec({
       sql: `INSERT OR IGNORE INTO durumlar(kod, konu, ozellik, deger, hedef, kip, baslangic, bitis, karar, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
       bind: [v.kod as string, v.konu as string, v.ozellik as string, (v.deger as string) ?? '', (v.hedef as string) ?? null, v.kip as string,
-        v.baslangic ? JSON.stringify(v.baslangic) : null, v.bitis ? JSON.stringify(v.bitis) : null, v.karar as string, i.zaman, i.zaman],
+        json(sinirTz(db, v.baslangic)), json(sinirTz(db, v.bitis)), v.karar as string, i.zaman, i.zaman],
     });
   },
   durum_degistir(db, i) {
     const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
     if (!['ozellik', 'deger', 'hedef', 'kip', 'baslangic', 'bitis', 'karar'].includes(alan)) return;
-    const d = alan === 'baslangic' || alan === 'bitis' ? (deger ? JSON.stringify(deger) : null) : (deger ?? (alan === 'hedef' ? null : ''));
+    const d = alan === 'baslangic' || alan === 'bitis' ? json(sinirTz(db, deger)) : (deger ?? (alan === 'hedef' ? null : ''));
     db.exec({ sql: `UPDATE durumlar SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [d as string | null, i.zaman, kod] });
     alanYaz(db, i, kod, alan, deger ?? null);
   },
@@ -465,7 +505,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
     if (typeof alan !== 'string' || !alan) return;
     if (deger === null || deger === undefined || deger === '' || deger === false) db.exec({ sql: 'DELETE FROM alan_degerleri WHERE kayit=? AND alan=?', bind: [kod, alan] });
-    else db.exec({ sql: 'INSERT OR REPLACE INTO alan_degerleri(kayit, alan, deger, duzenleme) VALUES(?,?,?,?)', bind: [kod, alan, JSON.stringify(deger), i.zaman] });
+    else db.exec({ sql: 'INSERT OR REPLACE INTO alan_degerleri(kayit, alan, deger, duzenleme) VALUES(?,?,?,?)', bind: [kod, alan, JSON.stringify(tz(db, deger)), i.zaman] });
     db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, kod] });
     alanYaz(db, i, kod, 'f:' + alan, deger ?? null);
   },

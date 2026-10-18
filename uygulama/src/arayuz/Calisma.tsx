@@ -10,6 +10,7 @@ import { gecerlilik } from '../alan/durum';
 import { aralikYazi } from './Anlati';
 import { degerMetni, useKayitSablonu } from './Sablon';
 import { yasHesapla } from '../alan/yas';
+import { useTakvim } from './Takvim';
 import { TURLER, turBul } from '../alan/turler';
 import { katla } from '../alan/turkce';
 import { KararRozeti } from './ortak';
@@ -323,10 +324,11 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
     return () => { iptal = true; };
   }, [kod, ana]);
   const ks = useKayitSablonu(istemci, evren, kod);
+  const takvim = useTakvim(istemci, evren);
   if (hata) return <p class="hata kucuk" style="padding:12px">{hata}</p>;
   if (!k) return <p class="soluk kucuk" style="padding:12px">Açılıyor…</p>;
   const tarih = k.tarih ?? k.sahneTarihi;
-  const yas = an?.tarih && ks ? yasHesapla((ks.degerler.dogum as EvrenTarihi) ?? null, an.tarih, (ks.degerler.olum as EvrenTarihi) ?? null)?.metin ?? null : null;
+  const yas = an?.tarih && ks ? yasHesapla((ks.degerler.dogum as EvrenTarihi) ?? null, an.tarih, (ks.degerler.olum as EvrenTarihi) ?? null, takvim)?.metin ?? null : null;
   return (
     <div class="yan-panel-ic">
       <div class="satir" style="flex-wrap:nowrap;align-items:flex-start">

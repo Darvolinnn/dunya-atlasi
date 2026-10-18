@@ -4,10 +4,11 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { Kayit, KayitSablonu, MeseleListesi, SablonBilgisi, SoruSatiri } from '../veri/api';
 import { ALAN_TURLERI, EVREN_SETLERI, MESELE_DURUMLARI, SORU_SETLERI, soruSetiBul, yeniAlanKodu, type Sablon, type SablonAlani, type Secenek } from '../alan/sablon';
-import { tarihAciklamasi, tarihCoz, type EvrenTarihi } from '../alan/tarih';
+import { tarihAciklamasi, tarihCoz, type EvrenTarihi, type Takvim } from '../alan/tarih';
 import { TURLER, turBul } from '../alan/turler';
 import { KararRozeti, KararSecici, TurSecici } from './ortak';
 import { git } from './Uygulama';
+import { takvimOrnegi, useTakvim } from './Takvim';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -35,6 +36,7 @@ export function degerMetni(a: SablonAlani | undefined, d: unknown): string {
 // ---------- Kayıt sayfasında şablon alanları ----------
 export function SablonAlanlari({ istemci, evren, kayit, ks }: { istemci: Istemci; evren: string; kayit: Kayit; ks: KayitSablonu | null }) {
   const [hata, setHata] = useState<string | null>(null);
+  const takvim = useTakvim(istemci, evren);
   if (!ks) return null;
   const yaz = (alan: string, deger: unknown) => istemci.iste('kayitAlanYaz', { evren, kod: kayit.kod, alan, deger }).then(() => setHata(null), (e) => setHata(hataYaz(e)));
   return (
@@ -44,7 +46,7 @@ export function SablonAlanlari({ istemci, evren, kayit, ks }: { istemci: Istemci
           <span class="alan-adi satir">{a.ad}
             <KararSecici etiket={a.ad} karar={kayit.alanKararlari[`f:${a.kod}`] ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod: kayit.kod, alan: `f:${a.kod}`, karar: k })} />
           </span>
-          <AlanGirdisi a={a} deger={ks.degerler[a.kod]} yaz={(v) => yaz(a.kod, v)} />
+          <AlanGirdisi a={a} takvim={takvim} deger={ks.degerler[a.kod]} yaz={(v) => yaz(a.kod, v)} />
         </div>
       ))}
       {ks.eskiler.length > 0 && (
@@ -64,7 +66,7 @@ export function SablonAlanlari({ istemci, evren, kayit, ks }: { istemci: Istemci
   );
 }
 
-function AlanGirdisi({ a, deger, yaz }: { a: SablonAlani; deger: unknown; yaz: (v: unknown) => Promise<unknown> }) {
+function AlanGirdisi({ a, takvim, deger, yaz }: { a: SablonAlani; takvim: Takvim; deger: unknown; yaz: (v: unknown) => Promise<unknown> }) {
   const metin = degerMetni(a, deger);
   const [yerel, setYerel] = useState(metin);
   useEffect(() => setYerel(metin), [metin]);
@@ -84,12 +86,12 @@ function AlanGirdisi({ a, deger, yaz }: { a: SablonAlani; deger: unknown; yaz: (
   if (a.tur === 'uzun') {
     return <textarea class="girdi" rows={3} lang="tr" aria-label={a.ad} placeholder={a.ipucu} value={yerel} onInput={(e) => setYerel((e.target as HTMLTextAreaElement).value)} onBlur={bitir} />;
   }
-  const onizleme = a.tur === 'tarih' && yerel.trim() ? tarihCoz(yerel) : null;
+  const onizleme = a.tur === 'tarih' && yerel.trim() ? tarihCoz(yerel, takvim) : null;
   return (
     <>
-      <input class="girdi" lang="tr" aria-label={a.ad} placeholder={a.ipucu ?? (a.tur === 'tarih' ? 'Örn. 400, yaklaşık 400' : '')} value={yerel}
+      <input class="girdi" lang="tr" aria-label={a.ad} placeholder={a.ipucu ?? (a.tur === 'tarih' ? takvimOrnegi(takvim) : '')} value={yerel}
         onInput={(e) => setYerel((e.target as HTMLInputElement).value)} onBlur={bitir} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
-      {a.tur === 'tarih' && <span class="soluk kucuk">{onizleme ? tarihAciklamasi(onizleme) : a.ipucu ?? ''}</span>}
+      {a.tur === 'tarih' && <span class="soluk kucuk">{onizleme ? tarihAciklamasi(onizleme, takvim) : a.ipucu ?? ''}</span>}
     </>
   );
 }

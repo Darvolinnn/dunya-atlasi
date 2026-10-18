@@ -7,6 +7,7 @@ import { durumKipiGecerli, gecerlilik, type DurumKipi, type Sinir } from '../ala
 import type { DurumGirdisi, DurumSatiri, SinirBilgisi } from '../veri/api';
 import { kararGecerli } from '../alan/turler';
 import type { EvrenVt } from './evren-vt';
+import { takvimOku } from './izdusum';
 
 export interface DurumBaglami {
   e: EvrenVt;
@@ -30,7 +31,7 @@ function sinirCoz(b: DurumBaglami, girdi: { ifade?: string; olay?: string | null
     if (!kodGecerliMi(girdi.olay) || b.e.db.selectValue('SELECT 1 FROM kayitlar WHERE kod=?', [girdi.olay]) === undefined) throw new Error('Bağlanan olay bulunamadı.');
     return { olay: girdi.olay };
   }
-  const t = tarihCoz(temiz(girdi.ifade, 120));
+  const t = tarihCoz(temiz(girdi.ifade, 120), takvimOku(b.e.db));
   return t ? { tarih: t } : null;
 }
 

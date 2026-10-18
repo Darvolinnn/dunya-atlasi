@@ -67,8 +67,8 @@ button.kart:hover { border-color: var(--vurgu); }
 .kart h3 { margin-bottom: 4px; }
 
 .satir { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.sekmeler { display: flex; gap: 4px; border-bottom: 1px solid var(--cizgi); margin: 16px 0; }
-.sekme { font: inherit; padding: 8px 12px; border: none; background: none; color: var(--metin-2); cursor: pointer; border-bottom: 2px solid transparent; }
+.sekmeler { display: flex; flex-wrap: wrap; gap: 0 4px; border-bottom: 1px solid var(--cizgi); margin: 16px 0; }
+.sekme { white-space: nowrap; font: inherit; padding: 8px 12px; border: none; background: none; color: var(--metin-2); cursor: pointer; border-bottom: 2px solid transparent; }
 .sekme[aria-selected="true"] { color: var(--metin); border-bottom-color: var(--vurgu); }
 
 .bos { padding: 32px 16px; text-align: center; color: var(--metin-2); border: 1px dashed var(--cizgi); border-radius: var(--yaricap); margin-top: 16px; }
@@ -295,3 +295,32 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .yildiz { color: var(--metin-2); }
 .yildiz.secili { color: #b07d10; }
 .alt-set { margin-top: 8px; }
+
+/* Takvim (§3.4) */
+.takvim-editoru h2 { margin-top: 20px; }
+.takvim-listesi { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+.takvim-listesi .sira { width: 2ch; text-align: right; }
+.takvim-etkisi { margin-top: 16px; }
+.etki-listesi { margin: 8px 0; padding-left: 18px; max-height: 320px; overflow: auto; }
+.etki-listesi li { margin: 4px 0; }
+.etki-listesi li.cozulemez .soluk { color: var(--tehlike); }
+
+/* Zaman çizelgesi (§7) */
+.cizelge-listesi { list-style: none; padding: 0; margin: 12px 0; }
+.cizelge-satiri, .cizelge-olcek { display: grid; grid-template-columns: minmax(160px, 2fr) 3fr; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--cizgi); }
+.cizelge-olcek { border-bottom: none; padding: 0; }
+.cizelge-olcek .cizelge-iz { height: 1.2em; background: none; font-size: 0.8rem; color: var(--metin-2); }
+.cizelge-olcek .cizelge-iz span { position: absolute; top: 0; }
+.cizelge-etiket { min-width: 0; }
+.cizelge-iz { position: relative; height: 14px; background: var(--yuzey-2); border-radius: 7px; }
+.cizelge-nokta { position: absolute; top: 1px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--vurgu); }
+.cizelge-bant { position: absolute; top: 2px; height: 10px; min-width: 4px; border-radius: 5px; border: 1px dashed var(--vurgu);
+  background: repeating-linear-gradient(45deg, var(--vurgu-zemin), var(--vurgu-zemin) 4px, transparent 4px, transparent 8px); }
+.cizelge-ok { position: absolute; top: 6px; height: 2px; background: var(--vurgu); opacity: 0.8; }
+.cizelge-ok.sola::before, .cizelge-ok.saga::after { content: ""; position: absolute; top: -4px; border: 5px solid transparent; }
+.cizelge-ok.sola::before { left: -2px; border-right-color: var(--vurgu); border-left: none; }
+.cizelge-ok.saga::after { right: -2px; border-left-color: var(--vurgu); border-right: none; }
+.cizelge-ok.sola { border-right: 2px solid var(--vurgu); }
+.cizelge-ok.saga { border-left: 2px solid var(--vurgu); }
+.cizelge-satiri.karar-fikir .cizelge-iz > span, .cizelge-satiri.karar-vazgecildi .cizelge-iz > span { opacity: 0.45; }
+@media (max-width: 600px) { .cizelge-satiri { grid-template-columns: 1fr; gap: 4px; } .cizelge-olcek { display: none; } }

@@ -4,7 +4,8 @@
 /** Veri biçimi sürümü (§10.7). Eski uygulama yeni biçimi açmaz, üzerine yazmaz. */
 // 2: anlatı yapısı (eser, bölüm, sahne sırası) ve durum geçmişi işlemleri.
 // 3: şablonlar, alan değerleri ve soru cevapları.
-export const VERI_BICIMI = 3;
+// 4: evrenin takvimi; tarihlerin ekseni gün parçası birimindedir.
+export const VERI_BICIMI = 4;
 
 export interface IslemGirdisi {
   tur: string;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { karsilastir, tarihCoz, tarihAciklamasi, tarihYenidenHesapla, VARSAYILAN_TAKVIM } from '../src/alan/tarih';
+import { GUN_PARCA, karsilastir, tarihCoz, tarihAciklamasi, tarihYenidenHesapla, VARSAYILAN_TAKVIM } from '../src/alan/tarih';
 
 const t = (s: string) => tarihCoz(s)!;
 
@@ -38,7 +38,7 @@ describe('evren tarihi', () => {
   it('takvim değişince ifade korunur, eksen yeniden hesaplanır', () => {
     const yeni = tarihYenidenHesapla(t('412 yazı'), { ...VARSAYILAN_TAKVIM, surum: 2, yilGun: 400 })!;
     expect(yeni.ifade).toBe('412 yazı');
-    expect(yeni.eksen!.enErken).toBe(412 * 400);
+    expect(yeni.eksen!.enErken).toBe(412 * 400 * GUN_PARCA);
     expect(yeni.takvimSurumu).toBe(2);
   });
 
