@@ -54,6 +54,23 @@ export interface AramaSonucu {
   /** Metinde bulunduysa çevresi. */
   parca?: string;
 }
+export interface IceAktarimRaporu {
+  kayitSayisi: number; baglantiSayisi: number;
+  /** Bağlantı verilmiş ama dosyası olmayan adlar: fikir olarak oluşturulur. */
+  bahsedilenler: string[];
+  tekrarAdlar: string[]; taninmayanTurler: string[]; digerAlanlar: string[];
+  /** Düz metne dönen biçimler, insan diliyle. */
+  kayiplar: string[];
+  eksikGorseller: string[]; gorselSayisi: number; okunamayan: string[];
+  turler: [string, number][];
+}
+export interface YedekBilgisi {
+  evrenKod: string; evrenAdi: string; tarih: number; islemSayisi: number; kayitSayisi: number;
+  medyaSayisi: number; eksikMedya: number;
+  /** Bu evren bu cihazda zaten var mı (varsa yedek ayrı bir evren olarak açılır). */
+  mevcut: { kod: string; ad: string } | null;
+  veriBicimi: number;
+}
 export interface BaglananKayit { kod: string; ad: string; tur: string; ifadeler: string[] }
 export interface AdDuzeltmesi { kaynak: string; kaynakAd: string; sira: number; eski: string; yeni: string }
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
@@ -97,6 +114,14 @@ export interface Istekler {
   gorselEkle(a: { evren: string; kod: string; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ ad: string; yeni: boolean }>;
   kayitGorselCikar(a: { evren: string; kod: string; ad: string }): void;
   gorsel(a: { evren: string; ad: string; onizleme?: boolean }): Promise<GorselSonucu>;
+
+  iceAktarIncele(a: { dosyalar: { yol: string; metin?: string; veri?: Uint8Array; tur?: string }[] }): IceAktarimRaporu;
+  iceAktar(a: { dosyalar: { yol: string; metin?: string; veri?: Uint8Array; tur?: string }[]; evrenAdi: string }): Promise<{ kod: string; rapor: IceAktarimRaporu; gorselHatalari: string[] }>;
+  yedekAl(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
+  yedekIncele(a: { veri: Uint8Array }): Promise<YedekBilgisi>;
+  yedektenYukle(a: { veri: Uint8Array }): Promise<{ kod: string; ayri: boolean }>;
+  evrenYerineKoy(a: { kopya: string; asil: string }): void;
+  sonYedek(a: { evren: string }): number | null;
 
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];

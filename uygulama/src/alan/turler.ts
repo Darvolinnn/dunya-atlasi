@@ -1,3 +1,5 @@
+import { katla } from './turkce';
+
 // Başlangıç kayıt türleri (§4). Kod değişmez; görünen ad değişebilir. Kullanıcının tür ve şablon
 // düzenlemesi sonraki aşamadadır (§14.1 aşama 2). Bilinmeyen tür kodu korunur ve "Diğer" gösterilir.
 
@@ -53,3 +55,33 @@ export const KARARLAR = [
 ] as const;
 export type Karar = (typeof KARARLAR)[number]['kod'];
 export const kararGecerli = (k: unknown): k is Karar => KARARLAR.some((x) => x.kod === k);
+
+/**
+ * Yazılmış bir tür adını koda çevirir ("Ad::Tür::özet", içe aktarımda ön bilgi ve klasör adı):
+ * görünen ad ya da kod; ad parçası; çoğul klasör adı ("Karakterler"). Bulunamazsa null.
+ */
+// Başka programlardan (ve eski prototipten) gelen İngilizce tür adları; yalnızca içe aktarımda işe yarar.
+const INGILIZCE: Record<string, string> = {
+  character: 'karakter', person: 'karakter', people: 'karakter', npc: 'karakter',
+  faction: 'topluluk', organization: 'topluluk', organisation: 'topluluk', group: 'topluluk', guild: 'topluluk',
+  nation: 'siyasi', kingdom: 'siyasi', empire: 'siyasi', country: 'siyasi', state: 'siyasi',
+  place: 'mekan', location: 'mekan', region: 'mekan', landmark: 'mekan', city: 'sehir', town: 'sehir', settlement: 'sehir', village: 'sehir',
+  route: 'rota', journey: 'yolculuk', item: 'esya', object: 'esya', artifact: 'esya', artefact: 'esya',
+  culture: 'kultur', religion: 'inanc', faith: 'inanc', ritual: 'rituel', language: 'dil',
+  magic: 'buyu_sistemi', spell: 'buyu_uygulamasi', technology: 'teknoloji', creature: 'canli', species: 'canli', plant: 'canli',
+  currency: 'para', event: 'olay', era: 'donem', age: 'donem', period: 'donem', treaty: 'antlasma', rumor: 'haber', rumour: 'haber',
+  document: 'belge', scene: 'sahne', plot: 'kurgu_hatti', note: 'not', source: 'kaynak',
+};
+
+export function turBulYazidan(yazilan: string): string | null {
+  const k = katla(yazilan.trim());
+  if (!k) return null;
+  const ing = INGILIZCE[k] ?? INGILIZCE[k.replace(/(ies)$/, 'y').replace(/s$/, '')];
+  if (ing) return ing;
+  const t = TURLER.find((t) => katla(t.ad) === k || t.kod === k)
+    ?? TURLER.find((t) => katla(t.ad).split(/[\s/]+/).some((p) => p === k))
+    ?? TURLER.find((t) => k.length >= 3 && katla(t.ad).startsWith(k))
+    ?? TURLER.find((t) => katla(t.ad).split(/[\s/]+/).some((p) => p.length >= 3 && k.startsWith(p) && /^(ler|lar)?$/.test(k.slice(p.length))));
+  return t?.kod ?? null;
+}
+export const turCoz = (yazilan: string) => turBulYazidan(yazilan) ?? 'diger';

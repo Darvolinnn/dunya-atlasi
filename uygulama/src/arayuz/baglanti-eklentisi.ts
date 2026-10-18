@@ -4,8 +4,7 @@ import { Plugin, type EditorState, type Transaction } from 'prosemirror-state';
 import type { EditorView } from 'prosemirror-view';
 import type { Mark, MarkType } from 'prosemirror-model';
 import { metinSemasi } from '../alan/metin-sema';
-import { TURLER } from '../alan/turler';
-import { katla } from '../alan/turkce';
+import { turCoz } from '../alan/turler';
 
 const sema = metinSemasi.schema;
 export const bagTuru: MarkType = sema.marks.bag;
@@ -24,15 +23,6 @@ export interface SeciciIstegi {
   kendiligindenBagla?: boolean;
   /** Arama metni editörde yazılıyor ("[[" sonrası ya da "]]" ile kapatılmış kısayol). */
   satirIci?: boolean;
-}
-
-/** "Ad::Tür::özet" sözdizimindeki türü bulur: görünen ad ya da kodun başı. Bulunamazsa Diğer. */
-export function turCoz(yazilan: string): string {
-  const k = katla(yazilan.trim());
-  if (!k) return 'diger';
-  const t = TURLER.find((t) => katla(t.ad) === k || t.kod === k)
-    ?? TURLER.find((t) => katla(t.ad).startsWith(k) || katla(t.ad).split(/[\s/]+/).some((p) => p === k));
-  return t?.kod ?? 'diger';
 }
 
 /** İmlecin içinde bulunduğu bağlantının aralığı ve hedefi. */

@@ -37,6 +37,13 @@ export class KurulumVt {
     this.db.exec({ sql: 'UPDATE evrenler SET ad=? WHERE kod=?', bind: [ad, kod] });
   }
 
+  ayar(k: string): string | undefined {
+    return this.db.selectValue('SELECT v FROM ayar WHERE k=?', [k]) as string | undefined;
+  }
+  ayarYaz(k: string, v: string) {
+    this.db.exec({ sql: 'INSERT INTO ayar VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v', bind: [k, v] });
+  }
+
   acildi(kod: string) {
     this.db.exec({ sql: 'UPDATE evrenler SET son_acilis=? WHERE kod=?', bind: [Date.now(), kod] });
   }

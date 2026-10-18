@@ -86,6 +86,32 @@ export class EvrenVt {
     return yazilan;
   }
 
+  /**
+   * Başka bir kaynaktan gelen işlemleri (yedek paketi; ileride eşitleme) olduğu gibi alır: kodu, kurulumu,
+   * sırası ve gördükleri korunur. Zaten olan işlem atlanır. Hepsi tek veritabanı işleminde uygulanır.
+   */
+  disaridanAl(islemler: Islem[]): number {
+    let alinan = 0;
+    const onceki = { ...this.gorulen };
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      for (const i of islemler) {
+        if (this.db.selectValue('SELECT 1 FROM islemler WHERE kod=?', [i.kod]) !== undefined) continue;
+        this.kaydet(i);
+        this.uygula(i);
+        this.gorulen[i.kurulum] = Math.max(this.gorulen[i.kurulum] ?? 0, i.sira);
+        alinan++;
+      }
+      this.db.exec('COMMIT');
+    } catch (e) {
+      this.db.exec('ROLLBACK');
+      this.gorulen = onceki;
+      metinBelleginiTemizle(this.db);
+      throw e;
+    }
+    return alinan;
+  }
+
   private kaydet(i: Islem) {
     this.db.exec({
       sql: 'INSERT INTO islemler(kod,kurulum,sira,zaman,grup,tur,veri,ikili,gordu) VALUES(?,?,?,?,?,?,?,?,?)',

@@ -8,10 +8,13 @@ import { baglantilar, duzMetindenSpans, spanAyari } from '../alan/metin-sema';
 import { karsilastir, siraAnahtari, tarihCoz, VARSAYILAN_TAKVIM, type EvrenTarihi } from '../alan/tarih';
 import { iliskiTuruBul, iliskiTuruGecerli, rolAdi } from '../alan/iliski-turleri';
 import { icerikAdi, onizlemeAdi, type GorselIsleyici, type MedyaDeposu } from './medya';
+import { iceAktarimPlani, type IceDosya } from './ice-aktarim';
+import { zipOku, zipYaz, type ZipDosyasi } from '../alan/zip';
+import { VERI_BICIMI, type Islem } from '../alan/islem';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, kokAdaylari } from '../alan/turkce-ek';
 import { kararGecerli, turGecerli } from '../alan/turler';
-import type { AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { KurulumVt } from './kurulum-vt';
 import { metinBelgesi } from './izdusum';
@@ -626,4 +629,176 @@ export class Hizmet implements Istekler {
     const turu = onizleme && (await this.medya.var(onizlemeAdi(ad))) ? 'image/webp' : r.tur as string;
     return { durum: 'var' as const, veri, tur: turu, en: r.en as number, boy: r.boy as number, dosyaAdi: r.dosya_adi as string };
   }
+
+  // ---------- İçe aktarım (§10.11, A6, T14) ----------
+  private iceDosyalar(dosyalar: IceDosya[]): IceDosya[] {
+    if (!Array.isArray(dosyalar) || dosyalar.length > 20000) throw new Error('Çok fazla dosya.');
+    return dosyalar.map((d) => ({ yol: String(d.yol).replace(/\\/g, '/'), metin: typeof d.metin === 'string' ? d.metin : undefined,
+      veri: d.veri instanceof Uint8Array ? d.veri : undefined, tur: d.tur ? String(d.tur) : undefined }));
+  }
+
+  iceAktarIncele({ dosyalar }: { dosyalar: IceDosya[] }): IceAktarimRaporu {
+    return iceAktarimPlani(this.iceDosyalar(dosyalar)).rapor;
+  }
+
+  /** Dosyaları yeni bir evrene aktarır (ayrı alan); mevcut evrenlere dokunmaz. */
+  async iceAktar({ dosyalar, evrenAdi }: { dosyalar: IceDosya[]; evrenAdi: string }) {
+    const temiz = this.iceDosyalar(dosyalar);
+    const { plan, rapor } = iceAktarimPlani(temiz);
+    if (!plan.length) throw new Error('İçe alınacak kayıt bulunamadı.');
+    const { kod: evren } = this.evrenOlustur({ ad: evrenAdi });
+    const girdiler: IslemGirdisi[] = [];
+    for (const p of plan) {
+      girdiler.push(...this.kayitGirdileri(p.kod, { ad: temizle(p.ad), tur: p.tur, karar: p.karar, ozet: temizle(p.ozet, { bos: true, uzunluk: 500 }), spans: p.spans }));
+      for (const l of p.lakaplar) girdiler.push({ tur: 'kayit_lakap', veri: { kod: p.kod, ekle: l } });
+      for (const t of p.etiketler) girdiler.push({ tur: 'kayit_etiket', veri: { kod: p.kod, ekle: t } });
+      if (p.okunus) girdiler.push({ tur: 'kayit_degistir', veri: { kod: p.kod, alan: 'okunus', deger: temizle(p.okunus, { bos: true }), onceki: '' } });
+      if (p.tarih) girdiler.push({ tur: 'kayit_tarih', veri: { kod: p.kod, tarih: tarihCoz(p.tarih), onceki: null } });
+    }
+    this.yaz(evren, girdiler);
+    const gorselHatalari: string[] = [];
+    const dosyaHaritasi = new Map(temiz.filter((d) => d.veri).map((d) => [d.yol, d]));
+    for (const p of plan) for (const yol of p.gorseller) {
+      const d = dosyaHaritasi.get(yol)!;
+      const tur = d.tur || ({ jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif' } as Record<string, string>)[yol.split('.').pop()!.toLowerCase()];
+      try { await this.gorselEkle({ evren, kod: p.kod, dosyaAdi: yol.split('/').pop()!, tur, veri: d.veri! }); }
+      catch (e) { gorselHatalari.push(`${yol}: ${(e as Error).message}`); }
+    }
+    return { kod: evren, rapor, gorselHatalari };
+  }
+
+  // ---------- Dosyaya tam yedek ve geri yükleme (§10.11 taşınabilir paket) ----------
+  /** Evrenin bütün işlem günlüğü ve görselleri tek bir paket dosyasında. Kayıpsız geri yüklenir. */
+  async yedekAl({ evren }: { evren: string }) {
+    const e = this.evren(evren);
+    const bilgi = this.evrenBilgisi({ evren });
+    const islemler = e.islemler();
+    const satirlar = islemler.map((i) => JSON.stringify({ ...i, ikili: i.ikili ? b64(i.ikili) : null }));
+    const medyaAdlari = (e.db.selectObjects('SELECT ad FROM medya ORDER BY olusturma') as { ad: string }[]).map((r) => r.ad);
+    const dosyalar: ZipDosyasi[] = [];
+    let eksik = 0;
+    for (const ad of medyaAdlari) {
+      const veri = await this.medya?.oku(ad);
+      if (!veri) { eksik++; continue; }
+      dosyalar.push({ ad: `medya/${ad}`, veri, sikistirma: false });
+      const k = await this.medya?.oku(onizlemeAdi(ad));
+      if (k) dosyalar.push({ ad: `medya/${onizlemeAdi(ad)}`, veri: k, sikistirma: false });
+    }
+    const simdi = Date.now();
+    const paket = { bicim: 'dunya-atlasi-paket', paketSurumu: 1, veriBicimi: VERI_BICIMI, evren: { kod: evren, ad: bilgi.ad },
+      olusturma: simdi, kurulum: { kod: this.kurulum.kod, ad: this.kurulum.ad }, islemSayisi: islemler.length, kayitSayisi: bilgi.kayitSayisi,
+      medya: medyaAdlari.length, eksikMedya: eksik };
+    const aciklama = [
+      'Dünya Atlası evren paketi',
+      '',
+      `Evren: ${bilgi.ad}`,
+      `Alındığı an: ${new Date(simdi).toISOString()}`,
+      `Kayıt: ${bilgi.kayitSayisi} (çöp kutusunda ${bilgi.copSayisi})`,
+      `Değişiklik: ${islemler.length}`,
+      `Görsel: ${medyaAdlari.length - eksik}${eksik ? ` (${eksik} görsel bu cihazda olmadığı için pakette yok)` : ''}`,
+      '',
+      'İçindekiler:',
+      '- paket.json: paketin özeti ve veri biçimi sürümü',
+      '- islemler.jsonl: evrende yapılmış bütün değişiklikler, yapıldıkları sırayla (her satır bir değişiklik).',
+      '  Kayıtlar, metinler, bağlantılar, ilişkiler, tarihler ve sürüm geçmişi bunlardan yeniden kurulur.',
+      '- medya/: görseller, içerikleriyle adlandırılmış olarak (her görsel bir kez)',
+      '',
+      'Geri yüklemek için: Dünya Atlası > Evrenler > Yedekten geri yükle.',
+    ].join('\n');
+    const zip = await zipYaz([
+      { ad: 'aciklama.txt', veri: new TextEncoder().encode(aciklama) },
+      { ad: 'paket.json', veri: new TextEncoder().encode(JSON.stringify(paket, null, 2)) },
+      { ad: 'islemler.jsonl', veri: new TextEncoder().encode(satirlar.join('\n')) },
+      ...dosyalar,
+    ]);
+    this.kurulum.ayarYaz(`son_yedek:${evren}`, String(simdi));
+    const gun = new Date(simdi).toISOString().slice(0, 10);
+    // Dosya adı yalnız İngiliz harfleriyle: bazı tarayıcılar Türkçe harfli indirme adını yok sayıyor.
+    const dosyaAdi = `${katla(bilgi.ad).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'evren'}-yedek-${gun}.zip`;
+    return { dosyaAdi, veri: zip };
+  }
+
+  sonYedek({ evren }: { evren: string }) {
+    const v = this.kurulum.ayar(`son_yedek:${evren}`);
+    return v ? Number(v) : null;
+  }
+
+  private async paketAc(veri: Uint8Array) {
+    if (!(veri instanceof Uint8Array)) throw new Error('Dosya okunamadı.');
+    const dosyalar = await zipOku(veri);
+    const p = dosyalar.get('paket.json');
+    const g = dosyalar.get('islemler.jsonl');
+    if (!p || !g) throw new Error('Bu dosya bir Dünya Atlası yedeği değil.');
+    const paket = JSON.parse(new TextDecoder().decode(p));
+    if (paket.bicim !== 'dunya-atlasi-paket') throw new Error('Bu dosya bir Dünya Atlası yedeği değil.');
+    if (Number(paket.veriBicimi) > VERI_BICIMI) throw new Error('Bu yedek programın daha yeni bir sürümüyle alınmış. Önce programı güncelleyin.');
+    if (!kodGecerliMi(paket.evren?.kod)) throw new Error('Yedekteki evren kodu bozuk.');
+    const metin = new TextDecoder().decode(g);
+    const islemler: Islem[] = metin ? metin.split('\n').filter(Boolean).map((satir, n) => {
+      const i = JSON.parse(satir);
+      if (!kodGecerliMi(i.kod) || !kodGecerliMi(i.kurulum) || typeof i.tur !== 'string' || !Number.isInteger(i.sira)) throw new Error(`Yedekte bozuk değişiklik (satır ${n + 1}).`);
+      return { ...i, ikili: i.ikili ? b64Coz(i.ikili) : null };
+    }) : [];
+    return { paket, islemler, dosyalar };
+  }
+
+  async yedekIncele({ veri }: { veri: Uint8Array }): Promise<YedekBilgisi> {
+    const { paket, islemler, dosyalar } = await this.paketAc(veri);
+    const mevcut = this.kurulum.evrenler().find((x) => x.kod === paket.evren.kod);
+    const medya = [...dosyalar.keys()].filter((a) => a.startsWith('medya/') && !a.endsWith('.onizleme')).length;
+    return {
+      evrenKod: paket.evren.kod, evrenAdi: String(paket.evren.ad), tarih: Number(paket.olusturma), islemSayisi: islemler.length,
+      kayitSayisi: Number(paket.kayitSayisi) || islemler.filter((i) => i.tur === 'kayit_olustur').length,
+      medyaSayisi: medya, eksikMedya: Number(paket.eksikMedya) || 0, mevcut: mevcut ? { kod: mevcut.kod, ad: mevcut.ad } : null,
+      veriBicimi: Number(paket.veriBicimi),
+    };
+  }
+
+  /**
+   * Yedeği geri yükler. Evren bu cihazda yoksa kendi koduyla geri gelir; varsa mevcut evrene dokunulmaz,
+   * yedek ayrı bir evren olarak açılır (kurtarma alanı, §10.8). İnceledikten sonra "yerine koy" denebilir.
+   */
+  async yedektenYukle({ veri }: { veri: Uint8Array }) {
+    const { paket, islemler, dosyalar } = await this.paketAc(veri);
+    const ayri = this.kurulum.evrenler().some((x) => x.kod === paket.evren.kod);
+    const kod = ayri ? yeniKod() : paket.evren.kod as string;
+    for (const [ad, icerik] of dosyalar) {
+      if (!ad.startsWith('medya/') || !this.medya) continue;
+      const dosya = ad.slice('medya/'.length);
+      if (!/^[0-9a-f]{64}(\.onizleme)?$/.test(dosya)) continue;
+      if (!dosya.endsWith('.onizleme') && (await icerikAdi(icerik)) !== dosya) throw new Error(`Yedekteki görsel bozuk: ${dosya}`);
+      if (!(await this.medya.var(dosya))) await this.medya.yaz(dosya, icerik);
+    }
+    const e = new EvrenVt(this.ac(`/evren-${kod}.db`), this.kurulum.kod);
+    if (e.islemSayisi() > 0) throw new Error('Bu cihazda aynı adlı bir evren dosyası zaten dolu.');
+    e.disaridanAl(islemler);
+    const adi = (e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined) ?? String(paket.evren.ad);
+    const gosterilen = ayri ? `${adi} (yedekten, ${new Date(Number(paket.olusturma)).toLocaleDateString('tr-TR')})` : adi;
+    if (ayri) e.islemYap([{ tur: 'evren_adlandir', veri: { ad: gosterilen } }]);
+    this.kurulum.evrenEkle(kod, gosterilen, Number(e.db.selectValue("SELECT v FROM evren WHERE k='olusturma'")) || Date.now());
+    this.acik.set(kod, e);
+    return { kod, ayri };
+  }
+
+  /** Geri yüklenen kopyayı asıl evrenin yerine koyar: kopya asıl adı alır, asıl "eski" diye adlanır. Hiçbir şey silinmez. */
+  evrenYerineKoy({ kopya, asil }: { kopya: string; asil: string }) {
+    if (kopya === asil) throw new Error('Aynı evren.');
+    const asilAd = this.evrenBilgisi({ evren: asil }).ad;
+    this.evrenBilgisi({ evren: kopya });
+    const eski = `${asilAd} (eski, ${new Date().toLocaleDateString('tr-TR')})`;
+    this.evrenAdlandir({ evren: asil, ad: eski });
+    this.evrenAdlandir({ evren: kopya, ad: asilAd });
+  }
+}
+
+function b64(b: Uint8Array): string {
+  let s = '';
+  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function b64Coz(s: string): Uint8Array {
+  const ham = atob(s);
+  const b = new Uint8Array(ham.length);
+  for (let i = 0; i < ham.length; i++) b[i] = ham.charCodeAt(i);
+  return b;
 }

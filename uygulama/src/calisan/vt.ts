@@ -17,7 +17,8 @@ const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', '
   'metinAc', 'metinKaydet', 'metinSurumu', 'metinGeriYukle',
   'ara', 'baglananlar', 'bahsedilenler', 'adDuzeltmeOnizle', 'adDuzeltmeUygula',
   'kayitTarih', 'alanKarari', 'hizliNot', 'nottanKayit', 'iliskiler', 'iliskiEkle', 'iliskiDegistir', 'iliskiSil', 'iliskiGeriYukle',
-  'sahneOlaylari', 'degisimEkle', 'degisimSil', 'kayitDegisimleri', 'gorselEkle', 'kayitGorselCikar', 'gorsel']);
+  'sahneOlaylari', 'degisimEkle', 'degisimSil', 'kayitDegisimleri', 'gorselEkle', 'kayitGorselCikar', 'gorsel',
+  'iceAktarIncele', 'iceAktar', 'yedekAl', 'yedekIncele', 'yedektenYukle', 'evrenYerineKoy', 'sonYedek']);
 
 function kurulumAdi(): string {
   const ua = navigator.userAgent;
