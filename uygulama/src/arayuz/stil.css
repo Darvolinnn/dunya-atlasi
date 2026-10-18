@@ -426,3 +426,27 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .serit-parca.sinir-bilinmiyor .serit-dolu { border-style: dotted; }
 .serit-an { position: absolute; top: 5px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--vurgu); }
 .serit-an-cizgisi { position: absolute; top: -4px; bottom: -4px; min-width: 2px; background: color-mix(in srgb, var(--tehlike) 35%, transparent); border-left: 2px solid var(--tehlike); pointer-events: none; }
+.alt-sekmeler { margin-top: -8px; font-size: 0.92rem; }
+.etki-raporu { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.etki-grubu ul { margin: 2px 0 0; padding-left: 20px; }
+.etki-grubu p { margin: 0; }
+.ns-kenar { fill: none; stroke: var(--metin-2); stroke-width: 1.6; }
+.ns-kenar.tur-kolaylastirdi { stroke-dasharray: 7 4; }
+.ns-kenar.tur-engelledi { stroke: var(--tehlike); }
+.ns-kenar.tur-tepki { stroke-dasharray: 2 3; }
+.ns-kenar.zaman-uyarisi { stroke: #b0700f; stroke-width: 2.4; }
+.ns-kenar.karar-fikir { opacity: 0.45; }
+.ns-engel-uc { stroke: var(--tehlike); stroke-width: 2.5; }
+.hat h3 { margin: 0; }
+.hat-eser { margin-top: 8px; }
+.hat-seridi { list-style: none; padding: 0; margin: 6px 0; display: flex; flex-wrap: wrap; gap: 2px; }
+.hat-seridi li { width: 22px; height: 22px; border-radius: 4px; background: var(--yuzey-2); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.hat-seridi li a { text-decoration: none; color: inherit; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.hat-seridi li.bagli { background: var(--vurgu-zemin); outline: 1px solid var(--vurgu); color: var(--vurgu); }
+.hat-listesi { margin: 4px 0 0; padding-left: 20px; }
+.tablo-kap { overflow: auto; max-height: 75vh; }
+.matris { border-collapse: collapse; font-size: 0.9rem; }
+.matris th, .matris td { border: 1px solid var(--cizgi); padding: 4px 8px; text-align: center; white-space: nowrap; }
+.matris tbody th { text-align: left; position: sticky; left: 0; background: var(--yuzey); }
+.matris thead th { position: sticky; top: 0; background: var(--yuzey-2); }
+.matris td.dolu { background: var(--vurgu-zemin); }

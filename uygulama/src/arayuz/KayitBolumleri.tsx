@@ -11,6 +11,7 @@ import { Gorsel, gorselAdresi } from './gorsel';
 import { git } from './Uygulama';
 import { takvimOrnegi, useTakvim } from './Takvim';
 import { gorseldeIsaretle } from './Harita';
+import { EtkiRaporuPaneli } from './Gorunumler';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -18,12 +19,20 @@ const hataYaz = (e: unknown) => (e as Error).message;
 export function TarihAlani({ istemci, evren, kayit }: { istemci: Istemci; evren: string; kayit: Kayit }) {
   const [yerel, setYerel] = useState(kayit.tarih?.ifade ?? '');
   const [hata, setHata] = useState<string | null>(null);
+  // Tarih değişince etki raporu (§9.2): önceki ifade saklanır, böylece tek dokunuşla geri dönülebilir (T4).
+  const [etki, setEtki] = useState<{ once: string | null } | null>(null);
   useEffect(() => setYerel(kayit.tarih?.ifade ?? ''), [kayit.tarih?.ifade]);
+  useEffect(() => setEtki(null), [kayit.kod]);
   const takvim = useTakvim(istemci, evren);
   const onizleme = tarihCoz(yerel, takvim);
   const bitir = async () => {
-    if (yerel.trim() === (kayit.tarih?.ifade ?? '')) return;
-    try { await istemci.iste('kayitTarih', { evren, kod: kayit.kod, ifade: yerel }); setHata(null); } catch (e) { setHata(hataYaz(e)); }
+    const once = kayit.tarih?.ifade ?? '';
+    if (yerel.trim() === once) return;
+    try {
+      await istemci.iste('kayitTarih', { evren, kod: kayit.kod, ifade: yerel });
+      setHata(null);
+      if (once) setEtki({ once });
+    } catch (e) { setHata(hataYaz(e)); }
   };
   const sahneden = !kayit.tarih && kayit.sahneOlayi && kayit.sahneTarihi;
   return (
@@ -39,6 +48,10 @@ export function TarihAlani({ istemci, evren, kayit }: { istemci: Istemci; evren:
           : onizleme ? tarihAciklamasi(onizleme, takvim) : <>Takvimi evrenin “Takvim” sekmesinden tanımlayabilirsin.</>}
       </span>
       {hata && <span class="hata kucuk">{hata}</span>}
+      {!etki && kayit.tarih && <button class="dugme sade kucuk" style="align-self:flex-start" onClick={() => setEtki({ once: null })}>Bu tarih değişirse neler etkilenir?</button>}
+      {etki && <EtkiRaporuPaneli istemci={istemci} evren={evren} kod={kayit.kod} once={etki.once}
+        geriAl={etki.once ? async () => { await istemci.iste('kayitTarih', { evren, kod: kayit.kod, ifade: etki.once! }); setEtki(null); } : null}
+        kapat={() => setEtki(null)} />}
     </div>
   );
 }

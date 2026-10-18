@@ -8,9 +8,14 @@ import { Bahsedilenler, CopKutusu, KayitListesi } from './KayitListesi';
 import { Masa } from './Masa';
 import { TakvimSekmesi, ZamanCizelgesi } from './Takvim';
 import { HaritalarSekmesi } from './Harita';
-import { AgGorunumu, DurumGecmisiSekmesi, SoyAgaciGorunumu } from './Gorunumler';
+import { AgGorunumu, BolumMatrisiGorunumu, DurumGecmisiSekmesi, KurguHatlariGorunumu, NedenSonucGorunumu, SoyAgaciGorunumu } from './Gorunumler';
 import { IncelemeKuyrugu } from './Inceleme';
 import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
+
+/** İnceleme görünümleri (§7) tek sekme altında; aynı verinin farklı çizimleri. */
+const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy', 'Soy ağacı'], ['neden', 'Neden–sonuç'], ['durumlar', 'Durum geçmişi'],
+  ['hatlar', 'Kurgu hatları'], ['matris', 'Bölüm × kayıt']] as const;
+let sonGorunum = 'cizelge';
 
 export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Istemci; kod: string; sekme: string; alt?: string | null }) {
   const [bilgi, setBilgi] = useState<EvrenBilgisi | null>(null);
@@ -20,6 +25,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
   useEffect(() => { istemci.iste('evrenBilgisi', { evren: kod }).then(setBilgi, (e) => setHata(e.message)); }, [kod, surum]);
   useEffect(() => istemci.dinle((d) => { if (d.evren === kod) setSurum((s) => s + 1); }), [kod]);
 
+  if (GORUNUMLER.some(([g]) => g === sekme)) sonGorunum = sekme;
   if (hata) return <main class="sayfa"><p class="hata">{hata}</p><a href="#/">Evrenlere dön</a></main>;
   if (!bilgi) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
 
@@ -34,11 +40,17 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
         <AdBasligi istemci={istemci} bilgi={bilgi} />
         <p class="soluk kucuk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
         <div class="sekmeler" role="tablist">
-          {([['masa', 'Masa'], ['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['meseleler', 'Açık meseleler'], ['sablonlar', 'Şablonlar'], ['haritalar', 'Haritalar'], ['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy', 'Soy ağacı'], ['durumlar', 'Durum geçmişi'], ['takvim', 'Takvim'], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
+          {([['masa', 'Masa'], ['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['meseleler', 'Açık meseleler'], ['sablonlar', 'Şablonlar'], ['haritalar', 'Haritalar'], ['gorunumler', 'Görünümler'], ['takvim', 'Takvim'], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
             ['inceleme', bilgi.catismaSayisi + bilgi.sorunSayisi ? `İnceleme (${bilgi.catismaSayisi + bilgi.sorunSayisi})` : 'İnceleme']] as const).map(([k, ad]) => (
-            <button class="sekme" role="tab" aria-selected={sekme === k} onClick={() => git(`/e/${kod}/${k}`)}>{ad}</button>
+            <button class="sekme" role="tab" aria-selected={k === 'gorunumler' ? GORUNUMLER.some(([g]) => g === sekme) : sekme === k}
+              onClick={() => git(`/e/${kod}/${k === 'gorunumler' ? sonGorunum : k}`)}>{ad}</button>
           ))}
         </div>
+        {GORUNUMLER.some(([g]) => g === sekme) && (
+          <div class="sekmeler alt-sekmeler" role="tablist" aria-label="Görünümler">
+            {GORUNUMLER.map(([k, ad]) => <button class="sekme" role="tab" aria-selected={sekme === k} onClick={() => git(`/e/${kod}/${k}`)}>{ad}</button>)}
+          </div>
+        )}
         {sekme === 'inceleme' ? <IncelemeKuyrugu istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
           : sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
@@ -51,6 +63,9 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           : sekme === 'ag' ? <AgGorunumu istemci={istemci} evren={kod} merkez={alt} />
           : sekme === 'soy' ? <SoyAgaciGorunumu istemci={istemci} evren={kod} odak={alt} />
           : sekme === 'durumlar' ? <DurumGecmisiSekmesi istemci={istemci} evren={kod} ozellik={alt} />
+          : sekme === 'neden' ? <NedenSonucGorunumu istemci={istemci} evren={kod} merkez={alt} />
+          : sekme === 'hatlar' ? <KurguHatlariGorunumu istemci={istemci} evren={kod} />
+          : sekme === 'matris' ? <BolumMatrisiGorunumu istemci={istemci} evren={kod} eser={alt} />
           : sekme === 'takvim' ? <TakvimSekmesi istemci={istemci} evren={kod} />
           : sekme === 'sablonlar' ? <SablonlarSekmesi istemci={istemci} evren={kod} tur={alt} />
           : <Masa istemci={istemci} evren={kod} surum={surum} ekler={<MasaPusulasi istemci={istemci} evren={kod} kayitSayisi={bilgi.kayitSayisi} />} />}

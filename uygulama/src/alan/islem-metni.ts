@@ -54,7 +54,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   isaret_geri_yukle: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki işareti geri getirildi`,
   kayit_birlestir: (v, ad) => `“${v.kaynakAd}” kaydı ${ad(v.hedef)} ile birleştirildi`,
   birlesme_geri_al: (v, ad) => `“${v.kaynakAd}” ile ${ad(v.hedef)} birleştirmesi geri alındı`,
-  inceleme_karari: (v) => v.durum === 'kabul' ? `İnceleme: “${v.baslik}” gerekçeyle kabul edildi` : v.durum === 'ertelendi' ? `İnceleme: “${v.baslik}” ertelendi` : `İnceleme: “${v.baslik}” yeniden açıldı`,
+  inceleme_karari: (v) => v.durum === 'kabul' ? `İnceleme: “${v.baslik}” gerekçeyle kabul edildi` : v.durum === 'ertelendi' ? `İnceleme: “${v.baslik}” ertelendi` : v.durum === 'duzeltildi' ? `İnceleme: “${v.baslik}” düzeltildi olarak kapandı` : `İnceleme: “${v.baslik}” yeniden açıldı`,
   takvim_yaz: (v) => v.takvim ? `Evrenin takvimi değişti (sürüm ${(v.takvim as { surum: number }).surum}); tarihlerin yeri yeniden hesaplandı` : 'Evrenin takvimi varsayılana döndü',
   sablon_yaz: (v) => v.sablon ? `“${turBul(String(v.tur)).ad}” şablonu değişti` : `“${turBul(String(v.tur)).ad}” şablonu varsayılana döndü`,
   kayit_alan: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” ${v.deger === null || v.deger === '' || v.deger === false ? 'boşaltıldı' : 'değişti'}`,

@@ -2,8 +2,8 @@
 // kayıtlarını gösterir; burada değiştirilen bir şey yoktur, düzenleme kaydın sayfasında yapılır.
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { AgKenari, AgSonucu, DurumGecmisi, DurumSatiri, SoyAgaci } from '../veri/api';
-import { ILISKI_TURLERI, iliskiTuruBul } from '../alan/iliski-turleri';
+import type { AgKenari, AgSonucu, BolumMatrisi, DurumGecmisi, DurumSatiri, EtkiRaporu, KurguHatlari, NedenSonucAgi, SoyAgaci } from '../veri/api';
+import { ILISKI_TURLERI, iliskiTuruBul, rolAdi } from '../alan/iliski-turleri';
 import { TURLER, turBul } from '../alan/turler';
 import { eksenYili, tarihAciklamasi, type EvrenTarihi, type Takvim } from '../alan/tarih';
 import { KararRozeti } from './ortak';
@@ -482,5 +482,260 @@ export function DurumSeritleri({ satirlar, takvim, an }: { evren: string; satirl
         </li>
       ))}
     </ol>
+  );
+}
+
+// ---------- Etki raporu (§9.2) ----------
+export function EtkiRaporuPaneli({ istemci, evren, kod, once, geriAl, kapat }: {
+  istemci: Istemci; evren: string; kod: string; once: string | null; geriAl: (() => Promise<void>) | null; kapat: () => void;
+}) {
+  const [r, setR] = useState<EtkiRaporu | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  useEffect(() => { istemci.iste('etkiRaporu', { evren, kod }).then(setR, (e) => setHata(hataYaz(e))); }, [evren, kod]);
+  const grup = (baslik: string, aciklama: string, l: EtkiRaporu['hesap']) => (
+    <div class="etki-grubu">
+      <strong class="kucuk">{baslik} ({l.length})</strong>
+      <p class="soluk kucuk">{aciklama}</p>
+      {l.length > 0 && <ul class="kucuk">{l.map((x, i) => <li key={x.kod + i}><a href={`#/e/${evren}/k/${x.kod}`}>{x.ad}</a> <span class="soluk">· {turBul(x.tur).ad}</span> — {x.aciklama}</li>)}</ul>}
+    </div>
+  );
+  return (
+    <section class="uyari etki-raporu" role="region" aria-label="Etki raporu">
+      <div class="satir">
+        <strong>{once ? `Tarih değişti (önceki: “${once}”). Etkilenebilecekler:` : 'Bu kaydın tarihi değişirse etkilenebilecekler:'}</strong>
+        <span class="bosluk" />
+        <button class="dugme sade kucuk" onClick={kapat}>Kapat</button>
+      </div>
+      {hata && <p class="hata kucuk">{hata}</p>}
+      {r && <>
+        {grup('Kendiliğinden yeniden hesaplananlar', 'Bu kayda bağlı tarihler ve yaşlar; elle bir şey yapman gerekmez.', r.hesap)}
+        {grup('İncelenmesi gerekenler', once ? 'Açıkça kurduğun bağlar yüzünden; inceleme listesine eklendi.' : 'Açıkça kurduğun bağlar yüzünden; tarih değişirse inceleme listesine eklenir.', r.bagimli)}
+        {grup('Yalnızca bahsedenler', 'Metninde bu kayda bağlantı olanlar; bilgi içindir, incelemeye açılmaz.', r.bahseden)}
+      </>}
+      {geriAl && <div class="satir"><button class="dugme kucuk" onClick={() => geriAl().catch((e) => setHata(hataYaz(e)))}>Önceki tarihe dön</button></div>}
+    </section>
+  );
+}
+
+// ---------- Neden–sonuç ağı ----------
+const NS_EN = 170, NS_BOY = 48, NS_KAT = 240, NS_ARA = 22;
+
+function nedenYerlesimi(a: NedenSonucAgi) {
+  const kodlar = a.dugumler.map((d) => d.kod);
+  const katman = new Map(kodlar.map((k) => [k, 0]));
+  // En uzun yol katmanı; döngü varsa sınırlı tur sonunda durur.
+  for (let tur = 0; tur < kodlar.length; tur++) {
+    let degisti = false;
+    for (const e of a.kenarlar) {
+      if (e.a === e.b) continue;
+      const y = katman.get(e.a)! + 1;
+      if (y > katman.get(e.b)! && y < kodlar.length) { katman.set(e.b, y); degisti = true; }
+    }
+    if (!degisti) break;
+  }
+  const katlar = new Map<number, string[]>();
+  for (const k of kodlar) { const n = katman.get(k)!; katlar.set(n, [...(katlar.get(n) ?? []), k]); }
+  const konum = new Map<string, Nokta>();
+  let maxY = 0;
+  for (const [n, l] of katlar) l.forEach((k, i) => { konum.set(k, { x: n * NS_KAT, y: i * (NS_BOY + NS_ARA) }); maxY = Math.max(maxY, i * (NS_BOY + NS_ARA)); });
+  return { konum, genislik: (Math.max(...katlar.keys()) + 1) * NS_KAT - (NS_KAT - NS_EN) + 80, yukseklik: maxY + NS_BOY + 80 };
+}
+
+export function NedenSonucGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren: string; merkez: string | null }) {
+  const n = useYenile(istemci, evren);
+  const takvim = useTakvim(istemci, evren);
+  const [tumu, setTumu] = useState(!merkez);
+  const [derinlik, setDerinlik] = useState(3);
+  const [a, setA] = useState<NedenSonucAgi | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  const merkezAdi = useKayitAdi(istemci, evren, merkez);
+  useEffect(() => { if (merkez) setTumu(false); }, [merkez]);
+  const etkin = merkez && !tumu ? merkez : null;
+  useEffect(() => {
+    istemci.iste('nedenSonucAgi', { evren, merkez: etkin, derinlik }).then((x) => { setA(x); setHata(null); }, (e) => setHata(hataYaz(e)));
+  }, [evren, etkin, derinlik, n]);
+  const y = useMemo(() => (a && a.dugumler.length ? nedenYerlesimi(a) : null), [a]);
+  const ad = new Map((a?.dugumler ?? []).map((d) => [d.kod, d]));
+  return (
+    <div class="gorunum">
+      <div class="satir">
+        <span>Olay</span>
+        <KayitSec istemci={istemci} evren={evren} secili={merkez && merkezAdi ? { kod: merkez, ad: merkezAdi } : null}
+          sec={(s) => { if (s) { setTumu(false); git(`/e/${evren}/neden/${s.kod}`); } }} etiket="Bir olay seç" />
+        <button class={`dugme kucuk ${tumu ? 'ana' : ''}`} aria-pressed={tumu} onClick={() => setTumu(!tumu)}>Bütün bağlar</button>
+        {!tumu && (
+          <label class="satir kucuk"><span class="soluk">Uzaklık</span>
+            <select class="girdi kucuk-girdi" value={derinlik} onChange={(e) => setDerinlik(Number((e.target as HTMLSelectElement).value))}>
+              {[1, 2, 3, 4, 5, 6].map((x) => <option value={x}>{x} adım</option>)}
+            </select></label>
+        )}
+      </div>
+      <p class="soluk kucuk">Yalnızca açıkça kurduğun “yol açtı, kolaylaştırdı, engelledi, tepki olarak gerçekleşti” bağları. Aynı tarihte olmak neden bağı sayılmaz. Bağları olayların sayfasındaki “İlişkiler” bölümünden kurarsın.</p>
+      {hata && <p class="hata">{hata}</p>}
+      {a && !a.dugumler.length && <p class="soluk">Gösterilecek neden–sonuç bağı yok.</p>}
+      {a && y && (
+        <>
+          <div class="cizim-alani" role="region" aria-label="Neden–sonuç çizimi">
+            <svg class="neden-agi" width={y.genislik} height={y.yukseklik} viewBox={`-40 -40 ${y.genislik} ${y.yukseklik}`}>
+              <defs>
+                <marker id="ns-ok" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="ag-ok" /></marker>
+                <marker id="ns-engel" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M8,0 L8,10" class="ns-engel-uc" /></marker>
+              </defs>
+              {a.kenarlar.map((e) => {
+                const p = y.konum.get(e.a)!, q = y.konum.get(e.b)!;
+                const ileri = q.x > p.x;
+                const d = ileri
+                  ? `M${p.x + NS_EN},${p.y + NS_BOY / 2} C${p.x + NS_EN + 50},${p.y + NS_BOY / 2} ${q.x - 50},${q.y + NS_BOY / 2} ${q.x},${q.y + NS_BOY / 2}`
+                  : `M${p.x + NS_EN / 2},${p.y + NS_BOY} C${p.x + NS_EN / 2},${p.y + NS_BOY + 60} ${q.x + NS_EN / 2},${q.y + NS_BOY + 60} ${q.x + NS_EN / 2},${q.y + NS_BOY}`;
+                return (
+                  <path key={e.kod} d={d} class={`ns-kenar tur-${e.tur} ${e.zamanUyarisi ? 'zaman-uyarisi' : ''} karar-${e.karar}`} marker-end={e.tur === 'engelledi' ? 'url(#ns-engel)' : 'url(#ns-ok)'}>
+                    <title>{`${ad.get(e.a)?.ad} → ${ad.get(e.b)?.ad}: ${e.aIcin.toLocaleLowerCase('tr-TR')}${e.zamanUyarisi ? '. ' + e.zamanUyarisi : ''}`}</title>
+                  </path>
+                );
+              })}
+              {a.dugumler.map((d) => {
+                const p = y.konum.get(d.kod)!;
+                return (
+                  <a key={d.kod} href={`#/e/${evren}/neden/${d.kod}`} aria-label={d.ad}>
+                    <g class={`soy-kutu ${grupSinifi(d.tur)} ${d.kod === a.merkez ? 'odak' : ''} karar-${d.karar}`} transform={`translate(${p.x},${p.y})`}>
+                      <rect width={NS_EN} height={NS_BOY} rx={8} />
+                      <text x={NS_EN / 2} y={20} text-anchor="middle" class="ad">{kisalt(d.ad, 22)}</text>
+                      <text x={NS_EN / 2} y={37} text-anchor="middle" class="tur">{d.tarih ? kisalt(tarihAciklamasi(d.tarih, takvim), 26) : 'tarihsiz'}</text>
+                    </g>
+                  </a>
+                );
+              })}
+            </svg>
+          </div>
+          <ul class="soy-aciklama kucuk soluk" aria-label="Çizgilerin anlamı">
+            {(['neden', 'kolaylastirdi', 'engelledi', 'tepki'] as const).map((t) => (
+              <li key={t}><svg width="36" height="10"><line class={`ns-kenar tur-${t}`} x1="0" y1="5" x2="36" y2="5" /></svg> {iliskiTuruBul(t).aIcin}</li>
+            ))}
+            <li><svg width="36" height="10"><line class="ns-kenar zaman-uyarisi" x1="0" y1="5" x2="36" y2="5" /></svg> Neden, sonucundan sonra görünüyor</li>
+          </ul>
+          {a.kenarlar.some((e) => e.zamanUyarisi) && (
+            <div class="uyari kucuk" role="status">
+              <strong>Tarih sırası tutmayan bağlar</strong>
+              <ul>{a.kenarlar.filter((e) => e.zamanUyarisi).map((e) => <li key={e.kod}>{ad.get(e.a)?.ad} ({ad.get(e.a)?.tarih?.ifade}) → {ad.get(e.b)?.ad} ({ad.get(e.b)?.tarih?.ifade}): {e.aIcin.toLocaleLowerCase('tr-TR')}</li>)}</ul>
+              <p class="soluk">Bu bir uyarıdır; bağ ya da tarihlerden biri bilerek böyle olabilir.</p>
+            </div>
+          )}
+          <details>
+            <summary>Bağlar liste olarak ({a.kenarlar.length})</summary>
+            <ul class="kucuk">{a.kenarlar.map((e) => <li key={e.kod}>{ad.get(e.a)?.ad} → {ad.get(e.b)?.ad}: {e.aIcin.toLocaleLowerCase('tr-TR')}</li>)}</ul>
+          </details>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ---------- Kurgu hatları ----------
+const HAT_ISARETI: Record<string, string> = { gelisme: '●', ipucu_planlandi: '○', ipucu_yerlesti: '◆', ipucu_karsilik: '★', ipucu_vazgecildi: '×' };
+
+export function KurguHatlariGorunumu({ istemci, evren }: { istemci: Istemci; evren: string }) {
+  const n = useYenile(istemci, evren);
+  const [k, setK] = useState<KurguHatlari | null>(null);
+  useEffect(() => { istemci.iste('kurguHatlari', { evren }).then(setK, () => setK({ hatlar: [] })); }, [evren, n]);
+  if (!k) return <p class="soluk">Açılıyor…</p>;
+  if (!k.hatlar.length) return <p class="soluk">Henüz kurgu hattı yok. “Kurgu hattı” türünde bir kayıt açıp sahnelerin sayfasından “Bağlı olduğu kurgu hattı” ilişkisiyle bağlayabilirsin.</p>;
+  return (
+    <div class="gorunum">
+      <p class="soluk kucuk">Her hat için eserin sahneleri okuma sırasıyla; hatta bağlı sahneler işaretli. {Object.entries(HAT_ISARETI).map(([r, i]) => `${i} ${rolAdi('kurgu_hattinda', r)}`).join(' · ')}</p>
+      {k.hatlar.map((h) => (
+        <section key={h.kod} class="kart hat">
+          <div class="satir"><h3><a href={`#/e/${evren}/k/${h.kod}`}>{h.ad}</a></h3> <KararRozeti karar={h.karar} />
+            {Object.keys(h.ipucu).length > 0 && <span class="soluk kucuk">İpuçları: {Object.entries(h.ipucu).map(([r, s]) => `${s} ${(rolAdi('kurgu_hattinda', r) ?? '').replace('İpucu: ', '')}`).join(', ')}</span>}
+          </div>
+          {!h.eserler.length && !h.yerlesmemis.length && <p class="soluk kucuk">Bu hatta bağlı sahne yok.</p>}
+          {h.eserler.map((x) => (
+            <div key={x.eser.kod} class="hat-eser">
+              <div class="kucuk"><strong>{x.eser.ad}</strong> <span class="soluk">· {x.toplam} sahne{x.sonrakiSahne !== null && (x.sonrakiSahne === 0 ? ' · son bağlı sahne eserin son sahnesi' : ` · son bağlı sahne ${x.sonrakiSahne} sahne önceydi`)}</span></div>
+              <ol class="hat-seridi" aria-label={`${x.eser.ad} sahneleri`}>
+                {x.sahneler.map((s) => (
+                  <li key={s.kod} class={s.baglar.length ? 'bagli' : ''} title={`${s.sira}. ${s.ad}${s.bolum ? ` (${s.bolum})` : ''}${s.baglar.map((b) => `\n${b.rolAdi ?? ''}${b.aciklama ? ': ' + b.aciklama : ''}`).join('')}`}>
+                    <a href={`#/e/${evren}/k/${s.kod}`} aria-label={`${s.sira}. ${s.ad}`}>{s.baglar.length ? s.baglar.map((b) => HAT_ISARETI[b.rol ?? ''] ?? '●').join('') : ''}</a>
+                  </li>
+                ))}
+              </ol>
+              <ul class="kucuk hat-listesi">
+                {x.sahneler.filter((s) => s.baglar.length).map((s) => (
+                  <li key={s.kod}>{s.sira}. <a href={`#/e/${evren}/k/${s.kod}`}>{s.ad}</a>{s.bolum && <span class="soluk"> · {s.bolum}</span>} — {s.baglar.map((b) => `${b.rolAdi ?? ''}${b.aciklama ? ` (${b.aciklama})` : ''}`).join('; ')}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          {h.yerlesmemis.length > 0 && <p class="kucuk soluk">Hiçbir esere yerleşmemiş: {h.yerlesmemis.map((y) => y.ad).join(', ')}</p>}
+        </section>
+      ))}
+    </div>
+  );
+}
+
+// ---------- Bölüm × kayıt matrisi ----------
+const KATMANLAR = [
+  { kod: 'bulunuyor', ad: 'Sahnede bulunuyor', kisa: 'B' },
+  { kod: 'aniliyor', ad: 'Anılıyor', kisa: 'A' },
+  { kod: 'bakis', ad: 'Bakış açısı', kisa: 'G' },
+  { kod: 'etki', ad: 'Olay etkisi', kisa: 'E' },
+] as const;
+
+export function BolumMatrisiGorunumu({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string | null }) {
+  const n = useYenile(istemci, evren);
+  const [eserler, setEserler] = useState<{ kod: string; ad: string }[] | null>(null);
+  const [tur, setTur] = useState('');
+  const [katman, setKatman] = useState<string[]>(KATMANLAR.map((k) => k.kod));
+  const [m, setM] = useState<BolumMatrisi | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  useEffect(() => { istemci.iste('eserler', { evren }).then(setEserler, () => setEserler([])); }, [evren, n]);
+  const secili = eser ?? (eserler?.length === 1 ? eserler[0].kod : null);
+  useEffect(() => {
+    if (!secili) { setM(null); return; }
+    istemci.iste('bolumMatrisi', { evren, eser: secili, turler: tur ? [tur] : null }).then((x) => { setM(x); setHata(null); }, (e) => setHata(hataYaz(e)));
+  }, [evren, secili, tur, n]);
+  if (!eserler) return <p class="soluk">Açılıyor…</p>;
+  if (!eserler.length) return <p class="soluk">Henüz eser yok. “Eser” türünde bir kayıt açıp bölüm ve sahnelerini ekleyebilirsin.</p>;
+  const turler = m ? [...new Set(m.satirlar.map((s) => s.kayit.tur))] : [];
+  return (
+    <div class="gorunum">
+      <div class="satir">
+        <label class="satir"><span>Eser</span>
+          <select class="girdi kucuk-girdi" value={secili ?? ''} onChange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v) git(`/e/${evren}/matris/${v}`); }}>
+            <option value="">Seç…</option>
+            {eserler.map((x) => <option value={x.kod}>{x.ad}</option>)}
+          </select></label>
+        <select class="girdi kucuk-girdi" aria-label="Kayıt türü" value={tur} onChange={(e) => setTur((e.target as HTMLSelectElement).value)}>
+          <option value="">Bütün kayıt türleri</option>
+          {(tur ? [tur, ...turler.filter((t) => t !== tur)] : turler).map((t) => <option value={t}>{turBul(t).ad}</option>)}
+        </select>
+        {KATMANLAR.map((k) => (
+          <label key={k.kod} class="satir kucuk"><input type="checkbox" checked={katman.includes(k.kod)}
+            onChange={(e) => setKatman((e.target as HTMLInputElement).checked ? [...katman, k.kod] : katman.filter((x) => x !== k.kod))} /> {k.kisa}: {k.ad}</label>
+        ))}
+      </div>
+      <p class="soluk kucuk">Hücrede her katman kaç sahnede olduğunu gösterir. “Görünüyor”: sahnede bulunduğu sahne sayısı; “konu oluyor”: herhangi bir biçimde yer aldığı sahne sayısı. Bilgi edinme ve okura açıklanma katmanları bilgi kayıtları gelince eklenecek.</p>
+      {hata && <p class="hata">{hata}</p>}
+      {m && !m.sutunlar.length && <p class="soluk">Bu eserde sahne yok.</p>}
+      {m && m.sutunlar.length > 0 && (
+        <div class="tablo-kap">
+          <table class="matris">
+            <thead><tr><th scope="col">Kayıt</th>{m.sutunlar.map((s) => <th key={s.kod} scope="col"><a href={`#/e/${evren}/k/${s.kod}`}>{kisalt(s.ad, 18)}</a><div class="soluk kucuk">{s.sahneSayisi} sahne</div></th>)}<th scope="col">Görünüyor</th><th scope="col">Konu oluyor</th></tr></thead>
+            <tbody>
+              {m.satirlar.map((r) => (
+                <tr key={r.kayit.kod}>
+                  <th scope="row"><a href={`#/e/${evren}/k/${r.kayit.kod}`}>{r.kayit.ad}</a> <span class="soluk kucuk">{turBul(r.kayit.tur).ad}</span></th>
+                  {r.hucreler.map((h, i) => {
+                    const parca = KATMANLAR.filter((k) => katman.includes(k.kod) && h[k.kod] > 0);
+                    return <td key={i} class={parca.length ? 'dolu' : ''} title={KATMANLAR.map((k) => `${k.ad}: ${h[k.kod]}`).join('\n')}>{parca.map((k) => `${k.kisa}${h[k.kod] > 1 ? h[k.kod] : ''}`).join(' ')}</td>;
+                  })}
+                  <td>{r.gorunduguSahne}</td><td>{r.konuOlduguSahne}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!m.satirlar.length && <p class="soluk">Bu eserin sahnelerinde yer alan kayıt yok.</p>}
+        </div>
+      )}
+    </div>
   );
 }

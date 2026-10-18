@@ -41,6 +41,15 @@ export const ES_ROLLERI = [
   { kod: 'siyasi', ad: 'Siyasi evlilik' },
 ];
 
+/** Kurgu hattına bağlı sahne (§4.6): hattı ilerletir ya da bir ipucu taşır; ipucunun durumu. */
+export const HAT_ROLLERI = [
+  { kod: 'gelisme', ad: 'Hattı ilerletir' },
+  { kod: 'ipucu_planlandi', ad: 'İpucu: planlandı' },
+  { kod: 'ipucu_yerlesti', ad: 'İpucu: metne yerleştirildi' },
+  { kod: 'ipucu_karsilik', ad: 'İpucu: karşılığı verildi' },
+  { kod: 'ipucu_vazgecildi', ad: 'İpucu: vazgeçildi' },
+];
+
 export const ILISKI_TURLERI: IliskiTuru[] = [
   { kod: 'ebeveyn', aIcin: 'Çocuğu', bIcin: 'Ebeveyni', karsilikli: false, grup: 'Aile', roller: EBEVEYN_ROLLERI, rolIstegeBagli: true },
   { kod: 'es', aIcin: 'Eşi', bIcin: 'Eşi', karsilikli: true, grup: 'Aile', roller: ES_ROLLERI, rolIstegeBagli: true },
@@ -68,7 +77,11 @@ export const ILISKI_TURLERI: IliskiTuru[] = [
   { kod: 'bakis', aIcin: 'Bakış açısı olduğu sahne', bIcin: 'Bakış açısı', karsilikli: false, grup: 'Sahne ve olay' },
   { kod: 'anlatici', aIcin: 'Anlatıcısı olduğu sahne', bIcin: 'Anlatıcı', karsilikli: false, grup: 'Sahne ve olay' },
   { kod: 'odak', aIcin: 'Odak karakteri olduğu sahne', bIcin: 'Odak karakter', karsilikli: false, grup: 'Sahne ve olay' },
-  { kod: 'neden', aIcin: 'Yol açtığı', bIcin: 'Nedeni', karsilikli: false, grup: 'Sahne ve olay' },
+  { kod: 'neden', aIcin: 'Yol açtığı', bIcin: 'Nedeni', karsilikli: false, grup: 'Neden ve sonuç' },
+  { kod: 'kolaylastirdi', aIcin: 'Kolaylaştırdığı', bIcin: 'Onu kolaylaştıran', karsilikli: false, grup: 'Neden ve sonuç' },
+  { kod: 'engelledi', aIcin: 'Engellediği', bIcin: 'Onu engelleyen', karsilikli: false, grup: 'Neden ve sonuç' },
+  { kod: 'tepki', aIcin: 'Doğurduğu tepki', bIcin: 'Tepki verdiği', karsilikli: false, grup: 'Neden ve sonuç' },
+  { kod: 'kurgu_hattinda', aIcin: 'Bağlı olduğu kurgu hattı', bIcin: 'Hattın sahnesi', karsilikli: false, grup: 'Yazarlık', roller: HAT_ROLLERI },
   { kod: 'mesele_konusu', aIcin: 'İlgili olduğu kayıt', bIcin: 'Açık meselesi', karsilikli: false, grup: 'Yazarlık' },
   { kod: 'gerekce_konusu', aIcin: 'Etkilediği kayıt', bIcin: 'Gerekçe kaydı', karsilikli: false, grup: 'Yazarlık' },
   { kod: 'nottan', aIcin: 'Dönüştüğü kayıt', bIcin: 'Doğduğu not', karsilikli: false, grup: 'Genel' },

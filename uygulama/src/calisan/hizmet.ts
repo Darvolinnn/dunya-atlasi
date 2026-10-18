@@ -110,7 +110,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       kayitSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NULL')),
       copSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NOT NULL AND kod NOT IN (SELECT kod FROM yonlendirmeler)')),
       catismaSayisi: this.catismaSayisi({ evren }),
-      sorunSayisi: saglik.acikSorunSayisi(e),
+      sorunSayisi: saglik.acikSorunSayisi(e) + gorunum.etkiIncelemeleri(e).acik.length,
     };
   }
 
@@ -1278,6 +1278,22 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     return [...gruplar.values()].sort((x, y) => turkceKarsilastir(x[0].ozellik, y[0].ozellik)).map((ds) => ({ ozellik: ds[0].ozellik, an: null, kayitlar: [{ kod, ad: r.ad as string, tur: r.tur as string, durumlar: ds }] }));
   }
+
+  nedenSonucAgi({ evren, merkez = null, derinlik }: { evren: string; merkez?: string | null; derinlik?: number }) { return gorunum.nedenSonucAgi(this.evren(evren), merkez, derinlik); }
+  etkiRaporu({ evren, kod }: { evren: string; kod: string }) { return gorunum.etkiRaporu(this.evren(evren), kod); }
+  etkiIncelemeleri({ evren }: { evren: string }) { return gorunum.etkiIncelemeleri(this.evren(evren)); }
+  /** Etki incelemesini kapatma (§9.3): düzeltildi, gerekçeyle kabul ya da ertele; null yeniden açar. */
+  etkiKarari({ evren, anahtar, durum, gerekce = '' }: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null; gerekce?: string }) {
+    const e = this.evren(evren);
+    const x = gorunum.etkiKarari(e, String(anahtar));
+    if (durum !== null && !['kabul', 'ertelendi', 'duzeltildi'].includes(durum)) throw new Error('Geçersiz karar.');
+    const g = String(gerekce ?? '').replace(/\s+/g, ' ').trim();
+    if (durum === 'kabul' && !g) throw new Error('Kabul ederken kısa bir gerekçe yaz.');
+    if (g.length > 500) throw new Error('Gerekçe çok uzun.');
+    this.yaz(evren, [{ tur: 'inceleme_karari', veri: { anahtar, durum, gerekce: g, dayanak: x.dayanak, baslik: x.baslik } }], [x.kayit]);
+  }
+  kurguHatlari({ evren }: { evren: string }) { return gorunum.kurguHatlari(this.evren(evren)); }
+  bolumMatrisi({ evren, eser, turler = null }: { evren: string; eser: string; turler?: string[] | null }) { return gorunum.bolumMatrisi(this.evren(evren), eser, turler); }
 
   // ---------- Harita: yükle, işaretle, bağla (§8.1) ----------
   private haritaBaglami(evren: string): harita.HaritaBaglami {

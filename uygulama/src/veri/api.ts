@@ -212,7 +212,7 @@ export interface BirlesmeOnizlemesi {
   baglantilar: number; gorseller: number; metinVar: boolean;
 }
 /** Sağlık taraması (§9.4) ve inceleme kararları (§9.3). */
-export interface IncelemeKarari { durum: 'kabul' | 'ertelendi'; gerekce: string; zaman: number }
+export interface IncelemeKarari { durum: 'kabul' | 'ertelendi' | 'duzeltildi'; gerekce: string; zaman: number }
 export interface SaglikBulgusu {
   anahtar: string; tur: 'kopuk_baglanti' | 'silinmis_baglanti' | 'vazgecilmis_baglanti' | 'eksik_gorsel' | 'kod_sorunu' | 'baglantisiz_fikir' | 'belirsiz_tarih';
   baslik: string; aciklama: string; kayit: KisaKayit | null; hedef: KisaKayit | null; harita?: { kod: string; ad: string }; dayanak: string; karar: IncelemeKarari | null;
@@ -250,6 +250,37 @@ export interface AgSonucu {
 export interface DurumGecmisi {
   ozellik: string; an: EvrenTarihi | null;
   kayitlar: { kod: string; ad: string; tur: string; durumlar: DurumSatiri[] }[];
+}
+export interface NedenSonucAgi {
+  merkez: string | null;
+  dugumler: (AgDugumu & { tarih: EvrenTarihi | null })[];
+  kenarlar: (AgKenari & { zamanUyarisi: string | null })[];
+}
+export interface EtkiSatiri { kod: string; ad: string; tur: string; aciklama: string }
+/** Etki raporu (§9.2): hesapla değişenler · incelenmesi gerekenler · yalnızca bahsedenler. */
+export interface EtkiRaporu { hesap: EtkiSatiri[]; bagimli: EtkiSatiri[]; bahseden: EtkiSatiri[] }
+export interface EtkiIncelemesi {
+  anahtar: string; islem: string; degisim: 'tarih' | 'katilimci';
+  kaynak: KisaKayit; hedef: KisaKayit;
+  once: string | null; sonra: string | null; aciklama: string; zaman: number;
+  karar: IncelemeKarari | null;
+}
+export interface EtkiIncelemeleri { acik: EtkiIncelemesi[]; ertelenen: EtkiIncelemesi[]; kapanan: EtkiIncelemesi[] }
+export interface HatSahnesi { kod: string; ad: string; sira: number; bolum: string | null; baglar: { rol: string | null; rolAdi: string | null; aciklama: string; karar: string }[] }
+export interface KurguHatlari {
+  hatlar: {
+    kod: string; ad: string; karar: string;
+    eserler: { eser: { kod: string; ad: string }; toplam: number; sahneler: HatSahnesi[]; sonBagliSira: number | null; sonrakiSahne: number | null }[];
+    /** Hiçbir esere yerleşmemiş bağlı kayıtlar. */
+    yerlesmemis: { kod: string; ad: string; tur: string; rol: string | null; rolAdi: string | null; aciklama: string; karar: string }[];
+    /** İpucu durumlarının sayısı. */
+    ipucu: Record<string, number>;
+  }[];
+}
+export interface BolumMatrisi {
+  eser: { kod: string; ad: string };
+  sutunlar: { kod: string; ad: string; sahneSayisi: number }[];
+  satirlar: { kayit: AgDugumu; hucreler: { bulunuyor: number; aniliyor: number; bakis: number; etki: number }[]; gorunduguSahne: number; konuOlduguSahne: number }[];
 }
 export interface CizelgeOgesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi; eser: string | null }
 
@@ -363,6 +394,12 @@ export interface Istekler {
   ag(a: { evren: string; merkez?: string | null; derinlik?: number; iliskiTurleri?: string[] | null; kayitTurleri?: string[] | null; an?: string | null; baglantilar?: boolean; vazgecilmis?: boolean }): AgSonucu;
   durumGecmisi(a: { evren: string; ozellik: string; an?: string | null }): DurumGecmisi;
   kayitDurumGecmisi(a: { evren: string; kod: string }): DurumGecmisi[];
+  nedenSonucAgi(a: { evren: string; merkez?: string | null; derinlik?: number }): NedenSonucAgi;
+  etkiRaporu(a: { evren: string; kod: string }): EtkiRaporu;
+  etkiIncelemeleri(a: { evren: string }): EtkiIncelemeleri;
+  etkiKarari(a: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null; gerekce?: string }): void;
+  kurguHatlari(a: { evren: string }): KurguHatlari;
+  bolumMatrisi(a: { evren: string; eser: string; turler?: string[] | null }): BolumMatrisi;
   haritalar(a: { evren: string; silinmis?: boolean }): HaritaOzeti[];
   harita(a: { evren: string; kod: string }): HaritaAyrintisi;
   haritaYukle(a: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ kod: string }>;

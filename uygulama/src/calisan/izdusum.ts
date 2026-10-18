@@ -7,6 +7,7 @@ import { baglantilar, duzMetin } from '../alan/metin-sema';
 import { katla } from '../alan/turkce';
 import { siraGecerli } from '../alan/sira';
 import { sablonGecerli } from '../alan/sablon';
+import { etkiAc } from './etki';
 import { tarihCoz, tarihMi, takvimGecerli, VARSAYILAN_TAKVIM, type Takvim } from '../alan/tarih';
 
 /** Evrenin şu anki takvimi (§3.4). */
@@ -40,7 +41,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 9;
+export const IZDUSUM_SURUMU = 10;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -250,6 +251,17 @@ CREATE TABLE IF NOT EXISTS inceleme_kararlari(
   dayanak TEXT NOT NULL DEFAULT '',
   zaman INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS etki_incelemeleri(
+  anahtar TEXT PRIMARY KEY,
+  kaynak TEXT NOT NULL,
+  hedef TEXT NOT NULL,
+  islem TEXT NOT NULL,
+  degisim TEXT NOT NULL,
+  once TEXT,
+  sonra TEXT,
+  aciklama TEXT NOT NULL,
+  zaman INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   islem TEXT PRIMARY KEY,
   kaynak TEXT NOT NULL,
@@ -258,9 +270,15 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
 );
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'medya',
-  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari'];
+  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
+
+function katilimciEtkisi(db: Database, i: Islem, olay: string, kisi: string, ne: string) {
+  const o = yonlendir(db, olay), k = yonlendir(db, kisi);
+  const ad = db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [k]) as string | undefined;
+  etkiAc(db, i.kod, i.zaman, o, 'katilimci', null, `${ad ?? 'Bir kayıt'} ${ne}`);
+}
 
 /** Birleştirilmiş kaydın kodu yeni kayda yönlendirir (§9.5); başka cihazdan gelen eski kodlu işlemler de doğru kayda varır. */
 export function yonlendir<T extends string | null | undefined>(db: Database, kod: T): T {
@@ -503,6 +521,11 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
 
   kayit_tarih(db, i) {
     const { kod, tarih } = i.veri as { kod: string; tarih: unknown };
+    const once = db.selectValue('SELECT tarih FROM kayitlar WHERE kod=?', [kod]) as string | null | undefined;
+    const onceIfade = once ? (JSON.parse(once).ifade as string) : null;
+    const sonraIfade = tarihMi(tarih) ? tarih.ifade : null;
+    // Önceden bir tarihi olan kaydın tarihi değişince ya da olaydan bir katılımcı çıkarılınca bağımlıları incelemeye açılır (§9.2, §9.3).
+    if (onceIfade && onceIfade !== sonraIfade) etkiAc(db, i.kod, i.zaman, kod, 'tarih', onceIfade, sonraIfade);
     db.exec({ sql: 'UPDATE kayitlar SET tarih=?, duzenleme=? WHERE kod=?', bind: [json(tz(db, tarih)), i.zaman, kod] });
     alanYaz(db, i, kod, 'tarih', tarih ?? null);
   },
@@ -536,6 +559,8 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     alanYaz(db, i, kod, alan, deger ?? null);
   },
   iliski_sil(db, i) {
+    const r = db.selectObject('SELECT tur, a, b FROM iliskiler WHERE kod=? AND silindi IS NULL', [i.veri.kod as string]);
+    if (r?.tur === 'olayda') katilimciEtkisi(db, i, r.b as string, r.a as string, 'çıkarıldı');
     db.exec({ sql: 'UPDATE iliskiler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
   },
   iliski_geri_yukle(db, i) {
@@ -706,7 +731,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   inceleme_karari(db, i) {
     const { anahtar, durum, gerekce, dayanak } = i.veri as { anahtar: string; durum: string | null; gerekce?: string; dayanak?: string };
     if (typeof anahtar !== 'string' || !anahtar) return;
-    if (durum === 'kabul' || durum === 'ertelendi') {
+    if (durum === 'kabul' || durum === 'ertelendi' || durum === 'duzeltildi') {
       db.exec({ sql: 'INSERT OR REPLACE INTO inceleme_kararlari(anahtar, durum, gerekce, dayanak, zaman) VALUES(?,?,?,?,?)', bind: [anahtar, durum, gerekce ?? '', dayanak ?? '', i.zaman] });
     } else db.exec({ sql: 'DELETE FROM inceleme_kararlari WHERE anahtar=?', bind: [anahtar] });
   },
