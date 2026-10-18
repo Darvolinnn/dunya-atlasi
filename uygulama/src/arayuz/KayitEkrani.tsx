@@ -10,6 +10,7 @@ import { MetinEditoru, MetinGorunumu, type EditorDenetimi } from './MetinEditoru
 import { KararSecici, TurSecici } from './ortak';
 import { Gorseller, Iliskiler, KayitDegisimleri, NotDonustur, SahneBolumu, TarihAlani } from './KayitBolumleri';
 import { git } from './Uygulama';
+import { CatismaListesi } from './Catismalar';
 
 export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
   const [kayit, setKayit] = useState<Kayit | null>(null);
@@ -47,6 +48,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
             <button class="dugme ana" onClick={() => istemci.iste('kayitGeriYukle', { evren, kod })}>Geri getir</button>
           </div>
         )}
+        <CatismaListesi istemci={istemci} evren={evren} kod={kod} surum={surum} />
         <div class="kayit-basi">
           <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>
           <AlanGirdisi etiket="Ad" deger={kayit.ad} buyuk zorunlu kaydet={async (v) => {

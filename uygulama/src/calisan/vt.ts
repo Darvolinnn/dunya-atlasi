@@ -32,7 +32,7 @@ async function hazirla(): Promise<Hizmet> {
   const h = await sqlite3.installOpfsSAHPoolVfs({ name: 'dunya-atlasi', directory: '/dunya-atlasi', initialCapacity: 16 });
   havuz = h as never;
   const ac = (ad: string) => new h.OpfsSAHPoolDb(ad);
-  return new Hizmet(ac, kurulumAdi(), sqlite3.version.libVersion, (evren, turler, kayitlar) => postMessage({ degisti: { evren, turler, kayitlar } }),
+  return new Hizmet(ac, kurulumAdi(), sqlite3.version.libVersion, (evren, turler, kayitlar, uzaktan) => postMessage({ degisti: { evren, turler, kayitlar, uzaktan } }),
     new OpfsDeposu(), tarayiciIsleyici);
 }
 

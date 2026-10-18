@@ -86,7 +86,7 @@ describe('serbest metin (Automerge)', () => {
     expect(doc.textBetween(0, doc.content.size, '\n')).toBe('Velkar kuzeyde doğdu.\n\nKılıcını babasından aldı.');
   });
 
-  it('değişmeyen metin yeni işlem yazmaz; eski temelle kaydetmek reddedilir', () => {
+  it('değişmeyen metin yeni işlem yazmaz; eski temelle kaydedilen birleşir, bilinmeyen sürüm reddedilir', () => {
     const { h, evren } = kur();
     const { kod } = h.kayitOlustur({ evren, ad: 'A', tur: 'not' });
     const ilk = h.metinAc({ evren, kayit: kod, alan: 'govde' });
@@ -94,7 +94,8 @@ describe('serbest metin (Automerge)', () => {
     const sayi = h.evrenBilgisi({ evren }).islemSayisi;
     expect(h.metinKaydet({ evren, kayit: kod, alan: 'govde', spans: parcalar('bir'), temel: r1.basliklar }).degisti).toBe(false);
     expect(h.evrenBilgisi({ evren }).islemSayisi).toBe(sayi);
-    expect(() => h.metinKaydet({ evren, kayit: kod, alan: 'govde', spans: parcalar('iki'), temel: ilk.basliklar })).toThrow('bu arada değişmiş');
+    expect(h.metinKaydet({ evren, kayit: kod, alan: 'govde', spans: parcalar('iki'), temel: ilk.basliklar }).birlesti).toBe(true);
+    expect(() => h.metinKaydet({ evren, kayit: kod, alan: 'govde', spans: parcalar('üç'), temel: ['ab'.repeat(32)] })).toThrow('sürümü bulunamadı');
   });
 
   it('sürüm geçmişi: her kaydetme bir sürüm; eski sürüm okunabilir', () => {

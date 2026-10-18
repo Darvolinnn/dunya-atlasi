@@ -4,6 +4,7 @@ import type { EvrenBilgisi, GunlukSatiri } from '../veri/api';
 import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
 import { git } from './Uygulama';
 import { YedekSekmesi } from './Tasima';
+import { CatismaListesi } from './Catismalar';
 import { Bahsedilenler, CopKutusu, KayitListesi } from './KayitListesi';
 
 export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: string; sekme: string }) {
@@ -28,11 +29,13 @@ export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: st
         <AdBasligi istemci={istemci} bilgi={bilgi} />
         <p class="soluk kucuk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
         <div class="sekmeler" role="tablist">
-          {([['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek']] as const).map(([k, ad]) => (
+          {([['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
+            ...(bilgi.catismaSayisi || sekme === 'inceleme' ? [['inceleme', `İnceleme bekleyen (${bilgi.catismaSayisi})`] as const] : [])] as const).map(([k, ad]) => (
             <button class="sekme" role="tab" aria-selected={sekme === k} onClick={() => git(`/e/${kod}/${k}`)}>{ad}</button>
           ))}
         </div>
-        {sekme === 'yedek' ? <YedekSekmesi istemci={istemci} evren={kod} surum={surum} />
+        {sekme === 'inceleme' ? <CatismaListesi istemci={istemci} evren={kod} surum={surum} />
+          : sekme === 'yedek' ? <YedekSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
           : sekme === 'bahsedilen' ? <Bahsedilenler istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'cop' ? <CopKutusu istemci={istemci} evren={kod} surum={surum} />

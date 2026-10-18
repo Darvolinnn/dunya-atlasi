@@ -24,4 +24,13 @@ export interface Islem extends IslemGirdisi {
   grup: string | null;
   /** İşlemin yapıldığı anda gördüğü değişiklikler: kurulum → son sıra (§10.1). */
   gordu: Record<string, number>;
+  /**
+   * Mantıksal saat: gördüğü işlemlerin en büyüğünden bir fazla. Her cihaz işlemleri (saat, kurulum, sıra)
+   * sırasıyla uygular; böylece işlemler hangi sırayla gelirse gelsin her cihazda aynı sonuç çıkar.
+   * Eski yedeklerde yoktur; alınırken hesaplanır.
+   */
+  saat?: number;
 }
+
+/** İşlem, verilen kurulum ve sıradaki işlemi görmüş mü (o işlemden sonra mı yapılmış)? */
+export const gorduMu = (i: Pick<Islem, 'gordu'>, kurulum: string, sira: number) => (i.gordu[kurulum] ?? 0) >= sira;

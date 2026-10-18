@@ -4,7 +4,7 @@ import type { EvrenTarihi } from '../alan/tarih';
 
 export interface KurulumBilgisi { kod: string; ad: string; sqlite: string }
 export interface EvrenOzeti { kod: string; ad: string; olusturma: number; sonAcilis: number | null }
-export interface EvrenBilgisi extends EvrenOzeti { islemSayisi: number; kayitSayisi: number; copSayisi: number }
+export interface EvrenBilgisi extends EvrenOzeti { islemSayisi: number; kayitSayisi: number; copSayisi: number; catismaSayisi: number }
 export type GunlukSatiri = Omit<Islem, 'ikili'> & { ikiliBoyut: number };
 
 export interface KayitOzeti {
@@ -71,6 +71,13 @@ export interface YedekBilgisi {
   mevcut: { kod: string; ad: string } | null;
   veriBicimi: number;
 }
+/** İnceleme bekleyen çatışma (§10.3, §10.6). Kurulum adları kullanıcıya gösterilecek biçimdedir. */
+export type Catisma =
+  | { tur: 'alan'; nesne: string; alan: string; nesneTuru: 'kayit' | 'iliski' | 'evren'; kayit: string | null; baslik: string;
+      degerler: { islem: string; deger: unknown; kurulum: string; zaman: number }[] }
+  | { tur: 'silme'; kayit: string; baslik: string; duzenlemeSayisi: number; zaman: number; kurulumlar: string[] }
+  | { tur: 'metin'; kayit: string; alan: string; baslik: string; temel: Basliklar;
+      a: { basliklar: Basliklar; kurulum: string; zaman: number }; b: { basliklar: Basliklar; kurulum: string; zaman: number } };
 export interface BaglananKayit { kod: string; ad: string; tur: string; ifadeler: string[] }
 export interface AdDuzeltmesi { kaynak: string; kaynakAd: string; sira: number; eski: string; yeni: string }
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
@@ -93,7 +100,7 @@ export interface Istekler {
   kayitGecmisi(a: { evren: string; kod: string }): GunlukSatiri[];
 
   metinAc(a: { evren: string; kayit: string; alan: string }): { spans: Spans; basliklar: Basliklar };
-  metinKaydet(a: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar }): { basliklar: Basliklar; degisti: boolean };
+  metinKaydet(a: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar }): { basliklar: Basliklar; degisti: boolean; birlesti: boolean; spans?: Spans };
   metinSurumu(a: { evren: string; kayit: string; alan: string; basliklar: Basliklar }): { spans: Spans };
   kayitTarih(a: { evren: string; kod: string; ifade: string }): { tarih: EvrenTarihi | null };
   alanKarari(a: { evren: string; kod: string; alan: string; karar: string }): void;
@@ -123,6 +130,16 @@ export interface Istekler {
   evrenYerineKoy(a: { kopya: string; asil: string }): void;
   sonYedek(a: { evren: string }): number | null;
 
+  catismalar(a: { evren: string; kod?: string }): Catisma[];
+  catismaSayisi(a: { evren: string }): number;
+  alanCatismasiCoz(a: { evren: string; nesne: string; alan: string; islem: string }): void;
+  silmeCatismasiCoz(a: { evren: string; kayit: string; geriYukle: boolean }): void;
+  metinCatismasiCoz(a: { evren: string; kayit: string; alan: string }): void;
+  gorulenler(a: { evren: string }): Record<string, number>;
+  islemleriVer(a: { evren: string; gorulen: Record<string, number>; kurulum?: string }): Islem[];
+  islemleriAl(a: { evren: string; islemler: Islem[] }): { alinan: number; bekleyen: number };
+  evreniDisaridanKur(a: { kod: string; islemler: Islem[] }): { kod: string; yeni: boolean };
+
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];
   bahsedilenler(a: { evren: string }): (KayitOzeti & { anilma: number })[];
@@ -136,4 +153,4 @@ export type IstekArg<K extends IstekAdi> = Parameters<Istekler[K]>[0];
 export type IstekSonuc<K extends IstekAdi> = Awaited<ReturnType<Istekler[K]>>;
 
 /** Çalışandan arayüze: bir evrende işlem yazıldı (ekranlar yenilensin). */
-export interface DegisiklikBildirimi { degisti: { evren: string; turler: string[]; kayitlar: string[] } }
+export interface DegisiklikBildirimi { degisti: { evren: string; turler: string[]; kayitlar: string[]; uzaktan?: boolean } }

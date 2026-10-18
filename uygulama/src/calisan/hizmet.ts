@@ -14,13 +14,13 @@ import { VERI_BICIMI, type Islem } from '../alan/islem';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, kokAdaylari } from '../alan/turkce-ek';
 import { kararGecerli, turGecerli } from '../alan/turler';
-import type { IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { Catisma, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { KurulumVt } from './kurulum-vt';
 import { metinBelgesi } from './izdusum';
 
 export type DosyaAcici = (ad: string) => Database;
-export type Bildirici = (evren: string, turler: string[], kayitlar: string[]) => void;
+export type Bildirici = (evren: string, turler: string[], kayitlar: string[], uzaktan?: boolean) => void;
 
 const temizle = (deger: unknown, { bos = false, uzunluk = 200 } = {}) => {
   const s = String(deger ?? '').replace(/\s+/g, ' ').trim();
@@ -95,12 +95,122 @@ export class Hizmet implements Istekler {
       ...oz, ad: ad ?? oz.ad, islemSayisi: e.islemSayisi(),
       kayitSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NULL')),
       copSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NOT NULL')),
+      catismaSayisi: this.catismaSayisi({ evren }),
     };
   }
 
   islemGunlugu({ evren, sinir }: { evren: string; sinir: number }) {
     return this.evren(evren).islemler(Math.min(Math.max(1, sinir), 1000), true)
       .map(({ ikili, ...i }) => ({ ...i, ikiliBoyut: ikili?.length ?? 0 }));
+  }
+
+  // ---------- Cihazlar arası değişiklik alışverişi (§10) ----------
+  /** Bu cihazdaki işlemlerin özeti: kurulum → son sıra. */
+  gorulenler({ evren }: { evren: string }) { return this.evren(evren).gorulenler(); }
+
+  /** Verilen özetin görmediği işlemler; kurulum verilirse yalnızca onunkiler. */
+  islemleriVer({ evren, gorulen, kurulum }: { evren: string; gorulen: Record<string, number>; kurulum?: string }): Islem[] {
+    return this.evren(evren).gorulmeyenler(gorulen, kurulum);
+  }
+
+  /** Başka cihazdan gelen işlemleri alır; arayüze "uzaktan" diye bildirir. */
+  islemleriAl({ evren, islemler }: { evren: string; islemler: Islem[] }) {
+    const e = this.evren(evren);
+    const r = e.disaridanAl(islemler);
+    if (r.alinan) {
+      const kayitlar = new Set<string>();
+      for (const i of r.islemler) for (const k of [i.veri.kod, i.veri.kayit, i.veri.a, i.veri.b]) if (typeof k === 'string') kayitlar.add(k);
+      const ad = e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined;
+      if (ad) this.kurulum.evrenAdi(evren, ad);
+      this.bildir(evren, [...new Set(r.islemler.map((i) => i.tur))], [...kayitlar], true);
+    }
+    return { alinan: r.alinan, bekleyen: r.bekleyen };
+  }
+
+  /** Başka cihazda oluşturulmuş bir evreni bu cihaza ilk kez kurar (işlemleriyle). */
+  evreniDisaridanKur({ kod, islemler }: { kod: string; islemler: Islem[] }) {
+    if (!kodGecerliMi(kod)) throw new Error('Geçersiz evren kodu.');
+    if (this.kurulum.evrenler().some((x) => x.kod === kod)) return { kod, yeni: false };
+    const e = new EvrenVt(this.ac(`/evren-${kod}.db`), this.kurulum.kod);
+    if (e.islemSayisi() === 0) e.disaridanAl(islemler);
+    const ad = (e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined) ?? 'Adsız evren';
+    if (e.db.selectValue("SELECT v FROM evren WHERE k='kod'") !== kod) throw new Error('Gelen evren eksik.');
+    this.kurulum.evrenEkle(kod, ad, Number(e.db.selectValue("SELECT v FROM evren WHERE k='olusturma'")) || Date.now());
+    this.acik.set(kod, e);
+    return { kod, yeni: true };
+  }
+
+  // ---------- Çatışmalar (§10.3, §10.6) ----------
+  private kurulumAdi(kod: string) {
+    if (kod === this.kurulum.kod) return 'bu cihaz';
+    return this.kurulum.kurulumAdi(kod) ?? 'başka bir cihaz';
+  }
+
+  /** İnceleme bekleyen bütün çatışmalar, tek yerde. */
+  catismalar({ evren, kod }: { evren: string; kod?: string }): Catisma[] {
+    const e = this.evren(evren);
+    const kayitAdi = (k: string) => (e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [k]) as string | undefined) ?? 'Kayıt';
+    const sonuc: Catisma[] = [];
+    const gruplar = e.db.selectObjects(
+      `SELECT nesne, alan FROM alan_yazanlari ${kod ? 'WHERE nesne=? OR nesne IN (SELECT kod FROM iliskiler WHERE a=? OR b=?)' : ''}
+       GROUP BY nesne, alan HAVING count(DISTINCT deger) > 1`, kod ? [kod, kod, kod] : []);
+    for (const g of gruplar) {
+      const nesne = g.nesne as string;
+      const alan = g.alan as string;
+      const iliski = e.db.selectObject('SELECT a, b, tur FROM iliskiler WHERE kod=?', [nesne]);
+      const degerler = e.db.selectObjects('SELECT islem, kurulum, deger, zaman FROM alan_yazanlari WHERE nesne=? AND alan=? ORDER BY zaman', [nesne, alan])
+        .map((r) => ({ islem: r.islem as string, deger: JSON.parse(r.deger as string), kurulum: this.kurulumAdi(r.kurulum as string), zaman: Number(r.zaman) }));
+      sonuc.push({
+        tur: 'alan', nesne, alan,
+        nesneTuru: nesne === 'evren' ? 'evren' : iliski ? 'iliski' : 'kayit',
+        kayit: iliski ? iliski.a as string : nesne === 'evren' ? null : nesne,
+        baslik: nesne === 'evren' ? 'Evren' : iliski ? `${kayitAdi(iliski.a as string)} – ${kayitAdi(iliski.b as string)} ilişkisi` : kayitAdi(nesne),
+        degerler,
+      });
+    }
+    for (const r of e.db.selectObjects(`SELECT kayit, count(*) n, max(zaman) zaman, group_concat(DISTINCT kurulum) kurulumlar FROM silme_catismalari
+        ${kod ? 'WHERE kayit=?' : ''} GROUP BY kayit`, kod ? [kod] : [])) {
+      sonuc.push({ tur: 'silme', kayit: r.kayit as string, baslik: kayitAdi(r.kayit as string), duzenlemeSayisi: Number(r.n), zaman: Number(r.zaman),
+        kurulumlar: String(r.kurulumlar).split(',').map((k) => this.kurulumAdi(k)) });
+    }
+    for (const r of e.db.selectObjects(`SELECT * FROM metin_catismalari ${kod ? 'WHERE kayit=?' : ''} ORDER BY b_zaman`, kod ? [kod] : [])) {
+      sonuc.push({ tur: 'metin', kayit: r.kayit as string, alan: r.alan as string, baslik: kayitAdi(r.kayit as string),
+        temel: JSON.parse(r.temel as string), a: { basliklar: JSON.parse(r.a_basliklar as string), kurulum: this.kurulumAdi(r.a_kurulum as string), zaman: Number(r.a_zaman) },
+        b: { basliklar: JSON.parse(r.b_basliklar as string), kurulum: this.kurulumAdi(r.b_kurulum as string), zaman: Number(r.b_zaman) } });
+    }
+    return sonuc;
+  }
+
+  catismaSayisi({ evren }: { evren: string }) { return this.catismalar({ evren }).length; }
+
+  /** Alan çatışması: yazar değerlerden birini seçer; seçim ikisini de görmüş yeni bir yazma olarak kaydedilir. */
+  alanCatismasiCoz({ evren, nesne, alan, islem }: { evren: string; nesne: string; alan: string; islem: string }) {
+    const e = this.evren(evren);
+    const r = e.db.selectObject('SELECT deger FROM alan_yazanlari WHERE nesne=? AND alan=? AND islem=?', [nesne, alan, islem]);
+    if (!r) throw new Error('Bu çatışma artık yok.');
+    const deger = JSON.parse(r.deger as string);
+    if (nesne === 'evren' && alan === 'ad') { this.yaz(evren, [{ tur: 'evren_adlandir', veri: { ad: String(deger) } }]); this.kurulum.evrenAdi(evren, String(deger)); return; }
+    const iliski = e.db.selectObject('SELECT a, b FROM iliskiler WHERE kod=?', [nesne]);
+    if (iliski) { this.yaz(evren, [{ tur: 'iliski_degistir', veri: { kod: nesne, alan, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
+    this.kayitVarMi(e, nesne);
+    if (alan === 'tarih') this.yaz(evren, [{ tur: 'kayit_tarih', veri: { kod: nesne, tarih: deger, cozum: true } }], [nesne]);
+    else if (alan.startsWith('karar:')) this.yaz(evren, [{ tur: 'kayit_alan_karar', veri: { kod: nesne, alan: alan.slice(6), karar: deger } }], [nesne]);
+    else this.yaz(evren, [{ tur: 'kayit_degistir', veri: { kod: nesne, alan, deger, cozum: true } }], [nesne]);
+  }
+
+  /** Silinmiş kayda gelen düzenleme: kayıt geri yüklenir ya da silinmiş kalır (düzenleme çöp kutusunda durur). */
+  silmeCatismasiCoz({ evren, kayit, geriYukle }: { evren: string; kayit: string; geriYukle: boolean }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kayit);
+    this.yaz(evren, [geriYukle ? { tur: 'kayit_geri_yukle', veri: { kod: kayit } } : { tur: 'catisma_coz', veri: { tur: 'silme', kayit } }], [kayit]);
+  }
+
+  /** Aynı paragrafa iki cihazdan yazılmış metin incelendi; metin şimdiki hâliyle kalır. */
+  metinCatismasiCoz({ evren, kayit, alan }: { evren: string; kayit: string; alan: string }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kayit);
+    if (!METIN_ALANLARI.has(alan)) throw new Error('Bilinmeyen metin alanı.');
+    this.yaz(evren, [{ tur: 'catisma_coz', veri: { tur: 'metin', kayit, alan } }], [kayit]);
   }
 
   // ---------- Kayıtlar ----------
@@ -280,15 +390,22 @@ export class Hizmet implements Istekler {
   metinKaydet({ evren, kayit, alan, spans, temel }: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar }) {
     const d = this.belge(this.evren(evren), kayit, alan);
     const simdiki = A.getHeads(d);
-    if (JSON.stringify([...simdiki].sort()) !== JSON.stringify([...temel].sort())) {
-      throw new Error('Metin bu arada değişmiş; sayfayı yenileyin.');
+    const ayni = JSON.stringify([...simdiki].sort()) === JSON.stringify([...temel].sort());
+    if (!Array.isArray(temel) || !temel.every((h) => typeof h === 'string' && A.hasHeads(d, [h]))) throw new Error('Metnin sürümü bulunamadı; sayfayı yenileyin.');
+    let yeni: A.Doc<{ t: string }>;
+    if (ayni) yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], spans as never, spanAyari()));
+    else {
+      // Editör eski bir sürümün üzerinde çalışıyorsa (bu arada başka cihazdan değişiklik geldi) yazılan, o sürümün
+      // üzerine yapılmış değişiklik olarak kaydedilir; Automerge ikisini kaybetmeden birleştirir (§10.3).
+      // Dal ayrı bir yazar koduyla açılır: aynı yazarın sonraki değişiklikleriyle sıra numarası çakışmasın.
+      const ek = [...crypto.getRandomValues(new Uint8Array(4))].map((b) => b.toString(16).padStart(2, '0')).join('');
+      const dal = A.change(A.clone(A.view(d, temel), { actor: this.aktor + ek }), (x) => A.updateSpans(x, ['t'], spans as never, spanAyari()));
+      yeni = A.merge(A.clone(d, { actor: this.aktor }), dal);
     }
-    const calisma = A.clone(d, { actor: this.aktor });
-    const yeni = A.change(calisma, (x) => A.updateSpans(x, ['t'], spans as never, spanAyari()));
     const basliklar = A.getHeads(yeni);
-    if (JSON.stringify(basliklar) === JSON.stringify(A.getHeads(calisma))) return { basliklar: simdiki, degisti: false };
-    this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar }, ikili: A.saveSince(yeni, simdiki) }], [kayit]);
-    return { basliklar, degisti: true };
+    if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) return { basliklar: simdiki, degisti: false, birlesti: false };
+    this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar, temel }, ikili: A.saveSince(yeni, simdiki) }], [kayit]);
+    return { basliklar, degisti: true, birlesti: !ayni, ...(!ayni ? { spans: A.spans(yeni, ['t']) as Spans } : {}) };
   }
 
   /** Metnin geçmişteki bir hâli (sürüm geçmişinde göstermek için). */

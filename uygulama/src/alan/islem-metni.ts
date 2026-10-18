@@ -14,6 +14,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   kayit_olustur: (v) => `${turBul(String(v.tur)).ad} oluşturuldu: “${v.ad}”`,
   kayit_degistir: (v, ad) => {
     const alan = String(v.alan);
+    if (v.cozum) return `${ad(v.kod)}: ${(ALAN_ADI[alan] ?? alan).toLocaleLowerCase('tr-TR')} için iki cihazdaki değerlerden biri seçildi${alan === 'ozet' ? '' : ` (“${deger(alan, v.deger)}”)`}`;
     if (alan === 'ozet') return `${ad(v.kod)}: kısa özet değişti`;
     const once = deger(alan, v.onceki), sonra = deger(alan, v.deger);
     return `${ad(v.kod)}: ${ALAN_ADI[alan] ?? alan} ${once ? `“${once}” → ` : ''}“${sonra}”`;
@@ -38,6 +39,8 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   iliski_geri_yukle: (v, ad) => `İlişki geri getirildi: ${ad(v.a)} – ${ad(v.b)}`,
   degisim_ekle: (v, ad) => `${ad(v.olay)}: değişim kaydedildi “${v.metin}”${v.konu ? ` (${ad(v.konu)})` : ''}`,
   degisim_sil: (v, ad) => `${ad(v.olay)}: değişim kaldırıldı “${v.metin}”`,
+  catisma_coz: (v, ad) => v.tur === 'silme' ? `${ad(v.kayit)}: silinmiş kalması kararlaştırıldı (başka cihazdaki değişiklikler incelendi)`
+    : `${ad(v.kayit)}: iki cihazda birlikte değişen metin incelendi`,
   metin: (v, ad) => v.adDuzeltme ? `${ad(v.kayit)}: bağlantıda “${ad(v.adDuzeltme)}” adı düzeltildi` : v.geriYukleme ? `${ad(v.kayit)}: metnin eski bir sürümü geri getirildi` : `${ad(v.kayit)}: metin kaydedildi`,
 };
 

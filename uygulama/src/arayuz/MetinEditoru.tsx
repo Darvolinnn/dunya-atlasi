@@ -2,7 +2,7 @@
 // belgesine tek değişiklik olarak yazar (TK2). Otomatik kaydetme: yazmaya ara verilince ya da en geç
 // birkaç saniyede bir; sekme gizlenince hemen.
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { EditorState, type Command, type Transaction } from 'prosemirror-state';
+import { EditorState, TextSelection, type Command, type Transaction } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 import { history, undo, redo } from 'prosemirror-history';
 import { keymap } from 'prosemirror-keymap';
@@ -114,6 +114,8 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim }:
         try {
           const r = await istemci.iste('metinKaydet', { evren, kayit, alan, spans, temel });
           temel = r.basliklar;
+          // Bu arada başka cihazdan gelen değişiklikle birleşti: editör birleşmiş metni gösterir.
+          if (r.birlesti && r.spans && !kirli) icerigiDegistir(r.spans);
           if (!kirli) setDurum({ tur: 'kayitli', zaman: Date.now() });
         } catch (e) {
           kirli = true;
@@ -134,6 +136,30 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim }:
     };
 
     if (denetim) denetim.current = { kaydet };
+
+    /** Editördeki belgeyi kaydedilmiş metinle değiştirir (yazılmamış bir şey yokken). İmleç yaklaşık yerinde kalır. */
+    const icerigiDegistir = (spans: Spans) => {
+      const v = gorunum.current;
+      if (!v) return;
+      const yeni = belgeYap(spans);
+      if (yeni.eq(v.state.doc)) return;
+      const secim = v.state.selection.from;
+      const tr = v.state.tr.replaceWith(0, v.state.doc.content.size, yeni.content).setMeta('disaridan', true).setMeta('addToHistory', false);
+      try { tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(secim, tr.doc.content.size)))); } catch { /* imleç başta kalır */ }
+      v.dispatch(tr);
+    };
+
+    // Başka cihazdan bu metne değişiklik gelirse: yazılmamış bir şey yoksa editör hemen güncellenir; varsa
+    // bir sonraki kaydetmede iki değişiklik birleştirilir.
+    const birakDinle = istemci.dinle((d) => {
+      if (!d.uzaktan || d.evren !== evren || !d.kayitlar.includes(kayit)) return;
+      if (kirli || suren || !gorunum.current) return;
+      void istemci.iste('metinAc', { evren, kayit, alan }).then((m) => {
+        if (iptal || kirli || suren) return;
+        temel = m.basliklar;
+        icerigiDegistir(m.spans);
+      });
+    });
 
     istemci.iste('metinAc', { evren, kayit, alan }).then((m) => {
       if (iptal || !kap.current) return;
@@ -171,7 +197,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim }:
           v.updateState(v.state.apply(tr));
           seciciIzle(tr, v.state);
           setAracDurumu((n) => n + 1);
-          if (tr.docChanged) planla();
+          if (tr.docChanged && !tr.getMeta('disaridan')) planla();
         },
       });
       setHazir(true);
@@ -183,6 +209,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim }:
     addEventListener('beforeunload', ayrilirken);
     return () => {
       iptal = true;
+      birakDinle();
       document.removeEventListener('visibilitychange', gizlenince);
       removeEventListener('beforeunload', ayrilirken);
       void kaydet();

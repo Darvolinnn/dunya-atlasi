@@ -197,3 +197,13 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .basari { color: var(--basari); }
 .bosluk { flex: 1; }
 .gorseller + .editor-kabi { margin-top: 20px; }
+
+/* İnceleme bekleyen çatışmalar */
+.catismalar { display: flex; flex-direction: column; gap: 10px; margin: 0 0 16px; }
+.kart.catisma { border-left: 4px solid var(--vurgu); }
+.catisma-degerleri { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.catisma-degerleri li { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.catisma-degerleri .deger { font-weight: 600; min-width: 120px; }
+.uc-surum { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 10px; }
+.uc-surum h4 { margin: 0 0 4px; font-size: 0.85rem; }
+.uc-surum > div { border: 1px solid var(--cizgi); border-radius: var(--yaricap); padding: 8px; }

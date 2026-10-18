@@ -7,11 +7,12 @@ import type { EvrenOzeti } from '../veri/api';
 const SEMA = `
 CREATE TABLE IF NOT EXISTS ayar(k TEXT PRIMARY KEY, v TEXT);
 CREATE TABLE IF NOT EXISTS evrenler(kod TEXT PRIMARY KEY, ad TEXT NOT NULL, olusturma INTEGER NOT NULL, son_acilis INTEGER);
+CREATE TABLE IF NOT EXISTS kurulumlar(kod TEXT PRIMARY KEY, ad TEXT NOT NULL, son_gorulme INTEGER, kullanim_disi INTEGER);
 `;
 
 export class KurulumVt {
   readonly kod: string;
-  readonly ad: string;
+  ad: string;
 
   constructor(readonly db: Database, varsayilanAd: string) {
     db.exec(SEMA);
@@ -42,6 +43,22 @@ export class KurulumVt {
   }
   ayarYaz(k: string, v: string) {
     this.db.exec({ sql: 'INSERT INTO ayar VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v', bind: [k, v] });
+  }
+
+  /** Bu kurulumun adını değiştirir ("Ofis bilgisayarı, Edge"). */
+  adDegistir(ad: string) {
+    this.ayarYaz('kurulum_adi', ad);
+    this.ad = ad;
+  }
+
+  /** Eşitlemeden öğrenilen öbür kurulumlar (§10.5). */
+  kurulumKaydet(kod: string, ad: string, sonGorulme: number | null) {
+    this.db.exec({ sql: `INSERT INTO kurulumlar(kod, ad, son_gorulme) VALUES(?,?,?)
+      ON CONFLICT(kod) DO UPDATE SET ad=excluded.ad, son_gorulme=max(coalesce(son_gorulme,0), coalesce(excluded.son_gorulme,0))`, bind: [kod, ad, sonGorulme] });
+  }
+  kurulumAdi(kod: string): string | null {
+    if (kod === this.kod) return this.ad;
+    return (this.db.selectValue('SELECT ad FROM kurulumlar WHERE kod=?', [kod]) as string | undefined) ?? null;
   }
 
   acildi(kod: string) {
