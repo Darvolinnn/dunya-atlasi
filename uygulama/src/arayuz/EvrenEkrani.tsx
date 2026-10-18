@@ -3,7 +3,7 @@ import type { Istemci } from '../veri/istemci';
 import type { EvrenBilgisi, GunlukSatiri } from '../veri/api';
 import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
 import { git } from './Uygulama';
-import { CopKutusu, KayitListesi } from './KayitListesi';
+import { Bahsedilenler, CopKutusu, KayitListesi } from './KayitListesi';
 
 export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: string; sekme: string }) {
   const [bilgi, setBilgi] = useState<EvrenBilgisi | null>(null);
@@ -27,11 +27,12 @@ export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: st
         <AdBasligi istemci={istemci} bilgi={bilgi} />
         <p class="soluk kucuk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
         <div class="sekmeler" role="tablist">
-          {([['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş']] as const).map(([k, ad]) => (
+          {([['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş']] as const).map(([k, ad]) => (
             <button class="sekme" role="tab" aria-selected={sekme === k} onClick={() => git(`/e/${kod}/${k}`)}>{ad}</button>
           ))}
         </div>
         {sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
+          : sekme === 'bahsedilen' ? <Bahsedilenler istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'cop' ? <CopKutusu istemci={istemci} evren={kod} surum={surum} />
           : <KayitListesi istemci={istemci} evren={kod} surum={surum} />}
       </main>

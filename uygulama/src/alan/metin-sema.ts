@@ -1,5 +1,5 @@
-// Serbest metnin yapısı: paragraf, başlık, alıntı; vurgu ve kalın. Bağlantı (§5.1) ve işaret (§5.7)
-// sonraki dilimlerde buraya eklenir. Automerge'deki karşılıkları "automerge" anahtarlarıdır.
+// Serbest metnin yapısı: paragraf, başlık, alıntı; vurgu, kalın ve kayda bağlantı (§5.1). İşaret (§5.7)
+// sonraki aşamalarda buraya eklenir. Automerge'deki karşılıkları "automerge" anahtarlarıdır.
 import { SchemaAdapter } from '@automerge/prosemirror';
 
 export const metinSemasi = new SchemaAdapter({
@@ -45,13 +45,28 @@ export const metinSemasi = new SchemaAdapter({
       automerge: { markName: 'strong' },
       parseDOM: [{ tag: 'b' }, { tag: 'strong' }], toDOM: () => ['strong', 0],
     },
+    // Bağlantı: hedef kaydın kodu. Görünen ifade metnin kendisidir (ekler dahil); hedeften ayrı tutulur.
+    // Bağlantılı ifade yazım denetiminden muaftır (§5.1, TK yazım denetimi deneyi).
+    bag: {
+      attrs: { hedef: {} },
+      inclusive: false,
+      automerge: {
+        markName: 'bag',
+        parsers: {
+          fromAutomerge: (v) => ({ hedef: String(v) }),
+          fromProsemirror: (m) => String(m.attrs.hedef),
+        },
+      },
+      parseDOM: [{ tag: 'a[data-kayit]', getAttrs: (d) => ({ hedef: (d as HTMLElement).getAttribute('data-kayit') }) }],
+      toDOM: (m) => ['a', { 'data-kayit': m.attrs.hedef, class: 'bag', spellcheck: 'false' }, 0],
+    },
   },
 });
 
 /** Worker'da updateSpans için işaret genişleme kuralları (şemadan türetilir). */
 export const spanAyari = () => metinSemasi.updateSpansConfig();
 
-type Span = { type: 'text'; value: string } | { type: 'block'; value: unknown };
+type Span = { type: 'text'; value: string; marks?: Record<string, unknown> } | { type: 'block'; value: unknown };
 
 /** Arama ve önizleme için düz metin: bloklar satır sonuyla ayrılır. */
 export function duzMetin(spans: readonly Span[]): string {
@@ -61,4 +76,18 @@ export function duzMetin(spans: readonly Span[]): string {
     else s += sp.value;
   }
   return s;
+}
+
+/** Metindeki bağlantılar, sırayla: hedef kod ve görünen ifade. Ardışık parçalar aynı hedefteyse tek bağlantıdır. */
+export function baglantilar(spans: readonly Span[]): { hedef: string; metin: string; parcalar: number[] }[] {
+  const sonuc: { hedef: string; metin: string; parcalar: number[] }[] = [];
+  let son: (typeof sonuc)[number] | null = null;
+  spans.forEach((sp, i) => {
+    const hedef = sp.type === 'text' ? sp.marks?.bag : undefined;
+    if (typeof hedef === 'string' && hedef) {
+      if (son && son.hedef === hedef && son.parcalar[son.parcalar.length - 1] === i - 1) { son.metin += (sp as { value: string }).value; son.parcalar.push(i); }
+      else { son = { hedef, metin: (sp as { value: string }).value, parcalar: [i] }; sonuc.push(son); }
+    } else son = null;
+  });
+  return sonuc;
 }

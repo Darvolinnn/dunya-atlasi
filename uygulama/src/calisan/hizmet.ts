@@ -4,9 +4,11 @@ import type { Database } from '@sqlite.org/sqlite-wasm';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
 import type { IslemGirdisi } from '../alan/islem';
 import { A } from '../alan/automerge';
-import { spanAyari } from '../alan/metin-sema';
+import { baglantilar, spanAyari } from '../alan/metin-sema';
+import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
+import { adDegistir, kokAdaylari } from '../alan/turkce-ek';
 import { kararGecerli, turGecerli } from '../alan/turler';
-import type { Basliklar, DegisebilirAlan, Istekler, Kayit, KayitOzeti, Spans } from '../veri/api';
+import type { AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, Istekler, Kayit, KayitOzeti, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { KurulumVt } from './kurulum-vt';
 import { metinBelgesi } from './izdusum';
@@ -224,5 +226,138 @@ export class Hizmet implements Istekler {
     if (JSON.stringify(sonra) === JSON.stringify(A.getHeads(calisma))) return { basliklar: simdiki, degisti: false };
     this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar: sonra, geriYukleme: true }, ikili: A.saveSince(yeni, simdiki) }], [kayit]);
     return { basliklar: sonra, degisti: true };
+  }
+
+  // ---------- Arama (§18 arama ve sıralama) ----------
+  /**
+   * Türkçe kurallarla arama: adlar, lakaplar, eski adlar ve okunuş; sonra kısa özet ve (istenirse) metin.
+   * Çekimli biçim köke indirilir ("kılıcıyla" → "Kılıç"). Sonuçta hangi addan bulunduğu söylenir.
+   */
+  ara({ evren, metin, sinir = 50, metinde = true }: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[] {
+    const e = this.evren(evren);
+    const q = katla(metin).replace(/\s+/g, ' ').trim();
+    if (!q) return [];
+    const parcalar = kelimeler(metin);
+    const kokler = new Set(kokAdaylari(metin).slice(1));
+    const kelimeSinirinda = (s: string) => s.startsWith(q) || s.includes(' ' + q) || s.includes('-' + q);
+    const sonuc: (AramaSonucu & { puan: number })[] = [];
+    const satirlar = e.db.selectObjects(
+      `SELECT k.kod, k.tur, k.ad, k.ozet, k.karar, k.lakaplar, k.onceki_adlar, k.okunus, m.duz, m.katli
+       FROM kayitlar k LEFT JOIN metinler m ON m.kayit=k.kod AND m.alan='govde' WHERE k.silindi IS NULL`);
+    for (const r of satirlar) {
+      const adlar: [AramaSonucu['nereden']['tur'], string][] = [['ad', r.ad as string]];
+      for (const l of JSON.parse(r.lakaplar as string) as string[]) adlar.push(['lakap', l]);
+      for (const l of JSON.parse(r.onceki_adlar as string) as string[]) adlar.push(['onceki', l]);
+      if (r.okunus) adlar.push(['okunus', r.okunus as string]);
+      let en: { puan: number; nereden: AramaSonucu['nereden']; tam: boolean; parca?: string } | null = null;
+      const dene = (puan: number, nereden: AramaSonucu['nereden'], tam = false, parca?: string) => { if (!en || puan > en.puan) en = { puan, nereden, tam, parca }; };
+      for (const [tur, ad] of adlar) {
+        const k = katla(ad);
+        const ek = tur === 'ad' ? 10 : 0;
+        if (k === q) dene(90 + ek, { tur, metin: ad }, true);
+        else if (kokler.has(k)) dene(75 + ek, { tur: tur === 'ad' ? 'kok' : tur, metin: ad }, true);
+        else if (k.startsWith(q)) dene(70 + ek, { tur, metin: ad });
+        else if (kelimeSinirinda(k)) dene(60 + ek, { tur, metin: ad });
+        else if (parcalar.length > 1 && parcalar.every((p) => k.includes(p))) dene(50 + ek, { tur, metin: ad });
+        else if (k.includes(q)) dene(40 + ek, { tur, metin: ad });
+      }
+      if (!en && katla(r.ozet as string).includes(q)) dene(30, { tur: 'ozet', metin: r.ozet as string });
+      if (!en && metinde && r.katli && (r.katli as string).includes(q)) {
+        const i = (r.katli as string).indexOf(q);
+        const duz = r.duz as string;
+        const bas = Math.max(0, i - 40);
+        const parca = (bas > 0 ? '…' : '') + duz.slice(bas, i + q.length + 60).replace(/\s+/g, ' ') + (i + q.length + 60 < duz.length ? '…' : '');
+        dene(20, { tur: 'metin', metin: '' }, false, parca);
+      }
+      if (en) {
+        const b = en as { puan: number; nereden: AramaSonucu['nereden']; tam: boolean; parca?: string };
+        sonuc.push({ kod: r.kod as string, tur: r.tur as string, ad: r.ad as string, ozet: r.ozet as string, karar: r.karar as string,
+          nereden: b.nereden, tam: b.tam, parca: b.parca, puan: b.puan });
+      }
+    }
+    sonuc.sort((a, b) => b.puan - a.puan || turkceKarsilastir(a.ad, b.ad));
+    return sonuc.slice(0, Math.min(Math.max(1, sinir), 500)).map(({ puan, ...x }) => x);
+  }
+
+  // ---------- Bağlantılar (§5.1) ----------
+  /** Bu kayda bağlanan kayıtlar ve bağlantının görünen ifadeleri. */
+  baglananlar({ evren, kod }: { evren: string; kod: string }): BaglananKayit[] {
+    const e = this.evren(evren);
+    const harita = new Map<string, BaglananKayit>();
+    for (const r of e.db.selectObjects(
+      `SELECT b.kaynak, b.metin, k.ad, k.tur FROM baglantilar b JOIN kayitlar k ON k.kod=b.kaynak
+       WHERE b.hedef=? AND k.silindi IS NULL ORDER BY k.duzenleme DESC, b.sira`, [kod])) {
+      let x = harita.get(r.kaynak as string);
+      if (!x) { x = { kod: r.kaynak as string, ad: r.ad as string, tur: r.tur as string, ifadeler: [] }; harita.set(x.kod, x); }
+      if (!x.ifadeler.includes(r.metin as string)) x.ifadeler.push(r.metin as string);
+    }
+    return [...harita.values()];
+  }
+
+  /** "Bahsedilen ama yazılmamış": bağlantı verilmiş ama metni boş kayıtlar (§5.1). */
+  bahsedilenler({ evren }: { evren: string }): (KayitOzeti & { anilma: number })[] {
+    const e = this.evren(evren);
+    return e.db.selectObjects(
+      `SELECT k.kod, k.tur, k.ad, k.ozet, k.karar, k.lakaplar, k.duzenleme, count(*) anilma
+       FROM kayitlar k JOIN baglantilar b ON b.hedef=k.kod JOIN kayitlar kk ON kk.kod=b.kaynak AND kk.silindi IS NULL
+       LEFT JOIN metinler m ON m.kayit=k.kod AND m.alan='govde'
+       WHERE k.silindi IS NULL AND trim(coalesce(m.duz,''))='' GROUP BY k.kod ORDER BY anilma DESC, k.duzenleme DESC`)
+      .map((r) => ({ kod: r.kod as string, tur: r.tur as string, ad: r.ad as string, ozet: r.ozet as string, karar: r.karar as string,
+        lakaplar: JSON.parse(r.lakaplar as string), duzenleme: Number(r.duzenleme), silindi: null, anilma: Number(r.anilma) }));
+  }
+
+  /** Bir bağlantının hedefi ve görünen ifadesi değişmeden önce kaynakların metinleri (ad düzeltmesi için). */
+  private adDuzeltmeleri(e: EvrenVt, kod: string, eskiAd: string, yeniAd: string, eskiOkunus: string, yeniOkunus: string) {
+    const sonuc: (AdDuzeltmesi & { parcalar: number[] })[] = [];
+    const kaynaklar = e.db.selectObjects(
+      `SELECT DISTINCT b.kaynak, k.ad FROM baglantilar b JOIN kayitlar k ON k.kod=b.kaynak WHERE b.hedef=? AND b.alan='govde'`, [kod]);
+    for (const r of kaynaklar) {
+      const d = metinBelgesi(e.db, r.kaynak as string, 'govde');
+      if (!d) continue;
+      baglantilar(A.spans(d, ['t']) as never).forEach((b, sira) => {
+        if (b.hedef !== kod) return;
+        const yeni = adDegistir(b.metin, eskiAd, yeniAd, eskiOkunus, yeniOkunus);
+        if (yeni === null || yeni === b.metin) return;
+        sonuc.push({ kaynak: r.kaynak as string, kaynakAd: r.ad as string, sira, eski: b.metin, yeni, parcalar: b.parcalar });
+      });
+    }
+    return sonuc;
+  }
+
+  /** Yazar düzeltmesi önizlemesi: bağlantılı ifadeler yeni adla nasıl görünecek (§5.1). */
+  adDuzeltmeOnizle({ evren, kod, eskiAd, yeniAd, eskiOkunus = '' }: { evren: string; kod: string; eskiAd: string; yeniAd: string; eskiOkunus?: string }): AdDuzeltmesi[] {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kod);
+    return this.adDuzeltmeleri(e, kod, eskiAd, yeniAd, eskiOkunus, '').map(({ parcalar, ...x }) => x);
+  }
+
+  /** Seçilen bağlantılı ifadeleri yeni adla değiştirir; hepsi tek işlem grubudur. */
+  adDuzeltmeUygula({ evren, kod, eskiAd, yeniAd, eskiOkunus = '', secilenler }: {
+    evren: string; kod: string; eskiAd: string; yeniAd: string; eskiOkunus?: string; secilenler: string[];
+  }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kod);
+    const secili = new Set(secilenler);
+    const kaynaga = new Map<string, (AdDuzeltmesi & { parcalar: number[] })[]>();
+    for (const x of this.adDuzeltmeleri(e, kod, eskiAd, yeniAd, eskiOkunus, '')) {
+      if (!secili.has(`${x.kaynak}:${x.sira}`)) continue;
+      kaynaga.set(x.kaynak, [...(kaynaga.get(x.kaynak) ?? []), x]);
+    }
+    const girdiler = [];
+    for (const [kaynak, liste] of kaynaga) {
+      const d = metinBelgesi(e.db, kaynak, 'govde')!;
+      const spans = (A.spans(d, ['t']) as { type: string; value: unknown; marks?: unknown }[]).map((x) => ({ ...x }));
+      const sil = new Set<number>();
+      for (const x of liste) {
+        spans[x.parcalar[0]].value = x.yeni;
+        for (const i of x.parcalar.slice(1)) sil.add(i);
+      }
+      const yeniSpans = spans.filter((_, i) => !sil.has(i));
+      const onceki = A.getHeads(d);
+      const yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], yeniSpans as never, spanAyari()));
+      girdiler.push({ tur: 'metin', veri: { kayit: kaynak, alan: 'govde', basliklar: A.getHeads(yeni), adDuzeltme: kod }, ikili: A.saveSince(yeni, onceki) });
+    }
+    if (girdiler.length) this.yaz(evren, girdiler, [kod, ...kaynaga.keys()]);
+    return { degisen: [...kaynaga.values()].reduce((n, l) => n + l.length, 0) };
   }
 }

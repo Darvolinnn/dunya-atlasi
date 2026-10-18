@@ -16,6 +16,17 @@ export interface Kayit extends KayitOzeti {
 /** Automerge zengin metin parçaları (blok işaretleri ve metin). */
 export type Spans = unknown[];
 export type Basliklar = string[];
+export interface AramaSonucu {
+  kod: string; tur: string; ad: string; ozet: string; karar: string;
+  /** Hangi addan ya da yerden bulunduğu. kok: çekimli biçimden köke inilerek. */
+  nereden: { tur: 'ad' | 'kok' | 'lakap' | 'onceki' | 'okunus' | 'ozet' | 'metin'; metin: string };
+  /** Ad ya da kökü tam eşleşti mi (bağlantı seçiminde güçlü öneri). */
+  tam: boolean;
+  /** Metinde bulunduysa çevresi. */
+  parca?: string;
+}
+export interface BaglananKayit { kod: string; ad: string; tur: string; ifadeler: string[] }
+export interface AdDuzeltmesi { kaynak: string; kaynakAd: string; sira: number; eski: string; yeni: string }
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
 
 export interface Istekler {
@@ -38,6 +49,11 @@ export interface Istekler {
   metinAc(a: { evren: string; kayit: string; alan: string }): { spans: Spans; basliklar: Basliklar };
   metinKaydet(a: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar }): { basliklar: Basliklar; degisti: boolean };
   metinSurumu(a: { evren: string; kayit: string; alan: string; basliklar: Basliklar }): { spans: Spans };
+  ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
+  baglananlar(a: { evren: string; kod: string }): BaglananKayit[];
+  bahsedilenler(a: { evren: string }): (KayitOzeti & { anilma: number })[];
+  adDuzeltmeOnizle(a: { evren: string; kod: string; eskiAd: string; yeniAd: string; eskiOkunus?: string }): AdDuzeltmesi[];
+  adDuzeltmeUygula(a: { evren: string; kod: string; eskiAd: string; yeniAd: string; eskiOkunus?: string; secilenler: string[] }): { degisen: number };
   metinGeriYukle(a: { evren: string; kayit: string; alan: string; basliklar: Basliklar }): { basliklar: Basliklar; degisti: boolean };
 }
 

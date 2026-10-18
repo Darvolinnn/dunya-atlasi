@@ -4,7 +4,7 @@
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { VERI_BICIMI, type Islem, type IslemGirdisi } from '../alan/islem';
 import { yeniKod } from '../alan/kod';
-import { UYGULAYICILAR, IZDUSUM_SEMA, IZDUSUM_TABLOLARI, metinBelleginiTemizle } from './izdusum';
+import { UYGULAYICILAR, IZDUSUM_SEMA, IZDUSUM_SURUMU, IZDUSUM_TABLOLARI, metinBelleginiTemizle } from './izdusum';
 
 const GUNLUK_SEMA = `
 CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
@@ -36,7 +36,14 @@ export class EvrenVt {
     const bicim = db.selectValue("SELECT v FROM meta WHERE k='veri_bicimi'") as string | undefined;
     if (bicim === undefined) db.exec({ sql: "INSERT INTO meta VALUES('veri_bicimi', ?)", bind: [String(VERI_BICIMI)] });
     else if (Number(bicim) > VERI_BICIMI) throw new VeriBicimiHatasi(`Bu evren daha yeni bir sürümle kaydedilmiş (biçim ${bicim}). Güncelleme gerekli.`);
-    db.exec(IZDUSUM_SEMA);
+    const izdusum = Number(this.meta('izdusum_surumu') ?? 0);
+    if (izdusum !== IZDUSUM_SURUMU) {
+      // Tabloların yapısı değişti: tablolar silinir ve günlükten baştan kurulur (veri günlükte durur).
+      for (const t of IZDUSUM_TABLOLARI) db.exec(`DROP TABLE IF EXISTS ${t}`);
+      db.exec(IZDUSUM_SEMA);
+      this.yenidenKur();
+      db.exec({ sql: "INSERT INTO meta VALUES('izdusum_surumu', ?) ON CONFLICT(k) DO UPDATE SET v=excluded.v", bind: [String(IZDUSUM_SURUMU)] });
+    } else db.exec(IZDUSUM_SEMA);
     for (const r of db.selectObjects('SELECT kurulum, max(sira) s FROM islemler GROUP BY kurulum')) {
       this.gorulen[r.kurulum as string] = Number(r.s);
     }

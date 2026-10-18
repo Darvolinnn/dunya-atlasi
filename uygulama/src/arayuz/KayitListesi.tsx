@@ -1,9 +1,9 @@
 // Bir evrenin kayıtları: yeni kayıt, süzme, sıralama ve çöp kutusu.
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { KayitOzeti } from '../veri/api';
+import type { AramaSonucu, KayitOzeti } from '../veri/api';
 import { turBul } from '../alan/turler';
-import { katla, turkceKarsilastir } from '../alan/turkce';
+import { turkceKarsilastir } from '../alan/turkce';
 import { zamanYaz } from '../alan/islem-metni';
 import { KararRozeti, TurSecici } from './ortak';
 import { git } from './Uygulama';
@@ -33,15 +33,12 @@ export function YeniKayit({ istemci, evren }: { istemci: Istemci; evren: string 
 
 type Siralama = 'son' | 'ad' | 'tur';
 
-/** Bir kaydın aramaya uyup uymadığı; uyuyorsa hangi addan bulunduğu (§18 arama). */
-export function eslesme(k: KayitOzeti, arama: string): string | null | false {
-  const a = katla(arama.trim());
-  if (!a) return null;
-  if (katla(k.ad).includes(a)) return null;
-  const lakap = k.lakaplar.find((l) => katla(l).includes(a));
-  if (lakap) return lakap;
-  if (katla(k.ozet).includes(a)) return null;
-  return false;
+const NEREDEN: Record<string, string> = { lakap: 'lakabı', onceki: 'eski adı', okunus: 'okunuşu', kok: 'çekimli biçimden', ozet: 'özetinde', metin: 'metninde' };
+
+function neredenYazisi(n: AramaSonucu['nereden']): string | null {
+  if (n.tur === 'ad' || n.tur === 'ozet') return null;
+  if (n.tur === 'kok' || n.tur === 'metin') return NEREDEN[n.tur] + ' bulundu';
+  return `${NEREDEN[n.tur]} “${n.metin}” ile bulundu`;
 }
 
 export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
@@ -49,18 +46,27 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
   const [arama, setArama] = useState('');
   const [tur, setTur] = useState('');
   const [siralama, setSiralama] = useState<Siralama>('son');
+  const [bulunan, setBulunan] = useState<AramaSonucu[] | null>(null);
   useEffect(() => { istemci.iste('kayitlar', { evren }).then(setKayitlar); }, [evren, surum]);
+  useEffect(() => {
+    let iptal = false;
+    if (!arama.trim()) { setBulunan(null); return; }
+    istemci.iste('ara', { evren, metin: arama, sinir: 500 }).then((r) => { if (!iptal) setBulunan(r); });
+    return () => { iptal = true; };
+  }, [evren, arama, surum]);
 
   const gorunen = useMemo(() => {
     if (!kayitlar) return [];
-    const s = kayitlar
-      .filter((k) => !tur || k.tur === tur)
-      .map((k) => ({ k, nereden: eslesme(k, arama) }))
-      .filter((x) => x.nereden !== false);
+    const harita = new Map(kayitlar.map((k) => [k.kod, k]));
+    // Arama varken sıra aramanın sırasıdır (en iyi eşleşme önce).
+    const s = (bulunan ? bulunan.filter((b) => harita.has(b.kod)).map((b) => ({ k: harita.get(b.kod)!, nereden: neredenYazisi(b.nereden), parca: b.parca }))
+      : kayitlar.map((k) => ({ k, nereden: null as string | null, parca: undefined as string | undefined })))
+      .filter((x) => !tur || x.k.tur === tur);
+    if (bulunan) return s;
     if (siralama === 'ad') s.sort((x, y) => turkceKarsilastir(x.k.ad, y.k.ad));
     if (siralama === 'tur') s.sort((x, y) => turkceKarsilastir(turBul(x.k.tur).ad, turBul(y.k.tur).ad) || turkceKarsilastir(x.k.ad, y.k.ad));
     return s;
-  }, [kayitlar, arama, tur, siralama]);
+  }, [kayitlar, bulunan, tur, siralama]);
 
   if (!kayitlar) return null;
   return (
@@ -74,7 +80,7 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
       ) : (
         <>
           <div class="suzgec satir">
-            <input class="girdi" style="flex:2;min-width:180px" type="search" aria-label="Kayıtlarda ara" placeholder="Ara (ad, lakap, özet)" value={arama}
+            <input class="girdi" style="flex:2;min-width:180px" type="search" aria-label="Kayıtlarda ara" placeholder="Ara (ad, lakap, eski ad, metin)" value={arama}
               lang="tr" onInput={(e) => setArama((e.target as HTMLInputElement).value)} />
             <span style="flex:1;min-width:150px"><TurSecici deger={tur} onDegis={setTur} hepsi="Bütün türler" etiket="Türe göre süz" /></span>
             <select class="girdi" style="flex:1;min-width:150px" aria-label="Sıralama" value={siralama} onChange={(e) => setSiralama((e.target as HTMLSelectElement).value as Siralama)}>
@@ -86,7 +92,7 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
           <p class="soluk kucuk">{gorunen.length === kayitlar.length ? `${kayitlar.length} kayıt` : `${kayitlar.length} kayıttan ${gorunen.length} tanesi`}</p>
           {gorunen.length === 0 ? <div class="bos"><p>Aramaya uyan kayıt yok.</p></div> : (
             <ul class="kayit-listesi">
-              {gorunen.map(({ k, nereden }) => <KayitSatiri key={k.kod} k={k} evren={evren} nereden={nereden} />)}
+              {gorunen.map(({ k, nereden, parca }) => <KayitSatiri key={k.kod} k={k} evren={evren} nereden={nereden} parca={parca} />)}
             </ul>
           )}
         </>
@@ -95,7 +101,7 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
   );
 }
 
-function KayitSatiri({ k, evren, nereden }: { k: KayitOzeti; evren: string; nereden?: string | null | false }) {
+function KayitSatiri({ k, evren, nereden, parca }: { k: KayitOzeti; evren: string; nereden?: string | null; parca?: string }) {
   const tur = turBul(k.tur);
   return (
     <li>
@@ -103,7 +109,8 @@ function KayitSatiri({ k, evren, nereden }: { k: KayitOzeti; evren: string; nere
         <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>
         <span class="govde">
           <span class="satir-ad">{k.ad} <KararRozeti karar={k.karar} /></span>
-          <span class="soluk kucuk">{tur.ad}{k.ozet ? ` · ${k.ozet}` : ''}{nereden ? ` · “${nereden}” adıyla bulundu` : ''}</span>
+          <span class="soluk kucuk">{tur.ad}{k.ozet ? ` · ${k.ozet}` : ''}{nereden ? ` · ${nereden}` : ''}</span>
+          {parca && <span class="soluk kucuk parca">{parca}</span>}
         </span>
         <span class="soluk kucuk zaman">{zamanYaz(k.duzenleme)}</span>
       </a>
@@ -133,6 +140,22 @@ export function CopKutusu({ istemci, evren, surum }: { istemci: Istemci; evren: 
               </li>
             );
           })}
+        </ul>
+      )}
+    </>
+  );
+}
+
+export function Bahsedilenler({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
+  const [liste, setListe] = useState<(KayitOzeti & { anilma: number })[] | null>(null);
+  useEffect(() => { istemci.iste('bahsedilenler', { evren }).then(setListe); }, [evren, surum]);
+  if (!liste) return null;
+  return (
+    <>
+      <p class="soluk kucuk">Metinlerde bağlantı verilmiş ama kendi metni henüz yazılmamış kayıtlar. En çok anılan en üstte.</p>
+      {liste.length === 0 ? <div class="bos"><p>Bahsedilip yazılmamış kayıt yok.</p></div> : (
+        <ul class="kayit-listesi">
+          {liste.map((k) => <KayitSatiri key={k.kod} k={k} evren={evren} nereden={`${k.anilma} yerde anılıyor`} />)}
         </ul>
       )}
     </>

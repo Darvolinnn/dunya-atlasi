@@ -2,7 +2,8 @@
 // sürüm geçmişi (§10.8) ve çöp kutusuna taşıma.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { DegisebilirAlan, GunlukSatiri, Kayit, Spans } from '../veri/api';
+import type { AdDuzeltmesi, BaglananKayit, DegisebilirAlan, GunlukSatiri, Kayit, Spans } from '../veri/api';
+import { sesBilgisi } from '../alan/turkce-ek';
 import { KARARLAR, turBul } from '../alan/turler';
 import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
 import { MetinEditoru, MetinGorunumu, type EditorDenetimi } from './MetinEditoru';
@@ -17,6 +18,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   const [editorAnahtari, setEditorAnahtari] = useState(0);
   const [gecmisAcik, setGecmisAcik] = useState(false);
   const denetim = useRef<EditorDenetimi | null>(null);
+  const [duzeltme, setDuzeltme] = useState<{ eskiAd: string; yeniAd: string; eskiOkunus: string; liste: AdDuzeltmesi[] } | null>(null);
 
   useEffect(() => { istemci.iste('kayit', { evren, kod }).then((k) => { setKayit(k); setHata(null); }, (e) => setHata(e.message)); }, [evren, kod, surum]);
   useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then((b) => setEvrenAdi(b.ad), () => {}); }, [evren]);
@@ -46,8 +48,23 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         )}
         <div class="kayit-basi">
           <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>
-          <AlanGirdisi etiket="Ad" deger={kayit.ad} buyuk kaydet={(v) => degistir('ad', v)} zorunlu />
+          <AlanGirdisi etiket="Ad" deger={kayit.ad} buyuk zorunlu kaydet={async (v) => {
+            const eskiAd = kayit.ad, eskiOkunus = kayit.okunus;
+            await degistir('ad', v);
+            const yeniAd = v.trim().replace(/\s+/g, ' ');
+            const liste = await istemci.iste('adDuzeltmeOnizle', { evren, kod, eskiAd, yeniAd, eskiOkunus });
+            setDuzeltme(liste.length ? { eskiAd, yeniAd, eskiOkunus, liste } : null);
+          }} />
         </div>
+        {duzeltme && (
+          <AdDuzeltmePaneli duzeltme={duzeltme} okunusVar={!!kayit.okunus} kapat={() => setDuzeltme(null)}
+            uygula={async (secilenler) => {
+              await denetim.current?.kaydet();
+              await istemci.iste('adDuzeltmeUygula', { evren, kod, eskiAd: duzeltme.eskiAd, yeniAd: duzeltme.yeniAd, eskiOkunus: duzeltme.eskiOkunus, secilenler });
+              if (duzeltme.liste.some((x) => x.kaynak === kod)) setEditorAnahtari((n) => n + 1);
+              setDuzeltme(null);
+            }} />
+        )}
         <div class="alanlar">
           <label class="alan">
             <span class="alan-adi">Tür</span>
@@ -83,6 +100,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         </div>
 
         <MetinEditoru key={editorAnahtari} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} />
+
+        <Baglananlar istemci={istemci} evren={evren} kod={kod} surum={surum} />
 
         {gecmisAcik && (
           <SurumGecmisi istemci={istemci} evren={evren} kayit={kayit} surum={surum}
@@ -190,6 +209,70 @@ function SurumGecmisi({ istemci, evren, kayit, surum, geriGetir }: {
             </span>
           </li>
         ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Yazar düzeltmesi (§5.1): bağlantılı ifadeler yeni adla ve uyumlu ekle değişir; yazar hangilerinin değişeceğini seçer. */
+function AdDuzeltmePaneli({ duzeltme, okunusVar, uygula, kapat }: {
+  duzeltme: { eskiAd: string; yeniAd: string; liste: AdDuzeltmesi[] }; okunusVar: boolean;
+  uygula: (secilenler: string[]) => Promise<void>; kapat: () => void;
+}) {
+  const anahtar = (x: AdDuzeltmesi) => `${x.kaynak}:${x.sira}`;
+  const [secili, setSecili] = useState(() => new Set(duzeltme.liste.map(anahtar)));
+  const [calisiyor, setCalisiyor] = useState(false);
+  const belirsiz = !sesBilgisi(duzeltme.yeniAd).kesin;
+  const degistir = (k: string) => { const s = new Set(secili); if (s.has(k)) s.delete(k); else s.add(k); setSecili(s); };
+  return (
+    <section class="kart ad-duzeltme" aria-label="Bağlantılarda ad">
+      <h2>“{duzeltme.eskiAd}” başka metinlerde {duzeltme.liste.length} yerde geçiyor</h2>
+      <p class="soluk kucuk">Bağlantılar zaten yeni ada gidiyor. İsterseniz metinlerde görünen ad da değişsin; ekler yeni ada uydurulur.
+        Değiştirmek istemediklerinizin işaretini kaldırın.</p>
+      {belirsiz && !okunusVar && <p class="uyari kucuk">“{duzeltme.yeniAd}” adının nasıl okunduğundan emin değilim. Ekleri kontrol edin; gerekirse aşağıdan okunuşunu girip adı yeniden kaydedin.</p>}
+      <ul class="duzeltme-listesi">
+        {duzeltme.liste.map((x) => (
+          <li key={anahtar(x)}>
+            <label class="satir">
+              <input type="checkbox" checked={secili.has(anahtar(x))} onChange={() => degistir(anahtar(x))} />
+              <span class="soluk">{x.kaynakAd}:</span>
+              <span><s>{x.eski}</s> → <strong>{x.yeni}</strong></span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <div class="satir">
+        <button class="dugme ana" disabled={calisiyor || !secili.size} onClick={async () => { setCalisiyor(true); try { await uygula([...secili]); } finally { setCalisiyor(false); } }}>
+          {secili.size === duzeltme.liste.length ? 'Hepsini değiştir' : `Seçilen ${secili.size} yeri değiştir`}
+        </button>
+        <button class="dugme" onClick={kapat}>Hiçbirini değiştirme</button>
+      </div>
+    </section>
+  );
+}
+
+function Baglananlar({ istemci, evren, kod, surum }: { istemci: Istemci; evren: string; kod: string; surum: number }) {
+  const [liste, setListe] = useState<BaglananKayit[] | null>(null);
+  useEffect(() => { istemci.iste('baglananlar', { evren, kod }).then(setListe); }, [kod, surum]);
+  if (!liste || !liste.length) return null;
+  return (
+    <section class="baglananlar" aria-label="Bu kayda bağlananlar">
+      <h2>Bu kayda bağlananlar ({liste.length})</h2>
+      <ul class="kayit-listesi">
+        {liste.map((b) => {
+          const tur = turBul(b.tur);
+          return (
+            <li key={b.kod}>
+              <a class="kayit-satiri" href={`#/e/${evren}/k/${b.kod}`}>
+                <span class="tur-rozeti" aria-hidden="true" title={tur.ad}>{tur.kisa}</span>
+                <span class="govde">
+                  <span class="satir-ad">{b.ad}</span>
+                  <span class="soluk kucuk">{b.ifadeler.map((i) => `“${i}”`).join(', ')}</span>
+                </span>
+              </a>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

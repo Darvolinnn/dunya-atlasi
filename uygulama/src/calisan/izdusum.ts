@@ -3,7 +3,11 @@
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import type { Islem } from '../alan/islem';
 import { A } from '../alan/automerge';
-import { duzMetin } from '../alan/metin-sema';
+import { baglantilar, duzMetin } from '../alan/metin-sema';
+import { katla } from '../alan/turkce';
+
+/** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
+export const IZDUSUM_SURUMU = 2;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -26,11 +30,21 @@ CREATE TABLE IF NOT EXISTS metinler(
   alan TEXT NOT NULL,
   belge BLOB NOT NULL,
   duz TEXT NOT NULL,
+  katli TEXT NOT NULL DEFAULT '',
   duzenleme INTEGER NOT NULL,
   PRIMARY KEY(kayit, alan)
 );
+CREATE TABLE IF NOT EXISTS baglantilar(
+  kaynak TEXT NOT NULL,
+  alan TEXT NOT NULL,
+  sira INTEGER NOT NULL,
+  hedef TEXT NOT NULL,
+  metin TEXT NOT NULL,
+  PRIMARY KEY(kaynak, alan, sira)
+);
+CREATE INDEX IF NOT EXISTS baglantilar_hedef ON baglantilar(hedef);
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler'];
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -113,12 +127,17 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const onceki = metinBelgesi(db, kayit, alan) ?? A.init<{ t: string }>();
     const yeni = A.loadIncremental(onceki, i.ikili);
     belgeler.get(db)!.set(kayit + '\u0000' + alan, yeni);
-    const duz = duzMetin(A.spans(yeni, ['t']) as never);
+    const spans = A.spans(yeni, ['t']) as never;
+    const duz = duzMetin(spans);
     db.exec({
-      sql: `INSERT INTO metinler(kayit, alan, belge, duz, duzenleme) VALUES(?,?,?,?,?)
-            ON CONFLICT(kayit, alan) DO UPDATE SET belge=excluded.belge, duz=excluded.duz, duzenleme=excluded.duzenleme`,
-      bind: [kayit, alan, A.save(yeni), duz, i.zaman],
+      sql: `INSERT INTO metinler(kayit, alan, belge, duz, katli, duzenleme) VALUES(?,?,?,?,?,?)
+            ON CONFLICT(kayit, alan) DO UPDATE SET belge=excluded.belge, duz=excluded.duz, katli=excluded.katli, duzenleme=excluded.duzenleme`,
+      bind: [kayit, alan, A.save(yeni), duz, katla(duz), i.zaman],
     });
+    db.exec({ sql: 'DELETE FROM baglantilar WHERE kaynak=? AND alan=?', bind: [kayit, alan] });
+    baglantilar(spans).forEach((b, sira) => db.exec({
+      sql: 'INSERT INTO baglantilar(kaynak, alan, sira, hedef, metin) VALUES(?,?,?,?,?)', bind: [kayit, alan, sira, b.hedef, b.metin],
+    }));
     db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, kayit] });
   },
 };
