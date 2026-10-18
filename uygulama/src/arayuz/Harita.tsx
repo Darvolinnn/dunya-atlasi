@@ -2,7 +2,10 @@
 // İşaretler haritanın uzayında durur; görsel bu uzaya oturtulmuş bir katmandır. Kipler görünür biçimde seçilir (§8.7).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { HaritaAyrintisi, HaritaIsareti, HaritaKatmani, HaritaOzeti, IsaretGirdisi, Kayit, KayitHaritalari } from '../veri/api';
+import type { HaritaAyrintisi, HaritaCizimi, HaritaIsareti, HaritaKatmani, HaritaOzeti, IsaretGirdisi, Kayit, KayitHaritalari } from '../veri/api';
+import { anaTakvim, yilYazisi } from '../alan/tarih';
+import { useTakvim } from './Takvim';
+import { SinirAlani } from './Anlati';
 import { hizala, ters, uygula, type Donusum, type KontrolCifti, type Nokta } from '../alan/hizalama';
 import { turBul } from '../alan/turler';
 import { BaglantiSecici } from './BaglantiSecici';
@@ -110,7 +113,11 @@ function HaritaYukle({ istemci, evren, yer = null }: { istemci: Istemci; evren: 
 
 // ---------- Harita görünümü ----------
 type Kip = { tur: 'gez' } | { tur: 'koy'; kesinlik: 'kesin' | 'yaklasik' } | { tur: 'tasi'; isaret: string; kesinlik: 'kesin' | 'yaklasik' }
-  | { tur: 'hizala'; katman: string; ciftler: KontrolCifti[]; bekleyen: Nokta | null };
+  | { tur: 'hizala'; katman: string; ciftler: KontrolCifti[]; bekleyen: Nokta | null }
+  | { tur: 'ciz'; bicim: 'bolge' | 'yol'; noktalar: Nokta[]; cizim: string | null };
+
+/** Kayda göre sabit renk: aynı kaydın bölgeleri her haritada aynı renktedir. */
+const kayitRengi = (kod: string) => { let h = 0; for (const c of kod) h = (h * 31 + c.charCodeAt(0)) % 360; return `hsl(${h} 55% 42%)`; };
 
 /** Katmanın CSS dönüşümü: öteleme katmanın kendi boyuna göre yüzde, doğrusal kısım matris (§8.5). */
 const katmanStili = (k: HaritaKatmani, d: Donusum, h: { en: number }, saydamlik: number) => ({
@@ -131,10 +138,15 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
   const [gizli, setGizli] = useState<Set<string>>(new Set());
   const [saydamlik, setSaydamlik] = useState<Record<string, number>>({});
   const [gizliTurler, setGizliTurler] = useState<Set<string>>(new Set());
+  const [seciliCizim, setSeciliCizim] = useState<string | null>(null);
+  const [cizimKaydi, setCizimKaydi] = useState<{ left: number; top: number } | null>(null);
+  const [bolgeKipi, setBolgeKipi] = useState<'denetim' | 'iddia'>('denetim');
+  const [an, setAn] = useState('');
+  const z = useTakvim(istemci, evren);
   const yuzey = useRef<HTMLDivElement>(null);
-  useEffect(() => { istemci.iste('harita', { evren, kod, bakis: bakis?.kod ?? null }).then((x) => { setH(x); setHata(null); }, (e) => setHata(hataYaz(e))); }, [kod, bakis?.kod, n]);
+  useEffect(() => { istemci.iste('harita', { evren, kod, bakis: bakis?.kod ?? null, an: an || null }).then((x) => { setH(x); setHata(null); }, (e) => setHata(hataYaz(e))); }, [kod, bakis?.kod, n, an]);
   useEffect(() => {
-    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { setKip((k) => (k.tur === 'hizala' && k.bekleyen ? { ...k, bekleyen: null } : { tur: 'gez' })); setYeni(null); } };
+    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { setKip((k) => (k.tur === 'hizala' && k.bekleyen ? { ...k, bekleyen: null } : { tur: 'gez' })); setYeni(null); setCizimKaydi(null); } };
     addEventListener('keydown', tus);
     return () => removeEventListener('keydown', tus);
   }, []);
@@ -147,8 +159,9 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
     return { x: ((e.clientX - r.left) / r.width) * h.en, y: ((e.clientY - r.top) / r.height) * h.boy };
   };
   const tikla = async (e: MouseEvent) => {
-    if (kip.tur === 'gez') { setSecili(null); return; }
+    if (kip.tur === 'gez') { setSecili(null); setSeciliCizim(null); return; }
     const p = uzayNoktasi(e);
+    if (kip.tur === 'ciz') { setKip({ ...kip, noktalar: [...kip.noktalar, [p.x, p.y]] }); return; }
     if (kip.tur === 'hizala') {
       const k = h.katmanlar.find((x) => x.kod === kip.katman);
       if (!k) return;
@@ -191,6 +204,8 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
         <button class="dugme kucuk" aria-pressed={kip.tur === 'gez'} onClick={() => setKip({ tur: 'gez' })}>Gez ve seç</button>
         <button class="dugme kucuk" aria-pressed={kip.tur === 'koy' && kip.kesinlik === 'kesin'} disabled={h.silindi} onClick={() => setKip({ tur: 'koy', kesinlik: 'kesin' })}>Kesin yer işaretle</button>
         <button class="dugme kucuk" aria-pressed={kip.tur === 'koy' && kip.kesinlik === 'yaklasik'} disabled={h.silindi} onClick={() => setKip({ tur: 'koy', kesinlik: 'yaklasik' })}>Yaklaşık bölge işaretle</button>
+        <button class="dugme kucuk" aria-pressed={kip.tur === 'ciz' && kip.bicim === 'bolge' && !kip.cizim} disabled={h.silindi} onClick={() => { setSecili(null); setSeciliCizim(null); setKip({ tur: 'ciz', bicim: 'bolge', noktalar: [], cizim: null }); }}>Bölge çiz</button>
+        <button class="dugme kucuk" aria-pressed={kip.tur === 'ciz' && kip.bicim === 'yol' && !kip.cizim} disabled={h.silindi} onClick={() => { setSecili(null); setSeciliCizim(null); setKip({ tur: 'ciz', bicim: 'yol', noktalar: [], cizim: null }); }}>Yol çiz</button>
         <BakisSecici istemci={istemci} evren={evren} bakis={bakis} sec={setBakis} />
         <span class="bosluk" />
         <button class="dugme kucuk" aria-label="Uzaklaştır" disabled={yakinlik <= 1} onClick={() => setYakinlik((z) => Math.max(1, z / 1.5))}>−</button>
@@ -198,13 +213,15 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
         <button class="dugme kucuk" aria-label="Yakınlaştır" disabled={yakinlik >= 12} onClick={() => setYakinlik((z) => Math.min(12, z * 1.5))}>+</button>
       </div>
       <p class="soluk kucuk" role="status">
-        {kip.tur === 'hizala' ? (kip.bekleyen ? 'Şimdi bu noktanın haritada olması gereken yere dokun.' : 'Hizalanan görselde tanıdık bir noktaya dokun (bir kıyı köşesi, bir kale).')
+        {kip.tur === 'ciz' ? `Haritada ${kip.bicim === 'bolge' ? 'bölgenin sınırı' : 'yol'} boyunca sırayla dokun; bitince yandaki “Bitir”e bas. Vazgeçmek için Esc.`
+          : kip.tur === 'hizala' ? (kip.bekleyen ? 'Şimdi bu noktanın haritada olması gereken yere dokun.' : 'Hizalanan görselde tanıdık bir noktaya dokun (bir kıyı köşesi, bir kale).')
           : kip.tur === 'koy' ? `Haritada bir yere dokun, sonra bağlanacak kaydı seç. Bitirmek için “Gez ve seç”e bas ya da Esc.`
           : kip.tur === 'tasi' ? `“${h.isaretler.find((x) => x.kod === kip.isaret)?.kayit.ad}” için yeni yere dokun. Vazgeçmek için Esc.`
             : 'Bir işarete dokunarak seç. İşaret koymak için yukarıdan bir kip seç.'}
       </p>
       {hata && <p class="hata kucuk">{hata}</p>}
       <BakisAciklamasi bakis={h.bakis} />
+      <ZamanKaydirici h={h} an={an} setAn={setAn} yilYaz={(y) => yilYazisi(y, anaTakvim(z))} />
 
       <div class="harita-duzen">
         <div class="harita-tuval">
@@ -228,6 +245,27 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
                 </>
               );
             })()}
+            <svg class={`harita-cizimler${kip.tur === 'gez' ? ' secilebilir' : ''}`} viewBox={`0 0 ${h.en} ${h.boy}`} preserveAspectRatio="none" aria-hidden="true">
+              {h.cizimler.filter((c) => c.gecerli !== 'hayir' && !gizliTurler.has(c.kayit.tur) && !(kip.tur === 'ciz' && kip.cizim === c.kod)).map((c) => {
+                const renk = kayitRengi(c.kayit.kod);
+                const nk = c.noktalar.map((p) => p.join(',')).join(' ');
+                const sinif = `cizim ${c.bicim} ${c.kip ?? ''}${c.kod === seciliCizim ? ' secili' : ''}${c.gecerli === 'belirsiz' ? ' belirsiz' : ''}${c.inanc ? ' inanc' : ''} karar-${c.karar}`;
+                const sec = (e: MouseEvent) => { e.stopPropagation(); if (kip.tur === 'gez') { setSecili(null); setSeciliCizim(c.kod); } };
+                return c.bicim === 'bolge'
+                  ? <polygon key={c.kod} class={sinif} points={nk} style={{ stroke: renk, fill: renk }} vector-effect="non-scaling-stroke" onClick={sec}><title>{c.kayit.ad}</title></polygon>
+                  : <polyline key={c.kod} class={sinif} points={nk} style={{ stroke: renk }} vector-effect="non-scaling-stroke" onClick={sec}><title>{c.kayit.ad}</title></polyline>;
+              })}
+              {kip.tur === 'ciz' && kip.noktalar.length > 0 && (
+                kip.bicim === 'bolge' && kip.noktalar.length >= 3
+                  ? <polygon class="cizim taslak" points={kip.noktalar.map((p) => p.join(',')).join(' ')} vector-effect="non-scaling-stroke" />
+                  : <polyline class="cizim taslak" points={kip.noktalar.map((p) => p.join(',')).join(' ')} vector-effect="non-scaling-stroke" />
+              )}
+            </svg>
+            {kip.tur === 'ciz' && kip.noktalar.map((p, i) => <span key={i} class="cizim-noktasi" style={{ left: yuzde(p[0], h.en), top: yuzde(p[1], h.boy) }} aria-hidden="true" />)}
+            {h.cizimler.filter((c) => c.bicim === 'bolge' && c.gecerli !== 'hayir' && !gizliTurler.has(c.kayit.tur)).map((c) => {
+              const [x, y] = c.noktalar.reduce((t, p) => [t[0] + p[0] / c.noktalar.length, t[1] + p[1] / c.noktalar.length], [0, 0]);
+              return <span key={c.kod} class={`cizim-etiketi${c.kip === 'iddia' ? ' iddia' : ''}`} style={{ left: yuzde(x, h.en), top: yuzde(y, h.boy) }} aria-hidden="true">{c.kayit.ad}{c.kip === 'iddia' ? ' (iddia)' : ''}</span>;
+            })}
             {yerlesen.map((i) => (
               <IsaretGorseli key={i.kod} i={i} h={h} secili={i.kod === secili} sec={() => { if (kip.tur === 'gez') setSecili(i.kod); }} />
             ))}
@@ -235,7 +273,18 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
           </div>
         </div>
         <aside class="harita-yan">
-          {kip.tur === 'hizala' ? <HizalamaPaneli istemci={istemci} evren={evren} h={h} kip={kip} sonuc={hzSonuc} setKip={setKip} hata={setHata} />
+          {kip.tur === 'ciz' ? (
+            <CizimTaslagi kip={kip} bolgeKipi={bolgeKipi} setBolgeKipi={setBolgeKipi} setKip={setKip}
+              bitir={async (e) => {
+                if (kip.cizim) {
+                  const r = await iste(istemci.iste('cizimDegistir', { evren, kod: kip.cizim, alan: 'noktalar', deger: kip.noktalar }));
+                  if (r !== null) { setSeciliCizim(kip.cizim); setKip({ tur: 'gez' }); }
+                } else { const b = (e.currentTarget as HTMLElement).getBoundingClientRect(); setCizimKaydi({ left: b.left, top: b.bottom + 4 }); }
+              }} />
+          ) : seciliCizim && h.cizimler.some((c) => c.kod === seciliCizim) ? (
+            <CizimPaneli istemci={istemci} evren={evren} c={h.cizimler.find((c) => c.kod === seciliCizim)!} kapat={() => setSeciliCizim(null)} hata={setHata}
+              yenidenCiz={(c) => setKip({ tur: 'ciz', bicim: c.bicim, noktalar: [], cizim: c.kod })} />
+          ) : kip.tur === 'hizala' ? <HizalamaPaneli istemci={istemci} evren={evren} h={h} kip={kip} sonuc={hzSonuc} setKip={setKip} hata={setHata} />
             : sec ? <IsaretPaneli istemci={istemci} evren={evren} i={sec} enBuyuk={Math.max(h.en, h.boy)} kapat={() => setSecili(null)}
             tasi={(k) => setKip({ tur: 'tasi', isaret: sec.kod, kesinlik: k })} hata={setHata} />
             : (
@@ -249,6 +298,26 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
                         onChange={() => setGizliTurler((g) => { const y = new Set(g); if (y.has(t)) y.delete(t); else y.add(t); return y; })} /> {turBul(t).ad}</label>
                     ))}
                   </fieldset>
+                )}
+                {h.an && (
+                  <section aria-label="Bu tarihte">
+                    <h2>{h.an.ifade} itibarıyla</h2>
+                    {!h.an.gecerli && <p class="hata kucuk">Bu tarih takvimde bir yere oturmuyor.</p>}
+                    {h.an.gecerli && !h.buTarihte.length && <p class="soluk kucuk">Yeri bu haritada işaretli olup bu tarihe denk gelen olay ya da sahne yok.</p>}
+                    <ul class="isaret-listesi">{h.buTarihte.map((o) => <li key={o.kod}><a href={`#/e/${evren}/k/${o.kod}`}>{o.ad}</a> <span class="soluk kucuk">{o.yer} · {o.tarih}</span></li>)}</ul>
+                  </section>
+                )}
+                {h.cizimler.length > 0 && (
+                  <>
+                    <h2>Bölgeler ve yollar</h2>
+                    <ul class="isaret-listesi">
+                      {h.cizimler.map((c) => (
+                        <li key={c.kod} class={c.gecerli === 'hayir' ? 'soluk' : ''}><span class="renk-kutusu" style={{ background: kayitRengi(c.kayit.kod) }} aria-hidden="true" />
+                          <button class="dugme sade kucuk" onClick={() => setSeciliCizim(c.kod)}>{c.kayit.ad}</button>
+                          <span class="soluk kucuk">{c.bicim === 'yol' ? 'yol' : c.kip === 'iddia' ? 'iddia edilen bölge' : 'bölge'}{c.gecerli === 'hayir' ? ' · bu tarihte yok' : c.gecerli === 'belirsiz' ? ' · bu tarihte belirsiz' : ''}</span></li>
+                      ))}
+                    </ul>
+                  </>
                 )}
                 <h2>İşaretler</h2>
                 {h.isaretler.length === 0 && <p class="soluk kucuk">Henüz işaret yok.</p>}
@@ -271,6 +340,13 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
         </aside>
       </div>
       {yeni && <BaglantiSecici istemci={istemci} evren={evren} sorgu="" konum={yeni.ekran} sec={(s) => void yeniKoy(s.kod)} kapat={() => setYeni(null)} />}
+      {cizimKaydi && kip.tur === 'ciz' && <BaglantiSecici istemci={istemci} evren={evren} sorgu="" konum={cizimKaydi}
+        sec={(s) => {
+          setCizimKaydi(null);
+          void iste(istemci.iste('cizimEkle', { evren, harita: kod, kayit: s.kod, bicim: kip.bicim, kip: kip.bicim === 'bolge' ? bolgeKipi : null, noktalar: kip.noktalar }))
+            .then((r) => { if (r) { setKip({ tur: 'gez' }); setSeciliCizim(r.kod); } });
+        }}
+        kapat={() => setCizimKaydi(null)} />}
       {bilinmeyenEkle && <BaglantiSecici istemci={istemci} evren={evren} sorgu="" konum={bilinmeyenEkle}
         sec={(s) => { setBilinmeyenEkle(null); void iste(istemci.iste('isaretKoy', { evren, harita: kod, kayit: s.kod, konum: { kesinlik: 'bilinmiyor', x: null, y: null, yaricap: null } })); }}
         kapat={() => setBilinmeyenEkle(null)} />}
@@ -375,6 +451,80 @@ function HizalamaPaneli({ istemci, evren, h, kip, sonuc, setKip, hata }: {
   );
 }
 
+/** Zaman kaydırıcısı (§8.2): harita seçilen tarihteki hâliyle gösterilir. Tarih yazılır ya da çizimlerin yılları arasında kaydırılır. */
+function ZamanKaydirici({ h, an, setAn, yilYaz }: { h: HaritaAyrintisi; an: string; setAn: (s: string) => void; yilYaz: (y: number) => string }) {
+  const [girdi, setGirdi] = useState(an);
+  const [yil, setYil] = useState<number | null>(null);
+  useEffect(() => setGirdi(an), [an]);
+  const ar = h.zamanAraligi;
+  if (!ar && !an && !h.cizimler.length) return null;
+  return (
+    <div class="satir zaman-kaydirici" role="group" aria-label="Zaman kaydırıcısı">
+      <label class="satir kucuk">Tarih
+        <input class="girdi kucuk" lang="tr" aria-label="Haritayı bu tarihte göster" placeholder="Örn. 412" value={girdi} style="width:140px"
+          onInput={(e) => setGirdi((e.target as HTMLInputElement).value)} onKeyDown={(e) => { if (e.key === 'Enter') setAn(girdi.trim()); }} onBlur={() => setAn(girdi.trim())} /></label>
+      {ar && ar.enBuyuk > ar.enKucuk && (
+        <input type="range" min={ar.enKucuk - 1} max={ar.enBuyuk + 1} step={1} value={yil ?? ar.enKucuk - 1} aria-label="Yıl" style="flex:1;min-width:160px"
+          onInput={(e) => setYil(Number((e.target as HTMLInputElement).value))} onChange={(e) => setAn(yilYaz(Number((e.target as HTMLInputElement).value)))} />
+      )}
+      {an && <button class="dugme sade kucuk" onClick={() => { setAn(''); setYil(null); }}>Bütün zamanlar</button>}
+      {an && <span class="soluk kucuk">{h.cizimler.filter((c) => c.gecerli === 'hayir').length} çizim bu tarihte yok; tarihi kesin olmayanlar soluk.</span>}
+    </div>
+  );
+}
+
+function CizimTaslagi({ kip, bolgeKipi, setBolgeKipi, setKip, bitir }: {
+  kip: Extract<Kip, { tur: 'ciz' }>; bolgeKipi: 'denetim' | 'iddia'; setBolgeKipi: (k: 'denetim' | 'iddia') => void; setKip: (k: Kip) => void; bitir: (e: MouseEvent) => void;
+}) {
+  const yeter = kip.noktalar.length >= (kip.bicim === 'bolge' ? 3 : 2);
+  return (
+    <div class="hizalama-paneli" aria-label="Çizim">
+      <h2>{kip.cizim ? 'Sınır yeniden çiziliyor' : kip.bicim === 'bolge' ? 'Yeni bölge' : 'Yeni yol'}</h2>
+      <p class="kucuk">{kip.noktalar.length} nokta{yeter ? '' : ` · en az ${kip.bicim === 'bolge' ? 3 : 2} gerekir`}</p>
+      {kip.bicim === 'bolge' && !kip.cizim && (
+        <fieldset class="katman-turleri"><legend class="alan-adi">Bölgenin türü</legend>
+          <label class="kucuk"><input type="radio" name="bolge-kipi" checked={bolgeKipi === 'denetim'} onChange={() => setBolgeKipi('denetim')} /> Fiilî denetim</label>
+          <label class="kucuk"><input type="radio" name="bolge-kipi" checked={bolgeKipi === 'iddia'} onChange={() => setBolgeKipi('iddia')} /> İddia edilen</label>
+        </fieldset>
+      )}
+      <p class="soluk kucuk">Bölgeler örtüşebilir. Tartışmalı toprakta her tarafın iddiasını ayrı bölge olarak çiz.</p>
+      <div class="satir">
+        <button class="dugme ana kucuk" disabled={!yeter} onClick={bitir}>{kip.cizim ? 'Kaydet' : 'Bitir ve kayda bağla'}</button>
+        <button class="dugme sade kucuk" disabled={!kip.noktalar.length} onClick={() => setKip({ ...kip, noktalar: kip.noktalar.slice(0, -1) })}>Son noktayı sil</button>
+        <button class="dugme sade kucuk" onClick={() => setKip({ tur: 'gez' })}>Vazgeç</button>
+      </div>
+    </div>
+  );
+}
+
+function CizimPaneli({ istemci, evren, c, kapat, hata, yenidenCiz }: {
+  istemci: Istemci; evren: string; c: HaritaCizimi; kapat: () => void; hata: (s: string | null) => void; yenidenCiz: (c: HaritaCizimi) => void;
+}) {
+  const iste = (p: Promise<unknown>) => p.then(() => hata(null), (e) => { hata(hataYaz(e)); throw e; });
+  const degistir = (alan: 'kayit' | 'kip' | 'baslangic' | 'bitis', deger: unknown) => iste(istemci.iste('cizimDegistir', { evren, kod: c.kod, alan, deger }));
+  return (
+    <div class="isaret-paneli" aria-label="Seçili çizim">
+      <div class="satir"><h2 style="flex:1"><a href={`#/e/${evren}/k/${c.kayit.kod}`}>{c.kayit.ad}</a></h2>
+        <button class="dugme sade kucuk" onClick={kapat} aria-label="Seçimi kapat">✕</button></div>
+      <p class="soluk kucuk">{c.bicim === 'yol' ? 'Yol' : 'Bölge'} · {turBul(c.kayit.tur).ad} <KararRozeti karar={c.karar} /></p>
+      {c.bicim === 'bolge' && (
+        <label class="alan"><span class="alan-adi">Bölgenin türü</span>
+          <select class="girdi" value={c.kip ?? 'denetim'} onChange={(e) => void degistir('kip', (e.target as HTMLSelectElement).value).catch(() => {})}>
+            <option value="denetim">Fiilî denetim</option><option value="iddia">İddia edilen</option>
+          </select></label>
+      )}
+      <SinirAlani istemci={istemci} evren={evren} etiket="Başlangıç" deger={c.baslangic} kaydet={(v) => degistir('baslangic', v)} />
+      <SinirAlani istemci={istemci} evren={evren} etiket="Bitiş" deger={c.bitis} kaydet={(v) => degistir('bitis', v)} />
+      <p class="soluk kucuk">Boş başlangıç ya da bitiş sınırsız sayılır. Bir olaya bağlanan sınır, olayın tarihi değişince kendiliğinden kayar.</p>
+      <div class="satir">
+        <button class="dugme kucuk" onClick={() => yenidenCiz(c)}>Sınırı yeniden çiz</button>
+        <KayitSec istemci={istemci} evren={evren} secili={null} etiket="Başka kayda bağla" sec={(s) => { if (s) void degistir('kayit', s.kod).catch(() => {}); }} />
+        <button class="dugme sade kucuk tehlikeli" onClick={() => { void iste(istemci.iste('cizimSil', { evren, kod: c.kod })).then(kapat, () => {}); }}>Kaldır</button>
+      </div>
+    </div>
+  );
+}
+
 function HaritaBasligi({ istemci, evren, h }: { istemci: Istemci; evren: string; h: HaritaAyrintisi }) {
   const [ad, setAd] = useState(h.ad);
   const [hata, setHata] = useState<string | null>(null);
@@ -455,13 +605,14 @@ export function KayitHaritaBolumu({ istemci, evren, kayit }: { istemci: Istemci;
   const n = useYenile(istemci, evren);
   const [v, setV] = useState<KayitHaritalari | null>(null);
   useEffect(() => { istemci.iste('kayitHaritalari', { evren, kod: kayit.kod }).then(setV, () => setV(null)); }, [kayit.kod, n]);
-  if (!v || (!v.isaretler.length && !v.haritalar.length)) return null;
+  if (!v || (!v.isaretler.length && !v.haritalar.length && !v.cizimler.length)) return null;
   return (
     <section class="kayit-haritalari" aria-label="Haritalar">
       <h2>Haritalar</h2>
       <ul>
         {v.haritalar.map((h) => <li key={h.kod}><a href={`#/e/${evren}/haritalar/${h.kod}`}>{h.ad}</a> <span class="soluk kucuk">bu yerin haritası</span></li>)}
         {v.isaretler.map((i) => <li key={i.kod}><a href={`#/e/${evren}/haritalar/${i.harita}`}>{i.haritaAd}</a> <span class="soluk kucuk">{kesinlikAdi(i.kesinlik).toLocaleLowerCase('tr-TR')}</span></li>)}
+        {v.cizimler.map((c) => <li key={c.kod}><a href={`#/e/${evren}/haritalar/${c.harita}`}>{c.haritaAd}</a> <span class="soluk kucuk">{c.bicim === 'yol' ? 'yol' : c.kip === 'iddia' ? 'iddia ettiği bölge' : 'bölgesi'}</span></li>)}
       </ul>
     </section>
   );

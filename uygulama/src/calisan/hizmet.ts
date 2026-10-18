@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -335,7 +335,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const sonuc: Catisma[] = [];
     const gruplar = e.db.selectObjects(
       `SELECT nesne, alan FROM alan_yazanlari ${kod ? `WHERE nesne=?1 OR nesne IN (SELECT kod FROM iliskiler WHERE a=?1 OR b=?1) OR nesne IN (SELECT kod FROM durumlar WHERE konu=?1)
-         OR nesne IN (SELECT kod FROM isaretler WHERE kayit=?1) OR nesne IN (SELECT kod FROM haritalar WHERE yer=?1)
+         OR nesne IN (SELECT kod FROM isaretler WHERE kayit=?1) OR nesne IN (SELECT kod FROM cizimler WHERE kayit=?1) OR nesne IN (SELECT kod FROM haritalar WHERE yer=?1)
          OR nesne IN (SELECT kod FROM iddialar WHERE konu=?1) OR nesne IN (SELECT kod FROM bilgiler WHERE bilen=?1)` : ''}
        GROUP BY nesne, alan HAVING count(DISTINCT deger) > 1`, kod ? [kod] : []);
     for (const g of gruplar) {
@@ -374,6 +374,13 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (isr) {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: isr.kayit as string, baslik: kayitAdi(isr.kayit as string),
           alanEtiketi: alan === 'konum' ? `“${isr.ad}” haritasındaki yeri` : `“${isr.ad}” haritasındaki işaretin bağlı olduğu kayıt`, degerler });
+        continue;
+      }
+      const cz = iliski || dr ? undefined : e.db.selectObject('SELECT c.kayit, c.bicim, h.ad FROM cizimler c JOIN haritalar h ON h.kod=c.harita WHERE c.kod=?', [nesne]);
+      if (cz) {
+        const ne = cz.bicim === 'yol' ? 'yolun' : 'bölgenin';
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: cz.kayit as string, baslik: kayitAdi(cz.kayit as string),
+          alanEtiketi: `“${cz.ad}” haritasındaki ${ne} ${({ noktalar: 'sınırı', kayit: 'bağlı olduğu kayıt', kip: 'türü', baslangic: 'başlangıcı', bitis: 'bitişi' } as Record<string, string>)[alan] ?? alan}`, degerler });
         continue;
       }
       if (nesne.startsWith('sablon:')) {
@@ -440,6 +447,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (!deger) return 'Cevapsız';
       const v = deger as { durum: string; cevap: string; kayitla: string | null };
       return v.durum === 'sonra' ? 'Sonraya bırakıldı' : v.durum === 'ilgisiz' ? 'İlgisiz' : v.kayitla ? `Kayıtla: ${ad(v.kayitla)}` : v.cevap;
+    }
+    if (nesne && e.db.selectValue('SELECT 1 FROM cizimler WHERE kod=?', [nesne]) !== undefined) {
+      if (alan === 'noktalar') return `${(deger as unknown[] | null)?.length ?? 0} noktalı çizim`;
+      if (alan === 'kip') return deger === 'iddia' ? 'İddia edilen bölge' : 'Fiilî denetim';
+      if (alan === 'kayit') return ad(deger);
+      if (alan === 'baslangic' || alan === 'bitis') return this.degerYazisi(e, alan, deger, true);
     }
     if (alan.startsWith('katman:')) {
       const ka = alan.split(':')[2];
@@ -543,6 +556,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       return;
     }
     if (hr) { this.yaz(evren, [{ tur: 'harita_degistir', veri: { kod: nesne, alan, deger, haritaAd: hr.ad, cozum: true } }]); return; }
+    const czr = e.db.selectObject('SELECT c.kayit, c.bicim, h.ad FROM cizimler c JOIN haritalar h ON h.kod=c.harita WHERE c.kod=?', [nesne]);
+    if (czr) { this.yaz(evren, [{ tur: 'cizim_degistir', veri: { kod: nesne, alan, deger, kayit: czr.kayit, bicim: czr.bicim, haritaAd: czr.ad, cozum: true } }], [czr.kayit as string]); return; }
     const isr = e.db.selectObject('SELECT i.kayit, h.ad FROM isaretler i JOIN haritalar h ON h.kod=i.harita WHERE i.kod=?', [nesne]);
     if (isr) { this.yaz(evren, [{ tur: 'isaret_degistir', veri: { kod: nesne, alan, deger, kayit: isr.kayit, haritaAd: isr.ad, cozum: true } }], [isr.kayit as string]); return; }
     if (alan === 'gorunurluk') {
@@ -1586,10 +1601,17 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
 
   // ---------- Harita: yükle, işaretle, bağla (§8.1) ----------
   private haritaBaglami(evren: string): harita.HaritaBaglami {
-    return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } };
+    const e = this.evren(evren);
+    return { e, yaz: (g, k) => { this.yaz(evren, g, k); }, olayTarihi: (kod) => this.olayTarihi(e, kod) };
   }
   haritalar({ evren, silinmis = false }: { evren: string; silinmis?: boolean }) { return harita.haritalar(this.evren(evren), !!silinmis); }
-  harita({ evren, kod, bakis = null }: { evren: string; kod: string; bakis?: string | null }) { return harita.harita(this.evren(evren), kod, bakis); }
+  harita({ evren, kod, bakis = null, an = null }: { evren: string; kod: string; bakis?: string | null; an?: string | null }) { return harita.harita(this.haritaBaglami(evren), kod, bakis, an); }
+  cizimEkle(a: { evren: string; harita: string; kayit: string; bicim: 'bolge' | 'yol'; kip?: 'denetim' | 'iddia' | null; noktalar: [number, number][]; baslangic?: SinirGirdisi | null; bitis?: SinirGirdisi | null }) {
+    const { evren, ...g } = a;
+    return harita.cizimEkle(this.haritaBaglami(evren), g);
+  }
+  cizimDegistir({ evren, kod, alan, deger }: { evren: string; kod: string; alan: 'noktalar' | 'kayit' | 'kip' | 'baslangic' | 'bitis'; deger: unknown }) { harita.cizimDegistir(this.haritaBaglami(evren), kod, alan, deger); }
+  cizimSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { harita.cizimSil(this.haritaBaglami(evren), kod, geriYukle); }
   async haritaYukle({ evren, ad, yer = null, dosyaAdi, tur, veri }: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }) {
     const e = this.evren(evren);
     if (yer) this.kayitVarMi(e, yer);

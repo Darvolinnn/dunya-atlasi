@@ -81,7 +81,7 @@ function tarihleriYenidenHesapla(db: Database) {
     db.exec({ sql: 'UPDATE iliskiler SET baslangic=?, bitis=? WHERE kod=?', bind: [yeni(r.baslangic), yeni(r.bitis), r.kod as string] });
   }
   const sinir = (ham: unknown) => (ham ? JSON.stringify(sinirTz(db, JSON.parse(ham as string), z)) : null);
-  for (const tablo of ['durumlar', 'bilgiler']) {
+  for (const tablo of ['durumlar', 'bilgiler', 'cizimler']) {
     for (const r of db.selectObjects(`SELECT kod, baslangic, bitis FROM ${tablo} WHERE baslangic IS NOT NULL OR bitis IS NOT NULL`)) {
       db.exec({ sql: `UPDATE ${tablo} SET baslangic=?, bitis=? WHERE kod=?`, bind: [sinir(r.baslangic), sinir(r.bitis), r.kod as string] });
     }
@@ -94,7 +94,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 15;
+export const IZDUSUM_SURUMU = 16;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -286,6 +286,21 @@ CREATE TABLE IF NOT EXISTS isaretler(
 );
 CREATE INDEX IF NOT EXISTS isaretler_harita ON isaretler(harita);
 CREATE INDEX IF NOT EXISTS isaretler_kayit ON isaretler(kayit);
+CREATE TABLE IF NOT EXISTS cizimler(
+  kod TEXT PRIMARY KEY,
+  harita TEXT NOT NULL,
+  kayit TEXT NOT NULL,
+  bicim TEXT NOT NULL,
+  kip TEXT,
+  noktalar TEXT NOT NULL,
+  baslangic TEXT,
+  bitis TEXT,
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS cizimler_harita ON cizimler(harita);
+CREATE INDEX IF NOT EXISTS cizimler_kayit ON cizimler(kayit);
 CREATE TABLE IF NOT EXISTS yonlendirmeler(
   kod TEXT PRIMARY KEY,
   hedef TEXT NOT NULL,
@@ -360,7 +375,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
 );
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'medya',
-  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
+  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -391,7 +406,7 @@ function yonlendirNotla(db: Database, kod: string | null | undefined, tablo: str
 }
 
 /** Birleştirmede kaynak kayda bağlı satırlar hedefe taşınır; geri almak için hangi satırın taşındığı tutulur. */
-const BIRLESME_SUTUNLARI: [string, string][] = [['iliskiler', 'a'], ['iliskiler', 'b'], ['durumlar', 'konu'], ['durumlar', 'hedef'], ['isaretler', 'kayit'],
+const BIRLESME_SUTUNLARI: [string, string][] = [['iliskiler', 'a'], ['iliskiler', 'b'], ['durumlar', 'konu'], ['durumlar', 'hedef'], ['isaretler', 'kayit'], ['cizimler', 'kayit'],
   ['haritalar', 'yer'], ['degisimler', 'konu'], ['degisimler', 'olay'], ['kayitlar', 'sahne_olayi'], ['anlati', 'ust'], ['yonlendirmeler', 'hedef'],
   ['iddialar', 'konu'], ['bilgiler', 'bilen'], ['bilgiler', 'kaynak_kayit'], ['bilgiler', 'sahne']];
 
@@ -409,6 +424,16 @@ function isaretKonumu(db: Database, harita: string, k: unknown): IsaretKonumu | 
   const sinirla = (n: number, ust: number) => Math.min(ust, Math.max(0, n));
   const yaricap = v.kesinlik === 'yaklasik' ? sinirla(Number.isFinite(v.yaricap) ? v.yaricap as number : Math.max(en, boy) * 0.05, Math.max(en, boy)) : null;
   return { kesinlik: v.kesinlik as Kesinlik, x: sinirla(v.x as number, en), y: sinirla(v.y as number, boy), yaricap };
+}
+
+/** Çizim noktaları harita uzayına sığdırılır; bölge en az 3, yol en az 2 noktadır. */
+function cizimNoktalari(db: Database, harita: string, bicim: string, n: unknown): [number, number][] | null {
+  const u = db.selectObject('SELECT en, boy FROM haritalar WHERE kod=?', [harita]);
+  if (!u || (bicim !== 'bolge' && bicim !== 'yol') || !Array.isArray(n)) return null;
+  const en = Number(u.en), boy = Number(u.boy);
+  const l = n.slice(0, 500).filter((p): p is [number, number] => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]))
+    .map(([x, y]) => [Math.min(en, Math.max(0, x)), Math.min(boy, Math.max(0, y))] as [number, number]);
+  return l.length >= (bicim === 'bolge' ? 3 : 2) ? l : null;
 }
 
 const evrenAlani = (db: Database, k: string, v: unknown) =>
@@ -819,6 +844,34 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
       db.exec({ sql: 'UPDATE isaretler SET kayit=?, duzenleme=? WHERE kod=?', bind: [yonlendir(db, deger), i.zaman, kod] });
       alanYaz(db, i, kod, alan, deger);
     }
+  },
+  /** Haritada çizim (§8.2): bölge (çokgen; fiilî denetim ya da iddia) ya da yol çizgisi. Zamanla değişir (§3.5). */
+  cizim_ekle(db, i) {
+    const v = i.veri as { kod: string; harita: string; kayit: string; bicim: string; kip?: string | null; noktalar: unknown; baslangic?: unknown; bitis?: unknown };
+    const n = cizimNoktalari(db, v.harita, v.bicim, v.noktalar);
+    if (!n || typeof v.kayit !== 'string') return;
+    db.exec({ sql: 'INSERT OR IGNORE INTO cizimler(kod, harita, kayit, bicim, kip, noktalar, baslangic, bitis, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?,?,?)',
+      bind: [v.kod, v.harita, yonlendirNotla(db, v.kayit, 'cizimler', 'kayit', v.kod), v.bicim, v.bicim === 'bolge' ? (v.kip === 'iddia' ? 'iddia' : 'denetim') : null,
+        JSON.stringify(n), json(sinirTz(db, v.baslangic)), json(sinirTz(db, v.bitis)), i.zaman, i.zaman] });
+  },
+  cizim_degistir(db, i) {
+    const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
+    const r = db.selectObject('SELECT harita, bicim FROM cizimler WHERE kod=?', [kod]);
+    if (!r) return;
+    let d: string | null;
+    if (alan === 'noktalar') { const n = cizimNoktalari(db, r.harita as string, r.bicim as string, deger); if (!n) return; d = JSON.stringify(n); }
+    else if (alan === 'kayit' && typeof deger === 'string') d = yonlendir(db, deger);
+    else if (alan === 'kip' && r.bicim === 'bolge' && (deger === 'denetim' || deger === 'iddia')) d = deger;
+    else if (alan === 'baslangic' || alan === 'bitis') d = json(sinirTz(db, deger));
+    else return;
+    db.exec({ sql: `UPDATE cizimler SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [d, i.zaman, kod] });
+    alanYaz(db, i, kod, alan, deger ?? null);
+  },
+  cizim_sil(db, i) {
+    db.exec({ sql: 'UPDATE cizimler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  cizim_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE cizimler SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
   },
   isaret_sil(db, i) {
     db.exec({ sql: 'UPDATE isaretler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });

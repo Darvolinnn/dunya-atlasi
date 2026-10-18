@@ -51,6 +51,10 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
     : v.alan === 'silindi' ? `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” ${v.deger ? 'kaldırıldı' : 'geri getirildi'}`
       : v.alan === 'gorsel' ? `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” görseli değişti`
         : `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” yeniden oturtuldu`,
+  cizim_ekle: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasına ${v.bicim === 'yol' ? 'yol çizildi' : v.kip === 'iddia' ? 'iddia ettiği bölge çizildi' : 'bölgesi çizildi'}`,
+  cizim_degistir: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki ${v.bicim === 'yol' ? 'yolun' : 'bölgenin'} ${({ noktalar: 'sınırı', kayit: 'bağlı olduğu kayıt', kip: 'türü', baslangic: 'başlangıcı', bitis: 'bitişi' } as Record<string, string>)[v.alan as string] ?? 'bilgisi'} değişti`,
+  cizim_sil: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki ${v.bicim === 'yol' ? 'yol' : 'bölge'} kaldırıldı`,
+  cizim_geri_yukle: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki ${v.bicim === 'yol' ? 'yol' : 'bölge'} geri getirildi`,
   harita_sil: (v) => `“${v.haritaAd}” haritası kaldırıldı`,
   harita_geri_yukle: (v) => `“${v.haritaAd}” haritası geri getirildi`,
   isaret_koy: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasında işaretlendi`,

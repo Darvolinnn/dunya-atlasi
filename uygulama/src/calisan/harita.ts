@@ -7,9 +7,15 @@ import { turkceKarsilastir } from '../alan/turkce';
 import type { HaritaAyrintisi, HaritaKatmani, HaritaOzeti, IsaretGirdisi, KayitHaritalari } from '../veri/api';
 import { buyukHatalar, donusumGecerli, hizala, olcektenDonusum, type Donusum, type KontrolCifti } from '../alan/hizalama';
 import type { EvrenVt } from './evren-vt';
+import { gecerlilik } from '../alan/durum';
+import { eksenYili, karsilastir, tarihCoz, type EvrenTarihi } from '../alan/tarih';
+import type { HaritaCizimi, SinirGirdisi } from '../veri/api';
+import { sinirBilgisi, sinirCoz, type DurumBaglami, type SinirVerisi } from './durum';
+import { zamanSetiOku } from './izdusum';
 
 export interface HaritaBaglami {
   e: EvrenVt;
+  olayTarihi(kod: string): EvrenTarihi | null;
   yaz(girdiler: IslemGirdisi[], kayitlar: string[]): void;
 }
 
@@ -77,7 +83,8 @@ const medyaBoyu = (e: EvrenVt, gorsel: string) => {
   return m ? { en: Number(m.en), boy: Number(m.boy) } : null;
 };
 
-export function harita(e: EvrenVt, kod: string, bakis: string | null = null): HaritaAyrintisi {
+export function harita(b: HaritaBaglami, kod: string, bakis: string | null = null, anIfade: string | null = null): HaritaAyrintisi {
+  const e = b.e;
   const h = haritaOku(e, kod);
   const bk = bakisHazirla(e, bakis);
   const r = e.db.selectObject('SELECT katmanlar FROM haritalar WHERE kod=?', [kod])!;
@@ -109,7 +116,40 @@ export function harita(e: EvrenVt, kod: string, bakis: string | null = null): Ha
     return { kod: k.kod, ad: k.ad, gorsel: k.gorsel, donusum: k.donusum, en: boy.en, boy: boy.boy, silindi: !!k.silindi, onceki: k.onceki ?? null,
       noktalar: k.noktalar ?? [], hatalar: hz?.hatalar ?? [], gozdenGecir };
   });
-  return { kod, ad: h.ad, en: h.en, boy: h.boy, silindi: h.silindi, yer: h.yer ? { kod: h.yer, ad: yerAd ?? 'Silinmiş kayıt' } : null, katmanlar, isaretler, ustHaritalar, bakis: bk.kisa };
+  // Çizimler ve zaman kaydırıcısı (§8.2): seçilen tarihte geçerli olmayan bölge gösterilmez, belirsiz olan soluk gösterilir.
+  const z = zamanSetiOku(e.db);
+  const an = anIfade && anIfade.trim() ? tarihCoz(anIfade.trim().slice(0, 120), z) : null;
+  const db: DurumBaglami = { e, yaz: () => { throw new Error('Okuma'); }, olayTarihi: b.olayTarihi };
+  const oku = (ham: unknown) => sinirBilgisi(db, ham ? JSON.parse(ham as string) as SinirVerisi : null);
+  const yillar: number[] = [];
+  const cizimler: HaritaCizimi[] = e.db.selectObjects(`SELECT c.*, k.ad, k.tur, k.karar, k.gorunurluk FROM cizimler c JOIN kayitlar k ON k.kod=c.kayit
+      WHERE c.harita=? AND c.silindi IS NULL AND k.silindi IS NULL ORDER BY c.olusturma`, [kod])
+    .filter((x) => bk.gorur(x.gorunurluk))
+    .map((x) => {
+      const baslangic = oku(x.baslangic), bitis = oku(x.bitis);
+      for (const s of [baslangic, bitis]) if (s?.tarih?.eksen?.enErken != null) yillar.push(eksenYili(s.tarih.eksen.enErken, z));
+      return {
+        ...(bk.kisa && bk.inanc(x.gorunurluk) ? { inanc: true } : {}),
+        kod: x.kod as string, kayit: { kod: x.kayit as string, ad: x.ad as string, tur: x.tur as string }, karar: x.karar as string,
+        bicim: x.bicim as HaritaCizimi['bicim'], kip: (x.kip as HaritaCizimi['kip']) ?? null, noktalar: JSON.parse(x.noktalar as string),
+        baslangic, bitis,
+        gecerli: an ? gecerlilik('aralik', baslangic ? baslangic.tarih : 'acik', bitis ? bitis.tarih : 'acik', an) : null,
+      };
+    });
+  // "Burada ne oldu?": yeri bu haritada işaretli olay ve sahneler, seçilen tarihle örtüşüyorsa.
+  const yerler = new Set(isaretler.map((i) => i.kayit.kod));
+  if (h.yer) yerler.add(h.yer);
+  const buTarihte = an?.eksen ? e.db.selectObjects(`SELECT DISTINCT o.kod, o.ad, o.tur, coalesce(o.tarih, s.tarih) tarih, y.kod yer, y.ad yer_ad FROM iliskiler i
+      JOIN kayitlar o ON o.kod=i.a JOIN kayitlar y ON y.kod=i.b LEFT JOIN kayitlar s ON s.kod=o.sahne_olayi
+      WHERE i.tur='sahne_yeri' AND i.silindi IS NULL AND i.karar<>'vazgecildi' AND o.silindi IS NULL AND o.karar<>'vazgecildi' AND y.silindi IS NULL`)
+    .flatMap((r) => {
+      const t = r.tarih ? JSON.parse(r.tarih as string) as EvrenTarihi : null;
+      if (!yerler.has(r.yer as string) || !t?.eksen || karsilastir(t, an) !== 'belirsiz') return [];
+      return [{ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string, tarih: t.ifade, yer: r.yer_ad as string }];
+    }) : [];
+  const zamanAraligi = yillar.length ? { enKucuk: Math.min(...yillar), enBuyuk: Math.max(...yillar) } : null;
+  return { kod, ad: h.ad, en: h.en, boy: h.boy, silindi: h.silindi, yer: h.yer ? { kod: h.yer, ad: yerAd ?? 'Silinmiş kayıt' } : null, katmanlar, isaretler, ustHaritalar, bakis: bk.kisa,
+    cizimler, an: an ? { ifade: an.ifade, gecerli: !!an.eksen } : null, zamanAraligi, buTarihte };
 }
 
 export function haritaDegistir(b: HaritaBaglami, kod: string, alan: 'ad' | 'yer', deger: unknown) {
@@ -167,6 +207,9 @@ export function kayitHaritalari(e: EvrenVt, kayit: string): KayitHaritalari {
         WHERE i.kayit=? AND i.silindi IS NULL AND h.silindi IS NULL ORDER BY h.ad`, [kayit])
       .map((r) => ({ kod: r.kod as string, harita: r.harita as string, haritaAd: r.ad as string, kesinlik: r.kesinlik as IsaretGirdisi['kesinlik'] })),
     haritalar: e.db.selectObjects('SELECT kod, ad FROM haritalar WHERE yer=? AND silindi IS NULL ORDER BY ad', [kayit]).map((r) => ({ kod: r.kod as string, ad: r.ad as string })),
+    cizimler: e.db.selectObjects(`SELECT c.kod, c.bicim, c.kip, h.kod harita, h.ad FROM cizimler c JOIN haritalar h ON h.kod=c.harita
+        WHERE c.kayit=? AND c.silindi IS NULL AND h.silindi IS NULL ORDER BY h.ad`, [kayit])
+      .map((r) => ({ kod: r.kod as string, harita: r.harita as string, haritaAd: r.ad as string, bicim: r.bicim as 'bolge' | 'yol', kip: (r.kip as 'denetim' | 'iddia') ?? null })),
   };
 }
 
@@ -231,6 +274,53 @@ export function katmanHizala(b: HaritaBaglami, harita: string, katman: string, n
     deger = { donusum };
   }
   b.yaz([{ tur: 'harita_katman', veri: { harita, haritaAd: h.ad, katman, katmanAd: k.ad, alan: 'donusum', deger } }], h.yer ? [h.yer] : []);
+}
+
+// ---------- Bölgeler ve yol çizgileri (§8.2) ----------
+const durumBaglami = (b: HaritaBaglami): DurumBaglami => ({ e: b.e, yaz: b.yaz, olayTarihi: b.olayTarihi });
+
+function cizimOku(e: EvrenVt, kod: string) {
+  const r = kodGecerliMi(kod) ? e.db.selectObject('SELECT c.*, h.ad harita_ad FROM cizimler c JOIN haritalar h ON h.kod=c.harita WHERE c.kod=?', [kod]) : undefined;
+  if (!r) throw new Error('Çizim bulunamadı.');
+  return r;
+}
+const noktalarTemiz = (n: unknown, bicim: string) => {
+  if (!Array.isArray(n)) throw new Error('Noktalar geçersiz.');
+  const l = n.slice(0, 500).map((p) => [Number((p as number[])[0]), Number((p as number[])[1])] as [number, number]).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+  if (l.length < (bicim === 'bolge' ? 3 : 2)) throw new Error(bicim === 'bolge' ? 'Bir bölge için en az üç nokta gerekir.' : 'Bir yol için en az iki nokta gerekir.');
+  return l;
+};
+
+export function cizimEkle(b: HaritaBaglami, a: { harita: string; kayit: string; bicim: 'bolge' | 'yol'; kip?: 'denetim' | 'iddia' | null; noktalar: [number, number][];
+  baslangic?: SinirGirdisi | null; bitis?: SinirGirdisi | null }) {
+  const h = haritaOku(b.e, a.harita);
+  if (h.silindi) throw new Error('Bu harita kaldırılmış.');
+  if (a.bicim !== 'bolge' && a.bicim !== 'yol') throw new Error('Geçersiz çizim.');
+  kayitVar(b.e, a.kayit);
+  const d = durumBaglami(b);
+  const kod = yeniKod();
+  b.yaz([{ tur: 'cizim_ekle', veri: { kod, harita: a.harita, haritaAd: h.ad, kayit: a.kayit, bicim: a.bicim, kip: a.bicim === 'bolge' ? (a.kip === 'iddia' ? 'iddia' : 'denetim') : null,
+    noktalar: noktalarTemiz(a.noktalar, a.bicim), baslangic: sinirCoz(d, a.baslangic), bitis: sinirCoz(d, a.bitis) } }], [a.kayit]);
+  return { kod };
+}
+
+export function cizimDegistir(b: HaritaBaglami, kod: string, alan: 'noktalar' | 'kayit' | 'kip' | 'baslangic' | 'bitis', deger: unknown) {
+  const r = cizimOku(b.e, kod);
+  let v: unknown;
+  if (alan === 'noktalar') v = noktalarTemiz(deger, r.bicim as string);
+  else if (alan === 'kayit') { kayitVar(b.e, deger); v = deger; }
+  else if (alan === 'kip') { if (r.bicim !== 'bolge' || (deger !== 'denetim' && deger !== 'iddia')) throw new Error('Geçersiz bölge türü.'); v = deger; }
+  else if (alan === 'baslangic' || alan === 'bitis') v = sinirCoz(durumBaglami(b), deger as SinirGirdisi | null);
+  else throw new Error('Geçersiz alan.');
+  const ham = r[alan];
+  const onceki = alan === 'baslangic' || alan === 'bitis' || alan === 'noktalar' ? (ham ? JSON.parse(ham as string) : null) : ham ?? null;
+  if (JSON.stringify(onceki) === JSON.stringify(v)) return;
+  b.yaz([{ tur: 'cizim_degistir', veri: { kod, alan, deger: v, kayit: r.kayit, bicim: r.bicim, haritaAd: r.harita_ad } }], [r.kayit as string, ...(alan === 'kayit' ? [v as string] : [])]);
+}
+
+export function cizimSil(b: HaritaBaglami, kod: string, geriYukle: boolean) {
+  const r = cizimOku(b.e, kod);
+  b.yaz([{ tur: geriYukle ? 'cizim_geri_yukle' : 'cizim_sil', veri: { kod, kayit: r.kayit, bicim: r.bicim, haritaAd: r.harita_ad } }], [r.kayit as string]);
 }
 
 /** Bu görsel bu kayıtta zaten işaretleme yüzeyi olarak açılmış mı? */

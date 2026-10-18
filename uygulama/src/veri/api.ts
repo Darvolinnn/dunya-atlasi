@@ -248,10 +248,26 @@ export interface HaritaAyrintisi {
   katmanlar: HaritaKatmani[];
   isaretler: HaritaIsareti[]; ustHaritalar: { kod: string; ad: string }[];
   bakis: KisaKayit | null;
+  cizimler: HaritaCizimi[];
+  /** Zaman kaydırıcısında seçilen tarih; çözülemediyse gecerli false. */
+  an: { ifade: string; gecerli: boolean } | null;
+  /** Çizimlerin sınırlarındaki en erken ve en geç yıl (kaydırıcının aralığı). */
+  zamanAraligi: { enKucuk: number; enBuyuk: number } | null;
+  /** Seçilen tarihte, yeri bu haritada işaretli olay ve sahneler. */
+  buTarihte: { kod: string; ad: string; tur: string; tarih: string; yer: string }[];
+}
+/** Haritada bölge (çokgen) ya da yol çizgisi (§8.2). Bölge fiilî denetim ya da iddiadır; tartışmalı toprakta her taraf ayrı çizilir. */
+export interface HaritaCizimi {
+  kod: string; kayit: KisaKayit; karar: string; bicim: 'bolge' | 'yol'; kip: 'denetim' | 'iddia' | null; noktalar: [number, number][];
+  baslangic: SinirBilgisi | null; bitis: SinirBilgisi | null;
+  /** Seçilen tarihte geçerli mi (tarih seçilmemişse null). */
+  gecerli: 'evet' | 'hayir' | 'belirsiz' | null;
+  inanc?: boolean;
 }
 export interface KayitHaritalari {
   isaretler: { kod: string; harita: string; haritaAd: string; kesinlik: IsaretGirdisi['kesinlik'] }[];
   haritalar: { kod: string; ad: string }[];
+  cizimler: { kod: string; harita: string; haritaAd: string; bicim: 'bolge' | 'yol'; kip: 'denetim' | 'iddia' | null }[];
 }
 /** Editoryal birleştirme önizlemesi (§9.5). */
 export interface BirlesmeAlani { alan: string; etiket: string; kaynak: string; hedef: string; celiski: boolean }
@@ -491,7 +507,10 @@ export interface Istekler {
   kurguHatlari(a: { evren: string }): KurguHatlari;
   bolumMatrisi(a: { evren: string; eser: string; turler?: string[] | null }): BolumMatrisi;
   haritalar(a: { evren: string; silinmis?: boolean }): HaritaOzeti[];
-  harita(a: { evren: string; kod: string; bakis?: string | null }): HaritaAyrintisi;
+  harita(a: { evren: string; kod: string; bakis?: string | null; an?: string | null }): HaritaAyrintisi;
+  cizimEkle(a: { evren: string; harita: string; kayit: string; bicim: 'bolge' | 'yol'; kip?: 'denetim' | 'iddia' | null; noktalar: [number, number][]; baslangic?: SinirGirdisi | null; bitis?: SinirGirdisi | null }): { kod: string };
+  cizimDegistir(a: { evren: string; kod: string; alan: 'noktalar' | 'kayit' | 'kip' | 'baslangic' | 'bitis'; deger: unknown }): void;
+  cizimSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   haritaYukle(a: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ kod: string }>;
   gorseldenHarita(a: { evren: string; kayit: string; gorsel: string }): { kod: string };
   haritaDegistir(a: { evren: string; kod: string; alan: 'ad' | 'yer'; deger: unknown }): void;

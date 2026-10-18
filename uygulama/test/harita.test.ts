@@ -122,4 +122,44 @@ describe('harita: yükle, işaretle, bağla', () => {
     h.katmanDegistir({ evren, harita, katman: 'ana', alan: 'silindi', deger: false });
     expect(h.haritalar({ evren })[0].gorsel).toBeTruthy();
   });
+
+  it('bölgeler ve yollar: zamanla değişir, zaman kaydırıcısı seçilen tarihteki hâli gösterir; olaya bağlı sınır kayar', async () => {
+    const h = cihaz();
+    const { kod: evren } = h.evrenOlustur({ ad: 'Kuzey' });
+    const krallik = h.kayitOlustur({ evren, ad: 'Ak Krallık', tur: 'siyasi' }).kod;
+    const boy = h.kayitOlustur({ evren, ad: 'Kurt Boyu', tur: 'topluluk' }).kod;
+    const liman = h.kayitOlustur({ evren, ad: 'Tuzlu Liman', tur: 'sehir' }).kod;
+    const savas = h.kayitOlustur({ evren, ad: 'Sınır Savaşı', tur: 'olay' }).kod;
+    h.kayitTarih({ evren, kod: savas, ifade: '420' });
+    const { kod: harita } = await h.haritaYukle({ evren, ad: 'Kıta', dosyaAdi: 'kita.png', tur: 'image/png', veri: gorsel(1) });
+    h.isaretKoy({ evren, harita, kayit: liman, konum: { kesinlik: 'kesin', x: 100, y: 100, yaricap: null } });
+    h.iliskiEkle({ evren, tur: 'sahne_yeri', a: savas, b: liman });
+    expect(() => h.cizimEkle({ evren, harita, kayit: krallik, bicim: 'bolge', noktalar: [[0, 0], [10, 10]] })).toThrow(/üç/);
+    const b1 = h.cizimEkle({ evren, harita, kayit: krallik, bicim: 'bolge', noktalar: [[0, 0], [400, 0], [400, 300], [-50, 900]], baslangic: { ifade: '300' }, bitis: { olay: savas } }).kod;
+    h.cizimEkle({ evren, harita, kayit: boy, bicim: 'bolge', kip: 'iddia', noktalar: [[300, 0], [800, 0], [800, 500]] });
+    h.cizimEkle({ evren, harita, kayit: krallik, bicim: 'yol', noktalar: [[10, 10], [500, 400]] });
+    let a = h.harita({ evren, kod: harita });
+    expect(a.cizimler).toHaveLength(3);
+    expect(a.cizimler[0].noktalar[3]).toEqual([0, 500]);
+    expect(a.cizimler[1].kip).toBe('iddia');
+    expect(a.zamanAraligi).toEqual({ enKucuk: 300, enBuyuk: 420 });
+
+    a = h.harita({ evren, kod: harita, an: '350' });
+    expect(a.cizimler.map((c) => c.gecerli)).toEqual(['evet', 'evet', 'evet']);
+    a = h.harita({ evren, kod: harita, an: '430' });
+    expect(a.cizimler[0].gecerli).toBe('hayir');
+    a = h.harita({ evren, kod: harita, an: '420' });
+    expect(a.cizimler[0].gecerli).toBe('belirsiz');
+    expect(a.buTarihte.map((o) => o.ad)).toEqual(['Sınır Savaşı']);
+
+    // Olay ileri alınınca bölgenin bitişi de kayar.
+    h.kayitTarih({ evren, kod: savas, ifade: '440' });
+    expect(h.harita({ evren, kod: harita, an: '430' }).cizimler[0].gecerli).toBe('evet');
+    h.cizimDegistir({ evren, kod: b1, alan: 'kip', deger: 'iddia' });
+    expect(h.kayitHaritalari({ evren, kod: krallik }).cizimler.map((c) => [c.bicim, c.kip])).toEqual([['bolge', 'iddia'], ['yol', null]]);
+    h.cizimSil({ evren, kod: b1 });
+    expect(h.harita({ evren, kod: harita }).cizimler).toHaveLength(2);
+    h.cizimSil({ evren, kod: b1, geriYukle: true });
+    expect(h.harita({ evren, kod: harita }).cizimler).toHaveLength(3);
+  });
 });

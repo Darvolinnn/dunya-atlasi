@@ -68,6 +68,9 @@ function sorunlar(e: EvrenVt): Ham[] {
   for (const r of db.selectObjects(`SELECT i.kod i, h.ad FROM isaretler i JOIN haritalar h ON h.kod=i.harita WHERE i.silindi IS NULL AND ${yok('i.kayit')}`)) {
     kodSorunu(`kod:isaret:${r.i}`, `“${r.ad}” haritasında bir işaretin kaydı bulunamıyor`, null);
   }
+  for (const r of db.selectObjects(`SELECT c.kod c, h.ad FROM cizimler c JOIN haritalar h ON h.kod=c.harita WHERE c.silindi IS NULL AND ${yok('c.kayit')}`)) {
+    kodSorunu(`kod:cizim:${r.c}`, `“${r.ad}” haritasında bir çizimin kaydı bulunamıyor`, null);
+  }
   for (const r of db.selectObjects(`SELECT a.kod, k.ad, k.tur FROM anlati a LEFT JOIN kayitlar k ON k.kod=a.kod WHERE ${yok('a.ust')}`)) {
     kodSorunu(`kod:anlati:${r.kod}`, 'Eser yapısında üstü bulunamayan bir parça var', r.ad ? r : null);
   }
