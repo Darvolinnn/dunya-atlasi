@@ -4,7 +4,7 @@
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { VERI_BICIMI, type Islem, type IslemGirdisi } from '../alan/islem';
 import { yeniKod } from '../alan/kod';
-import { UYGULAYICILAR, IZDUSUM_SEMA, IZDUSUM_TABLOLARI } from './izdusum';
+import { UYGULAYICILAR, IZDUSUM_SEMA, IZDUSUM_TABLOLARI, metinBelleginiTemizle } from './izdusum';
 
 const GUNLUK_SEMA = `
 CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
@@ -73,6 +73,7 @@ export class EvrenVt {
     } catch (e) {
       this.db.exec('ROLLBACK');
       this.gorulen = onceki;
+      metinBelleginiTemizle(this.db); // bellekteki belgeler geri alınan işlemi içermesin
       throw e;
     }
     return yazilan;
@@ -93,12 +94,13 @@ export class EvrenVt {
 
   /** İzdüşüm tablolarını silip bütün günlüğü baştan uygular. Sınama ve onarım için. */
   yenidenKur() {
+    metinBelleginiTemizle(this.db);
     this.db.exec('BEGIN IMMEDIATE');
     try {
       for (const t of IZDUSUM_TABLOLARI) this.db.exec(`DELETE FROM ${t}`);
       for (const i of this.islemler()) this.uygula(i);
       this.db.exec('COMMIT');
-    } catch (e) { this.db.exec('ROLLBACK'); throw e; }
+    } catch (e) { this.db.exec('ROLLBACK'); metinBelleginiTemizle(this.db); throw e; }
   }
 
   islemler(sinir = -1, sondan = false): Islem[] {

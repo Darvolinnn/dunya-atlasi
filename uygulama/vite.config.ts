@@ -8,5 +8,5 @@ export default defineConfig({
   optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm'] },
   worker: { format: 'es' },
   build: { target: 'es2022' },
-  test: { environment: 'node' },
+  test: { environment: 'node', setupFiles: ['test/hazirlik.ts'] },
 } as never);
