@@ -264,6 +264,21 @@ export interface HaritaCizimi {
   gecerli: 'evet' | 'hayir' | 'belirsiz' | null;
   inanc?: boolean;
 }
+/** Rota (§4.2): iki uç, elle girilmiş mesafe, koşula göre süreler (gün), duraklar. */
+export interface RotaVerisi {
+  a: KisaKayit | null; b: KisaKayit | null; mesafe: { deger: number; birim: string } | null;
+  sureler: { kosul: string; gun: number }[]; duraklar: KisaKayit[];
+  /** Bu rotayı kullanan yolculuklar. */
+  kullananlar: KisaKayit[];
+}
+export interface RotaGirdisi { a: string | null; b: string | null; mesafe: { deger: number; birim: string } | null; sureler: { kosul: string; gun: number }[]; duraklar: string[] }
+/** Yolculuğun bir aşaması: bir yerden ötekine, isteğe bağlı bir rotayla. Planlanan ile gerçekleşen ayrıdır. */
+export interface YolculukAsamasi {
+  nereden: KisaKayit | null; nereye: KisaKayit | null; rota: KisaKayit | null; cikis: EvrenTarihi | null; varis: EvrenTarihi | null;
+  durum: 'plan' | 'gerceklesti'; uyari: string | null; sure: { enAz: number; enCok: number } | null;
+}
+export interface YolculukAsamaGirdisi { nereden: string | null; nereye: string | null; rota: string | null; cikis: string; varis: string; durum: 'plan' | 'gerceklesti' }
+export interface Yolculuk { asamalar: YolculukAsamasi[]; yolcular: (KisaKayit & { rol: string | null })[] }
 export interface KayitHaritalari {
   isaretler: { kod: string; harita: string; haritaAd: string; kesinlik: IsaretGirdisi['kesinlik'] }[];
   haritalar: { kod: string; ad: string }[];
@@ -511,6 +526,10 @@ export interface Istekler {
   cizimEkle(a: { evren: string; harita: string; kayit: string; bicim: 'bolge' | 'yol'; kip?: 'denetim' | 'iddia' | null; noktalar: [number, number][]; baslangic?: SinirGirdisi | null; bitis?: SinirGirdisi | null }): { kod: string };
   cizimDegistir(a: { evren: string; kod: string; alan: 'noktalar' | 'kayit' | 'kip' | 'baslangic' | 'bitis'; deger: unknown }): void;
   cizimSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  rota(a: { evren: string; kod: string }): RotaVerisi;
+  rotaYaz(a: { evren: string; kod: string; rota: RotaGirdisi }): void;
+  yolculuk(a: { evren: string; kod: string }): Yolculuk;
+  yolculukYaz(a: { evren: string; kod: string; asamalar: YolculukAsamaGirdisi[] }): void;
   haritaYukle(a: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ kod: string }>;
   gorseldenHarita(a: { evren: string; kayit: string; gorsel: string }): { kod: string };
   haritaDegistir(a: { evren: string; kod: string; alan: 'ad' | 'yer'; deger: unknown }): void;

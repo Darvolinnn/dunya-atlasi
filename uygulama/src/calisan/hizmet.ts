@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -29,6 +29,7 @@ import * as harita from './harita';
 import * as birlesme from './birlesme';
 import * as saglik from './saglik';
 import * as denetim from './denetim';
+import * as yol from './yol';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -425,6 +426,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
 
   /** Şablon alanı ya da soru çatışmasında alanın adı. */
   private alanEtiketi(e: EvrenVt, nesne: string, alan: string): string | null {
+    if (alan === 'rota') return 'Rotanın uçları, mesafesi ve süreleri';
+    if (alan === 'asamalar') return 'Yolculuğun aşamaları';
     if (nesne === 'evren' && alan.startsWith('takvim:')) return 'Paralel takvim';
     if (nesne === 'evren' && alan.startsWith('akis:')) return 'Zaman akışı';
     if (alan.startsWith('s:')) {
@@ -447,6 +450,14 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (!deger) return 'Cevapsız';
       const v = deger as { durum: string; cevap: string; kayitla: string | null };
       return v.durum === 'sonra' ? 'Sonraya bırakıldı' : v.durum === 'ilgisiz' ? 'İlgisiz' : v.kayitla ? `Kayıtla: ${ad(v.kayitla)}` : v.cevap;
+    }
+    if (alan === 'rota') {
+      const r = deger as { a: string | null; b: string | null; sureler: { kosul: string; gun: number }[] } | null;
+      return r ? `${r.a ? ad(r.a) : '?'} – ${r.b ? ad(r.b) : '?'}; ${r.sureler.map((x) => `${x.kosul ? x.kosul + ': ' : ''}${x.gun} gün`).join(', ') || 'süre yok'}` : '(boş)';
+    }
+    if (alan === 'asamalar') {
+      const l = (deger as { nereden: string | null; nereye: string | null }[] | null) ?? [];
+      return l.length ? l.map((a) => `${a.nereden ? ad(a.nereden) : '?'} → ${a.nereye ? ad(a.nereye) : '?'}`).join('; ') : 'Aşama yok';
     }
     if (nesne && e.db.selectValue('SELECT 1 FROM cizimler WHERE kod=?', [nesne]) !== undefined) {
       if (alan === 'noktalar') return `${(deger as unknown[] | null)?.length ?? 0} noktalı çizim`;
@@ -533,6 +544,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const r = e.db.selectObject('SELECT deger FROM alan_yazanlari WHERE nesne=? AND alan=? AND islem=?', [nesne, alan, islem]);
     if (!r) throw new Error('Bu çatışma artık yok.');
     const deger = JSON.parse(r.deger as string);
+    if (alan === 'rota') { this.yaz(evren, [{ tur: 'rota_yaz', veri: { kod: nesne, rota: deger, cozum: true } }], [nesne]); return; }
+    if (alan === 'asamalar') { this.yaz(evren, [{ tur: 'yolculuk_yaz', veri: { kod: nesne, asamalar: deger, cozum: true } }], [nesne]); return; }
     if (nesne.startsWith('sablon:')) { this.yaz(evren, [{ tur: 'sablon_yaz', veri: { tur: nesne.slice(7), sablon: deger, cozum: true } }]); return; }
     if (alan.startsWith('s:')) {
       const v = deger as { durum: string; cevap: string; kayitla: string | null } | null;
@@ -1611,6 +1624,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return harita.cizimEkle(this.haritaBaglami(evren), g);
   }
   cizimDegistir({ evren, kod, alan, deger }: { evren: string; kod: string; alan: 'noktalar' | 'kayit' | 'kip' | 'baslangic' | 'bitis'; deger: unknown }) { harita.cizimDegistir(this.haritaBaglami(evren), kod, alan, deger); }
+  rota({ evren, kod }: { evren: string; kod: string }) { return yol.rota(this.evren(evren), kod); }
+  rotaYaz({ evren, kod, rota }: { evren: string; kod: string; rota: RotaGirdisi }) { yol.rotaYaz(this.haritaBaglami(evren), kod, rota); }
+  yolculuk({ evren, kod }: { evren: string; kod: string }) { return yol.yolculuk(this.evren(evren), kod); }
+  yolculukYaz({ evren, kod, asamalar }: { evren: string; kod: string; asamalar: YolculukAsamaGirdisi[] }) { yol.yolculukYaz(this.haritaBaglami(evren), kod, asamalar); }
   cizimSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { harita.cizimSil(this.haritaBaglami(evren), kod, geriYukle); }
   async haritaYukle({ evren, ad, yer = null, dosyaAdi, tur, veri }: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }) {
     const e = this.evren(evren);

@@ -162,4 +162,16 @@ describe('harita: yükle, işaretle, bağla', () => {
     h.cizimSil({ evren, kod: b1, geriYukle: true });
     expect(h.harita({ evren, kod: harita }).cizimler).toHaveLength(3);
   });
+
+  it('zaman kaydırıcısı süren yolculuk aşamasını gösterir', async () => {
+    const h = cihaz();
+    const { kod: evren } = h.evrenOlustur({ ad: 'Kuzey' });
+    const a = h.kayitOlustur({ evren, ad: 'Liman', tur: 'sehir' }).kod, b = h.kayitOlustur({ evren, ad: 'Kale', tur: 'mekan' }).kod;
+    const y = h.kayitOlustur({ evren, ad: 'Sefer', tur: 'yolculuk' }).kod;
+    const { kod: harita } = await h.haritaYukle({ evren, ad: 'Kıta', dosyaAdi: 'kita.png', tur: 'image/png', veri: gorsel(1) });
+    h.isaretKoy({ evren, harita, kayit: a, konum: { kesinlik: 'kesin', x: 10, y: 10, yaricap: null } });
+    h.yolculukYaz({ evren, kod: y, asamalar: [{ nereden: a, nereye: b, rota: null, cikis: '410', varis: '412', durum: 'gerceklesti' }] });
+    expect(h.harita({ evren, kod: harita, an: '411' }).buTarihte).toMatchObject([{ ad: 'Sefer', yer: 'Liman → Kale' }]);
+    expect(h.harita({ evren, kod: harita, an: '420' }).buTarihte).toEqual([]);
+  });
 });

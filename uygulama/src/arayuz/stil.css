@@ -526,3 +526,12 @@ label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; 
 @media (max-width: 600px) { .cizelge-caglar { display: none; } }
 .goreli-kisitlar { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 6px; }
 .tarih-paralel { display: block; }
+
+/* Rota ve yolculuk (§4.2) */
+.yol-bolumu { margin: 16px 0; display: grid; gap: 8px; }
+.yol-listesi { padding-left: 18px; margin: 4px 0; }
+.yolculuk-asamalari { padding-left: 22px; display: grid; gap: 8px; margin: 0; }
+.yolculuk-asamasi { display: grid; gap: 6px; }
+.yolculuk-asamasi.plan { border-style: dashed; }
+.yol-bolumu > .dugme, .yol-bolumu > form .dugme { justify-self: start; }
+.yolculuk-asamasi select.girdi, .yol-bolumu input.girdi { width: auto; }

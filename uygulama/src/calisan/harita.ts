@@ -12,6 +12,7 @@ import { eksenYili, karsilastir, tarihCoz, type EvrenTarihi } from '../alan/tari
 import type { HaritaCizimi, SinirGirdisi } from '../veri/api';
 import { sinirBilgisi, sinirCoz, type DurumBaglami, type SinirVerisi } from './durum';
 import { zamanSetiOku } from './izdusum';
+import { asamalarOku } from './yol';
 
 export interface HaritaBaglami {
   e: EvrenVt;
@@ -147,6 +148,19 @@ export function harita(b: HaritaBaglami, kod: string, bakis: string | null = nul
       if (!yerler.has(r.yer as string) || !t?.eksen || karsilastir(t, an) !== 'belirsiz') return [];
       return [{ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string, tarih: t.ifade, yer: r.yer_ad as string }];
     }) : [];
+  // "Yolculuğun hangi aşamasındaydılar?": seçilen tarihte süren aşamalar, uçlarından biri bu haritadaysa.
+  if (an?.eksen) {
+    for (const y of e.db.selectObjects(`SELECT y.kod, k.ad, k.tur FROM yolculuklar y JOIN kayitlar k ON k.kod=y.kod WHERE k.silindi IS NULL AND k.karar<>'vazgecildi'`)) {
+      asamalarOku(e, y.kod as string).forEach((a) => {
+        if (!a.cikis?.eksen || !(yerler.has(a.nereden ?? '') || yerler.has(a.nereye ?? ''))) return;
+        const bas = a.cikis.eksen.enErken, bit = a.varis?.eksen?.enGec ?? a.cikis.eksen.enGec;
+        if (bas === null || bit === null || an.eksen!.enGec! < bas || an.eksen!.enErken! > bit) return;
+        const ad = (k: string | null) => (k ? (e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [k]) as string | undefined) ?? '?' : '?');
+        buTarihte.push({ kod: y.kod as string, ad: y.ad as string, tur: y.tur as string, tarih: `${a.cikis.ifade}${a.varis ? ` – ${a.varis.ifade}` : ''}${a.durum === 'plan' ? ' (planlanan)' : ''}`,
+          yer: `${ad(a.nereden)} → ${ad(a.nereye)}` });
+      });
+    }
+  }
   const zamanAraligi = yillar.length ? { enKucuk: Math.min(...yillar), enBuyuk: Math.max(...yillar) } : null;
   return { kod, ad: h.ad, en: h.en, boy: h.boy, silindi: h.silindi, yer: h.yer ? { kod: h.yer, ad: yerAd ?? 'Silinmiş kayıt' } : null, katmanlar, isaretler, ustHaritalar, bakis: bk.kisa,
     cizimler, an: an ? { ifade: an.ifade, gecerli: !!an.eksen } : null, zamanAraligi, buTarihte };

@@ -135,4 +135,45 @@ describe('tutarlılık denetimleri (§9.1)', () => {
     expect(d.acik.filter((z) => z.kural === 'esya')).toHaveLength(0);
     expect(d.kurallar.find((k) => k.kural === 'esya')!.sonuc).toBe('sorun_yok');
   });
+
+  it('rota ve yolculuk: aşama süresi rotasından kısaysa çelişki; iki olay arası rota süresine yetmiyorsa olası', () => {
+    const { h, evren, kayit } = kur();
+    const a = kayit('Liman', 'sehir'), b = kayit('Dağ Kalesi', 'mekan');
+    const r = kayit('Dağ Yolu', 'rota'), y = kayit('Kuzeye sefer', 'yolculuk');
+    const k = kayit('Haberci', 'karakter');
+    expect(() => h.rotaYaz({ evren, kod: y, rota: { a, b, mesafe: null, sureler: [], duraklar: [] } })).toThrow(/rota kaydı/);
+    expect(() => h.rotaYaz({ evren, kod: r, rota: { a, b: a, mesafe: null, sureler: [], duraklar: [] } })).toThrow(/aynı/);
+    h.rotaYaz({ evren, kod: r, rota: { a, b, mesafe: { deger: 40, birim: 'fersah' }, sureler: [{ kosul: 'yaz, atlı', gun: 3 }, { kosul: 'kış, yaya', gun: 9 }], duraklar: [] } });
+    expect(h.rota({ evren, kod: r })).toMatchObject({ a: { kod: a }, b: { kod: b }, mesafe: { deger: 40, birim: 'fersah' }, sureler: [{ gun: 3 }, { gun: 9 }] });
+
+    h.yolculukYaz({ evren, kod: y, asamalar: [{ nereden: a, nereye: b, rota: r, cikis: '1 Tohum 500', varis: '2 Tohum 500', durum: 'gerceklesti' }] });
+    const yv = h.yolculuk({ evren, kod: y });
+    expect(yv.asamalar[0].uyari).toContain('en kısa süre 3 gün');
+    expect(h.rota({ evren, kod: r }).kullananlar.map((x) => x.kod)).toEqual([y]);
+    h.iliskiEkle({ evren, tur: 'yolculukta', a: k, b: y, rol: 'yolcu' });
+    let d = h.denetimler({ evren });
+    expect(d.acik.find((x) => x.anahtar.startsWith('denetim:rota-asama:'))!.hukum).toBe('celiski');
+
+    // Aşama düzeltilince çelişki kalkar; ayrı bir olayla rota süresinden kısa yer değiştirme olası uyuşmazlıktır.
+    h.yolculukYaz({ evren, kod: y, asamalar: [{ nereden: a, nereye: b, rota: r, cikis: '1 Tohum 500', varis: '5 Tohum 500', durum: 'gerceklesti' }] });
+    const o = kayit('Limanda ziyafet', 'olay', '6 Tohum 500');
+    h.iliskiEkle({ evren, tur: 'sahne_yeri', a: o, b: a });
+    h.iliskiEkle({ evren, tur: 'olayda', a: k, b: o, rol: 'katilan' });
+    d = h.denetimler({ evren });
+    expect(d.acik.some((x) => x.anahtar.startsWith('denetim:rota-asama:'))).toBe(false);
+    const rb = d.acik.filter((x) => x.anahtar.startsWith('denetim:rota:'));
+    expect(rb).toHaveLength(1);
+    expect(rb[0].hukum).toBe('olasi');
+    expect(rb[0].dayanak).toContain('en çok 2 gün');
+    expect(rb[0].dayanak).toContain('başka bir yolla gelemeyeceği çıkarılmaz');
+    expect(d.kurallar.find((x) => x.kural === 'konum')!.not).toContain('rota süresiyle');
+
+    // Planlanan aşama bulunma sayılmaz; yaşam süresi yolculuğu da kapsar.
+    h.kayitAlanYaz({ evren, kod: k, alan: 'olum', deger: '400' });
+    d = h.denetimler({ evren });
+    expect(d.acik.filter((x) => x.kural === 'yasam').length).toBeGreaterThanOrEqual(2);
+    h.yolculukYaz({ evren, kod: y, asamalar: [{ nereden: a, nereye: b, rota: r, cikis: '1 Tohum 500', varis: '5 Tohum 500', durum: 'plan' }] });
+    d = h.denetimler({ evren });
+    expect(d.acik.filter((x) => x.kural === 'yasam')).toHaveLength(1);
+  });
 });

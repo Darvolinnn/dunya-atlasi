@@ -4,7 +4,8 @@
 // kapsam için geçerlidir. Fikir durumundaki değerlerin bulguları ayrı ve sessiz gruptadır; vazgeçilmişler denetlenmez.
 // Kararlar inceleme kuyruğunun kararlarıdır (§9.3): kabul edilen bulgu dayanağı değişmedikçe yeniden açılmaz.
 import type { IslemGirdisi } from '../alan/islem';
-import { karsilastir, type EvrenTarihi } from '../alan/tarih';
+import { GUN_PARCA, karsilastir, type EvrenTarihi } from '../alan/tarih';
+import { asamaSuresi, asamalarOku, enKisaSure, rotalar, yolculukBulunmalari } from './yol';
 import { turkceKarsilastir } from '../alan/turkce';
 import type { DenetimBulgusu, DenetimKurali, DenetimOzeti, Denetimler, IncelemeKarari, KisaKayit } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
@@ -24,6 +25,8 @@ type Aralik = { enErken: number | null; enGec: number | null };
 interface Bulunma {
   kisi: KisaKayit; olay: KisaKayit; iliski: string; rol: string; tarih: EvrenTarihi | null;
   fikir: boolean; sahneOlayi: string | null;
+  /** Yolculuk aşamasının ucu: yer olayın yerinden değil buradan gelir. */
+  yer?: KisaKayit;
 }
 
 const oku = (s: unknown) => (s ? JSON.parse(s as string) as EvrenTarihi : null);
@@ -31,8 +34,9 @@ const kisa = (r: Record<string, unknown>, p = ''): KisaKayit => ({ kod: r[p + 'k
 const sonlu = (a: Aralik | null | undefined): a is { enErken: number; enGec: number } => !!a && a.enErken !== null && a.enGec !== null;
 const ortusur = (a: Aralik, b: Aralik) => (a.enErken === null || b.enGec === null || a.enErken <= b.enGec) && (b.enErken === null || a.enGec === null || b.enErken <= a.enGec);
 const tirnak = (t: EvrenTarihi) => `“${t.ifade}”`;
+const gunYaz = (n: number) => `${n.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} gün`;
 
-const ROL_ADI: Record<string, string> = { bulunuyor: 'sahnede bulunuyor', baslatan: 'başlatan', katilan: 'katılan', tanik: 'tanık', zarar: 'zarar gören' };
+const ROL_ADI: Record<string, string> = { yolcu: 'yolcu', bulunuyor: 'sahnede bulunuyor', baslatan: 'başlatan', katilan: 'katılan', tanik: 'tanık', zarar: 'zarar gören' };
 
 /** Kişilerin fiziksel olarak bulunduğu olay ve sahneler. Sahnenin tarihi yoksa kendi sahne olayından alınır. */
 function bulunmalar(e: EvrenVt): Bulunma[] {
@@ -133,7 +137,7 @@ function dongu(e: EvrenVt): { bulgular: Ham[]; denetlenen: number } {
 }
 
 /** Konum: aynı zamanda, parçası olma ilişkisiyle birbirini kapsamayan iki yerde fiziksel olarak bulunma. */
-function konum(e: EvrenVt, b: Bulunma[]): { bulgular: Ham[]; denetlenen: number; yersiz: number } {
+function konum(e: EvrenVt, b: Bulunma[]): { bulgular: Ham[]; denetlenen: number; yersiz: number; rotaDenetlenen: number } {
   const yerler = new Map<string, { yer: KisaKayit; fikir: boolean }[]>();
   for (const r of e.db.selectObjects(`SELECT i.a olay, i.karar ikarar, y.kod, y.ad, y.tur, y.karar FROM iliskiler i JOIN kayitlar y ON y.kod=i.b
       WHERE i.tur='sahne_yeri' AND i.silindi IS NULL AND y.silindi IS NULL AND i.karar<>'vazgecildi' AND y.karar<>'vazgecildi'`)) {
@@ -162,22 +166,54 @@ function konum(e: EvrenVt, b: Bulunma[]): { bulgular: Ham[]; denetlenen: number;
   const kisiler = new Map<string, Bulunma[]>();
   let yersiz = 0;
   for (const x of b) {
-    if (!x.tarih?.eksen || !yerler.has(x.olay.kod)) { yersiz++; continue; }
+    if (x.yer) yerler.set(`${x.iliski}`, [{ yer: x.yer, fikir: false }]);
+    if (!x.tarih?.eksen || !yerler.has(x.yer ? x.iliski : x.olay.kod)) { yersiz++; continue; }
     kisiler.set(x.kisi.kod, [...(kisiler.get(x.kisi.kod) ?? []), x]);
   }
   const bulgular: Ham[] = [];
-  let denetlenen = 0;
+  let denetlenen = 0, rotaDenetlenen = 0;
+  // Kayıtlı rota süreleri (§8.4 süre ağı): iki yer arasında doğrudan kayıtlı rotaların en kısa süresi.
+  const rs = rotalar(e).filter((r) => r.a && r.b && r.sureler.length);
+  const enHizli = (p: string, q: string) => {
+    let en: { rota: (typeof rs)[number]; sure: { kosul: string; gun: number } } | null = null;
+    for (const r of rs) {
+      if (!((uyumlu(r.a!, p) && uyumlu(r.b!, q)) || (uyumlu(r.a!, q) && uyumlu(r.b!, p)))) continue;
+      const k = enKisaSure(r.sureler)!;
+      if (!en || k.gun < en.sure.gun) en = { rota: r, sure: k };
+    }
+    return en;
+  };
   for (const liste of kisiler.values()) {
     const kaba: { x: Bulunma; y: Bulunma; yx: KisaKayit; yy: KisaKayit; fikir: boolean }[] = [];
     for (let i = 0; i < liste.length; i++) for (let j = i + 1; j < liste.length; j++) {
       const x = liste[i], y = liste[j];
       if (ayniOlay(x, y)) continue;
       denetlenen++;
-      if (!ortusur(x.tarih!.eksen!, y.tarih!.eksen!)) continue;
-      const yx = yerler.get(x.olay.kod)!, yy = yerler.get(y.olay.kod)!;
+      const yx = yerler.get(x.yer ? x.iliski : x.olay.kod)!, yy = yerler.get(y.yer ? y.iliski : y.olay.kod)!;
       // Yerlerden biri ötekini kapsıyorsa (handa olmak ile aynı şehirde olmak) çelişmez.
       if (yx.some((a) => yy.some((c) => uyumlu(a.yer.kod, c.yer.kod)))) continue;
       const fikir = x.fikir || y.fikir || yx.every((a) => a.fikir) || yy.every((a) => a.fikir);
+      if (!ortusur(x.tarih!.eksen!, y.tarih!.eksen!)) {
+        // Ayrı zamanlarda iki yer: aralarında kayıtlı rota varsa, aradaki en uzun olası süre rotanın en kısa süresine yetiyor mu?
+        const ex = x.tarih!.eksen!, ey = y.tarih!.eksen!;
+        if (!sonlu(ex) || !sonlu(ey)) continue;
+        const r = yx.flatMap((a) => yy.map((c) => enHizli(a.yer.kod, c.yer.kod))).reduce((m, v) => (v && (!m || v.sure.gun < m.sure.gun) ? v : m), null);
+        if (!r) continue;
+        rotaDenetlenen++;
+        const enCok = Math.max(ey.enGec - ex.enErken, ex.enGec - ey.enErken) / GUN_PARCA;
+        if (enCok >= r.sure.gun) continue;
+        const [p, q] = [x, y].sort((m, n) => m.iliski.localeCompare(n.iliski));
+        const [ilk, son] = karsilastir(x.tarih, y.tarih) === 'sonra' ? [y, x] : [x, y];
+        bulgular.push({
+          anahtar: `denetim:rota:${p.iliski}:${q.iliski}`, kural: 'konum', hukum: 'olasi',
+          baslik: `${x.kisi.ad}, “${r.rota.ad}” için tanımlı süreden kısa sürede yer değiştiriyor`,
+          dayanak: `${ilk.olay.ad} ${tirnak(ilk.tarih!)} ile ${son.olay.ad} ${tirnak(son.tarih!)} arasında en çok ${gunYaz(enCok)} var. `
+            + `“${r.rota.ad}” için tanımlı en kısa süre ${gunYaz(r.sure.gun)}${r.sure.kosul ? ` (${r.sure.kosul})` : ''}. Bu yalnızca kayıtlı rotalar için geçerlidir; başka bir yolla gelemeyeceği çıkarılmaz.`,
+          kayitlar: [x.kisi, ilk.olay, son.olay, { kod: r.rota.kod, ad: r.rota.ad, tur: 'rota' }], fikir,
+          imza: JSON.stringify([ex, ey, r.rota.kod, r.sure.gun]),
+        });
+        continue;
+      }
       const gunluk = x.tarih!.hassasiyet === 'gun' && y.tarih!.hassasiyet === 'gun' && sonlu(x.tarih!.eksen) && sonlu(y.tarih!.eksen);
       if (!gunluk) { kaba.push({ x, y, yx: yx[0].yer, yy: yy[0].yer, fikir }); continue; }
       // Rota süreleri henüz kayıtlı olmadığı için aynı gün iki yerde olmak da olası uyuşmazlıktır (§2.2 kural 13).
@@ -205,7 +241,7 @@ function konum(e: EvrenVt, b: Bulunma[]): { bulgular: Ham[]; denetlenen: number;
       });
     }
   }
-  return { bulgular, denetlenen, yersiz };
+  return { bulgular, denetlenen, yersiz, rotaDenetlenen };
 }
 
 /** Eşya: aynı dönemde iki ayrı sahibi görünen eşya. Ortak sahiplik olabileceği için olası uyuşmazlıktır. */
@@ -245,9 +281,36 @@ function esya(e: EvrenVt): { bulgular: Ham[]; denetlenen: number } {
   return { bulgular, denetlenen };
 }
 
+/** Yolculuk aşaması kendi seçtiği rotanın tanımlı en kısa süresinden kısa sürüyorsa: yazarın kendi verisi çelişiyor. */
+function asamaDenetimi(e: EvrenVt): Ham[] {
+  const rs = new Map(rotalar(e).map((r) => [r.kod, r]));
+  const bulgular: Ham[] = [];
+  for (const r of e.db.selectObjects(`SELECT y.kod, k.ad, k.tur, k.karar FROM yolculuklar y JOIN kayitlar k ON k.kod=y.kod WHERE k.silindi IS NULL AND k.karar<>'vazgecildi'`)) {
+    asamalarOku(e, r.kod as string).forEach((a, n) => {
+      if (a.durum !== 'gerceklesti' || !a.rota) return;
+      const rota = rs.get(a.rota), sure = asamaSuresi(a);
+      const ek = rota ? enKisaSure(rota.sureler) : null;
+      if (!rota || !ek || !sure || sure.enCok >= ek.gun) return;
+      bulgular.push({
+        anahtar: `denetim:rota-asama:${r.kod}:${n}`, kural: 'konum', hukum: 'celiski',
+        baslik: `“${r.ad}” yolculuğunun ${n + 1}. aşaması kendi rotasının süresinden kısa`,
+        dayanak: `Çıkış ${tirnak(a.cikis!)}, varış ${tirnak(a.varis!)}: en çok ${gunYaz(sure.enCok)}. “${rota.ad}” için tanımlı en kısa süre ${gunYaz(ek.gun)}${ek.kosul ? ` (${ek.kosul})` : ''}.`,
+        kayitlar: [{ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string }, { kod: rota.kod, ad: rota.ad, tur: 'rota' }],
+        fikir: r.karar === 'fikir', imza: JSON.stringify([a.cikis?.eksen, a.varis?.eksen, ek.gun]),
+      });
+    });
+  }
+  return bulgular;
+}
+
 function hesapla(e: EvrenVt): { bulgular: Ham[]; kurallar: DenetimOzeti[] } {
-  const b = bulunmalar(e);
+  const b: Bulunma[] = [...bulunmalar(e), ...yolculukBulunmalari(e).map((x) => {
+    const yer = e.db.selectObject('SELECT kod, ad, tur FROM kayitlar WHERE kod=?', [x.yer]);
+    return { kisi: x.kisi, olay: x.yolculuk, iliski: x.iliski, rol: 'yolcu', tarih: x.tarih, fikir: x.fikir, sahneOlayi: null,
+      yer: yer ? { kod: yer.kod as string, ad: yer.ad as string, tur: yer.tur as string } : { kod: x.yer, ad: 'Silinmiş kayıt', tur: 'diger' } };
+  })];
   const y = yasam(e, b), d = dongu(e), k = konum(e, b), s = esya(e);
+  k.bulgular.push(...asamaDenetimi(e));
   const ozet = (kural: DenetimKurali, ad: string, tanim: string, x: { bulgular: Ham[]; denetlenen: number }, bos: string, not: string): DenetimOzeti => ({
     kural, ad, tanim, denetlenen: x.denetlenen, not: x.denetlenen ? not : bos,
     sonuc: x.bulgular.length ? 'bulgu_var' : x.denetlenen ? 'sorun_yok' : 'konu_degil',
@@ -260,7 +323,7 @@ function hesapla(e: EvrenVt): { bulgular: Ham[]; kurallar: DenetimOzeti[] } {
       'Bir olaya göre verilmiş tarih yok.', `${d.denetlenen} göreli tarih denetlendi.`),
     ozet('konum', 'Konum', 'Aynı zamanda, biri ötekinin parçası olmayan iki yerde fiziksel olarak bulunma.', k,
       'Aynı kişinin tarihli ve yeri belli iki olayı ya da sahnesi yok.',
-      `${k.denetlenen} olay çifti denetlendi.${k.yersiz ? ` ${k.yersiz} bulunmanın tarihi ya da yeri olmadığı için denetlenemedi.` : ''} Yol süreleri henüz denetlenmiyor.`),
+      `${k.denetlenen} olay çifti denetlendi${k.rotaDenetlenen ? `; ${k.rotaDenetlenen} çift kayıtlı rota süresiyle karşılaştırıldı` : ''}.${k.yersiz ? ` ${k.yersiz} bulunmanın tarihi ya da yeri olmadığı için denetlenemedi.` : ''} Rota süreleri yalnızca kayıtlı rotalar için geçerlidir.`),
     ozet('esya', 'Eşya', 'Bir eşyanın aynı dönemde iki ayrı sahibinin görünmesi.', s,
       'İki ya da daha çok sahibi kayıtlı eşya yok.', `${s.denetlenen} eşya denetlendi. Başlangıcı yazılmamış sahiplikler denetlenmez; yok edilme henüz denetlenmiyor.`),
     { kural: 'bilgi', ad: 'Bilgi', tanim: 'Karakterin bir bilgiyi öğrenmeden önce ona göre davranması.', sonuc: 'denetlenemiyor', denetlenen: 0,

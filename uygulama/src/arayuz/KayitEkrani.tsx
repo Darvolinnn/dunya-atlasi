@@ -13,6 +13,7 @@ import { git } from './Uygulama';
 import { CatismaListesi } from './Catismalar';
 import { useCalisma } from './Calisma';
 import { KayitHaritaBolumu } from './Harita';
+import { RotaBolumu, YolculukBolumu } from './Yol';
 import { BirlesmeBilgisi, BirlestirDugmesi } from './Birlesme';
 import { KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
 import { BilinenlerBolumu, GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
@@ -125,6 +126,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
 
         <Gorseller istemci={istemci} evren={evren} kayit={kayit} />
         <KayitHaritaBolumu istemci={istemci} evren={evren} kayit={kayit} />
+        {kayit.tur === 'rota' && <RotaBolumu istemci={istemci} evren={evren} kayit={kayit} />}
+        {kayit.tur === 'yolculuk' && <YolculukBolumu istemci={istemci} evren={evren} kayit={kayit} />}
 
         <MetinEditoru key={editorAnahtari} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} baslangic={editorAnahtari === 0 ? baslangic : null} />
 

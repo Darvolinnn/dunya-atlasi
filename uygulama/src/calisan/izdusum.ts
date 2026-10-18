@@ -86,6 +86,10 @@ function tarihleriYenidenHesapla(db: Database) {
       db.exec({ sql: `UPDATE ${tablo} SET baslangic=?, bitis=? WHERE kod=?`, bind: [sinir(r.baslangic), sinir(r.bitis), r.kod as string] });
     }
   }
+  for (const r of db.selectObjects('SELECT kod, asamalar FROM yolculuklar')) {
+    const l = (JSON.parse(r.asamalar as string) as Record<string, unknown>[]).map((a) => ({ ...a, cikis: tz(db, a.cikis, z), varis: tz(db, a.varis, z) }));
+    db.exec({ sql: 'UPDATE yolculuklar SET asamalar=? WHERE kod=?', bind: [JSON.stringify(l), r.kod as string] });
+  }
   for (const r of db.selectObjects('SELECT kayit, alan, deger FROM alan_degerleri')) {
     const d = JSON.parse(r.deger as string);
     if (tarihMi(d)) db.exec({ sql: 'UPDATE alan_degerleri SET deger=? WHERE kayit=? AND alan=?', bind: [JSON.stringify(tz(db, d, z)), r.kayit as string, r.alan as string] });
@@ -94,7 +98,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 16;
+export const IZDUSUM_SURUMU = 17;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -301,6 +305,20 @@ CREATE TABLE IF NOT EXISTS cizimler(
 );
 CREATE INDEX IF NOT EXISTS cizimler_harita ON cizimler(harita);
 CREATE INDEX IF NOT EXISTS cizimler_kayit ON cizimler(kayit);
+CREATE TABLE IF NOT EXISTS rotalar(
+  kod TEXT PRIMARY KEY,
+  a TEXT,
+  b TEXT,
+  mesafe TEXT,
+  sureler TEXT NOT NULL DEFAULT '[]',
+  duraklar TEXT NOT NULL DEFAULT '[]'
+);
+CREATE INDEX IF NOT EXISTS rotalar_a ON rotalar(a);
+CREATE INDEX IF NOT EXISTS rotalar_b ON rotalar(b);
+CREATE TABLE IF NOT EXISTS yolculuklar(
+  kod TEXT PRIMARY KEY,
+  asamalar TEXT NOT NULL DEFAULT '[]'
+);
 CREATE TABLE IF NOT EXISTS yonlendirmeler(
   kod TEXT PRIMARY KEY,
   hedef TEXT NOT NULL,
@@ -375,7 +393,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
 );
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'medya',
-  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
+  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -406,7 +424,7 @@ function yonlendirNotla(db: Database, kod: string | null | undefined, tablo: str
 }
 
 /** Birleştirmede kaynak kayda bağlı satırlar hedefe taşınır; geri almak için hangi satırın taşındığı tutulur. */
-const BIRLESME_SUTUNLARI: [string, string][] = [['iliskiler', 'a'], ['iliskiler', 'b'], ['durumlar', 'konu'], ['durumlar', 'hedef'], ['isaretler', 'kayit'], ['cizimler', 'kayit'],
+const BIRLESME_SUTUNLARI: [string, string][] = [['iliskiler', 'a'], ['iliskiler', 'b'], ['durumlar', 'konu'], ['durumlar', 'hedef'], ['isaretler', 'kayit'], ['cizimler', 'kayit'], ['rotalar', 'a'], ['rotalar', 'b'],
   ['haritalar', 'yer'], ['degisimler', 'konu'], ['degisimler', 'olay'], ['kayitlar', 'sahne_olayi'], ['anlati', 'ust'], ['yonlendirmeler', 'hedef'],
   ['iddialar', 'konu'], ['bilgiler', 'bilen'], ['bilgiler', 'kaynak_kayit'], ['bilgiler', 'sahne']];
 
@@ -866,6 +884,35 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     else return;
     db.exec({ sql: `UPDATE cizimler SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [d, i.zaman, kod] });
     alanYaz(db, i, kod, alan, deger ?? null);
+  },
+  /** Rota (§4.2, §8.4 süre ağı): iki uç, elle girilmiş mesafe, koşula göre süreler, duraklar. Program koşulu yorumlamaz. */
+  rota_yaz(db, i) {
+    const { kod, rota } = i.veri as { kod: string; rota: { a?: unknown; b?: unknown; mesafe?: unknown; sureler?: unknown; duraklar?: unknown } | null };
+    if (typeof kod !== 'string') return;
+    if (!rota) db.exec({ sql: 'DELETE FROM rotalar WHERE kod=?', bind: [kod] });
+    else {
+      const k = (x: unknown) => (typeof x === 'string' ? yonlendir(db, x) : null);
+      const m = rota.mesafe as { deger?: unknown; birim?: unknown } | null;
+      const mesafe = m && Number.isFinite(m.deger) && (m.deger as number) >= 0 ? { deger: m.deger, birim: String(m.birim ?? '').slice(0, 30) } : null;
+      const sureler = (Array.isArray(rota.sureler) ? rota.sureler : []).slice(0, 30)
+        .filter((x: { gun?: unknown }) => Number.isFinite(x?.gun) && (x.gun as number) > 0).map((x: { kosul?: unknown; gun: number }) => ({ kosul: String(x.kosul ?? '').slice(0, 80), gun: x.gun }));
+      const duraklar = (Array.isArray(rota.duraklar) ? rota.duraklar : []).filter((x): x is string => typeof x === 'string').slice(0, 50);
+      db.exec({ sql: 'INSERT OR REPLACE INTO rotalar(kod, a, b, mesafe, sureler, duraklar) VALUES(?,?,?,?,?,?)',
+        bind: [kod, k(rota.a), k(rota.b), mesafe ? JSON.stringify(mesafe) : null, JSON.stringify(sureler), JSON.stringify(duraklar)] });
+    }
+    alanYaz(db, i, kod, 'rota', rota ?? null);
+  },
+  /** Yolculuk (§4.2): belirli bir zamanda yer yer ilerleyen aşamalar; planlanan ve gerçekleşen ayrı işaretlenir. */
+  yolculuk_yaz(db, i) {
+    const { kod, asamalar } = i.veri as { kod: string; asamalar: unknown };
+    if (typeof kod !== 'string' || !Array.isArray(asamalar)) return;
+    const k = (x: unknown) => (typeof x === 'string' ? x : null);
+    const l = asamalar.slice(0, 100).map((a: Record<string, unknown>) => ({
+      nereden: k(a?.nereden), nereye: k(a?.nereye), rota: k(a?.rota), cikis: tz(db, a?.cikis) ?? null, varis: tz(db, a?.varis) ?? null,
+      durum: a?.durum === 'plan' ? 'plan' : 'gerceklesti',
+    }));
+    db.exec({ sql: 'INSERT OR REPLACE INTO yolculuklar(kod, asamalar) VALUES(?,?)', bind: [kod, JSON.stringify(l)] });
+    alanYaz(db, i, kod, 'asamalar', asamalar);
   },
   cizim_sil(db, i) {
     db.exec({ sql: 'UPDATE cizimler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });

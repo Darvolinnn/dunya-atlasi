@@ -31,6 +31,12 @@ export const OLAY_ROLLERI = [
   { kod: 'sonradan', ad: 'Sonradan öğrenen' },
 ];
 
+/** Yolculukta bulunma (§4.2): yolcu yolculuğun aşamalarında fiziksel olarak bulunur; taşınan eşya da yolculukla gider. */
+export const YOLCULUK_ROLLERI = [
+  { kod: 'yolcu', ad: 'Yolcu' },
+  { kod: 'tasinan', ad: 'Taşınan' },
+];
+
 /** Ebeveynlik ve evliliğin niteliği; soy ağacında farklı çizgiyle gösterilir (§7). Soybilim ile hukuki ebeveynlik ayrıdır (§15-8). */
 export const EBEVEYN_ROLLERI = [
   { kod: 'kan', ad: 'Kan bağı' },
@@ -73,6 +79,7 @@ export const ILISKI_TURLERI: IliskiTuru[] = [
   { kod: 'anlatir', aIcin: 'Anlattığı olay', bIcin: 'Anlatıldığı sahne', karsilikli: false, grup: 'Sahne ve olay' },
   { kod: 'sahnede', aIcin: 'Yer aldığı sahne', bIcin: 'Sahnedekiler', karsilikli: false, grup: 'Sahne ve olay', roller: SAHNE_ROLLERI },
   { kod: 'olayda', aIcin: 'Yer aldığı olay', bIcin: 'Olaydakiler', karsilikli: false, grup: 'Sahne ve olay', roller: OLAY_ROLLERI },
+  { kod: 'yolculukta', aIcin: 'Katıldığı yolculuk', bIcin: 'Yolculuktakiler', karsilikli: false, grup: 'Sahne ve olay', roller: YOLCULUK_ROLLERI, rolIstegeBagli: true },
   { kod: 'sahne_yeri', aIcin: 'Geçtiği yer', bIcin: 'Burada geçen sahne', karsilikli: false, grup: 'Sahne ve olay' },
   { kod: 'bakis', aIcin: 'Bakış açısı olduğu sahne', bIcin: 'Bakış açısı', karsilikli: false, grup: 'Sahne ve olay' },
   { kod: 'anlatici', aIcin: 'Anlatıcısı olduğu sahne', bIcin: 'Anlatıcı', karsilikli: false, grup: 'Sahne ve olay' },
