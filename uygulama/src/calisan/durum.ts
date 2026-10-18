@@ -18,14 +18,14 @@ export interface DurumBaglami {
 /** Saklanan sınır: tarih ya da bir olay (olayın tarihi okunurken alınır). */
 export interface SinirVerisi { tarih?: EvrenTarihi | null; olay?: string | null }
 
-const temiz = (s: unknown, uzunluk: number, bos = true) => {
+export const temiz = (s: unknown, uzunluk: number, bos = true) => {
   const x = String(s ?? '').replace(/\s+/g, ' ').trim();
   if (!x && !bos) throw new Error('Boş olamaz.');
   if (x.length > uzunluk) throw new Error('Metin çok uzun.');
   return x;
 };
 
-function sinirCoz(b: DurumBaglami, girdi: { ifade?: string; olay?: string | null } | null | undefined): SinirVerisi | null {
+export function sinirCoz(b: DurumBaglami, girdi: { ifade?: string; olay?: string | null } | null | undefined): SinirVerisi | null {
   if (!girdi) return null;
   if (girdi.olay) {
     if (!kodGecerliMi(girdi.olay) || b.e.db.selectValue('SELECT 1 FROM kayitlar WHERE kod=?', [girdi.olay]) === undefined) throw new Error('Bağlanan olay bulunamadı.');
@@ -35,7 +35,7 @@ function sinirCoz(b: DurumBaglami, girdi: { ifade?: string; olay?: string | null
   return t ? { tarih: t } : null;
 }
 
-function sinirBilgisi(b: DurumBaglami, v: SinirVerisi | null): SinirBilgisi | null {
+export function sinirBilgisi(b: DurumBaglami, v: SinirVerisi | null): SinirBilgisi | null {
   if (!v) return null;
   if (v.olay) {
     const ad = b.e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [v.olay]) as string | undefined;

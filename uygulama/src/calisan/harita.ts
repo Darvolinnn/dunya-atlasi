@@ -1,5 +1,6 @@
 // Harita: yükle, işaretle, bağla (§8.1). Her haritanın kendi uzayı vardır; ilk görselin piksel boyutu uzayın
 // boyutu olur ve en-boy oranı korunur. Görsel uzaya oturtulmuş bir katmandır; işaretler uzayda saklanır.
+import { bakisHazirla } from './gorunum';
 import type { IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
 import { turkceKarsilastir } from '../alan/turkce';
@@ -62,18 +63,21 @@ export function haritalar(e: EvrenVt, silinmis = false): HaritaOzeti[] {
     .sort((x, y) => turkceKarsilastir(x.ad, y.ad));
 }
 
-export function harita(e: EvrenVt, kod: string): HaritaAyrintisi {
+export function harita(e: EvrenVt, kod: string, bakis: string | null = null): HaritaAyrintisi {
   const h = haritaOku(e, kod);
+  const bk = bakisHazirla(e, bakis);
   const r = e.db.selectObject('SELECT katmanlar FROM haritalar WHERE kod=?', [kod])!;
   const katmanlar = (JSON.parse(r.katmanlar as string) as { gorsel: string; x: number; y: number; olcek: number }[]).map((k) => {
     const m = e.db.selectObject('SELECT en, boy FROM medya WHERE ad=?', [k.gorsel]);
     return { ...k, en: Number(m?.en ?? h.en), boy: Number(m?.boy ?? h.boy) };
   });
   const yerAd = h.yer ? (e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [h.yer]) as string | undefined) : undefined;
-  const isaretler = e.db.selectObjects(`SELECT i.*, k.ad, k.tur, k.karar,
+  const isaretler = e.db.selectObjects(`SELECT i.*, k.ad, k.tur, k.karar, k.gorunurluk,
       (SELECT kod FROM haritalar WHERE yer=i.kayit AND silindi IS NULL AND kod<>i.harita ORDER BY olusturma LIMIT 1) alt_harita
       FROM isaretler i JOIN kayitlar k ON k.kod=i.kayit WHERE i.harita=? AND i.silindi IS NULL AND k.silindi IS NULL ORDER BY k.ad`, [kod])
+    .filter((x) => bk.gorur(x.gorunurluk))
     .map((x) => ({
+      ...(bk.kisa && bk.inanc(x.gorunurluk) ? { inanc: true } : {}),
       kod: x.kod as string, kayit: { kod: x.kayit as string, ad: x.ad as string, tur: x.tur as string }, karar: x.karar as string,
       konum: { kesinlik: x.kesinlik as IsaretGirdisi['kesinlik'], x: x.x as number | null, y: x.y as number | null, yaricap: x.yaricap as number | null },
       altHarita: (x.alt_harita as string) ?? null,
@@ -81,7 +85,7 @@ export function harita(e: EvrenVt, kod: string): HaritaAyrintisi {
   // Bu haritanın yerini gösteren başka haritalar (iç içe gezinti, §8.1).
   const ustHaritalar = h.yer ? e.db.selectObjects(`SELECT DISTINCT h.kod, h.ad FROM isaretler i JOIN haritalar h ON h.kod=i.harita
       WHERE i.kayit=? AND i.silindi IS NULL AND h.silindi IS NULL AND h.kod<>?`, [h.yer, kod]).map((x) => ({ kod: x.kod as string, ad: x.ad as string })) : [];
-  return { kod, ad: h.ad, en: h.en, boy: h.boy, silindi: h.silindi, yer: h.yer ? { kod: h.yer, ad: yerAd ?? 'Silinmiş kayıt' } : null, katmanlar, isaretler, ustHaritalar };
+  return { kod, ad: h.ad, en: h.en, boy: h.boy, silindi: h.silindi, yer: h.yer ? { kod: h.yer, ad: yerAd ?? 'Silinmiş kayıt' } : null, katmanlar, isaretler, ustHaritalar, bakis: bk.kisa };
 }
 
 export function haritaDegistir(b: HaritaBaglami, kod: string, alan: 'ad' | 'yer', deger: unknown) {

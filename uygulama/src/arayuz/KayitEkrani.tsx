@@ -15,6 +15,7 @@ import { useCalisma } from './Calisma';
 import { KayitHaritaBolumu } from './Harita';
 import { BirlesmeBilgisi, BirlestirDugmesi } from './Birlesme';
 import { KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
+import { BilinenlerBolumu, GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
 import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
 
 /** Durum geçmişi tutulmayan türler (anlatı parçaları ve notlar). */
@@ -66,6 +67,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {(kayit.tur === 'sahne' || kayit.tur === 'bolum') && <AnlatiYolu istemci={istemci} evren={evren} kayit={kayit} />}
         <div class="kayit-basi">
           <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>
+          <GorunurlukRozeti g={kayit.gorunurluk} />
           <AlanGirdisi etiket="Ad" deger={kayit.ad} buyuk zorunlu kaydet={async (v) => {
             const eskiAd = kayit.ad, eskiOkunus = kayit.okunus;
             await degistir('ad', v);
@@ -115,6 +117,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
             <Liste ogeler={kayit.etiketler} ekleEtiketi="Etiket ekle" ekle={(v) => istemci.iste('kayitListe', { evren, kod, liste: 'etiket', ekle: v })}
               cikar={(v) => istemci.iste('kayitListe', { evren, kod, liste: 'etiket', cikar: v })} />
           </div>
+          <GorunurlukAlani istemci={istemci} evren={evren} kod={kod} nesne="kayit" deger={kayit.gorunurluk} />
           {kayit.oncekiAdlar.length > 0 && (
             <p class="soluk kucuk genis">Önceki adları (aramada bulunur): {kayit.oncekiAdlar.join(', ')}</p>
           )}
@@ -129,6 +132,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={sahneBaglami} />}
         {kayit.tur === 'sahne' && <SahneBolumu istemci={istemci} evren={evren} kayit={kayit} surum={surum} />}
         {!DURUMSUZ.has(kayit.tur) && <DurumGecmisi istemci={istemci} evren={evren} kayit={kayit} />}
+        {kayit.tur !== 'not' && <BilinenlerBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
         <KayitMeseleleri istemci={istemci} evren={evren} kayit={kayit} />
         <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />

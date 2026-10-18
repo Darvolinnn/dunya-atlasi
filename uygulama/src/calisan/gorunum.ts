@@ -11,6 +11,31 @@ import { takvimOku } from './izdusum';
 import { durumlar, type DurumBaglami } from './durum';
 import { bagimlilar, NEDEN_TURLERI, type Bagimlilar } from './etki';
 import { eserYapisi } from './anlati';
+import { goruyorMu, gorunurlukOku } from '../alan/gorunurluk';
+import { yonlendir } from './izdusum';
+import type { KisaKayit } from '../veri/api';
+
+// ---------- Bakış açısı (§3.6) ----------
+/**
+ * Bakış açısı süzgeci: null evrenin gerçeğidir (inançlar gösterilmez). Bir bilen seçilince onun bilmediği gizli
+ * gerçekler düşer, onun inancındaki kayıt ve ilişkiler eklenir. Grup inancı üyelere geçmez.
+ */
+export interface Bakis { kisa: KisaKayit | null; gorur(ham: unknown): boolean; inanc(ham: unknown): boolean }
+export function bakisHazirla(e: EvrenVt, bakis: string | null | undefined): Bakis {
+  let kisa: KisaKayit | null = null;
+  if (bakis) {
+    const k = yonlendir(e.db, bakis);
+    const r = kodGecerliMi(k) ? e.db.selectObject('SELECT kod, ad, tur FROM kayitlar WHERE kod=?', [k]) : undefined;
+    if (!r) throw new Error('Bakış açısı kaydı bulunamadı.');
+    kisa = { kod: r.kod as string, ad: r.ad as string, tur: r.tur as string };
+  }
+  const kod = (k: string) => yonlendir(e.db, k);
+  return {
+    kisa,
+    gorur: (ham) => goruyorMu(gorunurlukOku(ham), kisa?.kod ?? null, kod),
+    inanc: (ham) => !!gorunurlukOku(ham).katman,
+  };
+}
 
 /** Bir görünümde en çok bu kadar kayıt çizilir; fazlası için süzgeç önerilir. */
 export const AG_SINIRI = 300;
@@ -32,7 +57,7 @@ function iliskiGecerliligi(r: Record<string, unknown>, an: EvrenTarihi | null): 
   return gecerlilik('aralik', bas ?? 'acik', bit ?? 'acik', an);
 }
 
-function kenar(r: Record<string, unknown>, an: EvrenTarihi | null): AgKenari {
+function kenar(r: Record<string, unknown>, an: EvrenTarihi | null, bk?: Bakis): AgKenari {
   const t = iliskiTuruBul(r.tur as string);
   return {
     kod: r.kod as string, tur: r.tur as string, a: r.a as string, b: r.b as string,
@@ -40,16 +65,17 @@ function kenar(r: Record<string, unknown>, an: EvrenTarihi | null): AgKenari {
     rol: (r.rol as string) ?? null, rolAdi: rolAdi(r.tur as string, (r.rol as string) ?? null),
     karar: r.karar as string, gecerlilik: iliskiGecerliligi(r, an),
     baslangic: tarihOku(r.baslangic), bitis: tarihOku(r.bitis),
+    ...(bk?.kisa && bk.inanc(r.gorunurluk) ? { inanc: true } : {}),
   };
 }
 
-function dugumler(e: EvrenVt, kodlar: Iterable<string>): Map<string, AgDugumu> {
+function dugumler(e: EvrenVt, kodlar: Iterable<string>, bk?: Bakis): Map<string, AgDugumu> {
   const m = new Map<string, AgDugumu>();
   const liste = [...kodlar];
   for (let i = 0; i < liste.length; i += 400) {
     const parca = liste.slice(i, i + 400);
-    for (const r of e.db.selectObjects(`SELECT kod, ad, tur, karar FROM kayitlar WHERE kod IN (${parca.map(() => '?').join(',')})`, parca)) {
-      m.set(r.kod as string, { kod: r.kod as string, ad: r.ad as string, tur: r.tur as string, karar: r.karar as string });
+    for (const r of e.db.selectObjects(`SELECT kod, ad, tur, karar, gorunurluk FROM kayitlar WHERE kod IN (${parca.map(() => '?').join(',')})`, parca)) {
+      m.set(r.kod as string, { kod: r.kod as string, ad: r.ad as string, tur: r.tur as string, karar: r.karar as string, ...(bk?.kisa && bk.inanc(r.gorunurluk) ? { inanc: true } : {}) });
     }
   }
   return m;
@@ -61,12 +87,14 @@ function dugumler(e: EvrenVt, kodlar: Iterable<string>): Map<string, AgDugumu> {
  * soy içi evlilikte eşlerin ortak ataları gösterilir (§15-8). Verilen anda geçerli olmayan bağlar düşer,
  * belirsiz olanlar işaretlenir. Vazgeçilmiş bağlar ve çöp kutusundaki kayıtlar gösterilmez.
  */
-export function soyAgaci(e: EvrenVt, odak: string, anIfade?: string | null): SoyAgaci {
+export function soyAgaci(e: EvrenVt, odak: string, anIfade?: string | null, bakisKod?: string | null): SoyAgaci {
   if (!kodGecerliMi(odak) || e.db.selectValue('SELECT 1 FROM kayitlar WHERE kod=? AND silindi IS NULL', [odak]) === undefined) throw new Error('Kayıt bulunamadı.');
   const an = anCoz(e, anIfade);
+  const bk = bakisHazirla(e, bakisKod);
   const tum = e.db.selectObjects(
-    `SELECT i.* FROM iliskiler i JOIN kayitlar x ON x.kod=i.a JOIN kayitlar y ON y.kod=i.b
-     WHERE i.tur IN ('ebeveyn','es','kardes') AND i.silindi IS NULL AND i.karar!='vazgecildi' AND x.silindi IS NULL AND y.silindi IS NULL`);
+    `SELECT i.*, x.gorunurluk xg, y.gorunurluk yg FROM iliskiler i JOIN kayitlar x ON x.kod=i.a JOIN kayitlar y ON y.kod=i.b
+     WHERE i.tur IN ('ebeveyn','es','kardes') AND i.silindi IS NULL AND i.karar!='vazgecildi' AND x.silindi IS NULL AND y.silindi IS NULL`)
+    .filter((r) => bk.gorur(r.gorunurluk) && bk.gorur(r.xg) && bk.gorur(r.yg));
   const komsu = new Map<string, Record<string, unknown>[]>();
   for (const r of tum) {
     if (iliskiGecerliligi(r, an) === 'hayir') continue;
@@ -87,7 +115,7 @@ export function soyAgaci(e: EvrenVt, odak: string, anIfade?: string | null): Soy
       kenarlar.set(r.kod as string, r);
     }
   }
-  const ks = [...kenarlar.values()].map((r) => kenar(r, an));
+  const ks = [...kenarlar.values()].map((r) => kenar(r, an, bk));
   // Soy içi evlilik: eşlerin kan ya da belirtilmemiş ebeveynlik üzerinden ortak bir atası var mı?
   const ebeveynleri = new Map<string, string[]>();
   for (const k of ks) if (k.tur === 'ebeveyn' && k.rol !== 'evlatlik') ebeveynleri.set(k.b, [...(ebeveynleri.get(k.b) ?? []), k.a]);
@@ -96,7 +124,7 @@ export function soyAgaci(e: EvrenVt, odak: string, anIfade?: string | null): Soy
     while (yigin.length) { const p = yigin.pop()!; if (!s.has(p)) { s.add(p); yigin.push(...(ebeveynleri.get(p) ?? [])); } }
     return s;
   };
-  const d = dugumler(e, gorulen);
+  const d = dugumler(e, gorulen, bk);
   const soyIci: SoyAgaci['soyIci'] = [];
   for (const k of ks) {
     if (k.tur !== 'es') continue;
@@ -106,7 +134,7 @@ export function soyAgaci(e: EvrenVt, odak: string, anIfade?: string | null): Soy
     const yakin = ortak.filter((a) => !ortak.some((b) => b !== a && atalar(b).has(a)));
     if (yakin.length) soyIci.push({ kenar: k.kod, ortakAtalar: yakin.map((a) => ({ kod: a, ad: d.get(a)?.ad ?? '' })) });
   }
-  return { odak, an, dugumler: [...d.values()], kenarlar: ks, soyIci, kesildi };
+  return { odak, an, bakis: bk.kisa, dugumler: [...d.values()], kenarlar: ks, soyIci, kesildi };
 }
 
 // ---------- Filtreli ağ ----------
@@ -118,6 +146,7 @@ export interface AgSecenekleri {
   an?: string | null;
   baglantilar?: boolean;
   vazgecilmis?: boolean;
+  bakis?: string | null;
 }
 
 /**
@@ -131,8 +160,11 @@ export function ag(e: EvrenVt, s: AgSecenekleri): AgSonucu {
   if (merkez && (!kodGecerliMi(merkez) || e.db.selectValue('SELECT 1 FROM kayitlar WHERE kod=? AND silindi IS NULL', [merkez]) === undefined)) throw new Error('Kayıt bulunamadı.');
   const iTur = s.iliskiTurleri?.length ? new Set(s.iliskiTurleri) : null;
   const kTur = s.kayitTurleri?.length ? new Set(s.kayitTurleri) : null;
+  const bk = bakisHazirla(e, s.bakis);
   const kayit = new Map<string, { tur: string; karar: string }>();
-  for (const r of e.db.selectObjects(`SELECT kod, tur, karar FROM kayitlar WHERE silindi IS NULL`)) kayit.set(r.kod as string, { tur: r.tur as string, karar: r.karar as string });
+  for (const r of e.db.selectObjects(`SELECT kod, tur, karar, gorunurluk FROM kayitlar WHERE silindi IS NULL`)) {
+    if (r.kod === merkez || bk.gorur(r.gorunurluk)) kayit.set(r.kod as string, { tur: r.tur as string, karar: r.karar as string });
+  }
   const uygun = (k: string) => {
     const x = kayit.get(k);
     if (!x) return false;
@@ -145,8 +177,9 @@ export function ag(e: EvrenVt, s: AgSecenekleri): AgSonucu {
   for (const r of e.db.selectObjects(`SELECT * FROM iliskiler WHERE silindi IS NULL`)) {
     if (!s.vazgecilmis && r.karar === 'vazgecildi') continue;
     if (iTur && !iTur.has(r.tur as string)) continue;
+    if (!bk.gorur(r.gorunurluk)) continue;
     if (!uygun(r.a as string) || !uygun(r.b as string)) continue;
-    const k = kenar(r, an);
+    const k = kenar(r, an, bk);
     if (k.gecerlilik === 'hayir') continue;
     ekle(k);
   }
@@ -185,9 +218,9 @@ export function ag(e: EvrenVt, s: AgSecenekleri): AgSonucu {
     for (const k of sirali) { if (secilen.size >= AG_SINIRI) { kesildi = true; break; } secilen.add(k); }
   }
   for (const k of secilen) for (const x of komsu.get(k) ?? []) if (secilen.has(x.a) && secilen.has(x.b)) kenarlar.set(x.kod, x);
-  const d = dugumler(e, secilen);
+  const d = dugumler(e, secilen, bk);
   return {
-    merkez, an, kesildi,
+    merkez, an, bakis: bk.kisa, kesildi,
     dugumler: [...d.values()].sort((x, y) => turkceKarsilastir(x.ad, y.ad)),
     kenarlar: [...kenarlar.values()],
     baglantisiz: merkez ? 0 : [...kayit.keys()].filter((k) => uygun(k) && !komsu.has(k)).length,
@@ -352,7 +385,7 @@ export function bolumMatrisi(e: EvrenVt, eser: string, turler?: string[] | null)
   const isle = (kayit: string, sahne: string, alan: keyof Hucre) => {
     const i = sahneSutun.get(sahne);
     if (i === undefined || kayit === sahne) return;
-    if (!satir.has(kayit)) satir.set(kayit, sutunlar.map(() => ({ bulunuyor: 0, aniliyor: 0, bakis: 0, etki: 0 })));
+    if (!satir.has(kayit)) satir.set(kayit, sutunlar.map(() => ({ bulunuyor: 0, aniliyor: 0, bakis: 0, etki: 0, bilgi: 0, okur: 0 })));
     satir.get(kayit)![i][alan]++;
     const k = sahneKumeleri.get(kayit) ?? { gorunur: new Set(), konu: new Set() };
     if (alan === 'bulunuyor') k.gorunur.add(sahne);
@@ -368,6 +401,13 @@ export function bolumMatrisi(e: EvrenVt, eser: string, turler?: string[] | null)
     // Metindeki bağlantı da anılmadır; aynı sahnede birden çok bağlantı tek anılma sayılır.
     for (const r of e.db.selectObjects(`SELECT DISTINCT kaynak, hedef FROM baglantilar WHERE kaynak IN (${yer})`, sahneler)) isle(r.hedef as string, r.kaynak as string, 'aniliyor');
     for (const r of e.db.selectObjects(`SELECT DISTINCT sahne, konu FROM degisimler WHERE silindi IS NULL AND konu IS NOT NULL AND sahne IN (${yer})`, sahneler)) isle(r.konu as string, r.sahne as string, 'etki');
+    // Bilgi edinme: bilen o sahnede bir şey öğrenir. Okura açıklanma: bu eserin okuru o sahnede bir iddiayı öğrenir;
+    // satır iddianın konusudur ("sır" kaydı ayrı değildir, sorunun sorulduğu kayıttır).
+    for (const r of e.db.selectObjects(`SELECT DISTINCT x.sahne, x.bilen, i.konu, k.tur FROM bilgiler x JOIN iddialar i ON i.kod=x.iddia JOIN kayitlar k ON k.kod=x.bilen
+        WHERE x.silindi IS NULL AND i.silindi IS NULL AND x.karar!='vazgecildi' AND x.sahne IN (${yer})`, sahneler)) {
+      if (r.tur === 'eser') { if (r.bilen === eser) isle(r.konu as string, r.sahne as string, 'okur'); }
+      else isle(r.bilen as string, r.sahne as string, 'bilgi');
+    }
   }
   const tSecili = turler?.length ? new Set(turler) : null;
   const d = dugumler(e, satir.keys());

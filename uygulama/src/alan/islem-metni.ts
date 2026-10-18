@@ -67,6 +67,19 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   kayit_soru_seti: (v, ad) => `${ad(v.kod)}: soru seti ${v.ekle ? 'eklendi' : 'çıkarıldı'}`,
   catisma_coz: (v, ad) => v.tur === 'silme' ? `${ad(v.kayit)}: silinmiş kalması kararlaştırıldı (başka cihazdaki değişiklikler incelendi)`
     : `${ad(v.kayit)}: iki cihazda birlikte değişen metin incelendi`,
+  gorunurluk_yaz: (v, ad) => {
+    const g = v.deger as { katman: string | null; bilenler: string[] } | null;
+    const ne = v.nesne === 'iliski' ? 'Bir ilişki' : ad(v.kod);
+    return !g ? `${ne}: evrenin gerçeği olarak işaretlendi` : g.katman ? `${ne}: yalnızca ${ad(g.katman)} böyle sanıyor` : `${ne}: gizli; yalnızca ${g.bilenler.map(ad).join(', ')} biliyor`;
+  },
+  iddia_ekle: (v, ad) => `${ad(v.konu)}: soru eklendi “${v.soru}”`,
+  iddia_degistir: (v, ad) => `${ad(v.konu)}: “${v.soru}” sorusunun ${({ soru: 'metni', secenekler: 'olası cevapları', gercek: 'gerçeği', karar: 'karar durumu' } as Record<string, string>)[String(v.alan)] ?? 'bir alanı'} değişti`,
+  iddia_sil: (v, ad) => `${ad(v.konu)}: “${v.soru}” sorusu kaldırıldı`,
+  iddia_geri_yukle: (v, ad) => `${ad(v.konu)}: “${v.soru}” sorusu geri getirildi`,
+  bilgi_ekle: (v, ad) => `${ad(v.bilen)}: “${v.soru}” hakkındaki bilgisi kaydedildi`,
+  bilgi_degistir: (v, ad) => `${ad(v.bilen)}: “${v.soru}” hakkındaki bilgisi değişti`,
+  bilgi_sil: (v, ad) => `${ad(v.bilen)}: “${v.soru}” hakkındaki bilgisi kaldırıldı`,
+  bilgi_geri_yukle: (v, ad) => `${ad(v.bilen)}: “${v.soru}” hakkındaki bilgisi geri getirildi`,
   metin: (v, ad) => v.adDuzeltme ? `${ad(v.kayit)}: bağlantıda “${ad(v.adDuzeltme)}” adı düzeltildi` : v.geriYukleme ? `${ad(v.kayit)}: metnin eski bir sürümü geri getirildi` : `${ad(v.kayit)}: metin kaydedildi`,
 };
 

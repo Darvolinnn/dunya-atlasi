@@ -11,6 +11,8 @@ import { KayitSec } from './KayitBolumleri';
 import { useTakvim } from './Takvim';
 import { aralikYazi } from './Anlati';
 import { git } from './Uygulama';
+import { BakisAciklamasi, BakisSecici } from './Bilgiler';
+import type { Secim } from './BaglantiSecici';
 import { kuvvetYerlesimi, soyYerlesimi, SOY_BOY, SOY_EN, type Nokta } from './yerlesim';
 
 const hataYaz = (e: unknown) => (e as Error).message;
@@ -57,11 +59,12 @@ function Yakinlastir({ olcek, setOlcek }: { olcek: number; setOlcek: (n: number)
 }
 
 // ---------- Soy ağacı ----------
-const soyCizgiSinifi = (k: AgKenari) => `soy-cizgi ${k.rol ? 'rol-' + k.rol : ''} ${k.gecerlilik === 'belirsiz' ? 'belirsiz' : ''} karar-${k.karar}`;
+const soyCizgiSinifi = (k: AgKenari) => `soy-cizgi ${k.rol ? 'rol-' + k.rol : ''} ${k.gecerlilik === 'belirsiz' ? 'belirsiz' : ''} ${k.inanc ? 'inanc' : ''} karar-${k.karar}`;
 
 export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; evren: string; odak: string | null }) {
   const n = useYenile(istemci, evren);
   const [an, setAn] = useState('');
+  const [bakis, setBakis] = useState<Secim | null>(null);
   const [t, setT] = useState<SoyAgaci | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const [kapali, setKapali] = useState<Set<string>>(new Set());
@@ -70,8 +73,8 @@ export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; e
   useEffect(() => { setKapali(new Set()); setSecili(null); }, [odak]);
   useEffect(() => {
     if (!odak) { setT(null); return; }
-    istemci.iste('soyAgaci', { evren, odak, an: an || null }).then((x) => { setT(x); setHata(null); }, (e) => setHata(hataYaz(e)));
-  }, [evren, odak, an, n]);
+    istemci.iste('soyAgaci', { evren, odak, an: an || null, bakis: bakis?.kod ?? null }).then((x) => { setT(x); setHata(null); }, (e) => setHata(hataYaz(e)));
+  }, [evren, odak, an, bakis?.kod, n]);
   const y = useMemo(() => (t ? soyYerlesimi(t, kapali) : null), [t, kapali]);
 
   const secim = (
@@ -80,6 +83,7 @@ export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; e
       <KayitSec istemci={istemci} evren={evren} secili={t && odak ? { kod: odak, ad: t.dugumler.find((d) => d.kod === odak)?.ad ?? '' } : null}
         sec={(s) => s && git(`/e/${evren}/soy/${s.kod}`)} etiket="Bir kayıt seç" />
       {odak && <AnGirdisi an={an} setAn={setAn} />}
+      {odak && <BakisSecici istemci={istemci} evren={evren} bakis={bakis} sec={setBakis} />}
       {y && <Yakinlastir olcek={olcek} setOlcek={setOlcek} />}
     </div>
   );
@@ -139,6 +143,7 @@ export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; e
     <div class="gorunum">
       {secim}
       <p class="soluk kucuk">Odaktaki kayıt vurgulu. Bir kayda dokununca seçilir; seçili kaydı odağa alabilir ya da dalını kapatabilirsin. Çizgiler kesişebilir.</p>
+      <BakisAciklamasi bakis={t.bakis} />
       {t.kesildi && <p class="uyari kucuk">Aile çok büyük; yalnızca odağa en yakın {t.dugumler.length} kayıt çizildi.</p>}
       <div class="cizim-alani" role="region" aria-label="Soy ağacı çizimi">
         <svg class="soy-agaci" width={y.genislik * olcek} height={y.yukseklik * olcek} viewBox={`${y.solUst.x} ${y.solUst.y} ${y.genislik} ${y.yukseklik}`}>
@@ -147,7 +152,7 @@ export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; e
             const d = ad.get(kod)!;
             const g = y.gizli.get(kod);
             return (
-              <g key={kod} class={`soy-kutu ${grupSinifi(d.tur)} ${kod === odak ? 'odak' : ''} ${kod === secili ? 'secili' : ''} karar-${d.karar}`}
+              <g key={kod} class={`soy-kutu ${grupSinifi(d.tur)} ${kod === odak ? 'odak' : ''} ${kod === secili ? 'secili' : ''} ${d.inanc ? 'inanc' : ''} karar-${d.karar}`}
                 transform={`translate(${p.x - SOY_EN / 2},${p.y - SOY_BOY / 2})`} role="button" tabIndex={0} aria-label={d.ad}
                 onClick={() => setSecili(kod)} onKeyDown={(e) => { if (e.key === 'Enter') setSecili(kod); }}>
                 <rect width={SOY_EN} height={SOY_BOY} rx={8} />
@@ -176,7 +181,7 @@ export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; e
         <ul class="kucuk">
           {y.kenarlar.map((e) => (
             <li key={e.kod}>{ad.get(e.a)?.ad}: {e.aIcin.toLocaleLowerCase('tr-TR')} {ad.get(e.b)?.ad}
-              {e.rolAdi ? ` (${e.rolAdi.toLocaleLowerCase('tr-TR')})` : ''}{soyIci.has(e.kod) ? ' · soy içi evlilik' : ''}{e.gecerlilik === 'belirsiz' ? ' · bu tarihte belirsiz' : ''}</li>
+              {e.rolAdi ? ` (${e.rolAdi.toLocaleLowerCase('tr-TR')})` : ''}{soyIci.has(e.kod) ? ' · soy içi evlilik' : ''}{e.gecerlilik === 'belirsiz' ? ' · bu tarihte belirsiz' : ''}{e.inanc ? ` · yalnızca ${t.bakis?.ad} böyle sanıyor` : ''}</li>
           ))}
         </ul>
       </details>
@@ -208,6 +213,7 @@ export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren
   const [iTur, setITur] = useState<string[]>([]);
   const [kTur, setKTur] = useState<string[]>([]);
   const [an, setAn] = useState('');
+  const [bakis, setBakis] = useState<Secim | null>(null);
   const [baglantilar, setBaglantilar] = useState(false);
   const [vazgecilmis, setVazgecilmis] = useState(false);
   const [r, setR] = useState<AgSonucu | null>(null);
@@ -219,9 +225,9 @@ export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren
   useEffect(() => { setSecili(null); }, [merkez, tumu]);
   useEffect(() => {
     if (!etkin && !tumu) { setR(null); return; }
-    istemci.iste('ag', { evren, merkez: etkin, derinlik, iliskiTurleri: iTur, kayitTurleri: kTur, an: an || null, baglantilar, vazgecilmis })
+    istemci.iste('ag', { evren, merkez: etkin, derinlik, iliskiTurleri: iTur, kayitTurleri: kTur, an: an || null, baglantilar, vazgecilmis, bakis: bakis?.kod ?? null })
       .then((x) => { setR(x); setHata(null); }, (e) => setHata(hataYaz(e)));
-  }, [evren, etkin, tumu, derinlik, iTur.join(), kTur.join(), an, baglantilar, vazgecilmis, n]);
+  }, [evren, etkin, tumu, derinlik, iTur.join(), kTur.join(), an, baglantilar, vazgecilmis, bakis?.kod, n]);
   const konum = useMemo(() => (r ? kuvvetYerlesimi(r.dugumler.map((d) => d.kod), r.kenarlar, r.merkez) : null), [r]);
 
   const secimler = (
@@ -238,6 +244,7 @@ export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren
             </select></label>
         )}
         <AnGirdisi an={an} setAn={setAn} />
+        <BakisSecici istemci={istemci} evren={evren} bakis={bakis} sec={setBakis} />
       </div>
       <div class="satir">
         <CokluSecim etiket="İlişki türleri" secili={iTur} setSecili={setITur}
@@ -274,6 +281,7 @@ export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren
         {r.an && ` ${tarihAciklamasi(r.an)} için: o tarihte sürmediği bilinen ilişkiler gizli, sürüp sürmediği belirsiz olanlar soluk.`}
         {!r.merkez && r.baglantisiz > 0 && ` Hiçbir bağı olmayan ${r.baglantisiz} kayıt ağda yer almıyor.`}
       </p>
+      <BakisAciklamasi bakis={r.bakis} />
       {r.kesildi && <p class="uyari kucuk">Çizim sınırı aşıldı; en çok bağı olan {r.dugumler.length} kayıt gösteriliyor. Süzgeçlerle daraltabilirsin.</p>}
       {!r.kenarlar.length && <p class="soluk">Bu süzgeçlerle gösterilecek bağ yok.</p>}
       <div class="cizim-alani" role="region" aria-label="Ağ çizimi">
@@ -285,7 +293,7 @@ export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren
             const a = konum.get(e.a)!, b = konum.get(e.b)!;
             const vurgu = s && (e.a === s.kod || e.b === s.kod);
             return (
-              <g key={e.kod} class={`ag-kenar ${e.baglanti ? 'baglanti' : ''} ${e.gecerlilik === 'belirsiz' ? 'belirsiz' : ''} karar-${e.karar} ${vurgu ? 'vurgu' : ''}`}>
+              <g key={e.kod} class={`ag-kenar ${e.baglanti ? 'baglanti' : ''} ${e.gecerlilik === 'belirsiz' ? 'belirsiz' : ''} ${e.inanc ? 'inanc' : ''} karar-${e.karar} ${vurgu ? 'vurgu' : ''}`}>
                 <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} marker-end={e.karsilikli ? undefined : 'url(#ag-ok)'}>
                   <title>{kenarYazisi(e, ad)}</title>
                 </line>
@@ -296,7 +304,7 @@ export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren
           {r.dugumler.map((d) => {
             const p = konum.get(d.kod)!;
             return (
-              <g key={d.kod} class={`ag-dugum ${grupSinifi(d.tur)} ${d.kod === r.merkez ? 'odak' : ''} ${d.kod === secili ? 'secili' : ''} karar-${d.karar}`}
+              <g key={d.kod} class={`ag-dugum ${grupSinifi(d.tur)} ${d.kod === r.merkez ? 'odak' : ''} ${d.kod === secili ? 'secili' : ''} ${d.inanc ? 'inanc' : ''} karar-${d.karar}`}
                 transform={`translate(${p.x},${p.y})`} role="button" tabIndex={0} aria-label={d.ad}
                 onClick={() => setSecili(d.kod)} onKeyDown={(e) => { if (e.key === 'Enter') setSecili(d.kod); }}>
                 <circle r={d.kod === r.merkez ? 13 : 9} />
@@ -328,7 +336,7 @@ export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren
 function kenarYazisi(e: AgKenari, ad: Map<string, { ad: string }>) {
   const a = ad.get(e.a)?.ad ?? '', b = ad.get(e.b)?.ad ?? '';
   const sure = e.baslangic || e.bitis ? ` (${e.baslangic?.ifade ?? '…'} – ${e.bitis?.ifade ?? '…'})` : '';
-  const not = `${e.rolAdi ? ` · ${e.rolAdi.toLocaleLowerCase('tr-TR')}` : ''}${e.gecerlilik === 'belirsiz' ? ' · bu tarihte belirsiz' : ''}${e.karar === 'fikir' ? ' · fikir' : ''}`;
+  const not = `${e.rolAdi ? ` · ${e.rolAdi.toLocaleLowerCase('tr-TR')}` : ''}${e.gecerlilik === 'belirsiz' ? ' · bu tarihte belirsiz' : ''}${e.karar === 'fikir' ? ' · fikir' : ''}${e.inanc ? ' · yalnızca bu bakış açısının inancı' : ''}`;
   if (e.baglanti) return `${a} → ${b}: ${e.etiket.toLocaleLowerCase('tr-TR')}`;
   return `${a}: ${iliskiTuruBul(e.tur).aIcin.toLocaleLowerCase('tr-TR')} ${b}${sure}${not}`;
 }
@@ -678,6 +686,8 @@ const KATMANLAR = [
   { kod: 'aniliyor', ad: 'Anılıyor', kisa: 'A' },
   { kod: 'bakis', ad: 'Bakış açısı', kisa: 'G' },
   { kod: 'etki', ad: 'Olay etkisi', kisa: 'E' },
+  { kod: 'bilgi', ad: 'Bilgi edinme', kisa: 'Ö' },
+  { kod: 'okur', ad: 'Okura açıklanma', kisa: 'O' },
 ] as const;
 
 export function BolumMatrisiGorunumu({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string | null }) {
@@ -713,7 +723,7 @@ export function BolumMatrisiGorunumu({ istemci, evren, eser }: { istemci: Istemc
             onChange={(e) => setKatman((e.target as HTMLInputElement).checked ? [...katman, k.kod] : katman.filter((x) => x !== k.kod))} /> {k.kisa}: {k.ad}</label>
         ))}
       </div>
-      <p class="soluk kucuk">Hücrede her katman kaç sahnede olduğunu gösterir. “Görünüyor”: sahnede bulunduğu sahne sayısı; “konu oluyor”: herhangi bir biçimde yer aldığı sahne sayısı. Bilgi edinme ve okura açıklanma katmanları bilgi kayıtları gelince eklenecek.</p>
+      <p class="soluk kucuk">Hücrede her katman kaç sahnede olduğunu gösterir. “Görünüyor”: sahnede bulunduğu sahne sayısı; “konu oluyor”: herhangi bir biçimde yer aldığı sahne sayısı. “Bilgi edinme”: o sahnede bir şey öğrendiği; “okura açıklanma”: bu eserin okurunun o kayıt hakkındaki bir soruyu o sahnede öğrendiği.</p>
       {hata && <p class="hata">{hata}</p>}
       {m && !m.sutunlar.length && <p class="soluk">Bu eserde sahne yok.</p>}
       {m && m.sutunlar.length > 0 && (

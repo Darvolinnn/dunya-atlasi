@@ -8,6 +8,8 @@ import { katla } from '../alan/turkce';
 import { siraGecerli } from '../alan/sira';
 import { sablonGecerli } from '../alan/sablon';
 import { etkiAc } from './etki';
+import { gorunurlukGecerli, sadeGercekMi } from '../alan/gorunurluk';
+import { BILGI_ALANLARI, IDDIA_ALANLARI, bilgiDegeri, iddiaDegeri } from '../alan/bilgi';
 import { tarihCoz, tarihMi, takvimGecerli, VARSAYILAN_TAKVIM, type Takvim } from '../alan/tarih';
 
 /** Evrenin şu anki takvimi (§3.4). */
@@ -31,8 +33,10 @@ function tarihleriYenidenHesapla(db: Database) {
     db.exec({ sql: 'UPDATE iliskiler SET baslangic=?, bitis=? WHERE kod=?', bind: [yeni(r.baslangic), yeni(r.bitis), r.kod as string] });
   }
   const sinir = (ham: unknown) => (ham ? JSON.stringify(sinirTz(db, JSON.parse(ham as string))) : null);
-  for (const r of db.selectObjects('SELECT kod, baslangic, bitis FROM durumlar WHERE baslangic IS NOT NULL OR bitis IS NOT NULL')) {
-    db.exec({ sql: 'UPDATE durumlar SET baslangic=?, bitis=? WHERE kod=?', bind: [sinir(r.baslangic), sinir(r.bitis), r.kod as string] });
+  for (const tablo of ['durumlar', 'bilgiler']) {
+    for (const r of db.selectObjects(`SELECT kod, baslangic, bitis FROM ${tablo} WHERE baslangic IS NOT NULL OR bitis IS NOT NULL`)) {
+      db.exec({ sql: `UPDATE ${tablo} SET baslangic=?, bitis=? WHERE kod=?`, bind: [sinir(r.baslangic), sinir(r.bitis), r.kod as string] });
+    }
   }
   for (const r of db.selectObjects('SELECT kayit, alan, deger FROM alan_degerleri')) {
     const d = JSON.parse(r.deger as string);
@@ -41,7 +45,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 10;
+export const IZDUSUM_SURUMU = 11;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -59,6 +63,7 @@ CREATE TABLE IF NOT EXISTS kayitlar(
   alan_kararlari TEXT NOT NULL DEFAULT '{}',
   gorseller TEXT NOT NULL DEFAULT '[]',
   sahne_olayi TEXT,
+  gorunurluk TEXT,
   olusturma INTEGER NOT NULL,
   duzenleme INTEGER NOT NULL,
   silindi INTEGER,
@@ -75,6 +80,7 @@ CREATE TABLE IF NOT EXISTS iliskiler(
   bitis TEXT,
   aciklama TEXT NOT NULL DEFAULT '',
   karar TEXT NOT NULL,
+  gorunurluk TEXT,
   olusturma INTEGER NOT NULL,
   duzenleme INTEGER NOT NULL,
   silindi INTEGER
@@ -262,6 +268,39 @@ CREATE TABLE IF NOT EXISTS etki_incelemeleri(
   aciklama TEXT NOT NULL,
   zaman INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS iddialar(
+  kod TEXT PRIMARY KEY,
+  konu TEXT NOT NULL,
+  soru TEXT NOT NULL,
+  secenekler TEXT NOT NULL DEFAULT '[]',
+  gercek TEXT,
+  karar TEXT NOT NULL,
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS iddialar_konu ON iddialar(konu);
+CREATE TABLE IF NOT EXISTS bilgiler(
+  kod TEXT PRIMARY KEY,
+  iddia TEXT NOT NULL,
+  bilen TEXT NOT NULL,
+  secenek TEXT,
+  inanc TEXT NOT NULL,
+  saklama TEXT,
+  kaynak TEXT,
+  kaynak_kayit TEXT,
+  sahne TEXT,
+  baslangic TEXT,
+  bitis TEXT,
+  aciklama TEXT NOT NULL DEFAULT '',
+  karar TEXT NOT NULL,
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS bilgiler_iddia ON bilgiler(iddia);
+CREATE INDEX IF NOT EXISTS bilgiler_bilen ON bilgiler(bilen);
+CREATE INDEX IF NOT EXISTS bilgiler_sahne ON bilgiler(sahne);
 CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   islem TEXT PRIMARY KEY,
   kaynak TEXT NOT NULL,
@@ -270,7 +309,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
 );
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'medya',
-  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri'];
+  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -302,7 +341,8 @@ function yonlendirNotla(db: Database, kod: string | null | undefined, tablo: str
 
 /** Birleştirmede kaynak kayda bağlı satırlar hedefe taşınır; geri almak için hangi satırın taşındığı tutulur. */
 const BIRLESME_SUTUNLARI: [string, string][] = [['iliskiler', 'a'], ['iliskiler', 'b'], ['durumlar', 'konu'], ['durumlar', 'hedef'], ['isaretler', 'kayit'],
-  ['haritalar', 'yer'], ['degisimler', 'konu'], ['degisimler', 'olay'], ['kayitlar', 'sahne_olayi'], ['anlati', 'ust'], ['yonlendirmeler', 'hedef']];
+  ['haritalar', 'yer'], ['degisimler', 'konu'], ['degisimler', 'olay'], ['kayitlar', 'sahne_olayi'], ['anlati', 'ust'], ['yonlendirmeler', 'hedef'],
+  ['iddialar', 'konu'], ['bilgiler', 'bilen'], ['bilgiler', 'kaynak_kayit'], ['bilgiler', 'sahne']];
 
 export type Kesinlik = 'kesin' | 'yaklasik' | 'bilinmiyor';
 export interface IsaretKonumu { kesinlik: Kesinlik; x: number | null; y: number | null; yaricap: number | null }
@@ -734,6 +774,74 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (durum === 'kabul' || durum === 'ertelendi' || durum === 'duzeltildi') {
       db.exec({ sql: 'INSERT OR REPLACE INTO inceleme_kararlari(anahtar, durum, gerekce, dayanak, zaman) VALUES(?,?,?,?,?)', bind: [anahtar, durum, gerekce ?? '', dayanak ?? '', i.zaman] });
     } else db.exec({ sql: 'DELETE FROM inceleme_kararlari WHERE anahtar=?', bind: [anahtar] });
+  },
+
+  /** Bilgi katmanı (§3.6): kayıt ya da ilişki evrenin gerçeği, gizli bir gerçek ya da yalnızca birinin inancıdır. */
+  gorunurluk_yaz(db, i) {
+    const { kod, nesne, deger } = i.veri as { kod: string; nesne: string; deger: unknown };
+    if (nesne !== 'kayit' && nesne !== 'iliski') return;
+    if (deger !== null && !gorunurlukGecerli(deger)) return;
+    const d = deger && !sadeGercekMi(deger) ? JSON.stringify(deger) : null;
+    db.exec({ sql: `UPDATE ${nesne === 'kayit' ? 'kayitlar' : 'iliskiler'} SET gorunurluk=?, duzenleme=? WHERE kod=?`, bind: [d, i.zaman, kod] });
+    alanYaz(db, i, kod, 'gorunurluk', d ? deger : null);
+  },
+
+  /** İddia (§3.6): bir kayıt hakkında soru ve olası cevapları; yazar gerçeği belirleyebilir ya da açık bırakır. */
+  iddia_ekle(db, i) {
+    const v = i.veri as Record<string, unknown>;
+    const secenekler = iddiaDegeri('secenekler', v.secenekler);
+    if (secenekler === undefined || typeof v.soru !== 'string') return;
+    const gercek = iddiaDegeri('gercek', v.gercek ?? null);
+    db.exec({
+      sql: 'INSERT OR IGNORE INTO iddialar(kod, konu, soru, secenekler, gercek, karar, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?)',
+      bind: [v.kod as string, yonlendirNotla(db, v.konu as string, 'iddialar', 'konu', v.kod as string), v.soru, JSON.stringify(secenekler), (gercek as string) ?? null, v.karar as string, i.zaman, i.zaman],
+    });
+  },
+  iddia_degistir(db, i) {
+    const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
+    if (!IDDIA_ALANLARI.includes(alan)) return;
+    const d = iddiaDegeri(alan, deger);
+    if (d === undefined) return;
+    db.exec({ sql: `UPDATE iddialar SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [alan === 'secenekler' ? JSON.stringify(d) : (d as string | null), i.zaman, kod] });
+    alanYaz(db, i, kod, alan, d);
+  },
+  iddia_sil(db, i) {
+    db.exec({ sql: 'UPDATE iddialar SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  iddia_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE iddialar SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+  /** Bilgi durumu (§3.6): bir bilenin (karakter, grup ya da okur) bir iddiaya tutumu; zamanı ve kaynağıyla. */
+  bilgi_ekle(db, i) {
+    const v = i.veri as Record<string, unknown>;
+    const kod = v.kod as string;
+    const d: Record<string, unknown> = {};
+    for (const a of BILGI_ALANLARI) { const x = bilgiDegeri(a, v[a] ?? null); if (x === undefined) return; d[a] = x; }
+    db.exec({
+      sql: `INSERT OR IGNORE INTO bilgiler(kod, iddia, bilen, secenek, inanc, saklama, kaynak, kaynak_kayit, sahne, baslangic, bitis, aciklama, karar, olusturma, duzenleme)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      bind: [kod, v.iddia as string, yonlendirNotla(db, v.bilen as string, 'bilgiler', 'bilen', kod), d.secenek as string | null, d.inanc as string,
+        json(d.saklama), d.kaynak as string | null, yonlendirNotla(db, d.kaynakKayit as string | null, 'bilgiler', 'kaynak_kayit', kod),
+        yonlendirNotla(db, d.sahne as string | null, 'bilgiler', 'sahne', kod), json(sinirTz(db, d.baslangic)), json(sinirTz(db, d.bitis)),
+        d.aciklama as string, d.karar as string, i.zaman, i.zaman],
+    });
+  },
+  bilgi_degistir(db, i) {
+    const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
+    if (!BILGI_ALANLARI.includes(alan)) return;
+    const d = bilgiDegeri(alan, deger);
+    if (d === undefined) return;
+    const sutun = alan === 'kaynakKayit' ? 'kaynak_kayit' : alan;
+    const yaz = alan === 'saklama' ? json(d) : alan === 'baslangic' || alan === 'bitis' ? json(sinirTz(db, d))
+      : alan === 'kaynakKayit' || alan === 'sahne' ? yonlendir(db, d as string | null) : d;
+    db.exec({ sql: `UPDATE bilgiler SET ${sutun}=?, duzenleme=? WHERE kod=?`, bind: [yaz as string | null, i.zaman, kod] });
+    alanYaz(db, i, kod, alan, d);
+  },
+  bilgi_sil(db, i) {
+    db.exec({ sql: 'UPDATE bilgiler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  bilgi_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE bilgiler SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
   },
 
   medya_ekle(db, i) {

@@ -8,12 +8,13 @@ import { turBul } from '../alan/turler';
 import { KararRozeti, KararSecici } from './ortak';
 import { KayitSec, SatirGirdisi } from './KayitBolumleri';
 import type { Secim } from './BaglantiSecici';
+import { BakisBilgileri } from './Bilgiler';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: { kod: string; ad: string }) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
 
 /** Değişiklik bildirimi gelince yeniden okuyan küçük yardımcı. */
-function useYukle<T>(istemci: Istemci, evren: string, oku: () => Promise<T>, bagimlilik: unknown[]): [T | null, () => void] {
+export function useYukle<T>(istemci: Istemci, evren: string, oku: () => Promise<T>, bagimlilik: unknown[]): [T | null, () => void] {
   const [v, setV] = useState<T | null>(null);
   const [n, setN] = useState(0);
   useEffect(() => { let iptal = false; oku().then((x) => { if (!iptal) setV(x); }, () => {}); return () => { iptal = true; }; }, [...bagimlilik, n]);
@@ -253,6 +254,7 @@ export function SahneBaglamPaneli({ evren, baglam }: { evren: string; baglam: Sa
         </div>
       )}
       {katilimcilar.length === 0 && !yer && <p class="soluk kucuk">Mekân, bakış açısı ya da sahnedekiler girilince burada o anki hâlleri toplanır.</p>}
+      {baglam.bakis && <BakisBilgileri evren={evren} bakis={baglam.bakis} liste={baglam.bakisBilgileri} tarihVar={!!tarih} />}
       {katilimcilar.map((k) => (
         <div class="baglam-kaydi" key={k.kod}>
           <div class="satir">{bag(evren, k)} <span class="soluk kucuk">{k.roller.join(', ')}</span>{k.yas && <span class="kucuk">· {k.yas}</span>}</div>
@@ -293,7 +295,7 @@ function DurumOzeti({ durumlar, evren }: { durumlar: DurumSatiri[]; evren: strin
 }
 
 // ---------- Durum geçmişi (§3.5) ----------
-const sinirYazi = (s: SinirBilgisi | null) => !s ? '…' : s.olay ? `${s.olay.ad} (${s.tarih?.ifade ?? 'tarihsiz'})` : s.tarih?.ifade ?? '…';
+export const sinirYazi = (s: SinirBilgisi | null) => !s ? '…' : s.olay ? `${s.olay.ad} (${s.tarih?.ifade ?? 'tarihsiz'})` : s.tarih?.ifade ?? '…';
 export function aralikYazi(d: DurumSatiri) {
   if (d.kip === 'anlik') return `${sinirYazi(d.baslangic)} (tek an)`;
   return `${sinirYazi(d.baslangic)} – ${sinirYazi(d.kip === 'sonraki' ? d.sonraki : d.bitis)}`;
@@ -366,7 +368,7 @@ function DurumSatir({ istemci, evren, d }: { istemci: Istemci; evren: string; d:
 }
 
 /** Sınır: yazılı tarih ya da bir olaya bağlı (olayın tarihi değişince kayar). */
-function SinirAlani({ istemci, evren, etiket, deger, kaydet }: {
+export function SinirAlani({ istemci, evren, etiket, deger, kaydet }: {
   istemci: Istemci; evren: string; etiket: string; deger: SinirBilgisi | null; kaydet: (v: SinirGirdisi | null) => Promise<unknown>;
 }) {
   if (deger?.olay) {
@@ -431,7 +433,7 @@ function DurumFormu({ istemci, evren, konu, kapat }: { istemci: Istemci; evren: 
   );
 }
 
-function SinirGirdi({ istemci, evren, etiket, ifade, setIfade, olay, setOlay }: {
+export function SinirGirdi({ istemci, evren, etiket, ifade, setIfade, olay, setOlay }: {
   istemci: Istemci; evren: string; etiket: string; ifade: string; setIfade: (v: string) => void; olay: Secim | null; setOlay: (s: Secim | null) => void;
 }) {
   return (

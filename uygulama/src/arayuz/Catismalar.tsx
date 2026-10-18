@@ -11,6 +11,7 @@ const ALAN_ADLARI: Record<string, string> = {
   ad: 'Ad', ozet: 'Kısa özet', okunus: 'Okunuş', tur: 'Tür', karar: 'Karar durumu', tarih: 'Evren tarihi',
   baslangic: 'Başlangıç', bitis: 'Bitiş', aciklama: 'Açıklama', rol: 'Rol',
   anlati: 'Eserdeki yeri', takvim: 'Takvim', ozellik: 'Özellik', deger: 'Değer', hedef: 'Değer', kip: 'Süre biçimi',
+  gorunurluk: 'Kimin gerçeği / kimler biliyor',
 };
 const alanAdi = (a: string) => a.startsWith('karar:') ? `${ALAN_ADLARI[a.slice(6)] ?? a.slice(6)} (karar durumu)` : ALAN_ADLARI[a] ?? a;
 

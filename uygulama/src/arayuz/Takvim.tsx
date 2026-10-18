@@ -6,6 +6,8 @@ import type { CizelgeOgesi, KisaKayit, TakvimEtkisi } from '../veri/api';
 import { eksenYili, takvimGecerli, tarihAciklamasi, tarihCoz, VARSAYILAN_TAKVIM, yilGunu, type EvrenTarihi, type Takvim } from '../alan/tarih';
 import { turBul } from '../alan/turler';
 import { KararRozeti } from './ortak';
+import { BakisAciklamasi, BakisSecici } from './Bilgiler';
+import type { Secim } from './BaglantiSecici';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const onbellek = new Map<string, Takvim>();
@@ -192,12 +194,13 @@ export function ZamanCizelgesi({ istemci, evren }: { istemci: Istemci; evren: st
   const [eserler, setEserler] = useState<KisaKayit[]>([]);
   const [tur, setTur] = useState('');
   const [eser, setEser] = useState('');
+  const [bakis, setBakis] = useState<Secim | null>(null);
   const [n, setN] = useState(0);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren) setN((x) => x + 1); }), [evren]);
   useEffect(() => {
-    istemci.iste('zamanCizelgesi', { evren }).then(setOgeler, () => setOgeler([]));
+    istemci.iste('zamanCizelgesi', { evren, bakis: bakis?.kod ?? null }).then(setOgeler, () => setOgeler([]));
     istemci.iste('eserler', { evren }).then(setEserler, () => {});
-  }, [evren, n]);
+  }, [evren, bakis?.kod, n]);
   if (!ogeler) return <p class="soluk">Açılıyor…</p>;
 
   const turler = [...new Set(ogeler.map((o) => o.tur))];
@@ -226,7 +229,9 @@ export function ZamanCizelgesi({ istemci, evren }: { istemci: Istemci; evren: st
             {eserler.map((x) => <option value={x.kod}>{x.ad}</option>)}
           </select>
         )}
+        <BakisSecici istemci={istemci} evren={evren} bakis={bakis} sec={setBakis} />
       </div>
+      <BakisAciklamasi bakis={bakis} />
       {!ogeler.length && <p class="soluk">Henüz evren tarihi verilmiş kayıt yok. Bir kaydın sayfasında “Evren tarihi” alanına yazabilirsin.</p>}
       {ogeler.length > 0 && !suzulmus.length && <p class="soluk">Bu süzgece uyan kayıt yok.</p>}
       {yerlesen.length > 0 && (
@@ -257,9 +262,9 @@ function CizelgeSatiri({ o, evren, takvim, yuzde }: { o: CizelgeOgesi; evren: st
   else if (t.bicim === 'kesin') isaret = <span class="cizelge-nokta" style={{ left: yuzde((enErken! + enGec!) / 2) }} />;
   else isaret = <span class="cizelge-bant" style={{ left: yuzde(enErken!), width: `calc(${yuzde(enGec!)} - ${yuzde(enErken!)})` }} />;
   return (
-    <li class={`cizelge-satiri karar-${o.karar}`}>
+    <li class={`cizelge-satiri karar-${o.karar}${o.inanc ? ' inanc' : ''}`}>
       <span class="cizelge-etiket">
-        <a class="satir-ad" href={`#/e/${evren}/k/${o.kod}`}>{o.ad}</a> <KararRozeti karar={o.karar} />
+        <a class="satir-ad" href={`#/e/${evren}/k/${o.kod}`}>{o.ad}</a> <KararRozeti karar={o.karar} />{o.inanc && <span class="rozet inanc">yalnızca inanç</span>}
         <span class="soluk kucuk"> {turBul(o.tur).ad} · {tarihAciklamasi(t, takvim)}</span>
       </span>
       <span class="cizelge-iz" title={tarihAciklamasi(t, takvim)}>{isaret}</span>

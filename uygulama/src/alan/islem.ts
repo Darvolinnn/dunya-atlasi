@@ -7,7 +7,8 @@
 // 4: evrenin takvimi; tarihlerin ekseni gün parçası birimindedir.
 // 5: haritalar ve işaretler.
 // 6: editoryal birleştirme ve yönlendirme; inceleme kararları.
-export const VERI_BICIMI = 6;
+// 7: iddialar ve bilgi durumları; kayıt ve ilişkilerin bilgi katmanı (kimin gerçeği, kimin inancı).
+export const VERI_BICIMI = 7;
 
 export interface IslemGirdisi {
   tur: string;

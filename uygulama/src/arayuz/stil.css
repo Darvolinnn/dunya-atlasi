@@ -11,6 +11,7 @@
   --vurgu-metin: #ffffff;
   --tehlike: #9b2c2c;
   --basari: #2f6b3f;
+  --inanc: #6e4a9e;          /* bir bilenin inancı (gerçek değil) */
   --odak: #2a5db0;
   --golge: 0 1px 2px rgb(0 0 0 / 0.05), 0 2px 8px rgb(0 0 0 / 0.04);
   --yaricap: 10px;
@@ -22,7 +23,7 @@
   :root:not([data-tema="acik"]) {
     --zemin: #1a1b1e; --yuzey: #232529; --yuzey-2: #2b2e33; --cizgi: #3a3d43;
     --metin: #ecebe8; --metin-2: #b4b1aa; --vurgu: #8fb3e6; --vurgu-zemin: #2a3446; --vurgu-metin: #12161d;
-    --tehlike: #f19a9a; --basari: #8fd19e; --odak: #9cc0ff;
+    --tehlike: #f19a9a; --basari: #8fd19e; --odak: #9cc0ff; --inanc: #c5a6ee;
     --golge: 0 1px 2px rgb(0 0 0 / 0.3);
     color-scheme: dark;
   }
@@ -30,7 +31,7 @@
 :root[data-tema="koyu"] {
   --zemin: #1a1b1e; --yuzey: #232529; --yuzey-2: #2b2e33; --cizgi: #3a3d43;
   --metin: #ecebe8; --metin-2: #b4b1aa; --vurgu: #8fb3e6; --vurgu-zemin: #2a3446; --vurgu-metin: #12161d;
-  --tehlike: #f19a9a; --basari: #8fd19e; --odak: #9cc0ff;
+  --tehlike: #f19a9a; --basari: #8fd19e; --odak: #9cc0ff; --inanc: #c5a6ee;
   --golge: 0 1px 2px rgb(0 0 0 / 0.3);
   color-scheme: dark;
 }
@@ -165,8 +166,8 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .karar-sec:hover { border-color: var(--cizgi); }
 .karar-sec.karar-fikir { border: 1px dashed var(--metin-2); color: var(--metin); }
 .karar-sec.karar-vazgecildi { border: 1px solid var(--cizgi); text-decoration: line-through; }
-.iliskiler, .sahne-bolumu, .degisimler, .gorseller, .eser-yapisi, .baglam-paneli, .durum-gecmisi { margin-top: 24px; }
-.iliskiler h2, .sahne-bolumu h2, .degisimler h2, .gorseller h2, .eser-yapisi h2, .baglam-paneli h2, .durum-gecmisi h2 { font-size: 1rem; }
+.iliskiler, .sahne-bolumu, .degisimler, .gorseller, .eser-yapisi, .baglam-paneli, .durum-gecmisi, .bilinenler { margin-top: 24px; }
+.iliskiler h2, .sahne-bolumu h2, .degisimler h2, .gorseller h2, .eser-yapisi h2, .baglam-paneli h2, .durum-gecmisi h2, .bilinenler h2 { font-size: 1rem; }
 .iliski-listesi, .degisim-listesi { list-style: none; padding: 0; margin: 8px 0 0; }
 .iliski-listesi > li { padding: 8px 0; border-bottom: 1px solid var(--cizgi); }
 .iliski-etiket { min-width: 120px; }
@@ -450,3 +451,22 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .matris tbody th { text-align: left; position: sticky; left: 0; background: var(--yuzey); }
 .matris thead th { position: sticky; top: 0; background: var(--yuzey-2); }
 .matris td.dolu { background: var(--vurgu-zemin); }
+
+/* Bilgi katmanları ve bakış açısı (§3.6) */
+.rozet.inanc { border-color: var(--inanc); color: var(--inanc); border-style: dashed; }
+.rozet.gizli { border-color: var(--metin-2); background: var(--yuzey-2); }
+.rozet.gercek { border-color: var(--basari); color: var(--basari); }
+.rozet.bilgi-dogru { border-color: var(--basari); color: var(--basari); }
+.rozet.bilgi-yanlis { border-color: var(--tehlike); color: var(--tehlike); }
+.rozet.bilgi-sakliyor { border-color: var(--vurgu); color: var(--vurgu); }
+.rozet.bilgi-suphe { border-style: dashed; }
+.bilinenler .iddia { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.bilgi-listesi { list-style: none; padding: 0; margin: 4px 0 0; }
+.bilgi-listesi > li { padding: 6px 0; border-bottom: 1px solid var(--cizgi); }
+.gorunurluk-formu { display: flex; flex-direction: column; gap: 6px; }
+.girinti { padding-left: 26px; }
+.bilgi-notu { border-left: 3px solid var(--inanc); padding: 4px 10px; margin: 6px 0; }
+.soy-cizgi.inanc, .ag-kenar.inanc line { stroke: var(--inanc); stroke-dasharray: 2 4; stroke-width: 2.2; }
+.soy-kutu.inanc rect, .ag-dugum.inanc circle { stroke: var(--inanc); stroke-dasharray: 3 3; stroke-width: 2; }
+.harita-isaret.inanc { background: var(--inanc); border-style: dashed; }
+.cizelge-satiri.inanc .cizelge-iz > span { background: var(--inanc); border-color: var(--inanc); }

@@ -3,6 +3,8 @@ import type { Islem } from '../alan/islem';
 import type { EvrenTarihi, Karsilastirma, Takvim } from '../alan/tarih';
 import type { DurumKipi, Gecerlilik } from '../alan/durum';
 import type { Sablon, Soru, SoruDurumu } from '../alan/sablon';
+import type { BilgiEtiketi, BilgiKaynagi, Inanc } from '../alan/bilgi';
+import type { Gorunurluk } from '../alan/gorunurluk';
 
 export interface KurulumBilgisi { kod: string; ad: string; sqlite: string }
 export interface EvrenOzeti { kod: string; ad: string; olusturma: number; sonAcilis: number | null }
@@ -29,13 +31,18 @@ export interface Kayit extends KayitOzeti {
   /** Editoryal birleştirme (§9.5): bu kayıt bir başkasına yönlendiriyorsa o kayıt; bu kayda birleştirilmiş kayıtlar. */
   birlesti: { kod: string; ad: string } | null;
   birlesenler: { kod: string; ad: string }[];
+  /** Bilgi katmanı (§3.6); evrenin sade gerçeğiyse null. */
+  gorunurluk: GorunurlukBilgisi | null;
 }
+/** Bilgi katmanının okunur hâli: kimin inancı ya da gizliyse kimlerin bildiği. */
+export interface GorunurlukBilgisi { katman: KisaKayit | null; gizli: boolean; bilenler: KisaKayit[] }
 export interface IliskiSatiri {
   kod: string; tur: string; ben: 'a' | 'b'; etiket: string; grup: string;
   karsi: { kod: string; ad: string; tur: string };
   rol: string | null; rolAdi: string | null;
   baslangic: EvrenTarihi | null; bitis: EvrenTarihi | null; aciklama: string; karar: string;
   uyari: string | null;
+  gorunurluk: GorunurlukBilgisi | null;
 }
 export interface DegisimSatiri {
   kod: string; metin: string; karar: string; olusturma: number;
@@ -163,7 +170,37 @@ export interface SahneBaglami {
   yer: (KisaKayit & { durumlar: DurumSatiri[] }) | null;
   bakis: KisaKayit | null; anlatici: KisaKayit | null; odak: KisaKayit | null;
   katilimcilar: SahneKatilimcisi[];
+  /** Bakış açısı karakterinin sahnenin tarihinde bildikleri (§5.5). */
+  bakisBilgileri: AnBilgisi[];
 }
+
+/** İddia ve bilgi durumu (§3.6). */
+export interface IddiaSecenegi { kod: string; metin: string }
+export interface IddiaOzeti { kod: string; soru: string; konu: KisaKayit; secenekler: IddiaSecenegi[]; gercek: string | null }
+export interface BilgiSatiri {
+  kod: string; iddia: IddiaOzeti;
+  bilen: KisaKayit;
+  /** Bilen bir eserse okurdur; zamanı okuma sırasıdır. */
+  okur: boolean;
+  secenek: IddiaSecenegi | null; inanc: Inanc; etiket: BilgiEtiketi;
+  /** null: saklamıyor · boş: herkesten saklıyor · dolu: bunlardan saklıyor. */
+  saklama: KisaKayit[] | null;
+  kaynak: BilgiKaynagi | null; kaynakKayit: KisaKayit | null;
+  sahne: KisaKayit | null;
+  /** Okur için sahnenin eserdeki okuma sırası. */
+  okumaSirasi: number | null;
+  baslangic: SinirBilgisi | null; bitis: SinirBilgisi | null;
+  aciklama: string; karar: string; uyari: string | null;
+}
+export interface IddiaSatiri extends IddiaOzeti { karar: string; bilgiler: BilgiSatiri[] }
+export interface BilgiGirdisi {
+  iddia: string; bilen: string; inanc: Inanc; secenek?: string | null;
+  saklama?: string[] | null; kaynak?: BilgiKaynagi | null; kaynakKayit?: string | null; sahne?: string | null;
+  baslangic?: SinirGirdisi | null; bitis?: SinirGirdisi | null; aciklama?: string; karar?: string;
+}
+export type BilgiAlani = 'secenek' | 'inanc' | 'saklama' | 'kaynak' | 'kaynakKayit' | 'sahne' | 'baslangic' | 'bitis' | 'aciklama' | 'karar';
+/** Bir bilenin bir andaki bilgisi: tek bir geçerli kayıt ya da (gizli seçim olmadan) birden çok olası kayıt. */
+export interface AnBilgisi { iddia: IddiaOzeti; durum: 'tek' | 'belirsiz'; satirlar: (BilgiSatiri & { gecerli: Gecerlilik })[] }
 
 /** Şablon ve soru kütüphanesi (§3.1, §6). */
 export interface SablonBilgisi { sablon: Sablon; varsayilan: boolean; varsayilanSablon: Sablon; /** Alan kodu → değeri dolu kayıt sayısı. */ kullanim: Record<string, number> }
@@ -194,11 +231,12 @@ export interface TakvimEtkisi {
 /** Harita (§8.1). Koordinatlar haritanın uzayındadır (ilk görselin piksel boyutu). */
 export interface IsaretGirdisi { kesinlik: 'kesin' | 'yaklasik' | 'bilinmiyor'; x: number | null; y: number | null; yaricap: number | null }
 export interface HaritaOzeti { kod: string; ad: string; en: number; boy: number; yer: KisaKayit | null; gorsel: string | null; isaretSayisi: number }
-export interface HaritaIsareti { kod: string; kayit: KisaKayit; karar: string; konum: IsaretGirdisi; altHarita: string | null }
+export interface HaritaIsareti { kod: string; kayit: KisaKayit; karar: string; konum: IsaretGirdisi; altHarita: string | null; /** Bakış açısında: yalnızca o bilenin inancında var. */ inanc?: boolean }
 export interface HaritaAyrintisi {
   kod: string; ad: string; en: number; boy: number; silindi: boolean; yer: { kod: string; ad: string } | null;
   katmanlar: { gorsel: string; x: number; y: number; olcek: number; en: number; boy: number }[];
   isaretler: HaritaIsareti[]; ustHaritalar: { kod: string; ad: string }[];
+  bakis: KisaKayit | null;
 }
 export interface KayitHaritalari {
   isaretler: { kod: string; harita: string; haritaAd: string; kesinlik: IsaretGirdisi['kesinlik'] }[];
@@ -219,7 +257,11 @@ export interface SaglikBulgusu {
 }
 export interface SaglikTaramasi { acik: SaglikBulgusu[]; ertelenen: SaglikBulgusu[]; kabul: SaglikBulgusu[]; bilgiler: SaglikBulgusu[] | null }
 /** Görünümlerde bir kayıt (§7). */
-export interface AgDugumu { kod: string; ad: string; tur: string; karar: string }
+export interface AgDugumu {
+  kod: string; ad: string; tur: string; karar: string;
+  /** Bakış açısı süzgecinde: yalnızca o bilenin inancında var. */
+  inanc?: boolean;
+}
 /** Görünümlerde bir ilişki ya da (istenirse) metindeki bağlantı. a → b yönlüdür. */
 export interface AgKenari {
   kod: string; tur: string; a: string; b: string;
@@ -231,16 +273,18 @@ export interface AgKenari {
   baslangic: EvrenTarihi | null; bitis: EvrenTarihi | null;
   /** Metindeki bağlantı (ilişki değil). */
   baglanti?: boolean;
+  /** Bakış açısı süzgecinde: yalnızca o bilenin inancında var. */
+  inanc?: boolean;
 }
 export interface SoyAgaci {
-  odak: string; an: EvrenTarihi | null;
+  odak: string; an: EvrenTarihi | null; bakis: KisaKayit | null;
   dugumler: AgDugumu[]; kenarlar: AgKenari[];
   /** Eşleri ortak bir atası olan evlilikler ve en yakın ortak ataları. */
   soyIci: { kenar: string; ortakAtalar: { kod: string; ad: string }[] }[];
   kesildi: boolean;
 }
 export interface AgSonucu {
-  merkez: string | null; an: EvrenTarihi | null;
+  merkez: string | null; an: EvrenTarihi | null; bakis: KisaKayit | null;
   dugumler: AgDugumu[]; kenarlar: AgKenari[];
   /** Çizim sınırı aşıldı: bazı kayıtlar gösterilmiyor. */
   kesildi: boolean;
@@ -280,9 +324,9 @@ export interface KurguHatlari {
 export interface BolumMatrisi {
   eser: { kod: string; ad: string };
   sutunlar: { kod: string; ad: string; sahneSayisi: number }[];
-  satirlar: { kayit: AgDugumu; hucreler: { bulunuyor: number; aniliyor: number; bakis: number; etki: number }[]; gorunduguSahne: number; konuOlduguSahne: number }[];
+  satirlar: { kayit: AgDugumu; hucreler: { bulunuyor: number; aniliyor: number; bakis: number; etki: number; bilgi: number; okur: number }[]; gorunduguSahne: number; konuOlduguSahne: number }[];
 }
-export interface CizelgeOgesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi; eser: string | null }
+export interface CizelgeOgesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi; eser: string | null; inanc?: boolean }
 
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
 
@@ -389,9 +433,19 @@ export interface Istekler {
   takvim(a: { evren: string }): Takvim;
   takvimEtkisi(a: { evren: string; takvim: Takvim | null }): TakvimEtkisi;
   takvimYaz(a: { evren: string; takvim: Takvim | null }): void;
-  zamanCizelgesi(a: { evren: string }): CizelgeOgesi[];
-  soyAgaci(a: { evren: string; odak: string; an?: string | null }): SoyAgaci;
-  ag(a: { evren: string; merkez?: string | null; derinlik?: number; iliskiTurleri?: string[] | null; kayitTurleri?: string[] | null; an?: string | null; baglantilar?: boolean; vazgecilmis?: boolean }): AgSonucu;
+  zamanCizelgesi(a: { evren: string; bakis?: string | null }): CizelgeOgesi[];
+  soyAgaci(a: { evren: string; odak: string; an?: string | null; bakis?: string | null }): SoyAgaci;
+  ag(a: { evren: string; merkez?: string | null; derinlik?: number; iliskiTurleri?: string[] | null; kayitTurleri?: string[] | null; an?: string | null; baglantilar?: boolean; vazgecilmis?: boolean; bakis?: string | null }): AgSonucu;
+  kayitIddialari(a: { evren: string; kod: string }): IddiaSatiri[];
+  iddialar(a: { evren: string }): IddiaOzeti[];
+  iddiaEkle(a: { evren: string; konu: string; soru: string; secenekler: string[]; gercek?: number | null; karar?: string }): { kod: string };
+  iddiaDegistir(a: { evren: string; kod: string; alan: 'soru' | 'secenekler' | 'gercek' | 'karar'; deger: unknown }): void;
+  iddiaSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  bilenBilgileri(a: { evren: string; kod: string }): BilgiSatiri[];
+  bilgiEkle(a: { evren: string; bilgi: BilgiGirdisi }): { kod: string };
+  bilgiDegistir(a: { evren: string; kod: string; alan: BilgiAlani; deger: unknown }): void;
+  bilgiSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  gorunurlukYaz(a: { evren: string; kod: string; nesne: 'kayit' | 'iliski'; deger: Gorunurluk | null }): void;
   durumGecmisi(a: { evren: string; ozellik: string; an?: string | null }): DurumGecmisi;
   kayitDurumGecmisi(a: { evren: string; kod: string }): DurumGecmisi[];
   nedenSonucAgi(a: { evren: string; merkez?: string | null; derinlik?: number }): NedenSonucAgi;
@@ -401,7 +455,7 @@ export interface Istekler {
   kurguHatlari(a: { evren: string }): KurguHatlari;
   bolumMatrisi(a: { evren: string; eser: string; turler?: string[] | null }): BolumMatrisi;
   haritalar(a: { evren: string; silinmis?: boolean }): HaritaOzeti[];
-  harita(a: { evren: string; kod: string }): HaritaAyrintisi;
+  harita(a: { evren: string; kod: string; bakis?: string | null }): HaritaAyrintisi;
   haritaYukle(a: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ kod: string }>;
   gorseldenHarita(a: { evren: string; kayit: string; gorsel: string }): { kod: string };
   haritaDegistir(a: { evren: string; kod: string; alan: 'ad' | 'yer'; deger: unknown }): void;

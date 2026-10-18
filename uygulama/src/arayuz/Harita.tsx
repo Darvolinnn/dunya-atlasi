@@ -9,6 +9,8 @@ import { KayitSec } from './KayitBolumleri';
 import { Gorsel } from './gorsel';
 import { KararRozeti } from './ortak';
 import { git } from './Uygulama';
+import { BakisAciklamasi, BakisSecici } from './Bilgiler';
+import type { Secim } from './BaglantiSecici';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const KESINLIKLER: { kod: IsaretGirdisi['kesinlik']; ad: string }[] = [
@@ -117,8 +119,9 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
   const [secili, setSecili] = useState<string | null>(null);
   const [yeni, setYeni] = useState<{ x: number; y: number; ekran: { left: number; top: number } } | null>(null);
   const [bilinmeyenEkle, setBilinmeyenEkle] = useState<{ left: number; top: number } | null>(null);
+  const [bakis, setBakis] = useState<Secim | null>(null);
   const yuzey = useRef<HTMLDivElement>(null);
-  useEffect(() => { istemci.iste('harita', { evren, kod }).then((x) => { setH(x); setHata(null); }, (e) => setHata(hataYaz(e))); }, [kod, n]);
+  useEffect(() => { istemci.iste('harita', { evren, kod, bakis: bakis?.kod ?? null }).then((x) => { setH(x); setHata(null); }, (e) => setHata(hataYaz(e))); }, [kod, bakis?.kod, n]);
   useEffect(() => {
     const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { setKip({ tur: 'gez' }); setYeni(null); } };
     addEventListener('keydown', tus);
@@ -164,6 +167,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
         <button class="dugme kucuk" aria-pressed={kip.tur === 'gez'} onClick={() => setKip({ tur: 'gez' })}>Gez ve seç</button>
         <button class="dugme kucuk" aria-pressed={kip.tur === 'koy' && kip.kesinlik === 'kesin'} disabled={h.silindi} onClick={() => setKip({ tur: 'koy', kesinlik: 'kesin' })}>Kesin yer işaretle</button>
         <button class="dugme kucuk" aria-pressed={kip.tur === 'koy' && kip.kesinlik === 'yaklasik'} disabled={h.silindi} onClick={() => setKip({ tur: 'koy', kesinlik: 'yaklasik' })}>Yaklaşık bölge işaretle</button>
+        <BakisSecici istemci={istemci} evren={evren} bakis={bakis} sec={setBakis} />
         <span class="bosluk" />
         <button class="dugme kucuk" aria-label="Uzaklaştır" disabled={yakinlik <= 1} onClick={() => setYakinlik((z) => Math.max(1, z / 1.5))}>−</button>
         <span class="soluk kucuk">%{Math.round(yakinlik * 100)}</span>
@@ -175,6 +179,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
             : 'Bir işarete dokunarak seç. İşaret koymak için yukarıdan bir kip seç.'}
       </p>
       {hata && <p class="hata kucuk">{hata}</p>}
+      <BakisAciklamasi bakis={h.bakis} />
 
       <div class="harita-duzen">
         <div class="harita-tuval">
@@ -253,7 +258,7 @@ function IsaretGorseli({ i, h, secili, sec }: { i: HaritaIsareti; h: HaritaAyrin
         <span class={`harita-bolge${secili ? ' secili' : ''}`} aria-hidden="true"
           style={{ left: `${((x! - yaricap) / h.en) * 100}%`, top: `${((y! - yaricap) / h.boy) * 100}%`, width: `${((2 * yaricap) / h.en) * 100}%`, height: `${((2 * yaricap) / h.boy) * 100}%` }} />
       )}
-      <button class={`harita-isaret ${i.konum.kesinlik}${secili ? ' secili' : ''} karar-${i.karar}`} style={{ left: sol, top: ust }}
+      <button class={`harita-isaret ${i.konum.kesinlik}${secili ? ' secili' : ''}${i.inanc ? ' inanc' : ''} karar-${i.karar}`} style={{ left: sol, top: ust }}
         aria-label={`${i.kayit.ad} (${kesinlikAdi(i.konum.kesinlik).toLocaleLowerCase('tr-TR')})`} aria-pressed={secili}
         onClick={(e) => { e.stopPropagation(); sec(); }}>
         <span class="harita-etiket">{i.kayit.ad}</span>

@@ -114,7 +114,7 @@ describe('neden–sonuç ağı, kurgu hatları, matris', () => {
     const m = h.bolumMatrisi({ evren, eser });
     expect(m.sutunlar.map((x) => [x.ad, x.sahneSayisi])).toEqual([['Birinci bölüm', 2], ['İkinci bölüm', 2]]);
     const el = m.satirlar.find((x) => x.kayit.ad === 'Elin')!;
-    expect(el.hucreler).toEqual([{ bulunuyor: 1, aniliyor: 0, bakis: 0, etki: 0 }, { bulunuyor: 1, aniliyor: 0, bakis: 1, etki: 1 }]);
+    expect(el.hucreler).toEqual([{ bulunuyor: 1, aniliyor: 0, bakis: 0, etki: 0, bilgi: 0, okur: 0 }, { bulunuyor: 1, aniliyor: 0, bakis: 1, etki: 1, bilgi: 0, okur: 0 }]);
     expect([el.gorunduguSahne, el.konuOlduguSahne]).toEqual([2, 2]);
     const kr = m.satirlar.find((x) => x.kayit.ad === 'Kral')!;
     expect([kr.gorunduguSahne, kr.konuOlduguSahne]).toEqual([0, 2]);

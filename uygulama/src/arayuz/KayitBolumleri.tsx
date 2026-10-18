@@ -12,6 +12,7 @@ import { git } from './Uygulama';
 import { takvimOrnegi, useTakvim } from './Takvim';
 import { gorseldeIsaretle } from './Harita';
 import { EtkiRaporuPaneli } from './Gorunumler';
+import { GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -183,6 +184,7 @@ function IliskiSatir({ istemci, evren, i }: { istemci: Istemci; evren: string; i
         <span class="iliski-etiket soluk">{i.etiket}{i.rolAdi ? ` (${i.rolAdi.toLocaleLowerCase('tr-TR')})` : ''}</span>
         <a href={`#/e/${evren}/k/${i.karsi.kod}`} title={tur.ad}>{i.karsi.ad}</a>
         <KararRozeti karar={i.karar} />
+        <GorunurlukRozeti g={i.gorunurluk} />
         {aralikYaz(i) && <span class="soluk kucuk">{aralikYaz(i)}</span>}
         {i.aciklama && <span class="soluk kucuk">· {i.aciklama}</span>}
         <span class="bosluk" />
@@ -203,6 +205,7 @@ function IliskiSatir({ istemci, evren, i }: { istemci: Istemci; evren: string; i
           )}
           <label class="alan"><span class="alan-adi">Karar durumu</span>
             <KararSecici etiket="İlişki" karar={i.karar} onDegis={(k) => istemci.iste('iliskiDegistir', { evren, kod: i.kod, alan: 'karar', deger: k })} /></label>
+          <GorunurlukAlani istemci={istemci} evren={evren} kod={i.kod} nesne="iliski" deger={i.gorunurluk} />
           <button class="dugme tehlikeli kucuk" onClick={() => istemci.iste('iliskiSil', { evren, kod: i.kod })}>İlişkiyi kaldır</button>
         </div>
       )}
