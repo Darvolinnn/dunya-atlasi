@@ -92,6 +92,14 @@ export interface EvrenEsitlemeDurumu {
   kod: string; ad: string; esitlenir: boolean; sonEsitleme: number | null; yalnizBuCihazda: number; bekleyen: number; guncellemeGerekli: boolean;
   cihazlar: { kod: string; ad: string; sonGorulme: number; kullanimDisi: boolean; bekleyen: number; buCihaz: boolean }[];
 }
+/** Kaldığın yer (§5.9): cihazlar arasında eşitlenir; panel yerleşimi gibi cihaza özel şeyler burada yok. */
+export interface KaldigiYer { kayit: string | null; konum: number | null; yanPanel: string[]; not: string; zaman: number }
+export interface KaldigiYerBilgisi extends KaldigiYer {
+  /** Başka bir cihazda bırakıldıysa o cihazın adı. */
+  cihaz: string | null;
+  kayitAdi: string | null; kayitTuru: string | null;
+  yanPanelKayitlari: { kod: string; ad: string; tur: string }[];
+}
 export interface BaglananKayit { kod: string; ad: string; tur: string; ifadeler: string[] }
 export interface AdDuzeltmesi { kaynak: string; kaynakAd: string; sira: number; eski: string; yeni: string }
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
@@ -171,6 +179,8 @@ export interface Istekler {
   kurulumAdiDegistir(a: { ad: string }): void;
   kurulumKullanimDisi(a: { kod: string; disi: boolean }): void;
 
+  kaldigiYer(a: { evren: string }): KaldigiYerBilgisi | null;
+  kaldigiYerYaz(a: { evren: string; yer: Omit<KaldigiYer, 'zaman'> }): void;
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];
   bahsedilenler(a: { evren: string }): (KayitOzeti & { anilma: number })[];

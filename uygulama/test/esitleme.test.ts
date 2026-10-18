@@ -177,6 +177,32 @@ describe('Drive eşitlemesi (sahte Drive ile)', () => {
   });
 });
 
+describe('kaldığın yer (§5.9)', () => {
+  it('başka cihazda kalınan yer eşitlemeyle gelir; yenisi gösterilir', async () => {
+    const drive = new BellekTasiyici();
+    const m = cihaz('Masaüstü', drive);
+    const t = cihaz('Tablet', drive);
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    const a = m.h.kayitOlustur({ evren, ad: 'Kuşatma', tur: 'sahne' }).kod;
+    const b = m.h.kayitOlustur({ evren, ad: 'Velkar', tur: 'karakter' }).kod;
+    expect(m.h.kaldigiYer({ evren })).toBeNull();
+    m.h.kaldigiYerYaz({ evren, yer: { kayit: a, konum: 12, yanPanel: [b, 'bozuk kod'], not: 'Elin karar verecek' } });
+    expect(m.h.kaldigiYer({ evren })).toMatchObject({ kayit: a, konum: 12, yanPanel: [b], cihaz: null, kayitAdi: 'Kuşatma', not: 'Elin karar verecek' });
+    await m.h.esitle();
+    await t.h.evreniIndir({ kod: evren });
+    expect(t.h.kaldigiYer({ evren })).toMatchObject({ kayit: a, konum: 12, cihaz: 'Masaüstü', yanPanelKayitlari: [{ kod: b, ad: 'Velkar', tur: 'karakter' }] });
+    // Tablette daha sonra başka yerde kalınır; masaüstü eşitleyince onu görür.
+    await new Promise((r) => setTimeout(r, 5));
+    t.h.kaldigiYerYaz({ evren, yer: { kayit: b, konum: null, yanPanel: [], not: '' } });
+    await t.h.esitle();
+    await m.h.esitle();
+    expect(m.h.kaldigiYer({ evren })).toMatchObject({ kayit: b, cihaz: 'Tablet' });
+    // Silinmiş kayıt kaldığın yer olarak gösterilmez.
+    m.h.kayitSil({ evren, kod: b });
+    expect(m.h.kaldigiYer({ evren })?.kayit).toBeNull();
+  });
+});
+
 describe('eşitleme işareti', () => {
   it('eşitlenecek evren yokken de eşitleme "sürüyor" durumunda kalmaz', async () => {
     const drive = new BellekTasiyici();

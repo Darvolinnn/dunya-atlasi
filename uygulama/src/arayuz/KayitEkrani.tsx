@@ -11,6 +11,7 @@ import { KararSecici, TurSecici } from './ortak';
 import { Gorseller, Iliskiler, KayitDegisimleri, NotDonustur, SahneBolumu, TarihAlani } from './KayitBolumleri';
 import { git } from './Uygulama';
 import { CatismaListesi } from './Catismalar';
+import { useCalisma } from './Calisma';
 
 export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
   const [kayit, setKayit] = useState<Kayit | null>(null);
@@ -21,6 +22,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   const [gecmisAcik, setGecmisAcik] = useState(false);
   const denetim = useRef<EditorDenetimi | null>(null);
   const [duzeltme, setDuzeltme] = useState<{ eskiAd: string; yeniAd: string; eskiOkunus: string; liste: AdDuzeltmesi[] } | null>(null);
+  const calisma = useCalisma();
+  const [baslangic] = useState(() => calisma?.konumAl(kod) ?? null);
 
   useEffect(() => { istemci.iste('kayit', { evren, kod }).then((k) => { setKayit(k); setHata(null); }, (e) => setHata(e.message)); }, [evren, kod, surum]);
   useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then((b) => setEvrenAdi(b.ad), () => {}); }, [evren]);
@@ -105,7 +108,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
 
         <Gorseller istemci={istemci} evren={evren} kayit={kayit} />
 
-        <MetinEditoru key={editorAnahtari} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} />
+        <MetinEditoru key={editorAnahtari} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} baslangic={editorAnahtari === 0 ? baslangic : null} />
 
         {kayit.tur === 'sahne' && <SahneBolumu istemci={istemci} evren={evren} kayit={kayit} surum={surum} />}
         <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />

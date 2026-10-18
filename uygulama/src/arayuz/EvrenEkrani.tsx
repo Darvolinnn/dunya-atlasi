@@ -6,6 +6,7 @@ import { git } from './Uygulama';
 import { DriveYedekleri, YedekSekmesi } from './Tasima';
 import { CatismaListesi } from './Catismalar';
 import { Bahsedilenler, CopKutusu, KayitListesi } from './KayitListesi';
+import { Masa } from './Masa';
 
 export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: string; sekme: string }) {
   const [bilgi, setBilgi] = useState<EvrenBilgisi | null>(null);
@@ -29,7 +30,7 @@ export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: st
         <AdBasligi istemci={istemci} bilgi={bilgi} />
         <p class="soluk kucuk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
         <div class="sekmeler" role="tablist">
-          {([['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
+          {([['masa', 'Masa'], ['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
             ...(bilgi.catismaSayisi || sekme === 'inceleme' ? [['inceleme', `İnceleme bekleyen (${bilgi.catismaSayisi})`] as const] : [])] as const).map(([k, ad]) => (
             <button class="sekme" role="tab" aria-selected={sekme === k} onClick={() => git(`/e/${kod}/${k}`)}>{ad}</button>
           ))}
@@ -39,7 +40,8 @@ export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: st
           : sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
           : sekme === 'bahsedilen' ? <Bahsedilenler istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'cop' ? <CopKutusu istemci={istemci} evren={kod} surum={surum} />
-          : <KayitListesi istemci={istemci} evren={kod} surum={surum} />}
+          : sekme === 'kayitlar' ? <KayitListesi istemci={istemci} evren={kod} surum={surum} />
+          : <Masa istemci={istemci} evren={kod} surum={surum} />}
       </main>
     </>
   );

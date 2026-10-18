@@ -54,6 +54,8 @@ export interface SatirIci { bas: number }
 export function baglantiEklentisi(o: {
   ac: (i: SeciciIstegi) => void;
   satirIciBasla: (bas: number) => void;
+  /** Boş satırın başında "/" komut paletini açar (§5.8); cümle içinde açmaz. */
+  paletAc?: () => void;
   yeniKayit: (ad: string, tur: string, ozet: string) => Promise<string>;
 }) {
   return new Plugin({
@@ -62,6 +64,7 @@ export function baglantiEklentisi(o: {
         const { state } = view;
         const $from = state.doc.resolve(from);
         const once = $from.parent.textBetween(0, $from.parentOffset, undefined, '\ufffc');
+        if (text === '/' && o.paletAc && from === to && $from.parent.content.size === 0) { o.paletAc(); return true; }
         if (text === '[' && once.endsWith('[') && from === to) {
           // "[[": metin yazılmaya devam eder, seçim kutusu yazılanı arar.
           view.dispatch(state.tr.insertText('[', from));

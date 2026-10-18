@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, kokAdaylari } from '../alan/turkce-ek';
 import { kararGecerli, turGecerli } from '../alan/turler';
-import type { Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -266,6 +266,37 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   kurulumKullanimDisi({ kod, disi }: { kod: string; disi: boolean }) {
     if (!kodGecerliMi(kod) || kod === this.kurulum.kod) throw new Error('Bu cihaz kendini kullanım dışı bırakamaz.');
     new Esitleme(this.esitlemeErisimi(), null).kullanimDisiIsaretle(kod, disi);
+  }
+
+  // ---------- Kaldığın yer (§5.9) ----------
+  /** En son bırakılan yer: bu cihazda ya da eşitlemeyle gelen başka bir cihazda (hangisi yeniyse). */
+  kaldigiYer({ evren }: { evren: string }): KaldigiYerBilgisi | null {
+    const e = this.evren(evren);
+    const oku = (k: string): (KaldigiYer & { cihaz?: string }) | null => {
+      try { const x = JSON.parse(this.kurulum.ayar(k) ?? 'null'); return x && typeof x === 'object' ? x : null; } catch { return null; }
+    };
+    const yerel = oku(`kaldigi:${evren}`);
+    const uzak = oku(`kaldigi_uzak:${evren}`);
+    const y = uzak && (!yerel || uzak.zaman > yerel.zaman) ? uzak : yerel;
+    if (!y) return null;
+    const bilgi = (kod: string | null) => kod ? e.db.selectObject('SELECT kod, ad, tur FROM kayitlar WHERE kod=? AND silindi IS NULL', [kod]) : undefined;
+    const k = bilgi(y.kayit);
+    return {
+      kayit: k ? y.kayit : null, konum: k ? y.konum : null, not: String(y.not ?? ''), zaman: Number(y.zaman) || 0,
+      yanPanel: (y.yanPanel ?? []).filter((x) => bilgi(x)),
+      cihaz: y === uzak && y.cihaz ? this.kurulumAdi(y.cihaz) : null,
+      kayitAdi: k ? k.ad as string : null, kayitTuru: k ? k.tur as string : null,
+      yanPanelKayitlari: (y.yanPanel ?? []).map(bilgi).filter(Boolean).map((r) => ({ kod: r!.kod as string, ad: r!.ad as string, tur: r!.tur as string })),
+    };
+  }
+
+  kaldigiYerYaz({ evren, yer }: { evren: string; yer: Omit<KaldigiYer, 'zaman'> }) {
+    this.evren(evren);
+    const kayit = yer?.kayit && kodGecerliMi(yer.kayit) ? yer.kayit : null;
+    const konum = Number.isInteger(yer?.konum) && (yer.konum as number) >= 0 ? yer.konum : null;
+    const yanPanel = Array.isArray(yer?.yanPanel) ? yer.yanPanel.filter((x) => kodGecerliMi(x)).slice(0, 12) : [];
+    const not = typeof yer?.not === 'string' ? yer.not.slice(0, 2000) : '';
+    this.kurulum.ayarYaz(`kaldigi:${evren}`, JSON.stringify({ kayit, konum, yanPanel, not, zaman: Date.now() }));
   }
 
   // ---------- Çatışmalar (§10.3, §10.6) ----------

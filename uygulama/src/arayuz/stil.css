@@ -214,3 +214,42 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .esitleme-seridi .hata { color: #7a1010; }
 .alt-baglanti { color: inherit; }
 .durum-listesi { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+
+/* Çalışma alanı: özet kartı, yan panel, komut paleti (§5.3, §5.4, §5.8) */
+.ozet-karti { position: fixed; z-index: 40; box-shadow: 0 8px 28px rgb(0 0 0 / 0.18); padding: 12px 14px; }
+.ozet-gorseli { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; flex: none; }
+.yan-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 380px; z-index: 20; background: var(--yuzey); border-left: 1px solid var(--cizgi); display: flex; flex-direction: column; box-shadow: var(--golge); }
+.yan-panel.kucuk { bottom: auto; }
+.calisma.yan-panel-acik { padding-right: 380px; }
+.calisma.yan-panel-acik.yan-panel-kucuk { padding-right: 0; }
+.yan-panel.kucuk { width: auto; left: auto; }
+.yan-panel-basi { display: flex; align-items: center; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--cizgi); }
+.yan-sekmeler { display: flex; gap: 2px; flex: 1; overflow-x: auto; }
+.yan-sekme { display: inline-flex; align-items: center; border-radius: 8px; }
+.yan-sekme[aria-selected="true"] { background: var(--vurgu-zemin); }
+.yan-sekme-ad, .yan-sekme-kapat { font: inherit; background: none; border: none; color: var(--metin); cursor: pointer; padding: 6px 6px; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.yan-sekme-kapat { color: var(--metin-2); padding: 6px 6px 6px 0; }
+.yan-panel-ic { padding: 12px 16px 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.yan-panel-ic p { margin: 0; }
+.yan-panel-ic .metin-editoru { padding: 0; font-size: 0.95rem; }
+.yan-iliskiler { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; }
+.yan-iliskiler li { padding: 2px 0; }
+@media (max-width: 900px) {
+  .yan-panel { top: auto; left: 0; width: auto; max-height: 55vh; border-left: none; border-top: 1px solid var(--cizgi); border-radius: 14px 14px 0 0; box-shadow: 0 -6px 24px rgb(0 0 0 / 0.15); }
+  .calisma.yan-panel-acik { padding-right: 0; padding-bottom: 55vh; }
+  .calisma.yan-panel-acik.yan-panel-kucuk { padding-bottom: 56px; }
+}
+.palet-perdesi { align-items: flex-start; padding-top: 12vh; }
+.palet { width: min(560px, calc(100vw - 32px)); padding: 10px; box-shadow: 0 12px 40px rgb(0 0 0 / 0.25); }
+.palet-listesi { list-style: none; margin: 8px 0 0; padding: 0; max-height: 50vh; overflow-y: auto; }
+.palet-listesi li { padding: 8px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: baseline; gap: 6px; }
+.palet-listesi li.secili { background: var(--vurgu-zemin); }
+.palet-baslik { font-weight: 500; }
+.palet-yan { margin-left: auto; min-height: 0; padding: 2px 8px; }
+
+/* Masa (§7) */
+.masa { display: flex; flex-direction: column; gap: 20px; }
+.masa-bolum h2 { margin-bottom: 6px; }
+.kisa-liste { list-style: none; padding: 0; margin: 0; }
+.kisa-liste li { padding: 4px 0; }
+.kucuk-rozet { width: 22px; height: 22px; font-size: 0.65rem; display: inline-grid; vertical-align: middle; }

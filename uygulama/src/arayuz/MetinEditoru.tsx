@@ -17,6 +17,7 @@ import { BaglantiSecici, type Secim, type SeciciTutamagi } from './BaglantiSecic
 import { katla } from '../alan/turkce';
 import { bagAraligi, baglantiEklentisi, bagTuru, type SeciciIstegi } from './baglanti-eklentisi';
 import { git } from './Uygulama';
+import { useCalisma } from './Calisma';
 
 const sema = metinSemasi.schema;
 const ARA = 1200;        // yazmaya bu kadar ara verilince kaydedilir
@@ -33,9 +34,14 @@ type Durum = { tur: 'kayitli'; zaman: number | null } | { tur: 'bekliyor' } | { 
 
 export interface EditorDenetimi { kaydet(): Promise<void> }
 
-export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim }: {
+export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, baslangic }: {
   istemci: Istemci; evren: string; kayit: string; alan?: string; denetim?: { current: EditorDenetimi | null };
+  /** Kaldığın yere dönülüyorsa imlecin konumu. */
+  baslangic?: number | null;
 }) {
+  const calisma = useCalisma();
+  const calismaRef = useRef(calisma);
+  calismaRef.current = calisma;
   const kap = useRef<HTMLDivElement>(null);
   const [durum, setDurum] = useState<Durum>({ tur: 'kayitli', zaman: null });
   const [hazir, setHazir] = useState(false);
@@ -170,9 +176,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim }:
           baglantiEklentisi({
             ac: (i) => seciciAc({ ...i, satirIci: true }),
             satirIciBasla: (b) => satirIciBasla(b),
+            paletAc: () => { calismaRef.current?.paletAc({ bagla }); },
             yeniKayit: async (ad, tur, ozet) => (await istemci.iste('kayitOlustur', { evren, ad, tur, ozet, karar: 'fikir' })).kod,
           }),
-          history(), keymap({ ...KISAYOLLAR, 'Mod-k': () => { bagla(); return true; } }), keymap(baseKeymap),
+          history(), keymap({ ...KISAYOLLAR, 'Mod-k': () => { if (calismaRef.current) calismaRef.current.paletAc({ bagla }); else bagla(); return true; } }), keymap(baseKeymap),
         ],
       });
       gorunum.current = new EditorView(kap.current, {
@@ -198,8 +205,16 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim }:
           seciciIzle(tr, v.state);
           setAracDurumu((n) => n + 1);
           if (tr.docChanged && !tr.getMeta('disaridan')) planla();
+          if ((tr.selectionSet || tr.docChanged) && !tr.getMeta('disaridan') && alan === 'govde') calismaRef.current?.konumBildir(kayit, v.state.selection.head);
         },
       });
+      if (baslangic != null) {
+        const v = gorunum.current;
+        try {
+          v.dispatch(v.state.tr.setSelection(TextSelection.near(v.state.doc.resolve(Math.min(baslangic, v.state.doc.content.size)))).scrollIntoView());
+          v.focus();
+        } catch { /* metin değişmiş: başta kalır */ }
+      }
       setHazir(true);
     }, (e) => setDurum({ tur: 'hata', mesaj: (e as Error).message }));
 
@@ -259,6 +274,11 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim }:
         <button type="button" class="arac bagla" title="Bir kayda bağla (Ctrl+K ya da [[ )" onMouseDown={(e) => e.preventDefault()} onClick={bagla}>Bağla</button>
         {bag && v && <>
           <a class="arac" href={`#/e/${evren}/k/${bag.hedef}`}>“{v.state.doc.textBetween(bag.from, bag.to)}” kaydını aç</a>
+          {calisma && <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => {
+            const r = v.coordsAtPos(bag.from), r2 = v.coordsAtPos(bag.to);
+            calisma.ozetAc(bag.hedef, new DOMRect(r.left, r.top, Math.max(1, r2.right - r.left), r.bottom - r.top));
+          }}>Özet</button>}
+          {calisma && <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => calisma.yanPanelAc(bag.hedef)}>Yan panelde aç</button>}
           <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => uygula((s, d) => { d?.(s.tr.removeMark(bag.from, bag.to, bagTuru)); return true; })}>Bağlantıyı kaldır</button>
         </>}
         <span class="bosluk" />

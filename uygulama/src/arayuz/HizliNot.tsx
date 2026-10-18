@@ -20,8 +20,10 @@ export function HizliNot({ istemci, evren }: { istemci: Istemci; evren: string |
   }, [evren, acik]);
   useEffect(() => {
     const tus = (e: KeyboardEvent) => { if (e.altKey && !e.ctrlKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); setAcik(true); } };
+    const ac = () => setAcik(true);
     addEventListener('keydown', tus);
-    return () => removeEventListener('keydown', tus);
+    document.addEventListener('hizli-not-ac', ac);
+    return () => { removeEventListener('keydown', tus); document.removeEventListener('hizli-not-ac', ac); };
   }, []);
   useEffect(() => { if (acik) setTimeout(() => alan.current?.focus()); }, [acik]);
 

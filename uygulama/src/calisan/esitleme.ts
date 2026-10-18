@@ -49,6 +49,8 @@ interface KurulumDosyasi {
   aldigi: Record<string, number>;
   /** Bu kurulumun "artık kullanılmıyor" diye işaretlediği kurulumlar (§10.5). */
   kullanimDisi: string[];
+  /** Bu kurulumda bu evrende kalınan yer (§5.9); öbür cihazlar en yenisini gösterir. */
+  kaldigi?: { zaman: number } & Record<string, unknown>;
 }
 interface IslemDosyasi { protokol: number; veriBicimi: number; evren: string; kurulum: string; gorulen?: Record<string, number>; islemler: Record<string, unknown>[] }
 
@@ -190,11 +192,14 @@ export class Esitleme {
     const kullanimDisi = new Set(kurulumDosyalari.flatMap((k) => k.kullanimDisi));
     for (const k of this.kullanimDisiListesi()) kullanimDisi.add(k);
     for (const k of kurulumDosyalari) if (k.kod !== ben) this.kurulum.kurulumKaydet(k.kod, k.ad, k.sonGorulme);
+    this.kaldigiYeriAl(evren, kurulumDosyalari.filter((k) => k.kod !== ben));
     const simdi = Date.now();
+    let kaldigi: KurulumDosyasi['kaldigi'];
+    try { kaldigi = JSON.parse(this.ayar(`kaldigi:${evren}`) ?? 'null') ?? undefined; } catch { kaldigi = undefined; }
     const benim: KurulumDosyasi = {
       protokol: PROTOKOL, veriBicimi: VERI_BICIMI, kod: ben, ad: this.kurulum.ad, sonGorulme: simdi, evren,
       evrenAdi: (e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string) ?? '', aldigi: e.gorulenler(),
-      kullanimDisi: this.kullanimDisiListesi(),
+      kullanimDisi: this.kullanimDisiListesi(), kaldigi,
     };
     const eskiBenim = dosyalar.find((d) => d.ozellikler.tur === 'kurulum' && d.ozellikler.kurulum === ben);
     await this.t.yukle(`${UYGULAMA}-${evren}-kurulum-${ben}`, ozellik(evren, 'kurulum', { kurulum: ben, zaman: String(simdi), evrenAdi: benim.evrenAdi.slice(0, 100) }),
@@ -283,6 +288,18 @@ export class Esitleme {
           await depo.yaz(dosya, veri);
         }
       }
+    }
+  }
+
+  /** Öbür cihazlarda kalınan yerlerin en yenisi saklanır; bu cihazdakinden yeniyse Masa'da o gösterilir. */
+  private kaldigiYeriAl(evren: string, digerleri: KurulumDosyasi[]) {
+    let mevcut = 0;
+    try { mevcut = Number(JSON.parse(this.ayar(`kaldigi_uzak:${evren}`) ?? 'null')?.zaman) || 0; } catch { /* yok */ }
+    for (const k of digerleri) {
+      const y = k.kaldigi;
+      if (!y || typeof y !== 'object' || !(Number(y.zaman) > mevcut)) continue;
+      mevcut = Number(y.zaman);
+      this.kurulum.ayarYaz(`kaldigi_uzak:${evren}`, JSON.stringify({ ...y, cihaz: k.kod }));
     }
   }
 
