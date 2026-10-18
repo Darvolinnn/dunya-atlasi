@@ -147,6 +147,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         <div class="kayit-alti">
           <span class="soluk kucuk">Oluşturuldu {zamanYaz(kayit.olusturma)} · Son değişiklik {zamanYaz(kayit.duzenleme)}</span>
           <span class="bosluk" />
+          {!kayit.silindi && <a class="dugme sade" href={`#/e/${evren}/ag/${kod}`}>Ağda göster</a>}
+          {!kayit.silindi && kayit.tur === 'karakter' && <a class="dugme sade" href={`#/e/${evren}/soy/${kod}`}>Soy ağacı</a>}
           {kayit.tur === 'not' && !kayit.silindi && <NotDonustur istemci={istemci} evren={evren} kayit={kayit} />}
           {!kayit.silindi && <BirlestirDugmesi istemci={istemci} evren={evren} kayit={kayit} onceKaydet={async () => { await denetim.current?.kaydet(); }} />}
           {!kayit.silindi && (

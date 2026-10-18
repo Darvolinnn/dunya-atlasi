@@ -10,8 +10,10 @@ export interface IliskiTuru {
   bIcin: string;
   karsilikli: boolean;
   grup: string;
-  /** Katılım rolü seçilen türler (§3.2): A katılımcı, B sahne ya da olay. */
+  /** Katılım rolü seçilen türler (§3.2): A katılımcı, B sahne ya da olay. Aile bağlarında bağın niteliği (§7 soy ağacı). */
   roller?: { kod: string; ad: string }[];
+  /** Rol seçmek isteğe bağlı mı (boş bırakılınca "belirtilmemiş"). */
+  rolIstegeBagli?: boolean;
 }
 
 export const SAHNE_ROLLERI = [
@@ -29,9 +31,19 @@ export const OLAY_ROLLERI = [
   { kod: 'sonradan', ad: 'Sonradan öğrenen' },
 ];
 
+/** Ebeveynlik ve evliliğin niteliği; soy ağacında farklı çizgiyle gösterilir (§7). Soybilim ile hukuki ebeveynlik ayrıdır (§15-8). */
+export const EBEVEYN_ROLLERI = [
+  { kod: 'kan', ad: 'Kan bağı' },
+  { kod: 'evlatlik', ad: 'Evlatlık' },
+  { kod: 'evlilik_disi', ad: 'Evlilik dışı' },
+];
+export const ES_ROLLERI = [
+  { kod: 'siyasi', ad: 'Siyasi evlilik' },
+];
+
 export const ILISKI_TURLERI: IliskiTuru[] = [
-  { kod: 'ebeveyn', aIcin: 'Çocuğu', bIcin: 'Ebeveyni', karsilikli: false, grup: 'Aile' },
-  { kod: 'es', aIcin: 'Eşi', bIcin: 'Eşi', karsilikli: true, grup: 'Aile' },
+  { kod: 'ebeveyn', aIcin: 'Çocuğu', bIcin: 'Ebeveyni', karsilikli: false, grup: 'Aile', roller: EBEVEYN_ROLLERI, rolIstegeBagli: true },
+  { kod: 'es', aIcin: 'Eşi', bIcin: 'Eşi', karsilikli: true, grup: 'Aile', roller: ES_ROLLERI, rolIstegeBagli: true },
   { kod: 'kardes', aIcin: 'Kardeşi', bIcin: 'Kardeşi', karsilikli: true, grup: 'Aile' },
   { kod: 'akraba', aIcin: 'Akrabası', bIcin: 'Akrabası', karsilikli: true, grup: 'Aile' },
   { kod: 'arkadas', aIcin: 'Arkadaşı', bIcin: 'Arkadaşı', karsilikli: true, grup: 'Kişiler arası' },

@@ -369,3 +369,60 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .bulgu.bilgi { padding: 4px 0; border-bottom: 1px solid var(--cizgi); }
 .bulgu-grubu summary { cursor: pointer; color: var(--metin-2); margin: 8px 0; }
 .ayirma { margin: 8px 20px; }
+
+/* ---------- İnceleme görünümleri (§7) ---------- */
+.gorunum > .satir, .ag-suzgec .satir { flex-wrap: wrap; margin-bottom: 8px; }
+.cizim-alani { overflow: auto; max-height: 70vh; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey); margin: 8px 0; }
+.cizim-alani svg { display: block; }
+.secili-kayit { margin: 8px 0; flex-wrap: wrap; }
+.secili-kayit ul { margin: 6px 0 0; padding-left: 20px; }
+/* Tür grubu renkleri: düğüm kenarı ve dolgusu, metin rengi değil. */
+.tg-0 { --tg: #3d5f8f; } .tg-1 { --tg: #2f6b3f; } .tg-2 { --tg: #8a5a12; } .tg-3 { --tg: #6b3f8f; } .tg-4 { --tg: #9b2c2c; } .tg-5 { --tg: #2c6f7b; } .tg-6 { --tg: #5c574e; }
+.soy-kutu rect { fill: var(--yuzey); stroke: var(--tg, var(--cizgi)); stroke-width: 1.5; }
+.soy-kutu.odak rect { stroke-width: 3; fill: var(--vurgu-zemin); }
+.soy-kutu.secili rect { stroke: var(--odak); stroke-width: 3; }
+.soy-kutu { cursor: pointer; }
+.soy-kutu:focus-visible { outline: none; }
+.soy-kutu:focus-visible rect { stroke: var(--odak); stroke-width: 3; }
+.soy-kutu .ad { fill: var(--metin); font-size: 13px; font-weight: 600; }
+.soy-kutu .tur, .soy-kutu .gizli { fill: var(--metin-2); font-size: 11px; }
+.soy-kutu.karar-fikir rect { stroke-dasharray: 4 3; }
+.soy-cizgi { fill: none; stroke: var(--metin-2); stroke-width: 1.6; }
+.soy-cizgi.rol-evlatlik { stroke-dasharray: 7 4; }
+.soy-cizgi.rol-evlilik_disi { stroke-dasharray: 2 3; }
+.soy-cizgi.es { stroke: var(--vurgu); stroke-width: 3; }
+.soy-cizgi.es.rol-siyasi { stroke-dasharray: 8 4; }
+.soy-cizgi.soy-ici { stroke: #b0700f; }
+.soy-cizgi.kardes { stroke-width: 1; stroke-dasharray: 1 3; }
+.soy-cizgi.belirsiz, .soy-cizgi.karar-fikir { opacity: 0.45; }
+.soy-cizgi.ters { stroke: var(--tehlike); }
+.soy-aciklama { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.soy-aciklama svg { vertical-align: middle; }
+.ag-dugum circle { fill: var(--tg, var(--vurgu)); stroke: var(--yuzey); stroke-width: 2; }
+.ag-dugum.odak circle { stroke: var(--metin); stroke-width: 3; }
+.ag-dugum.secili circle { stroke: var(--odak); stroke-width: 4; }
+.ag-dugum.karar-fikir circle { fill-opacity: 0.45; stroke: var(--tg); stroke-dasharray: 3 2; }
+.ag-dugum.karar-vazgecildi { opacity: 0.4; }
+.ag-dugum text { fill: var(--metin); font-size: 12px; paint-order: stroke; stroke: var(--yuzey); stroke-width: 3px; }
+.ag-dugum { cursor: pointer; }
+.ag-dugum:focus-visible { outline: none; }
+.ag-dugum:focus-visible circle { stroke: var(--odak); stroke-width: 4; }
+.ag-kenar line { stroke: var(--metin-2); stroke-width: 1.4; }
+.ag-kenar.baglanti line { stroke-dasharray: 3 4; stroke-width: 1; }
+.ag-kenar.belirsiz, .ag-kenar.karar-fikir { opacity: 0.45; }
+.ag-kenar.vurgu line { stroke: var(--vurgu); stroke-width: 2.5; }
+.ag-etiket { fill: var(--metin-2); font-size: 10px; paint-order: stroke; stroke: var(--yuzey); stroke-width: 3px; }
+.ag-ok { fill: var(--metin-2); }
+.coklu-secim { position: relative; }
+.coklu-secim > summary { list-style: none; }
+.coklu-secim > summary::-webkit-details-marker { display: none; }
+.coklu-secim-icerik { position: absolute; z-index: 20; max-height: 50vh; overflow: auto; min-width: 240px; margin-top: 4px; }
+.coklu-secim-icerik fieldset { border: none; padding: 0; margin: 6px 0; }
+.serit { height: 22px; border-radius: 6px; }
+.serit-parca .serit-dolu, .serit-parca .serit-bulanik { position: absolute; top: 2px; height: 18px; }
+.serit-dolu { background: var(--vurgu-zemin); border: 1px solid var(--vurgu); border-radius: 4px; font-size: 11px; line-height: 16px; padding: 0 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--metin); box-sizing: border-box; }
+.serit-bulanik { background: repeating-linear-gradient(45deg, var(--vurgu-zemin), var(--vurgu-zemin) 3px, transparent 3px, transparent 6px); }
+.serit-parca.karar-fikir .serit-dolu { border-style: dashed; }
+.serit-parca.sinir-bilinmiyor .serit-dolu { border-style: dotted; }
+.serit-an { position: absolute; top: 5px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--vurgu); }
+.serit-an-cizgisi { position: absolute; top: -4px; bottom: -4px; min-width: 2px; background: color-mix(in srgb, var(--tehlike) 35%, transparent); border-left: 2px solid var(--tehlike); pointer-events: none; }

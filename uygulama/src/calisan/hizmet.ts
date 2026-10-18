@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, kokAdaylari } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { IsaretGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { IsaretGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -28,6 +28,7 @@ import * as sablonlar from './sablon';
 import * as harita from './harita';
 import * as birlesme from './birlesme';
 import * as saglik from './saglik';
+import * as gorunum from './gorunum';
 import { yasHesapla } from '../alan/yas';
 import { MESELE_DURUMLARI, type Sablon, type SoruDurumu } from '../alan/sablon';
 import { gecerlilik, DURUM_KIPLERI } from '../alan/durum';
@@ -906,6 +907,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (!iliskiTuruGecerli(tur)) throw new Error('Bilinmeyen ilişki türü.');
     if (!kararGecerli(karar)) throw new Error('Geçersiz karar durumu.');
     const t = iliskiTuruBul(tur);
+    if (!rol && t.rolIstegeBagli) rol = null;
     if (rol !== null && !t.roller?.some((r) => r.kod === rol)) throw new Error('Bu ilişki için geçersiz rol.');
     const kod = yeniKod();
     this.yaz(evren, [{ tur: 'iliski_ekle', veri: {
@@ -928,7 +930,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (alan === 'baslangic' || alan === 'bitis') yeni = tarihCoz(temizle(deger, { bos: true }), takvimOku(e.db));
     else if (alan === 'aciklama') yeni = temizle(deger, { bos: true, uzunluk: 500 });
     else if (alan === 'karar') { if (!kararGecerli(deger)) throw new Error('Geçersiz karar durumu.'); yeni = deger; }
-    else if (alan === 'rol') { if (!iliskiTuruBul(r.tur as string).roller?.some((x) => x.kod === deger)) throw new Error('Geçersiz rol.'); yeni = deger; }
+    else if (alan === 'rol') {
+      const t = iliskiTuruBul(r.tur as string);
+      if (!deger && t.rolIstegeBagli) yeni = null;
+      else if (!t.roller?.some((x) => x.kod === deger)) throw new Error('Geçersiz rol.');
+      else yeni = deger;
+    }
     else throw new Error('Bu alan değiştirilemez.');
     const onceki = alan === 'baslangic' || alan === 'bitis' ? (r[alan] ? JSON.parse(r[alan] as string) : null) : r[alan];
     this.yaz(evren, [{ tur: 'iliski_degistir', veri: { kod, alan, deger: yeni, onceki } }], [r.a as string, r.b as string]);
@@ -1252,6 +1259,24 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return e.db.selectObjects(`SELECT kod, ad, tur, karar, tarih FROM kayitlar WHERE tarih IS NOT NULL AND silindi IS NULL`)
       .map((r) => ({ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string, karar: r.karar as string, tarih: JSON.parse(r.tarih as string) as EvrenTarihi, eser: eserOf.get(r.kod as string) ?? null }))
       .sort((a, b) => siraAnahtari(a.tarih) - siraAnahtari(b.tarih) || turkceKarsilastir(a.ad, b.ad));
+  }
+
+  // ---------- İnceleme görünümleri (§7) ----------
+  soyAgaci({ evren, odak, an = null }: { evren: string; odak: string; an?: string | null }) { return gorunum.soyAgaci(this.evren(evren), odak, an); }
+  ag({ evren, ...s }: { evren: string } & gorunum.AgSecenekleri) { return gorunum.ag(this.evren(evren), s); }
+  durumGecmisi({ evren, ozellik, an = null }: { evren: string; ozellik: string; an?: string | null }) { return gorunum.durumGecmisi(this.durumBaglami(evren), ozellik, an); }
+  /** Bir kaydın her özelliği ayrı şerit olarak (§3.5). */
+  kayitDurumGecmisi({ evren, kod }: { evren: string; kod: string }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kod);
+    const r = e.db.selectObject('SELECT ad, tur FROM kayitlar WHERE kod=?', [kod])!;
+    const gruplar = new Map<string, DurumSatiri[]>();
+    for (const d of durum.durumlar(this.durumBaglami(evren), kod)) {
+      if (d.karar === 'vazgecildi') continue;
+      const k = d.ozellik.toLocaleLowerCase('tr-TR');
+      gruplar.set(k, [...(gruplar.get(k) ?? []), d]);
+    }
+    return [...gruplar.values()].sort((x, y) => turkceKarsilastir(x[0].ozellik, y[0].ozellik)).map((ds) => ({ ozellik: ds[0].ozellik, an: null, kayitlar: [{ kod, ad: r.ad as string, tur: r.tur as string, durumlar: ds }] }));
   }
 
   // ---------- Harita: yükle, işaretle, bağla (§8.1) ----------

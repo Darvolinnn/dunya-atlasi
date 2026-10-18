@@ -182,8 +182,9 @@ function IliskiSatir({ istemci, evren, i }: { istemci: Istemci; evren: string; i
           <SatirGirdisi etiket="Bitiş" deger={i.bitis?.ifade ?? ''} ipucu="Sürüyorsa boş" kaydet={(v) => istemci.iste('iliskiDegistir', { evren, kod: i.kod, alan: 'bitis', deger: v })} />
           <SatirGirdisi etiket="Açıklama" deger={i.aciklama} kaydet={(v) => istemci.iste('iliskiDegistir', { evren, kod: i.kod, alan: 'aciklama', deger: v })} />
           {iliskiTuruBul(i.tur).roller && (
-            <label class="alan"><span class="alan-adi">Rol</span>
+            <label class="alan"><span class="alan-adi">{iliskiTuruBul(i.tur).rolIstegeBagli ? 'Niteliği' : 'Rol'}</span>
               <select class="girdi" value={i.rol ?? ''} onChange={(e) => istemci.iste('iliskiDegistir', { evren, kod: i.kod, alan: 'rol', deger: (e.target as HTMLSelectElement).value })}>
+                {iliskiTuruBul(i.tur).rolIstegeBagli && <option value="">Belirtilmemiş</option>}
                 {iliskiTuruBul(i.tur).roller!.map((r) => <option value={r.kod}>{r.ad}</option>)}
               </select></label>
           )}
@@ -224,7 +225,7 @@ function IliskiFormu({ istemci, evren, ben, kapat, varsayilan = 'ilgili:a', kars
   const [hata, setHata] = useState<string | null>(null);
   const [turKod, yon] = secenek.split(':');
   const tur = iliskiTuruBul(turKod);
-  useEffect(() => setRol(tur.roller?.[0]?.kod ?? null), [turKod]);
+  useEffect(() => setRol(tur.rolIstegeBagli ? null : tur.roller?.[0]?.kod ?? null), [turKod]);
   const kaydet = async (e: Event) => {
     e.preventDefault();
     if (!karsi) return;
@@ -242,7 +243,8 @@ function IliskiFormu({ istemci, evren, ben, kapat, varsayilan = 'ilgili:a', kars
         </select>
         <KayitSec istemci={istemci} evren={evren} secili={karsi} sec={setKarsi} />
         {tur.roller && (
-          <select class="girdi" style="flex:1;min-width:140px" aria-label="Rol" value={rol ?? ''} onChange={(e) => setRol((e.target as HTMLSelectElement).value)}>
+          <select class="girdi" style="flex:1;min-width:140px" aria-label={tur.rolIstegeBagli ? 'Niteliği' : 'Rol'} value={rol ?? ''} onChange={(e) => setRol((e.target as HTMLSelectElement).value || null)}>
+            {tur.rolIstegeBagli && <option value="">Niteliği belirtilmemiş</option>}
             {tur.roller.map((r) => <option value={r.kod}>{r.ad}</option>)}
           </select>
         )}

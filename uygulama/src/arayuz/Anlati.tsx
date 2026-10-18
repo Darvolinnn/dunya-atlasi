@@ -1,4 +1,5 @@
 // Anlatı yapısı (§3.3), sahne alanları ve bağlam paneli (§5.5), durum geçmişi (§3.5).
+import { KayitDurumSeritleri } from './Gorunumler';
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AnlatiEtkisi, AnlatiYeri, DurumAlani, DurumSatiri, EserYapisi, Kayit, KisaKayit, SahneAlani, SahneBaglami, SinirBilgisi, SinirGirdisi, YapiSahnesi } from '../veri/api';
@@ -301,6 +302,7 @@ export function aralikYazi(d: DurumSatiri) {
 export function DurumGecmisi({ istemci, evren, kayit }: { istemci: Istemci; evren: string; kayit: Kayit }) {
   const [veri] = useYukle(istemci, evren, () => istemci.iste('durumlar', { evren, kod: kayit.kod }), [kayit.kod]);
   const [ekle, setEkle] = useState(false);
+  const [serit, setSerit] = useState(false);
   if (!veri) return null;
   const gruplar = new Map<string, DurumSatiri[]>();
   for (const d of veri.durumlar) gruplar.set(d.ozellik, [...(gruplar.get(d.ozellik) ?? []), d]);
@@ -309,11 +311,13 @@ export function DurumGecmisi({ istemci, evren, kayit }: { istemci: Istemci; evre
       <div class="satir">
         <h2>Zamanla değişenler</h2>
         <span class="bosluk" />
+        {veri.durumlar.length > 0 && <button class="dugme sade kucuk" aria-pressed={serit} onClick={() => setSerit(!serit)}>{serit ? 'Listeyi göster' : 'Zaman şeridinde göster'}</button>}
         {!ekle && <button class="dugme kucuk" onClick={() => setEkle(true)}>Durum ekle</button>}
       </div>
       {!veri.durumlar.length && !ekle && <p class="soluk kucuk">Unvan, ikamet, sahibi gibi zamanla değişen değerleri evren tarihleriyle yazın. Sahne açıkken yan panel o tarihteki değeri gösterir.</p>}
       {ekle && <DurumFormu istemci={istemci} evren={evren} konu={kayit.kod} kapat={() => setEkle(false)} />}
-      {[...gruplar].map(([ozellik, satirlar]) => (
+      {serit && <KayitDurumSeritleri istemci={istemci} evren={evren} kod={kayit.kod} />}
+      {!serit && [...gruplar].map(([ozellik, satirlar]) => (
         <div class="durum-grubu" key={ozellik}>
           <strong class="kucuk">{ozellik}</strong>
           <ul class="durum-listesi">{satirlar.map((d) => <DurumSatir key={d.kod} istemci={istemci} evren={evren} d={d} />)}</ul>

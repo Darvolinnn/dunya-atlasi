@@ -218,6 +218,39 @@ export interface SaglikBulgusu {
   baslik: string; aciklama: string; kayit: KisaKayit | null; hedef: KisaKayit | null; harita?: { kod: string; ad: string }; dayanak: string; karar: IncelemeKarari | null;
 }
 export interface SaglikTaramasi { acik: SaglikBulgusu[]; ertelenen: SaglikBulgusu[]; kabul: SaglikBulgusu[]; bilgiler: SaglikBulgusu[] | null }
+/** Görünümlerde bir kayıt (§7). */
+export interface AgDugumu { kod: string; ad: string; tur: string; karar: string }
+/** Görünümlerde bir ilişki ya da (istenirse) metindeki bağlantı. a → b yönlüdür. */
+export interface AgKenari {
+  kod: string; tur: string; a: string; b: string;
+  /** Kısa okunuş: karşılıklı türlerde tek ad, yönlülerde "B'nin gözünden → A'nın gözünden". */
+  etiket: string; aIcin: string; bIcin: string; karsilikli: boolean;
+  rol: string | null; rolAdi: string | null; karar: string;
+  /** Bakılan andaki geçerliliği (bir an verildiyse). */
+  gecerlilik: Gecerlilik | null;
+  baslangic: EvrenTarihi | null; bitis: EvrenTarihi | null;
+  /** Metindeki bağlantı (ilişki değil). */
+  baglanti?: boolean;
+}
+export interface SoyAgaci {
+  odak: string; an: EvrenTarihi | null;
+  dugumler: AgDugumu[]; kenarlar: AgKenari[];
+  /** Eşleri ortak bir atası olan evlilikler ve en yakın ortak ataları. */
+  soyIci: { kenar: string; ortakAtalar: { kod: string; ad: string }[] }[];
+  kesildi: boolean;
+}
+export interface AgSonucu {
+  merkez: string | null; an: EvrenTarihi | null;
+  dugumler: AgDugumu[]; kenarlar: AgKenari[];
+  /** Çizim sınırı aşıldı: bazı kayıtlar gösterilmiyor. */
+  kesildi: boolean;
+  /** Bütün evren görünümünde hiçbir bağı olmadığı için ağda yer almayan kayıt sayısı. */
+  baglantisiz: number;
+}
+export interface DurumGecmisi {
+  ozellik: string; an: EvrenTarihi | null;
+  kayitlar: { kod: string; ad: string; tur: string; durumlar: DurumSatiri[] }[];
+}
 export interface CizelgeOgesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi; eser: string | null }
 
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
@@ -326,6 +359,10 @@ export interface Istekler {
   takvimEtkisi(a: { evren: string; takvim: Takvim | null }): TakvimEtkisi;
   takvimYaz(a: { evren: string; takvim: Takvim | null }): void;
   zamanCizelgesi(a: { evren: string }): CizelgeOgesi[];
+  soyAgaci(a: { evren: string; odak: string; an?: string | null }): SoyAgaci;
+  ag(a: { evren: string; merkez?: string | null; derinlik?: number; iliskiTurleri?: string[] | null; kayitTurleri?: string[] | null; an?: string | null; baglantilar?: boolean; vazgecilmis?: boolean }): AgSonucu;
+  durumGecmisi(a: { evren: string; ozellik: string; an?: string | null }): DurumGecmisi;
+  kayitDurumGecmisi(a: { evren: string; kod: string }): DurumGecmisi[];
   haritalar(a: { evren: string; silinmis?: boolean }): HaritaOzeti[];
   harita(a: { evren: string; kod: string }): HaritaAyrintisi;
   haritaYukle(a: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ kod: string }>;
