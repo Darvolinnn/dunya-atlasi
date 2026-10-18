@@ -12,6 +12,7 @@ import { Gorseller, Iliskiler, KayitDegisimleri, NotDonustur, SahneBolumu, Tarih
 import { git } from './Uygulama';
 import { CatismaListesi } from './Catismalar';
 import { useCalisma } from './Calisma';
+import { KayitHaritaBolumu } from './Harita';
 import { KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
 import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
 
@@ -118,6 +119,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         </div>
 
         <Gorseller istemci={istemci} evren={evren} kayit={kayit} />
+        <KayitHaritaBolumu istemci={istemci} evren={evren} kayit={kayit} />
 
         <MetinEditoru key={editorAnahtari} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} baslangic={editorAnahtari === 0 ? baslangic : null} />
 

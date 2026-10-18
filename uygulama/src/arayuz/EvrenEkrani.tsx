@@ -8,6 +8,7 @@ import { CatismaListesi } from './Catismalar';
 import { Bahsedilenler, CopKutusu, KayitListesi } from './KayitListesi';
 import { Masa } from './Masa';
 import { TakvimSekmesi, ZamanCizelgesi } from './Takvim';
+import { HaritalarSekmesi } from './Harita';
 import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
 
 export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Istemci; kod: string; sekme: string; alt?: string | null }) {
@@ -32,7 +33,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
         <AdBasligi istemci={istemci} bilgi={bilgi} />
         <p class="soluk kucuk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
         <div class="sekmeler" role="tablist">
-          {([['masa', 'Masa'], ['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['meseleler', 'Açık meseleler'], ['sablonlar', 'Şablonlar'], ['cizelge', 'Zaman çizelgesi'], ['takvim', 'Takvim'], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
+          {([['masa', 'Masa'], ['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['meseleler', 'Açık meseleler'], ['sablonlar', 'Şablonlar'], ['haritalar', 'Haritalar'], ['cizelge', 'Zaman çizelgesi'], ['takvim', 'Takvim'], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
             ...(bilgi.catismaSayisi || sekme === 'inceleme' ? [['inceleme', `İnceleme bekleyen (${bilgi.catismaSayisi})`] as const] : [])] as const).map(([k, ad]) => (
             <button class="sekme" role="tab" aria-selected={sekme === k} onClick={() => git(`/e/${kod}/${k}`)}>{ad}</button>
           ))}
@@ -44,6 +45,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           : sekme === 'cop' ? <CopKutusu istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'kayitlar' ? <KayitListesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'meseleler' ? <MeseleSekmesi istemci={istemci} evren={kod} />
+          : sekme === 'haritalar' ? <HaritalarSekmesi istemci={istemci} evren={kod} kod={alt} />
           : sekme === 'cizelge' ? <ZamanCizelgesi istemci={istemci} evren={kod} />
           : sekme === 'takvim' ? <TakvimSekmesi istemci={istemci} evren={kod} />
           : sekme === 'sablonlar' ? <SablonlarSekmesi istemci={istemci} evren={kod} tur={alt} />

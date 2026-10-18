@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, kokAdaylari } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { IsaretGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -24,6 +24,7 @@ import { metinBelgesi, takvimOku } from './izdusum';
 import * as anlati from './anlati';
 import * as durum from './durum';
 import * as sablonlar from './sablon';
+import * as harita from './harita';
 import { yasHesapla } from '../alan/yas';
 import { MESELE_DURUMLARI, type Sablon, type SoruDurumu } from '../alan/sablon';
 import { gecerlilik, DURUM_KIPLERI } from '../alan/durum';
@@ -317,8 +318,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const kayitAdi = (k: string) => (e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [k]) as string | undefined) ?? 'Kayıt';
     const sonuc: Catisma[] = [];
     const gruplar = e.db.selectObjects(
-      `SELECT nesne, alan FROM alan_yazanlari ${kod ? 'WHERE nesne=? OR nesne IN (SELECT kod FROM iliskiler WHERE a=? OR b=?) OR nesne IN (SELECT kod FROM durumlar WHERE konu=?)' : ''}
-       GROUP BY nesne, alan HAVING count(DISTINCT deger) > 1`, kod ? [kod, kod, kod, kod] : []);
+      `SELECT nesne, alan FROM alan_yazanlari ${kod ? 'WHERE nesne=? OR nesne IN (SELECT kod FROM iliskiler WHERE a=? OR b=?) OR nesne IN (SELECT kod FROM durumlar WHERE konu=?) OR nesne IN (SELECT kod FROM isaretler WHERE kayit=?) OR nesne IN (SELECT kod FROM haritalar WHERE yer=?)' : ''}
+       GROUP BY nesne, alan HAVING count(DISTINCT deger) > 1`, kod ? [kod, kod, kod, kod, kod, kod] : []);
     for (const g of gruplar) {
       const nesne = g.nesne as string;
       const alan = g.alan as string;
@@ -331,6 +332,18 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         });
       if (dr) {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'durum', kayit: dr.konu as string, baslik: `${kayitAdi(dr.konu as string)} · ${dr.ozellik}`, degerler });
+        continue;
+      }
+      const hr = iliski || dr ? undefined : e.db.selectObject('SELECT ad, yer FROM haritalar WHERE kod=?', [nesne]);
+      if (hr) {
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: hr.yer ? 'kayit' : 'evren', kayit: (hr.yer as string) ?? null, baslik: `“${hr.ad}” haritası`,
+          alanEtiketi: alan === 'ad' ? 'Haritanın adı' : 'Haritanın gösterdiği yer', degerler });
+        continue;
+      }
+      const isr = iliski || dr ? undefined : e.db.selectObject('SELECT i.kayit, h.ad FROM isaretler i JOIN haritalar h ON h.kod=i.harita WHERE i.kod=?', [nesne]);
+      if (isr) {
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: isr.kayit as string, baslik: kayitAdi(isr.kayit as string),
+          alanEtiketi: alan === 'konum' ? `“${isr.ad}” haritasındaki yeri` : `“${isr.ad}” haritasındaki işaretin bağlı olduğu kayıt`, degerler });
         continue;
       }
       if (nesne.startsWith('sablon:')) {
@@ -405,6 +418,15 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       const t = deger as Takvim | null;
       return t ? `${t.aylar?.length ?? 0} ay, ${yilGunu(t)} gün, ${t.gunBolumleri?.length ?? 0} gün bölümü` : 'Varsayılan takvim';
     }
+    if (alan === 'konum' && deger && typeof deger === 'object' && 'kesinlik' in deger) {
+      const k = deger as IsaretGirdisi;
+      const u = e.db.selectObject('SELECT h.en, h.boy FROM isaretler i JOIN haritalar h ON h.kod=i.harita WHERE i.kod=?', [nesne]);
+      const yer = u && k.x !== null && k.y !== null ? `, soldan %${Math.round((k.x / Number(u.en)) * 100)}, üstten %${Math.round((k.y / Number(u.boy)) * 100)}` : '';
+      return k.kesinlik === 'bilinmiyor' ? 'Yeri bilinmiyor' : `${k.kesinlik === 'kesin' ? 'Kesin yer' : 'Yaklaşık bölge'}${yer}`;
+    }
+    if ((alan === 'yer' || alan === 'kayit') && e.db.selectValue('SELECT 1 FROM haritalar WHERE kod=? UNION SELECT 1 FROM isaretler WHERE kod=?', [nesne, nesne]) !== undefined) {
+      return deger ? ad(deger) : '(yok)';
+    }
     if (alan === 'anlati') {
       if (!deger) return 'Hiçbir esere yerleşmemiş';
       return `${ad((deger as { ust: string }).ust)} içinde`;
@@ -440,6 +462,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     if (nesne === 'evren' && alan === 'takvim') { this.yaz(evren, [{ tur: 'takvim_yaz', veri: { takvim: deger, cozum: true } }]); return; }
     if (nesne === 'evren' && alan === 'ad') { this.yaz(evren, [{ tur: 'evren_adlandir', veri: { ad: String(deger) } }]); this.kurulum.evrenAdi(evren, String(deger)); return; }
+    const hr = e.db.selectObject('SELECT ad FROM haritalar WHERE kod=?', [nesne]);
+    if (hr) { this.yaz(evren, [{ tur: 'harita_degistir', veri: { kod: nesne, alan, deger, haritaAd: hr.ad, cozum: true } }]); return; }
+    const isr = e.db.selectObject('SELECT i.kayit, h.ad FROM isaretler i JOIN haritalar h ON h.kod=i.harita WHERE i.kod=?', [nesne]);
+    if (isr) { this.yaz(evren, [{ tur: 'isaret_degistir', veri: { kod: nesne, alan, deger, kayit: isr.kayit, haritaAd: isr.ad, cozum: true } }], [isr.kayit as string]); return; }
     const iliski = e.db.selectObject('SELECT a, b FROM iliskiler WHERE kod=?', [nesne]);
     const dr = iliski ? undefined : e.db.selectObject('SELECT konu, ozellik FROM durumlar WHERE kod=?', [nesne]);
     if (dr) {
@@ -1206,10 +1232,43 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       .sort((a, b) => siraAnahtari(a.tarih) - siraAnahtari(b.tarih) || turkceKarsilastir(a.ad, b.ad));
   }
 
-  // ---------- Görseller (§10.12) ----------
-  async gorselEkle({ evren, kod, dosyaAdi, tur, veri }: { evren: string; kod: string; dosyaAdi: string; tur: string; veri: Uint8Array }) {
+  // ---------- Harita: yükle, işaretle, bağla (§8.1) ----------
+  private haritaBaglami(evren: string): harita.HaritaBaglami {
+    return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } };
+  }
+  haritalar({ evren, silinmis = false }: { evren: string; silinmis?: boolean }) { return harita.haritalar(this.evren(evren), !!silinmis); }
+  harita({ evren, kod }: { evren: string; kod: string }) { return harita.harita(this.evren(evren), kod); }
+  async haritaYukle({ evren, ad, yer = null, dosyaAdi, tur, veri }: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }) {
+    const e = this.evren(evren);
+    if (yer) this.kayitVarMi(e, yer);
+    const g = await this.gorselSakla(e, dosyaAdi, tur, veri);
+    return harita.haritaOlustur(this.haritaBaglami(evren), { ad, yer, gorsel: g.ad }, g.girdiler);
+  }
+  /** Bir kaydın görseli üzerinde işaretleme (kat planı, eşya, karakter görseli): aynı bileşen, aynı harita uzayı. */
+  gorseldenHarita({ evren, kayit, gorsel }: { evren: string; kayit: string; gorsel: string }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kayit);
+    const liste = JSON.parse(e.db.selectValue('SELECT gorseller FROM kayitlar WHERE kod=?', [kayit]) as string) as string[];
+    if (!liste.includes(gorsel)) throw new Error('Bu görsel bu kayıtta yok.');
+    const var_ = harita.gorselHaritasi(e, kayit, gorsel);
+    if (var_) return { kod: var_ };
+    const ad = e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [kayit]) as string;
+    return harita.haritaOlustur(this.haritaBaglami(evren), { ad: `${ad} görseli`, yer: kayit, gorsel });
+  }
+  haritaDegistir({ evren, kod, alan, deger }: { evren: string; kod: string; alan: 'ad' | 'yer'; deger: unknown }) { harita.haritaDegistir(this.haritaBaglami(evren), kod, alan, deger); }
+  haritaSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { harita.haritaSil(this.haritaBaglami(evren), kod, geriYukle); }
+  isaretKoy({ evren, harita: h, kayit, konum }: { evren: string; harita: string; kayit: string; konum: IsaretGirdisi }) { return harita.isaretKoy(this.haritaBaglami(evren), h, kayit, konum); }
+  isaretDegistir({ evren, kod, alan, deger }: { evren: string; kod: string; alan: 'konum' | 'kayit'; deger: unknown }) { harita.isaretDegistir(this.haritaBaglami(evren), kod, alan, deger); }
+  isaretSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { harita.isaretSil(this.haritaBaglami(evren), kod, geriYukle); }
+  kayitHaritalari({ evren, kod }: { evren: string; kod: string }) {
     const e = this.evren(evren);
     this.kayitVarMi(e, kod);
+    return harita.kayitHaritalari(e, kod);
+  }
+
+  // ---------- Görseller (§10.12) ----------
+  /** Görseli içerik adıyla saklar; medya tablosunda yoksa eklenecek işlemi verir (TK5). */
+  private async gorselSakla(e: EvrenVt, dosyaAdi: string, tur: string, veri: Uint8Array) {
     if (!this.medya || !this.gorselIsle) throw new Error('Görsel saklama bu cihazda kullanılamıyor.');
     if (!(veri instanceof Uint8Array) || veri.length === 0) throw new Error('Dosya boş.');
     if (veri.length > 200 * 1024 * 1024) throw new Error('Dosya çok büyük (en çok 200 MB).');
@@ -1221,6 +1280,13 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (e.db.selectValue('SELECT 1 FROM medya WHERE ad=?', [ad]) === undefined) {
       girdiler.push({ tur: 'medya_ekle', veri: { ad, tur: g.tur, boyut: g.veri.length, en: g.en, boy: g.boy, dosyaAdi: temizle(dosyaAdi, { bos: true }), onizleme: !!g.onizleme } });
     }
+    return { ad, girdiler };
+  }
+
+  async gorselEkle({ evren, kod, dosyaAdi, tur, veri }: { evren: string; kod: string; dosyaAdi: string; tur: string; veri: Uint8Array }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kod);
+    const { ad, girdiler } = await this.gorselSakla(e, dosyaAdi, tur, veri);
     const liste = JSON.parse(e.db.selectValue('SELECT gorseller FROM kayitlar WHERE kod=?', [kod]) as string) as string[];
     if (!liste.includes(ad)) girdiler.push({ tur: 'kayit_gorsel', veri: { kod, ekle: ad } });
     if (girdiler.length) this.yaz(evren, girdiler, [kod]);

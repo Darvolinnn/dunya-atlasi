@@ -324,3 +324,33 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .cizelge-ok.saga { border-left: 2px solid var(--vurgu); }
 .cizelge-satiri.karar-fikir .cizelge-iz > span, .cizelge-satiri.karar-vazgecildi .cizelge-iz > span { opacity: 0.45; }
 @media (max-width: 600px) { .cizelge-satiri { grid-template-columns: 1fr; gap: 4px; } .cizelge-olcek { display: none; } }
+
+/* Harita (§8.1) */
+.harita-izgara { list-style: none; padding: 0; margin: 12px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.harita-karti { display: flex; flex-direction: column; gap: 4px; color: inherit; text-decoration: none; padding: 8px; }
+.harita-karti:hover { border-color: var(--vurgu); }
+.harita-onizleme { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; }
+.harita-yukle { margin: 12px 0; display: grid; gap: 8px; }
+.harita-arac { margin: 8px 0 4px; }
+.harita-arac [aria-pressed="true"] { background: var(--vurgu-zemin); border-color: var(--vurgu); color: var(--metin); }
+.harita-duzen { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .harita-duzen { grid-template-columns: 1fr; } }
+.harita-tuval { overflow: auto; max-height: 75vh; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey-2); }
+.harita-yuzey { position: relative; min-width: 100%; touch-action: pan-x pan-y; }
+.harita-yuzey.isaretleme { cursor: crosshair; }
+.harita-katman { position: absolute; pointer-events: none; }
+.harita-katman img { display: block; width: 100%; height: auto; user-select: none; }
+.harita-isaret { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; padding: 0; border-radius: 50%; border: 2px solid #fff; background: var(--vurgu);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4); cursor: pointer; z-index: 2; }
+.harita-isaret.yaklasik { background: var(--yuzey); border-color: var(--vurgu); border-style: dashed; }
+.harita-isaret.secili { outline: 3px solid var(--odak); outline-offset: 2px; }
+.harita-isaret.yeni { background: var(--tehlike); pointer-events: none; }
+.harita-isaret.karar-fikir, .harita-isaret.karar-vazgecildi { opacity: 0.6; }
+.harita-etiket { position: absolute; left: 14px; top: -4px; white-space: nowrap; font-size: 0.8rem; padding: 0 4px; border-radius: 4px; background: rgb(255 255 255 / 0.85); color: #23211d; pointer-events: none; }
+.harita-bolge { position: absolute; border-radius: 50%; border: 2px dashed var(--vurgu); background: rgb(61 95 143 / 0.12); pointer-events: none; z-index: 1; }
+.harita-bolge.secili { border-color: var(--odak); background: rgb(42 93 176 / 0.2); }
+.harita-yan h2 { font-size: 1.05rem; }
+.isaret-listesi { list-style: none; padding: 0; margin: 4px 0 12px; }
+.isaret-listesi li { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.isaret-paneli { display: grid; gap: 8px; }
+.kayit-haritalari ul { padding-left: 18px; }

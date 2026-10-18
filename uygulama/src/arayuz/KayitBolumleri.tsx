@@ -10,6 +10,7 @@ import { KararRozeti, KararSecici, TurSecici } from './ortak';
 import { Gorsel, gorselAdresi } from './gorsel';
 import { git } from './Uygulama';
 import { takvimOrnegi, useTakvim } from './Takvim';
+import { gorseldeIsaretle } from './Harita';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -85,12 +86,13 @@ export function Gorseller({ istemci, evren, kayit }: { istemci: Istemci; evren: 
       </div>
       {hata && <p class="hata kucuk">{hata}</p>}
       {buyuk && <GorselGorunumu istemci={istemci} evren={evren} ad={buyuk} kapat={() => setBuyuk(null)}
+        isaretle={() => gorseldeIsaretle(istemci, evren, kayit.kod, buyuk).catch((e) => setHata(hataYaz(e)))}
         cikar={async () => { await istemci.iste('kayitGorselCikar', { evren, kod: kayit.kod, ad: buyuk }); setBuyuk(null); }} />}
     </section>
   );
 }
 
-function GorselGorunumu({ istemci, evren, ad, kapat, cikar }: { istemci: Istemci; evren: string; ad: string; kapat: () => void; cikar: () => void }) {
+function GorselGorunumu({ istemci, evren, ad, kapat, cikar, isaretle }: { istemci: Istemci; evren: string; ad: string; kapat: () => void; cikar: () => void; isaretle: () => void }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => { gorselAdresi(istemci, evren, ad, false).then((x) => setUrl(x.url)); }, [ad]);
   useEffect(() => {
@@ -103,6 +105,7 @@ function GorselGorunumu({ istemci, evren, ad, kapat, cikar }: { istemci: Istemci
       <div class="perde-ic">
         <div class="satir">
           <span class="bosluk" />
+          <button class="dugme" onClick={isaretle}>Üzerinde işaretle</button>
           {url && <a class="dugme" href={url} download>İndir</a>}
           <button class="dugme tehlikeli" onClick={cikar}>Kayıttan çıkar</button>
           <button class="dugme" onClick={kapat} autoFocus>Kapat</button>

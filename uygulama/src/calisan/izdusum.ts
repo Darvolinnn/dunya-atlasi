@@ -40,7 +40,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 7;
+export const IZDUSUM_SURUMU = 8;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -206,11 +206,51 @@ CREATE TABLE IF NOT EXISTS metin_catismalari(
   temel TEXT NOT NULL,
   PRIMARY KEY(kayit, alan, a, b)
 );
+CREATE TABLE IF NOT EXISTS haritalar(
+  kod TEXT PRIMARY KEY,
+  ad TEXT NOT NULL,
+  yer TEXT,
+  en REAL NOT NULL,
+  boy REAL NOT NULL,
+  katmanlar TEXT NOT NULL DEFAULT '[]',
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS haritalar_yer ON haritalar(yer);
+CREATE TABLE IF NOT EXISTS isaretler(
+  kod TEXT PRIMARY KEY,
+  harita TEXT NOT NULL,
+  kayit TEXT NOT NULL,
+  kesinlik TEXT NOT NULL,
+  x REAL, y REAL, yaricap REAL,
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS isaretler_harita ON isaretler(harita);
+CREATE INDEX IF NOT EXISTS isaretler_kayit ON isaretler(kayit);
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'medya',
-  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri'];
+  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
+
+export type Kesinlik = 'kesin' | 'yaklasik' | 'bilinmiyor';
+export interface IsaretKonumu { kesinlik: Kesinlik; x: number | null; y: number | null; yaricap: number | null }
+
+/** İşaretin konumu harita uzayına sığdırılır; yeri bilinmeyen işaretin koordinatı yoktur (§8.1). */
+function isaretKonumu(db: Database, harita: string, k: unknown): IsaretKonumu | null {
+  const u = db.selectObject('SELECT en, boy FROM haritalar WHERE kod=?', [harita]);
+  const v = k as Partial<IsaretKonumu> | null;
+  if (!u || !v || !['kesin', 'yaklasik', 'bilinmiyor'].includes(v.kesinlik as string)) return null;
+  if (v.kesinlik === 'bilinmiyor') return { kesinlik: 'bilinmiyor', x: null, y: null, yaricap: null };
+  const en = Number(u.en), boy = Number(u.boy);
+  if (!Number.isFinite(v.x) || !Number.isFinite(v.y)) return null;
+  const sinirla = (n: number, ust: number) => Math.min(ust, Math.max(0, n));
+  const yaricap = v.kesinlik === 'yaklasik' ? sinirla(Number.isFinite(v.yaricap) ? v.yaricap as number : Math.max(en, boy) * 0.05, Math.max(en, boy)) : null;
+  return { kesinlik: v.kesinlik as Kesinlik, x: sinirla(v.x as number, en), y: sinirla(v.y as number, boy), yaricap };
+}
 
 const evrenAlani = (db: Database, k: string, v: unknown) =>
   db.exec({ sql: 'INSERT INTO evren(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v', bind: [k, String(v)] });
@@ -522,6 +562,53 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const { kod, set, ekle } = i.veri as { kod: string; set: string; ekle: boolean };
     if (ekle) db.exec({ sql: 'INSERT OR IGNORE INTO kayit_soru_setleri(kayit, soru_seti) VALUES(?,?)', bind: [kod, set] });
     else db.exec({ sql: 'DELETE FROM kayit_soru_setleri WHERE kayit=? AND soru_seti=?', bind: [kod, set] });
+  },
+
+  /** Harita (§8.1): kendi uzayı olan, üstüne görsellerin oturtulduğu yüzey. İşaretler görselde değil uzayda durur. */
+  harita_olustur(db, i) {
+    const v = i.veri as { kod: string; ad: string; yer?: string | null; en: number; boy: number; gorsel: string };
+    if (!(v.en > 0 && v.boy > 0) || typeof v.gorsel !== 'string') return;
+    db.exec({ sql: 'INSERT OR IGNORE INTO haritalar(kod, ad, yer, en, boy, katmanlar, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?)',
+      bind: [v.kod, String(v.ad), v.yer ?? null, v.en, v.boy, JSON.stringify([{ gorsel: v.gorsel, x: 0, y: 0, olcek: 1 }]), i.zaman, i.zaman] });
+  },
+  harita_degistir(db, i) {
+    const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
+    if (alan !== 'ad' && alan !== 'yer') return;
+    db.exec({ sql: `UPDATE haritalar SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [(deger as string | null) ?? (alan === 'ad' ? '' : null), i.zaman, kod] });
+    alanYaz(db, i, kod, alan, deger ?? null);
+  },
+  harita_sil(db, i) {
+    db.exec({ sql: 'UPDATE haritalar SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  harita_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE haritalar SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+  isaret_koy(db, i) {
+    const v = i.veri as { kod: string; harita: string; kayit: string; konum: unknown };
+    const k = isaretKonumu(db, v.harita, v.konum);
+    if (!k) return;
+    db.exec({ sql: 'INSERT OR IGNORE INTO isaretler(kod, harita, kayit, kesinlik, x, y, yaricap, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?,?)',
+      bind: [v.kod, v.harita, v.kayit, k.kesinlik, k.x, k.y, k.yaricap, i.zaman, i.zaman] });
+  },
+  isaret_degistir(db, i) {
+    const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
+    const harita = db.selectValue('SELECT harita FROM isaretler WHERE kod=?', [kod]) as string | undefined;
+    if (harita === undefined) return;
+    if (alan === 'konum') {
+      const k = isaretKonumu(db, harita, deger);
+      if (!k) return;
+      db.exec({ sql: 'UPDATE isaretler SET kesinlik=?, x=?, y=?, yaricap=?, duzenleme=? WHERE kod=?', bind: [k.kesinlik, k.x, k.y, k.yaricap, i.zaman, kod] });
+      alanYaz(db, i, kod, alan, k);
+    } else if (alan === 'kayit' && typeof deger === 'string') {
+      db.exec({ sql: 'UPDATE isaretler SET kayit=?, duzenleme=? WHERE kod=?', bind: [deger, i.zaman, kod] });
+      alanYaz(db, i, kod, alan, deger);
+    }
+  },
+  isaret_sil(db, i) {
+    db.exec({ sql: 'UPDATE isaretler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  isaret_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE isaretler SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
   },
 
   medya_ekle(db, i) {

@@ -187,6 +187,19 @@ export interface TakvimEtkisi {
   toplam: number; degisenSayisi: number; cozulemezSayisi: number;
   degisen: { yer: string; kayit: string; ifade: string; once: string; sonra: string; cozulemez: boolean }[];
 }
+/** Harita (§8.1). Koordinatlar haritanın uzayındadır (ilk görselin piksel boyutu). */
+export interface IsaretGirdisi { kesinlik: 'kesin' | 'yaklasik' | 'bilinmiyor'; x: number | null; y: number | null; yaricap: number | null }
+export interface HaritaOzeti { kod: string; ad: string; en: number; boy: number; yer: KisaKayit | null; gorsel: string | null; isaretSayisi: number }
+export interface HaritaIsareti { kod: string; kayit: KisaKayit; karar: string; konum: IsaretGirdisi; altHarita: string | null }
+export interface HaritaAyrintisi {
+  kod: string; ad: string; en: number; boy: number; silindi: boolean; yer: { kod: string; ad: string } | null;
+  katmanlar: { gorsel: string; x: number; y: number; olcek: number; en: number; boy: number }[];
+  isaretler: HaritaIsareti[]; ustHaritalar: { kod: string; ad: string }[];
+}
+export interface KayitHaritalari {
+  isaretler: { kod: string; harita: string; haritaAd: string; kesinlik: IsaretGirdisi['kesinlik'] }[];
+  haritalar: { kod: string; ad: string }[];
+}
 export interface CizelgeOgesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi; eser: string | null }
 
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
@@ -295,6 +308,16 @@ export interface Istekler {
   takvimEtkisi(a: { evren: string; takvim: Takvim | null }): TakvimEtkisi;
   takvimYaz(a: { evren: string; takvim: Takvim | null }): void;
   zamanCizelgesi(a: { evren: string }): CizelgeOgesi[];
+  haritalar(a: { evren: string; silinmis?: boolean }): HaritaOzeti[];
+  harita(a: { evren: string; kod: string }): HaritaAyrintisi;
+  haritaYukle(a: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ kod: string }>;
+  gorseldenHarita(a: { evren: string; kayit: string; gorsel: string }): { kod: string };
+  haritaDegistir(a: { evren: string; kod: string; alan: 'ad' | 'yer'; deger: unknown }): void;
+  haritaSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  isaretKoy(a: { evren: string; harita: string; kayit: string; konum: IsaretGirdisi }): { kod: string };
+  isaretDegistir(a: { evren: string; kod: string; alan: 'konum' | 'kayit'; deger: unknown }): void;
+  isaretSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  kayitHaritalari(a: { evren: string; kod: string }): KayitHaritalari;
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];
   bahsedilenler(a: { evren: string }): (KayitOzeti & { anilma: number })[];
