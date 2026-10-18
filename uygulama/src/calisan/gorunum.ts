@@ -7,7 +7,7 @@ import { karsilastir, siraAnahtari, tarihCoz, type EvrenTarihi } from '../alan/t
 import { turkceKarsilastir } from '../alan/turkce';
 import type { AgSonucu, AgDugumu, AgKenari, BolumMatrisi, DurumGecmisi, EtkiIncelemeleri, EtkiIncelemesi, IncelemeKarari, KurguHatlari, NedenSonucAgi, SoyAgaci, YapiSahnesi } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
-import { takvimOku } from './izdusum';
+import { zamanSetiOku } from './izdusum';
 import { durumlar, type DurumBaglami } from './durum';
 import { bagimlilar, NEDEN_TURLERI, type Bagimlilar } from './etki';
 import { eserYapisi } from './anlati';
@@ -44,7 +44,7 @@ const tarihOku = (ham: unknown): EvrenTarihi | null => (ham ? JSON.parse(ham as 
 
 function anCoz(e: EvrenVt, an: string | null | undefined): EvrenTarihi | null {
   if (!an || !String(an).trim()) return null;
-  const t = tarihCoz(String(an).trim().slice(0, 120), takvimOku(e.db));
+  const t = tarihCoz(String(an).trim().slice(0, 120), zamanSetiOku(e.db));
   if (!t) return null;
   if (!t.eksen) throw new Error('Bu tarih sıralamaya yerleşmiyor; başka bir tarih yaz.');
   return t;

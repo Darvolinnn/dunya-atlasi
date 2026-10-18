@@ -470,3 +470,14 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .soy-kutu.inanc rect, .ag-dugum.inanc circle { stroke: var(--inanc); stroke-dasharray: 3 3; stroke-width: 2; }
 .harita-isaret.inanc { background: var(--inanc); border-style: dashed; }
 .cizelge-satiri.inanc .cizelge-iz > span { background: var(--inanc); border-color: var(--inanc); }
+/* Çağlar ve göreli tarihler (zaman çizelgesi) */
+.cizelge-caglar { display: grid; grid-template-columns: minmax(160px, 2fr) 3fr; gap: 12px; align-items: center; padding: 4px 0; }
+.cizelge-caglar .cizelge-iz { background: none; height: 18px; }
+.cizelge-cag { position: absolute; top: 0; height: 18px; overflow: hidden; white-space: nowrap; font-size: 0.75rem; line-height: 18px; padding: 0 4px; box-sizing: border-box; border-left: 1px solid var(--cizgi); color: var(--metin-2); }
+.cizelge-cag.cag-0 { background: var(--yuzey-2); }
+.cizelge-bant.goreli { border: 2px dotted var(--vurgu); background: transparent; }
+.cizelge-ok.goreli { opacity: 0.55; }
+.cizelge-paralel { display: block; }
+@media (max-width: 600px) { .cizelge-caglar { display: none; } }
+.goreli-kisitlar { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 6px; }
+.tarih-paralel { display: block; }

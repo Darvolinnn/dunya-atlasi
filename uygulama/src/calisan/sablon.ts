@@ -9,7 +9,7 @@ import {
 } from '../alan/sablon';
 import type { EvrenSorulari, KayitSablonu, KisaKayit, MeseleListesi, SablonBilgisi, SoruSatiri } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
-import { takvimOku } from './izdusum';
+import { zamanSetiOku } from './izdusum';
 
 export interface SablonBaglami {
   e: EvrenVt;
@@ -107,7 +107,7 @@ function degerCoz(e: EvrenVt, a: SablonAlani, girdi: unknown): unknown {
       if (s.length > (a.tur === 'metin' ? 300 : 5000)) throw new Error('Metin çok uzun.');
       return s || null;
     }
-    case 'tarih': return tarihCoz(String(girdi).slice(0, 120), takvimOku(e.db));
+    case 'tarih': return tarihCoz(String(girdi).slice(0, 120), zamanSetiOku(e.db));
     case 'secim':
       if (!a.secenekler?.some((x) => x.kod === girdi)) throw new Error('Geçersiz seçenek.');
       return girdi;

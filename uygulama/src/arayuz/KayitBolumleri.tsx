@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { DegisimSatiri, IliskiSatiri, Kayit, SahneOlayBilgisi } from '../veri/api';
-import { tarihAciklamasi, tarihCoz, type EvrenTarihi } from '../alan/tarih';
+import { farkYazisi, paralelYazilar, tarihAciklamasi, tarihCoz, type EvrenTarihi, type ZamanSeti } from '../alan/tarih';
 import { ILISKI_SECENEKLERI, iliskiTuruBul } from '../alan/iliski-turleri';
 import { turBul } from '../alan/turler';
 import { BaglantiSecici, type Secim } from './BaglantiSecici';
@@ -18,16 +18,18 @@ const hataYaz = (e: unknown) => (e as Error).message;
 
 // ---------- Evren tarihi ----------
 export function TarihAlani({ istemci, evren, kayit }: { istemci: Istemci; evren: string; kayit: Kayit }) {
-  const [yerel, setYerel] = useState(kayit.tarih?.ifade ?? '');
+  const goreli = kayit.tarih?.bicim === 'goreli';
+  const [yerel, setYerel] = useState(goreli ? '' : kayit.tarih?.ifade ?? '');
+  const [kip, setKip] = useState<'yaz' | 'goreli'>(goreli ? 'goreli' : 'yaz');
   const [hata, setHata] = useState<string | null>(null);
   // Tarih değişince etki raporu (§9.2): önceki ifade saklanır, böylece tek dokunuşla geri dönülebilir (T4).
   const [etki, setEtki] = useState<{ once: string | null } | null>(null);
-  useEffect(() => setYerel(kayit.tarih?.ifade ?? ''), [kayit.tarih?.ifade]);
+  useEffect(() => { setYerel(kayit.tarih?.bicim === 'goreli' ? '' : kayit.tarih?.ifade ?? ''); setKip(kayit.tarih?.bicim === 'goreli' ? 'goreli' : 'yaz'); }, [kayit.tarih?.ifade, kayit.tarih?.bicim]);
   useEffect(() => setEtki(null), [kayit.kod]);
-  const takvim = useTakvim(istemci, evren);
-  const onizleme = tarihCoz(yerel, takvim);
+  const z = useTakvim(istemci, evren);
+  const onizleme = tarihCoz(yerel, z);
   const bitir = async () => {
-    const once = kayit.tarih?.ifade ?? '';
+    const once = goreli ? '' : kayit.tarih?.ifade ?? '';
     if (yerel.trim() === once) return;
     try {
       await istemci.iste('kayitTarih', { evren, kod: kayit.kod, ifade: yerel });
@@ -36,18 +38,25 @@ export function TarihAlani({ istemci, evren, kayit }: { istemci: Istemci; evren:
     } catch (e) { setHata(hataYaz(e)); }
   };
   const sahneden = !kayit.tarih && kayit.sahneOlayi && kayit.sahneTarihi;
+  const gosterilen = kip === 'yaz' ? onizleme : kayit.tarih;
+  const paralel = gosterilen ? paralelYazilar(gosterilen, z) : [];
   return (
     <div class="alan">
       <span class="alan-adi satir">Evren tarihi
         <KararSecici etiket="Evren tarihi" karar={kayit.alanKararlari.tarih ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod: kayit.kod, alan: 'tarih', karar: k })} />
+        <span class="bosluk" />
+        <button class="dugme sade kucuk" onClick={() => setKip(kip === 'yaz' ? 'goreli' : 'yaz')}>{kip === 'yaz' ? 'Bir olaya göre ver' : 'Tarihi yaz'}</button>
       </span>
-      <input class="girdi" aria-label="Evren tarihi" value={yerel} lang="tr" placeholder={sahneden ? `${kayit.sahneTarihi!.ifade} (sahneden)` : takvimOrnegi(takvim)}
-        onInput={(e) => setYerel((e.target as HTMLInputElement).value)} onBlur={bitir}
-        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
-      <span class="soluk kucuk">
-        {sahneden ? <>Tarih sahneden geliyor: <a href={`#/e/${evren}/k/${kayit.sahneOlayi}`}>{tarihAciklamasi(kayit.sahneTarihi!, takvim)}</a></>
-          : onizleme ? tarihAciklamasi(onizleme, takvim) : <>Takvimi evrenin “Takvim” sekmesinden tanımlayabilirsin.</>}
-      </span>
+      {kip === 'yaz' ? <>
+        <input class="girdi" aria-label="Evren tarihi" value={yerel} lang="tr" placeholder={sahneden ? `${kayit.sahneTarihi!.ifade} (sahneden)` : goreli ? kayit.tarih!.ifade : takvimOrnegi(z)}
+          onInput={(e) => setYerel((e.target as HTMLInputElement).value)} onBlur={bitir}
+          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+        <span class="soluk kucuk">
+          {sahneden ? <>Tarih sahneden geliyor: <a href={`#/e/${evren}/k/${kayit.sahneOlayi}`}>{tarihAciklamasi(kayit.sahneTarihi!, z)}</a></>
+            : onizleme ? tarihAciklamasi(onizleme, z) : goreli ? <>Şu an bir olaya göre verilmiş; buraya yazarsan onun yerine geçer.</> : <>Takvimi evrenin “Takvim” sekmesinden tanımlayabilirsin.</>}
+        </span>
+      </> : <GoreliTarih istemci={istemci} evren={evren} kayit={kayit} z={z} />}
+      {paralel.map((p) => <span class="soluk kucuk tarih-paralel">{p.takvim}: {p.yazi}</span>)}
       {hata && <span class="hata kucuk">{hata}</span>}
       {!etki && kayit.tarih && <button class="dugme sade kucuk" style="align-self:flex-start" onClick={() => setEtki({ once: null })}>Bu tarih değişirse neler etkilenir?</button>}
       {etki && <EtkiRaporuPaneli istemci={istemci} evren={evren} kod={kayit.kod} once={etki.once}
@@ -57,6 +66,56 @@ export function TarihAlani({ istemci, evren, kayit }: { istemci: Istemci; evren:
   );
 }
 
+/**
+ * Göreli ve çapalı tarih (§3.4): bir ya da birkaç olaya göre ("Tufan'dan 80–120 yıl sonra", "Kralın ölümünden önce").
+ * Olası aralığı program hesaplar; dayanağın tarihi değişince kayar. Kısıtlar çelişirse çelişen zincir gösterilir.
+ */
+function GoreliTarih({ istemci, evren, kayit, z }: { istemci: Istemci; evren: string; kayit: Kayit; z: ZamanSeti }) {
+  type Satir = { olay: Secim | null; fark: string };
+  const ilk = (): Satir[] => kayit.tarih?.bicim === 'goreli' ? (kayit.tarih.kisitlar ?? []).map((k) => ({ olay: { kod: k.olay, ad: '…' }, fark: farkYazisi(k) })) : [{ olay: null, fark: 'sonra' }];
+  const [satirlar, setSatirlar] = useState<Satir[]>(ilk);
+  const [hata, setHata] = useState<string | null>(null);
+  const [degisti, setDegisti] = useState(false);
+  useEffect(() => {
+    setSatirlar(ilk()); setDegisti(false);
+    // Dayanakların adları
+    const k = kayit.tarih?.kisitlar ?? [];
+    Promise.all(k.map((x) => istemci.iste('kayit', { evren, kod: x.olay }).then((r) => ({ kod: r.kod, ad: r.ad }), () => ({ kod: x.olay, ad: 'Silinmiş kayıt' }))))
+      .then((adlar) => setSatirlar((s) => s.map((x, i) => (adlar[i] && x.olay?.kod === k[i]?.olay ? { ...x, olay: adlar[i] } : x))));
+  }, [kayit.kod, JSON.stringify(kayit.tarih?.kisitlar ?? null)]);
+  const degis = (i: number, f: (s: Satir) => Satir) => { setSatirlar(satirlar.map((s, j) => (j === i ? f(s) : s))); setDegisti(true); };
+  const kaydet = async () => {
+    try {
+      const k = satirlar.filter((s) => s.olay);
+      if (!k.length) throw new Error('En az bir olay seç.');
+      await istemci.iste('kayitTarih', { evren, kod: kayit.kod, kisitlar: k.map((s) => ({ olay: s.olay!.kod, fark: s.fark })) });
+      setHata(null); setDegisti(false);
+    } catch (e) { setHata(hataYaz(e)); }
+  };
+  const t = kayit.tarih?.bicim === 'goreli' ? kayit.tarih : null;
+  return (
+    <div>
+      <ul class="goreli-kisitlar">
+        {satirlar.map((s, i) => (
+          <li class="satir" key={i}>
+            <KayitSec istemci={istemci} evren={evren} secili={s.olay} sec={(x) => degis(i, (y) => ({ ...y, olay: x }))} etiket="Olay seç" />
+            <input class="girdi" style="flex:1;min-width:140px" lang="tr" aria-label="Fark" value={s.fark} placeholder="sonra · 14 gün sonra · 80–120 yıl önce"
+              onInput={(e) => degis(i, (y) => ({ ...y, fark: (e.target as HTMLInputElement).value }))} />
+            {satirlar.length > 1 && <button class="dugme sade kucuk tehlikeli" onClick={() => { setSatirlar(satirlar.filter((_, j) => j !== i)); setDegisti(true); }}>Kaldır</button>}
+          </li>
+        ))}
+      </ul>
+      <div class="satir">
+        <button class="dugme kucuk" onClick={() => { setSatirlar([...satirlar, { olay: null, fark: 'önce' }]); setDegisti(true); }}>Kısıt ekle</button>
+        <button class="dugme ana kucuk" disabled={!degisti} onClick={kaydet}>Kaydet</button>
+      </div>
+      <p class="soluk kucuk">Fark yazılmazsa yalnızca önce ya da sonra olduğu bilinir. Yıl farkı yıl düzeyinde kalır; gün uydurulmaz. Olası aralık bir olasılık değildir; yalnızca kısıtların izin verdiği yerdir.</p>
+      {t && !degisti && <p class={t.celiski ? 'hata kucuk' : 'kucuk'}>
+        {t.ifade}. {tarihAciklamasi(t, z)}{t.celiski && t.celiskiAdlari ? `. Çelişen kısıt zinciri: ${t.celiskiAdlari.join(' → ')}` : ''}.</p>}
+      {hata && <span class="hata kucuk">{hata}</span>}
+    </div>
+  );
+}
 export const tarihKisa = (t: EvrenTarihi | null) => t ? t.ifade : '';
 
 // ---------- Görseller ----------

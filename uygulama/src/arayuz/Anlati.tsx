@@ -4,11 +4,13 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AnlatiEtkisi, AnlatiYeri, DurumAlani, DurumSatiri, EserYapisi, Kayit, KisaKayit, SahneAlani, SahneBaglami, SinirBilgisi, SinirGirdisi, YapiSahnesi } from '../veri/api';
 import { DURUM_KIPLERI } from '../alan/durum';
+import { farkYazisi, tarihAciklamasi } from '../alan/tarih';
 import { turBul } from '../alan/turler';
 import { KararRozeti, KararSecici } from './ortak';
 import { KayitSec, SatirGirdisi } from './KayitBolumleri';
 import type { Secim } from './BaglantiSecici';
 import { BakisBilgileri } from './Bilgiler';
+import { useTakvim } from './Takvim';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: { kod: string; ad: string }) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
@@ -295,7 +297,9 @@ function DurumOzeti({ durumlar, evren }: { durumlar: DurumSatiri[]; evren: strin
 }
 
 // ---------- Durum geçmişi (§3.5) ----------
-export const sinirYazi = (s: SinirBilgisi | null) => !s ? '…' : s.olay ? `${s.olay.ad} (${s.tarih?.ifade ?? 'tarihsiz'})` : s.tarih?.ifade ?? '…';
+export const sinirYazi = (s: SinirBilgisi | null) => !s ? '…' : s.olay
+  ? (s.fark ? (s.tarih?.ifade ?? `${s.olay.ad}, ${farkYazisi(s.fark)} (tarihsiz)`) : `${s.olay.ad} (${s.tarih?.ifade ?? 'tarihsiz'})`)
+  : s.tarih?.ifade ?? '…';
 export function aralikYazi(d: DurumSatiri) {
   if (d.kip === 'anlik') return `${sinirYazi(d.baslangic)} (tek an)`;
   return `${sinirYazi(d.baslangic)} – ${sinirYazi(d.kip === 'sonraki' ? d.sonraki : d.bitis)}`;
@@ -371,11 +375,15 @@ function DurumSatir({ istemci, evren, d }: { istemci: Istemci; evren: string; d:
 export function SinirAlani({ istemci, evren, etiket, deger, kaydet }: {
   istemci: Istemci; evren: string; etiket: string; deger: SinirBilgisi | null; kaydet: (v: SinirGirdisi | null) => Promise<unknown>;
 }) {
+  const z = useTakvim(istemci, evren);
   if (deger?.olay) {
+    const olay = deger.olay;
     return (
       <div class="alan"><span class="alan-adi">{etiket}</span>
-        <span class="satir"><span>{bag(evren, deger.olay)} <span class="soluk kucuk">({deger.tarih?.ifade ?? 'tarihsiz'})</span></span>
+        <span class="satir"><span>{bag(evren, olay)} <span class="soluk kucuk">({deger.tarih ? (deger.fark ? tarihAciklamasi(deger.tarih, z) : deger.tarih.ifade) : 'tarihsiz'})</span></span>
           <button class="dugme sade kucuk" onClick={() => kaydet(null).catch(() => {})}>Bağı kaldır</button></span>
+        <SatirGirdisi etiket="Olaya göre fark" deger={deger.fark ? farkYazisi(deger.fark) : ''} ipucu="Boş: olayın kendisi · 3 gün sonra · 2 yıl önce"
+          kaydet={(v) => kaydet({ olay: olay.kod, fark: v.trim() || null })} />
       </div>
     );
   }

@@ -1,10 +1,11 @@
 // Yaş (§3.4): doğum tarihi biliniyorsa bir andaki yaş hesaplanır ve hangi tarihe bakıldığı yazılır.
 // Hassasiyet korunur: yıl düzeyinde iki tarihten tek yaş değil, olası en küçük ve en büyük yaş çıkar.
-import { karsilastir, VARSAYILAN_TAKVIM, yilParcasi, type EvrenTarihi, type Takvim } from './tarih';
+import { anaTakvim, karsilastir, VARSAYILAN_TAKVIM, yilParcasi, type EvrenTarihi, type TakvimYa } from './tarih';
 
 export interface Yas { metin: string; enAz: number | null; enCok: number | null }
 
-export function yasHesapla(dogum: EvrenTarihi | null, an: EvrenTarihi | null, olum: EvrenTarihi | null = null, t: Takvim = VARSAYILAN_TAKVIM): Yas | null {
+export function yasHesapla(dogum: EvrenTarihi | null, an: EvrenTarihi | null, olum: EvrenTarihi | null = null, tk: TakvimYa = VARSAYILAN_TAKVIM): Yas | null {
+  const t = anaTakvim(tk);
   if (!dogum || !an) return null;
   const bilinmiyor = { metin: 'Yaşı hesaplanamıyor (tarihlerden biri takvime çevrilemedi)', enAz: null, enCok: null };
   if (!dogum.eksen || !an.eksen) return bilinmiyor;

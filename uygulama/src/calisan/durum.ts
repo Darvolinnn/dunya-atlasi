@@ -2,12 +2,13 @@
 // bağlanırsa olayın tarihi değişince kendiliğinden kayar (dayanak görünür; gizli çapa yoktur).
 import type { IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
-import { tarihCoz, siraAnahtari, karsilastir, type EvrenTarihi } from '../alan/tarih';
+import { farkCoz, farkGecerli, farkYazisi, kaydir, tarihCoz, siraAnahtari, karsilastir, type EvrenTarihi, type Fark } from '../alan/tarih';
+import { ekKalibi, ekYaz, sesBilgisi } from '../alan/turkce-ek';
 import { durumKipiGecerli, gecerlilik, type DurumKipi, type Sinir } from '../alan/durum';
 import type { DurumGirdisi, DurumSatiri, SinirBilgisi } from '../veri/api';
 import { kararGecerli } from '../alan/turler';
 import type { EvrenVt } from './evren-vt';
-import { takvimOku } from './izdusum';
+import { takvimOku, zamanSetiOku } from './izdusum';
 
 export interface DurumBaglami {
   e: EvrenVt;
@@ -15,8 +16,8 @@ export interface DurumBaglami {
   olayTarihi(kod: string): EvrenTarihi | null;
 }
 
-/** Saklanan sınır: tarih ya da bir olay (olayın tarihi okunurken alınır). */
-export interface SinirVerisi { tarih?: EvrenTarihi | null; olay?: string | null }
+/** Saklanan sınır: tarih ya da bir olay ve isteğe bağlı fark (olayın tarihi okunurken alınır). */
+export interface SinirVerisi { tarih?: EvrenTarihi | null; olay?: string | null; fark?: Fark | null }
 
 export const temiz = (s: unknown, uzunluk: number, bos = true) => {
   const x = String(s ?? '').replace(/\s+/g, ' ').trim();
@@ -25,21 +26,32 @@ export const temiz = (s: unknown, uzunluk: number, bos = true) => {
   return x;
 };
 
-export function sinirCoz(b: DurumBaglami, girdi: { ifade?: string; olay?: string | null } | null | undefined): SinirVerisi | null {
+export function sinirCoz(b: DurumBaglami, girdi: { ifade?: string; olay?: string | null; fark?: string | null } | null | undefined): SinirVerisi | null {
   if (!girdi) return null;
   if (girdi.olay) {
     if (!kodGecerliMi(girdi.olay) || b.e.db.selectValue('SELECT 1 FROM kayitlar WHERE kod=?', [girdi.olay]) === undefined) throw new Error('Bağlanan olay bulunamadı.');
-    return { olay: girdi.olay };
+    const f = String(girdi.fark ?? '').trim();
+    if (!f) return { olay: girdi.olay };
+    const fark = farkCoz(f);
+    if (!fark) throw new Error('Farkı “3 gün sonra” ya da “2 yıl önce” gibi yaz; boş bırakırsan olayın kendi tarihi kullanılır.');
+    return { olay: girdi.olay, fark };
   }
-  const t = tarihCoz(temiz(girdi.ifade, 120), takvimOku(b.e.db));
+  const t = tarihCoz(temiz(girdi.ifade, 120), zamanSetiOku(b.e.db));
   return t ? { tarih: t } : null;
 }
 
 export function sinirBilgisi(b: DurumBaglami, v: SinirVerisi | null): SinirBilgisi | null {
   if (!v) return null;
   if (v.olay) {
-    const ad = b.e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [v.olay]) as string | undefined;
-    return { tarih: b.olayTarihi(v.olay), olay: { kod: v.olay, ad: ad ?? 'Silinmiş kayıt' } };
+    const ad = (b.e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [v.olay]) as string | undefined) ?? 'Silinmiş kayıt';
+    const t = b.olayTarihi(v.olay);
+    if (!v.fark || !farkGecerli(v.fark)) return { tarih: t, olay: { kod: v.olay, ad } };
+    // Olay + fark: olayın tarihi değişince sınır da kayar (çapalı sınır, §3.5).
+    const ses = sesBilgisi(ad);
+    const ana = takvimOku(b.e.db);
+    const tarih: EvrenTarihi | null = t ? { ifade: `${ad}'${ekYaz(ses, ekKalibi(ses, 'dan'))} ${farkYazisi(v.fark)}`, bicim: 'goreli', hassasiyet: v.fark.birim === 'yil' ? 'yil' : t.hassasiyet,
+      takvim: ana.kod, takvimSurumu: ana.surum, kisitlar: [{ olay: v.olay, ...v.fark }], eksen: kaydir(t.eksen, v.fark, ana) } : null;
+    return { tarih, olay: { kod: v.olay, ad }, fark: v.fark };
   }
   return { tarih: v.tarih ?? null, olay: null };
 }

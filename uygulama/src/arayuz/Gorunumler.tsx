@@ -5,7 +5,7 @@ import type { Istemci } from '../veri/istemci';
 import type { AgKenari, AgSonucu, BolumMatrisi, DurumGecmisi, DurumSatiri, EtkiRaporu, KurguHatlari, NedenSonucAgi, SoyAgaci } from '../veri/api';
 import { ILISKI_TURLERI, iliskiTuruBul, rolAdi } from '../alan/iliski-turleri';
 import { TURLER, turBul } from '../alan/turler';
-import { eksenYili, tarihAciklamasi, type EvrenTarihi, type Takvim } from '../alan/tarih';
+import { anaTakvim, eksenYili, tarihAciklamasi, yilYazisi, type EvrenTarihi, type TakvimYa } from '../alan/tarih';
 import { KararRozeti } from './ortak';
 import { KayitSec } from './KayitBolumleri';
 import { useTakvim } from './Takvim';
@@ -447,7 +447,7 @@ function parcalar(d: DurumSatiri): Parca {
  * Durumların zaman şeridi. Sınırın belirsiz kısmı soluk, kesin kısmı dolu çizilir; açık uçlar şeridin
  * kenarına uzanır. Tarihi bilinmeyen sınır (bağlı olayın tarihi yok) çizimde uydurulmaz, listede söylenir.
  */
-export function DurumSeritleri({ satirlar, takvim, an }: { evren: string; satirlar: Serit[]; takvim: Takvim; an: EvrenTarihi | null }) {
+export function DurumSeritleri({ satirlar, takvim, an }: { evren: string; satirlar: Serit[]; takvim: TakvimYa; an: EvrenTarihi | null }) {
   const tum = satirlar.flatMap((s) => s.durumlar.map(parcalar));
   const uclar = tum.flatMap((p) => [p.s0, p.s1, p.e0, p.e1]).filter((x): x is number => x !== null && Number.isFinite(x));
   if (an?.eksen) for (const x of [an.eksen.enErken, an.eksen.enGec]) if (x !== null) uclar.push(x);
@@ -464,7 +464,7 @@ export function DurumSeritleri({ satirlar, takvim, an }: { evren: string; satirl
   const yil0 = eksenYili(bas, takvim), yil1 = eksenYili(bas + uzunluk, takvim);
   return (
     <ol class="cizelge-listesi durum-seritleri" aria-label="Durum şeritleri">
-      <li class="cizelge-olcek" aria-hidden="true"><span /><span class="cizelge-iz"><span style="left:0">{takvim.ad} {yil0}</span><span style="right:0">{takvim.ad} {yil1}</span></span></li>
+      <li class="cizelge-olcek" aria-hidden="true"><span /><span class="cizelge-iz"><span style="left:0">{yilYazisi(yil0, anaTakvim(takvim))}</span><span style="right:0">{yilYazisi(yil1, anaTakvim(takvim))}</span></span></li>
       {satirlar.map((s) => (
         <li key={s.anahtar} class="cizelge-satiri">
           <span class="cizelge-etiket"><a class="satir-ad" href={s.href}>{s.etiket}</a></span>

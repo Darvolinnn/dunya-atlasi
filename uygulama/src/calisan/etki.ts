@@ -32,6 +32,10 @@ export function bagimlilar(db: Database, kod: string): Bagimlilar {
     const k = ad(db, r.a as string);
     if (k) hesap.push({ ...k, aciklama: 'Doğum tarihi biliniyor; buradaki yaşı yeniden hesaplanır.' });
   }
+  for (const r of db.selectObjects(`SELECT kod FROM kayitlar WHERE silindi IS NULL AND kod!=? AND json_extract(tarih,'$.bicim')='goreli' AND tarih LIKE ?`, [kod, `%"olay":"${kod}"%`])) {
+    const k = ad(db, r.kod as string);
+    if (k) hesap.push({ ...k, aciklama: 'Tarihi bu kayda göre verilmiş; olası yeri kendiliğinden yeniden hesaplanır.' });
+  }
   const so = db.selectValue('SELECT sahne_olayi FROM kayitlar WHERE kod=?', [kod]) as string | null | undefined;
   if (so) { const k = ad(db, so); if (k) hesap.push({ ...k, aciklama: 'Sahne olayının tarihi sahneden gelir.' }); }
 

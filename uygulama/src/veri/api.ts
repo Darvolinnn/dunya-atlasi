@@ -1,6 +1,6 @@
 // Arayüz ile veritabanı çalışanı arasındaki istekler. Arayüz veritabanına yalnızca bunlarla erişir.
 import type { Islem } from '../alan/islem';
-import type { EvrenTarihi, Karsilastirma, Takvim } from '../alan/tarih';
+import type { Akis, EvrenTarihi, Fark, Karsilastirma, ParalelTakvim, Takvim, ZamanSeti } from '../alan/tarih';
 import type { DurumKipi, Gecerlilik } from '../alan/durum';
 import type { Sablon, Soru, SoruDurumu } from '../alan/sablon';
 import type { BilgiEtiketi, BilgiKaynagi, Inanc } from '../alan/bilgi';
@@ -134,8 +134,9 @@ export interface AnlatiYeri {
 export interface AnlatiEtkisi { kayit: { kod: string; ad: string }; onceki: { kod: string; ad: string } | null; yeni: { kod: string; ad: string } | null }
 
 /** Durum geçmişi (§3.5). */
-export interface SinirBilgisi { tarih: EvrenTarihi | null; olay: { kod: string; ad: string } | null }
-export interface SinirGirdisi { ifade?: string; olay?: string | null }
+/** Sınır: tarih ya da bir olay (isteğe bağlı farkla: "Kuşatma'dan 3 gün sonra"). */
+export interface SinirBilgisi { tarih: EvrenTarihi | null; olay: { kod: string; ad: string } | null; fark?: Fark | null }
+export interface SinirGirdisi { ifade?: string; olay?: string | null; fark?: string | null }
 export interface DurumSatiri {
   kod: string; konu: string; ozellik: string; deger: string;
   hedef: { kod: string; ad: string; tur: string } | null;
@@ -226,6 +227,8 @@ export interface MeseleListesi { meseleler: MeseleSatiri[]; gerekceler: GerekceS
 /** Takvim değişikliğinin önizlemesi (§3.4). */
 export interface TakvimEtkisi {
   toplam: number; degisenSayisi: number; cozulemezSayisi: number;
+  /** Dayanağa göre verilmiş tarihler: yazılışları değişmez, yerleri dayanaklarından yeniden hesaplanır. */
+  goreliSayisi: number;
   degisen: { yer: string; kayit: string; ifade: string; once: string; sonra: string; cozulemez: boolean }[];
 }
 /** Harita (§8.1). Koordinatlar haritanın uzayındadır (ilk görselin piksel boyutu). */
@@ -350,7 +353,7 @@ export interface Istekler {
   metinAc(a: { evren: string; kayit: string; alan: string }): { spans: Spans; basliklar: Basliklar };
   metinKaydet(a: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar }): { basliklar: Basliklar; degisti: boolean; birlesti: boolean; spans?: Spans };
   metinSurumu(a: { evren: string; kayit: string; alan: string; basliklar: Basliklar }): { spans: Spans };
-  kayitTarih(a: { evren: string; kod: string; ifade: string }): { tarih: EvrenTarihi | null };
+  kayitTarih(a: { evren: string; kod: string; ifade?: string; kisitlar?: { olay: string; fark: string }[] | null }): { tarih: EvrenTarihi | null };
   alanKarari(a: { evren: string; kod: string; alan: string; karar: string }): void;
   hizliNot(a: { evren: string; metin: string }): { kod: string; ad: string };
   nottanKayit(a: { evren: string; not: string; ad: string; tur: string }): { kod: string };
@@ -431,8 +434,12 @@ export interface Istekler {
   meseleler(a: { evren: string; kod?: string }): MeseleListesi;
   yazarKaydiEkle(a: { evren: string; tur: 'acik_mesele' | 'gerekce'; ad: string; bagla?: string | null; onemli?: boolean }): { kod: string };
   takvim(a: { evren: string }): Takvim;
-  takvimEtkisi(a: { evren: string; takvim: Takvim | null }): TakvimEtkisi;
+  takvimEtkisi(a: { evren: string; takvim: Takvim | ParalelTakvim | null; kod?: string | null }): TakvimEtkisi;
   takvimYaz(a: { evren: string; takvim: Takvim | null }): void;
+  zamanSeti(a: { evren: string }): ZamanSeti;
+  paralelTakvimYaz(a: { evren: string; kod?: string | null; takvim: ParalelTakvim | null }): { kod: string };
+  akisYaz(a: { evren: string; kod?: string | null; akis: Akis | null }): { kod: string };
+  akisEtkisi(a: { evren: string; kod: string; akis: Akis | null }): TakvimEtkisi;
   zamanCizelgesi(a: { evren: string; bakis?: string | null }): CizelgeOgesi[];
   soyAgaci(a: { evren: string; odak: string; an?: string | null; bakis?: string | null }): SoyAgaci;
   ag(a: { evren: string; merkez?: string | null; derinlik?: number; iliskiTurleri?: string[] | null; kayitTurleri?: string[] | null; an?: string | null; baglantilar?: boolean; vazgecilmis?: boolean; bakis?: string | null }): AgSonucu;

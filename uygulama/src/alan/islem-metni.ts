@@ -55,7 +55,10 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   kayit_birlestir: (v, ad) => `“${v.kaynakAd}” kaydı ${ad(v.hedef)} ile birleştirildi`,
   birlesme_geri_al: (v, ad) => `“${v.kaynakAd}” ile ${ad(v.hedef)} birleştirmesi geri alındı`,
   inceleme_karari: (v) => v.durum === 'kabul' ? `İnceleme: “${v.baslik}” gerekçeyle kabul edildi` : v.durum === 'ertelendi' ? `İnceleme: “${v.baslik}” ertelendi` : v.durum === 'duzeltildi' ? `İnceleme: “${v.baslik}” düzeltildi olarak kapandı` : `İnceleme: “${v.baslik}” yeniden açıldı`,
-  takvim_yaz: (v) => v.takvim ? `Evrenin takvimi değişti (sürüm ${(v.takvim as { surum: number }).surum}); tarihlerin yeri yeniden hesaplandı` : 'Evrenin takvimi varsayılana döndü',
+  takvim_yaz: (v) => v.kod
+    ? (v.takvim ? `“${(v.takvim as { ad: string }).ad}” takvimi ${(v.takvim as { surum: number }).surum === 1 ? 'eklendi' : 'değişti'}` : `“${v.ad ?? 'Paralel'}” takvimi kaldırıldı`)
+    : v.takvim ? `Evrenin takvimi değişti (sürüm ${(v.takvim as { surum: number }).surum}); tarihlerin yeri yeniden hesaplandı` : 'Evrenin takvimi varsayılana döndü',
+  akis_yaz: (v) => v.akis ? `“${(v.akis as { ad: string }).ad}” zaman akışı tanımlandı ya da değişti` : `“${v.ad ?? 'Bir'}” zaman akışı kaldırıldı`,
   sablon_yaz: (v) => v.sablon ? `“${turBul(String(v.tur)).ad}” şablonu değişti` : `“${turBul(String(v.tur)).ad}” şablonu varsayılana döndü`,
   kayit_alan: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” ${v.deger === null || v.deger === '' || v.deger === false ? 'boşaltıldı' : 'değişti'}`,
   soru_cevapla: (v, ad) => {

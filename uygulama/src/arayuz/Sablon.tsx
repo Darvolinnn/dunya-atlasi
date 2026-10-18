@@ -4,7 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { Kayit, KayitSablonu, MeseleListesi, SablonBilgisi, SoruSatiri } from '../veri/api';
 import { ALAN_TURLERI, EVREN_SETLERI, MESELE_DURUMLARI, SORU_SETLERI, soruSetiBul, yeniAlanKodu, type Sablon, type SablonAlani, type Secenek } from '../alan/sablon';
-import { tarihAciklamasi, tarihCoz, type EvrenTarihi, type Takvim } from '../alan/tarih';
+import { tarihAciklamasi, tarihCoz, type EvrenTarihi, type TakvimYa } from '../alan/tarih';
 import { TURLER, turBul } from '../alan/turler';
 import { KararRozeti, KararSecici, TurSecici } from './ortak';
 import { git } from './Uygulama';
@@ -66,7 +66,7 @@ export function SablonAlanlari({ istemci, evren, kayit, ks }: { istemci: Istemci
   );
 }
 
-function AlanGirdisi({ a, takvim, deger, yaz }: { a: SablonAlani; takvim: Takvim; deger: unknown; yaz: (v: unknown) => Promise<unknown> }) {
+function AlanGirdisi({ a, takvim, deger, yaz }: { a: SablonAlani; takvim: TakvimYa; deger: unknown; yaz: (v: unknown) => Promise<unknown> }) {
   const metin = degerMetni(a, deger);
   const [yerel, setYerel] = useState(metin);
   useEffect(() => setYerel(metin), [metin]);

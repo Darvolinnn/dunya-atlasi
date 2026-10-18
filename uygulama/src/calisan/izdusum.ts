@@ -10,29 +10,76 @@ import { sablonGecerli } from '../alan/sablon';
 import { etkiAc } from './etki';
 import { gorunurlukGecerli, sadeGercekMi } from '../alan/gorunurluk';
 import { BILGI_ALANLARI, IDDIA_ALANLARI, bilgiDegeri, iddiaDegeri } from '../alan/bilgi';
-import { tarihCoz, tarihMi, takvimGecerli, VARSAYILAN_TAKVIM, type Takvim } from '../alan/tarih';
+import { akisGecerli, kisitGecerli, paralelGecerli, tarihCoz, tarihMi, takvimGecerli, VARSAYILAN_TAKVIM, type EvrenTarihi, type Takvim, type ZamanSeti } from '../alan/tarih';
+import { goreliCoz } from '../alan/goreli';
 
 /** Evrenin şu anki takvimi (§3.4). */
 export function takvimOku(db: Database): Takvim {
   const ham = db.selectValue("SELECT v FROM evren WHERE k='takvim'") as string | undefined;
   return ham ? JSON.parse(ham) : VARSAYILAN_TAKVIM;
 }
-/** Tarihin ekseni her zaman ifadeden ve evrenin o anki takviminden hesaplanır; başka cihazın hesabına güvenilmez. */
-function tz(db: Database, t: unknown): unknown {
-  return tarihMi(t) ? tarihCoz(t.ifade, takvimOku(db)) : t;
+/** Evrenin bütün zaman tanımları: ana takvim, paralel takvimler ve zaman akışları (§3.4). */
+export function zamanSetiOku(db: Database): ZamanSeti {
+  const oku = (on: string) => (db.selectObjects(`SELECT v FROM evren WHERE k LIKE '${on}:%' ORDER BY k`) as { v: string }[]).map((r) => JSON.parse(r.v));
+  return { ana: takvimOku(db), diger: oku('takvim'), akislar: oku('akis') };
 }
-const sinirTz = (db: Database, s: unknown) => (s && typeof s === 'object' && (s as { tarih?: unknown }).tarih ? { ...(s as object), tarih: tz(db, (s as { tarih: unknown }).tarih) } : s);
+/**
+ * Tarihin ekseni her zaman ifadeden ve evrenin o anki zaman tanımlarından hesaplanır; başka cihazın hesabına
+ * güvenilmez. Göreli tarihin ekseni çözücüden gelir (goreliYenile).
+ */
+function tz(db: Database, t: unknown, z: ZamanSeti = zamanSetiOku(db)): unknown {
+  if (!tarihMi(t)) return t;
+  if (t.bicim === 'goreli') {
+    const k = (t as EvrenTarihi).kisitlar;
+    if (!Array.isArray(k) || !k.length || k.length > 20 || !k.every(kisitGecerli)) return null;
+    return { ifade: String(t.ifade).slice(0, 300), bicim: 'goreli', hassasiyet: k.some((x) => x.birim === 'yil') ? 'yil' : null, takvim: z.ana.kod, takvimSurumu: z.ana.surum,
+      kisitlar: k.map((x) => ({ olay: x.olay, yon: x.yon, en: x.en, cok: x.cok, birim: x.birim })), eksen: null };
+  }
+  return tarihCoz(t.ifade, z);
+}
+const sinirTz = (db: Database, s: unknown, z?: ZamanSeti) => (s && typeof s === 'object' && (s as { tarih?: unknown }).tarih ? { ...(s as object), tarih: tz(db, (s as { tarih: unknown }).tarih, z) } : s);
+
+/**
+ * Göreli tarihlerin eksenini kısıt ağından yeniden hesaplar (§15 araç 1). Dayanağın tarihi değişince bağlı tarihler
+ * kendiliğinden kayar. Yalnızca göreli tarihi olan evrenlerde çalışır.
+ */
+export function goreliYenile(db: Database) {
+  const goreliler = db.selectObjects(`SELECT k.kod, k.tarih FROM goreli_tarihler g JOIN kayitlar k ON k.kod=g.kod WHERE k.silindi IS NULL AND k.tarih IS NOT NULL`);
+  if (!goreliler.length) return;
+  const tarihler = new Map<string, EvrenTarihi | null>();
+  const kuyruk: string[] = [];
+  for (const r of goreliler) { tarihler.set(r.kod as string, JSON.parse(r.tarih as string)); kuyruk.push(r.kod as string); }
+  while (kuyruk.length) {
+    const t = tarihler.get(kuyruk.pop()!);
+    for (const k of t?.kisitlar ?? []) {
+      const o = yonlendir(db, k.olay);
+      if (tarihler.has(o)) continue;
+      const r = db.selectObject('SELECT tarih FROM kayitlar WHERE kod=? AND silindi IS NULL', [o]);
+      if (!r) continue;
+      const ot = r.tarih ? JSON.parse(r.tarih as string) as EvrenTarihi : null;
+      tarihler.set(o, ot);
+      if (ot?.bicim === 'goreli') kuyruk.push(o);
+    }
+  }
+  const sonuc = goreliCoz(tarihler, takvimOku(db), (k) => yonlendir(db, k));
+  for (const [kod, s] of sonuc) {
+    const t = tarihler.get(kod)!;
+    const yeni: EvrenTarihi = { ...t, eksen: s.eksen };
+    if (s.celiski) yeni.celiski = s.celiski; else delete yeni.celiski;
+    if (JSON.stringify(yeni) !== JSON.stringify(t)) db.exec({ sql: 'UPDATE kayitlar SET tarih=? WHERE kod=?', bind: [JSON.stringify(yeni), kod] });
+  }
+}
 const json = (v: unknown) => (v ? JSON.stringify(v) : null);
 
 /** Takvim değişti: bütün tarihlerin ekseni yeniden hesaplanır, ifadeler korunur. */
 function tarihleriYenidenHesapla(db: Database) {
-  const t = takvimOku(db);
-  const yeni = (ham: unknown) => (ham ? JSON.stringify(tarihCoz(JSON.parse(ham as string).ifade, t)) : null);
+  const z = zamanSetiOku(db);
+  const yeni = (ham: unknown) => (ham ? json(tz(db, JSON.parse(ham as string), z)) : null);
   for (const r of db.selectObjects('SELECT kod, tarih FROM kayitlar WHERE tarih IS NOT NULL')) db.exec({ sql: 'UPDATE kayitlar SET tarih=? WHERE kod=?', bind: [yeni(r.tarih), r.kod as string] });
   for (const r of db.selectObjects('SELECT kod, baslangic, bitis FROM iliskiler WHERE baslangic IS NOT NULL OR bitis IS NOT NULL')) {
     db.exec({ sql: 'UPDATE iliskiler SET baslangic=?, bitis=? WHERE kod=?', bind: [yeni(r.baslangic), yeni(r.bitis), r.kod as string] });
   }
-  const sinir = (ham: unknown) => (ham ? JSON.stringify(sinirTz(db, JSON.parse(ham as string))) : null);
+  const sinir = (ham: unknown) => (ham ? JSON.stringify(sinirTz(db, JSON.parse(ham as string), z)) : null);
   for (const tablo of ['durumlar', 'bilgiler']) {
     for (const r of db.selectObjects(`SELECT kod, baslangic, bitis FROM ${tablo} WHERE baslangic IS NOT NULL OR bitis IS NOT NULL`)) {
       db.exec({ sql: `UPDATE ${tablo} SET baslangic=?, bitis=? WHERE kod=?`, bind: [sinir(r.baslangic), sinir(r.bitis), r.kod as string] });
@@ -40,12 +87,13 @@ function tarihleriYenidenHesapla(db: Database) {
   }
   for (const r of db.selectObjects('SELECT kayit, alan, deger FROM alan_degerleri')) {
     const d = JSON.parse(r.deger as string);
-    if (tarihMi(d)) db.exec({ sql: 'UPDATE alan_degerleri SET deger=? WHERE kayit=? AND alan=?', bind: [JSON.stringify(tz(db, d)), r.kayit as string, r.alan as string] });
+    if (tarihMi(d)) db.exec({ sql: 'UPDATE alan_degerleri SET deger=? WHERE kayit=? AND alan=?', bind: [JSON.stringify(tz(db, d, z)), r.kayit as string, r.alan as string] });
   }
+  goreliYenile(db);
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 12;
+export const IZDUSUM_SURUMU = 13;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -301,6 +349,7 @@ CREATE TABLE IF NOT EXISTS bilgiler(
 CREATE INDEX IF NOT EXISTS bilgiler_iddia ON bilgiler(iddia);
 CREATE INDEX IF NOT EXISTS bilgiler_bilen ON bilgiler(bilen);
 CREATE INDEX IF NOT EXISTS bilgiler_sahne ON bilgiler(sahne);
+CREATE TABLE IF NOT EXISTS goreli_tarihler(kod TEXT PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   islem TEXT PRIMARY KEY,
   kaynak TEXT NOT NULL,
@@ -309,7 +358,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
 );
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'medya',
-  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler'];
+  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -497,12 +546,23 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   /** Takvim tanımı (§3.4): bir şema değişikliğidir; bütün tarihler yeni takvimle yeniden hesaplanır. */
   takvim_yaz(db, i) {
-    const { takvim } = i.veri as { takvim: unknown };
-    if (takvim !== null && !takvimGecerli(takvim)) return;
-    if (takvim) evrenAlani(db, 'takvim', JSON.stringify(takvim));
-    else db.exec("DELETE FROM evren WHERE k='takvim'");
+    const { takvim, kod } = i.veri as { takvim: unknown; kod?: string };
+    // Kodlu takvim paralel takvimdir (ana takvimin yanında); kodsuz olan ana takvim.
+    const anahtar = kod ? `takvim:${kod}` : 'takvim';
+    if (takvim !== null && !(kod ? paralelGecerli(takvim) && (takvim as { kod: string }).kod === kod : takvimGecerli(takvim))) return;
+    if (takvim) evrenAlani(db, anahtar, JSON.stringify(takvim));
+    else db.exec({ sql: 'DELETE FROM evren WHERE k=?', bind: [anahtar] });
     tarihleriYenidenHesapla(db);
-    alanYaz(db, i, 'evren', 'takvim', takvim ?? null);
+    alanYaz(db, i, 'evren', anahtar, takvim ?? null);
+  },
+  /** Zaman akışı (§3.4): tanımı değişince akıştaki tarihlerin ana eksendeki yeri yeniden hesaplanır. */
+  akis_yaz(db, i) {
+    const { akis, kod } = i.veri as { akis: unknown; kod: string };
+    if (typeof kod !== 'string' || (akis !== null && !(akisGecerli(akis) && akis.kod === kod))) return;
+    if (akis) evrenAlani(db, `akis:${kod}`, JSON.stringify(akis));
+    else db.exec({ sql: 'DELETE FROM evren WHERE k=?', bind: [`akis:${kod}`] });
+    tarihleriYenidenHesapla(db);
+    alanYaz(db, i, 'evren', `akis:${kod}`, akis ?? null);
   },
   evren_adlandir(db, i) {
     evrenAlani(db, 'ad', i.veri.ad);
@@ -539,10 +599,12 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     db.exec({ sql: 'UPDATE kayitlar SET silindi=?, silen=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.kod, kod] });
     silmeCatismalariniKapat(db, i, kod);
     silmedenOnceki(db, i);
+    goreliYenile(db);
   },
   kayit_geri_yukle(db, i) {
     db.exec({ sql: 'UPDATE kayitlar SET silindi=NULL, silen=NULL WHERE kod=?', bind: [i.veri.kod as string] });
     silmeCatismalariniKapat(db, i, i.veri.kod as string);
+    goreliYenile(db);
   },
   /** Yazar bir çatışmayı inceledi: silinmiş kayıt silinmiş kalır ya da birleşmiş metin olduğu gibi kalır. */
   catisma_coz(db, i) {
@@ -565,7 +627,11 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const sonraIfade = tarihMi(tarih) ? tarih.ifade : null;
     // Önceden bir tarihi olan kaydın tarihi değişince ya da olaydan bir katılımcı çıkarılınca bağımlıları incelemeye açılır (§9.2, §9.3).
     if (onceIfade && onceIfade !== sonraIfade) etkiAc(db, i.kod, i.zaman, kod, 'tarih', onceIfade, sonraIfade);
-    db.exec({ sql: 'UPDATE kayitlar SET tarih=?, duzenleme=? WHERE kod=?', bind: [json(tz(db, tarih)), i.zaman, kod] });
+    const yeni = tz(db, tarih) as EvrenTarihi | null;
+    db.exec({ sql: 'UPDATE kayitlar SET tarih=?, duzenleme=? WHERE kod=?', bind: [json(yeni), i.zaman, kod] });
+    if (yeni?.bicim === 'goreli') db.exec({ sql: 'INSERT OR IGNORE INTO goreli_tarihler(kod) VALUES(?)', bind: [kod] });
+    else db.exec({ sql: 'DELETE FROM goreli_tarihler WHERE kod=?', bind: [kod] });
+    goreliYenile(db);
     alanYaz(db, i, kod, 'tarih', tarih ?? null);
   },
   kayit_alan_karar(db, i) {
@@ -753,6 +819,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, son] });
     // Birleştirmeyi görmeden eski kayda yazılmış ve sıralamada önce gelen düzenlemeler de incelemeye düşer.
     silmedenOnceki(db, i, kaynak);
+    goreliYenile(db);
   },
   birlesme_geri_al(db, i) {
     const { kaynak, islem } = i.veri as { kaynak: string; islem: string };
@@ -766,6 +833,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     db.exec({ sql: 'DELETE FROM yonlendirmeler WHERE kod=?', bind: [kaynak] });
     db.exec({ sql: 'UPDATE kayitlar SET silindi=NULL, silen=NULL WHERE kod=? AND silen=?', bind: [kaynak, islem] });
     silmeCatismalariniKapat(db, i, kaynak);
+    goreliYenile(db);
   },
 
   /** İnceleme kuyruğu (§9.3): bulgu gerekçeyle kabul edilir ya da ertelenir; null karar kuyruğa geri koyar. */
