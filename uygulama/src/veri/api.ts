@@ -1,6 +1,7 @@
 // Arayüz ile veritabanı çalışanı arasındaki istekler. Arayüz veritabanına yalnızca bunlarla erişir.
 import type { Islem } from '../alan/islem';
-import type { EvrenTarihi } from '../alan/tarih';
+import type { EvrenTarihi, Karsilastirma } from '../alan/tarih';
+import type { DurumKipi, Gecerlilik } from '../alan/durum';
 
 export interface KurulumBilgisi { kod: string; ad: string; sqlite: string }
 export interface EvrenOzeti { kod: string; ad: string; olusturma: number; sonAcilis: number | null }
@@ -73,8 +74,9 @@ export interface YedekBilgisi {
 }
 /** İnceleme bekleyen çatışma (§10.3, §10.6). Kurulum adları kullanıcıya gösterilecek biçimdedir. */
 export type Catisma =
-  | { tur: 'alan'; nesne: string; alan: string; nesneTuru: 'kayit' | 'iliski' | 'evren'; kayit: string | null; baslik: string;
-      degerler: { islem: string; deger: unknown; kurulum: string; zaman: number }[] }
+  | { tur: 'alan'; nesne: string; alan: string; nesneTuru: 'kayit' | 'iliski' | 'evren' | 'durum'; kayit: string | null; baslik: string;
+      /** yazi: değerin okunur hâli (yer, kayıt adı gibi); yoksa değer doğrudan gösterilir. */
+      degerler: { islem: string; deger: unknown; yazi?: string; kurulum: string; zaman: number }[] }
   | { tur: 'silme'; kayit: string; baslik: string; duzenlemeSayisi: number; zaman: number; kurulumlar: string[] }
   | { tur: 'metin'; kayit: string; alan: string; baslik: string; temel: Basliklar;
       a: { basliklar: Basliklar; kurulum: string; zaman: number }; b: { basliklar: Basliklar; kurulum: string; zaman: number } };
@@ -102,6 +104,58 @@ export interface KaldigiYerBilgisi extends KaldigiYer {
 }
 export interface BaglananKayit { kod: string; ad: string; tur: string; ifadeler: string[] }
 export interface AdDuzeltmesi { kaynak: string; kaynakAd: string; sira: number; eski: string; yeni: string }
+/** Anlatı yapısı (§3.3). */
+export interface YapiSahnesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi | null; sira: number }
+export interface YapiBolumu { kod: string; ad: string; karar: string; sira: number; sahneler: YapiSahnesi[] }
+export interface EserYapisi { eser: { kod: string; ad: string }; bolumler: YapiBolumu[]; dogrudan: YapiSahnesi[] }
+export interface AnlatiYeri {
+  eser: { kod: string; ad: string } | null;
+  bolum: { kod: string; ad: string; sira: number } | null;
+  /** Sahnenin eserin okuma sırasındaki yeri (1'den). */
+  sira: number | null;
+  onceki: { kod: string; ad: string } | null;
+  sonraki: { kod: string; ad: string } | null;
+}
+/** Taşımadan sonra bir kaydın eserde ilk anıldığı sahne değişti. */
+export interface AnlatiEtkisi { kayit: { kod: string; ad: string }; onceki: { kod: string; ad: string } | null; yeni: { kod: string; ad: string } | null }
+
+/** Durum geçmişi (§3.5). */
+export interface SinirBilgisi { tarih: EvrenTarihi | null; olay: { kod: string; ad: string } | null }
+export interface SinirGirdisi { ifade?: string; olay?: string | null }
+export interface DurumSatiri {
+  kod: string; konu: string; ozellik: string; deger: string;
+  hedef: { kod: string; ad: string; tur: string } | null;
+  kip: DurumKipi; karar: string;
+  baslangic: SinirBilgisi | null; bitis: SinirBilgisi | null;
+  /** "Sonraki değişikliğe kadar" kaydında bir sonraki kaydın başlangıcı. */
+  sonraki: SinirBilgisi | null;
+  /** Bakılan andaki geçerliliği (bir an verildiyse). */
+  gecerli?: Gecerlilik;
+  uyari: string | null;
+}
+export interface DurumGirdisi {
+  ozellik: string; deger?: string; hedef?: string | null; kip?: string; karar?: string;
+  baslangic?: SinirGirdisi | null; bitis?: SinirGirdisi | null;
+}
+export type DurumAlani = 'ozellik' | 'deger' | 'hedef' | 'kip' | 'karar' | 'baslangic' | 'bitis';
+
+/** Sahne bağlam paneli (§5.5): sahnenin evren tarihindeki hâl, salt okunur. */
+export type SahneAlani = 'sahne_yeri' | 'bakis' | 'anlatici' | 'odak';
+export interface KisaKayit { kod: string; ad: string; tur: string }
+export interface SahneKatilimcisi extends KisaKayit {
+  roller: string[];
+  durumlar: DurumSatiri[];
+  iliskiler: (IliskiSatiri & { gecerli: Gecerlilik })[];
+  /** Sahneden önce (ya da belki önce) geçirdiği değişimler. */
+  degisimler: (DegisimSatiri & { sira: Karsilastirma })[];
+}
+export interface SahneBaglami {
+  tarih: EvrenTarihi | null;
+  yer: (KisaKayit & { durumlar: DurumSatiri[] }) | null;
+  bakis: KisaKayit | null; anlatici: KisaKayit | null; odak: KisaKayit | null;
+  katilimcilar: SahneKatilimcisi[];
+}
+
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
 
 export interface Istekler {
@@ -181,6 +235,19 @@ export interface Istekler {
 
   kaldigiYer(a: { evren: string }): KaldigiYerBilgisi | null;
   kaldigiYerYaz(a: { evren: string; yer: Omit<KaldigiYer, 'zaman'> }): void;
+  eserYapisi(a: { evren: string; eser: string }): EserYapisi;
+  anlatiYeri(a: { evren: string; kod: string }): AnlatiYeri;
+  yerlesmemisler(a: { evren: string }): YapiSahnesi[];
+  eserler(a: { evren: string }): KisaKayit[];
+  anlatiYerlestir(a: { evren: string; kod: string; ust: string | null; sira?: number | null }): { etki: AnlatiEtkisi[] };
+  anlatiOlustur(a: { evren: string; ust: string; ad: string; tur: 'bolum' | 'sahne' }): { kod: string };
+  durumlar(a: { evren: string; kod: string; an?: string | null }): { durumlar: DurumSatiri[]; an: EvrenTarihi | null };
+  durumEkle(a: { evren: string; kod: string; durum: DurumGirdisi }): { kod: string };
+  durumDegistir(a: { evren: string; kod: string; alan: DurumAlani; deger: unknown }): void;
+  durumSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  ozellikAdlari(a: { evren: string }): string[];
+  sahneAlaniAyarla(a: { evren: string; sahne: string; alan: SahneAlani; kayit: string | null }): void;
+  sahneBaglami(a: { evren: string; sahne: string }): SahneBaglami;
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];
   bahsedilenler(a: { evren: string }): (KayitOzeti & { anilma: number })[];

@@ -4,7 +4,10 @@
 import { createContext } from 'preact';
 import { useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { AramaSonucu, IliskiSatiri, Kayit, KayitOzeti, Spans } from '../veri/api';
+import type { AramaSonucu, DurumSatiri, IliskiSatiri, Kayit, KayitOzeti, Spans } from '../veri/api';
+import type { EvrenTarihi } from '../alan/tarih';
+import { gecerlilik } from '../alan/durum';
+import { aralikYazi } from './Anlati';
 import { TURLER, turBul } from '../alan/turler';
 import { katla } from '../alan/turkce';
 import { KararRozeti } from './ortak';
@@ -16,6 +19,8 @@ export interface PaletBaglami { bagla?: () => void }
 
 export interface CalismaDenetimi {
   evren: string | null;
+  /** Ana alanda açık kayıt (yan panel, açık sahnenin tarihine göre gösterir). */
+  acikKayit: string | null;
   yanPanel: string[];
   yanPanelAc(kod: string): void;
   yanPanelKapat(kod?: string): void;
@@ -84,7 +89,7 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
   useEffect(() => { setKart(null); }, [evren, kayit]);
 
   const d: CalismaDenetimi = {
-    evren, yanPanel,
+    evren, yanPanel, acikKayit: kayit,
     yanPanelAc(kod) {
       if (!evren) return;
       setPaneller((p) => ({ ...p, [evren]: [...(p[evren] ?? []).filter((x) => x !== kod), kod].slice(-8) }));
@@ -299,6 +304,22 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
     istemci.iste('metinAc', { evren, kayit: kod, alan: 'govde' }).then((m) => setMetin(m.spans), () => {});
     istemci.iste('iliskiler', { evren, kod }).then(setIliskiler, () => {});
   }, [kod]);
+  // Ana alanda bir sahne ya da olay açıksa kayıt o anın evren tarihindeki hâliyle gösterilir (§3.5).
+  const ana = d?.acikKayit && d.acikKayit !== kod ? d.acikKayit : null;
+  const [an, setAn] = useState<{ ad: string; tarih: EvrenTarihi | null } | null>(null);
+  const [durumlar, setDurumlar] = useState<DurumSatiri[]>([]);
+  useEffect(() => {
+    let iptal = false;
+    (async () => {
+      const a = ana ? await istemci.iste('kayit', { evren, kod: ana }).catch(() => null) : null;
+      const anli = a && (a.tur === 'sahne' || a.tur === 'olay') ? a : null;
+      const r = await istemci.iste('durumlar', { evren, kod, an: anli?.kod ?? null });
+      if (iptal) return;
+      setAn(anli ? { ad: anli.ad, tarih: r.an } : null);
+      setDurumlar(anli ? r.durumlar.filter((x) => x.gecerli !== 'hayir') : r.durumlar);
+    })().catch(() => {});
+    return () => { iptal = true; };
+  }, [kod, ana]);
   if (hata) return <p class="hata kucuk" style="padding:12px">{hata}</p>;
   if (!k) return <p class="soluk kucuk" style="padding:12px">Açılıyor…</p>;
   const tarih = k.tarih ?? k.sahneTarihi;
@@ -313,9 +334,21 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
       </div>
       {tarih && <p class="soluk kucuk">Evren tarihi: {tarih.ifade}</p>}
       {k.lakaplar.length > 0 && <p class="soluk kucuk">Başka adları: {k.lakaplar.join(', ')}</p>}
+      {an && <p class="kucuk yan-an">{an.tarih ? <>“{an.ad}” tarihinde (<strong>{an.tarih.ifade}</strong>) gösteriliyor.</> : <>“{an.ad}” için evren tarihi girilmemiş; o anki hâl bilinemiyor, bütün değerler gösteriliyor.</>}</p>}
+      {durumlar.length > 0 && (
+        <ul class="yan-iliskiler">
+          {durumlar.map((x) => (
+            <li key={x.kod}>
+              <span class="soluk">{x.ozellik}:</span> {x.hedef ? x.hedef.ad : x.deger}
+              {x.gecerli === 'belirsiz' && an?.tarih ? <span class="rozet">belki</span> : null}
+              {!an?.tarih && <span class="soluk kucuk"> ({aralikYazi(x)})</span>}
+            </li>
+          ))}
+        </ul>
+      )}
       {iliskiler.length > 0 && (
         <ul class="yan-iliskiler">
-          {iliskiler.map((i) => (
+          {iliskiler.filter((i) => !an?.tarih || gecerlilik('aralik', i.baslangic ?? 'acik', i.bitis ?? 'acik', an.tarih) !== 'hayir').map((i) => (
             <li key={i.kod}>
               <span class="soluk">{i.etiket}:</span>{' '}
               <a href={`#/e/${evren}/k/${i.karsi.kod}`} onClick={(e) => { e.preventDefault(); d?.yanPanelAc(i.karsi.kod); }}>{i.karsi.ad}</a>

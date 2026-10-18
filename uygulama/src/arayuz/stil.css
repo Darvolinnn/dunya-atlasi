@@ -165,8 +165,8 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .karar-sec:hover { border-color: var(--cizgi); }
 .karar-sec.karar-fikir { border: 1px dashed var(--metin-2); color: var(--metin); }
 .karar-sec.karar-vazgecildi { border: 1px solid var(--cizgi); text-decoration: line-through; }
-.iliskiler, .sahne-bolumu, .degisimler, .gorseller { margin-top: 24px; }
-.iliskiler h2, .sahne-bolumu h2, .degisimler h2, .gorseller h2 { font-size: 1rem; }
+.iliskiler, .sahne-bolumu, .degisimler, .gorseller, .eser-yapisi, .baglam-paneli, .durum-gecmisi { margin-top: 24px; }
+.iliskiler h2, .sahne-bolumu h2, .degisimler h2, .gorseller h2, .eser-yapisi h2, .baglam-paneli h2, .durum-gecmisi h2 { font-size: 1rem; }
 .iliski-listesi, .degisim-listesi { list-style: none; padding: 0; margin: 8px 0 0; }
 .iliski-listesi > li { padding: 8px 0; border-bottom: 1px solid var(--cizgi); }
 .iliski-etiket { min-width: 120px; }
@@ -253,3 +253,24 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .kisa-liste { list-style: none; padding: 0; margin: 0; }
 .kisa-liste li { padding: 4px 0; }
 .kucuk-rozet { width: 22px; height: 22px; font-size: 0.65rem; display: inline-grid; vertical-align: middle; }
+
+/* Anlatı yapısı, sahne bağlamı ve durum geçmişi */
+.anlati-yolu { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 0.9rem; }
+.yapi-bolum { border-top: 1px solid var(--cizgi); padding: 8px 0; }
+.yapi-bolum.vurgu { background: var(--vurgu-zemin); border-radius: var(--yaricap); padding: 8px; }
+.yapi-sahneler { list-style: none; padding: 0 0 0 12px; margin: 4px 0; }
+.yapi-sahneler li { padding: 2px 0; }
+.yapi-no { min-width: 2em; text-align: right; }
+.kucuk-secim { padding: 2px 6px; font-size: 0.85rem; width: auto; }
+.yeni-satir { padding-left: 12px; margin-top: 4px; }
+.yerlesmemis { margin-top: 12px; }
+.yerlesmemis ul { list-style: none; padding: 0; }
+.etki-ozeti { margin: 8px 0; }
+.etki-ozeti ul { margin: 4px 0 0; padding-left: 18px; }
+.baglam-kaydi { border-top: 1px solid var(--cizgi); padding: 8px 0; }
+.baglam-listesi { list-style: none; padding: 0 0 0 12px; margin: 4px 0 0; font-size: 0.92rem; }
+.baglam-listesi li { padding: 1px 0; }
+.durum-grubu { margin-top: 8px; }
+.durum-listesi { list-style: none; padding: 0; margin: 4px 0 0; }
+.durum-listesi > li { padding: 6px 0; border-bottom: 1px solid var(--cizgi); }
+.yan-an { background: var(--vurgu-zemin); border-radius: var(--yaricap); padding: 6px 8px; }

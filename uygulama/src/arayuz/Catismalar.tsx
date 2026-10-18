@@ -10,6 +10,7 @@ import { MetinGorunumu } from './MetinEditoru';
 const ALAN_ADLARI: Record<string, string> = {
   ad: 'Ad', ozet: 'Kısa özet', okunus: 'Okunuş', tur: 'Tür', karar: 'Karar durumu', tarih: 'Evren tarihi',
   baslangic: 'Başlangıç', bitis: 'Bitiş', aciklama: 'Açıklama', rol: 'Rol',
+  anlati: 'Eserdeki yeri', ozellik: 'Özellik', deger: 'Değer', hedef: 'Değer', kip: 'Süre biçimi',
 };
 const alanAdi = (a: string) => a.startsWith('karar:') ? `${ALAN_ADLARI[a.slice(6)] ?? a.slice(6)} (karar durumu)` : ALAN_ADLARI[a] ?? a;
 
@@ -41,11 +42,11 @@ export function CatismaListesi({ istemci, evren, kod, surum, baslikGoster = true
             : <span class="kucuk">{c.baslik}</span>)}
           {c.tur === 'alan' && (
             <>
-              <p><strong>{alanAdi(c.alan)}</strong>{c.nesneTuru === 'iliski' && kod ? ` (${c.baslik})` : ''}: iki cihazda farklı yazılmış. Hangisi kalsın?</p>
+              <p><strong>{alanAdi(c.alan)}</strong>{(c.nesneTuru === 'iliski' || c.nesneTuru === 'durum') && kod ? ` (${c.baslik})` : ''}: iki cihazda farklı yazılmış. Hangisi kalsın?</p>
               <ul class="catisma-degerleri">
                 {c.degerler.map((d) => (
                   <li key={d.islem}>
-                    <span class="deger">{degerYazisi(c.alan, d.deger)}</span>
+                    <span class="deger">{d.yazi ?? degerYazisi(c.alan, d.deger)}</span>
                     <span class="soluk kucuk">{d.kurulum} · {zamanYaz(d.zaman)}</span>
                     <button class="dugme kucuk" onClick={() => calistir(istemci.iste('alanCatismasiCoz', { evren, nesne: c.nesne, alan: c.alan, islem: d.islem }))}>Bunu kullan</button>
                   </li>

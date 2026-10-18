@@ -5,9 +5,10 @@ import { gorduMu, type Islem } from '../alan/islem';
 import { A } from '../alan/automerge';
 import { baglantilar, duzMetin } from '../alan/metin-sema';
 import { katla } from '../alan/turkce';
+import { siraGecerli } from '../alan/sira';
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 4;
+export const IZDUSUM_SURUMU = 5;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -117,6 +118,28 @@ CREATE TABLE IF NOT EXISTS metin_yazanlari(
   zaman INTEGER NOT NULL,
   PRIMARY KEY(kayit, alan, islem)
 );
+CREATE TABLE IF NOT EXISTS anlati(
+  kod TEXT PRIMARY KEY,
+  ust TEXT NOT NULL,
+  konum TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS anlati_ust ON anlati(ust, konum);
+CREATE TABLE IF NOT EXISTS durumlar(
+  kod TEXT PRIMARY KEY,
+  konu TEXT NOT NULL,
+  ozellik TEXT NOT NULL,
+  deger TEXT NOT NULL DEFAULT '',
+  hedef TEXT,
+  kip TEXT NOT NULL,
+  baslangic TEXT,
+  bitis TEXT,
+  karar TEXT NOT NULL,
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS durumlar_konu ON durumlar(konu);
+CREATE INDEX IF NOT EXISTS durumlar_hedef ON durumlar(hedef);
 CREATE TABLE IF NOT EXISTS metin_catismalari(
   kayit TEXT NOT NULL,
   alan TEXT NOT NULL,
@@ -127,7 +150,7 @@ CREATE TABLE IF NOT EXISTS metin_catismalari(
 );
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'medya',
-  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari'];
+  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -370,6 +393,36 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   degisim_sil(db, i) {
     db.exec({ sql: 'UPDATE degisimler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+
+  /** Anlatı yapısı (§3.3): bölüm esere, sahne esere ya da bölüme yerleşir; sıra anahtarla tutulur. */
+  anlati_yerlestir(db, i) {
+    const { kod, ust, konum } = i.veri as { kod: string; ust: string | null; konum: string | null };
+    if (ust && siraGecerli(konum)) db.exec({ sql: 'INSERT INTO anlati(kod, ust, konum) VALUES(?,?,?) ON CONFLICT(kod) DO UPDATE SET ust=excluded.ust, konum=excluded.konum', bind: [kod, ust, konum] });
+    else db.exec({ sql: 'DELETE FROM anlati WHERE kod=?', bind: [kod] });
+    alanYaz(db, i, kod, 'anlati', ust && siraGecerli(konum) ? { ust, konum } : null);
+  },
+
+  durum_ekle(db, i) {
+    const v = i.veri as Record<string, unknown>;
+    db.exec({
+      sql: `INSERT OR IGNORE INTO durumlar(kod, konu, ozellik, deger, hedef, kip, baslangic, bitis, karar, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
+      bind: [v.kod as string, v.konu as string, v.ozellik as string, (v.deger as string) ?? '', (v.hedef as string) ?? null, v.kip as string,
+        v.baslangic ? JSON.stringify(v.baslangic) : null, v.bitis ? JSON.stringify(v.bitis) : null, v.karar as string, i.zaman, i.zaman],
+    });
+  },
+  durum_degistir(db, i) {
+    const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
+    if (!['ozellik', 'deger', 'hedef', 'kip', 'baslangic', 'bitis', 'karar'].includes(alan)) return;
+    const d = alan === 'baslangic' || alan === 'bitis' ? (deger ? JSON.stringify(deger) : null) : (deger ?? (alan === 'hedef' ? null : ''));
+    db.exec({ sql: `UPDATE durumlar SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [d as string | null, i.zaman, kod] });
+    alanYaz(db, i, kod, alan, deger ?? null);
+  },
+  durum_sil(db, i) {
+    db.exec({ sql: 'UPDATE durumlar SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  durum_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE durumlar SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
   },
 
   medya_ekle(db, i) {

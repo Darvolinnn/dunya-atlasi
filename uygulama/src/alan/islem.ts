@@ -2,7 +2,8 @@
 // her değişiklik bir işlemdir; ekrandaki durum işlemlerin uygulanmasıyla oluşur.
 
 /** Veri biçimi sürümü (§10.7). Eski uygulama yeni biçimi açmaz, üzerine yazmaz. */
-export const VERI_BICIMI = 1;
+// 2: anlatı yapısı (eser, bölüm, sahne sırası) ve durum geçmişi işlemleri.
+export const VERI_BICIMI = 2;
 
 export interface IslemGirdisi {
   tur: string;

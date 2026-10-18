@@ -112,7 +112,7 @@ function GorselGorunumu({ istemci, evren, ad, kapat, cikar }: { istemci: Istemci
 }
 
 // ---------- Kayıt seçme düğmesi ----------
-function KayitSec({ istemci, evren, secili, sec, etiket = 'Kayıt seç' }: {
+export function KayitSec({ istemci, evren, secili, sec, etiket = 'Kayıt seç' }: {
   istemci: Istemci; evren: string; secili: Secim | null; sec: (s: Secim | null) => void; etiket?: string;
 }) {
   const [konum, setKonum] = useState<{ left: number; top: number } | null>(null);
@@ -136,7 +136,8 @@ export function Iliskiler({ istemci, evren, kayit, surum }: { istemci: Istemci; 
   useEffect(() => { istemci.iste('iliskiler', { evren, kod: kayit.kod }).then(setListe); }, [kayit.kod, surum]);
   if (!liste) return null;
   // Sahne katılımcıları ve anlatılan olaylar sahne bölümünde gösterilir.
-  const gorunen = kayit.tur === 'sahne' ? liste.filter((i) => !(i.ben === 'b' && i.tur === 'sahnede') && !(i.ben === 'a' && i.tur === 'anlatir')) : liste;
+  // Mekân, bakış açısı, anlatıcı ve odak sahnenin alanlarında gösterilir.
+  const gorunen = kayit.tur === 'sahne' ? liste.filter((i) => !(i.ben === 'b' && ['sahnede', 'bakis', 'anlatici', 'odak'].includes(i.tur)) && !(i.ben === 'a' && ['anlatir', 'sahne_yeri'].includes(i.tur))) : liste;
   return (
     <section class="iliskiler" aria-label="İlişkiler">
       <div class="satir">
@@ -190,7 +191,7 @@ function IliskiSatir({ istemci, evren, i }: { istemci: Istemci; evren: string; i
   );
 }
 
-function SatirGirdisi({ etiket, deger, kaydet, ipucu }: { etiket: string; deger: string; kaydet: (v: string) => Promise<unknown>; ipucu?: string }) {
+export function SatirGirdisi({ etiket, deger, kaydet, ipucu }: { etiket: string; deger: string; kaydet: (v: string) => Promise<unknown>; ipucu?: string }) {
   const [yerel, setYerel] = useState(deger);
   const [hata, setHata] = useState<string | null>(null);
   useEffect(() => setYerel(deger), [deger]);

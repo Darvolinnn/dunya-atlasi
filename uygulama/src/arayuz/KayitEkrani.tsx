@@ -12,6 +12,10 @@ import { Gorseller, Iliskiler, KayitDegisimleri, NotDonustur, SahneBolumu, Tarih
 import { git } from './Uygulama';
 import { CatismaListesi } from './Catismalar';
 import { useCalisma } from './Calisma';
+import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
+
+/** Durum geçmişi tutulmayan türler (anlatı parçaları ve notlar). */
+const DURUMSUZ = new Set(['sahne', 'bolum', 'eser', 'not']);
 
 export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
   const [kayit, setKayit] = useState<Kayit | null>(null);
@@ -29,6 +33,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then((b) => setEvrenAdi(b.ad), () => {}); }, [evren]);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren && (d.kayitlar.includes(kod) || !d.kayitlar.length)) setSurum((s) => s + 1); }), [evren, kod]);
   useEffect(() => { if (kayit) document.title = `${kayit.ad} · Dünya Atlası`; return () => { document.title = 'Dünya Atlası'; }; }, [kayit?.ad]);
+
+  const sahneBaglami = useSahneBaglami(istemci, evren, kayit?.tur === 'sahne' ? kod : null);
 
   if (hata) return <main class="sayfa"><p class="hata">{hata}</p><a href={`#/e/${evren}`}>Kayıtlara dön</a></main>;
   if (!kayit) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
@@ -52,6 +58,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           </div>
         )}
         <CatismaListesi istemci={istemci} evren={evren} kod={kod} surum={surum} />
+        {(kayit.tur === 'sahne' || kayit.tur === 'bolum') && <AnlatiYolu istemci={istemci} evren={evren} kayit={kayit} />}
         <div class="kayit-basi">
           <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>
           <AlanGirdisi etiket="Ad" deger={kayit.ad} buyuk zorunlu kaydet={async (v) => {
@@ -83,6 +90,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
             </select>
           </label>
           <TarihAlani istemci={istemci} evren={evren} kayit={kayit} />
+          {kayit.tur === 'sahne' && <SahneAlanlari istemci={istemci} evren={evren} kayit={kayit} baglam={sahneBaglami} />}
           <div class="alan genis">
             <span class="alan-adi satir">Kısa özet <KararSecici etiket="Kısa özet" karar={kayit.alanKararlari.ozet ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod, alan: 'ozet', karar: k })} /></span>
             <AlanGirdisi etiket="Kısa özet" deger={kayit.ozet} kaydet={(v) => degistir('ozet', v)} ipucu="Bir satırda kim ya da ne olduğu" />
@@ -110,7 +118,10 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
 
         <MetinEditoru key={editorAnahtari} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} baslangic={editorAnahtari === 0 ? baslangic : null} />
 
+        {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}
+        {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={sahneBaglami} />}
         {kayit.tur === 'sahne' && <SahneBolumu istemci={istemci} evren={evren} kayit={kayit} surum={surum} />}
+        {!DURUMSUZ.has(kayit.tur) && <DurumGecmisi istemci={istemci} evren={evren} kayit={kayit} />}
         <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />
         <KayitDegisimleri istemci={istemci} evren={evren} kod={kod} surum={surum} />
         <Baglananlar istemci={istemci} evren={evren} kod={kod} surum={surum} />
