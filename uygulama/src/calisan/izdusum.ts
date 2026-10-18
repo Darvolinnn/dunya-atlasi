@@ -7,7 +7,7 @@ import { baglantilar, duzMetin } from '../alan/metin-sema';
 import { katla } from '../alan/turkce';
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 2;
+export const IZDUSUM_SURUMU = 3;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -21,9 +21,51 @@ CREATE TABLE IF NOT EXISTS kayitlar(
   lakaplar TEXT NOT NULL DEFAULT '[]',
   onceki_adlar TEXT NOT NULL DEFAULT '[]',
   etiketler TEXT NOT NULL DEFAULT '[]',
+  tarih TEXT,
+  alan_kararlari TEXT NOT NULL DEFAULT '{}',
+  gorseller TEXT NOT NULL DEFAULT '[]',
+  sahne_olayi TEXT,
   olusturma INTEGER NOT NULL,
   duzenleme INTEGER NOT NULL,
   silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS kayitlar_sahne_olayi ON kayitlar(sahne_olayi);
+CREATE TABLE IF NOT EXISTS iliskiler(
+  kod TEXT PRIMARY KEY,
+  tur TEXT NOT NULL,
+  a TEXT NOT NULL,
+  b TEXT NOT NULL,
+  rol TEXT,
+  baslangic TEXT,
+  bitis TEXT,
+  aciklama TEXT NOT NULL DEFAULT '',
+  karar TEXT NOT NULL,
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS iliskiler_a ON iliskiler(a);
+CREATE INDEX IF NOT EXISTS iliskiler_b ON iliskiler(b);
+CREATE TABLE IF NOT EXISTS degisimler(
+  kod TEXT PRIMARY KEY,
+  olay TEXT NOT NULL,
+  sahne TEXT,
+  konu TEXT,
+  metin TEXT NOT NULL,
+  karar TEXT NOT NULL,
+  olusturma INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS degisimler_olay ON degisimler(olay);
+CREATE INDEX IF NOT EXISTS degisimler_konu ON degisimler(konu);
+CREATE TABLE IF NOT EXISTS medya(
+  ad TEXT PRIMARY KEY,
+  tur TEXT NOT NULL,
+  boyut INTEGER NOT NULL,
+  en INTEGER,
+  boy INTEGER,
+  dosya_adi TEXT NOT NULL DEFAULT '',
+  olusturma INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS metinler(
   kayit TEXT NOT NULL,
@@ -44,7 +86,7 @@ CREATE TABLE IF NOT EXISTS baglantilar(
 );
 CREATE INDEX IF NOT EXISTS baglantilar_hedef ON baglantilar(hedef);
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar'];
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'medya'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -53,7 +95,7 @@ const evrenAlani = (db: Database, k: string, v: unknown) =>
 
 const DEGISEBILIR = new Set(['ad', 'tur', 'ozet', 'okunus', 'karar']);
 
-function listeDegistir(db: Database, kod: string, sutun: 'lakaplar' | 'etiketler' | 'onceki_adlar', ekle?: unknown, cikar?: unknown) {
+function listeDegistir(db: Database, kod: string, sutun: 'lakaplar' | 'etiketler' | 'onceki_adlar' | 'gorseller', ekle?: unknown, cikar?: unknown) {
   const ham = db.selectValue(`SELECT ${sutun} FROM kayitlar WHERE kod=?`, [kod]) as string | undefined;
   if (ham === undefined) return;
   let liste: string[] = JSON.parse(ham);
@@ -93,8 +135,8 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   kayit_olustur(db, i) {
     const v = i.veri;
     db.exec({
-      sql: `INSERT OR IGNORE INTO kayitlar(kod, tur, ad, ozet, karar, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?)`,
-      bind: [v.kod as string, v.tur as string, v.ad as string, (v.ozet as string) ?? '', v.karar as string, i.zaman, i.zaman],
+      sql: `INSERT OR IGNORE INTO kayitlar(kod, tur, ad, ozet, karar, sahne_olayi, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?)`,
+      bind: [v.kod as string, v.tur as string, v.ad as string, (v.ozet as string) ?? '', v.karar as string, (v.sahneOlayi as string) ?? null, i.zaman, i.zaman],
     });
   },
   kayit_degistir(db, i) {
@@ -119,6 +161,63 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   kayit_geri_yukle(db, i) {
     db.exec({ sql: 'UPDATE kayitlar SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+
+  kayit_tarih(db, i) {
+    const { kod, tarih } = i.veri as { kod: string; tarih: unknown };
+    db.exec({ sql: 'UPDATE kayitlar SET tarih=?, duzenleme=? WHERE kod=?', bind: [tarih ? JSON.stringify(tarih) : null, i.zaman, kod] });
+  },
+  kayit_alan_karar(db, i) {
+    const { kod, alan, karar } = i.veri as { kod: string; alan: string; karar: string };
+    const ham = db.selectValue('SELECT alan_kararlari FROM kayitlar WHERE kod=?', [kod]) as string | undefined;
+    if (ham === undefined) return;
+    const k = JSON.parse(ham) as Record<string, string>;
+    if (karar === 'kesin') delete k[alan]; else k[alan] = karar; // düz değer varsayılan olarak kesindir (K13)
+    db.exec({ sql: 'UPDATE kayitlar SET alan_kararlari=?, duzenleme=? WHERE kod=?', bind: [JSON.stringify(k), i.zaman, kod] });
+  },
+  kayit_gorsel(db, i) {
+    listeDegistir(db, i.veri.kod as string, 'gorseller', i.veri.ekle, i.veri.cikar);
+    db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, i.veri.kod as string] });
+  },
+
+  iliski_ekle(db, i) {
+    const v = i.veri as Record<string, unknown>;
+    db.exec({
+      sql: `INSERT OR IGNORE INTO iliskiler(kod, tur, a, b, rol, baslangic, bitis, aciklama, karar, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
+      bind: [v.kod as string, v.tur as string, v.a as string, v.b as string, (v.rol as string) ?? null,
+        v.baslangic ? JSON.stringify(v.baslangic) : null, v.bitis ? JSON.stringify(v.bitis) : null, (v.aciklama as string) ?? '', v.karar as string, i.zaman, i.zaman],
+    });
+  },
+  iliski_degistir(db, i) {
+    const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
+    if (!['baslangic', 'bitis', 'aciklama', 'karar', 'rol'].includes(alan)) return;
+    const d = alan === 'baslangic' || alan === 'bitis' ? (deger ? JSON.stringify(deger) : null) : deger;
+    db.exec({ sql: `UPDATE iliskiler SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [d as string | null, i.zaman, kod] });
+  },
+  iliski_sil(db, i) {
+    db.exec({ sql: 'UPDATE iliskiler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  iliski_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE iliskiler SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+
+  degisim_ekle(db, i) {
+    const v = i.veri as Record<string, unknown>;
+    db.exec({
+      sql: 'INSERT OR IGNORE INTO degisimler(kod, olay, sahne, konu, metin, karar, olusturma) VALUES(?,?,?,?,?,?,?)',
+      bind: [v.kod as string, v.olay as string, (v.sahne as string) ?? null, (v.konu as string) ?? null, v.metin as string, v.karar as string, i.zaman],
+    });
+  },
+  degisim_sil(db, i) {
+    db.exec({ sql: 'UPDATE degisimler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+
+  medya_ekle(db, i) {
+    const v = i.veri as Record<string, unknown>;
+    db.exec({
+      sql: 'INSERT OR IGNORE INTO medya(ad, tur, boyut, en, boy, dosya_adi, olusturma) VALUES(?,?,?,?,?,?,?)',
+      bind: [v.ad as string, v.tur as string, v.boyut as number, (v.en as number) ?? null, (v.boy as number) ?? null, (v.dosyaAdi as string) ?? '', i.zaman],
+    });
   },
 
   metin(db, i) {

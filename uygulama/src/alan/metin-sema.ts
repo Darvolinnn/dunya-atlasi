@@ -1,6 +1,6 @@
 // Serbest metnin yapısı: paragraf, başlık, alıntı; vurgu, kalın ve kayda bağlantı (§5.1). İşaret (§5.7)
 // sonraki aşamalarda buraya eklenir. Automerge'deki karşılıkları "automerge" anahtarlarıdır.
-import { SchemaAdapter } from '@automerge/prosemirror';
+import { SchemaAdapter, pmNodeToSpans } from '@automerge/prosemirror';
 
 export const metinSemasi = new SchemaAdapter({
   nodes: {
@@ -90,4 +90,12 @@ export function baglantilar(spans: readonly Span[]): { hedef: string; metin: str
     } else son = null;
   });
   return sonuc;
+}
+
+/** Düz metinden parçalar: her satır bir paragraf (hızlı not ve içe aktarma için). */
+export function duzMetindenSpans(metin: string): unknown[] {
+  const s = metinSemasi.schema;
+  const satirlar = metin.replace(/\r\n?/g, '\n').split('\n');
+  const doc = s.node('doc', null, satirlar.map((p) => s.node('paragraph', null, p ? [s.text(p)] : [])));
+  return pmNodeToSpans(metinSemasi, doc);
 }

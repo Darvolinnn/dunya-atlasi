@@ -1,5 +1,6 @@
 // İşlemlerin kullanıcıya gösterilen açıklaması. Programlama terimi kullanılmaz (§10.7).
 import { KARARLAR, turBul } from './turler';
+import { iliskiTuruBul } from './iliski-turleri';
 
 type Aciklayici = (veri: Record<string, unknown>, ad: (kod: unknown) => string) => string;
 
@@ -21,6 +22,22 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   kayit_etiket: (v, ad) => v.ekle ? `${ad(v.kod)}: etiket eklendi “${v.ekle}”` : `${ad(v.kod)}: etiket çıkarıldı “${v.cikar}”`,
   kayit_sil: (v, ad) => `${ad(v.kod)}: çöp kutusuna taşındı`,
   kayit_geri_yukle: (v, ad) => `${ad(v.kod)}: çöp kutusundan geri getirildi`,
+  kayit_tarih: (v, ad) => {
+    const t = (x: unknown) => (x as { ifade?: string } | null)?.ifade ?? '';
+    return t(v.tarih) ? `${ad(v.kod)}: evren tarihi “${t(v.tarih)}”` : `${ad(v.kod)}: evren tarihi kaldırıldı`;
+  },
+  kayit_alan_karar: (v, ad) => `${ad(v.kod)}: ${(ALAN_ADI[String(v.alan)] ?? (v.alan === 'tarih' ? 'Evren tarihi' : String(v.alan))).toLocaleLowerCase('tr-TR')} artık “${kararAdi(v.karar)}”`,
+  kayit_gorsel: (v, ad) => v.ekle ? `${ad(v.kod)}: görsel eklendi` : `${ad(v.kod)}: görsel çıkarıldı`,
+  medya_ekle: (v) => `Görsel saklandı${v.dosyaAdi ? `: ${v.dosyaAdi}` : ''}`,
+  iliski_ekle: (v, ad) => `${ad(v.a)} → ${iliskiTuruBul(String(v.tur)).aIcin.toLocaleLowerCase('tr-TR')}: ${ad(v.b)}`,
+  iliski_degistir: (v) => {
+    const alan = ({ baslangic: 'başlangıcı', bitis: 'bitişi', aciklama: 'açıklaması', karar: 'karar durumu', rol: 'rolü' } as Record<string, string>)[String(v.alan)] ?? 'bir alanı';
+    return `Bir ilişkinin ${alan} değişti`;
+  },
+  iliski_sil: (v, ad) => `İlişki kaldırıldı: ${ad(v.a)} – ${ad(v.b)}`,
+  iliski_geri_yukle: (v, ad) => `İlişki geri getirildi: ${ad(v.a)} – ${ad(v.b)}`,
+  degisim_ekle: (v, ad) => `${ad(v.olay)}: değişim kaydedildi “${v.metin}”${v.konu ? ` (${ad(v.konu)})` : ''}`,
+  degisim_sil: (v, ad) => `${ad(v.olay)}: değişim kaldırıldı “${v.metin}”`,
   metin: (v, ad) => v.adDuzeltme ? `${ad(v.kayit)}: bağlantıda “${ad(v.adDuzeltme)}” adı düzeltildi` : v.geriYukleme ? `${ad(v.kayit)}: metnin eski bir sürümü geri getirildi` : `${ad(v.kayit)}: metin kaydedildi`,
 };
 

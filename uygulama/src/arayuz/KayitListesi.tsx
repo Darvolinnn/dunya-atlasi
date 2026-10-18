@@ -4,6 +4,8 @@ import type { Istemci } from '../veri/istemci';
 import type { AramaSonucu, KayitOzeti } from '../veri/api';
 import { turBul } from '../alan/turler';
 import { turkceKarsilastir } from '../alan/turkce';
+import { siraAnahtari } from '../alan/tarih';
+import { Gorsel } from './gorsel';
 import { zamanYaz } from '../alan/islem-metni';
 import { KararRozeti, TurSecici } from './ortak';
 import { git } from './Uygulama';
@@ -31,7 +33,7 @@ export function YeniKayit({ istemci, evren }: { istemci: Istemci; evren: string 
   );
 }
 
-type Siralama = 'son' | 'ad' | 'tur';
+type Siralama = 'son' | 'ad' | 'tur' | 'tarih';
 
 const NEREDEN: Record<string, string> = { lakap: 'lakabı', onceki: 'eski adı', okunus: 'okunuşu', kok: 'çekimli biçimden', ozet: 'özetinde', metin: 'metninde' };
 
@@ -47,6 +49,7 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
   const [tur, setTur] = useState('');
   const [siralama, setSiralama] = useState<Siralama>('son');
   const [bulunan, setBulunan] = useState<AramaSonucu[] | null>(null);
+  const [vazgecilenGizli, setVazgecilenGizli] = useState(false);
   useEffect(() => { istemci.iste('kayitlar', { evren }).then(setKayitlar); }, [evren, surum]);
   useEffect(() => {
     let iptal = false;
@@ -61,12 +64,13 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
     // Arama varken sıra aramanın sırasıdır (en iyi eşleşme önce).
     const s = (bulunan ? bulunan.filter((b) => harita.has(b.kod)).map((b) => ({ k: harita.get(b.kod)!, nereden: neredenYazisi(b.nereden), parca: b.parca }))
       : kayitlar.map((k) => ({ k, nereden: null as string | null, parca: undefined as string | undefined })))
-      .filter((x) => !tur || x.k.tur === tur);
+      .filter((x) => (!tur || x.k.tur === tur) && (!vazgecilenGizli || x.k.karar !== 'vazgecildi'));
     if (bulunan) return s;
+    if (siralama === 'tarih') s.sort((x, y) => siraAnahtari(x.k.tarih ?? null) - siraAnahtari(y.k.tarih ?? null) || turkceKarsilastir(x.k.ad, y.k.ad));
     if (siralama === 'ad') s.sort((x, y) => turkceKarsilastir(x.k.ad, y.k.ad));
     if (siralama === 'tur') s.sort((x, y) => turkceKarsilastir(turBul(x.k.tur).ad, turBul(y.k.tur).ad) || turkceKarsilastir(x.k.ad, y.k.ad));
     return s;
-  }, [kayitlar, bulunan, tur, siralama]);
+  }, [kayitlar, bulunan, tur, siralama, vazgecilenGizli]);
 
   if (!kayitlar) return null;
   return (
@@ -87,12 +91,14 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
               <option value="son">Son değişen önce</option>
               <option value="ad">Ada göre</option>
               <option value="tur">Türe göre</option>
+              <option value="tarih">Evren tarihine göre</option>
             </select>
+            <label class="satir kucuk soluk"><input type="checkbox" checked={vazgecilenGizli} onChange={() => setVazgecilenGizli(!vazgecilenGizli)} /> Vazgeçilenleri gizle</label>
           </div>
           <p class="soluk kucuk">{gorunen.length === kayitlar.length ? `${kayitlar.length} kayıt` : `${kayitlar.length} kayıttan ${gorunen.length} tanesi`}</p>
           {gorunen.length === 0 ? <div class="bos"><p>Aramaya uyan kayıt yok.</p></div> : (
             <ul class="kayit-listesi">
-              {gorunen.map(({ k, nereden, parca }) => <KayitSatiri key={k.kod} k={k} evren={evren} nereden={nereden} parca={parca} />)}
+              {gorunen.map(({ k, nereden, parca }) => <KayitSatiri key={k.kod} k={k} evren={evren} nereden={nereden} parca={parca} istemci={istemci} />)}
             </ul>
           )}
         </>
@@ -101,15 +107,15 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
   );
 }
 
-function KayitSatiri({ k, evren, nereden, parca }: { k: KayitOzeti; evren: string; nereden?: string | null; parca?: string }) {
+function KayitSatiri({ k, evren, nereden, parca, istemci }: { k: KayitOzeti; evren: string; nereden?: string | null; parca?: string; istemci?: Istemci }) {
   const tur = turBul(k.tur);
   return (
     <li>
       <a class="kayit-satiri" href={`#/e/${evren}/k/${k.kod}`}>
-        <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>
+        {k.gorsel && istemci ? <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} sinif="satir-gorseli" /> : <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>}
         <span class="govde">
           <span class="satir-ad">{k.ad} <KararRozeti karar={k.karar} /></span>
-          <span class="soluk kucuk">{tur.ad}{k.ozet ? ` · ${k.ozet}` : ''}{nereden ? ` · ${nereden}` : ''}</span>
+          <span class="soluk kucuk">{tur.ad}{k.tarih ? ` · ${k.tarih.ifade}` : ''}{k.ozet ? ` · ${k.ozet}` : ''}{nereden ? ` · ${nereden}` : ''}</span>
           {parca && <span class="soluk kucuk parca">{parca}</span>}
         </span>
         <span class="soluk kucuk zaman">{zamanYaz(k.duzenleme)}</span>
@@ -155,7 +161,7 @@ export function Bahsedilenler({ istemci, evren, surum }: { istemci: Istemci; evr
       <p class="soluk kucuk">Metinlerde bağlantı verilmiş ama kendi metni henüz yazılmamış kayıtlar. En çok anılan en üstte.</p>
       {liste.length === 0 ? <div class="bos"><p>Bahsedilip yazılmamış kayıt yok.</p></div> : (
         <ul class="kayit-listesi">
-          {liste.map((k) => <KayitSatiri key={k.kod} k={k} evren={evren} nereden={`${k.anilma} yerde anılıyor`} />)}
+          {liste.map((k) => <KayitSatiri key={k.kod} k={k} evren={evren} istemci={istemci} nereden={`${k.anilma} yerde anılıyor`} />)}
         </ul>
       )}
     </>

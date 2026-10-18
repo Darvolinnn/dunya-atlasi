@@ -5,6 +5,7 @@ import type { IstekAdi } from '../veri/api';
 import { Hizmet } from './hizmet';
 import { automergeHazirla } from '../alan/automerge';
 import automergeWasm from '@automerge/automerge/automerge.wasm?url';
+import { OpfsDeposu, tarayiciIsleyici } from './medya-tarayici';
 
 let hizmet: Hizmet | null = null;
 let havuz: { getFileCount(): number; getCapacity(): number; addCapacity(n: number): Promise<number> } | null = null;
@@ -14,7 +15,9 @@ let hazirlik: Promise<Hizmet> | null = null;
 const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', 'evrenOlustur', 'evrenAdlandir', 'evrenBilgisi', 'islemGunlugu',
   'kayitlar', 'kayit', 'kayitOlustur', 'kayitDegistir', 'kayitListe', 'kayitSil', 'kayitGeriYukle', 'kayitGecmisi',
   'metinAc', 'metinKaydet', 'metinSurumu', 'metinGeriYukle',
-  'ara', 'baglananlar', 'bahsedilenler', 'adDuzeltmeOnizle', 'adDuzeltmeUygula']);
+  'ara', 'baglananlar', 'bahsedilenler', 'adDuzeltmeOnizle', 'adDuzeltmeUygula',
+  'kayitTarih', 'alanKarari', 'hizliNot', 'nottanKayit', 'iliskiler', 'iliskiEkle', 'iliskiDegistir', 'iliskiSil', 'iliskiGeriYukle',
+  'sahneOlaylari', 'degisimEkle', 'degisimSil', 'kayitDegisimleri', 'gorselEkle', 'kayitGorselCikar', 'gorsel']);
 
 function kurulumAdi(): string {
   const ua = navigator.userAgent;
@@ -28,7 +31,8 @@ async function hazirla(): Promise<Hizmet> {
   const h = await sqlite3.installOpfsSAHPoolVfs({ name: 'dunya-atlasi', directory: '/dunya-atlasi', initialCapacity: 16 });
   havuz = h as never;
   const ac = (ad: string) => new h.OpfsSAHPoolDb(ad);
-  return new Hizmet(ac, kurulumAdi(), sqlite3.version.libVersion, (evren, turler, kayitlar) => postMessage({ degisti: { evren, turler, kayitlar } }));
+  return new Hizmet(ac, kurulumAdi(), sqlite3.version.libVersion, (evren, turler, kayitlar) => postMessage({ degisti: { evren, turler, kayitlar } }),
+    new OpfsDeposu(), tarayiciIsleyici);
 }
 
 onmessage = async (e: MessageEvent<{ no: number; ad: IstekAdi; arg: unknown }>) => {
@@ -40,7 +44,10 @@ onmessage = async (e: MessageEvent<{ no: number; ad: IstekAdi; arg: unknown }>) 
     if (havuz && havuz.getFileCount() + 6 > havuz.getCapacity()) await havuz.addCapacity(16);
     if (!IZINLI.has(ad)) throw new Error('Bilinmeyen istek: ' + ad);
     const fn = (hizmet as unknown as Record<string, (a: unknown) => unknown>)[ad];
-    postMessage({ no, sonuc: fn.call(hizmet, arg) });
+    const sonuc = await fn.call(hizmet, arg);
+    // Görsel baytları kopyalanmadan aktarılır.
+    const aktar = sonuc && typeof sonuc === 'object' && (sonuc as { veri?: unknown }).veri instanceof Uint8Array ? [((sonuc as { veri: Uint8Array }).veri).buffer] : [];
+    postMessage({ no, sonuc }, { transfer: aktar as Transferable[] });
   } catch (err) {
     postMessage({ no, hata: err instanceof Error ? err.message : String(err) });
   }

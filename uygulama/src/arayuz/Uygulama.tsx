@@ -4,6 +4,7 @@ import type { KurulumBilgisi } from '../veri/api';
 import { EvrenlerEkrani } from './EvrenlerEkrani';
 import { EvrenEkrani } from './EvrenEkrani';
 import { KayitEkrani } from './KayitEkrani';
+import { HizliNot } from './HizliNot';
 
 export type Yol = { ekran: 'evrenler' } | { ekran: 'evren'; kod: string; sekme: string } | { ekran: 'kayit'; evren: string; kod: string };
 
@@ -55,6 +56,7 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
       {yol.ekran === 'evrenler' ? <EvrenlerEkrani istemci={istemci} />
         : yol.ekran === 'kayit' ? <KayitEkrani key={yol.kod} istemci={istemci} evren={yol.evren} kod={yol.kod} />
         : <EvrenEkrani istemci={istemci} kod={yol.kod} sekme={yol.sekme} />}
+      <HizliNot istemci={istemci} evren={yol.ekran === 'evren' ? yol.kod : yol.ekran === 'kayit' ? yol.evren : null} />
       <footer class="alt" aria-label="Durum">
         <span>Bu cihaza kaydediliyor</span>
         <span>{kalici === null ? '' : kalici ? 'Tarayıcı verileri kalıcı tutuyor' : 'Tarayıcı kalıcı depolama izni vermedi'}</span>

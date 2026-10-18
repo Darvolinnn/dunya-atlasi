@@ -4,11 +4,14 @@ import type { Database } from '@sqlite.org/sqlite-wasm';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
 import type { IslemGirdisi } from '../alan/islem';
 import { A } from '../alan/automerge';
-import { baglantilar, spanAyari } from '../alan/metin-sema';
+import { baglantilar, duzMetindenSpans, spanAyari } from '../alan/metin-sema';
+import { karsilastir, siraAnahtari, tarihCoz, VARSAYILAN_TAKVIM, type EvrenTarihi } from '../alan/tarih';
+import { iliskiTuruBul, iliskiTuruGecerli, rolAdi } from '../alan/iliski-turleri';
+import { icerikAdi, onizlemeAdi, type GorselIsleyici, type MedyaDeposu } from './medya';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, kokAdaylari } from '../alan/turkce-ek';
 import { kararGecerli, turGecerli } from '../alan/turler';
-import type { AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, Istekler, Kayit, KayitOzeti, Spans } from '../veri/api';
+import type { AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { KurulumVt } from './kurulum-vt';
 import { metinBelgesi } from './izdusum';
@@ -32,7 +35,8 @@ export class Hizmet implements Istekler {
   private readonly aktor: string;
 
   constructor(private readonly ac: DosyaAcici, varsayilanKurulumAdi: string, private readonly sqliteSurumu: string,
-    private readonly bildir: Bildirici = () => {}) {
+    private readonly bildir: Bildirici = () => {},
+    private readonly medya: MedyaDeposu | null = null, private readonly gorselIsle: GorselIsleyici | null = null) {
     this.kurulum = new KurulumVt(ac('/kurulum.db'), varsayilanKurulumAdi);
     this.aktor = aktor(this.kurulum.kod);
   }
@@ -100,10 +104,14 @@ export class Hizmet implements Istekler {
   kayitlar({ evren, cop = false }: { evren: string; cop?: boolean }): KayitOzeti[] {
     const e = this.evren(evren);
     return e.db.selectObjects(
-      `SELECT kod, tur, ad, ozet, karar, lakaplar, duzenleme, silindi FROM kayitlar WHERE silindi IS ${cop ? 'NOT ' : ''}NULL ORDER BY duzenleme DESC`)
+      `SELECT k.kod, k.tur, k.ad, k.ozet, k.karar, k.lakaplar, k.duzenleme, k.silindi, k.gorseller,
+              coalesce(k.tarih, s.tarih) tarih
+       FROM kayitlar k LEFT JOIN kayitlar s ON s.kod=k.sahne_olayi
+       WHERE k.silindi IS ${cop ? 'NOT ' : ''}NULL ORDER BY k.duzenleme DESC`)
       .map((r) => ({
         kod: r.kod as string, tur: r.tur as string, ad: r.ad as string, ozet: r.ozet as string, karar: r.karar as string,
         lakaplar: JSON.parse(r.lakaplar as string), duzenleme: Number(r.duzenleme), silindi: r.silindi == null ? null : Number(r.silindi),
+        tarih: r.tarih ? JSON.parse(r.tarih as string) : null, gorsel: (JSON.parse(r.gorseller as string) as string[])[0] ?? null,
       }));
   }
 
@@ -115,19 +123,70 @@ export class Hizmet implements Istekler {
       kod, tur: r.tur as string, ad: r.ad as string, ozet: r.ozet as string, karar: r.karar as string, okunus: r.okunus as string,
       lakaplar: JSON.parse(r.lakaplar as string), etiketler: JSON.parse(r.etiketler as string), oncekiAdlar: JSON.parse(r.onceki_adlar as string),
       olusturma: Number(r.olusturma), duzenleme: Number(r.duzenleme), silindi: r.silindi == null ? null : Number(r.silindi),
+      tarih: r.tarih ? JSON.parse(r.tarih as string) : null, alanKararlari: JSON.parse(r.alan_kararlari as string),
+      gorseller: JSON.parse(r.gorseller as string), gorsel: (JSON.parse(r.gorseller as string) as string[])[0] ?? null,
+      sahneOlayi: (r.sahne_olayi as string) ?? null,
+      sahneTarihi: r.sahne_olayi ? this.tarihOku(e, r.sahne_olayi as string) : null,
     };
+  }
+
+  private tarihOku(e: EvrenVt, kod: string): EvrenTarihi | null {
+    const t = e.db.selectValue('SELECT tarih FROM kayitlar WHERE kod=?', [kod]) as string | null | undefined;
+    return t ? JSON.parse(t) : null;
+  }
+  /** Bir olayın geçerli tarihi: kendi tarihi, yoksa sahne olayıysa sahnenin tarihi (§3.3). */
+  private olayTarihi(e: EvrenVt, kod: string): EvrenTarihi | null {
+    const r = e.db.selectObject('SELECT tarih, sahne_olayi FROM kayitlar WHERE kod=?', [kod]);
+    if (!r) return null;
+    if (r.tarih) return JSON.parse(r.tarih as string);
+    return r.sahne_olayi ? this.tarihOku(e, r.sahne_olayi as string) : null;
+  }
+
+  /** Yeni kaydın işlemleri. Kaydın gövde metni ilk değişiklikle birlikte doğar; bütün cihazlar aynı kökten başlar. */
+  private kayitGirdileri(kod: string, v: { ad: string; tur: string; karar: string; ozet: string; spans?: Spans; sahneOlayi?: string }): IslemGirdisi[] {
+    const kok = A.from({ t: '' }, { actor: this.aktor });
+    const girdiler: IslemGirdisi[] = [
+      { tur: 'kayit_olustur', veri: { kod, tur: turGecerli(v.tur) ? v.tur : 'diger', ad: v.ad, karar: v.karar, ozet: v.ozet, ...(v.sahneOlayi ? { sahneOlayi: v.sahneOlayi } : {}) } },
+      { tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(kok), ilk: true }, ikili: A.save(kok) },
+    ];
+    if (v.spans && v.spans.length) {
+      const dolu = A.change(A.clone(kok, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], v.spans as never, spanAyari()));
+      girdiler.push({ tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(dolu) }, ikili: A.saveSince(dolu, A.getHeads(kok)) });
+    }
+    return girdiler;
   }
 
   kayitOlustur({ evren, ad, tur, karar = 'kesin', ozet = '' }: { evren: string; ad: string; tur: string; karar?: string; ozet?: string }) {
     const temizAd = temizle(ad);
     if (!kararGecerli(karar)) throw new Error('Geçersiz karar durumu.');
     const kod = yeniKod();
-    // Kaydın gövde metni ilk değişiklikle birlikte doğar; bütün cihazlar aynı kökten başlar.
-    const kok = A.from({ t: '' }, { actor: this.aktor });
+    this.yaz(evren, this.kayitGirdileri(kod, { ad: temizAd, tur, karar, ozet: temizle(ozet, { bos: true, uzunluk: 500 }) }), [kod]);
+    return { kod };
+  }
+
+  /** Hızlı not (§5.8): form yok; ilk satır adı olur, metin notun gövdesidir. */
+  hizliNot({ evren, metin }: { evren: string; metin: string }) {
+    const duz = String(metin ?? '').replace(/\r\n?/g, '\n').trim();
+    if (!duz) throw new Error('Not boş.');
+    if (duz.length > 100_000) throw new Error('Not çok uzun.');
+    const ilk = duz.split('\n')[0].replace(/\s+/g, ' ').trim();
+    const ad = ilk.length > 60 ? ilk.slice(0, 60).replace(/\s+\S*$/, '') + '…' : ilk;
+    const kod = yeniKod();
+    this.yaz(evren, this.kayitGirdileri(kod, { ad: ad || 'Not', tur: 'not', karar: 'fikir', ozet: '', spans: duzMetindenSpans(duz) }), [kod]);
+    return { kod, ad: ad || 'Not' };
+  }
+
+  /** Notu kayda dönüştürür (§4.6, T2): metin yeni kayda kopyalanır, not yerinde kalır ve ikisi bağlı kalır. */
+  nottanKayit({ evren, not, ad, tur }: { evren: string; not: string; ad: string; tur: string }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, not);
+    if (!turGecerli(tur)) throw new Error('Bilinmeyen tür.');
+    const d = metinBelgesi(e.db, not, 'govde');
+    const kod = yeniKod();
     this.yaz(evren, [
-      { tur: 'kayit_olustur', veri: { kod, tur: turGecerli(tur) ? tur : 'diger', ad: temizAd, karar, ozet: temizle(ozet, { bos: true, uzunluk: 500 }) } },
-      { tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(kok), ilk: true }, ikili: A.save(kok) },
-    ], [kod]);
+      ...this.kayitGirdileri(kod, { ad: temizle(ad), tur, karar: 'fikir', ozet: '', spans: d ? A.spans(d, ['t']) as Spans : undefined }),
+      { tur: 'iliski_ekle', veri: { kod: yeniKod(), tur: 'nottan', a: not, b: kod, karar: 'kesin' } },
+    ], [kod, not]);
     return { kod };
   }
 
@@ -144,6 +203,26 @@ export class Hizmet implements Istekler {
     const onceki = e.db.selectValue(`SELECT ${alan} FROM kayitlar WHERE kod=?`, [kod]) as string;
     if (onceki === temiz) return;
     this.yaz(evren, [{ tur: 'kayit_degistir', veri: { kod, alan, deger: temiz, onceki } }], [kod]);
+  }
+
+  /** Evren tarihi (§3.4): ifade ve kanonik eksen birlikte saklanır. Boş ifade tarihi kaldırır. */
+  kayitTarih({ evren, kod, ifade }: { evren: string; kod: string; ifade: string }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kod);
+    const tarih = tarihCoz(temizle(ifade, { bos: true }), VARSAYILAN_TAKVIM);
+    const onceki = this.tarihOku(e, kod);
+    if (JSON.stringify(onceki?.ifade ?? null) === JSON.stringify(tarih?.ifade ?? null)) return { tarih };
+    this.yaz(evren, [{ tur: 'kayit_tarih', veri: { kod, tarih, onceki } }], [kod]);
+    return { tarih };
+  }
+
+  /** Alan düzeyinde karar durumu (§3.6): düz girilen değer kesindir; tek dokunuşla fikre çevrilir. */
+  alanKarari({ evren, kod, alan, karar }: { evren: string; kod: string; alan: string; karar: string }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kod);
+    if (!['ad', 'ozet', 'okunus', 'tarih'].includes(alan)) throw new Error('Bu alanın karar durumu tutulmuyor.');
+    if (!kararGecerli(karar)) throw new Error('Geçersiz karar durumu.');
+    this.yaz(evren, [{ tur: 'kayit_alan_karar', veri: { kod, alan, karar } }], [kod]);
   }
 
   kayitListe({ evren, kod, liste, ekle, cikar }: { evren: string; kod: string; liste: 'lakap' | 'etiket'; ekle?: string; cikar?: string }) {
@@ -359,5 +438,192 @@ export class Hizmet implements Istekler {
     }
     if (girdiler.length) this.yaz(evren, girdiler, [kod, ...kaynaga.keys()]);
     return { degisen: [...kaynaga.values()].reduce((n, l) => n + l.length, 0) };
+  }
+
+  // ---------- İlişkiler (§3.2) ----------
+  /** Bir kaydın ilişkileri, o kaydın gözünden okunmuş. Karşı kaydı çöp kutusunda olanlar gösterilmez. */
+  iliskiler({ evren, kod }: { evren: string; kod: string }): IliskiSatiri[] {
+    const e = this.evren(evren);
+    return e.db.selectObjects(
+      `SELECT i.*, k.ad karsi_ad, k.tur karsi_tur, k.kod karsi_kod FROM iliskiler i
+       JOIN kayitlar k ON k.kod = CASE WHEN i.a=? THEN i.b ELSE i.a END
+       WHERE (i.a=? OR i.b=?) AND i.silindi IS NULL AND k.silindi IS NULL ORDER BY i.tur, i.olusturma`, [kod, kod, kod])
+      .map((r) => {
+        const tur = iliskiTuruBul(r.tur as string);
+        const ben = r.a === kod ? 'a' : 'b';
+        const baslangic = r.baslangic ? JSON.parse(r.baslangic as string) : null;
+        const bitis = r.bitis ? JSON.parse(r.bitis as string) : null;
+        return {
+          kod: r.kod as string, tur: r.tur as string, ben, etiket: ben === 'a' ? tur.aIcin : tur.bIcin, grup: tur.grup,
+          karsi: { kod: r.karsi_kod as string, ad: r.karsi_ad as string, tur: r.karsi_tur as string },
+          rol: (r.rol as string) ?? null, rolAdi: rolAdi(r.tur as string, (r.rol as string) ?? null),
+          baslangic, bitis, aciklama: r.aciklama as string, karar: r.karar as string,
+          uyari: karsilastir(baslangic, bitis) === 'sonra' ? 'Bitiş, başlangıçtan önce görünüyor.' : null,
+        };
+      });
+  }
+
+  iliskiEkle({ evren, tur, a, b, rol = null, baslangic = '', bitis = '', aciklama = '', karar = 'kesin' }: {
+    evren: string; tur: string; a: string; b: string; rol?: string | null; baslangic?: string; bitis?: string; aciklama?: string; karar?: string;
+  }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, a);
+    this.kayitVarMi(e, b);
+    if (a === b) throw new Error('Bir kayıt kendisiyle ilişkilendirilemez.');
+    if (!iliskiTuruGecerli(tur)) throw new Error('Bilinmeyen ilişki türü.');
+    if (!kararGecerli(karar)) throw new Error('Geçersiz karar durumu.');
+    const t = iliskiTuruBul(tur);
+    if (rol !== null && !t.roller?.some((r) => r.kod === rol)) throw new Error('Bu ilişki için geçersiz rol.');
+    const kod = yeniKod();
+    this.yaz(evren, [{ tur: 'iliski_ekle', veri: {
+      kod, tur, a, b, ...(rol ? { rol } : {}), karar, aciklama: temizle(aciklama, { bos: true, uzunluk: 500 }),
+      baslangic: tarihCoz(temizle(baslangic, { bos: true })), bitis: tarihCoz(temizle(bitis, { bos: true })),
+    } }], [a, b]);
+    return { kod };
+  }
+
+  private iliskiBul(e: EvrenVt, kod: string) {
+    const r = kodGecerliMi(kod) ? e.db.selectObject('SELECT * FROM iliskiler WHERE kod=?', [kod]) : undefined;
+    if (!r) throw new Error('İlişki bulunamadı.');
+    return r;
+  }
+
+  iliskiDegistir({ evren, kod, alan, deger }: { evren: string; kod: string; alan: 'baslangic' | 'bitis' | 'aciklama' | 'karar' | 'rol'; deger: string }) {
+    const e = this.evren(evren);
+    const r = this.iliskiBul(e, kod);
+    let yeni: unknown;
+    if (alan === 'baslangic' || alan === 'bitis') yeni = tarihCoz(temizle(deger, { bos: true }));
+    else if (alan === 'aciklama') yeni = temizle(deger, { bos: true, uzunluk: 500 });
+    else if (alan === 'karar') { if (!kararGecerli(deger)) throw new Error('Geçersiz karar durumu.'); yeni = deger; }
+    else if (alan === 'rol') { if (!iliskiTuruBul(r.tur as string).roller?.some((x) => x.kod === deger)) throw new Error('Geçersiz rol.'); yeni = deger; }
+    else throw new Error('Bu alan değiştirilemez.');
+    const onceki = alan === 'baslangic' || alan === 'bitis' ? (r[alan] ? JSON.parse(r[alan] as string) : null) : r[alan];
+    this.yaz(evren, [{ tur: 'iliski_degistir', veri: { kod, alan, deger: yeni, onceki } }], [r.a as string, r.b as string]);
+  }
+
+  iliskiSil({ evren, kod }: { evren: string; kod: string }) {
+    const e = this.evren(evren);
+    const r = this.iliskiBul(e, kod);
+    this.yaz(evren, [{ tur: 'iliski_sil', veri: { kod, a: r.a, b: r.b, iliski: r.tur } }], [r.a as string, r.b as string]);
+  }
+
+  iliskiGeriYukle({ evren, kod }: { evren: string; kod: string }) {
+    const e = this.evren(evren);
+    const r = this.iliskiBul(e, kod);
+    this.yaz(evren, [{ tur: 'iliski_geri_yukle', veri: { kod, a: r.a, b: r.b, iliski: r.tur } }], [r.a as string, r.b as string]);
+  }
+
+  // ---------- Sahne olayı (§3.3, K14) ve değişimler (§5.6) ----------
+  private sahneOlayiBul(e: EvrenVt, sahne: string): string | null {
+    return (e.db.selectValue('SELECT kod FROM kayitlar WHERE sahne_olayi=? AND silindi IS NULL ORDER BY olusturma LIMIT 1', [sahne]) as string) ?? null;
+  }
+
+  private degisimler(e: EvrenVt, kosul: string, arg: string): DegisimSatiri[] {
+    return e.db.selectObjects(
+      `SELECT d.*, o.ad olay_ad, s.ad sahne_ad, k.ad konu_ad, k.tur konu_tur FROM degisimler d
+       JOIN kayitlar o ON o.kod=d.olay LEFT JOIN kayitlar s ON s.kod=d.sahne LEFT JOIN kayitlar k ON k.kod=d.konu
+       WHERE ${kosul} AND d.silindi IS NULL AND o.silindi IS NULL ORDER BY d.olusturma`, [arg])
+      .map((r) => ({
+        kod: r.kod as string, metin: r.metin as string, karar: r.karar as string, olusturma: Number(r.olusturma),
+        olay: { kod: r.olay as string, ad: r.olay_ad as string }, sahne: r.sahne ? { kod: r.sahne as string, ad: r.sahne_ad as string } : null,
+        konu: r.konu && r.konu_ad != null ? { kod: r.konu as string, ad: r.konu_ad as string, tur: r.konu_tur as string } : null,
+        tarih: this.olayTarihi(e, r.olay as string),
+      }));
+  }
+
+  /** Bir sahnenin anlattığı olaylar ve değişimleri; sahne olayı ilk ihtiyaçta oluşur, öncesinde yoktur. */
+  sahneOlaylari({ evren, sahne }: { evren: string; sahne: string }): SahneOlayBilgisi[] {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, sahne);
+    return e.db.selectObjects(
+      `SELECT k.kod, k.ad, k.sahne_olayi FROM iliskiler i JOIN kayitlar k ON k.kod=i.b
+       WHERE i.tur='anlatir' AND i.a=? AND i.silindi IS NULL AND k.silindi IS NULL ORDER BY (k.sahne_olayi=?) DESC, i.olusturma`, [sahne, sahne])
+      .map((r) => ({
+        kod: r.kod as string, ad: r.ad as string, sahneOlayi: r.sahne_olayi === sahne,
+        tarih: this.olayTarihi(e, r.kod as string), degisimler: this.degisimler(e, 'd.olay=?', r.kod as string),
+      }));
+  }
+
+  /**
+   * Sahnede bir değişim kaydeder ("Elin'in eli yaralandı", T12). Olay verilmezse sahnenin kendi sahne olayına
+   * bağlanır; sahne olayı yoksa aynı işlem grubunda oluşur (görünür adla, tarihi sahneden gelir).
+   */
+  degisimEkle({ evren, sahne, olay = null, konu = null, metin, karar = 'kesin' }: {
+    evren: string; sahne: string; olay?: string | null; konu?: string | null; metin: string; karar?: string;
+  }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, sahne);
+    if (konu) this.kayitVarMi(e, konu);
+    if (!kararGecerli(karar)) throw new Error('Geçersiz karar durumu.');
+    const temiz = temizle(metin, { uzunluk: 500 });
+    const girdiler: IslemGirdisi[] = [];
+    let hedef = olay;
+    if (hedef) this.kayitVarMi(e, hedef);
+    else {
+      hedef = this.sahneOlayiBul(e, sahne);
+      if (!hedef) {
+        hedef = yeniKod();
+        const sahneAdi = e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [sahne]) as string;
+        girdiler.push(...this.kayitGirdileri(hedef, { ad: `Sahne: ${sahneAdi}`.slice(0, 200), tur: 'olay', karar: 'kesin', ozet: '', sahneOlayi: sahne }));
+        girdiler.push({ tur: 'iliski_ekle', veri: { kod: yeniKod(), tur: 'anlatir', a: sahne, b: hedef, karar: 'kesin' } });
+      }
+    }
+    const kod = yeniKod();
+    girdiler.push({ tur: 'degisim_ekle', veri: { kod, olay: hedef, sahne, ...(konu ? { konu } : {}), metin: temiz, karar } });
+    this.yaz(evren, girdiler, [sahne, hedef, ...(konu ? [konu] : [])]);
+    return { kod, olay: hedef };
+  }
+
+  degisimSil({ evren, kod }: { evren: string; kod: string }) {
+    const e = this.evren(evren);
+    const r = kodGecerliMi(kod) ? e.db.selectObject('SELECT * FROM degisimler WHERE kod=?', [kod]) : undefined;
+    if (!r) throw new Error('Değişim bulunamadı.');
+    this.yaz(evren, [{ tur: 'degisim_sil', veri: { kod, olay: r.olay, metin: r.metin } }], [r.olay as string, ...(r.konu ? [r.konu as string] : [])]);
+  }
+
+  /** Bir kaydın geçirdiği değişimler, evren tarihine göre (eşlenemeyenler sonda). */
+  kayitDegisimleri({ evren, kod }: { evren: string; kod: string }): DegisimSatiri[] {
+    const e = this.evren(evren);
+    return this.degisimler(e, 'd.konu=?', kod).sort((x, y) => siraAnahtari(x.tarih) - siraAnahtari(y.tarih) || x.olusturma - y.olusturma);
+  }
+
+  // ---------- Görseller (§10.12) ----------
+  async gorselEkle({ evren, kod, dosyaAdi, tur, veri }: { evren: string; kod: string; dosyaAdi: string; tur: string; veri: Uint8Array }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kod);
+    if (!this.medya || !this.gorselIsle) throw new Error('Görsel saklama bu cihazda kullanılamıyor.');
+    if (!(veri instanceof Uint8Array) || veri.length === 0) throw new Error('Dosya boş.');
+    if (veri.length > 200 * 1024 * 1024) throw new Error('Dosya çok büyük (en çok 200 MB).');
+    const g = await this.gorselIsle(veri, String(tur));
+    const ad = await icerikAdi(g.veri);
+    if (!(await this.medya.var(ad))) await this.medya.yaz(ad, g.veri);
+    if (g.onizleme && !(await this.medya.var(onizlemeAdi(ad)))) await this.medya.yaz(onizlemeAdi(ad), g.onizleme);
+    const girdiler: IslemGirdisi[] = [];
+    if (e.db.selectValue('SELECT 1 FROM medya WHERE ad=?', [ad]) === undefined) {
+      girdiler.push({ tur: 'medya_ekle', veri: { ad, tur: g.tur, boyut: g.veri.length, en: g.en, boy: g.boy, dosyaAdi: temizle(dosyaAdi, { bos: true }), onizleme: !!g.onizleme } });
+    }
+    const liste = JSON.parse(e.db.selectValue('SELECT gorseller FROM kayitlar WHERE kod=?', [kod]) as string) as string[];
+    if (!liste.includes(ad)) girdiler.push({ tur: 'kayit_gorsel', veri: { kod, ekle: ad } });
+    if (girdiler.length) this.yaz(evren, girdiler, [kod]);
+    return { ad, yeni: girdiler.length > 0 };
+  }
+
+  kayitGorselCikar({ evren, kod, ad }: { evren: string; kod: string; ad: string }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kod);
+    this.yaz(evren, [{ tur: 'kayit_gorsel', veri: { kod, cikar: String(ad) } }], [kod]);
+  }
+
+  /** Görselin kendisi ya da küçük önizlemesi. İndirilmemiş ile silinmiş ayrı söylenir (§10.8). */
+  async gorsel({ evren, ad, onizleme = false }: { evren: string; ad: string; onizleme?: boolean }) {
+    const e = this.evren(evren);
+    if (!/^[0-9a-f]{64}$/.test(String(ad))) throw new Error('Geçersiz görsel adı.');
+    const r = e.db.selectObject('SELECT tur, en, boy, dosya_adi FROM medya WHERE ad=?', [ad]);
+    if (!r) return { durum: 'yok' as const };
+    if (!this.medya) return { durum: 'indirilmemis' as const };
+    const veri = (onizleme ? await this.medya.oku(onizlemeAdi(ad)) : null) ?? await this.medya.oku(ad);
+    if (!veri) return { durum: 'indirilmemis' as const };
+    const turu = onizleme && (await this.medya.var(onizlemeAdi(ad))) ? 'image/webp' : r.tur as string;
+    return { durum: 'var' as const, veri, tur: turu, en: r.en as number, boy: r.boy as number, dosyaAdi: r.dosya_adi as string };
   }
 }

@@ -7,7 +7,8 @@ import { sesBilgisi } from '../alan/turkce-ek';
 import { KARARLAR, turBul } from '../alan/turler';
 import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
 import { MetinEditoru, MetinGorunumu, type EditorDenetimi } from './MetinEditoru';
-import { TurSecici } from './ortak';
+import { KararSecici, TurSecici } from './ortak';
+import { Gorseller, Iliskiler, KayitDegisimleri, NotDonustur, SahneBolumu, TarihAlani } from './KayitBolumleri';
 import { git } from './Uygulama';
 
 export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
@@ -76,12 +77,13 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
               {KARARLAR.map((k) => <option value={k.kod}>{k.ad}</option>)}
             </select>
           </label>
+          <TarihAlani istemci={istemci} evren={evren} kayit={kayit} />
           <div class="alan genis">
-            <span class="alan-adi">Kısa özet</span>
+            <span class="alan-adi satir">Kısa özet <KararSecici etiket="Kısa özet" karar={kayit.alanKararlari.ozet ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod, alan: 'ozet', karar: k })} /></span>
             <AlanGirdisi etiket="Kısa özet" deger={kayit.ozet} kaydet={(v) => degistir('ozet', v)} ipucu="Bir satırda kim ya da ne olduğu" />
           </div>
           <div class="alan">
-            <span class="alan-adi">Okunuş</span>
+            <span class="alan-adi satir">Okunuş <KararSecici etiket="Okunuş" karar={kayit.alanKararlari.okunus ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod, alan: 'okunus', karar: k })} /></span>
             <AlanGirdisi etiket="Okunuş" deger={kayit.okunus} kaydet={(v) => degistir('okunus', v)} ipucu="Örn. Jean → Jan" />
           </div>
           <div class="alan genis">
@@ -99,8 +101,13 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           )}
         </div>
 
+        <Gorseller istemci={istemci} evren={evren} kayit={kayit} />
+
         <MetinEditoru key={editorAnahtari} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} />
 
+        {kayit.tur === 'sahne' && <SahneBolumu istemci={istemci} evren={evren} kayit={kayit} surum={surum} />}
+        <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />
+        <KayitDegisimleri istemci={istemci} evren={evren} kod={kod} surum={surum} />
         <Baglananlar istemci={istemci} evren={evren} kod={kod} surum={surum} />
 
         {gecmisAcik && (
@@ -115,6 +122,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         <div class="kayit-alti">
           <span class="soluk kucuk">Oluşturuldu {zamanYaz(kayit.olusturma)} · Son değişiklik {zamanYaz(kayit.duzenleme)}</span>
           <span class="bosluk" />
+          {kayit.tur === 'not' && !kayit.silindi && <NotDonustur istemci={istemci} evren={evren} kayit={kayit} />}
           {!kayit.silindi && (
             <button class="dugme tehlikeli" onClick={async () => {
               await denetim.current?.kaydet();

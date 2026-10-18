@@ -22,3 +22,13 @@ export function KararRozeti({ karar }: { karar: string }) {
   const ad = KARARLAR.find((k) => k.kod === karar)?.ad ?? karar;
   return <span class={`rozet karar-${karar}`}>{ad}</span>;
 }
+
+/** Alan düzeyinde karar durumu (§3.6). Kesin varsayılandır ve sade görünür; fikir ve vazgeçilmiş belirgindir. */
+export function KararSecici({ karar, onDegis, etiket }: { karar: string; onDegis: (k: string) => void; etiket: string }) {
+  return (
+    <select class={`karar-sec karar-${karar}`} aria-label={`${etiket}: karar durumu`} value={karar}
+      onChange={(e) => onDegis((e.target as HTMLSelectElement).value)}>
+      {KARARLAR.map((k) => <option value={k.kod}>{k.ad}</option>)}
+    </select>
+  );
+}
