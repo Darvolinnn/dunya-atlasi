@@ -8,6 +8,8 @@ import type { AramaSonucu, DurumSatiri, IliskiSatiri, Kayit, KayitOzeti, Spans }
 import type { EvrenTarihi } from '../alan/tarih';
 import { gecerlilik } from '../alan/durum';
 import { aralikYazi } from './Anlati';
+import { degerMetni, useKayitSablonu } from './Sablon';
+import { yasHesapla } from '../alan/yas';
 import { TURLER, turBul } from '../alan/turler';
 import { katla } from '../alan/turkce';
 import { KararRozeti } from './ortak';
@@ -320,9 +322,11 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
     })().catch(() => {});
     return () => { iptal = true; };
   }, [kod, ana]);
+  const ks = useKayitSablonu(istemci, evren, kod);
   if (hata) return <p class="hata kucuk" style="padding:12px">{hata}</p>;
   if (!k) return <p class="soluk kucuk" style="padding:12px">Açılıyor…</p>;
   const tarih = k.tarih ?? k.sahneTarihi;
+  const yas = an?.tarih && ks ? yasHesapla((ks.degerler.dogum as EvrenTarihi) ?? null, an.tarih, (ks.degerler.olum as EvrenTarihi) ?? null)?.metin ?? null : null;
   return (
     <div class="yan-panel-ic">
       <div class="satir" style="flex-wrap:nowrap;align-items:flex-start">
@@ -334,6 +338,12 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
       </div>
       {tarih && <p class="soluk kucuk">Evren tarihi: {tarih.ifade}</p>}
       {k.lakaplar.length > 0 && <p class="soluk kucuk">Başka adları: {k.lakaplar.join(', ')}</p>}
+      {ks && ks.sablon.alanlar.some((a) => ks.degerler[a.kod] != null) && (
+        <ul class="yan-iliskiler">
+          {ks.sablon.alanlar.filter((a) => ks.degerler[a.kod] != null).map((a) => <li key={a.kod}><span class="soluk">{a.ad}:</span> {degerMetni(a, ks.degerler[a.kod])}</li>)}
+        </ul>
+      )}
+      {yas && <p class="kucuk">{yas} <span class="soluk">({an!.tarih!.ifade} itibarıyla)</span></p>}
       {an && <p class="kucuk yan-an">{an.tarih ? <>“{an.ad}” tarihinde (<strong>{an.tarih.ifade}</strong>) gösteriliyor.</> : <>“{an.ad}” için evren tarihi girilmemiş; o anki hâl bilinemiyor, bütün değerler gösteriliyor.</>}</p>}
       {durumlar.length > 0 && (
         <ul class="yan-iliskiler">

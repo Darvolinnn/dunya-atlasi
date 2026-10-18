@@ -27,7 +27,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
     const t = (x: unknown) => (x as { ifade?: string } | null)?.ifade ?? '';
     return t(v.tarih) ? `${ad(v.kod)}: evren tarihi “${t(v.tarih)}”` : `${ad(v.kod)}: evren tarihi kaldırıldı`;
   },
-  kayit_alan_karar: (v, ad) => `${ad(v.kod)}: ${(ALAN_ADI[String(v.alan)] ?? (v.alan === 'tarih' ? 'Evren tarihi' : String(v.alan))).toLocaleLowerCase('tr-TR')} artık “${kararAdi(v.karar)}”`,
+  kayit_alan_karar: (v, ad) => `${ad(v.kod)}: ${(ALAN_ADI[String(v.alan)] ?? (v.alan === 'tarih' ? 'Evren tarihi' : String(v.ad ?? 'bir alan'))).toLocaleLowerCase('tr-TR')} artık “${kararAdi(v.karar)}”`,
   kayit_gorsel: (v, ad) => v.ekle ? `${ad(v.kod)}: görsel eklendi` : `${ad(v.kod)}: görsel çıkarıldı`,
   medya_ekle: (v) => `Görsel saklandı${v.dosyaAdi ? `: ${v.dosyaAdi}` : ''}`,
   iliski_ekle: (v, ad) => `${ad(v.a)} → ${iliskiTuruBul(String(v.tur)).aIcin.toLocaleLowerCase('tr-TR')}: ${ad(v.b)}`,
@@ -44,6 +44,15 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   durum_degistir: (v, ad) => `${ad(v.konu)}: “${v.ozellik}” durumunun ${({ deger: 'değeri', hedef: 'değeri', kip: 'süresi', baslangic: 'başlangıcı', bitis: 'bitişi', karar: 'karar durumu', ozellik: 'adı' } as Record<string, string>)[String(v.alan)] ?? 'bir alanı'} değişti`,
   durum_sil: (v, ad) => `${ad(v.konu)}: “${v.ozellik}” durumu kaldırıldı`,
   durum_geri_yukle: (v, ad) => `${ad(v.konu)}: “${v.ozellik}” durumu geri getirildi`,
+  sablon_yaz: (v) => v.sablon ? `“${turBul(String(v.tur)).ad}” şablonu değişti` : `“${turBul(String(v.tur)).ad}” şablonu varsayılana döndü`,
+  kayit_alan: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” ${v.deger === null || v.deger === '' || v.deger === false ? 'boşaltıldı' : 'değişti'}`,
+  soru_cevapla: (v, ad) => {
+    const kim = v.kod === 'evren' ? 'Evren' : ad(v.kod);
+    const s = v.metin ? `“${v.metin}”` : 'bir soru';
+    return v.durum === 'cevaplandi' ? `${kim}: ${s} cevaplandı` : v.durum === 'sonra' ? `${kim}: ${s} sonraya bırakıldı`
+      : v.durum === 'ilgisiz' ? `${kim}: ${s} ilgisiz işaretlendi` : `${kim}: ${s} yeniden açıldı`;
+  },
+  kayit_soru_seti: (v, ad) => `${ad(v.kod)}: soru seti ${v.ekle ? 'eklendi' : 'çıkarıldı'}`,
   catisma_coz: (v, ad) => v.tur === 'silme' ? `${ad(v.kayit)}: silinmiş kalması kararlaştırıldı (başka cihazdaki değişiklikler incelendi)`
     : `${ad(v.kayit)}: iki cihazda birlikte değişen metin incelendi`,
   metin: (v, ad) => v.adDuzeltme ? `${ad(v.kayit)}: bağlantıda “${ad(v.adDuzeltme)}” adı düzeltildi` : v.geriYukleme ? `${ad(v.kayit)}: metnin eski bir sürümü geri getirildi` : `${ad(v.kayit)}: metin kaydedildi`,

@@ -57,6 +57,8 @@ export const ILISKI_TURLERI: IliskiTuru[] = [
   { kod: 'anlatici', aIcin: 'Anlatıcısı olduğu sahne', bIcin: 'Anlatıcı', karsilikli: false, grup: 'Sahne ve olay' },
   { kod: 'odak', aIcin: 'Odak karakteri olduğu sahne', bIcin: 'Odak karakter', karsilikli: false, grup: 'Sahne ve olay' },
   { kod: 'neden', aIcin: 'Yol açtığı', bIcin: 'Nedeni', karsilikli: false, grup: 'Sahne ve olay' },
+  { kod: 'mesele_konusu', aIcin: 'İlgili olduğu kayıt', bIcin: 'Açık meselesi', karsilikli: false, grup: 'Yazarlık' },
+  { kod: 'gerekce_konusu', aIcin: 'Etkilediği kayıt', bIcin: 'Gerekçe kaydı', karsilikli: false, grup: 'Yazarlık' },
   { kod: 'nottan', aIcin: 'Dönüştüğü kayıt', bIcin: 'Doğduğu not', karsilikli: false, grup: 'Genel' },
   { kod: 'ilgili', aIcin: 'İlgili', bIcin: 'İlgili', karsilikli: true, grup: 'Genel' },
 ];

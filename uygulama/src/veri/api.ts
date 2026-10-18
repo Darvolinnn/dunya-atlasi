@@ -2,6 +2,7 @@
 import type { Islem } from '../alan/islem';
 import type { EvrenTarihi, Karsilastirma } from '../alan/tarih';
 import type { DurumKipi, Gecerlilik } from '../alan/durum';
+import type { Sablon, Soru, SoruDurumu } from '../alan/sablon';
 
 export interface KurulumBilgisi { kod: string; ad: string; sqlite: string }
 export interface EvrenOzeti { kod: string; ad: string; olusturma: number; sonAcilis: number | null }
@@ -75,6 +76,8 @@ export interface YedekBilgisi {
 /** İnceleme bekleyen çatışma (§10.3, §10.6). Kurulum adları kullanıcıya gösterilecek biçimdedir. */
 export type Catisma =
   | { tur: 'alan'; nesne: string; alan: string; nesneTuru: 'kayit' | 'iliski' | 'evren' | 'durum'; kayit: string | null; baslik: string;
+      /** Alanın kullanıcıya gösterilecek adı (şablon alanı, soru); yoksa arayüz alan kodundan bulur. */
+      alanEtiketi?: string;
       /** yazi: değerin okunur hâli (yer, kayıt adı gibi); yoksa değer doğrudan gösterilir. */
       degerler: { islem: string; deger: unknown; yazi?: string; kurulum: string; zaman: number }[] }
   | { tur: 'silme'; kayit: string; baslik: string; duzenlemeSayisi: number; zaman: number; kurulumlar: string[] }
@@ -148,6 +151,8 @@ export interface SahneKatilimcisi extends KisaKayit {
   iliskiler: (IliskiSatiri & { gecerli: Gecerlilik })[];
   /** Sahneden önce (ya da belki önce) geçirdiği değişimler. */
   degisimler: (DegisimSatiri & { sira: Karsilastirma })[];
+  /** Doğum tarihi biliniyorsa sahnenin tarihindeki yaşı. */
+  yas: string | null;
 }
 export interface SahneBaglami {
   tarih: EvrenTarihi | null;
@@ -155,6 +160,27 @@ export interface SahneBaglami {
   bakis: KisaKayit | null; anlatici: KisaKayit | null; odak: KisaKayit | null;
   katilimcilar: SahneKatilimcisi[];
 }
+
+/** Şablon ve soru kütüphanesi (§3.1, §6). */
+export interface SablonBilgisi { sablon: Sablon; varsayilan: boolean; varsayilanSablon: Sablon; /** Alan kodu → değeri dolu kayıt sayısı. */ kullanim: Record<string, number> }
+export interface SoruCevabi { durum: SoruDurumu; cevap: string; kayitla: KisaKayit | null }
+export interface SoruSatiri extends Soru {
+  /** Soru bu kayda sonradan eklenen bir setten geliyorsa setin kodu. */
+  set: string | null;
+  cevap: SoruCevabi | null;
+  /** Şablondan çıkarılmış ama cevabı olan soru. */
+  eski: boolean;
+}
+export interface KayitSablonu {
+  tur: string; sablon: Sablon; degerler: Record<string, unknown>;
+  /** Şablonda olmayan (tür değişmiş ya da alan kaldırılmış) değerler; silinmez. */
+  eskiler: { kod: string; deger: unknown }[];
+  setler: string[]; sorular: SoruSatiri[];
+}
+export type EvrenSorulari = { kod: string; ad: string; sorular: SoruSatiri[] }[];
+export interface MeseleSatiri { kod: string; ad: string; karar: string; duzenleme: number; durum: string; onemli: boolean; bagli: KisaKayit[] }
+export interface GerekceSatiri { kod: string; ad: string; karar: string; duzenleme: number; soru: string; cozum: string; gerekce: string; etkilenen: KisaKayit[] }
+export interface MeseleListesi { meseleler: MeseleSatiri[]; gerekceler: GerekceSatiri[] }
 
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
 
@@ -248,6 +274,16 @@ export interface Istekler {
   ozellikAdlari(a: { evren: string }): string[];
   sahneAlaniAyarla(a: { evren: string; sahne: string; alan: SahneAlani; kayit: string | null }): void;
   sahneBaglami(a: { evren: string; sahne: string }): SahneBaglami;
+  sablon(a: { evren: string; tur: string }): SablonBilgisi;
+  sablonYaz(a: { evren: string; tur: string; sablon: Sablon | null }): void;
+  kayitSablonu(a: { evren: string; kod: string }): KayitSablonu;
+  kayitAlanYaz(a: { evren: string; kod: string; alan: string; deger: unknown }): void;
+  soruCevapla(a: { evren: string; kod: string; soru: string; durum: SoruDurumu | null; cevap?: string }): void;
+  soruKayitla(a: { evren: string; kod: string; soru: string; ad: string; tur: string }): { kod: string };
+  kayitSoruSeti(a: { evren: string; kod: string; set: string; ekle: boolean }): void;
+  evrenSorulari(a: { evren: string }): EvrenSorulari;
+  meseleler(a: { evren: string; kod?: string }): MeseleListesi;
+  yazarKaydiEkle(a: { evren: string; tur: 'acik_mesele' | 'gerekce'; ad: string; bagla?: string | null; onemli?: boolean }): { kod: string };
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];
   bahsedilenler(a: { evren: string }): (KayitOzeti & { anilma: number })[];

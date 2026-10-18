@@ -42,7 +42,7 @@ export function CatismaListesi({ istemci, evren, kod, surum, baslikGoster = true
             : <span class="kucuk">{c.baslik}</span>)}
           {c.tur === 'alan' && (
             <>
-              <p><strong>{alanAdi(c.alan)}</strong>{(c.nesneTuru === 'iliski' || c.nesneTuru === 'durum') && kod ? ` (${c.baslik})` : ''}: iki cihazda farklı yazılmış. Hangisi kalsın?</p>
+              <p><strong>{c.alanEtiketi ?? alanAdi(c.alan)}</strong>{(c.nesneTuru === 'iliski' || c.nesneTuru === 'durum') && kod ? ` (${c.baslik})` : ''}: iki cihazda farklı yazılmış. Hangisi kalsın?</p>
               <ul class="catisma-degerleri">
                 {c.degerler.map((d) => (
                   <li key={d.islem}>

@@ -7,8 +7,9 @@ import { DriveYedekleri, YedekSekmesi } from './Tasima';
 import { CatismaListesi } from './Catismalar';
 import { Bahsedilenler, CopKutusu, KayitListesi } from './KayitListesi';
 import { Masa } from './Masa';
+import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
 
-export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: string; sekme: string }) {
+export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Istemci; kod: string; sekme: string; alt?: string | null }) {
   const [bilgi, setBilgi] = useState<EvrenBilgisi | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const [surum, setSurum] = useState(0);
@@ -30,7 +31,7 @@ export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: st
         <AdBasligi istemci={istemci} bilgi={bilgi} />
         <p class="soluk kucuk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
         <div class="sekmeler" role="tablist">
-          {([['masa', 'Masa'], ['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
+          {([['masa', 'Masa'], ['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['meseleler', 'Açık meseleler'], ['sablonlar', 'Şablonlar'], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
             ...(bilgi.catismaSayisi || sekme === 'inceleme' ? [['inceleme', `İnceleme bekleyen (${bilgi.catismaSayisi})`] as const] : [])] as const).map(([k, ad]) => (
             <button class="sekme" role="tab" aria-selected={sekme === k} onClick={() => git(`/e/${kod}/${k}`)}>{ad}</button>
           ))}
@@ -41,7 +42,9 @@ export function EvrenEkrani({ istemci, kod, sekme }: { istemci: Istemci; kod: st
           : sekme === 'bahsedilen' ? <Bahsedilenler istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'cop' ? <CopKutusu istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'kayitlar' ? <KayitListesi istemci={istemci} evren={kod} surum={surum} />
-          : <Masa istemci={istemci} evren={kod} surum={surum} />}
+          : sekme === 'meseleler' ? <MeseleSekmesi istemci={istemci} evren={kod} />
+          : sekme === 'sablonlar' ? <SablonlarSekmesi istemci={istemci} evren={kod} tur={alt} />
+          : <Masa istemci={istemci} evren={kod} surum={surum} ekler={<MasaPusulasi istemci={istemci} evren={kod} kayitSayisi={bilgi.kayitSayisi} />} />}
       </main>
     </>
   );

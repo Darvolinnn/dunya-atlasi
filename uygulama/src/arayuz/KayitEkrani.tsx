@@ -12,6 +12,7 @@ import { Gorseller, Iliskiler, KayitDegisimleri, NotDonustur, SahneBolumu, Tarih
 import { git } from './Uygulama';
 import { CatismaListesi } from './Catismalar';
 import { useCalisma } from './Calisma';
+import { KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
 import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
 
 /** Durum geçmişi tutulmayan türler (anlatı parçaları ve notlar). */
@@ -35,6 +36,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   useEffect(() => { if (kayit) document.title = `${kayit.ad} · Dünya Atlası`; return () => { document.title = 'Dünya Atlası'; }; }, [kayit?.ad]);
 
   const sahneBaglami = useSahneBaglami(istemci, evren, kayit?.tur === 'sahne' ? kod : null);
+  const ks = useKayitSablonu(istemci, evren, kod);
 
   if (hata) return <main class="sayfa"><p class="hata">{hata}</p><a href={`#/e/${evren}`}>Kayıtlara dön</a></main>;
   if (!kayit) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
@@ -91,6 +93,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           </label>
           <TarihAlani istemci={istemci} evren={evren} kayit={kayit} />
           {kayit.tur === 'sahne' && <SahneAlanlari istemci={istemci} evren={evren} kayit={kayit} baglam={sahneBaglami} />}
+          <SablonAlanlari istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
           <div class="alan genis">
             <span class="alan-adi satir">Kısa özet <KararSecici etiket="Kısa özet" karar={kayit.alanKararlari.ozet ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod, alan: 'ozet', karar: k })} /></span>
             <AlanGirdisi etiket="Kısa özet" deger={kayit.ozet} kaydet={(v) => degistir('ozet', v)} ipucu="Bir satırda kim ya da ne olduğu" />
@@ -122,6 +125,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={sahneBaglami} />}
         {kayit.tur === 'sahne' && <SahneBolumu istemci={istemci} evren={evren} kayit={kayit} surum={surum} />}
         {!DURUMSUZ.has(kayit.tur) && <DurumGecmisi istemci={istemci} evren={evren} kayit={kayit} />}
+        <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
+        <KayitMeseleleri istemci={istemci} evren={evren} kayit={kayit} />
         <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />
         <KayitDegisimleri istemci={istemci} evren={evren} kod={kod} surum={surum} />
         <Baglananlar istemci={istemci} evren={evren} kod={kod} surum={surum} />

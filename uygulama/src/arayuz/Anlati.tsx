@@ -254,7 +254,7 @@ export function SahneBaglamPaneli({ evren, baglam }: { evren: string; baglam: Sa
       {katilimcilar.length === 0 && !yer && <p class="soluk kucuk">Mekân, bakış açısı ya da sahnedekiler girilince burada o anki hâlleri toplanır.</p>}
       {katilimcilar.map((k) => (
         <div class="baglam-kaydi" key={k.kod}>
-          <div class="satir">{bag(evren, k)} <span class="soluk kucuk">{k.roller.join(', ')}</span></div>
+          <div class="satir">{bag(evren, k)} <span class="soluk kucuk">{k.roller.join(', ')}</span>{k.yas && <span class="kucuk">· {k.yas}</span>}</div>
           <DurumOzeti durumlar={k.durumlar} evren={evren} />
           {k.iliskiler.length > 0 && (
             <ul class="baglam-listesi">

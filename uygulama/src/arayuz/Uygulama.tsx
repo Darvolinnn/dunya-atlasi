@@ -8,13 +8,13 @@ import { HizliNot } from './HizliNot';
 import { CalismaSaglayici } from './Calisma';
 import { EsitlemeEkrani, EsitlemeOzeti, EsitlemeSaglayici, EsitlemeSeridi } from './Esitleme';
 
-export type Yol = { ekran: 'evrenler' } | { ekran: 'esitleme' } | { ekran: 'evren'; kod: string; sekme: string } | { ekran: 'kayit'; evren: string; kod: string };
+export type Yol = { ekran: 'evrenler' } | { ekran: 'esitleme' } | { ekran: 'evren'; kod: string; sekme: string; alt: string | null } | { ekran: 'kayit'; evren: string; kod: string };
 
 function yolOku(): Yol {
   const p = location.hash.replace(/^#\/?/, '').split('/');
   if (p[0] === 'e' && p[1] && p[2] === 'k' && p[3]) return { ekran: 'kayit', evren: p[1], kod: p[3] };
   if (p[0] === 'esitleme') return { ekran: 'esitleme' };
-  if (p[0] === 'e' && p[1]) return { ekran: 'evren', kod: p[1], sekme: p[2] || 'masa' };
+  if (p[0] === 'e' && p[1]) return { ekran: 'evren', kod: p[1], sekme: p[2] || 'masa', alt: p[3] || null };
   return { ekran: 'evrenler' };
 }
 export const git = (yol: string) => { location.hash = yol; };
@@ -62,7 +62,7 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
       {yol.ekran === 'evrenler' ? <EvrenlerEkrani istemci={istemci} />
         : yol.ekran === 'esitleme' ? <EsitlemeEkrani istemci={istemci} />
         : yol.ekran === 'kayit' ? <KayitEkrani key={yol.kod} istemci={istemci} evren={yol.evren} kod={yol.kod} />
-        : <EvrenEkrani istemci={istemci} kod={yol.kod} sekme={yol.sekme} />}
+        : <EvrenEkrani istemci={istemci} kod={yol.kod} sekme={yol.sekme} alt={yol.alt} />}
       <HizliNot istemci={istemci} evren={evren} />
       <footer class="alt" aria-label="Durum">
         <span>Bu cihaza kaydediliyor</span>

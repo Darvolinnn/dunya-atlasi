@@ -1,0 +1,163 @@
+// Düzenlenebilir şablonlar ve soru kütüphanesi (§3.1, §4, §6, Ek A). Şablon bir türün alanları ve soru
+// listesidir; değerler kayıtta durur. Şablondan bir alan kaldırılınca değerler silinmez, kayıtta
+// "Şablonda olmayan alanlar" altında kalır (§3.1). Bütün sorular isteğe bağlıdır; doluluk ölçülmez.
+
+/** metin: tek satır · uzun: paragraf · tarih: evren tarihi · secim: seçeneklerden biri · onay: evet/hayır */
+export type AlanTuru = 'metin' | 'uzun' | 'tarih' | 'secim' | 'onay';
+export const ALAN_TURLERI: { kod: AlanTuru; ad: string }[] = [
+  { kod: 'metin', ad: 'Kısa metin' },
+  { kod: 'uzun', ad: 'Uzun metin' },
+  { kod: 'tarih', ad: 'Evren tarihi' },
+  { kod: 'secim', ad: 'Seçeneklerden biri' },
+  { kod: 'onay', ad: 'Evet / hayır' },
+];
+
+export interface Secenek { kod: string; ad: string }
+export interface SablonAlani {
+  kod: string; ad: string; tur: AlanTuru; ipucu?: string; secenekler?: Secenek[];
+  /** Programın anlamını bildiği alan (doğum tarihi, açık meselenin durumu); adı değişebilir, kaldırılamaz. */
+  sabit?: boolean;
+}
+export interface Soru { kod: string; metin: string; ipucu?: string }
+export interface Sablon { alanlar: SablonAlani[]; sorular: Soru[] }
+export interface SoruSeti { kod: string; ad: string; sorular: Soru[] }
+
+const set = (kod: string, ad: string, sorular: (string | [string, string])[]): SoruSeti => ({
+  kod, ad, sorular: sorular.map((s, i) => (typeof s === 'string' ? { kod: `${kod}.${i + 1}`, metin: s } : { kod: `${kod}.${i + 1}`, metin: s[0], ipucu: s[1] })),
+});
+
+/** Ek A: başlangıç seti. Kodlar değişmez; cevaplar bu kodlarla saklanır. */
+export const SORU_SETLERI: SoruSeti[] = [
+  set('pusula', 'Dünya Pusulası', [
+    ['Bu evrenin merkez çatışması ne?', 'Kıtlık, inanç, iktidar, hayatta kalma, özgürlük, intikam…'],
+    ['İnsanlar burada nasıl yaşıyor?', 'Geçim, ritüeller, korkular, alışkanlıklar'],
+    ['Güç kimde ve bedeli ne?', 'Büyü, bilgi, para, soy…'],
+    'Hangi kural kırılırsa her şey değişir?',
+    'Bu evren karakteri nasıl dönüştürüyor?',
+  ]),
+  set('baslangic', 'Yeni evren başlangıcı', [
+    ['Temel fikir', 'Evreni farklı kılan tek kural'],
+    ['Çatışma', 'İki taraf'],
+    ['Ortadaki karakter', 'Yeni bir karakter kaydıyla da cevaplayabilirsin'],
+  ]),
+  set('karakter', 'Karakter: temel altı soru', [
+    'En çok ne istiyor?', 'En büyük korkusu ne?', 'En büyük kusuru ne?', 'Ne saklıyor?',
+    ['Sınırı nerede?', 'Asla yapmayacağını düşündüğü şey'], 'Geçmişi onu nasıl değiştirdi?',
+  ]),
+  set('olay_izi', 'Karakter geçmişindeki bir olay', [
+    ['Bu olay onda ne bıraktı?', 'Korku, özlem, öfke, utanç, inanç'], 'Bugün neyi farklı yapıyor?', 'Kime karşı tavrı değişti?',
+    'Hangi yanlış sonuca vardı?', 'Hikâye bu yarayı nasıl sınayacak?',
+  ]),
+  set('aliskanlik', 'Kötü alışkanlık', ['Alışkanlık ne?', 'Tetikleyicisi ne?', 'Kimi rahatsız ediyor?', 'Neyi gizliyor?', 'Karakter farkında mı?', 'Değişebilir mi?']),
+  set('karsit', 'Karşıt karakter', ['Ne istiyor?', 'Neden kendini haklı görüyor?', 'Neyi kaybetmekten korkuyor?', 'Hangi sınırı aşmaz?', 'Ana karakterle ortak yanı ne?']),
+  set('iliski', 'İlişki', [
+    ['Geçmişlerini ne bağlıyor?', 'Bir karşılaşma, ortak bir kayıp, çözülmemiş bir mesele'], 'İki tarafın beklentisi ne?',
+    ['Gerilim noktası ne?', 'Söylenmemiş bir söz, yanlış anlaşılmış bir karar, tutulmamış bir söz'],
+  ]),
+  set('mekan', 'Mekân: gerçek hissettiren altı ayrıntı', [
+    'Nasıl kokuyor?', 'Nasıl ses çıkarıyor?', 'İnsanlar nasıl hareket ediyor?', 'Gece ne değişiyor?', 'Yerliler neyi normal buluyor?', 'Geçmişten hangi iz kaldı?',
+  ]),
+  set('sehir', 'Şehir lojistiği', ['Su nereden geliyor?', 'Yemek nasıl geliyor?', 'Atık nereye gidiyor?', 'Gece nasıl işliyor?', 'Mahalleler neden farklı?', 'Şehri gerçekte kim yönetiyor?']),
+  set('siyasi', 'Siyasi varlık', ['Taht kime geçiyor?', 'Hükümdarı kim sınırlıyor?', 'Para nereden geliyor?', 'Halk ne bekliyor?', 'Din ne kadar güçlü?', 'Zayıf noktası ne?']),
+  set('topluluk', 'Topluluk', ['Neyi korur?', 'Ne ister?', 'Neden korkar?']),
+  set('buyu', 'Büyü sistemi', [
+    ['Kuralı ne?', 'Okurun anlayabileceği mantık'], ['Bedeli ne?', 'Zaman, enerji, hafıza, sağlık, para…'], ['Sınırı ne?', 'Kesinlikle yapamadığı şey'],
+    'Riski ne?', 'Sonucu ne?', 'Dengesi nasıl kuruluyor?',
+  ]),
+  set('kultur', 'Kültür', [
+    ['Coğrafya onu nasıl şekillendiriyor?', 'Ulaşım, yemek, ticaret, korku'], 'Gelenekleri ne?', 'Yasakları ve tabuları ne?', 'Ayıp sayılanlar ne?', 'Kutsal sayılanlar ne?',
+    ['Gündelik hayat nasıl?', 'Selam, sofra, para, inanç, çatışma'],
+  ]),
+  set('dil', 'Dil ve adlar', [
+    ['Ses paleti ne?', 'Tekrar eden heceler; sert ↔ akıcı; kısa ↔ uzun. Aynı kültürün karakter, şehir ve ülke adları bu seslerden türetilir.'],
+  ]),
+  set('haritasiz', 'Haritasız evren büyütme', ['Uzak yerlerden nasıl söz ettiriliyor?', 'Hangi ticaret izleri var?', 'Hangi farklı diller duyuluyor?', 'Hangi eski olaylar anılıyor?', 'Hangi söylentiler dolaşıyor?']),
+  set('rehber', 'Evren kurma rehberi', [
+    ['Kim hüküm sürüyor?', 'Bir topluluk kaydıyla da cevaplayabilirsin'], 'Büyünün bedeli ne?', ['İnsanlar neye inanıyor?', 'Bir inanç kaydıyla da cevaplayabilirsin'],
+  ]),
+];
+const setler = new Map(SORU_SETLERI.map((s) => [s.kod, s]));
+export const soruSetiBul = (kod: string) => setler.get(kod);
+/** Kaydın değil evrenin soruları (Masa'da durur). */
+export const EVREN_SETLERI = ['pusula', 'baslangic', 'rehber', 'haritasiz'];
+
+export const MESELE_DURUMLARI: Secenek[] = [
+  { kod: 'dusunulecek', ad: 'Düşünülecek' },
+  { kod: 'kararlastirildi', ad: 'Kararlaştırıldı' },
+  { kod: 'gerekmiyor', ad: 'Şu an gerekmiyor' },
+];
+
+const sorular = (...kodlar: string[]) => kodlar.flatMap((k) => soruSetiBul(k)!.sorular);
+
+/** Türlerin varsayılan şablonları. Yazar değiştirince evrene kaydedilir; değiştirmediği tür bunları kullanır. */
+const VARSAYILANLAR: Record<string, Sablon> = {
+  karakter: {
+    alanlar: [
+      { kod: 'dogum', ad: 'Doğum tarihi', tur: 'tarih', sabit: true, ipucu: 'Biliniyorsa her sahnedeki yaşı hesaplanır' },
+      { kod: 'olum', ad: 'Ölüm tarihi', tur: 'tarih', sabit: true },
+    ],
+    sorular: sorular('karakter'),
+  },
+  mekan: { alanlar: [], sorular: sorular('mekan') },
+  sehir: { alanlar: [], sorular: sorular('mekan', 'sehir') },
+  siyasi: { alanlar: [], sorular: sorular('siyasi') },
+  topluluk: { alanlar: [], sorular: sorular('topluluk') },
+  buyu_sistemi: { alanlar: [], sorular: sorular('buyu') },
+  kultur: { alanlar: [], sorular: sorular('kultur') },
+  dil: { alanlar: [], sorular: sorular('dil') },
+  acik_mesele: {
+    alanlar: [
+      { kod: 'durum', ad: 'Durum', tur: 'secim', secenekler: MESELE_DURUMLARI, sabit: true },
+      { kod: 'onemli', ad: 'Önemli', tur: 'onay', sabit: true, ipucu: 'Önemli işaretli düşünülecek meseleler Masa\'da öne çıkar' },
+    ],
+    sorular: [],
+  },
+  gerekce: {
+    alanlar: [
+      { kod: 'soru', ad: 'Soru', tur: 'metin', sabit: true },
+      { kod: 'secenekler', ad: 'Düşünülen seçenekler', tur: 'uzun', sabit: true },
+      { kod: 'cozum', ad: 'Seçilen çözüm', tur: 'metin', sabit: true },
+      { kod: 'gerekce', ad: 'Gerekçe', tur: 'uzun', sabit: true },
+    ],
+    sorular: [],
+  },
+};
+const BOS: Sablon = { alanlar: [], sorular: [] };
+export const varsayilanSablon = (tur: string): Sablon => structuredClone(VARSAYILANLAR[tur] ?? BOS);
+
+const KOD = /^[a-z0-9_.-]{1,40}$/;
+const metinMi = (s: unknown, n: number) => typeof s === 'string' && s.trim().length > 0 && s.length <= n;
+
+/** Şablon biçimi doğru mu (arayüzden ya da başka cihazdan gelen). Kodlar tekrar etmez; sabit alanlar kalır. */
+export function sablonGecerli(s: unknown, tur?: string): s is Sablon {
+  if (!s || typeof s !== 'object') return false;
+  const { alanlar, sorular: sr } = s as Sablon;
+  if (!Array.isArray(alanlar) || !Array.isArray(sr) || alanlar.length > 60 || sr.length > 120) return false;
+  const kodlar = new Set<string>();
+  for (const a of alanlar) {
+    if (!a || !KOD.test(a.kod) || kodlar.has(a.kod) || !metinMi(a.ad, 80) || !ALAN_TURLERI.some((t) => t.kod === a.tur)) return false;
+    if (a.ipucu !== undefined && (typeof a.ipucu !== 'string' || a.ipucu.length > 200)) return false;
+    if (a.tur === 'secim' && (!Array.isArray(a.secenekler) || !a.secenekler.length || a.secenekler.length > 30
+      || a.secenekler.some((x) => !KOD.test(x?.kod) || !metinMi(x.ad, 80)) || new Set(a.secenekler.map((x) => x.kod)).size !== a.secenekler.length)) return false;
+    kodlar.add(a.kod);
+  }
+  const sk = new Set<string>();
+  for (const q of sr) {
+    if (!q || !KOD.test(q.kod) || sk.has(q.kod) || !metinMi(q.metin, 300)) return false;
+    if (q.ipucu !== undefined && (typeof q.ipucu !== 'string' || q.ipucu.length > 300)) return false;
+    sk.add(q.kod);
+  }
+  if (tur) for (const a of varsayilanSablon(tur).alanlar) if (a.sabit && !alanlar.some((x) => x.kod === a.kod && x.tur === a.tur)) return false;
+  return true;
+}
+
+/** Yeni alan ya da soru kodu: rastgele, okunabilir değil (ad değişse de kod değişmez). */
+export const yeniAlanKodu = (on: 'a' | 's') => `${on}${Math.random().toString(36).slice(2, 10)}`;
+
+export type SoruDurumu = 'cevaplandi' | 'sonra' | 'ilgisiz';
+export const SORU_DURUMLARI: { kod: SoruDurumu; ad: string }[] = [
+  { kod: 'cevaplandi', ad: 'Cevaplandı' },
+  { kod: 'sonra', ad: 'Sonraya bırakıldı' },
+  { kod: 'ilgisiz', ad: 'Bu kayıtla ilgisiz' },
+];
+export const soruDurumuGecerli = (d: unknown): d is SoruDurumu => SORU_DURUMLARI.some((x) => x.kod === d);

@@ -6,9 +6,10 @@ import { A } from '../alan/automerge';
 import { baglantilar, duzMetin } from '../alan/metin-sema';
 import { katla } from '../alan/turkce';
 import { siraGecerli } from '../alan/sira';
+import { sablonGecerli } from '../alan/sablon';
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 5;
+export const IZDUSUM_SURUMU = 6;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -140,6 +141,32 @@ CREATE TABLE IF NOT EXISTS durumlar(
 );
 CREATE INDEX IF NOT EXISTS durumlar_konu ON durumlar(konu);
 CREATE INDEX IF NOT EXISTS durumlar_hedef ON durumlar(hedef);
+CREATE TABLE IF NOT EXISTS sablonlar(
+  tur TEXT PRIMARY KEY,
+  veri TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS alan_degerleri(
+  kayit TEXT NOT NULL,
+  alan TEXT NOT NULL,
+  deger TEXT NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  PRIMARY KEY(kayit, alan)
+);
+CREATE TABLE IF NOT EXISTS soru_cevaplari(
+  kayit TEXT NOT NULL,
+  soru TEXT NOT NULL,
+  durum TEXT NOT NULL,
+  cevap TEXT NOT NULL DEFAULT '',
+  metin TEXT NOT NULL DEFAULT '',
+  kayitla TEXT,
+  duzenleme INTEGER NOT NULL,
+  PRIMARY KEY(kayit, soru)
+);
+CREATE TABLE IF NOT EXISTS kayit_soru_setleri(
+  kayit TEXT NOT NULL,
+  soru_seti TEXT NOT NULL,
+  PRIMARY KEY(kayit, soru_seti)
+);
 CREATE TABLE IF NOT EXISTS metin_catismalari(
   kayit TEXT NOT NULL,
   alan TEXT NOT NULL,
@@ -150,7 +177,7 @@ CREATE TABLE IF NOT EXISTS metin_catismalari(
 );
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'medya',
-  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar'];
+  'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -200,7 +227,7 @@ function alanYaz(db: Database, i: Islem, nesne: string, alan: string, deger: unk
 }
 
 /** Silinmiş kayda, silmeyi görmemiş bir cihazdan gelen düzenleme: kayıt geri gelmez, düzenleme kaybolmaz (§10.6). */
-const KAYDA_DOKUNAN = new Set(['kayit_degistir', 'kayit_lakap', 'kayit_etiket', 'kayit_tarih', 'kayit_alan_karar', 'kayit_gorsel', 'metin']);
+const KAYDA_DOKUNAN = new Set(['kayit_alan', 'soru_cevapla', 'kayit_degistir', 'kayit_lakap', 'kayit_etiket', 'kayit_tarih', 'kayit_alan_karar', 'kayit_gorsel', 'metin']);
 const dokunulanKayit = (i: Islem) => (i.tur === 'metin' ? i.veri.kayit : i.veri.kod) as string;
 
 function silmeDenetle(db: Database, i: Islem) {
@@ -423,6 +450,38 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   durum_geri_yukle(db, i) {
     db.exec({ sql: 'UPDATE durumlar SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+
+  /** Şablon (§3.1): tür için bütün şablon yazılır; null varsayılana döner. Değerler silinmez. */
+  sablon_yaz(db, i) {
+    const { tur, sablon } = i.veri as { tur: string; sablon: unknown };
+    if (sablon && sablonGecerli(sablon, tur)) db.exec({ sql: 'INSERT OR REPLACE INTO sablonlar(tur, veri) VALUES(?,?)', bind: [tur, JSON.stringify(sablon)] });
+    else if (!sablon) db.exec({ sql: 'DELETE FROM sablonlar WHERE tur=?', bind: [tur] });
+    else return;
+    alanYaz(db, i, 'sablon:' + tur, 'sablon', sablon ?? null);
+  },
+  /** Şablon alanının değeri; boş değer satırı kaldırır. */
+  kayit_alan(db, i) {
+    const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
+    if (typeof alan !== 'string' || !alan) return;
+    if (deger === null || deger === undefined || deger === '' || deger === false) db.exec({ sql: 'DELETE FROM alan_degerleri WHERE kayit=? AND alan=?', bind: [kod, alan] });
+    else db.exec({ sql: 'INSERT OR REPLACE INTO alan_degerleri(kayit, alan, deger, duzenleme) VALUES(?,?,?,?)', bind: [kod, alan, JSON.stringify(deger), i.zaman] });
+    db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, kod] });
+    alanYaz(db, i, kod, 'f:' + alan, deger ?? null);
+  },
+  /** Soru kütüphanesi (§6): cevap, sonraya bırakma ya da ilgisiz; durum null ise cevapsıza döner. */
+  soru_cevapla(db, i) {
+    const { kod, soru, durum, cevap, kayitla, metin } = i.veri as { kod: string; soru: string; durum: string | null; cevap?: string; kayitla?: string | null; metin?: string };
+    if (typeof soru !== 'string' || !soru) return;
+    if (!durum) db.exec({ sql: 'DELETE FROM soru_cevaplari WHERE kayit=? AND soru=?', bind: [kod, soru] });
+    else db.exec({ sql: 'INSERT OR REPLACE INTO soru_cevaplari(kayit, soru, durum, cevap, metin, kayitla, duzenleme) VALUES(?,?,?,?,?,?,?)', bind: [kod, soru, durum, cevap ?? '', metin ?? '', kayitla ?? null, i.zaman] });
+    if (kod !== 'evren') db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, kod] });
+    alanYaz(db, i, kod, 's:' + soru, durum ? { durum, cevap: cevap ?? '', kayitla: kayitla ?? null } : null);
+  },
+  kayit_soru_seti(db, i) {
+    const { kod, set, ekle } = i.veri as { kod: string; set: string; ekle: boolean };
+    if (ekle) db.exec({ sql: 'INSERT OR IGNORE INTO kayit_soru_setleri(kayit, soru_seti) VALUES(?,?)', bind: [kod, set] });
+    else db.exec({ sql: 'DELETE FROM kayit_soru_setleri WHERE kayit=? AND soru_seti=?', bind: [kod, set] });
   },
 
   medya_ekle(db, i) {

@@ -14,7 +14,7 @@ import { VERI_BICIMI, type Islem } from '../alan/islem';
 import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, kokAdaylari } from '../alan/turkce-ek';
-import { kararGecerli, turGecerli } from '../alan/turler';
+import { kararGecerli, turBul, turGecerli } from '../alan/turler';
 import type { DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
@@ -23,6 +23,9 @@ import { DonemselYedek, donemselDurum, type YedekTasiyici } from './donemsel-yed
 import { metinBelgesi } from './izdusum';
 import * as anlati from './anlati';
 import * as durum from './durum';
+import * as sablonlar from './sablon';
+import { yasHesapla } from '../alan/yas';
+import { MESELE_DURUMLARI, type Sablon, type SoruDurumu } from '../alan/sablon';
 import { gecerlilik, DURUM_KIPLERI } from '../alan/durum';
 
 export type DosyaAcici = (ad: string) => Database;
@@ -324,10 +327,22 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       const degerler = e.db.selectObjects('SELECT islem, kurulum, deger, zaman FROM alan_yazanlari WHERE nesne=? AND alan=? ORDER BY zaman', [nesne, alan])
         .map((r) => {
           const deger = JSON.parse(r.deger as string);
-          return { islem: r.islem as string, deger, yazi: this.degerYazisi(e, alan, deger, !!dr), kurulum: this.kurulumAdi(r.kurulum as string), zaman: Number(r.zaman) };
+          return { islem: r.islem as string, deger, yazi: this.degerYazisi(e, alan, deger, !!dr, nesne), kurulum: this.kurulumAdi(r.kurulum as string), zaman: Number(r.zaman) };
         });
       if (dr) {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'durum', kayit: dr.konu as string, baslik: `${kayitAdi(dr.konu as string)} · ${dr.ozellik}`, degerler });
+        continue;
+      }
+      if (nesne.startsWith('sablon:')) {
+        const tur = nesne.slice(7);
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: `“${turBul(tur).ad}” şablonu`, alanEtiketi: 'Şablon',
+          degerler: degerler.map((d) => ({ ...d, yazi: d.deger ? `${(d.deger as Sablon).alanlar.length} alan, ${(d.deger as Sablon).sorular.length} soru` : 'Varsayılan şablon' })) });
+        continue;
+      }
+      const etiket = this.alanEtiketi(e, nesne, alan);
+      if (etiket) {
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: nesne === 'evren' ? 'evren' : 'kayit', kayit: nesne === 'evren' ? null : nesne,
+          baslik: nesne === 'evren' ? 'Evren' : kayitAdi(nesne), alanEtiketi: etiket, degerler });
         continue;
       }
       sonuc.push({
@@ -353,9 +368,39 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
 
   catismaSayisi({ evren }: { evren: string }) { return this.catismalar({ evren }).length; }
 
+  /** Şablon alanı ya da soru çatışmasında alanın adı. */
+  private alanEtiketi(e: EvrenVt, nesne: string, alan: string): string | null {
+    if (alan.startsWith('s:')) {
+      const m = e.db.selectValue('SELECT metin FROM soru_cevaplari WHERE kayit=? AND soru=?', [nesne, alan.slice(2)]) as string | undefined;
+      return m ? `Soru: ${m}` : 'Soru';
+    }
+    if (alan.startsWith('f:') || alan.startsWith('karar:f:')) {
+      const kod = alan.startsWith('f:') ? alan.slice(2) : alan.slice(8);
+      const tur = e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [nesne]) as string | undefined;
+      const ad = tur ? sablonlar.sablonOku(e, tur).alanlar.find((a) => a.kod === kod)?.ad : undefined;
+      return alan.startsWith('karar:') ? `${ad ?? 'Alan'} (karar durumu)` : ad ?? 'Şablonda olmayan alan';
+    }
+    return null;
+  }
+
   /** Çatışan değerin okunur hâli; düz değerlerde boş kalır, arayüz değeri olduğu gibi gösterir. */
-  private degerYazisi(e: EvrenVt, alan: string, deger: unknown, durumAlani: boolean): string | undefined {
+  private degerYazisi(e: EvrenVt, alan: string, deger: unknown, durumAlani: boolean, nesne = ''): string | undefined {
     const ad = (k: unknown) => (typeof k === 'string' ? (e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [k]) as string | undefined) : undefined) ?? 'silinmiş kayıt';
+    if (alan.startsWith('s:')) {
+      if (!deger) return 'Cevapsız';
+      const v = deger as { durum: string; cevap: string; kayitla: string | null };
+      return v.durum === 'sonra' ? 'Sonraya bırakıldı' : v.durum === 'ilgisiz' ? 'İlgisiz' : v.kayitla ? `Kayıtla: ${ad(v.kayitla)}` : v.cevap;
+    }
+    if (alan.startsWith('f:')) {
+      if (deger === null || deger === undefined) return '(boş)';
+      if (deger === true) return 'Evet';
+      if (typeof deger === 'object' && 'ifade' in (deger as object)) return (deger as { ifade: string }).ifade;
+      const secenek = MESELE_DURUMLARI.find((x) => x.kod === deger);
+      if (alan === 'f:durum' && secenek) return secenek.ad;
+      const tur = e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [nesne]) as string | undefined;
+      const a = tur ? sablonlar.sablonOku(e, tur).alanlar.find((x) => x.kod === alan.slice(2)) : undefined;
+      return a?.secenekler?.find((x) => x.kod === deger)?.ad ?? String(deger);
+    }
     if (alan === 'anlati') {
       if (!deger) return 'Hiçbir esere yerleşmemiş';
       return `${ad((deger as { ust: string }).ust)} içinde`;
@@ -377,6 +422,18 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const r = e.db.selectObject('SELECT deger FROM alan_yazanlari WHERE nesne=? AND alan=? AND islem=?', [nesne, alan, islem]);
     if (!r) throw new Error('Bu çatışma artık yok.');
     const deger = JSON.parse(r.deger as string);
+    if (nesne.startsWith('sablon:')) { this.yaz(evren, [{ tur: 'sablon_yaz', veri: { tur: nesne.slice(7), sablon: deger, cozum: true } }]); return; }
+    if (alan.startsWith('s:')) {
+      const v = deger as { durum: string; cevap: string; kayitla: string | null } | null;
+      const metin = (e.db.selectValue('SELECT metin FROM soru_cevaplari WHERE kayit=? AND soru=?', [nesne, alan.slice(2)]) as string | undefined) ?? '';
+      this.yaz(evren, [{ tur: 'soru_cevapla', veri: { kod: nesne, soru: alan.slice(2), durum: v?.durum ?? null, cevap: v?.cevap ?? '', metin, ...(v?.kayitla ? { kayitla: v.kayitla } : {}), cozum: true } }], nesne === 'evren' ? [] : [nesne]);
+      return;
+    }
+    if (alan.startsWith('f:')) {
+      this.kayitVarMi(e, nesne);
+      this.yaz(evren, [{ tur: 'kayit_alan', veri: { kod: nesne, alan: alan.slice(2), ad: this.alanEtiketi(e, nesne, alan), deger, cozum: true } }], [nesne]);
+      return;
+    }
     if (nesne === 'evren' && alan === 'ad') { this.yaz(evren, [{ tur: 'evren_adlandir', veri: { ad: String(deger) } }]); this.kurulum.evrenAdi(evren, String(deger)); return; }
     const iliski = e.db.selectObject('SELECT a, b FROM iliskiler WHERE kod=?', [nesne]);
     const dr = iliski ? undefined : e.db.selectObject('SELECT konu, ozellik FROM durumlar WHERE kod=?', [nesne]);
@@ -532,9 +589,13 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   alanKarari({ evren, kod, alan, karar }: { evren: string; kod: string; alan: string; karar: string }) {
     const e = this.evren(evren);
     this.kayitVarMi(e, kod);
-    if (!['ad', 'ozet', 'okunus', 'tarih'].includes(alan)) throw new Error('Bu alanın karar durumu tutulmuyor.');
+    let ad: string | undefined;
+    if (sablonlar.alanKarariGecerli(alan)) {
+      ad = sablonlar.sablonOku(e, e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [kod]) as string).alanlar.find((a) => a.kod === alan.slice(2))?.ad;
+      if (!ad) throw new Error('Bu alan şablonda yok.');
+    } else if (!['ad', 'ozet', 'okunus', 'tarih'].includes(alan)) throw new Error('Bu alanın karar durumu tutulmuyor.');
     if (!kararGecerli(karar)) throw new Error('Geçersiz karar durumu.');
-    this.yaz(evren, [{ tur: 'kayit_alan_karar', veri: { kod, alan, karar } }], [kod]);
+    this.yaz(evren, [{ tur: 'kayit_alan_karar', veri: { kod, alan, karar, ...(ad ? { ad } : {}) } }], [kod]);
   }
 
   kayitListe({ evren, kod, liste, ekle, cikar }: { evren: string; kod: string; liste: 'lakap' | 'etiket'; ekle?: string; cikar?: string }) {
@@ -1021,7 +1082,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       ekle({ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string }, rolAdi('sahnede', (r.rol as string) ?? null) ?? 'Sahnede');
     }
 
-    const SAHNE_TURLERI = new Set(['anlatir', 'sahnede', 'olayda', 'sahne_yeri', 'bakis', 'anlatici', 'odak']);
+    // Sahne yapısı ve yazarlık bağları (açık mesele, gerekçe, not) evrenin o anki hâli değildir.
+    const SAHNE_TURLERI = new Set(['anlatir', 'sahnede', 'olayda', 'sahne_yeri', 'bakis', 'anlatici', 'odak', 'mesele_konusu', 'gerekce_konusu', 'nottan']);
     const katilimcilar: SahneKatilimcisi[] = [...katilim.values()].map((k) => ({
       ...k,
       durumlar: durum.durumlar(db, k.kod, an).filter(gorunur),
@@ -1033,12 +1095,42 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         .filter((d) => d.sahne?.kod !== sahne)
         .map((d) => ({ ...d, sira: karsilastir(d.tarih, an) }))
         .filter((d) => d.sira !== 'sonra') : [],
+      yas: yasHesapla(sablonlar.tarihDegeri(e, k.kod, 'dogum'), an, sablonlar.tarihDegeri(e, k.kod, 'olum'))?.metin ?? null,
     }));
     return {
       tarih: an,
       yer: yer ? { ...yer, durumlar: durum.durumlar(db, yer.kod, an).filter(gorunur) } : null,
       bakis, anlatici, odak, katilimcilar,
     };
+  }
+
+  // ---------- Şablonlar, soru kütüphanesi, açık meseleler ve gerekçe defteri (§3.1, §6, §4.6) ----------
+  private sablonBaglami(evren: string): sablonlar.SablonBaglami {
+    return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); }, kayitGirdileri: (kod, v) => this.kayitGirdileri(kod, v) };
+  }
+  sablon({ evren, tur }: { evren: string; tur: string }) { return sablonlar.sablonBilgisi(this.evren(evren), tur); }
+  sablonYaz({ evren, tur, sablon }: { evren: string; tur: string; sablon: Sablon | null }) { sablonlar.sablonYaz(this.sablonBaglami(evren), tur, sablon); }
+  kayitSablonu({ evren, kod }: { evren: string; kod: string }) { return sablonlar.kayitSablonu(this.evren(evren), kod); }
+  kayitAlanYaz({ evren, kod, alan, deger }: { evren: string; kod: string; alan: string; deger: unknown }) {
+    sablonlar.kayitAlanYaz(this.sablonBaglami(evren), kod, alan, deger);
+  }
+  soruCevapla({ evren, kod, soru, durum: d, cevap = '' }: { evren: string; kod: string; soru: string; durum: SoruDurumu | null; cevap?: string }) {
+    sablonlar.soruCevapla(this.sablonBaglami(evren), kod, soru, d, cevap);
+  }
+  soruKayitla({ evren, kod, soru, ad, tur }: { evren: string; kod: string; soru: string; ad: string; tur: string }) {
+    return sablonlar.soruKayitla(this.sablonBaglami(evren), kod, soru, ad, tur);
+  }
+  kayitSoruSeti({ evren, kod, set, ekle }: { evren: string; kod: string; set: string; ekle: boolean }) {
+    sablonlar.kayitSoruSeti(this.sablonBaglami(evren), kod, set, ekle);
+  }
+  evrenSorulari({ evren }: { evren: string }) { return sablonlar.evrenSorulari(this.evren(evren)); }
+  meseleler({ evren, kod }: { evren: string; kod?: string }) {
+    const e = this.evren(evren);
+    if (kod) this.kayitVarMi(e, kod);
+    return sablonlar.meseleler(e, kod);
+  }
+  yazarKaydiEkle({ evren, tur, ad, bagla = null, onemli = false }: { evren: string; tur: 'acik_mesele' | 'gerekce'; ad: string; bagla?: string | null; onemli?: boolean }) {
+    return sablonlar.yazarKaydiEkle(this.sablonBaglami(evren), tur, ad, bagla, onemli);
   }
 
   // ---------- Görseller (§10.12) ----------

@@ -274,3 +274,24 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .durum-listesi { list-style: none; padding: 0; margin: 4px 0 0; }
 .durum-listesi > li { padding: 6px 0; border-bottom: 1px solid var(--cizgi); }
 .yan-an { background: var(--vurgu-zemin); border-radius: var(--yaricap); padding: 6px 8px; }
+
+/* Şablon alanları, sorular, açık meseleler */
+.sorular, .kayit-meseleleri { margin-top: 24px; }
+.sorular h2, .kayit-meseleleri h2, .meseleler h2, .sablon-editoru h2 { font-size: 1rem; }
+.sorular summary, .pusula summary { cursor: pointer; }
+.soru-grubu { margin-top: 10px; }
+.soru-listesi { list-style: none; padding: 0; margin: 6px 0 0; }
+.soru-listesi .soru { padding: 8px 0; border-bottom: 1px solid var(--cizgi); }
+.soru-metni { margin-bottom: 4px; }
+.soluk-soru .soru-metni { color: var(--metin-2); }
+.soru-dugmeleri { margin-top: 2px; }
+.eski-alanlar ul { list-style: none; padding: 0; margin: 4px 0 0; }
+.sablon-listesi { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 8px; }
+.sablon-listesi > li.kart { display: grid; gap: 6px; }
+.secenekler { display: grid; gap: 4px; padding-left: 12px; }
+.mesele-listesi, .gerekce-listesi { list-style: none; padding: 0; margin: 6px 0 0; }
+.mesele-listesi li, .gerekce-listesi li { padding: 6px 0; border-bottom: 1px solid var(--cizgi); }
+.mesele-grubu { margin-top: 10px; }
+.yildiz { color: var(--metin-2); }
+.yildiz.secili { color: #b07d10; }
+.alt-set { margin-top: 8px; }
