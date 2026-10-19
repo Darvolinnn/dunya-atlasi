@@ -99,7 +99,9 @@ Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok.
    | İşlem | Kelime | Yeni cihazda kurma | Yerelde baştan kurma | Arama | Tek değişiklik | Sahne açma |
    |---|---|---|---|---|---|---|
    | 20.800 | 113.000 | 137 sn | 138 sn | 80 ms | 1 ms | 12 ms |
-   | 40.000 ve 80.000 | — | ölçüm sürüyordu (19 Ekim akşam); sonuç gelince bu satır doldurulur | | | | |
+   | 40.800 | 273.000 | 319 sn | 318 sn | 87–162 ms | 0,7 ms | 12 ms |
+
+   İşlem iki katına çıkınca baştan kurma 2,3 katına çıktı (doğrusaldan biraz kötü); bu gidişle 300.000 işlemde bir saati aşar. 80.000 ölçümü sonucu değiştirmeyeceği için yapılmadı.
 
    Günlük kullanım (yazma, arama, sahne açma) büyüklükten etkilenmiyor. Ağır olan **günlüğün baştan işletilmesi**: evreni yeni cihaza indirme, yedekten geri yükleme ve başka cihazdan geçmişe düşen bir işlem gelmesi (`evren-vt.ts` `bastanUygula`). Profil (3.000 metin işlemi, 21 sn): sürenin %50'si Automerge'ün her değişikliği tek tek işlemesi (`A.loadIncremental`), %31'i her değişiklikten sonra metnin yeniden okunması (`A.spans`), kalanı belgenin her seferinde baştan paketlenip yazılması (`A.save`) (`izdusum.ts` `metin` uygulayıcısı). Bir saat yazma yaklaşık 200–500 işlem eder (metin 1,2 sn arada ya da en geç 8 sn'de bir kaydedilir); Red Rising büyüklüğünde bir seri (~1 milyon kelime, taslak ve düzeltmelerle) 300.000–1.500.000 işlem demektir. Seçenekler (tasarımda karşılığı yok; önce §16'ya Öneri olarak yazılıp kullanıcıya sunulmalı, sonra kodlanır):
    - **a. Baştan kurmada metni toplu uygula:** aynı belgenin ardışık değişiklikleri tek `loadIncremental` ile uygulanır; `spans`, `save` ve bağlantı tabloları belge başına bir kez, sonda yazılır. Dikkat: `metinYazanlari` (çatışma) ve F24 işaretli cümlenin "ilk görülen hâli" ara durumlara bakıyor; bunlar ya korunmalı ya da toplu yolda ayrıca hesaplanmalı.
