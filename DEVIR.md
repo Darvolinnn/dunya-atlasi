@@ -17,6 +17,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 ## 2. Kullanıcı ve çalışma tercihi
 
 - Kullanıcı Türkçe yazar; ona Türkçe, kısa ve sade cevap ver. Arayüzdeki ve hata iletilerindeki her metin Türkçedir; kullanıcıya görünen metinde programlama terimi olmaz.
+- Her adım bitince DEVIR.md'de yapılan ve yapılacak adımlar güncellenir ve gönderilir (kullanıcı isteği, 19 Ekim 2026).
 - Kullanıcının açık tercihi: **bir aşama ya da madde bitince onay beklemeden sıradakine geç.** Yalnızca geri alınamaz işlerde (zorla gönderme, toplu silme, dışarıya mesaj) ya da kullanıcının vermesi gereken bir kararda dur ve sor.
 - Kullanıcı bazen başka ajanları (GPT/Codex, Argon) ayrı dallarda paralel çalıştırır. Onlara verilecek promptları sen yazarsın; dalları sen birleştirir, sürümü sen artırır, denetimi sen yaparsın (bkz. §6).
 
@@ -73,6 +74,18 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 19 Ekim 2026'daki ilk dört paket birleştirildi. Aynı gün ikinci tur beş paket verildi; beşi de birleştirildi. Üçüncü turdaki Argon paketi (§15-2) birleştirildi; GPT inceleme paketi hak bittiği için yarım kaldı, yerine yardımcı ajan inceledi. Bekleyen paket yok. Dalı uzak depoda belirince birleştir (§6). Paketler `IZDUSUM_SURUMU`'nu artırmaz; artırmayı birleştiren yapar. Promptlar kullanıcının proje klasöründe `paket-promptlari/tur2/` altındadır; depoda değildir.
 
 Bütün "Tasarım" maddeleri kodlandı (F16 formülü hariç; TK8 onaylandı, sırada). Promptlar `paket-promptlari/tur3/`.
+
+### 3.2a Süren iş: F16 formül dili (adım adım)
+
+Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yapılan ve yapılacak adımlar burada görünür.
+
+- [x] Kullanıcı TK8 taslağını onayladı, sayılarla birlikte seçti (19 Ekim 2026)
+- [ ] Sözleşmeyi tasarım belgesine yaz (§18 "Kural ve formül dili", §1 TK8 satırı, geçmiş dosyasına bir satır)
+- [ ] Şablonlara birimli sayı alanı ekle (nicelik türü, birim, hassasiyet)
+- [ ] Formül çözümleyici ve üç değerli değerlendirme (alan/formul.ts)
+- [ ] Hukuk kuralının "kimlere" kısmına formül alanı; kural atölyesi örnekleriyle sınama
+- [ ] Arayüz: formül yazma, hatanın yerini gösterme
+- [ ] Sınamalar, izdüşüm sürümü, DEVIR güncellemesi, gönderme
 
 ### 3.3 Kalan işler (önerilen sıra)
 
