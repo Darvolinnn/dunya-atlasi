@@ -5,6 +5,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { OlaySurecSorumlulari, SurecEngelSatiri, SurecEngelTuru } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
+import { onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -218,7 +219,7 @@ function EngelSatirGorunumu({
         type="button"
         class="dugme sade kucuk"
         aria-label={`${satir.kayit.ad}: listeden kaldır`}
-        onClick={() => isle(istemci.iste('surecEngelSil', { evren, olay, kural, tur, kod: satir.kod }))}
+        onClick={() => onayla('Bu satır kaldırılsın mı?') && isle(istemci.iste('surecEngelSil', { evren, olay, kural, tur, kod: satir.kod }))}
       >
         Kaldır
       </button>

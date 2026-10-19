@@ -4,6 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { IsaretAlani, IsaretIncelemeleri, IsaretIncelemesi, MetinIsareti } from '../veri/api';
 import { zamanYaz } from '../alan/islem-metni';
 import type { Istemci } from '../veri/istemci';
+import { onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const DURUM: Record<MetinIsareti['durum'], string> = {
@@ -39,7 +40,7 @@ function Satir({ istemci, evren, x, kaynakGoster, saltOkunur, yenile }: { istemc
           <input class="girdi" lang="tr" maxLength={300} aria-label="İddia" placeholder="Cümlenin söylediği, kısaca" value={iddia} onInput={(e) => setIddia((e.target as HTMLInputElement).value)}
             onBlur={() => { if (iddia.trim() !== x.iddia) yaz('iddia', iddia); }} />
           <label class="kucuk"><input type="checkbox" checked={x.kritik} onChange={(e) => yaz('kritik', (e.target as HTMLInputElement).checked)} /> Kritik</label>
-          <button class="dugme sade kucuk" onClick={() => istemci.iste('metinIsaretiSil', { evren, kod: x.kod }).then(yenile, (e) => setHata(hataYaz(e)))}>İşareti kaldır</button>
+          <button class="dugme sade kucuk" onClick={() => onayla('Bu işaret kaldırılsın mı?') && istemci.iste('metinIsaretiSil', { evren, kod: x.kod }).then(yenile, (e) => setHata(hataYaz(e)))}>İşareti kaldır</button>
         </div>
       )}
       {hata && <p class="hata kucuk">{hata}</p>}
@@ -115,7 +116,7 @@ export function IsaretIncelemeSatiri({ evren, x, karar, kaldir }: { evren: strin
           <button class="dugme kucuk" onClick={() => karar(x.anahtar, 'duzeltildi', 'Metin düzeltildi')}>Metni düzelttim</button>
           <button class="dugme kucuk" onClick={() => karar(x.anahtar, 'duzeltildi', 'Evren verisi düzeltildi')}>Evren verisini düzelttim</button>
           <button class="dugme kucuk" onClick={() => setKabulYaz(true)}>Bu hâliyle kabul et…</button>
-          <button class="dugme sade kucuk" onClick={() => kaldir(i.kod)}>Yanlış bağlantı: işareti kaldır</button>
+          <button class="dugme sade kucuk" onClick={() => onayla('Bu işaret kaldırılsın mı?') && kaldir(i.kod)}>Yanlış bağlantı: işareti kaldır</button>
           <button class="dugme sade kucuk" onClick={() => karar(x.anahtar, 'ertelendi')}>Ertele</button>
         </div>
       )}

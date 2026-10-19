@@ -2,6 +2,7 @@
 // Yalnızca ilgili görünüm açılınca çalışır; hesaplar Web Worker üzerinden arka planda yürür ve arayüzü dondurmaz.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
+import { onayla } from './onay';
 import type {
   HaritaAyrintisi,
   OlcekliHaritaDurumu,
@@ -534,7 +535,7 @@ export function OlcekliHaritaBolumu({
                   <button
                     type="button"
                     class="dugme sade kucuk"
-                    onClick={() =>
+                    onClick={() => onayla('Bu arazi kaldırılsın mı?') &&
                       istemci
                         .iste('olcekliAraziSil', { evren, kod: a.kod })
                         .then(yukle, (err) => setHata(hataYaz(err)))

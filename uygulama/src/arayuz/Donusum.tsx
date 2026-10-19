@@ -5,6 +5,7 @@ import type { Catisma, DonusumBicimi, DonusumDevirTuru, DonusumGirdisi, DonusumO
 import { yeniKod } from '../alan/kod';
 import { TURLER } from '../alan/turler';
 import { useYukle } from './Anlati';
+import { onayla } from './onay';
 
 const BICIMLER: Record<DonusumBicimi, string> = { birlesme: 'Birleşme', bolunme: 'Bölünme', donusum: 'Dönüşüm' };
 const DEVIRLER: Record<DonusumDevirTuru, string> = { uyeler: 'Üyeler', esya: 'Eşya', haklar: 'Haklar', ad: 'Adı', adlandirilan: 'Adlandırılan devir', iliski: 'Kayıtlı ilişki' };
@@ -40,7 +41,7 @@ export function DonusumBolumu({ istemci, evren, kod, saltOkunur }: { istemci: Is
       {d.olay && <p>Bağlı olay: {bag(d.olay)}</p>}
       {d.tanim.devirler.length === 0 ? <p class="soluk">Devir seçilmedi.</p> : <ul>{d.tanim.devirler.map((v, i) => <li key={i}>{bag(ad(d, v.kaynak))} → {bag(ad(d, v.hedef))}: {DEVIRLER[v.tur]}{v.aciklama && ` — ${v.aciklama}`}</li>)}</ul>}
       {d.tanim.not && <p>{d.tanim.not}</p>}
-      {!saltOkunur && <p><button class="dugme kucuk" disabled={bekle} onClick={() => { setHata(''); setForm(d); }}>Dönüşümü düzenle</button>{!d.geriAlindi && <button class="dugme kucuk" disabled={bekle} onClick={() => void calistir(() => istemci.iste('donusumGeriAl', { evren, kod: d.kod }))}>Dönüşümü geri al</button>}</p>}
+      {!saltOkunur && <p><button class="dugme kucuk" disabled={bekle} onClick={() => { setHata(''); setForm(d); }}>Dönüşümü düzenle</button>{!d.geriAlindi && <button class="dugme kucuk" disabled={bekle} onClick={() => onayla('Bu dönüşüm geri alınsın mı?') && void calistir(() => istemci.iste('donusumGeriAl', { evren, kod: d.kod }))}>Dönüşümü geri al</button>}</p>}
       {catismalar?.filter((c): c is Extract<Catisma, { tur: 'alan' }> => c.tur === 'alan' && c.nesne === d.kod && c.alan === 'donusum_degeri').map((c) => <div key={c.nesne} role="region" aria-label="Dönüşümün farklı yazımları">
         <p>İki cihazda farklı yazılmış. Kalacak yazımı seçin:</p>
         <ul>{c.degerler.map((v) => <li key={v.islem}><p>{v.yazi} <small>({v.kurulum})</small></p>{!saltOkunur && <button class="dugme kucuk" disabled={bekle} onClick={() => void calistir(() => istemci.iste('alanCatismasiCoz', { evren, nesne: d.kod, alan: c.alan, islem: v.islem }))}>Bu yazım kalsın</button>}</li>)}</ul>

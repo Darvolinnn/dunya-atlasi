@@ -4,6 +4,7 @@ import { useState } from 'preact/hooks';
 import type { IzKaydi, KaliciIzTuru, KisaKayit, MekanIzKatmani, OlayIzleri } from '../veri/api';
 import type { Istemci } from '../veri/istemci';
 import { useYukle } from './Anlati';
+import { onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -139,7 +140,7 @@ function OlayIzleriBolumu({
             <button type="button" class="dugme sade kucuk" onClick={() => formuAc(iz)}>
               Düzenle
             </button>
-            <button type="button" class="dugme sade kucuk" onClick={() => sil(iz.kod)}>
+            <button type="button" class="dugme sade kucuk" onClick={() => onayla('Bu iz kaldırılsın mı?') && sil(iz.kod)}>
               Kaldır
             </button>
           </>

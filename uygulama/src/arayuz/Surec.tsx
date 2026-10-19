@@ -4,6 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AdimDurumu, MakamYurutucusu, OlaySurecleri, SurecAdimi, SurecKurali } from '../veri/api';
 import { SurecSorumluBolumu } from './SurecSorumlu';
+import { onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const DURUMLAR: { kod: AdimDurumu; ad: string }[] = [
@@ -80,7 +81,7 @@ function KuralDuzenleyici({ istemci, evren, k }: { istemci: Istemci; evren: stri
         <span class="bosluk" />
         <button class="dugme ana kucuk" disabled={!degisti} onClick={() => istemci.iste('surecKuraliYaz', { evren, kod: k.kod, tanim: t }).then(() => setHata(null), (x) => setHata(hataYaz(x)))}>Kaydet</button>
         <button class="dugme kucuk" disabled={!degisti} onClick={() => setT({ ad: k.ad, kosullar: k.kosullar, adimlar: structuredClone(k.adimlar) })}>Vazgeç</button>
-        <button class="dugme sade kucuk" onClick={() => istemci.iste('surecKuraliSil', { evren, kod: k.kod })}>Kuralı kaldır</button>
+        <button class="dugme sade kucuk" onClick={() => onayla('Bu kural kaldırılsın mı?') && istemci.iste('surecKuraliSil', { evren, kod: k.kod })}>Kuralı kaldır</button>
       </div>
       {!t.adimlar.some((a) => a.sonuc) && t.adimlar.length > 0 && <p class="soluk kucuk">Hiçbir adım “sonuç için gerekli” değil; program sonucun doğup doğmadığını söylemez.</p>}
       {hata && <p class="hata kucuk">{hata}</p>}

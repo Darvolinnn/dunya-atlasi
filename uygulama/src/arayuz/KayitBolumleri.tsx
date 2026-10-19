@@ -15,6 +15,7 @@ import { EtkiRaporuPaneli } from './Gorunumler';
 import { DegisiklikMasasiPaneli } from './DegisiklikMasasi';
 import { GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
 import { SureklilikDefteri } from './Sureklilik';
+import { onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -167,7 +168,7 @@ export function Gorseller({ istemci, evren, kayit }: { istemci: Istemci; evren: 
       {hata && <p class="hata kucuk">{hata}</p>}
       {buyuk && <GorselGorunumu istemci={istemci} evren={evren} ad={buyuk} kapat={() => setBuyuk(null)}
         isaretle={() => gorseldeIsaretle(istemci, evren, kayit.kod, buyuk).catch((e) => setHata(hataYaz(e)))}
-        cikar={async () => { await istemci.iste('kayitGorselCikar', { evren, kod: kayit.kod, ad: buyuk }); setBuyuk(null); }} />}
+        cikar={async () => { if (!(onayla('Bu görsel kayıttan çıkarılsın mı?'))) return; await istemci.iste('kayitGorselCikar', { evren, kod: kayit.kod, ad: buyuk }); setBuyuk(null); }} />}
     </section>
   );
 }
@@ -272,7 +273,7 @@ function IliskiSatir({ istemci, evren, i }: { istemci: Istemci; evren: string; i
           <label class="alan"><span class="alan-adi">Karar durumu</span>
             <KararSecici etiket="İlişki" karar={i.karar} onDegis={(k) => istemci.iste('iliskiDegistir', { evren, kod: i.kod, alan: 'karar', deger: k })} /></label>
           <GorunurlukAlani istemci={istemci} evren={evren} kod={i.kod} nesne="iliski" deger={i.gorunurluk} />
-          <button class="dugme tehlikeli kucuk" onClick={() => istemci.iste('iliskiSil', { evren, kod: i.kod })}>İlişkiyi kaldır</button>
+          <button class="dugme tehlikeli kucuk" onClick={() => onayla('Bu ilişki kaldırılsın mı?') && istemci.iste('iliskiSil', { evren, kod: i.kod })}>İlişkiyi kaldır</button>
         </div>
       )}
     </li>
@@ -428,7 +429,7 @@ function DegisimListesi({ istemci, evren, liste, konuGoster, olayGoster }: { ist
           <KararRozeti karar={d.karar} />
           {olayGoster && <span class="soluk kucuk">· <a href={`#/e/${evren}/k/${d.sahne?.kod ?? d.olay.kod}`}>{d.sahne?.ad ?? d.olay.ad}</a>{d.tarih ? ` · ${d.tarih.ifade}` : ''}</span>}
           <span class="bosluk" />
-          <button class="dugme sade kucuk" aria-label="Değişimi kaldır" onClick={() => istemci.iste('degisimSil', { evren, kod: d.kod })}>×</button>
+          <button class="dugme sade kucuk" aria-label="Değişimi kaldır" onClick={() => onayla('Bu değişim kaldırılsın mı?') && istemci.iste('degisimSil', { evren, kod: d.kod })}>×</button>
         </li>
       ))}
     </ul>

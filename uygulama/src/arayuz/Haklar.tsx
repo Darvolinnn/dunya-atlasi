@@ -6,6 +6,7 @@ import { farkYazisi } from '../alan/tarih';
 import { KayitSec } from './KayitBolumleri';
 import { SinirGirdi, sinirYazi } from './Anlati';
 import type { Secim } from './BaglantiSecici';
+import { onayla } from './onay';
 
 const TURLER: Record<HakTuru, string> = { mulkiyet: 'Mülkiyet', kullanim: 'Kullanım hakkı', yetki: 'Yetki', yukumluluk: 'Yükümlülük', izin: 'İzin' };
 const TANIMALAR: Record<HakTanimaDurumu, string> = { taniyor: 'Tanıyor', tanimiyor: 'Tanımıyor', bilinmiyor: 'Bilinmiyor' };
@@ -58,7 +59,7 @@ export function HaklarBolumu({ istemci, evren, kod, ad, surum, saltOkunur = fals
     </li>)}</ul></>}
     {!saltOkunur && <><TanimaFormu key={s.kod} istemci={istemci} evren={evren} mesgul={mesgul} kaydet={(otorite, durum) => is(() => istemci.iste('hakTanimaYaz', { evren, hak: s.kod, otorite, durum }))} />
       <button class="dugme" disabled={mesgul} onClick={() => duzenle(s)}>Düzenle</button>{' '}
-      <button class="dugme" disabled={mesgul} onClick={() => is(() => istemci.iste('hakSil', { evren, kod: s.kod }))}>Kaldır</button>
+      <button class="dugme" disabled={mesgul} onClick={() => onayla('Bu kayıt kaldırılsın mı? Kaldırılanlardan geri getirebilirsin.') && is(() => istemci.iste('hakSil', { evren, kod: s.kod }))}>Kaldır</button>
     </>}
   </li>;
   const gruplar = (l: HakSatiri[]) => Object.entries(TURLER).filter(([tur]) => l.some((s) => s.tanim.tur === tur)).map(([tur, ad]) => <div key={tur}><h4>{ad}</h4><ul>{l.filter((s) => s.tanim.tur === tur).map(satir)}</ul></div>);

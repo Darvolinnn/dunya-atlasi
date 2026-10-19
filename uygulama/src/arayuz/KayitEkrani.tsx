@@ -50,6 +50,7 @@ import { KullanildigiYerler } from './MetinKullanim';
 import { DonusumBolumu } from './Donusum';
 import { KalabalikBolumu } from './Kalabalik';
 import { KaliciIzBolumu } from './KaliciIz';
+import { onayla } from './onay';
 
 /** Durum geçmişi tutulmayan türler (anlatı parçaları ve notlar). */
 const DURUMSUZ = new Set(['sahne', 'bolum', 'eser', 'not']);
@@ -255,7 +256,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           {kayit.tur === 'not' && !kayit.silindi && <NotDonustur istemci={istemci} evren={evren} kayit={kayit} />}
           {!kayit.silindi && <BirlestirDugmesi istemci={istemci} evren={evren} kayit={kayit} onceKaydet={async () => { await denetim.current?.kaydet(); }} />}
           {!kayit.silindi && (
-            <button class="dugme tehlikeli" onClick={async () => {
+            <button class="dugme tehlikeli" onClick={async () => { if (!(onayla(`“${kayit.ad}” çöp kutusuna taşınsın mı? Çöp kutusundan geri getirebilirsin.`))) return;
               await denetim.current?.kaydet();
               await istemci.iste('kayitSil', { evren, kod });
               git(`/e/${evren}`);
@@ -331,7 +332,7 @@ function SurumGecmisi({ istemci, evren, kayit, surum, geriGetir }: {
           <div class="satir">
             <strong style="flex:1">{zamanYaz(secili.satir.zaman)} tarihindeki metin</strong>
             {secili.satir.kod !== enYeni && (
-              <button class="dugme ana" onClick={async () => { await geriGetir(secili.satir.veri.basliklar as string[]); setSecili(null); }}>Bu hâli geri getir</button>
+              <button class="dugme ana" onClick={async () => { if (!onayla('Metin bu eski hâline döndürülsün mü?')) return; await geriGetir(secili.satir.veri.basliklar as string[]); setSecili(null); }}>Bu hâli geri getir</button>
             )}
             <button class="dugme" onClick={() => setSecili(null)}>Kapat</button>
           </div>
