@@ -713,6 +713,10 @@ CREATE TABLE IF NOT EXISTS uyarlama_eslemeleri(
   deger TEXT NOT NULL,
   silindi INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS harita_kunyeleri(
+  harita TEXT PRIMARY KEY,
+  tanim TEXT NOT NULL
+);
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'gokyuzu_tanimi',
@@ -725,6 +729,7 @@ IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi', 'kul
 IZDUSUM_TABLOLARI.push('bakim_tanimlari', 'bakim_kayitlari');
 IZDUSUM_TABLOLARI.push('kural_ornekleri');
 IZDUSUM_TABLOLARI.push('uyarlama_eslemeleri');
+IZDUSUM_TABLOLARI.push('harita_kunyeleri');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -2046,5 +2051,27 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const silindi = i.veri.silindi !== false;
     db.exec({ sql: 'UPDATE uyarlama_eslemeleri SET silindi=? WHERE kod=?', bind: [silindi ? 1 : 0, kod] });
     alanYaz(db, i, kod, 'uyarlama_silindi', silindi);
+  },
+  harita_kunye_yaz(db, i) {
+    const v = i.veri as { harita?: string; tanim?: { tarih?: string; yapan?: string | null; amac?: string; bilinenHatalar?: string[] } | null };
+    const harita = typeof v.harita === 'string' ? v.harita.trim() : '';
+    if (!harita) return;
+    const t = v.tanim;
+    const tarih = typeof t?.tarih === 'string' ? t.tarih.trim().slice(0, 120) : '';
+    const yapan = typeof t?.yapan === 'string' && t.yapan.trim() ? yonlendir(db, t.yapan.trim()) : null;
+    const amac = typeof t?.amac === 'string' ? t.amac.trim().slice(0, 500) : '';
+    const bilinenHatalar = Array.isArray(t?.bilinenHatalar)
+      ? t.bilinenHatalar.map((x) => (typeof x === 'string' ? x.trim().slice(0, 300) : '')).filter(Boolean).slice(0, 50)
+      : [];
+    const temiz = tarih || yapan || amac || bilinenHatalar.length > 0 ? { tarih, yapan, amac, bilinenHatalar } : null;
+    if (temiz) {
+      db.exec({
+        sql: 'INSERT INTO harita_kunyeleri(harita, tanim) VALUES(?, ?) ON CONFLICT(harita) DO UPDATE SET tanim=excluded.tanim',
+        bind: [harita, JSON.stringify(temiz)],
+      });
+    } else {
+      db.exec({ sql: 'DELETE FROM harita_kunyeleri WHERE harita=?', bind: [harita] });
+    }
+    alanYaz(db, i, `harita_kunye:${harita}`, 'harita_kunye', temiz);
   },
 };
