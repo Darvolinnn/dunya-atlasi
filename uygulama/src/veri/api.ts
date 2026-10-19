@@ -344,6 +344,14 @@ export interface SonrakiSoru {
 /** F31 keşif sorusu: tanımlı ilişkilerden çıkan aday; "mümkün" der, "oldu" demez. */
 export interface KesifAdayi { kisiler: KisaKayit[]; yer: KisaKayit; aralik: string; yazi: string; dayanaklar: string[] }
 export interface KesifSonucu { sablon: 'farkli_inananlar'; soru: string; adaylar: KesifAdayi[]; dahaFazla: boolean; kapsam: string; not: string }
+/** F12 "neden her yerde kullanılmıyor" masası: bağlı alanlar ve her biri için yazarın dört kısa metni. */
+export interface KullanimAlani { kod: string; ad: string; kayit: string | null; maliyet: string; erisim: string; karsiOnlem: string; yasak: string }
+export interface KullanimMasasiTanimi { alanlar: KullanimAlani[] }
+export interface KullanimMasasi {
+  kayit: KisaKayit;
+  alanlar: (KullanimAlani & { kayitKaydi: KisaKayit | null; yazilmamis: ('maliyet' | 'erisim' | 'karsiOnlem' | 'yasak')[] })[];
+  adaylar: KisaKayit[]; not: string;
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -734,6 +742,8 @@ export interface Istekler {
   delilGecmisi(a: { evren: string; kod: string }): DelilGecmisi;
   delilYaz(a: { evren: string; kod: string; tanim: DelilTanimi }): void;
   sorulabilirHesaplar(a: { evren: string; kod: string }): { hesap: SonrakiSoru['hesap']; ad: string }[];
+  kullanimMasasi(a: { evren: string; kod: string }): KullanimMasasi;
+  kullanimMasasiYaz(a: { evren: string; kod: string; tanim: KullanimMasasiTanimi }): void;
   kesifSorusu(a: { evren: string; sablon: KesifSonucu['sablon']; iddia: string }): KesifSonucu;
   kesifAdayiKaydet(a: { evren: string; bicim: 'sahne' | 'mesele'; ad: string; aciklama: string; kisiler: string[]; yer: string | null }): { kod: string };
   sonrakiSoru(a: { evren: string; kod: string; hesap: SonrakiSoru['hesap']; nereden?: string | null; tarih?: string | null }): SonrakiSoru;

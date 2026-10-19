@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 41;
+export const IZDUSUM_SURUMU = 42;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -371,6 +371,9 @@ CREATE TABLE IF NOT EXISTS anlatimlar(
 );
 CREATE INDEX IF NOT EXISTS anlatimlar_iddia ON anlatimlar(iddia);
 CREATE TABLE IF NOT EXISTS delil_gecmisi(
+  kod TEXT PRIMARY KEY, tanim TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS kullanim_masalari(
   kod TEXT PRIMARY KEY, tanim TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS sahne_yerlesimleri(
@@ -655,7 +658,7 @@ export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar'
   'sozlukler', 'sozluk_isaretleri',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
-IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi');
+IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi', 'kullanim_masalari');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -1367,6 +1370,13 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (typeof kod !== 'string' || !tanim || typeof tanim !== 'object') return;
     db.exec({ sql: 'INSERT OR REPLACE INTO delil_gecmisi(kod, tanim) VALUES(?,?)', bind: [kod, JSON.stringify(tanim)] });
     alanYaz(db, i, kod, 'delil', tanim);
+  },
+  /** F12 "neden her yerde kullanılmıyor" masası. */
+  kullanim_masasi_yaz(db, i) {
+    const { kod, tanim } = i.veri as { kod?: unknown; tanim?: unknown };
+    if (typeof kod !== 'string' || !tanim || typeof tanim !== 'object') return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO kullanim_masalari(kod, tanim) VALUES(?,?)', bind: [kod, JSON.stringify(tanim)] });
+    alanYaz(db, i, kod, 'kullanim_masasi', tanim);
   },
   yerlesim_yaz(db, i) {
     const v = i.veri as unknown as { sahne: string; plan: import('../veri/api').YerlesimPlani; ogeler: import('../veri/api').YerlesimOgesi[] };

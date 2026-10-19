@@ -63,6 +63,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   anlatim_yaz: (v) => `“${v.soru ?? 'Soru'}” sorusunun dosyasında bir anlatım ${v.cozum ? 'için iki cihazdaki değerlerden biri seçildi' : 'kaydedildi'}`,
   anlatim_sil: (v) => `“${v.soru ?? 'Soru'}” sorusunun dosyasından bir anlatım kaldırıldı`,
   anlatim_geri_yukle: (v) => `“${v.soru ?? 'Soru'}” sorusunun dosyasına bir anlatım geri getirildi`,
+  kullanim_masasi_yaz: (v, ad) => `${ad(v.kod)}: kullanım masası ${v.cozum ? 'için iki cihazdaki değerlerden biri seçildi' : 'değişti'}`,
   delil_yaz: (v, ad) => `${ad(v.kod)}: delil geçmişi ${v.cozum ? 'için iki cihazdaki değerlerden biri seçildi' : 'değişti'}`,
   yerlesim_yaz: (v, ad) => `${ad(v.sahne)}: sahne yerleşimi değişti`,
   derleme_yaz: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'}: ${v.alan === 'ad' ? (v.derlemeAd === v.deger ? 'oluşturuldu' : `adı “${v.deger}” oldu`) : v.derlemeTuru === 'pano' ? 'görseller değişti' : 'adımlar değişti'}`,

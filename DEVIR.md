@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. `main` son kayıt: bu dosyayı ekleyen kayıt. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **41**. Sınama: 51 dosya, 247 sınama, hepsi geçiyor.*
+*Son güncelleme: 19 Ekim 2026. `main` son kayıt: bu dosyayı ekleyen kayıt. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **42**. Sınama: 52 dosya, 249 sınama, hepsi geçiyor.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -41,6 +41,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | F08 | Delil geçmişi ve soruşturma masası | `ea19c5b` |
 | F33 | Bir sonraki yararlı soru | `238fac0` |
 | F31 | Açık verilere dayanan keşif soruları (ilk şablon) | `5111598` |
+| F12 | Neden her yerde kullanılmıyor masası | bu dosyayı güncelleyen kayıt |
 
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
@@ -58,17 +59,16 @@ Bu paketlerin tam promptları kullanıcının proje klasöründedir; depoda değ
 ### 3.3 Kalan işler (önerilen sıra)
 
 1. **Hazır olan paketleri birleştir** (§3.2), her birinden sonra sınama ve tarayıcıda deneme.
-2. **F12 "Büyü neden her yerde kullanılmıyor"**: büyü uygulaması, büyü sistemi, teknoloji ve evren kuralı kayıtlarının sayfasında bir masa: yazar bağlı alanları (mahkeme, diplomasi, ticaret… bir kayda bağlı ya da kısa adla) ekler; her alan için maliyet, erişim, karşı önlem ve yasak hücreleri yazarın kısa metinleridir. Aday alanlar yalnızca o kayda doğrudan ilişkisi olan kayıtlardan gösterilir. Boş hücre "yazılmamış" diye gösterilir, eksik sayılmaz. Toplumsal hüküm verilmez. Tek tablo, tek "yaz" işlemi (örnek: `calisan/delil.ts`); `IZDUSUM_SURUMU` 1 artar.
-3. **F35 baskı ve uyarlama karşılaştırma**: yazar iki eser (ya da eser ile deneme kopyası) arasında eşlemeler tanımlar (iki karakter → tek karakter, olay sırası değişimi); sonraki değişiklikte etkilenebilecek eşlemeler listelenir. Hiçbir dal ötekini kendiliğinden güncellemez. Dallar için `calisan/dal.ts`, eser yapısı için `calisan/anlati.ts`.
-4. **F16 kural atölyesi**: önce **TK8** kararı gerekir. Bu karar kullanıcınındır; kodlamadan önce sor.
-5. **Bilinen boşluklar:**
+2. **F35 baskı ve uyarlama karşılaştırma**: yazar iki eser (ya da eser ile deneme kopyası) arasında eşlemeler tanımlar (iki karakter → tek karakter, olay sırası değişimi); sonraki değişiklikte etkilenebilecek eşlemeler listelenir. Hiçbir dal ötekini kendiliğinden güncellemez. Dallar için `calisan/dal.ts`, eser yapısı için `calisan/anlati.ts`.
+3. **F16 kural atölyesi**: önce **TK8** kararı gerekir. Bu karar kullanıcınındır; kodlamadan önce sor.
+4. **Bilinen boşluklar:**
    - Deneme kopyası (dal) değişiklikleri yalnızca o cihazda kalıyor, eşitlenmiyor.
    - Göreli tarihlerde Türkçe iyelik eki eksik.
    - Zaman akışları arasında yaşanan zaman hesaplanmıyor.
    - Sahne panelinde okur bilgisi gösterilmiyor.
    - Gökyüzü sekmesinde tarih hatası sekmenin en altında görünüyor; girdinin yanına taşınmalı.
-6. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
-7. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
+5. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
+6. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
 
