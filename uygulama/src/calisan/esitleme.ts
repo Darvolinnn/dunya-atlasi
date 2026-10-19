@@ -157,7 +157,8 @@ export class Esitleme {
     for (const p of parcalar.sort((a, b) => a.kurulum.localeCompare(b.kurulum) || a.ilk - b.ilk)) {
       if (p.son <= (elde[p.kurulum] ?? 0)) continue;
       const dosya = await this.dosyaOku(p.d);
-      islemler.push(...dosya.islemler.filter((i) => i.sira > (elde[p.kurulum] ?? 0)));
+      // Tek tek eklenir: push(...dizi) çok büyük parçada yığını taşırır.
+      for (const i of dosya.islemler) if (i.sira > (elde[p.kurulum] ?? 0)) islemler.push(i);
     }
     return islemler;
   }

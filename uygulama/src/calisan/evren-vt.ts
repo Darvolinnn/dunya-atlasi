@@ -36,6 +36,11 @@ type Anahtar = [number, string, number];
 const anahtarKarsilastir = (a: Anahtar, b: Anahtar) => a[0] - b[0] || (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0) || a[2] - b[2];
 const anahtari = (i: Islem): Anahtar => [i.saat!, i.kurulum, i.sira];
 
+/** Baştan kurmada ilerleme; yalnızca uzun sürecek (çok işlemli) kurmalarda çağrılır. */
+export type Ilerleme = (d: { neden: 'guncelleme' | 'kurulum'; yapilan: number; toplam: number }) => void;
+/** Bundan az işlemli evrende kurma kısa sürer; ilerleme bildirilmez (ekranda şerit yanıp sönmesin). */
+const ILERLEME_ESIGI = 5000;
+
 export interface AlmaSonucu { alinan: number; bekleyen: number; bastanKuruldu: boolean; islemler: Islem[] }
 
 export class EvrenVt {
@@ -44,7 +49,7 @@ export class EvrenVt {
   /** Uygulanmış en son işlemin sıra anahtarı. */
   private son: Anahtar = [0, '', 0];
 
-  constructor(readonly db: Database, readonly kurulum: string) {
+  constructor(readonly db: Database, readonly kurulum: string, private readonly ilerleme: Ilerleme = () => {}) {
     db.exec('PRAGMA foreign_keys=ON;');
     db.exec(GUNLUK_SEMA);
     const bicim = db.selectValue("SELECT v FROM meta WHERE k='veri_bicimi'") as string | undefined;
@@ -58,7 +63,7 @@ export class EvrenVt {
       // Tabloların yapısı değişti: tablolar silinir ve günlükten baştan kurulur (veri günlükte durur).
       for (const t of IZDUSUM_TABLOLARI) db.exec(`DROP TABLE IF EXISTS ${t}`);
       db.exec(IZDUSUM_SEMA);
-      this.yenidenKur();
+      this.yenidenKur('guncelleme');
       db.exec({ sql: "INSERT INTO meta VALUES('izdusum_surumu', ?) ON CONFLICT(k) DO UPDATE SET v=excluded.v", bind: [String(IZDUSUM_SURUMU)] });
     } else db.exec(IZDUSUM_SEMA);
     for (const r of db.selectObjects('SELECT kurulum, max(sira) s FROM islemler GROUP BY kurulum')) {
@@ -172,6 +177,8 @@ export class EvrenVt {
         k.set(i.sira, [...(k.get(i.sira) ?? []), i]);
       }
       const alinanKodlar = new Set<string>();
+      const bildir = adaylar.size >= ILERLEME_ESIGI;
+      if (bildir) this.ilerleme({ neden: 'kurulum', yapilan: 0, toplam: adaylar.size });
       for (;;) {
         const hazir: Islem[] = [];
         for (const [kurulum, siralar] of dizin) {
@@ -195,14 +202,19 @@ export class EvrenVt {
           this.gorulen[i.kurulum] = i.sira;
           alinanlar.push(islem);
         }
+        const once = alinanKodlar.size;
         for (const i of hazir) { alinanKodlar.add(i.kod); dizin.get(i.kurulum)!.delete(i.sira); }
+        if (bildir && Math.floor(once / 2000) !== Math.floor(alinanKodlar.size / 2000)) {
+          this.ilerleme({ neden: 'kurulum', yapilan: Math.min(alinanKodlar.size, adaylar.size - 1), toplam: adaylar.size });
+        }
       }
       const kalan = [...adaylar.values()].filter((i) => !alinanKodlar.has(i.kod));
       this.db.exec('DELETE FROM bekleyen_islemler');
       for (const i of kalan) {
         this.db.exec({ sql: 'INSERT INTO bekleyen_islemler(kod, islem, ikili) VALUES(?,?,?)', bind: [i.kod, JSON.stringify({ ...i, ikili: null }), i.ikili ?? null] });
       }
-      if (bastan) { topluBirak(this.db); this.bastanUygula(); } else topluBitir(this.db);
+      if (bastan) { topluBirak(this.db); this.bastanUygula('kurulum'); } else topluBitir(this.db);
+      if (bildir) this.ilerleme({ neden: 'kurulum', yapilan: adaylar.size, toplam: adaylar.size });
       this.db.exec('COMMIT');
       return { alinan: alinanlar.length, bekleyen: kalan.length, bastanKuruldu: bastan, islemler: alinanlar };
     } catch (e) {
@@ -231,10 +243,14 @@ export class EvrenVt {
    * İzdüşüm tablolarını silip bütün günlüğü baştan uygular (açık bir veritabanı işleminin içinde). Günlük sayfa
    * sayfa okunur ve metinler toplu uygulanır (§10.1).
    */
-  private bastanUygula() {
+  private bastanUygula(neden: 'guncelleme' | 'kurulum') {
     metinBelleginiTemizle(this.db);
     for (const t of IZDUSUM_TABLOLARI) this.db.exec(`DELETE FROM ${t}`);
     topluBaslat(this.db);
+    const toplam = Number(this.db.selectValue('SELECT count(*) FROM islemler'));
+    const bildir = toplam >= ILERLEME_ESIGI;
+    let yapilan = 0;
+    if (bildir) this.ilerleme({ neden, yapilan, toplam });
     let son: [number, string, number] = [-Infinity, '', 0];
     for (;;) {
       const sayfa = this.db.selectObjects(
@@ -243,14 +259,17 @@ export class EvrenVt {
       for (const i of sayfa) this.uygula(i);
       const x = sayfa[sayfa.length - 1];
       son = [x.saat!, x.kurulum, x.sira];
+      yapilan += sayfa.length;
+      if (bildir) this.ilerleme({ neden, yapilan: Math.min(yapilan, toplam - 1), toplam });
     }
     topluBitir(this.db);
+    if (bildir) this.ilerleme({ neden, yapilan: toplam, toplam });
   }
 
   /** İzdüşüm tablolarını silip bütün günlüğü baştan uygular. Sınama ve onarım için. */
-  yenidenKur() {
+  yenidenKur(neden: 'guncelleme' | 'kurulum' = 'kurulum') {
     this.db.exec('BEGIN IMMEDIATE');
-    try { this.bastanUygula(); this.db.exec('COMMIT'); }
+    try { this.bastanUygula(neden); this.db.exec('COMMIT'); }
     catch (e) { this.db.exec('ROLLBACK'); metinBelleginiTemizle(this.db); throw e; }
   }
 
@@ -266,7 +285,8 @@ export class EvrenVt {
     for (const [k, s] of Object.entries(this.gorulen)) {
       if (kurulum && k !== kurulum) continue;
       if ((gorulen[k] ?? 0) >= s) continue;
-      sonuc.push(...this.db.selectObjects('SELECT * FROM islemler WHERE kurulum=? AND sira>? ORDER BY sira', [k, gorulen[k] ?? 0]).map(satirdan));
+      // Tek tek eklenir: push(...dizi) yüz binlerce işlemde yığını taşırır.
+      for (const r of this.db.selectObjects('SELECT * FROM islemler WHERE kurulum=? AND sira>? ORDER BY sira', [k, gorulen[k] ?? 0])) sonuc.push(satirdan(r));
     }
     return sonuc.sort((a, b) => anahtarKarsilastir(anahtari(a), anahtari(b)));
   }
