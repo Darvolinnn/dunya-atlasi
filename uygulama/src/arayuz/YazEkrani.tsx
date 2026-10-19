@@ -58,6 +58,13 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
           <span class="bosluk" />
           {sahne && baglamKapali && <button class="dugme sade kucuk" onClick={() => baglamAc(true)}>Bağlamı göster</button>}
           <a class="dugme sade kucuk" href={`#/e/${evren}/k/${kod}`}>Bütün alanlar</a>
+          {!kayit.silindi && !saltOkunur && (
+            <button class="dugme sade kucuk tehlikeli" title="Çöp kutusundan geri getirilebilir" onClick={async () => {
+              await denetim.current?.kaydet();
+              await istemci.iste('kayitSil', { evren, kod });
+              git(`/e/${evren}/yaz`);
+            }}>Çöp kutusuna taşı</button>
+          )}
         </div>
         {kayit.silindi && <p class="uyari">Bu kayıt çöp kutusunda. Geri getirmek için <a href={`#/e/${evren}/k/${kod}`}>kayıt sayfasını</a> açın.</p>}
         <CatismaListesi istemci={istemci} evren={evren} kod={kod} surum={surum} />
