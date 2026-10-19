@@ -5,7 +5,7 @@
 // ölçmez, edebî kalite puanı vermez.
 import type { IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi } from '../alan/kod';
-import type { KisaKayit, KurguMontaji, MontajHedefi, SahneNiyeti } from '../veri/api';
+import type { KisaKayit, KitapSonuAciklar, KurguMontaji, MontajHedefi, SahneNiyeti } from '../veri/api';
 import { eserYapisi, yerlestir, type AnlatiBaglami } from './anlati';
 import type { EvrenVt } from './evren-vt';
 import { yonlendir } from './izdusum';
@@ -180,4 +180,35 @@ export function montajTasi(b: AnlatiBaglami, sahne: string, yon: -1 | 1) {
   const ayni = komsu.ust === l[i].ust;
   const hedef = yon < 0 ? j + (ayni ? 0 : 1) : j + (ayni ? 1 : 0);
   return yerlestir(b, sahne, komsu.ust, hedef);
+}
+
+/** Kitap sonunda açık olanlar (K27, Model §7): seçilen eserin okuma sırasıyla, okura sorulan ama bu eserde
+ *  "açıklar" niyeti taşıyan sahnesi olmayan okur soruları. Konuma dayanır: sonraki kitaplar yazılınca bu eserin
+ *  sütunu değişmez; yalnız "sonra" sütunu, serinin önerilen okuma sırasında bu eserden sonraki eserlere bakar.
+ *  Serbest metinden "çözüldü" çıkarılmaz. */
+export function kitapSonuAciklar(e: EvrenVt, eser: string): KitapSonuAciklar {
+  const m = kurguMontaji(e, eser);
+  const seri = e.db.selectValue(`SELECT a.ust FROM anlati a JOIN kayitlar s ON s.kod=a.ust WHERE a.kod=? AND s.tur='seri' AND s.silindi IS NULL`, [eser]) as string | undefined;
+  const sonrakiler: { kod: string; ad: string }[] = [];
+  if (seri) {
+    const l = e.db.selectObjects(`SELECT k.kod, k.ad FROM anlati a JOIN kayitlar k ON k.kod=a.kod WHERE a.ust=? AND k.tur='eser' AND k.silindi IS NULL ORDER BY a.konum, a.kod`, [seri]) as { kod: string; ad: string }[];
+    sonrakiler.push(...l.slice(l.findIndex((x) => x.kod === eser) + 1));
+  }
+  const sonrakiMontaj = new Map<string, KurguMontaji>();
+  const montajOf = (k: string) => { if (!sonrakiMontaj.has(k)) sonrakiMontaj.set(k, kurguMontaji(e, k)); return sonrakiMontaj.get(k)!; };
+  const sorular = m.sorular.filter((s) => s.olaylar.some((o) => o.tur !== 'okur') && !s.olaylar.some((o) => o.tur === 'aciklama')).map((s) => {
+    let sonra: KitapSonuAciklar['sorular'][number]['sonra'] = null;
+    for (const x of sonrakiler) {
+      const a = montajOf(x.kod).sorular.find((q) => q.iddia.kod === s.iddia.kod)?.olaylar.find((o) => o.tur === 'aciklama');
+      if (a) { sonra = { eser: { kod: x.kod, ad: x.ad, tur: 'eser' }, sahne: a.sahne, sira: a.sira }; break; }
+    }
+    return {
+      iddia: s.iddia,
+      ipucu: s.olaylar.filter((o) => o.tur === 'ipucu').length,
+      yaniltmaca: s.olaylar.filter((o) => o.tur === 'yaniltmaca').length,
+      destekler: s.olaylar.filter((o) => o.tur === 'destekler' || o.tur === 'zayiflatir').length,
+      sonra,
+    };
+  });
+  return { eser: m.eser, seride: !!seri, sorular };
 }

@@ -2,7 +2,7 @@
 import { KayitDurumSeritleri } from './Gorunumler';
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { AnlatiEtkisi, AnlatiYeri, DurumAlani, DurumSatiri, EserYapisi, Kayit, KisaKayit, SahneAlani, SahneBaglami, SinirBilgisi, SinirGirdisi, YapiSahnesi } from '../veri/api';
+import type { AnlatiEtkisi, AnlatiYeri, KitapSonuAciklar, DurumAlani, DurumSatiri, EserYapisi, Kayit, KisaKayit, SahneAlani, SahneBaglami, SinirBilgisi, SinirGirdisi, YapiSahnesi } from '../veri/api';
 import { DURUM_KIPLERI } from '../alan/durum';
 import { farkYazisi, tarihAciklamasi } from '../alan/tarih';
 import { turBul } from '../alan/turler';
@@ -147,6 +147,30 @@ export function SeriBolumu({ istemci, evren, kayit }: { istemci: Istemci; evren:
           {l.serisiz.map((x) => <option value={x.kod}>{x.ad}</option>)}
         </select>
       )}
+    </section>
+  );
+}
+
+/** Eser sayfasında "Kitap sonunda açık kalanlar" (K27): okura sorulup bu eserde açıklanmayan sorular; montajdaki
+ *  sahne niyetlerinden hesaplanır. Uyarı değildir, renkle gösterilmez. Soru yoksa görünmez. */
+export function KitapSonuBolumu({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string }) {
+  const [k] = useYukle<KitapSonuAciklar>(istemci, evren, () => istemci.iste('kitapSonuAciklar', { evren, eser }), [eser]);
+  if (!k || !k.sorular.length) return null;
+  return (
+    <section class="kitap-sonu" aria-label="Kitap sonunda açık kalanlar">
+      <h2>Kitap sonunda açık kalanlar</h2>
+      <p class="soluk kucuk">Okura sorduğunuz ama bu kitapta açıklayan sahnesini işaretlemediğiniz sorular. Bir sırrı bilerek açık bırakmak da bir seçimdir.
+        {' '}Sahne sahne ayrıntı aşağıda “Diğer bölümler” içindeki kurgu montajındadır.</p>
+      <ul>
+        {k.sorular.map((q) => (
+          <li key={q.iddia.kod}>
+            <strong>{q.iddia.soru}</strong>
+            <span class="soluk kucuk"> · {[q.ipucu && `${q.ipucu} ipucu`, q.yaniltmaca && `${q.yaniltmaca} yanıltmaca`, q.destekler && `${q.destekler} başka işaret`].filter(Boolean).join(', ') || 'işaret yok'}</span>
+            {q.sonra ? <span class="kucuk"> · Sonra: <a href={`#/e/${evren}/k/${q.sonra.eser.kod}`}>{q.sonra.eser.ad}</a>, {q.sonra.sira}. sahnede (<a href={`#/e/${evren}/yaz/${q.sonra.sahne.kod}`}>{q.sonra.sahne.ad}</a>) açıklanıyor</span>
+              : k.seride ? <span class="soluk kucuk"> · Serinin sonraki kitaplarında da açıklanmıyor</span> : null}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

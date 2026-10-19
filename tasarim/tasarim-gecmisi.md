@@ -151,6 +151,7 @@ Bölüm numaraları Sürüm 6'ya aittir. Bölüm numaralarında değişiklik yok
 | K27 uygulaması (19 Ekim) | İlk adımlarda başlangıç yolları (§5.10) | Dört yol (sahne, hikâye fikri, karakter, dünya); "Geç" adımı yapılmış saymaz; dayanaklar kayıtlı veriden. Seri yolu seri kaydıyla gelecek. |
 | K27 uygulaması (19 Ekim) | Seri (§3.3, §4.6, §5.10) | Yeni kayıt türü; eser anlatı ağacında serinin altında, sıra önerilen okuma sırası. Silme altındakilere dokunmaz; geri gelince arada taşınan eser yerinde kalır. Ek seri üyeliği ve seri okuma yolları sonraya. |
 | K27 uygulaması (19 Ekim) | Alternatifler (§3.6, §9.1) | `alternatif` ilişkisi (aynı türden kayıtlar), kesinleştirmede öbürlerini vazgeçirme sorusu, iki kesin alternatif için uyarı. Ayrı plan katmanı kurulmadı; karar durumları yetiyor. |
+| K27 uygulaması (19 Ekim) | Çalışma durumu ve kitap sonunda açık kalanlar (§4.6) | Eser ve sahne için ayrı, karar durumundan bağımsız çalışma durumu. Kitap sonu listesi kurgu hattı ipucu sayılarına değil montajdaki sahne niyetlerine dayanır; kurgu hattı ipucu rolleri tek tek ipucunu ayırt etmediği için tarihsel doğru sonuç veremezdi. |
 | Alınmayanlar | — | B10 6.2'deki eser için `.docx` dışa aktarımı yeni bir fikir sayıldı (K11). F26'nın ayrıntısı ve 2.2'nin tam birleştirmesi bekliyor. B10 6.2 lisans önerisi yerine K19 |
 
 ---

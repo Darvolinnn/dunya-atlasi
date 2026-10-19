@@ -214,6 +214,12 @@ export interface TahtSirasi {
 /** Sahnenin yazarca işaretlenen niyeti (F13): bir açıklamayı destekler, zayıflatır ya da açıklar. */
 export interface SahneNiyeti { iddia: string; secenek: string | null; tur: 'destekler' | 'zayiflatir' | 'aciklar' }
 export type MontajHedefi = 'surpriz' | 'gerilim';
+/** Kitap sonunda açık olanlar (K27): okura sorulup bu eserde açıklanmayan sorular; sonraki kitapta açıklanıyorsa nerede. */
+export interface KitapSonuAciklar {
+  eser: KisaKayit; seride: boolean;
+  sorular: { iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null }; ipucu: number; yaniltmaca: number; destekler: number;
+    sonra: { eser: KisaKayit; sahne: KisaKayit; sira: number } | null }[];
+}
 export interface KurguMontaji {
   eser: KisaKayit; sahneler: { kod: string; ad: string; sira: number; bolum: string | null }[];
   sorular: {
@@ -1140,6 +1146,7 @@ export interface Istekler {
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
   ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
   alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
+  kitapSonuAciklar(a: { evren: string; eser: string }): KitapSonuAciklar;
   seriler(a: { evren: string }): { seriler: { kod: string; ad: string; eserler: { kod: string; ad: string }[] }[]; serisiz: { kod: string; ad: string }[] };
   evrenAdlandir(a: { evren: string; ad: string }): void;
   evrenBilgisi(a: { evren: string }): EvrenBilgisi;
