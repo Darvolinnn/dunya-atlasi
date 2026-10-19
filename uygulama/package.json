@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
-    "denetle": "tsc --noEmit"
+    "denetle": "tsc --noEmit",
+    "uygulama": "tauri dev",
+    "kurulum": "tauri build"
   },
   "dependencies": {
     "@automerge/automerge": "3.5.0",
@@ -24,6 +26,7 @@
     "prosemirror-view": "1.42.6"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "2.12.3",
     "@types/node": "24.19.1",
     "typescript": "5.9.3",
     "vite": "8.3.2",
