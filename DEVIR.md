@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 76 dosya, 441 sınama, hepsi geçiyor. GitHub Actions'ta otomatik denetim var.*
+*Son güncelleme: 19 Ekim 2026 (Windows uygulaması başladı). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 76 dosya, 441 sınama, hepsi geçiyor. GitHub Actions'ta otomatik denetim var.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -96,11 +96,23 @@ Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yap
 - [x] Arayüz: formül yazma, hatanın yerini gösterme, yazım kılavuzu; uygulanan kurallarda formülün belirsiz nedenleri ve "hesaplanamadı" (`arayuz/Hukuk.tsx`)
 - [x] Sınamalar (435), izdüşüm sürümü (gerekmedi: tanım JSON olarak saklanıyor), DEVIR güncellemesi, gönderme
 
+### 3.2b Süren iş: Windows uygulaması (TK6, Tauri 2)
+
+Kullanıcı 19 Ekim 2026'da programın site gibi durduğunu söyledi; Windows için kurulan uygulama, tablet için APK istedi, iPhone'u plandan çıkardı. Sıra kullanıcının: **önce Windows; kullanıcı Windows'u onaylayınca Google girişi ve APK.** Analiz: proje klasöründe `analiz/uygulama-paketleme.md`.
+
+- [x] Kabuk: `uygulama/src-tauri/` (Rust). Kurulu sürüm dosyaları `http://localhost:41730`'dan sunar (`tauri-plugin-localhost`, `.wasm` için doğru tür); bu adres veritabanının kökenidir, **değiştirme** (§17.4). Geliştirmede `npm run uygulama` 5173'ü kullanır. Tek örnek (ikinci açılış pencereyi öne getirir). Yalnız `accounts.google.com` yeni pencere açabilir.
+- [x] GitHub: `.github/workflows/windows.yml` Windows'ta derler, `windows` ön sürüm sayfasına `Dunya-Atlasi-kurulum.exe` koyar (main ve `claude/**` dallarında).
+- [x] Tasarım: K3, K7, K16, K17, TK3, TK6, §10.7, §10.9, §12.3, §14.3, §17 iPhone'suz ve Tauri'li.
+- [ ] Kullanıcının bilgisayarında kur, aç, veritabanı ve yazma çalışıyor mu bak.
+- [ ] Google: `http://localhost:41730` Google projesinde izinli adreslere eklenmeli (kullanıcı yapar). Sonra izin penceresi uygulama içinde açılıyor mu dene. Açılmazsa TK3'ü "sistem tarayıcısında giriş + yenileme jetonu" olarak değiştir.
+- [ ] Veriyi tarayıcı kurulumundan uygulamaya taşı (Drive eşitlemesi ya da Taşıma ekranı); tarayıcı kurulumunu "kullanılmıyor" işaretle.
+- [ ] APK (kullanıcı Windows'u onaylayınca): `tauri android init`, imza anahtarı (depoya girmez), dokunmatik düzen.
+
 ### 3.3 Kalan işler (önerilen sıra)
 
-1. **Tablet ve iPhone** (§14.3): kullanıcı 19 Ekim 2026'da süresiz erteledi; şimdilik yalnız Windows tarafına odaklanılıyor.
+1. **Windows uygulaması, sonra tablet APK'sı** (§3.2b, §14.3). iPhone plandan çıktı (K3).
 2. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
-3. **Dış güvenilirlik eleştirisinin kalanları** (analiz: proje klasöründe `analiz/guvenilirlik-plani-analizi.md`): yapılanlar yukarıda. Tablet / iPhone ertelendiği için bekleyenler: ana ekran uygulaması (uygulama tanımı, çevrimdışı katman, Cloudflare Pages yayını, "güncelleme hazır" davranışı) ve büyük dosyada gerçekten kaldığı yerden yükleme (`drive.ts` tek parça gönderiyor, TK5 tersini söylüyor). Komut paleti §5.8'deki "iki mekân arası yolculuk süresi" ve "takvim günü hesabı" komutlarını henüz açmıyor (sayfalar ve görünümler artık bulunuyor). İsteğe bağlı: yeniden kurma süresini 50.000 işlemle ölçmek (`evren-vt.ts` geçmişe düşen işlem gelince bütün günlüğü baştan uygular)
+3. **Dış güvenilirlik eleştirisinin kalanları** (analiz: proje klasöründe `analiz/guvenilirlik-plani-analizi.md`): yapılanlar yukarıda. Ana ekran uygulaması ve Cloudflare yayını artık gerekmiyor (Tauri kabuğu, TK6). Bekleyen: büyük dosyada gerçekten kaldığı yerden yükleme (`drive.ts` tek parça gönderiyor, TK5 tersini söylüyor). Komut paleti §5.8'deki "iki mekân arası yolculuk süresi" ve "takvim günü hesabı" komutlarını henüz açmıyor (sayfalar ve görünümler artık bulunuyor). İsteğe bağlı: yeniden kurma süresini 50.000 işlemle ölçmek (`evren-vt.ts` geçmişe düşen işlem gelince bütün günlüğü baştan uygular)
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
 
@@ -130,6 +142,7 @@ Kurallar: veritabanına yalnızca `EvrenVt.islemYap()` (hizmette `this.yaz`) yaz
 
 - `cd uygulama && npm ci`, sonra `npm test` (bütün sınamalar) ve `npm run denetle` (tür denetimi). İkisi de hatasız olmadan kayıt yapma.
 - `npm run dev` → http://localhost:5173 (Google girişine izin verilen adres bu).
+- Windows uygulaması: `npm run uygulama` (geliştirme penceresi, Rust gerekir), `npm run kurulum` (kurulum dosyası). Kullanıcının bilgisayarında Rust yok; kurulum dosyasını GitHub derler (`windows` sürüm sayfası).
 - Arayüzü denemek için Playwright kullanılabilir: yeni evren oluştur, kayıt oluştur, bölümü kullan, tarayıcı konsolunda hata olmadığını gör. Ekran görüntülerini depoya koyma.
 
 ## 6. Paralel ajan dallarını birleştirme
