@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026 (akşam). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 80 dosya, 455 sınama; tarayıcıda 11 akış sınaması, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
+*Son güncelleme: 19 Ekim 2026 (akşam). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 81 dosya, 456 sınama; tarayıcıda 11 akış sınaması, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -80,12 +80,13 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | İnceleme 2 | Kalan dört şüphe: inanç kaldırma ile eşzamanlı düzenleme çatışma olur (izdüşüm 58); çöp kutusundaki yere bağlı iz düzenlenince bağ düşmez; kayıt dönüşümdeki kendi devamıyla birleştirilemez; toplu sayımda açık boş alan iletileri | `b22b861` |
 | §5.8 | Komut paletinde "Yolculuk süresi" (kayıtlı rotalarla en kısa yol) ve "Takvim günü hesabı" (tarihe gün/yıl ekleme, iki tarih arası; `alan/tarih.ts` `gunFarki`), `arayuz/Hesaplar.tsx` | `b7601cd` |
 | Hız | `disaridanAl` adayları her turda baştan tarıyordu (kareli). 52.500 işlemde evreni başka cihazda kurma 101 sn → 22 sn; yerelde baştan kurma 25 sn, arama 63 ms, tek değişiklik 1 ms | `7a876b0` |
+| §10.1 | Metnin toplu uygulanması ve bellekte en çok 32 metin belgesi; 21.800 gerçekçi işlemde yeni cihazda kurma 154 sn → 9,3 sn (ayrıntı §3.3-2) | `99ba813` |
 | F19 | İnceleme: ayırt etme satırı var, sahne hatırlatıcısını sahne paneli karşılıyor; okur tanıtımı ve "sır yayına girmez" yayına (§11) bağlı, K20 gereği kapsam dışı | — |
 ### 3.2 Açık PR'lar ve dallar
 
 | PR | Dal | Ne | Durum |
 |---|---|---|---|
-| [#2](https://github.com/Darvolinnn/dunya-atlasi/pull/2) | `claude/modest-lovelace-ozltpf` | 19 Ekim akşam oturumu: inceleme 5–6 (bağlam paneli, durum özeti), İnceleme 2'nin dört şüphesi, komut paleti hesapları, kırmızı tarayıcı denetiminin onarımı, `disaridanAl` hızı, Türkçe düzeltmeler, bu DEVIR | Taslak; denetim bekliyor. Kullanıcı inceleyip birleştirir |
+| [#2](https://github.com/Darvolinnn/dunya-atlasi/pull/2) | `claude/modest-lovelace-ozltpf` | 19 Ekim akşam oturumu: inceleme 5–6 (bağlam paneli, durum özeti), İnceleme 2'nin dört şüphesi, komut paleti hesapları, kırmızı tarayıcı denetiminin onarımı, `disaridanAl` hızı, metnin toplu uygulanması (§10.1), Türkçe düzeltmeler, bu DEVIR | Taslak; denetim bekliyor. Kullanıcı inceleyip birleştirir |
 | [#1](https://github.com/Darvolinnn/dunya-atlasi/pull/1) | `claude/project-thread-hdk5g6` | Windows uygulaması (TK6, Tauri 2). Kurulum dosyası: [windows ön sürümü](https://github.com/Darvolinnn/dunya-atlasi/releases/tag/windows) (`Dunya-Atlasi-kurulum.exe`). Dalın kendi DEVIR'inde iş listesi §3.2b; aynı dalda karar: iPhone plandan çıktı (K3) | Güncel `main`'i içermiyor. Birleştirmeden önce `main` dala alınır (o dalda çalışmak için kullanıcının izni gerekir) |
 
 Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok. Promptlar kullanıcının proje klasöründe `paket-promptlari/` altındadır, depoda değildir.
@@ -94,20 +95,20 @@ Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok.
 
 **Kullanıcının kararı ya da işi gereken:**
 1. **PR #2'yi incele ve birleştir.**
-2. **Metin geçmişinin hızı (ölçüldü, karar gerekiyor).** Gerçekçi bir seri benzetimi (400 sahne, sahne başına 2.500 kelimeye kadar cümle cümle yazma, sonra düzeltme turları; işlemlerin %80'i metin kaydı) yapıldı; ölçüm betiği depoya konmadı, kalıbı aşağıda. Sonuçlar:
+2. **Büyük evrende hız ve bellek.** Kullanıcı kararı (19 Ekim): seri büyüklüğünde (Red Rising gibi, ~1 milyon kelime; taslak ve düzeltmelerle 300.000–1.500.000 işlem) evren dakikalar içinde kurulmalı; bellek bilgisayarda 16 GB'a kadar kabul, **tablette 4 GB altı şart**. Tanım §10.1 "Tablolar günlükten baştan kurulabilir".
+   - [x] **Adım 1: metni toplu uygula, bellekte yalnız son kullanılanlar** (`99ba813`). Ölçüm (gerçekçi karışım: 400 sahne, sahne başına 2.500 kelimeye kadar cümle cümle yazma, sonra düzeltme turları, işlemlerin %80'i metin):
 
-   | İşlem | Kelime | Yeni cihazda kurma | Yerelde baştan kurma | Arama | Tek değişiklik | Sahne açma |
-   |---|---|---|---|---|---|---|
-   | 20.800 | 113.000 | 137 sn | 138 sn | 80 ms | 1 ms | 12 ms |
-   | 40.800 | 273.000 | 319 sn | 318 sn | 87–162 ms | 0,7 ms | 12 ms |
+     | İşlem | Önce: yeni cihaz | Şimdi: yeni cihaz | Şimdi: baştan kurma | Bellek artışı (yeni cihaz) |
+     |---|---|---|---|---|
+     | 21.800 | 154 sn | 9,3 sn | 10,2 sn | 253 MB → 192 MB |
+     | 40.800 | 319 sn | — | — | — |
+     | 60.000 ve 150.000 | — | ölçülüyor (19 Ekim akşam) | | |
 
-   İşlem iki katına çıkınca baştan kurma 2,3 katına çıktı (doğrusaldan biraz kötü); bu gidişle 300.000 işlemde bir saati aşar. 80.000 ölçümü sonucu değiştirmeyeceği için yapılmadı.
-
-   Günlük kullanım (yazma, arama, sahne açma) büyüklükten etkilenmiyor. Ağır olan **günlüğün baştan işletilmesi**: evreni yeni cihaza indirme, yedekten geri yükleme ve başka cihazdan geçmişe düşen bir işlem gelmesi (`evren-vt.ts` `bastanUygula`). Profil (3.000 metin işlemi, 21 sn): sürenin %50'si Automerge'ün her değişikliği tek tek işlemesi (`A.loadIncremental`), %31'i her değişiklikten sonra metnin yeniden okunması (`A.spans`), kalanı belgenin her seferinde baştan paketlenip yazılması (`A.save`) (`izdusum.ts` `metin` uygulayıcısı). Bir saat yazma yaklaşık 200–500 işlem eder (metin 1,2 sn arada ya da en geç 8 sn'de bir kaydedilir); Red Rising büyüklüğünde bir seri (~1 milyon kelime, taslak ve düzeltmelerle) 300.000–1.500.000 işlem demektir. Seçenekler (tasarımda karşılığı yok; önce §16'ya Öneri olarak yazılıp kullanıcıya sunulmalı, sonra kodlanır):
-   - **a. Baştan kurmada metni toplu uygula:** aynı belgenin ardışık değişiklikleri tek `loadIncremental` ile uygulanır; `spans`, `save` ve bağlantı tabloları belge başına bir kez, sonda yazılır. Dikkat: `metinYazanlari` (çatışma) ve F24 işaretli cümlenin "ilk görülen hâli" ara durumlara bakıyor; bunlar ya korunmalı ya da toplu yolda ayrıca hesaplanmalı.
-   - **b. Anlık görüntüden kurma:** evren belli aralıklarla tabloların ve belgelerin anlık görüntüsünü saklar; baştan kurma o noktadan başlar. Tasarımda temizlik ve kontrol noktası (§10.5) var, yeniden kurma için kullanılmıyor.
-   - **c. Yeni cihaza indirmede günlük yerine anlık görüntü gönderme** (eşitleme biçimi değişir; en büyük iş).
-   Ölçüm kalıbı: `test/_olcum.test.ts` adıyla geçici bir vitest dosyası; `Hizmet` bellekte, `metinKaydet` dönüşündeki `basliklar` bir sonraki kaydın `temel`'i; ölçümden sonra `islemleriVer` → yeni `Hizmet` üzerinde `evreniDisaridanKur`, ve `evren(...).yenidenKur()`.
+     Neden yavaştı: her metin kaydı uygulanırken belge baştan okunuyor (`A.spans`) ve baştan paketleniyordu (`A.save`); Automerge'ün değişikliği işlemesi (`A.loadIncremental`) de değişiklik başına pahalıydı. Toplu yolun kuralları `izdusum.ts` "Toplu uygulama" yorumunda; eşdeğerlik sınaması `test/toplu-metin.test.ts`.
+   - [ ] **Tablette gerçek bellek ölçümü:** yukarıdaki bellek sayıları Node sınama sürecinin (iki cihaz birden). Tarayıcıda büyük bir evrenle (açılış, yazma, baştan kurma) ölçülmeli; tablet 4 GB'ın altında kalmalı. Wasm belleği büyüyünce küçülmez; tepe değer önemli.
+   - [ ] **Adım 2 (öneri, kullanıcıya sunulacak): anlık görüntüden kurma.** Evren belli aralıklarla tabloların anlık görüntüsünü saklar; geçmişe düşen işlem ve yedekten dönüş baştan değil görüntüden işler. **Program güncellemesi** ayrıca düşünülmeli: (a) tabloları silmeden yerinde dönüştürme ya da (b) yeni tabloları arka planda kurarken eskileriyle yazmaya devam. Kullanıcıya iki seçenek somut örneklerle anlatılmalı (kullanıcı yazılımcı değil; günlük hayat ya da bilgisayar örnekleri tercih ediyor, laboratuvar benzetmesi istemiyor).
+   - [ ] **Adım 3 (öneri): yeni cihaza günlük yerine anlık görüntü gönderme.** Eşitleme biçimi değişir; yalnız Adım 1–2'den sonra yeni cihaza indirme hâlâ yavaşsa.
+   Ölçüm kalıbı: geçici vitest dosyası (`test/_*.test.ts`, depoya girmez); `Hizmet` bellekte; `metinKaydet` dönüşündeki `basliklar` sonraki kaydın `temel`'i; işlemler JSON'a (ikili base64) yazılıp ayrı süreçte `evreniDisaridanKur` ve `evren(...).yenidenKur()` ölçülür.
 3. **Rehberli arayüz (§3.5):** dört kararı bekliyor. Kademeli açılış (dış rapor madde 4) bunun içinde.
 4. **Windows uygulaması (PR #1):** kurup denemek; Google izinli adreslerine `http://localhost:41730` eklemek. Kabul akışı: tam yedek → uygulamaya ayrı evren olarak yükle → metin ve görsel denetimi; eski kopya korunur. Gerçek kurulumda denenecekler: açılış, yeniden açılış, ikinci başlatma, yedek, geri yükleme, EPUB/PDF, Google izin yenilemesi. Ayarlarda görünen sürüm ve derleme tarihi.
 5. **K16:** iki haftalık gerçek kullanım (kod işi değil).
