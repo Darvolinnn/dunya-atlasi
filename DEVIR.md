@@ -80,7 +80,7 @@ Bütün "Tasarım" maddeleri kodlandı (F16 formülü hariç; TK8 onaylandı, s�
 Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yapılan ve yapılacak adımlar burada görünür.
 
 - [x] Kullanıcı TK8 taslağını onayladı, sayılarla birlikte seçti (19 Ekim 2026)
-- [ ] Sözleşmeyi tasarım belgesine yaz (§18 "Kural ve formül dili", §1 TK8 satırı, geçmiş dosyasına bir satır)
+- [x] Sözleşmeyi tasarım belgesine yaz (§18.1 "Kural ve formül dili", §1.3 TK8 satırı, geçmiş dosyasına bir satır)
 - [ ] Şablonlara birimli sayı alanı ekle (nicelik türü, birim, hassasiyet)
 - [ ] Formül çözümleyici ve üç değerli değerlendirme (alan/formul.ts)
 - [ ] Hukuk kuralının "kimlere" kısmına formül alanı; kural atölyesi örnekleriyle sınama

@@ -133,6 +133,7 @@ Bölüm numaraları Sürüm 6'ya aittir. Bölüm numaralarında değişiklik yok
 | B11 N11 | GitHub hesabı | İki hesap da kullanıcının (K7) |
 | Kullanıcı kararı (18 Ekim, kodlama başladıktan sonra) | Deponun görünürlüğü | Depo gizli yerine herkese açık oldu (K7). Cloudflare Pages'in seçilme gerekçesi artık gizli depo değil; kendine ait köken, Cloudflare Access ve HTTP başlıkları (§14) |
 | Kodlama (19 Ekim) | F16'nın formülsüz kısmı | §18.2 kullanım sözleşmesi §16.1 sonuna yazıldı: seçmeli kural hukuk kuralıdır (§15-11); atölye örnek durumları, beklentiyle ve önceki tanımla karşılaştırmayı ve örnekleriyle kopyalamayı ekler. Formül kısmı TK8 bekliyor |
+| Kullanıcı kararı (19 Ekim) | TK8 kural ve formül dili | Kullanıcı taslağı birimli sayılarla birlikte onayladı. Sözleşme §18.1 "Kural ve formül dili" bölümüne yazıldı: hukuk kuralının "kimlere" kısmı; ilişki, şablon alanı, tarih, birimli sayı ve yaş; üç değerli sonuç; hatalı formül kaydedilmez, sonradan bozulan "hesaplanamadı" der; dil sürümü. Şablona birimli sayı alanı türü eklendi |
 | Alınmayanlar | — | B10 6.2'deki eser için `.docx` dışa aktarımı yeni bir fikir sayıldı (K11). F26'nın ayrıntısı ve 2.2'nin tam birleştirmesi bekliyor. B10 6.2 lisans önerisi yerine K19 |
 
 ---

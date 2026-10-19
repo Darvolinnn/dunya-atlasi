@@ -165,7 +165,7 @@ Kodlamadan önce kapanması gereken teknik kararlardır. Numaraları §13'teki T
 | TK5 | Medya saklama | **Karar verildi (18 Ekim, Windows deneyi):** içerikle adlandırılmış değişmez dosyalar; parça parça ve kaldığı yerden sürdürülebilen yükleme; cihaz başına indirme politikası, telefon için küçük önizleme. Yedekte her görsel bir kez saklanır. Konum bilgisi silinir. Büyük görsellerin gidip gelmesi arka planda yürür ve "indirilmemiş" durumu ekranda görünür (§10.8) | Karar verildi. 26 MB harita: yükleme 26 sn, yarıda kopunca 16 MB'tan sürdü; indirme 20 sn; önizleme 0,5 MB; günlük yedek başına 195 KB. Ayrıntı: `deneyler/tk3-tk4-google/SONUC.md` | §10.12 |
 | TK6 | Uygulama kabuğu (mağaza uygulaması) | Şimdilik yok; PWA yeter | Tablet ve iPhone deneylerinden sonra | §17.1 |
 | TK7 | Yayın mekanizması | Wiki yapılırsa uygulama paketi zip olarak üretir; yükleme ayrı ve bilinçli bir adımdır | K20 değişirse | §11 |
-| TK8 | Kural ve formül dili (F16) | Kodlamadan önce ayrı bir sözleşme: izin verilen işlemler, hata davranışı, sürüm | Sözleşme yazılınca | §18 |
+| TK8 | Kural ve formül dili (F16) | **Karar verildi (19 Ekim, kullanıcı onayı):** formül hukuk kuralının "kimlere" kısmını yazar; ilişkiler, şablon alanları, tarih ve birimli sayılar kullanılabilir; sonuç üç değerlidir; hatalı formül kaydedilmez | Karar verildi. Sözleşme §18.1 "Kural ve formül dili" | §18.1, §16.1 F16 |
 
 ---
 
@@ -1278,7 +1278,7 @@ Tarayıcı, yerel veriyi (yerel veritabanı, tarayıcı depolaması) adres klas�
 | **Şema sürümü** | Şablon, alan türü, kural ve takvim değişikliklerinin sürümü; her değerin girildiği şema sürümü (§9.5, §10.3) | Dönüşemeyen değer silinmez |
 | **Medya** | İçerik adı, boyut, cihaz politikası, yayın izni (§10.12) | İndirilmemiş ile silinmiş ayrı |
 | **Arama ve sıralama** | Türkçe harf kuralları, toleranslı arama, eski adlar | Aşağıda |
-| **Kural ve formül dili** | F16'nın formül yazımı: izin verilen işlemler, alan anlamına bağlılık, hata davranışı, sürüm (TK8) | Kodlanmadan önce yazılır |
+| **Kural ve formül dili** | F16'nın formül yazımı: izin verilen işlemler, alan anlamına bağlılık, hata davranışı, sürüm (TK8) | Aşağıda |
 
 **Nicelik ve alan anlamı:**
 - Mesafe, süre, miktar, oran, hız ve kapasite ayrı nicelik türleridir. "10" tek başına anlamsızdır: 10 gün, 10 saatlik emek, 10 kişi, 10 kullanım hakkı ve 10 para birimi farklı işlemlere izin verir.
@@ -1301,6 +1301,21 @@ Tarayıcı, yerel veriyi (yerel veritabanı, tarayıcı depolaması) adres klas�
 - Uydurma adlardaki ä, é, ø gibi harfler için aksan duyarsız arama bir seçenektir ve varsayılan olarak açıktır.
 - Eski adlar, lakaplar ve okunuşlar aramaya girer; sonuçta hangi addan bulunduğu gösterilir.
 - Arama yalnızca yazarın kaydettiği veride çalışır; serbest metinden anlam çıkarmaz (K1).
+
+**Kural ve formül dili (TK8):**
+- **Kapsam.** Formül yalnızca hukuk kuralının "kimlere uygulanır" kısmını yazar (§15-11). Bir kural ya koşul listesini ya da formülü kullanır; formül yazılıysa liste kullanılmaz. Süreç kuralları ve öteki hesaplar formül kullanmaz.
+- **Yapı taşları.** Formülde yalnızca şunlar bulunur; her biri değerlendirildiği kişi için *evet · hayır · belirsiz* verir:
+  - *İlişki:* kişinin bir kayda kayıtlı ilişkisi, hukuk koşullarındaki ilişki adlarıyla: `üyesi [Kuzey Loncası]`, `kültüründen [Göçebeler]`, `türünden [...]`, `makamını yürüten [...]`, `hizmetinde [...]`, `orada yaşayan [...]`. Kayıtlı ilişki "evet"tir; kayıt yoksa sonuç "hayır" değil "belirsiz"dir, neden "kayıtlı değil" diye yazılır (§2.2 kural 4).
+  - *Seçim alanı:* `{Rütbe} = "Subay"`; *evet / hayır alanı:* `{Mühürlü}`.
+  - *Tarih alanı:* `{Doğum tarihi} < "400"`; sağdaki yazı evren tarihi olarak okunur (§3.4). Karşılaştırma tarih karşılaştırmasının üç değerli kuralıyla yapılır.
+  - *Birimli sayı alanı:* `{Boy} >= 180 cm`. *Yaş:* `yaş >= 16 yıl`, kişinin doğum tarihinden ve kuralın değerlendirildiği tarihten hesaplanır.
+  - *Bağlaçlar:* `ve`, `veya`, `değil` ve parantez. Öncelik: değil, sonra ve, sonra veya.
+- **Alan anlamına bağlılık.** Alan ve kayıt adla yazılır, kodla saklanır; ad değişince formül bozulmaz, gösterimde güncel ad görünür. Aynı adı taşıyan iki alan ya da iki kayıt varsa formül kaydedilmez ve hangisinin kastedildiği seçtirilir. Alan, kişinin kendi şablonundan okunur; kişinin şablonunda o alan yoksa sonuç "belirsiz", neden "bu kayıt için geçerli değil"dir.
+- **Birimli sayı alanı.** Şablona yeni bir alan türü eklenir: nicelik türü (uzunluk, kütle, süre, miktar, para, diğer), birim ve hassasiyet (ondalık basamak sayısı). Değer tek sayı ya da aralıktır ("170–180"); aralık karşılaştırmanın iki yanına düşerse sonuç "belirsiz"dir. Uzunluk ve kütle birimleri kendi içinde çevrilir; süre yalnızca dakika, saat, gün ve hafta arasında çevrilir (ay ve yıl takvime bağlıdır, çevrilmez). Para ve "diğer" çevrilmez, yalnızca aynı birimle karşılaştırılır. Birimler uyuşmazsa formül kaydedilmez; değer sonradan uyuşmaz hale gelirse hesap durur ve nedenini söyler (Nicelik ve alan anlamı, yukarıda).
+- **Üç değerli sonuç.** "ve": biri hayırsa hayır, hepsi evetse evet, öteki durumlarda belirsiz. "veya": biri evetse evet, hepsi hayırsa hayır, öteki durumlarda belirsiz. "değil" evet ile hayırı değiştirir, belirsizi belirsiz bırakır. Boş, çelişkili (iki cihazda farklı) ya da bilinmeyen değer "hayır" sayılmaz, "belirsiz"dir; nedeni sonuçla birlikte gösterilir. Kural formülü "evet" verirse uygulanır, "hayır" verirse uygulanmaz, "belirsiz" verirse koşulu kayıtsız kural olarak listelenir (§15-11).
+- **Hata davranışı.** Okunamayan formül kaydedilmez; hatanın yeri işaretlenir ve sade bir Türkçe açıklama verilir ("şu kelimeden sonra bir karşılaştırma bekleniyor"). Sonradan bozulan formül (alan silindi, alanın türü değişti, seçenek kaldırıldı, kayıt silindi) o kural için "hesaplanamadı" der ve nedenini yazar; program formülü kendiliğinden düzeltmez. Birleştirilen kayda giden bağ yönlendirmeyle sürer (§18.1 Kod ve kimlik).
+- **Sürüm.** Her formül yazıldığı dil sürümüyle saklanır (ilk sürüm 1). Program bilmediği bir sürümü değerlendirmez, "bu formül daha yeni bir program sürümüyle yazılmış" der. Dil değişirse eski sürümler okunmaya devam eder.
+- **Yapmadıkları.** Formül hesap yapmaz (toplama, çarpma yok), metin içinde arama yapmaz, kendi kendine kayıt değiştirmez ve serbest metinden anlam çıkarmaz (K1). Kural atölyesinin örnek durumları (F16) formüllü kuralda da aynı biçimde çalışır.
 
 ### 18.2 Özellik kullanım sözleşmesi
 
