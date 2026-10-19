@@ -17,7 +17,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 ## 2. Kullanıcı ve çalışma tercihi
 
 - Kullanıcı Türkçe yazar; ona Türkçe, kısa ve sade cevap ver. Arayüzdeki ve hata iletilerindeki her metin Türkçedir; kullanıcıya görünen metinde programlama terimi olmaz.
-- Kullanıcının açık tercihi: **bir aşama ya da madde bitince onay beklemeden sıradakine geç.** Yalnızca geri alınamaz işlerde (zorla gönderme, toplu silme, dışarıya mesaj) ya da kullanıcının vermesi gereken bir kararda (ör. TK8) dur ve sor.
+- Kullanıcının açık tercihi: **bir aşama ya da madde bitince onay beklemeden sıradakine geç.** Yalnızca geri alınamaz işlerde (zorla gönderme, toplu silme, dışarıya mesaj) ya da kullanıcının vermesi gereken bir kararda dur ve sor.
 - Kullanıcı bazen başka ajanları (GPT/Codex, Argon) ayrı dallarda paralel çalıştırır. Onlara verilecek promptları sen yazarsın; dalları sen birleştirir, sürümü sen artırır, denetimi sen yaparsın (bkz. §6).
 
 ## 3. Durum
@@ -72,11 +72,11 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 
 19 Ekim 2026'daki ilk dört paket birleştirildi. Aynı gün ikinci tur beş paket verildi; beşi de birleştirildi. Üçüncü turdaki Argon paketi (§15-2) birleştirildi; GPT inceleme paketi hak bittiği için yarım kaldı, yerine yardımcı ajan inceledi. Bekleyen paket yok. Dalı uzak depoda belirince birleştir (§6). Paketler `IZDUSUM_SURUMU`'nu artırmaz; artırmayı birleştiren yapar. Promptlar kullanıcının proje klasöründe `paket-promptlari/tur2/` altındadır; depoda değildir.
 
-Bütün "Tasarım" maddeleri kodlandı (F16 formülü hariç, TK8'i bekliyor). Promptlar `paket-promptlari/tur3/`.
+Bütün "Tasarım" maddeleri kodlandı (F16 formülü hariç; TK8 onaylandı, sırada). Promptlar `paket-promptlari/tur3/`.
 
 ### 3.3 Kalan işler (önerilen sıra)
 
-1. **F16 formül yazımı**: formülsüz kısım kodlandı (kullanım sözleşmesi tasarımda §16.1 sonunda). Formül için önce **TK8** sözleşmesi yazılmalı ve kullanıcı onaylamalı; kodlamadan önce sor. Süreç kuralları için örnek durumlar henüz yok.
+1. **F16 formül yazımı (TK8)**: kullanıcı 19 Ekim 2026'da taslağı onayladı ve **sayılarla birlikte** yapılmasını seçti. Kapsam: formül, hukuk kuralının "kimlere" kısmını yazar; ilişkiler, şablon seçim/onay alanları, tarih karşılaştırması, **birimli sayı alanları** (şablona yeni alan türü; nicelik türü ve birim tanımlı, birimler uyuşmazsa hesap durur, §18.1), "ve / veya / değil" ve parantez kullanılabilir. Sonuç üç değerli (evet · hayır · belirsiz; kayıtsız bilgi "hayır" sayılmaz). Hatalı formül kaydedilmez, hatanın yeri gösterilir; sonradan bozulan formül "hesaplanamadı" der, kendiliğinden düzeltilmez. Her formül dil sürümüyle saklanır. Sözleşme tasarım belgesine §18'e yazılır, sonra kodlanır. Süreç kuralları için örnek durumlar henüz yok.
 2. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
 3. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
 
