@@ -19,7 +19,7 @@ export interface DenetimBaglami {
 
 /** Fiziksel bulunma sayılan katılım rolleri. Adı anılmak, hatırlanmak, emri vermek ya da sonradan öğrenmek sayılmaz. */
 const SAHNEDE_FIZIKSEL = ['bulunuyor'];
-const OLAYDA_FIZIKSEL = ['baslatan', 'katilan', 'tanik', 'zarar'];
+const OLAYDA_FIZIKSEL = ['baslatan', 'katilan', 'tanik', 'zarar', 'olen', 'dirilen', 'beden_degisen'];
 
 type Ham = Omit<DenetimBulgusu, 'karar'> & { imza: string };
 type Aralik = { enErken: number | null; enGec: number | null };
@@ -38,7 +38,7 @@ const ortusur = (a: Aralik, b: Aralik) => (a.enErken === null || b.enGec === nul
 const tirnak = (t: EvrenTarihi) => `“${t.ifade}”`;
 const gunYaz = (n: number) => `${n.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} gün`;
 
-const ROL_ADI: Record<string, string> = { yolcu: 'yolcu', bulunuyor: 'sahnede bulunuyor', baslatan: 'başlatan', katilan: 'katılan', tanik: 'tanık', zarar: 'zarar gören' };
+const ROL_ADI: Record<string, string> = { yolcu: 'yolcu', bulunuyor: 'sahnede bulunuyor', baslatan: 'başlatan', katilan: 'katılan', tanik: 'tanık', zarar: 'zarar gören', olen: 'ölen', dirilen: 'dirilen', beden_degisen: 'bedeni değişen' };
 
 /** Kişilerin fiziksel olarak bulunduğu olay ve sahneler. Sahnenin tarihi yoksa kendi sahne olayından alınır. */
 function bulunmalar(e: EvrenVt): Bulunma[] {
@@ -83,7 +83,7 @@ function yasam(e: EvrenVt, b: Bulunma[]): { bulgular: Ham[]; denetlenen: number;
   const bulgular: Ham[] = [];
   const sinirlar = new Map<string, { dogum: EvrenTarihi | null; olum: EvrenTarihi | null; fikir: { dogum: boolean; olum: boolean } }>();
   for (const r of e.db.selectObjects(`SELECT v.kayit, v.alan, v.deger, k.alan_kararlari FROM alan_degerleri v JOIN kayitlar k ON k.kod=v.kayit
-      WHERE v.alan IN ('dogum','olum') AND k.silindi IS NULL AND k.karar<>'vazgecildi'`)) {
+      WHERE v.alan IN ('dogum','olum') AND k.silindi IS NULL AND k.karar<>'vazgecildi' AND k.tur<>'kimlik'`)) {
     const ak = JSON.parse(r.alan_kararlari as string) as Record<string, string>;
     const alan = r.alan as 'dogum' | 'olum';
     if (ak[alan] === 'vazgecildi') continue;
@@ -93,6 +93,9 @@ function yasam(e: EvrenVt, b: Bulunma[]): { bulgular: Ham[]; denetlenen: number;
     s[alan] = t; s.fikir[alan] = ak[alan] === 'fikir';
     sinirlar.set(r.kayit as string, s);
   }
+  // Dirilme (§9.1, §3.12): ölümden sonra bulunma, ondan önce kayıtlı bir dirilme olayı varsa çelişki değildir.
+  const dirilmeler = new Map<string, EvrenTarihi[]>();
+  for (const x of b) if (x.rol === 'dirilen' && x.tarih?.eksen) dirilmeler.set(x.kisi.kod, [...(dirilmeler.get(x.kisi.kod) ?? []), x.tarih]);
   let denetlenen = 0, tarihsiz = 0, kisiVar = false;
   for (const x of b) {
     const s = sinirlar.get(x.kisi.kod);
@@ -103,6 +106,8 @@ function yasam(e: EvrenVt, b: Bulunma[]): { bulgular: Ham[]; denetlenen: number;
     const rol = ROL_ADI[x.rol] ?? 'katılımcı';
     const kontrol = (sinir: EvrenTarihi | null, tur: 'dogum' | 'olum') => {
       if (!sinir?.eksen) return;
+      const diril = tur === 'olum' ? dirilmeler.get(x.kisi.kod) ?? [] : [];
+      if (diril.some((d) => karsilastir(d, sinir) !== 'once' && karsilastir(x.tarih!, d) !== 'once')) return;
       const once = tur === 'dogum';
       const kesin = karsilastir(x.tarih, sinir) === (once ? 'once' : 'sonra');
       // Olası: olayın bir kısmı sınırın öbür yanına düşebiliyor. Aynı aralıkta verilmiş tarihler (ör. savaşta ölüm) sayılmaz.
@@ -117,7 +122,7 @@ function yasam(e: EvrenVt, b: Bulunma[]): { bulgular: Ham[]; denetlenen: number;
         anahtar: `denetim:yasam:${x.iliski}:${tur}`, kural: 'yasam', hukum: kesin ? 'celiski' : 'olasi',
         baslik: kesin ? `${x.kisi.ad}, ${ne} “${x.olay.ad}” içinde bulunuyor` : `${x.kisi.ad}, ${ne} “${x.olay.ad}” içinde bulunuyor olabilir`,
         dayanak: `${x.olay.ad} ${tirnak(x.tarih!)}; ${x.kisi.ad} burada ${rol}. ${once ? 'Doğum' : 'Ölüm'} tarihi ${tirnak(sinir)}.`
-          + (kesin ? '' : ' Tarihler birbirini ayıracak kadar kesin değil.'),
+          + (kesin ? '' : ' Tarihler birbirini ayıracak kadar kesin değil.') + (!once && !diril.length ? ' Kayıtlı bir dirilme olayı yok.' : ''),
         kayitlar: [x.kisi, x.olay], fikir: x.fikir || s.fikir[tur],
         imza: JSON.stringify([x.tarih!.eksen, sinir.eksen, x.rol]),
       });

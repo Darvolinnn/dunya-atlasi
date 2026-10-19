@@ -29,6 +29,11 @@ export const OLAY_ROLLERI = [
   { kod: 'tanik', ad: 'Tanık' },
   { kod: 'zarar', ad: 'Zarar gören' },
   { kod: 'sonradan', ad: 'Sonradan öğrenen' },
+  // Beden olayları (§3.12, §9.1): ölüm, bedensiz dönem, dirilme ve beden değişimi ayrı olaylardır.
+  { kod: 'olen', ad: 'Ölen' },
+  { kod: 'bedensiz', ad: 'Bedensiz kalan' },
+  { kod: 'dirilen', ad: 'Dirilen' },
+  { kod: 'beden_degisen', ad: 'Bedeni değişen' },
 ];
 
 /** Yolculukta bulunma (§4.2): yolcu yolculuğun aşamalarında fiziksel olarak bulunur; taşınan eşya da yolculukla gider. */
@@ -71,6 +76,7 @@ export const ILISKI_TURLERI: IliskiTuru[] = [
   { kod: 'nefret', aIcin: 'Nefret ettiği', bIcin: 'Ondan nefret eden', karsilikli: false, grup: 'Kişiler arası' },
   { kod: 'borclu', aIcin: 'Borçlu olduğu', bIcin: 'Alacaklı olduğu', karsilikli: false, grup: 'Kişiler arası' },
   { kod: 'hizmet', aIcin: 'Hizmet ettiği', bIcin: 'Hizmetindeki', karsilikli: false, grup: 'Kişiler arası' },
+  { kod: 'kimligi', aIcin: 'Kullandığı kimlik', bIcin: 'Bu kimliği kullanan', karsilikli: false, grup: 'Kişiler arası' },
   { kod: 'uye', aIcin: 'Üyesi olduğu', bIcin: 'Üyesi', karsilikli: false, grup: 'Gruplar ve yerler' },
   { kod: 'lider', aIcin: 'Başında olduğu', bIcin: 'Başındaki', karsilikli: false, grup: 'Gruplar ve yerler' },
   { kod: 'sahip', aIcin: 'Sahip olduğu', bIcin: 'Sahibi', karsilikli: false, grup: 'Gruplar ve yerler' },

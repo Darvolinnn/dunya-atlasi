@@ -11,6 +11,7 @@ export const TURLER: Tur[] = [
   { kod: 'siyasi', ad: 'Siyasi varlık', grup: 'İnsanlar ve gruplar', kisa: 'Sy' },
   { kod: 'makam', ad: 'Makam', grup: 'İnsanlar ve gruplar', kisa: 'Mk' },
   { kod: 'kafile', ad: 'Kafile', grup: 'İnsanlar ve gruplar', kisa: 'Kf' },
+  { kod: 'kimlik', ad: 'Kimlik', grup: 'İnsanlar ve gruplar', kisa: 'Km' },
   { kod: 'mekan', ad: 'Mekân', grup: 'Yerler', kisa: 'Me' },
   { kod: 'sehir', ad: 'Şehir', grup: 'Yerler', kisa: 'Şe' },
   { kod: 'rota', ad: 'Rota', grup: 'Yerler', kisa: 'Ro' },

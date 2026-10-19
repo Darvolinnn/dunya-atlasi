@@ -527,6 +527,10 @@ export interface DairInanc {
   gercekDurum: string | null;
   uyum: 'dogru' | 'yanlis' | 'belirsiz'; neden: string;
 }
+/** Kişi ve kimlik (F06): bir kişinin bir kimliği kullanması; kimliğin olay ve sahneleri kişide de görünür. */
+export interface KimlikKullanimi { iliski: string; kisi: KisaKayit; kimlik: KisaKayit; baslangic: string; bitis: string; olaylar: KisaKayit[]; sahneler: KisaKayit[] }
+export interface KimlikBilgisi { kayit: KisaKayit; kimlikler: KimlikKullanimi[]; kullananlar: KimlikKullanimi[] }
+export interface KimlikAyirmaAdayi { iliski: string; baslik: string }
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1251,6 +1255,11 @@ export interface Istekler {
   dairInanclar(a: { evren: string; iddia: string }): DairInanc[];
   dairInancYaz(a: { evren: string; iddia: string; kod?: string | null; tanim: DairInancTanimi }): { kod: string };
   dairInancSil(a: { evren: string; kod: string }): void;
+  kimlikBilgisi(a: { evren: string; kod: string }): KimlikBilgisi;
+  kimlikAyirmaAdaylari(a: { evren: string; kisi: string }): KimlikAyirmaAdayi[];
+  kimlikAyir(a: { evren: string; kisi: string; ad: string; iliskiler: string[]; baslangic?: string; bitis?: string }): { kod: string };
+  kimlikBirlestirOnizle(a: { evren: string; kisi: string; diger: string }): string[];
+  kimlikBirlestir(a: { evren: string; kisi: string; diger: string; baslangic?: string; bitis?: string }): void;
 }
 
 export type IstekAdi = keyof Istekler;

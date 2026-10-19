@@ -82,6 +82,7 @@ import * as uyarlama from './uyarlama';
 import type { UyarlamaTanimi } from '../veri/api';
 import * as dairInanc from './dair-inanc';
 import { SANILAN_DURUMLAR } from '../alan/bilgi';
+import * as kimlik from './kimlik';
 import type { DairInancTanimi } from '../veri/api';
 
 export type DosyaAcici = (ad: string) => Database;
@@ -2222,6 +2223,24 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   dairInanclar({ evren, iddia }: { evren: string; iddia: string }) { return dairInanc.dairInanclar(this.durumBaglami(evren), iddia); }
   dairInancYaz({ evren, iddia, kod = null, tanim }: { evren: string; iddia: string; kod?: string | null; tanim: DairInancTanimi }) { return dairInanc.dairInancYaz(this.durumBaglami(evren), iddia, kod, tanim); }
   dairInancSil({ evren, kod }: { evren: string; kod: string }) { dairInanc.dairInancSil(this.durumBaglami(evren), kod); }
+  // ---------- Kişi, kimlik ve beden (F06) ----------
+  private kimlikBaglami(evren: string): kimlik.KimlikBaglami {
+    const e = this.evren(evren);
+    return {
+      e, yaz: (g, k) => { this.yaz(evren, g, k); },
+      kayitGirdileri: (kod, ad, tur) => this.kayitGirdileri(kod, { ad: temizle(ad), tur, karar: 'kesin', ozet: '' }),
+      tarih: (ifade) => tarihCoz(temizle(ifade, { bos: true }), zamanSetiOku(e.db)),
+    };
+  }
+  kimlikBilgisi({ evren, kod }: { evren: string; kod: string }) { return kimlik.kimlikBilgisi(this.evren(evren), kod); }
+  kimlikAyirmaAdaylari({ evren, kisi }: { evren: string; kisi: string }) { return kimlik.kimlikAyirmaAdaylari(this.evren(evren), kisi); }
+  kimlikAyir({ evren, kisi, ad, iliskiler, baslangic = '', bitis = '' }: { evren: string; kisi: string; ad: string; iliskiler: string[]; baslangic?: string; bitis?: string }) {
+    return kimlik.kimlikAyir(this.kimlikBaglami(evren), kisi, ad, iliskiler, baslangic, bitis);
+  }
+  kimlikBirlestirOnizle({ evren, kisi, diger }: { evren: string; kisi: string; diger: string }) { return kimlik.kimlikBirlestirOnizle(this.evren(evren), kisi, diger); }
+  kimlikBirlestir({ evren, kisi, diger, baslangic = '', bitis = '' }: { evren: string; kisi: string; diger: string; baslangic?: string; bitis?: string }) {
+    kimlik.kimlikBirlestir(this.kimlikBaglami(evren), kisi, diger, baslangic, bitis);
+  }
   // ---------- Üretim, kesinti, besin ağı (§15-5, F10) ----------
   kosulMasasi({ evren, paket, ...g }: kosulMod.KosulGirdisi & { evren: string; paket?: string | null }) {
     const e = this.evren(evren);

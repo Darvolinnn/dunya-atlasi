@@ -175,7 +175,7 @@ export const masalar = (e: EvrenVt): MasaOzeti[] => e.db.selectObjects('SELECT *
 
 /** Masadaki kayıtların gruplanması (yalnızca gösterim; masa kendi düzenini sıra olarak korur). */
 const GRUPLAR: [string, string[]][] = [
-  ['Karakterler ve topluluklar', ['karakter', 'topluluk', 'siyasi', 'makam', 'kafile']],
+  ['Karakterler ve topluluklar', ['karakter', 'topluluk', 'siyasi', 'makam', 'kafile', 'kimlik']],
   ['Yerler ve yollar', ['mekan', 'sehir', 'rota', 'yolculuk']],
   ['Olaylar ve dönemler', ['olay', 'donem', 'antlasma', 'haber']],
   ['Sahneler', ['eser', 'bolum', 'sahne', 'kurgu_hatti']],
