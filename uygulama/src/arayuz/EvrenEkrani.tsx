@@ -13,6 +13,7 @@ import { AgGorunumu, BolumMatrisiGorunumu, DurumGecmisiSekmesi, KurguHatlariGoru
 import { IncelemeKuyrugu } from './Inceleme';
 import { KarsilastirmaSekmesi, SiradanGunSekmesi } from './Gundelik';
 import { DerlemeSekmesi } from './Derleme';
+import { BagSeridi, SurumlerSekmesi } from './Surumler';
 import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
 
 /** İnceleme görünümleri (§7) tek sekme altında; aynı verinin farklı çizimleri. */
@@ -40,11 +41,12 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
         <span class="bosluk" />
       </header>
       <main class="sayfa">
-        <AdBasligi istemci={istemci} bilgi={bilgi} />
+        <BagSeridi bag={bilgi.bag} />
+        {bilgi.bag ? <h1>{bilgi.ad}</h1> : <AdBasligi istemci={istemci} bilgi={bilgi} />}
         <p class="soluk kucuk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
         <div class="sekmeler" role="tablist">
-          {([['masa', 'Masa'], ['masalar', 'Çalışma masaları'], ['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['meseleler', 'Açık meseleler'], ['sablonlar', 'Şablonlar'], ['haritalar', 'Haritalar'], ['gorunumler', 'Görünümler'], ['takvim', 'Takvim'], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
-            ['inceleme', bilgi.catismaSayisi + bilgi.sorunSayisi ? `İnceleme (${bilgi.catismaSayisi + bilgi.sorunSayisi})` : 'İnceleme']] as const).map(([k, ad]) => (
+          {([['masa', 'Masa'], ['masalar', 'Çalışma masaları'], ['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['meseleler', 'Açık meseleler'], ['sablonlar', 'Şablonlar'], ['haritalar', 'Haritalar'], ['gorunumler', 'Görünümler'], ['takvim', 'Takvim'], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['surumler', 'Sürümler'], ['yedek', 'Yedek'],
+            ['inceleme', bilgi.catismaSayisi + bilgi.sorunSayisi ? `İnceleme (${bilgi.catismaSayisi + bilgi.sorunSayisi})` : 'İnceleme']] as const).filter(([k]) => !bilgi.bag || !['surumler', 'yedek'].includes(k)).map(([k, ad]) => (
             <button class="sekme" role="tab" aria-selected={k === 'gorunumler' ? GORUNUMLER.some(([g]) => g === sekme) : sekme === k}
               onClick={() => git(`/e/${kod}/${k === 'gorunumler' ? sonGorunum : k}`)}>{ad}</button>
           ))}
@@ -56,6 +58,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
         )}
         {sekme === 'inceleme' ? <IncelemeKuyrugu istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
+          : sekme === 'surumler' && !bilgi.bag ? <SurumlerSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
           : sekme === 'bahsedilen' ? <Bahsedilenler istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'cop' ? <CopKutusu istemci={istemci} evren={kod} surum={surum} />

@@ -44,6 +44,7 @@ import * as soyMod from './soy';
 import * as montaj from './montaj';
 import * as gundelik from './gundelik';
 import * as derlemeMod from './derleme';
+import * as fark from './fark';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -75,11 +76,15 @@ const katmanEtiketi = (alan: string) => ({ ad: 'Katmanın adı', silindi: 'Katma
 export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   private readonly kurulum: KurulumVt;
   private readonly acik = new Map<string, EvrenVt>();
+  /** Bir evrene bağlı açılan sabit sürümler ve deneme kopyaları (§9.7): kod → ana evren. */
+  private readonly bagli = new Map<string, { tur: 'surum' | 'dal'; evren: string }>();
   private readonly aktor: string;
 
   constructor(private readonly ac: DosyaAcici, varsayilanKurulumAdi: string, private readonly sqliteSurumu: string,
     private readonly bildir: Bildirici = () => {},
-    private readonly medya: MedyaDeposu | null = null, private readonly gorselIsle: GorselIsleyici | null = null) {
+    private readonly medya: MedyaDeposu | null = null, private readonly gorselIsle: GorselIsleyici | null = null,
+    /** Kalıcı olmayan veritabanı (sabit sürüm görünümleri); tarayıcıda bellekte açılır. */
+    private readonly gecici: () => Database = () => ac(`/gecici-${yeniKod()}.db`)) {
     this.kurulum = new KurulumVt(ac('/kurulum.db'), varsayilanKurulumAdi);
     this.aktor = aktor(this.kurulum.kod);
   }
@@ -88,15 +93,33 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (!kodGecerliMi(kod)) throw new Error('Geçersiz evren kodu.');
     let e = this.acik.get(kod);
     if (!e) {
-      if (!this.kurulum.evrenler().some((x) => x.kod === kod)) throw new Error('Bu evren bu cihazda yok.');
+      if (!this.kurulum.evrenler().some((x) => x.kod === kod)) return this.bagliAc(kod);
       e = new EvrenVt(this.ac(`/evren-${kod}.db`), this.kurulum.kod);
       this.acik.set(kod, e);
     }
     return e;
   }
 
+  /** Kod bir evrenin adlandırılmış sürümüyse o sürümü salt okunur olarak kurar (bellekte, günlükten). */
+  private bagliAc(kod: string): EvrenVt {
+    for (const x of this.kurulum.evrenler()) {
+      const ana = this.evren(x.kod);
+      const r = ana.db.selectObject('SELECT gordu FROM evren_surumleri WHERE kod=?', [kod]);
+      if (!r) continue;
+      const gordu = JSON.parse(r.gordu as string) as Record<string, number>;
+      const e = new EvrenVt(this.gecici(), this.kurulum.kod);
+      e.disaridanAl(ana.islemler().filter((i) => i.sira <= (gordu[i.kurulum] ?? 0)));
+      this.acik.set(kod, e);
+      this.bagli.set(kod, { tur: 'surum', evren: x.kod });
+      return e;
+    }
+    throw new Error('Bu evren bu cihazda yok.');
+  }
+
   /** İşlemleri yazar ve arayüze bildirir. */
   private yaz(evren: string, girdiler: IslemGirdisi[], kayitlar: string[] = []) {
+    this.evren(evren);
+    if (this.bagli.get(evren)?.tur === 'surum') throw new Error('Bu, evrenin sabit bir sürümü; değiştirilemez. Değişiklikler ana evrende yapılır.');
     const yazilan = this.evren(evren).islemYap(girdiler);
     this.bildir(evren, [...new Set(yazilan.map((i) => i.tur))], kayitlar);
     return yazilan;
@@ -128,11 +151,15 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
 
   evrenBilgisi({ evren }: { evren: string }) {
     const e = this.evren(evren);
-    const oz = this.kurulum.evrenler().find((x) => x.kod === evren)!;
-    this.kurulum.acildi(evren);
-    const ad = e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined;
+    const b = this.bagli.get(evren);
+    const anaOz = this.kurulum.evrenler().find((x) => x.kod === (b ? b.evren : evren))!;
+    const anaAd = (b ? this.evren(b.evren) : e).db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined ?? anaOz.ad;
+    const bag = b ? { tur: b.tur, evren: b.evren, evrenAdi: anaAd, ad: this.evren(b.evren).db.selectValue('SELECT ad FROM evren_surumleri WHERE kod=?', [evren]) as string } : null;
+    const oz = b ? { ...anaOz, kod: evren } : anaOz;
+    if (!b) this.kurulum.acildi(evren);
+    const ad = bag ? `${anaAd} · ${bag.ad}` : anaAd;
     return {
-      ...oz, ad: ad ?? oz.ad, islemSayisi: e.islemSayisi(),
+      ...oz, ad, bag, islemSayisi: e.islemSayisi(),
       kayitSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NULL')),
       copSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NOT NULL AND kod NOT IN (SELECT kod FROM yonlendirmeler)')),
       catismaSayisi: this.catismaSayisi({ evren }),
@@ -402,6 +429,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         const ne = cz.bicim === 'yol' ? 'yolun' : 'bölgenin';
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: cz.kayit as string, baslik: kayitAdi(cz.kayit as string),
           alanEtiketi: `“${cz.ad}” haritasındaki ${ne} ${({ noktalar: 'sınırı', kayit: 'bağlı olduğu kayıt', kip: 'türü', baslangic: 'başlangıcı', bitis: 'bitişi' } as Record<string, string>)[alan] ?? alan}`, degerler });
+        continue;
+      }
+      const svr = iliski || dr ? undefined : e.db.selectObject('SELECT ad FROM evren_surumleri WHERE kod=?', [nesne]);
+      if (svr) {
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: `“${svr.ad}” sürümü`, alanEtiketi: alan === 'ad' ? 'Adı' : 'Açıklaması',
+          degerler: degerler.map((d) => ({ ...d, yazi: d.deger === null ? '(boş)' : String(d.deger) })) });
         continue;
       }
       const dlr = iliski || dr ? undefined : e.db.selectObject('SELECT ad, tur FROM derlemeler WHERE kod=?', [nesne]);
@@ -688,6 +721,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const deger = JSON.parse(r.deger as string);
     if (alan === 'rota') { this.yaz(evren, [{ tur: 'rota_yaz', veri: { kod: nesne, rota: deger, cozum: true } }], [nesne]); return; }
     if (alan === 'asamalar') { this.yaz(evren, [{ tur: 'yolculuk_yaz', veri: { kod: nesne, asamalar: deger, cozum: true } }], [nesne]); return; }
+    const svr = e.db.selectObject('SELECT ad FROM evren_surumleri WHERE kod=?', [nesne]);
+    if (svr) { this.yaz(evren, [{ tur: 'surum_yaz', veri: { kod: nesne, alan, deger, surumAd: svr.ad, cozum: true } }]); return; }
     const dlr = e.db.selectObject('SELECT ad, tur FROM derlemeler WHERE kod=?', [nesne]);
     if (dlr) { this.yaz(evren, [{ tur: 'derleme_yaz', veri: { kod: nesne, derlemeTuru: dlr.tur, alan, deger, derlemeAd: dlr.ad, cozum: true } }]); return; }
     const msr = e.db.selectObject('SELECT ad FROM masalar WHERE kod=?', [nesne]);
@@ -2018,6 +2053,46 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   karsilastirmaliOkuma({ evren, sutunlar }: { evren: string; sutunlar: { kayit: string; tarih: string | null }[] }) {
     return gundelik.karsilastirmaliOkuma(this.evren(evren), sutunlar, (kod, an) => durum.durumlar(this.durumBaglami(evren), kod, an ?? undefined));
   }
+  // ---------- Adlandırılmış evren sürümleri (§9.7) ----------
+  private anaEvren(evren: string) {
+    const e = this.evren(evren);
+    if (this.bagli.has(evren)) throw new Error('Sürümler ana evrende adlandırılır.');
+    return e;
+  }
+  private surumBul(e: EvrenVt, kod: string) {
+    const r = kodGecerliMi(kod) ? e.db.selectObject('SELECT * FROM evren_surumleri WHERE kod=?', [kod]) : undefined;
+    if (!r) throw new Error('Sürüm bulunamadı.');
+    return r;
+  }
+  surumler({ evren }: { evren: string }) {
+    return this.anaEvren(evren).db.selectObjects('SELECT * FROM evren_surumleri WHERE silindi IS NULL ORDER BY olusturma DESC')
+      .map((r) => ({ kod: r.kod as string, ad: r.ad as string, aciklama: r.aciklama as string, olusturma: Number(r.olusturma), islemSayisi: Number(r.islem_sayisi) }));
+  }
+  surumOlustur({ evren, ad, aciklama = '' }: { evren: string; ad: string; aciklama?: string }) {
+    this.anaEvren(evren);
+    const kod = yeniKod();
+    this.yaz(evren, [{ tur: 'surum_olustur', veri: { kod, ad: temizle(ad, { uzunluk: 120 }), aciklama: temizle(aciklama, { bos: true, uzunluk: 1000 }) } }]);
+    return { kod };
+  }
+  surumYaz({ evren, kod, alan, deger }: { evren: string; kod: string; alan: 'ad' | 'aciklama'; deger: string }) {
+    const r = this.surumBul(this.anaEvren(evren), kod);
+    if (alan !== 'ad' && alan !== 'aciklama') throw new Error('Geçersiz alan.');
+    const d = temizle(deger, { bos: alan === 'aciklama', uzunluk: alan === 'ad' ? 120 : 1000 });
+    if (d === r[alan]) return;
+    this.yaz(evren, [{ tur: 'surum_yaz', veri: { kod, alan, deger: d, surumAd: r.ad } }]);
+  }
+  surumSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) {
+    const r = this.surumBul(this.anaEvren(evren), kod);
+    if (!!r.silindi !== !!geriYukle) return;
+    this.yaz(evren, [{ tur: geriYukle ? 'surum_geri_yukle' : 'surum_sil', veri: { kod, surumAd: r.ad } }]);
+  }
+  /** Sürümden bugüne ne değişti. */
+  surumFarki({ evren, surum }: { evren: string; surum: string }) {
+    const e = this.anaEvren(evren);
+    this.surumBul(e, surum);
+    return fark.evrenFarki(this.evren(surum), e);
+  }
+
   // ---------- Gezinti ve görsel pano (§7) ----------
   private derlemeBaglami(evren: string): derlemeMod.DerlemeBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
   derlemeler({ evren, tur }: { evren: string; tur: derlemeMod.DerlemeTuru }) { return derlemeMod.derlemeler(this.evren(evren), tur); }

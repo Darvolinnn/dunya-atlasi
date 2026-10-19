@@ -616,3 +616,16 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .pano-isaret { position: absolute; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 50%; background: var(--vurgu); color: #fff; font-size: 0.75rem; display: grid; place-items: center; pointer-events: none; box-shadow: 0 0 0 2px #fff; }
 .pano-notlari { margin: 4px 0; padding-left: 20px; }
 .pano-perde { overflow: auto; }
+/* Sürümler ve deneme kopyaları (§9.7) */
+.bag-seridi { border-radius: var(--yaricap); padding: 8px 12px; margin-bottom: 12px; font-size: 0.9rem; border: 1px solid var(--cizgi); background: var(--yuzey-2); }
+.bag-seridi.surum { border-left: 4px solid var(--vurgu); }
+.bag-seridi.dal { border-left: 4px solid var(--basari); }
+.surum-listesi { list-style: none; padding: 0; }
+.surum-listesi > li { border-bottom: 1px solid var(--cizgi); padding: 8px 0; }
+.fark-listesi { list-style: none; padding: 0; margin: 4px 0; }
+.fark-listesi > li { padding: 3px 0 3px 8px; border-left: 3px solid var(--cizgi); margin-bottom: 4px; }
+.fark-listesi > li.fark-yeni { border-left-color: var(--basari); }
+.fark-listesi > li.fark-silindi { border-left-color: var(--tehlike); }
+.fark-listesi > li.fark-degisti { border-left-color: var(--vurgu); }
+.fark del { color: var(--tehlike); }
+.fark ins { color: var(--basari); text-decoration: none; }

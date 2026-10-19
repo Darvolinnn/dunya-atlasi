@@ -35,8 +35,10 @@ type Durum = { tur: 'kayitli'; zaman: number | null } | { tur: 'bekliyor' } | { 
 
 export interface EditorDenetimi { kaydet(): Promise<void> }
 
-export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, baslangic }: {
+export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, baslangic, saltOkunur = false }: {
   istemci: Istemci; evren: string; kayit: string; alan?: string; denetim?: { current: EditorDenetimi | null };
+  /** Sabit sürümde metin değiştirilemez. */
+  saltOkunur?: boolean;
   /** Kaldığın yere dönülüyorsa imlecin konumu. */
   baslangic?: number | null;
 }) {
@@ -51,6 +53,8 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   type AcikSecici = SeciciIstegi & { konum: { left: number; top: number }; canli?: boolean };
   const [secici, setSeciciDurumu] = useState<AcikSecici | null>(null);
   const seciciRef = useRef<AcikSecici | null>(null);
+  const saltRef = useRef(saltOkunur);
+  useEffect(() => { saltRef.current = saltOkunur; const v = gorunum.current; if (v) v.updateState(v.state); }, [saltOkunur]);
   const tutamak = useRef<SeciciTutamagi | null>(null);
   const setSecici = (x: AcikSecici | null) => { seciciRef.current = x; setSeciciDurumu(x); };
   /** Bölme (§9.5): seçili parça yeni kayda dönüşür, yerinde ona bağlantı kalır. */
@@ -187,6 +191,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       });
       gorunum.current = new EditorView(kap.current, {
         state,
+        editable: () => !saltRef.current,
         attributes: { class: 'metin-editoru', spellcheck: 'true', lang: 'tr', 'aria-label': 'Metin', role: 'textbox', 'aria-multiline': 'true' },
         handleKeyDown(_v, e) {
           // Satır içi bağlantı kutusu açıkken ok tuşları, Enter ve Esc kutuya gider.

@@ -8,7 +8,11 @@ import type { Gorunurluk } from '../alan/gorunurluk';
 
 export interface KurulumBilgisi { kod: string; ad: string; sqlite: string }
 export interface EvrenOzeti { kod: string; ad: string; olusturma: number; sonAcilis: number | null }
-export interface EvrenBilgisi extends EvrenOzeti { islemSayisi: number; kayitSayisi: number; copSayisi: number; catismaSayisi: number; sorunSayisi: number }
+export interface EvrenBilgisi extends EvrenOzeti {
+  islemSayisi: number; kayitSayisi: number; copSayisi: number; catismaSayisi: number; sorunSayisi: number;
+  /** Adlandırılmış sürüm (salt okunur) ya da deneme kopyasıysa bağlı olduğu evren (§9.7). */
+  bag?: { tur: 'surum' | 'dal'; evren: string; evrenAdi: string; ad: string } | null;
+}
 export type GunlukSatiri = Omit<Islem, 'ikili'> & { ikiliBoyut: number };
 
 export interface KayitOzeti {
@@ -211,6 +215,11 @@ export interface KarsilastirmaliOkuma {
   sutunlar: { kayit: KisaKayit; tarih: EvrenTarihi | null; ozet: string }[];
   satirlar: { baslik: string; grup: 'alan' | 'soru' | 'durum'; degerler: (string | null)[] }[]; not: string;
 }
+export interface EvrenSurumu { kod: string; ad: string; aciklama: string; olusturma: number; islemSayisi: number }
+export interface FarkAlani { alan: string; etiket: string; once: string | null; sonra: string | null }
+export interface KayitFarki { kod: string; ad: string; tur: string; durum: 'yeni' | 'silindi' | 'degisti'; alanlar: FarkAlani[] }
+export interface IliskiFarki { kod: string; tur: string; a: KisaKayit; b: KisaKayit; durum: 'yeni' | 'silindi' | 'degisti'; ayrinti: string[] }
+export interface EvrenFarki { kayitlar: KayitFarki[]; iliskiler: IliskiFarki[] }
 export interface DerlemeOzeti { kod: string; tur: 'gezinti' | 'pano'; ad: string; ogeSayisi: number; duzenleme: number }
 export interface GezintiAdimi { kayit: string; not: string }
 export interface PanoNotu { x: number; y: number; metin: string }
@@ -755,6 +764,11 @@ export interface Istekler {
   siradanGun(a: { evren: string; yer: string; donem?: string | null; statu?: string | null }): SiradanGun;
   karsilastirmaliOkuma(a: { evren: string; sutunlar: { kayit: string; tarih: string | null }[] }): KarsilastirmaliOkuma;
   derlemeler(a: { evren: string; tur: 'gezinti' | 'pano' }): DerlemeOzeti[];
+  surumler(a: { evren: string }): EvrenSurumu[];
+  surumOlustur(a: { evren: string; ad: string; aciklama?: string }): { kod: string };
+  surumYaz(a: { evren: string; kod: string; alan: 'ad' | 'aciklama'; deger: string }): void;
+  surumSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  surumFarki(a: { evren: string; surum: string }): EvrenFarki;
   derleme(a: { evren: string; kod: string }): Derleme;
   derlemeOlustur(a: { evren: string; tur: 'gezinti' | 'pano'; ad: string }): { kod: string };
   derlemeAdYaz(a: { evren: string; kod: string; ad: string }): void;

@@ -2,7 +2,7 @@
 // sürüm geçmişi (§10.8) ve çöp kutusuna taşıma.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { AdDuzeltmesi, BaglananKayit, DegisebilirAlan, GunlukSatiri, Kayit, Spans } from '../veri/api';
+import type { AdDuzeltmesi, EvrenBilgisi, BaglananKayit, DegisebilirAlan, GunlukSatiri, Kayit, Spans } from '../veri/api';
 import { sesBilgisi } from '../alan/turkce-ek';
 import { KARARLAR, turBul } from '../alan/turler';
 import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
@@ -17,6 +17,7 @@ import { AdBicimleriBolumu, DilBolumu, KisiDilleriBolumu } from './Dil';
 import { MotifBolumu, TEKNOLOJI_YERLERI, TeknolojiBolumu, TeknolojiDurumuAraci } from './Teknoloji';
 import { KalitimBolumu, VerasetBolumu } from './Soy';
 import { GUNDELIK_YERLERI, GundelikBolumu } from './Gundelik';
+import { BagSeridi } from './Surumler';
 import { KurguMontajiBolumu, SahneNiyetleriBolumu } from './Montaj';
 import { HaberYayilimiBolumu, KanalBolumu, ROTA_ARACI_TURLERI, RotaAraci } from './Haber';
 import { KESINTI_TURLERI, KesintiBolumu, UretimOzetiBolumu } from './Uretim';
@@ -47,7 +48,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   const [baslangic] = useState(() => calisma?.konumAl(kod) ?? null);
 
   useEffect(() => { istemci.iste('kayit', { evren, kod }).then((k) => { setKayit(k); setHata(null); }, (e) => setHata(e.message)); }, [evren, kod, surum]);
-  useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then((b) => setEvrenAdi(b.ad), () => {}); }, [evren]);
+  const [bag, setBag] = useState<EvrenBilgisi['bag']>(null);
+  useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then((b) => { setEvrenAdi(b.ad); setBag(b.bag ?? null); }, () => {}); }, [evren]);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren && (d.kayitlar.includes(kod) || !d.kayitlar.length)) setSurum((s) => s + 1); }), [evren, kod]);
   useEffect(() => { if (kayit) document.title = `${kayit.ad} · Dünya Atlası`; return () => { document.title = 'Dünya Atlası'; }; }, [kayit?.ad]);
 
@@ -69,6 +71,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         <button class="dugme sade" aria-expanded={gecmisAcik} onClick={() => setGecmisAcik(!gecmisAcik)}>Sürüm geçmişi</button>
       </header>
       <main class="sayfa kayit-sayfasi">
+        <BagSeridi bag={bag} />
         <BirlesmeBilgisi istemci={istemci} evren={evren} kayit={kayit} />
         {kayit.silindi && !kayit.birlesti && (
           <div class="uyari satir" style="margin-bottom:16px">
@@ -144,7 +147,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {kayit.tur === 'haber' && <HaberYayilimiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {kayit.tur === 'yolculuk' && <YolculukBolumu istemci={istemci} evren={evren} kayit={kayit} />}
 
-        <MetinEditoru key={editorAnahtari} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} baslangic={editorAnahtari === 0 ? baslangic : null} />
+        <MetinEditoru saltOkunur={bag?.tur === 'surum'} key={editorAnahtari} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} baslangic={editorAnahtari === 0 ? baslangic : null} />
 
         {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={sahneBaglami} />}
