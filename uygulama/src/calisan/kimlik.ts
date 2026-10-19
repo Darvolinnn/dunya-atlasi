@@ -11,6 +11,7 @@ import type { EvrenTarihi } from '../alan/tarih';
 import type { IslemGirdisi } from '../alan/islem';
 import type { KimlikAyirmaAdayi, KimlikBilgisi, KimlikKullanimi, KisaKayit } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
+import { yonlendir } from './izdusum';
 
 export const KISI_TURU = 'karakter', KIMLIK_TURU = 'kimlik', KIMLIK_ILISKISI = 'kimligi';
 
@@ -22,7 +23,8 @@ export interface KimlikBaglami {
 }
 
 const kayit = (e: EvrenVt, kod: unknown, hata = 'Kayıt bulunamadı.') => {
-  const r = kodGecerliMi(kod) ? e.db.selectObject('SELECT kod, ad, tur FROM kayitlar WHERE kod=? AND silindi IS NULL', [kod]) : undefined;
+  const k = kodGecerliMi(kod) ? yonlendir(e.db, kod) : null;
+  const r = k ? e.db.selectObject('SELECT kod, ad, tur FROM kayitlar WHERE kod=? AND silindi IS NULL', [k]) : undefined;
   if (!r) throw new Error(hata);
   return { kod: r.kod as string, ad: r.ad as string, tur: r.tur as string };
 };
@@ -51,6 +53,7 @@ export function kimlikBilgisi(e: EvrenVt, kod: string): KimlikBilgisi {
 /** Ayrılırken yeni kimliğe taşınabilecek bağlar: kişinin öbür kayıtlarla ilişkileri (kimlik bağları hariç). */
 export function kimlikAyirmaAdaylari(e: EvrenVt, kisi: string): KimlikAyirmaAdayi[] {
   const k = kayit(e, kisi);
+  kisi = k.kod;
   if (k.tur !== KISI_TURU) throw new Error('Yalnızca bir karakter kimliklere ayrılabilir.');
   return e.db.selectObjects(`SELECT i.kod, i.tur, i.a, i.b, o.ad FROM iliskiler i JOIN kayitlar o ON o.kod=(CASE WHEN i.a=? THEN i.b ELSE i.a END)
       WHERE (i.a=? OR i.b=?) AND i.tur<>? AND i.silindi IS NULL AND o.silindi IS NULL ORDER BY i.tur, o.ad`, [kisi, kisi, kisi, KIMLIK_ILISKISI]).map((r) => {
@@ -62,6 +65,7 @@ export function kimlikAyirmaAdaylari(e: EvrenVt, kisi: string): KimlikAyirmaAday
 /** Kişinin seçilen bağlarını yeni bir kimliğe taşır; kişi ile kimlik arasında "kullandığı kimlik" kurulur. */
 export function kimlikAyir(b: KimlikBaglami, kisi: string, ad: string, iliskiler: string[], baslangic: string, bitis: string) {
   const k = kayit(b.e, kisi);
+  kisi = k.kod;
   if (k.tur !== KISI_TURU) throw new Error('Yalnızca bir karakter kimliklere ayrılabilir.');
   const adaylar = new Set(kimlikAyirmaAdaylari(b.e, kisi).map((x) => x.iliski));
   if (!Array.isArray(iliskiler) || iliskiler.some((x) => !adaylar.has(x))) throw new Error('Taşınacak bağlardan biri bulunamadı.');
@@ -71,11 +75,13 @@ export function kimlikAyir(b: KimlikBaglami, kisi: string, ad: string, iliskiler
   for (const kod of new Set(iliskiler)) {
     const r = b.e.db.selectObject('SELECT * FROM iliskiler WHERE kod=?', [kod])!;
     const a = r.a === kisi ? kimlik : r.a as string, bb = r.b === kisi ? kimlik : r.b as string;
+    const yeniIliski = yeniKod();
     girdiler.push({ tur: 'iliski_sil', veri: { kod, a: r.a, b: r.b, iliski: r.tur } });
     girdiler.push({ tur: 'iliski_ekle', veri: {
-      kod: yeniKod(), tur: r.tur, a, b: bb, ...(r.rol ? { rol: r.rol } : {}), karar: r.karar, aciklama: r.aciklama,
+      kod: yeniIliski, tur: r.tur, a, b: bb, ...(r.rol ? { rol: r.rol } : {}), karar: r.karar, aciklama: r.aciklama,
       baslangic: r.baslangic ? JSON.parse(r.baslangic as string) : null, bitis: r.bitis ? JSON.parse(r.bitis as string) : null,
     } });
+    if (r.gorunurluk) girdiler.push({ tur: 'gorunurluk_yaz', veri: { nesne: 'iliski', kod: yeniIliski, deger: JSON.parse(r.gorunurluk as string) } });
     ilgili.add(r.a as string); ilgili.add(r.b as string);
   }
   b.yaz(girdiler, [...ilgili]);
@@ -107,6 +113,7 @@ export function kimlikBirlestirOnizle(e: EvrenVt, kisi: string, diger: string): 
 
 export function kimlikBirlestir(b: KimlikBaglami, kisi: string, diger: string, baslangic: string, bitis: string) {
   kimlikBirlestirOnizle(b.e, kisi, diger);
+  kisi = kayit(b.e, kisi).kod;
   const d = kayit(b.e, diger);
   const girdiler: IslemGirdisi[] = [];
   if (d.tur !== KIMLIK_TURU) girdiler.push({ tur: 'kayit_degistir', veri: { kod: d.kod, alan: 'tur', deger: KIMLIK_TURU, onceki: d.tur } });

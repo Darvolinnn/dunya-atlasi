@@ -119,10 +119,10 @@ export function kullanildigiYerler(b: KullanimBaglami, kaynak: string): MetinKul
 export function guncelle(b: KullanimBaglami, kod: string) {
   const k = bul(b.e, kod);
   if (k.tanim.bicim !== 'bagli') throw new Error('Yalnızca ortak kaynağa bağlı kullanım kaynaktan güncellenir.');
-  kayit(b.e, k.kaynak, 'Kaynak metin silinmiş.');
+  const kaynak = kayit(b.e, k.kaynak, 'Kaynak metin silinmiş.');
   const d = belge(b.spans(k.hedef, k.alan)), r = aralik(d, kod);
   if (!r) throw new Error('Kullanım metinde bulunamadı.');
-  const yeni = kaynakParcalari(b, k.kaynak);
+  const yeni = kaynakParcalari(b, kaynak.kod);
   let tr = EditorState.create({ doc: d }).tr.replace(r[0], r[1], new Slice(belge(yeni).content, 1, 1));
   tr = isaretKodu(tr, tr.mapping.map(r[0], -1), tr.mapping.map(r[1], 1), kod, true);
   const girdiler = [yazGirdisi({ ...k, tanim: { ...k.tanim, alinan: olcu(duz(yeni)) } })];

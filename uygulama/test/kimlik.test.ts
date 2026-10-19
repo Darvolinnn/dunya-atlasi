@@ -20,6 +20,29 @@ function kur() {
 }
 
 describe('kişi, kimlik ve beden (F06)', () => {
+  it('kimliğe taşınan gizli ilişkinin bilgi katmanı ve bilenleri korunur', () => {
+    const { h, evren, kayit } = kur();
+    const kisi = kayit('Neru', 'karakter'), bilen = kayit('Çiy Bekçisi', 'karakter'), olay = kayit('Gizli buluşma', 'olay');
+    const { kod: iliski } = h.iliskiEkle({ evren, a: kisi, b: olay, tur: 'olayda', rol: 'tanik' });
+    h.gorunurlukYaz({ evren, nesne: 'iliski', kod: iliski, deger: { katman: null, gizli: true, bilenler: [bilen] } });
+    const onceki = h.iliskiler({ evren, kod: kisi }).find((i) => i.kod === iliski)!.gorunurluk;
+    const { kod: kimlik } = h.kimlikAyir({ evren, kisi, ad: 'Çiy Maskesi', iliskiler: [iliski] });
+    const tasinan = h.iliskiler({ evren, kod: kimlik }).find((i) => i.tur === 'olayda')!;
+    expect(tasinan.gorunurluk).toEqual(onceki);
+    expect(tasinan.gorunurluk?.bilenler.map((k) => k.kod)).toEqual([bilen]);
+  });
+  it('birleştirilmiş eski kişi kodu okuma, ayırma adayları ve kimliğe ayırmada korunan kişiye yönlenir', () => {
+    const { h, evren, kayit } = kur();
+    const eski = kayit('Neru eski kayıt', 'karakter'), kisi = kayit('Neru', 'karakter');
+    const olay = kayit('Çiy buluşması', 'olay');
+    const { kod: iliski } = h.iliskiEkle({ evren, a: eski, b: olay, tur: 'olayda', rol: 'tanik' });
+    h.birlestir({ evren, kaynak: eski, hedef: kisi, secimler: {} });
+    expect(h.kimlikBilgisi({ evren, kod: eski }).kayit.kod).toBe(kisi);
+    expect(h.kimlikAyirmaAdaylari({ evren, kisi: eski }).map((x) => x.iliski)).toContain(iliski);
+    const { kod: kimlik } = h.kimlikAyir({ evren, kisi: eski, ad: 'Çiy Maskesi', iliskiler: [iliski] });
+    expect(h.kimlikBilgisi({ evren, kod: kisi }).kimlikler[0]).toMatchObject({ kimlik: { kod: kimlik }, olaylar: [{ kod: olay }] });
+    expect(() => h.kimlikBirlestirOnizle({ evren, kisi: eski, diger: kisi })).toThrow(/Aynı kayıt/);
+  });
   it('iki kaydı bir kişinin iki kimliği olarak birleştirmek: önizleme, tek işlem grubu, kimliğin olayları kişide', () => {
     const { h, evren, kayit } = kur();
     const arven = kayit('Arven', 'karakter'), tilki = kayit('Kara Tilki', 'karakter');

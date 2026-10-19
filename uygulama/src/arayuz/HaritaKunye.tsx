@@ -70,7 +70,7 @@ export function HaritaKunyeBolumu({
           {kunye.tanim.yapan && (
             <p>
               <span class="soluk">Yapan:</span>{' '}
-              <a href={`#/e/${evren}/k/${kunye.tanim.yapan}`}>{kunye.yapanAd ?? kunye.tanim.yapan}</a>
+              {kunye.yapanAd ? <a href={`#/e/${evren}/k/${kunye.tanim.yapan}`}>{kunye.yapanAd}</a> : <span>Silinmiş veya bulunamayan kayıt</span>}
             </p>
           )}
           {kunye.tanim.amac && (

@@ -61,7 +61,7 @@ function satirdanKunye(db: Database, r: Record<string, unknown>): HaritaKunyesi 
   if (!tanim) return null;
   const yapanAd = kayitAdiOku(db, tanim.yapan);
   const catismali = Number(
-    db.selectValue('SELECT count(*) FROM alan_yazanlari WHERE nesne=? AND alan=?', [nesneAnahtari(harita), 'harita_kunye']) ?? 0,
+    db.selectValue('SELECT count(DISTINCT deger) FROM alan_yazanlari WHERE nesne=? AND alan=?', [nesneAnahtari(harita), 'harita_kunye']) ?? 0,
   ) > 1;
   return { harita, haritaAd, tanim, yapanAd, catismali };
 }
@@ -130,7 +130,7 @@ export function catismaDegerYazisi(deger: unknown, kayitAdi: (kod: string) => st
   if (t.tarih) parcalar.push(`tarih: ${t.tarih}`);
   if (t.yapan) parcalar.push(`yapan: ${kayitAdi(t.yapan)}`);
   if (t.amac) parcalar.push(`amaç: ${t.amac}`);
-  if (t.bilinenHatalar.length > 0) parcalar.push(`${t.bilinenHatalar.length} bilinen hata`);
+  if (t.bilinenHatalar.length > 0) parcalar.push(`bilinen hatalar: ${t.bilinenHatalar.join('; ')}`);
   return parcalar.join(' · ') || '(boş)';
 }
 

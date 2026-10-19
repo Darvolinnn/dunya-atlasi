@@ -31,6 +31,15 @@ function kur() {
 }
 
 describe('sahne içinde bağlam parçaları (F29)', () => {
+  it('uzun parça notu sessizce kesilmez; hata verilir ve kısmi kayıt yazılmaz', () => {
+    const { h, evren, sahne } = kur();
+    const onceki = h.gorulenler({ evren });
+    expect(() => h.baglamParcasiOlustur({ evren, kayit: sahne, alan: 'govde', tanim: tanim({ not: 'ç'.repeat(301) }) })).toThrow(/300/);
+    expect(h.baglamParcalari({ evren, kayit: sahne })).toEqual([]);
+    expect(h.islemleriVer({ evren, gorulen: onceki })).toEqual([]);
+    const { kod } = h.baglamParcasiOlustur({ evren, kayit: sahne, alan: 'govde', tanim: tanim({ not: 'ç'.repeat(300) }) });
+    expect(h.baglamParcalari({ evren, kayit: sahne })[0]).toMatchObject({ kod, not: 'ç'.repeat(300) });
+  });
   it('imlecin bulunduğu parça sahnenin tarihini, yerini ve bakışını değiştirir; seçilmeyen alan sahneden gelir', () => {
     const { h, evren, sahne, koy, asker, ana } = kur();
     const { kod } = h.baglamParcasiOlustur({ evren, kayit: sahne, alan: 'govde', tanim: tanim({ tarih: { kip: 'deger', ifade: '398' }, yer: { kip: 'deger', kod: koy }, not: 'Geçmişe dönüş' }) });

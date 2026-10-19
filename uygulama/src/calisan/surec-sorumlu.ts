@@ -233,7 +233,7 @@ export function olaySurecSorumlulari(e: EvrenVt, olayGirdi: string): OlaySurecSo
 
   const baglar = e.db.selectObjects(
     `SELECT b.kural, s.ad, s.adimlar FROM surec_baglari b JOIN surec_kurallari s ON s.kod=b.kural
-     WHERE b.olay=? AND b.silindi IS NULL ORDER BY b.olusturma`,
+     WHERE b.olay=? AND b.silindi IS NULL AND s.silindi IS NULL ORDER BY b.olusturma`,
     [olay.kod],
   );
 
