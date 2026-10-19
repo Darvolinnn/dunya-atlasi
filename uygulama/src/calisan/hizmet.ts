@@ -49,6 +49,7 @@ import * as dalMod from './dal';
 import * as yayimMod from './yayim';
 import * as cikti from './cikti';
 import * as belgeMod from './belge';
+import * as isaretMod from './metin-isaret';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -387,7 +388,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       `SELECT nesne, alan FROM alan_yazanlari ${kod ? `WHERE nesne=?1 OR nesne IN (SELECT kod FROM iliskiler WHERE a=?1 OR b=?1) OR nesne IN (SELECT kod FROM durumlar WHERE konu=?1)
          OR nesne IN (SELECT kod FROM isaretler WHERE kayit=?1) OR nesne IN (SELECT kod FROM cizimler WHERE kayit=?1) OR nesne IN (SELECT kod FROM haritalar WHERE yer=?1)
          OR nesne IN (SELECT kod FROM iddialar WHERE konu=?1) OR nesne IN (SELECT kod FROM bilgiler WHERE bilen=?1) OR nesne IN (SELECT kod FROM izler WHERE konu=?1)
-         OR nesne IN (SELECT kod FROM surec_kurallari WHERE sahip=?1) OR nesne IN (SELECT kod FROM hukuk_kurallari WHERE sahip=?1)` : ''}
+         OR nesne IN (SELECT kod FROM surec_kurallari WHERE sahip=?1) OR nesne IN (SELECT kod FROM hukuk_kurallari WHERE sahip=?1)
+         OR nesne IN (SELECT kod FROM metin_isaretleri WHERE kayit=?1)` : ''}
        GROUP BY nesne, alan HAVING count(DISTINCT deger) > 1`, kod ? [kod] : []);
     for (const g of gruplar) {
       const nesne = g.nesne as string;
@@ -499,6 +501,13 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         const yazi = (d: unknown) => !d ? '(boş)' : alan === 'dil' ? `${(d as DilTanimi).kurallar.length} kural, ${(d as DilTanimi).sozluk.length} sözcük, ${(d as DilTanimi).heceler.length} hece` : (d as { bicim: string }).bicim;
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: alan === 'dil' ? 'Dil tanımı' : `${kayitAdi(alan.slice(10))} dilindeki biçimi`,
           degerler: degerler.map((d) => ({ ...d, yazi: yazi(d.deger) })) });
+        continue;
+      }
+      const mir = iliski || dr ? undefined : e.db.selectObject('SELECT kayit FROM metin_isaretleri WHERE kod=?', [nesne]);
+      if (mir) {
+        const ETIKET: Record<string, string> = { hedef: 'Bağlı olduğu kayıt', hedefAlan: 'Bağlı olduğu bilgi', iddia: 'İddiası', kritik: 'Kritik mi', imza: 'Dayandığı sürüm' };
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: mir.kayit as string, baslik: `${kayitAdi(mir.kayit as string)} · işaretli cümle`, alanEtiketi: ETIKET[alan] ?? alan,
+          degerler: degerler.map((d) => ({ ...d, yazi: d.deger === null ? '(boş)' : typeof d.deger === 'boolean' ? (d.deger ? 'Evet' : 'Hayır') : alan === 'hedef' ? kayitAdi(String(d.deger)) : String(d.deger) })) });
         continue;
       }
       if (!iliski && alan === 'belge_sunumu') {
@@ -834,6 +843,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (iliski && alan === 'dil_yeterliligi') { this.yaz(evren, [{ tur: 'dil_yeterliligi_yaz', veri: { iliski: nesne, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
     if (!iliski && alan === 'dil') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'dil_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
     if (!iliski && alan.startsWith('ad_bicimi:')) { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'ad_bicimi_yaz', veri: { kayit: nesne, dil: alan.slice(10), deger, cozum: true } }], [nesne]); return; }
+    const mir = e.db.selectObject('SELECT kayit FROM metin_isaretleri WHERE kod=?', [nesne]);
+    if (mir) { this.yaz(evren, [{ tur: 'metin_isareti_yaz', veri: { kod: nesne, kayit: mir.kayit, alan, deger, cozum: true } }], [mir.kayit as string]); return; }
     if (!iliski && alan === 'belge_sunumu') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'belge_sunumu_yaz', veri: { kod: nesne, sunum: deger ?? belgeMod.BOS_SUNUM, cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'gundelik') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'gundelik_yaz', veri: { yer: nesne, kartlar: deger ?? [], cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'niyetler') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'sahne_niyeti_yaz', veri: { sahne: nesne, niyetler: deger ?? [], cozum: true } }], [nesne]); return; }
@@ -2158,6 +2169,16 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     belgeMod.sunumYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod, sunum);
   }
   belgeCiktisi({ evren, kod }: { evren: string; kod: string }) { return { html: belgeMod.belgeCiktisi(this.evren(evren), kod) }; }
+  // ---------- Metin işaretleme (§5.7) ----------
+  private isaretBaglami(evren: string): isaretMod.IsaretBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
+  isaretAlanlari({ evren, hedef }: { evren: string; hedef: string }) { return isaretMod.isaretAlanlari(this.evren(evren), hedef); }
+  metinIsaretiOlustur({ evren, ...g }: { evren: string; kayit: string; alan: string; hedef: string | null; hedefAlan?: string | null; iddia?: string; kritik?: boolean }) {
+    return isaretMod.isaretOlustur(this.isaretBaglami(evren), g);
+  }
+  metinIsaretiYaz({ evren, kod, alan, deger }: { evren: string; kod: string; alan: isaretMod.IsaretAlaniAdi; deger: unknown }) { isaretMod.isaretYaz(this.isaretBaglami(evren), kod, alan, deger); }
+  metinIsaretiSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { isaretMod.isaretSil(this.isaretBaglami(evren), kod, !!geriYukle); }
+  kayitIsaretleri({ evren, kod }: { evren: string; kod: string }) { return isaretMod.kayitIsaretleri(this.evren(evren), kod); }
+  isaretOzetleri({ evren, kodlar }: { evren: string; kodlar: string[] }) { return isaretMod.isaretOzetleri(this.evren(evren), Array.isArray(kodlar) ? kodlar.slice(0, 50) : []); }
 
   // ---------- Yayımlanmış eser kilidi (F18) ----------
   private readonly celismeOnbellegi = new Map<string, { sayi: number; liste: Omit<YayimCelismesi, 'karar'>[] }>();

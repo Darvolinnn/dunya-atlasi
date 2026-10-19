@@ -9,10 +9,10 @@ import { keymap } from 'prosemirror-keymap';
 import { baseKeymap, toggleMark, setBlockType, wrapIn, lift } from 'prosemirror-commands';
 import type { Node as PmNode } from 'prosemirror-model';
 import { pmDocFromSpans, pmNodeToSpans } from '@automerge/prosemirror';
-import { metinSemasi } from '../alan/metin-sema';
+import { metinSemasi, isaretKodlari } from '../alan/metin-sema';
 import { saatYaz } from '../alan/islem-metni';
 import type { Istemci } from '../veri/istemci';
-import type { Spans } from '../veri/api';
+import type { IsaretAlani, KisaKayit, Spans } from '../veri/api';
 import { BaglantiSecici, type Secim, type SeciciTutamagi } from './BaglantiSecici';
 import { katla } from '../alan/turkce';
 import { bagAraligi, baglantiEklentisi, bagTuru, type SeciciIstegi } from './baglanti-eklentisi';
@@ -25,6 +25,30 @@ const ARA = 1200;        // yazmaya bu kadar ara verilince kaydedilir
 const EN_GEC = 8000;     // sürekli yazarken bile en geç bu aralıkla kaydedilir
 
 export const belgeYap = (spans: Spans): PmNode => pmDocFromSpans(metinSemasi, spans as never);
+const isaretTuru = sema.marks.isaret;
+
+/** Aralıktaki metne bir işaret kodu ekler ya da çıkarır; parçadaki öteki işaretler korunur (üst üste gelebilirler). */
+function isaretKodu(tr: Transaction, from: number, to: number, kod: string, ekle: boolean): Transaction {
+  const parcalar: [number, number, string][] = [];
+  tr.doc.nodesBetween(from, to, (n, pos) => {
+    if (!n.isText) return;
+    const k = new Set(isaretKodlari(isaretTuru.isInSet(n.marks)?.attrs.kodlar));
+    if (ekle) k.add(kod); else if (!k.delete(kod)) return;
+    parcalar.push([Math.max(from, pos), Math.min(to, pos + n.nodeSize), [...k].sort().join(' ')]);
+  });
+  for (const [a, b, k] of parcalar) tr = k ? tr.addMark(a, b, isaretTuru.create({ kodlar: k })) : tr.removeMark(a, b, isaretTuru);
+  return tr;
+}
+/** İmlecin bulunduğu yerdeki işaret kodları. */
+function imlectekiIsaretler(state: EditorState): string[] {
+  const { $from, empty, from, to } = state.selection;
+  const kodlar = new Set<string>();
+  if (empty) { for (const m of [...$from.marks(), ...($from.nodeAfter?.marks ?? [])]) if (m.type === isaretTuru) isaretKodlari(m.attrs.kodlar).forEach((k) => kodlar.add(k)); }
+  else state.doc.nodesBetween(from, to, (n) => { if (n.isText) isaretKodlari(isaretTuru.isInSet(n.marks)?.attrs.kodlar).forEach((k) => kodlar.add(k)); });
+  return [...kodlar].sort();
+}
+type IsaretOzeti = { kod: string; hedef: KisaKayit | null; hedefAlanAdi: string | null; iddia: string; kritik: boolean };
+type IsaretFormu = { from: number; to: number; belge: PmNode; hedef: Secim | null; alanlar: IsaretAlani[]; hedefAlan: string; iddia: string; kritik: boolean; hata: string | null };
 
 const KISAYOLLAR: Record<string, Command> = {
   'Mod-z': undo, 'Mod-y': redo, 'Shift-Mod-z': redo,
@@ -59,6 +83,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   const setSecici = (x: AcikSecici | null) => { seciciRef.current = x; setSeciciDurumu(x); };
   /** Bölme (§9.5): seçili parça yeni kayda dönüşür, yerinde ona bağlantı kalır. */
   const [ayirma, setAyirma] = useState<{ from: number; to: number; belge: PmNode; ad: string; tur: string; hata: string | null } | null>(null);
+  /** Metin işaretleme (§5.7). */
+  const [isaretFormu, setIsaretFormu] = useState<IsaretFormu | null>(null);
+  const [isaretOzet, setIsaretOzet] = useState<{ anahtar: string; liste: IsaretOzeti[] }>({ anahtar: '', liste: [] });
+  const [hedefSecici, setHedefSecici] = useState<{ left: number; top: number } | null>(null);
 
   const konumu = (pos: number) => {
     const k = gorunum.current!.coordsAtPos(pos);
@@ -276,6 +304,42 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     } catch (x) { setAyirma({ ...ayirma, hata: (x as Error).message }); }
   }
 
+  function isaretFormuAc() {
+    const v = gorunum.current;
+    if (!v || v.state.selection.empty) return;
+    const { from, to } = v.state.selection;
+    setIsaretFormu({ from, to, belge: v.state.doc, hedef: null, alanlar: [], hedefAlan: '', iddia: '', kritik: false, hata: null });
+  }
+  function hedefSec(s: Secim) {
+    setHedefSecici(null);
+    setIsaretFormu((f) => f && { ...f, hedef: s, alanlar: [], hedefAlan: '' });
+    istemci.iste('isaretAlanlari', { evren, hedef: s.kod }).then((alanlar) => setIsaretFormu((f) => f && f.hedef?.kod === s.kod ? { ...f, alanlar } : f), () => {});
+  }
+  async function isaretle(e: Event) {
+    e.preventDefault();
+    const v = gorunum.current, f = isaretFormu;
+    if (!v || !f) return;
+    if (v.state.doc !== f.belge) { setIsaretFormu({ ...f, hata: 'Metin bu arada değişti; cümleyi yeniden seçin.' }); return; }
+    try {
+      const { kod: ik } = await istemci.iste('metinIsaretiOlustur', { evren, kayit, alan, hedef: f.hedef?.kod ?? null, hedefAlan: f.hedefAlan || null, iddia: f.iddia, kritik: f.kritik });
+      const g = gorunum.current;
+      if (g) g.dispatch(isaretKodu(g.state.tr, f.from, f.to, ik, true));
+      setIsaretFormu(null);
+      setIsaretOzet({ anahtar: '', liste: [] });
+      g?.focus();
+    } catch (x) { setIsaretFormu({ ...f, hata: (x as Error).message }); }
+  }
+  /** İşareti metinden ve kaydıyla birlikte kaldırır. Bağlı evren bilgisi silinmez. */
+  async function isaretKaldir(ik: string) {
+    const v = gorunum.current;
+    if (!v) return;
+    try { await istemci.iste('metinIsaretiSil', { evren, kod: ik }); } catch { /* yalnızca metinden kaldırılır */ }
+    const g = gorunum.current;
+    if (g) g.dispatch(isaretKodu(g.state.tr, 0, g.state.doc.content.size, ik, false));
+    setIsaretOzet({ anahtar: '', liste: [] });
+    g?.focus();
+  }
+
   const uygula = (komut: Command) => {
     const v = gorunum.current;
     if (!v) return;
@@ -293,6 +357,16 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   const blokTuru = v ? v.state.selection.$from.parent : null;
   const baslikMi = (s: number) => blokTuru?.type === sema.nodes.heading && blokTuru.attrs.level === s;
   const bag = v ? bagAraligi(v.state) : null;
+  const imlecIsaretleri = v ? imlectekiIsaretler(v.state) : [];
+  const isaretAnahtari = imlecIsaretleri.join(' ');
+  useEffect(() => {
+    if (!isaretAnahtari) return;
+    if (isaretAnahtari === isaretOzet.anahtar) return;
+    let iptal = false;
+    istemci.iste('isaretOzetleri', { evren, kodlar: isaretAnahtari.split(' ') }).then((liste) => { if (!iptal) setIsaretOzet({ anahtar: isaretAnahtari, liste }); }, () => {});
+    return () => { iptal = true; };
+  }, [isaretAnahtari, isaretOzet.anahtar]);
+  const gorunenIsaretler = isaretAnahtari && isaretOzet.anahtar === isaretAnahtari ? isaretOzet.liste : [];
 
   return (
     <div class="editor-kabi">
@@ -315,9 +389,48 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => uygula((s, d) => { d?.(s.tr.removeMark(bag.from, bag.to, bagTuru)); return true; })}>Bağlantıyı kaldır</button>
         </>}
         {v && !v.state.selection.empty && alan === 'govde' && <button type="button" class="arac" title="Seçili parçayı yeni bir kayda dönüştür; yerinde ona bağlantı kalır" onMouseDown={(e) => e.preventDefault()} onClick={ayirmaAc}>Yeni kayda ayır</button>}
+        {v && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili cümleyi bir kayda, bir değere ya da bir soruya bağla" onMouseDown={(e) => e.preventDefault()} onClick={isaretFormuAc}>İşaretle</button>}
         <span class="bosluk" />
         <span class="kayit-durumu soluk kucuk" aria-live="polite">{durumYazisi(durum)}</span>
       </div>
+      {gorunenIsaretler.length > 0 && (
+        <div class="isaret-seridi kucuk" aria-label="İşaretli cümle">
+          {gorunenIsaretler.map((x) => (
+            <span key={x.kod} class="satir">
+              <span>{x.kritik && <strong>Kritik · </strong>}İşaretli: {x.hedef ? <a href={`#/e/${evren}/k/${x.hedef.kod}`}>{x.hedef.ad}</a> : 'bağsız'}{x.hedefAlanAdi && ` · ${x.hedefAlanAdi}`}{x.iddia && ` · “${x.iddia}”`}</span>
+              {!saltOkunur && <button type="button" class="dugme sade kucuk" onMouseDown={(e) => e.preventDefault()} onClick={() => isaretKaldir(x.kod)}>İşareti kaldır</button>}
+            </span>
+          ))}
+        </div>
+      )}
+      {isaretFormu && (
+        <form class="kart ayirma" onSubmit={isaretle} aria-label="Cümleyi işaretle">
+          <p class="kucuk" style="margin:0 0 6px">“{isaretFormu.belge.textBetween(isaretFormu.from, isaretFormu.to, ' ').slice(0, 120)}” işaretlenecek. Metin değişmez; yalnızca bağ kurulur.</p>
+          <div class="satir">
+            <span class="kucuk">Bağlı olduğu kayıt:</span>
+            <button type="button" class="dugme kucuk" onClick={(e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setHedefSecici({ left: r.left, top: r.bottom + 4 }); }}>{isaretFormu.hedef?.ad ?? 'Kayıt seç'}</button>
+            {isaretFormu.hedef && (
+              <label class="kucuk">Hangi bilgisi{' '}
+                <select class="girdi kucuk-secim" value={isaretFormu.hedefAlan} onChange={(e) => setIsaretFormu({ ...isaretFormu, hedefAlan: (e.target as HTMLSelectElement).value })}>
+                  <option value="">Belirtmeden (kaydın kendisi)</option>
+                  {[...new Set(isaretFormu.alanlar.map((a) => a.grup))].map((g) => (
+                    <optgroup key={g} label={g}>{isaretFormu.alanlar.filter((a) => a.grup === g).map((a) => <option key={a.kod} value={a.kod}>{a.ad}</option>)}</optgroup>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+          <div class="satir">
+            <input class="girdi" style="flex:1;min-width:200px" lang="tr" maxLength={300} aria-label="İddia" placeholder="Cümlenin söylediği, kısaca (isteğe bağlı)" value={isaretFormu.iddia}
+              onInput={(e) => setIsaretFormu({ ...isaretFormu, iddia: (e.target as HTMLInputElement).value })} />
+            <label class="kucuk" title="Kritik işaretli cümle değişince program kısaca sorar"><input type="checkbox" checked={isaretFormu.kritik} onChange={(e) => setIsaretFormu({ ...isaretFormu, kritik: (e.target as HTMLInputElement).checked })} /> Kritik</label>
+            <button class="dugme ana kucuk">İşaretle</button>
+            <button type="button" class="dugme sade kucuk" onClick={() => setIsaretFormu(null)}>Vazgeç</button>
+          </div>
+          {isaretFormu.hata && <p class="hata kucuk">{isaretFormu.hata}</p>}
+        </form>
+      )}
+      {hedefSecici && <BaglantiSecici istemci={istemci} evren={evren} sorgu="" konum={hedefSecici} sec={(s) => hedefSec({ kod: s.kod, ad: s.ad })} kapat={() => setHedefSecici(null)} />}
       {ayirma && (
         <form class="kart ayirma satir" onSubmit={ayir} aria-label="Yeni kayda ayır">
           <span class="kucuk">Seçili parça yeni kayda taşınacak; burada yerine ona bağlantı kalacak.</span>

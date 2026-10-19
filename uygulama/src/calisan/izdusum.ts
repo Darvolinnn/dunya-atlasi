@@ -3,7 +3,7 @@
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { gorduMu, type Islem } from '../alan/islem';
 import { A } from '../alan/automerge';
-import { baglantilar, duzMetin } from '../alan/metin-sema';
+import { baglantilar, duzMetin, isaretYerleri } from '../alan/metin-sema';
 import { katla } from '../alan/turkce';
 import { siraGecerli } from '../alan/sira';
 import { sablonGecerli } from '../alan/sablon';
@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 35;
+export const IZDUSUM_SURUMU = 36;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -326,6 +326,30 @@ CREATE TABLE IF NOT EXISTS yayim_kararlari(
   imza TEXT NOT NULL,
   PRIMARY KEY(yayim, anahtar)
 );
+CREATE TABLE IF NOT EXISTS metin_isaretleri(
+  kod TEXT PRIMARY KEY,
+  kayit TEXT NOT NULL,
+  alan TEXT NOT NULL,
+  hedef TEXT,
+  hedef_alan TEXT,
+  iddia TEXT NOT NULL DEFAULT '',
+  kritik INTEGER NOT NULL DEFAULT 0,
+  imza TEXT,
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS metin_isaretleri_kayit ON metin_isaretleri(kayit);
+CREATE INDEX IF NOT EXISTS metin_isaretleri_hedef ON metin_isaretleri(hedef);
+CREATE TABLE IF NOT EXISTS metin_isaret_yerleri(
+  kayit TEXT NOT NULL,
+  alan TEXT NOT NULL,
+  sira INTEGER NOT NULL,
+  isaret TEXT NOT NULL,
+  metin TEXT NOT NULL,
+  PRIMARY KEY(kayit, alan, sira)
+);
+CREATE INDEX IF NOT EXISTS metin_isaret_yerleri_isaret ON metin_isaret_yerleri(isaret);
 CREATE TABLE IF NOT EXISTS belge_sunumlari(
   kod TEXT PRIMARY KEY,
   sunum TEXT NOT NULL
@@ -602,7 +626,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -1236,6 +1260,28 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     else db.exec({ sql: 'INSERT OR REPLACE INTO yayim_kararlari(yayim, anahtar, karar, imza) VALUES(?,?,?,?)', bind: [yayim, anahtar, karar, String(imza ?? '')] });
     alanYaz(db, i, yayim, `karar:${anahtar}`, typeof karar === 'string' && karar ? karar : null);
   },
+  /** Metin işareti (§5.7): cümlenin bağlandığı kayıt ve bilgi. Metindeki yeri metin belgesindedir. */
+  metin_isareti_olustur(db, i) {
+    const v = i.veri as { kod?: unknown; kayit?: unknown; alan?: unknown; hedef?: unknown; hedefAlan?: unknown; iddia?: unknown; kritik?: unknown; imza?: unknown };
+    if (typeof v.kod !== 'string' || typeof v.kayit !== 'string' || typeof v.alan !== 'string') return;
+    db.exec({ sql: `INSERT OR IGNORE INTO metin_isaretleri(kod, kayit, alan, hedef, hedef_alan, iddia, kritik, imza, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?,?,?)`,
+      bind: [v.kod, v.kayit, v.alan, typeof v.hedef === 'string' ? v.hedef : null, typeof v.hedefAlan === 'string' ? v.hedefAlan : null, String(v.iddia ?? ''), v.kritik ? 1 : 0,
+        typeof v.imza === 'string' ? v.imza : null, i.zaman, i.zaman] });
+  },
+  metin_isareti_yaz(db, i) {
+    const { kod, alan, deger } = i.veri as { kod?: unknown; alan?: unknown; deger?: unknown };
+    const sutun: Record<string, string> = { hedef: 'hedef', hedefAlan: 'hedef_alan', iddia: 'iddia', kritik: 'kritik', imza: 'imza' };
+    if (typeof kod !== 'string' || typeof alan !== 'string' || !sutun[alan]) return;
+    const d = alan === 'kritik' ? (deger ? 1 : 0) : alan === 'iddia' ? String(deger ?? '') : typeof deger === 'string' ? deger : null;
+    db.exec({ sql: `UPDATE metin_isaretleri SET ${sutun[alan]}=?, duzenleme=? WHERE kod=?`, bind: [d, i.zaman, kod] });
+    alanYaz(db, i, kod, alan, deger ?? null);
+  },
+  metin_isareti_sil(db, i) {
+    db.exec({ sql: 'UPDATE metin_isaretleri SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  metin_isareti_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE metin_isaretleri SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
   /** Evren içi belgenin sunumu (§11.5): biçim, mühür, bağlı kişiler. */
   belge_sunumu_yaz(db, i) {
     const { kod, sunum } = i.veri as { kod?: unknown; sunum?: unknown };
@@ -1658,6 +1704,10 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     db.exec({ sql: 'DELETE FROM baglantilar WHERE kaynak=? AND alan=?', bind: [kayit, alan] });
     baglantilar(spans).forEach((b, sira) => db.exec({
       sql: 'INSERT INTO baglantilar(kaynak, alan, sira, hedef, metin) VALUES(?,?,?,?,?)', bind: [kayit, alan, sira, b.hedef, b.metin],
+    }));
+    db.exec({ sql: 'DELETE FROM metin_isaret_yerleri WHERE kayit=? AND alan=?', bind: [kayit, alan] });
+    isaretYerleri(spans).forEach((y, sira) => db.exec({
+      sql: 'INSERT INTO metin_isaret_yerleri(kayit, alan, sira, isaret, metin) VALUES(?,?,?,?,?)', bind: [kayit, alan, sira, y.isaret, y.metin.slice(0, 500)],
     }));
     db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, kayit] });
     if (!i.veri.ilk) metinYazanlari(db, i, yeni);

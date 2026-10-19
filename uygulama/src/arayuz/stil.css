@@ -142,6 +142,8 @@ a.kayit-satiri:hover { background: var(--yuzey-2); }
 /* Bağlantılar */
 .metin-editoru a.bag { color: var(--vurgu); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--vurgu) 45%, transparent); text-underline-offset: 3px; cursor: text; }
 .metin-editoru a.bag:hover { text-decoration-color: var(--vurgu); }
+.metin-editoru .isaretli { text-decoration: underline dotted; text-decoration-color: color-mix(in srgb, var(--basari) 70%, transparent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.isaret-seridi { display: flex; flex-direction: column; gap: 4px; padding: 6px 20px; border-bottom: 1px solid var(--cizgi); background: var(--yuzey-2); }
 a.arac { display: inline-flex; align-items: center; text-decoration: none; color: var(--vurgu); }
 .secici { position: fixed; z-index: 20; width: min(360px, calc(100vw - 16px)); background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--yaricap); box-shadow: 0 8px 28px rgb(0 0 0 / 0.16); padding: 8px; font-family: var(--yazi); }
 .secici-liste { list-style: none; margin: 6px 0 0; padding: 0; max-height: 320px; overflow: auto; }

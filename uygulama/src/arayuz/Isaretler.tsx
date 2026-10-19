@@ -1,0 +1,66 @@
+// Metin işaretleri (§5.7): bu kaydın metnindeki işaretli cümleler ve başka metinlerde bu kayda bağlanmış cümleler.
+// Metni silmek evren kaydını silmez; işaretli parçası metinden çıkmış işaret "artık metinde yok" olarak görünür.
+import { useEffect, useState } from 'preact/hooks';
+import type { IsaretAlani, MetinIsareti } from '../veri/api';
+import type { Istemci } from '../veri/istemci';
+
+const hataYaz = (e: unknown) => (e as Error).message;
+const DURUM: Record<MetinIsareti['durum'], string> = {
+  yerinde: '', metinde_yok: 'Artık metinde yok', belirsiz: 'Bağlantı belirsiz: metinde birden çok yerde',
+};
+
+function Satir({ istemci, evren, x, kaynakGoster, saltOkunur, yenile }: { istemci: Istemci; evren: string; x: MetinIsareti; kaynakGoster: boolean; saltOkunur: boolean; yenile: () => void }) {
+  const [acik, setAcik] = useState(false);
+  const [alanlar, setAlanlar] = useState<IsaretAlani[] | null>(null);
+  const [iddia, setIddia] = useState(x.iddia);
+  const [hata, setHata] = useState<string | null>(null);
+  const yaz = (alan: 'hedefAlan' | 'iddia' | 'kritik', deger: unknown) => istemci.iste('metinIsaretiYaz', { evren, kod: x.kod, alan, deger }).then(() => { setHata(null); yenile(); }, (e) => setHata(hataYaz(e)));
+  useEffect(() => { if (acik && x.hedef && !alanlar) istemci.iste('isaretAlanlari', { evren, hedef: x.hedef.kod }).then(setAlanlar, () => setAlanlar([])); }, [acik]);
+  return (
+    <li>
+      <span>{x.kritik && <strong>Kritik · </strong>}
+        {x.yerler[0] ? `“${x.yerler[0].slice(0, 160)}”` : <em class="soluk">(işaretli parça metinde yok)</em>}
+        {' → '}{kaynakGoster ? <a href={`#/e/${evren}/k/${x.kayit.kod}`}>{x.kayit.ad}</a> : x.hedef ? <a href={`#/e/${evren}/k/${x.hedef.kod}`}>{x.hedef.ad}</a> : 'bağsız'}
+        {!kaynakGoster && x.hedefAlanAdi && ` · ${x.hedefAlanAdi}`}
+        {x.iddia && <span class="soluk"> · {x.iddia}</span>}
+      </span>
+      {DURUM[x.durum] && <span class="uyari-yazisi kucuk"> · {DURUM[x.durum]}</span>}
+      {!saltOkunur && !kaynakGoster && <button class="dugme sade kucuk" aria-expanded={acik} onClick={() => setAcik(!acik)}>{acik ? 'Kapat' : 'Düzenle'}</button>}
+      {acik && (
+        <div class="satir" style="margin:6px 0 10px">
+          {x.hedef && (
+            <select class="girdi kucuk-secim" aria-label="Bağlı olduğu bilgi" value={x.hedefAlan ?? ''} onChange={(e) => yaz('hedefAlan', (e.target as HTMLSelectElement).value || null)}>
+              <option value="">Belirtmeden (kaydın kendisi)</option>
+              {(alanlar ?? []).map((a) => <option key={a.kod} value={a.kod}>{a.grup}: {a.ad}</option>)}
+              {x.hedefAlan && alanlar && !alanlar.some((a) => a.kod === x.hedefAlan) && <option value={x.hedefAlan}>{x.hedefAlanAdi}</option>}
+            </select>
+          )}
+          <input class="girdi" lang="tr" maxLength={300} aria-label="İddia" placeholder="Cümlenin söylediği, kısaca" value={iddia} onInput={(e) => setIddia((e.target as HTMLInputElement).value)}
+            onBlur={() => { if (iddia.trim() !== x.iddia) yaz('iddia', iddia); }} />
+          <label class="kucuk"><input type="checkbox" checked={x.kritik} onChange={(e) => yaz('kritik', (e.target as HTMLInputElement).checked)} /> Kritik</label>
+          <button class="dugme sade kucuk" onClick={() => istemci.iste('metinIsaretiSil', { evren, kod: x.kod }).then(yenile, (e) => setHata(hataYaz(e)))}>İşareti kaldır</button>
+        </div>
+      )}
+      {hata && <p class="hata kucuk">{hata}</p>}
+    </li>
+  );
+}
+
+export function IsaretlerBolumu({ istemci, evren, kod, surum, saltOkunur }: { istemci: Istemci; evren: string; kod: string; surum: number; saltOkunur: boolean }) {
+  const [v, setV] = useState<{ metindekiler: MetinIsareti[]; buKayda: MetinIsareti[] } | null>(null);
+  const [n, setN] = useState(0);
+  useEffect(() => { istemci.iste('kayitIsaretleri', { evren, kod }).then(setV, () => {}); }, [kod, surum, n]);
+  if (!v || (!v.metindekiler.length && !v.buKayda.length)) return null;
+  const yenile = () => setN((x) => x + 1);
+  return (
+    <section class="surecler" aria-label="İşaretli cümleler">
+      <h2>İşaretli cümleler</h2>
+      <p class="soluk kucuk">Metinde işaretlenen cümleler ve bağlandıkları bilgi. Cümleyi metinden silmek bağlı bilgiyi silmez.</p>
+      {v.metindekiler.length > 0 && <ul class="toplanan-listesi">{v.metindekiler.map((x) => <Satir key={x.kod} istemci={istemci} evren={evren} x={x} kaynakGoster={false} saltOkunur={saltOkunur} yenile={yenile} />)}</ul>}
+      {v.buKayda.length > 0 && <>
+        <h3>Başka metinlerde bu kayda bağlananlar</h3>
+        <ul class="toplanan-listesi">{v.buKayda.map((x) => <Satir key={x.kod} istemci={istemci} evren={evren} x={x} kaynakGoster saltOkunur={saltOkunur} yenile={yenile} />)}</ul>
+      </>}
+    </section>
+  );
+}

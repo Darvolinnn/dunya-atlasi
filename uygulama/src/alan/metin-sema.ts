@@ -60,6 +60,22 @@ export const metinSemasi = new SchemaAdapter({
       parseDOM: [{ tag: 'a[data-kayit]', getAttrs: (d) => ({ hedef: (d as HTMLElement).getAttribute('data-kayit') }) }],
       toDOM: (m) => ['a', { 'data-kayit': m.attrs.hedef, class: 'bag', spellcheck: 'false' }, 0],
     },
+    // Metin işareti (§5.7): cümlenin bir iddiaya, evren durumuna ya da olaya bağlandığı yer. Değer, o parçayı kapsayan
+    // işaret kodlarıdır (boşlukla ayrılmış, sıralı); böylece işaretler kısmen üst üste gelebilir. İşaretin kendisi
+    // (neye bağlı olduğu, kritik olup olmadığı) metinde değil, işlem günlüğündeki kaydındadır.
+    isaret: {
+      attrs: { kodlar: {} },
+      inclusive: false,
+      automerge: {
+        markName: 'isaret',
+        parsers: {
+          fromAutomerge: (v) => ({ kodlar: String(v) }),
+          fromProsemirror: (m) => String(m.attrs.kodlar),
+        },
+      },
+      parseDOM: [{ tag: 'span[data-isaret]', getAttrs: (d) => ({ kodlar: (d as HTMLElement).getAttribute('data-isaret') }) }],
+      toDOM: (m) => ['span', { 'data-isaret': m.attrs.kodlar, class: 'isaretli' }, 0],
+    },
   },
 });
 
@@ -89,6 +105,28 @@ export function baglantilar(spans: readonly Span[]): { hedef: string; metin: str
       else { son = { hedef, metin: (sp as { value: string }).value, parcalar: [i] }; sonuc.push(son); }
     } else son = null;
   });
+  return sonuc;
+}
+
+/** Bir işaret değerindeki kodlar. */
+export const isaretKodlari = (v: unknown): string[] => (typeof v === 'string' ? v.split(' ').filter(Boolean) : []);
+
+/** Metindeki işaretli parçalar, sırayla. Aynı işaret metinde birbirinden ayrı iki yerde görünüyorsa (kopyala–yapıştır)
+ *  iki ayrı yer olarak döner; hangisinin asıl olduğu program tarafından seçilmez (§5.7). Paragraf sınırı yeri bölmez. */
+export function isaretYerleri(spans: readonly Span[]): { isaret: string; metin: string }[] {
+  const sonuc: { isaret: string; metin: string }[] = [];
+  const acik = new Map<string, { yer: { isaret: string; metin: string }; son: number }>();
+  let n = -1, araBlok = false;
+  for (const sp of spans) {
+    if (sp.type === 'block') { araBlok = true; continue; }
+    n++;
+    for (const kod of isaretKodlari(sp.marks?.isaret)) {
+      const a = acik.get(kod);
+      if (a && a.son === n - 1) { a.yer.metin += (araBlok ? ' ' : '') + sp.value; a.son = n; }
+      else { const yer = { isaret: kod, metin: sp.value }; sonuc.push(yer); acik.set(kod, { yer, son: n }); }
+    }
+    araBlok = false;
+  }
   return sonuc;
 }
 

@@ -222,6 +222,13 @@ export interface IliskiFarki { kod: string; tur: string; a: KisaKayit; b: KisaKa
 export interface EvrenFarki { kayitlar: KayitFarki[]; iliskiler: IliskiFarki[] }
 export interface Yayim { kod: string; eser: KisaKayit; surum: { kod: string; ad: string }; baski: string; olusturma: number; acik: number }
 export interface YayimCelismesi { anahtar: string; kayit: KisaKayit; baslik: string; once: string | null; sonra: string | null; karar: string | null }
+export interface MetinIsareti {
+  kod: string; kayit: KisaKayit; alan: string; hedef: KisaKayit | null; hedefAlan: string | null; hedefAlanAdi: string | null;
+  iddia: string; kritik: boolean; yerler: string[];
+  /** yerinde: metinde tek yerde · metinde_yok: işaretli parça silinmiş · belirsiz: metinde birden çok yerde ya da başka metinde */
+  durum: 'yerinde' | 'metinde_yok' | 'belirsiz';
+}
+export interface IsaretAlani { kod: string; ad: string; grup: string }
 export interface BelgeSunumu { bicim: 'mektup' | 'gazete' | 'ilan' | 'izin' | 'gunluk' | 'antlasma' | 'mezar'; yazan: string | null; alici: string | null; yer: string | null; muhur: string | null; muhurYazisi: string; imzalayanlar: string[] }
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
@@ -792,6 +799,12 @@ export interface Istekler {
   belgeSunumu(a: { evren: string; kod: string }): { sunum: BelgeSunumu; adlar: Record<string, string> };
   belgeSunumuYaz(a: { evren: string; kod: string; sunum: BelgeSunumu }): void;
   belgeCiktisi(a: { evren: string; kod: string }): { html: string };
+  isaretAlanlari(a: { evren: string; hedef: string }): IsaretAlani[];
+  metinIsaretiOlustur(a: { evren: string; kayit: string; alan: string; hedef: string | null; hedefAlan?: string | null; iddia?: string; kritik?: boolean }): { kod: string };
+  metinIsaretiYaz(a: { evren: string; kod: string; alan: 'hedef' | 'hedefAlan' | 'iddia' | 'kritik'; deger: unknown }): void;
+  metinIsaretiSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  kayitIsaretleri(a: { evren: string; kod: string }): { metindekiler: MetinIsareti[]; buKayda: MetinIsareti[] };
+  isaretOzetleri(a: { evren: string; kodlar: string[] }): { kod: string; hedef: KisaKayit | null; hedefAlanAdi: string | null; iddia: string; kritik: boolean }[];
   yayimla(a: { evren: string; eser: string; baski: string }): { kod: string };
   yayimSil(a: { evren: string; kod: string }): void;
   yayimCelismeleri(a: { evren: string; yayim: string }): YayimCelismesi[];
