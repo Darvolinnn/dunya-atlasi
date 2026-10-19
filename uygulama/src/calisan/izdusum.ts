@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 54;
+export const IZDUSUM_SURUMU = 55;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -763,6 +763,21 @@ CREATE TABLE IF NOT EXISTS surec_sorumlulari(
   veto TEXT NOT NULL DEFAULT '[]',
   PRIMARY KEY(olay, kural)
 );
+CREATE TABLE IF NOT EXISTS iz_kayitlari(
+  kod TEXT PRIMARY KEY,
+  olay TEXT NOT NULL,
+  tur TEXT NOT NULL,
+  ad TEXT NOT NULL,
+  yer TEXT,
+  bitis TEXT,
+  gercek_koken TEXT NOT NULL DEFAULT '',
+  anlatilan_hikaye TEXT NOT NULL DEFAULT '',
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS iz_kayitlari_olay ON iz_kayitlari(olay);
+CREATE INDEX IF NOT EXISTS iz_kayitlari_yer ON iz_kayitlari(yer);
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'gokyuzu_tanimi',
@@ -781,6 +796,7 @@ IZDUSUM_TABLOLARI.push('donusum_kayitlari');
 IZDUSUM_TABLOLARI.push('kalabalik_gozlemleri', 'kalabalik_olaylari');
 IZDUSUM_TABLOLARI.push('harita_kunyeleri');
 IZDUSUM_TABLOLARI.push('surec_sorumlulari');
+IZDUSUM_TABLOLARI.push('iz_kayitlari');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -2216,5 +2232,41 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
       bind: [o, kural, JSON.stringify(temiz)],
     });
     alanYaz(db, i, o, `surec_sorumlu_${sutun}:${kural}`, temiz);
+  },
+  iz_kaydi_yaz(db, i) {
+    const r = i.veri as {
+      kod?: unknown; olay?: unknown; tur?: unknown; ad?: unknown;
+      yer?: unknown; bitis?: unknown; gercekKoken?: unknown; anlatilanHikaye?: unknown; olusturma?: unknown;
+    };
+    if (typeof r.kod !== 'string' || typeof r.olay !== 'string' || (r.tur !== 'kisa_vadeli' && r.tur !== 'kalici') || typeof r.ad !== 'string') return;
+    const mevcut = db.selectObject('SELECT olusturma, silindi FROM iz_kayitlari WHERE kod=?', [r.kod]);
+    const olusturma = typeof r.olusturma === 'number' ? r.olusturma : mevcut ? Number(mevcut.olusturma) : i.zaman;
+    const silindi = mevcut ? (mevcut.silindi as number | null) : null;
+    const yer = typeof r.yer === 'string' && r.yer ? r.yer : null;
+    const bitis = r.bitis ?? null;
+    const gercekKoken = typeof r.gercekKoken === 'string' ? r.gercekKoken : '';
+    const anlatilanHikaye = typeof r.anlatilanHikaye === 'string' ? r.anlatilanHikaye : '';
+    db.exec({
+      sql: `INSERT INTO iz_kayitlari(kod, olay, tur, ad, yer, bitis, gercek_koken, anlatilan_hikaye, olusturma, duzenleme, silindi)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(kod) DO UPDATE SET olay=excluded.olay, tur=excluded.tur, ad=excluded.ad, yer=excluded.yer,
+              bitis=excluded.bitis, gercek_koken=excluded.gercek_koken, anlatilan_hikaye=excluded.anlatilan_hikaye, duzenleme=excluded.duzenleme`,
+      bind: [r.kod, r.olay, r.tur, r.ad, yer, bitis ? JSON.stringify(bitis) : null, gercekKoken, anlatilanHikaye, olusturma, i.zaman, silindi],
+    });
+    alanYaz(db, i, r.kod, 'iz_kaydi', {
+      olay: r.olay, tur: r.tur, ad: r.ad, yer, bitis, gercekKoken, anlatilanHikaye, olusturma,
+    });
+  },
+  iz_kaydi_sil(db, i) {
+    const { kod } = i.veri as { kod?: unknown };
+    if (typeof kod !== 'string') return;
+    db.exec({ sql: 'UPDATE iz_kayitlari SET silindi=?, duzenleme=? WHERE kod=?', bind: [i.zaman, i.zaman, kod] });
+    alanYaz(db, i, kod, 'iz_kaydi_silindi', true);
+  },
+  iz_kaydi_geri_yukle(db, i) {
+    const { kod } = i.veri as { kod?: unknown };
+    if (typeof kod !== 'string') return;
+    db.exec({ sql: 'UPDATE iz_kayitlari SET silindi=NULL, duzenleme=? WHERE kod=?', bind: [i.zaman, kod] });
+    alanYaz(db, i, kod, 'iz_kaydi_silindi', false);
   },
 };

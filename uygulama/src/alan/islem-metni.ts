@@ -205,6 +205,9 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   harita_kunye_yaz: (v) => `“${v.haritaAd || 'Harita'}” haritası: künye ${v.tanim ? 'kaydedildi' : 'kaldırıldı'}`,
   surec_sorumlu_adim_yaz: (v, ad) => `${ad(v.olay)}: “${v.kuralAd ?? 'süreç'}” kuralında “${v.adimAd ?? 'adım'}” adımının sorumlusu ${v.sorumlu ? ad(v.sorumlu) + ' olarak kaydedildi' : 'kaldırıldı'}`,
   surec_sorumlu_engel_yaz: (v, ad) => `${ad(v.olay)}: “${v.kuralAd ?? 'süreç'}” kuralında ${v.engelTuru === 'veto' ? 'fiilî veto' : 'durdurabilir'} listesi güncellendi`,
+  iz_kaydi_yaz: (v, ad) => `${ad(v.olay)}: “${v.ad}” ${v.tur === 'kisa_vadeli' ? 'kısa vadeli sonucu' : 'kalıcı izi'} kaydedildi`,
+  iz_kaydi_sil: (v, ad) => `${ad(v.olay)}: “${v.ad ?? 'iz kaydı'}” kaldırıldı`,
+  iz_kaydi_geri_yukle: (v, ad) => `${ad(v.olay)}: “${v.ad ?? 'iz kaydı'}” geri getirildi`,
 };
 
 /** Kullanıcının yaptığı bir değişiklik sayılmayan, başka bir işlemin parçası olan adımlar (listelerde gösterilmez). */

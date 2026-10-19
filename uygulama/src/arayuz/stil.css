@@ -676,3 +676,11 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .surec-sorumlu-bolumu { margin-top: .75rem; border-top: 1px solid var(--cizgi); padding-top: .5rem; display: flex; flex-direction: column; gap: .5rem; }
 .surec-sorumlu-karti { display: flex; flex-direction: column; gap: .5rem; }
 .surec-sorumlu-engel { margin-top: .25rem; display: flex; flex-direction: column; gap: .25rem; }
+
+/* Geçmişin bugünkü izleri (F11) */
+.kalici-iz-formu { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+.kalici-iz-gruplar { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.kalici-iz-listesi { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.kalici-iz-karti { padding: 6px 8px; border-left: 3px solid var(--cizgi, #ccc); display: flex; flex-direction: column; gap: 4px; }
+.kalici-iz-katman-listesi { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.kalici-iz-katman > h3 { margin: 0 0 4px; }

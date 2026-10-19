@@ -48,6 +48,7 @@ import { KimlikBolumu } from './Kimlik';
 import { KullanildigiYerler } from './MetinKullanim';
 import { DonusumBolumu } from './Donusum';
 import { KalabalikBolumu } from './Kalabalik';
+import { KaliciIzBolumu } from './KaliciIz';
 
 /** Durum geçmişi tutulmayan türler (anlatı parçaları ve notlar). */
 const DURUMSUZ = new Set(['sahne', 'bolum', 'eser', 'not']);
@@ -205,6 +206,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {(kayit.tur === 'makam' || kayit.tur === 'siyasi') && <VerasetBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {GUNDELIK_YERLERI.includes(kayit.tur) && <GundelikBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {kayit.tur === 'olay' && <OlaySurecBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+        <KaliciIzBolumu istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} surum={surum} saltOkunur={bag?.tur === 'surum'} />
         {!DURUMSUZ.has(kayit.tur) && <DurumGecmisi istemci={istemci} evren={evren} kayit={kayit} />}
         {kayit.tur !== 'not' && <BilinenlerBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
