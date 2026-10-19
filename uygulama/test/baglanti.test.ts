@@ -40,6 +40,11 @@ describe('bağlantılar', () => {
     expect(hedef).toBe(kale);
     expect(h.baglananlar({ evren, kod: kale })).toEqual([{ kod: velkar, ad: 'Velkar', tur: 'karakter', ifadeler: ["Kuzey Kalesi'nden"] }]);
     expect(h.bahsedilenler({ evren }).map((k) => [k.ad, k.anilma])).toEqual([['Kuzey Kalesi', 1]]);
+    // Anlatı sözleşmesinde bilinçli olarak açık bırakılan kayıt hatırlatılmaz (F15).
+    const madde = h.sozlesmeMaddeYaz({ evren, tanim: { metin: 'Kalenin içi anlatılmayacak.', tur: 'acik_birakildi', karar: 'kesin', kapsam: { tur: 'evren' }, bagliKayitlar: [kale] } }).kod;
+    expect(h.bahsedilenler({ evren })).toEqual([]);
+    h.sozlesmeMaddeSil({ evren, kod: madde });
+    expect(h.bahsedilenler({ evren }).map((k) => k.ad)).toEqual(['Kuzey Kalesi']);
     // Kalenin metni yazılınca listeden çıkar; bağlayan kayıt çöpe gidince bağlantı sayılmaz.
     yaz(h, evren, kale, p('Taş duvarlar.'));
     expect(h.bahsedilenler({ evren })).toEqual([]);

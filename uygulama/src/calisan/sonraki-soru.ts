@@ -10,6 +10,7 @@ import { asamalarOku, rotalar } from './yol';
 import { enKisaRota, haberCikisiOku, kanalOku } from './haber';
 import { tanimOku as gokyuzuTanimi } from './gokyuzu';
 import { tarihDegeri } from './sablon';
+import { acikBirakilanKayitlar } from './anlati-sozlesmesi';
 
 export type Hesap = SonrakiSoru['hesap'];
 export const HESAP_ADLARI: Record<Hesap, string> = {
@@ -141,6 +142,10 @@ export function sonrakiSoru(e: EvrenVt, b: SoruBaglami, hesap: Hesap, kodGirdi: 
     const tarih = b.olayTarihi(kod);
     girdiler.push(tarih?.eksen ? var_('Tarih', tarih.ifade, kayit) : eksik('Tarih', 'Kaydın tarihi yazılmamış ya da takvime çevrilemiyor.', kayit, TARIH_KULLANIMI));
   }
+  // Anlatı sözleşmesinde bilinçli olarak açık bırakılan kayda ait girdi eksik sayılmaz (F15).
+  const acik = acikBirakilanKayitlar(e);
+  girdiler = girdiler.map((g) => g.durum !== 'var' && g.kayit && acik.has(g.kayit.kod)
+    ? { ...g, durum: 'var', aciklama: `Anlatı sözleşmesinde bilinçli olarak açık bırakıldı. (${g.aciklama})`, kullanim: [] } : g);
   const eksikler = girdiler.filter((g) => g.durum !== 'var');
   return {
     hesap, ad: HESAP_ADLARI[hesap], kayit, girdiler, hazir: !eksikler.some((g) => g.durum === 'eksik'),

@@ -61,6 +61,11 @@ describe('bir sonraki yararlı soru (F33)', () => {
     let y = h.sonrakiSoru({ evren, kod: kisi, hesap: 'yas' });
     expect(y.siradaki?.ad).toBe('Doğum');
     expect(y.siradaki?.kullanim).toHaveLength(3);
+    // Anlatı sözleşmesinde açık bırakılan kişinin doğumu eksik sayılmaz (F15).
+    const madde = h.sozlesmeMaddeYaz({ evren, tanim: { metin: 'Kişinin yaşı söylenmeyecek.', tur: 'acik_birakildi', karar: 'kesin', kapsam: { tur: 'evren' }, bagliKayitlar: [kisi] } }).kod;
+    y = h.sonrakiSoru({ evren, kod: kisi, hesap: 'yas' });
+    expect([y.hazir, y.girdiler[0].aciklama]).toEqual([true, expect.stringContaining('bilinçli olarak açık bırakıldı')]);
+    h.sozlesmeMaddeSil({ evren, kod: madde });
     h.kayitAlanYaz({ evren, kod: kisi, alan: 'dogum', deger: '400' });
     y = h.sonrakiSoru({ evren, kod: kisi, hesap: 'yas', tarih: '430' });
     expect(y.hazir).toBe(true);

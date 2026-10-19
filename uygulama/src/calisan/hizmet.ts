@@ -1350,13 +1350,16 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   /** "Bahsedilen ama yazılmamış": bağlantı verilmiş ama metni boş kayıtlar (§5.1). */
   bahsedilenler({ evren }: { evren: string }): (KayitOzeti & { anilma: number })[] {
     const e = this.evren(evren);
+    const acik = sozlesme.acikBirakilanKayitlar(e);
     return e.db.selectObjects(
       `SELECT k.kod, k.tur, k.ad, k.ozet, k.karar, k.lakaplar, k.duzenleme, count(*) anilma
        FROM kayitlar k JOIN baglantilar b ON b.hedef=k.kod JOIN kayitlar kk ON kk.kod=b.kaynak AND kk.silindi IS NULL
        LEFT JOIN metinler m ON m.kayit=k.kod AND m.alan='govde'
        WHERE k.silindi IS NULL AND trim(coalesce(m.duz,''))='' GROUP BY k.kod ORDER BY anilma DESC, k.duzenleme DESC`)
       .map((r) => ({ kod: r.kod as string, tur: r.tur as string, ad: r.ad as string, ozet: r.ozet as string, karar: r.karar as string,
-        lakaplar: JSON.parse(r.lakaplar as string), duzenleme: Number(r.duzenleme), silindi: null, anilma: Number(r.anilma) }));
+        lakaplar: JSON.parse(r.lakaplar as string), duzenleme: Number(r.duzenleme), silindi: null, anilma: Number(r.anilma) }))
+      // Anlatı sözleşmesinde bilinçli olarak açık bırakılan kayıtlar "yazılmamış" diye hatırlatılmaz (F15).
+      .filter((k) => !acik.has(k.kod));
   }
 
   /** Bir bağlantının hedefi ve görünen ifadesi değişmeden önce kaynakların metinleri (ad düzeltmesi için). */
