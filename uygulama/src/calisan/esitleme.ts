@@ -5,6 +5,8 @@
 // - görüntü:  evrenin bütün işlemleri; hangi işlemlere kadar olduğunu söyler. Yeni kurulum önce bunu indirir.
 // - kurulum:  her kurulumun kendi durum dosyası: adı, son görülme, bu evrende neye kadar aldığı.
 // - medya:    içerikle adlandırılmış görseller (§10.12).
+// Deneme kopyaları (§9.7) aynı düzenle, kendi kodlarıyla eşitlenir; dosyalarında `ana` özelliği bağlı oldukları
+// evreni gösterir. Bir deneme kopyası, ana evreni eşitlenirken ardından eşitlenir.
 // Her kurulum yalnızca kendi dosyalarını yazar ve siler; başkasının dosyasına dokunmaz (§10.2).
 import { VERI_BICIMI, type Islem } from '../alan/islem';
 import { kodGecerliMi } from '../alan/kod';
@@ -40,6 +42,11 @@ export interface EsitlemeErisimi {
   evrenler(): { kod: string; ad: string }[];
   islemleriAl(evren: string, islemler: Islem[]): { alinan: number; bekleyen: number };
   evreniDisaridanKur(kod: string, islemler: Islem[]): void;
+  /**
+   * Evrenin silinmemiş deneme kopyaları: açıldıkları andaki görülenler (`gordu`) ve bu cihazda bulunup bulunmadığı.
+   * Bu cihazda olmayan bir kopya ancak Drive'da dosyası varsa kurulur.
+   */
+  dallar(evren: string): { kod: string; gordu: Record<string, number>; yerel: boolean }[];
 }
 
 interface KurulumDosyasi {
@@ -66,7 +73,7 @@ export interface EvrenEsitlemeDurumu {
   cihazlar: CihazDurumu[];
 }
 
-const ozellik = (evren: string, tur: string, ek: Record<string, string> = {}) => ({ uygulama: UYGULAMA, evren, tur, ...ek });
+const ozellikYap = (evren: string, tur: string, ek: Record<string, string> = {}) => ({ uygulama: UYGULAMA, evren, tur, ...ek });
 
 export class Esitleme {
   constructor(private readonly x: EsitlemeErisimi, private readonly tasiyici: Tasiyici | null) {}
@@ -88,7 +95,7 @@ export class Esitleme {
     const sonuc = new Map<string, { kod: string; ad: string; sonGorulme: number }>();
     for (const d of await this.t.listele({ uygulama: UYGULAMA, tur: 'kurulum' })) {
       const evren = d.ozellikler.evren;
-      if (!kodGecerliMi(evren) || yerel.has(evren)) continue;
+      if (!kodGecerliMi(evren) || yerel.has(evren) || d.ozellikler.ana) continue; // deneme kopyası ayrı bir evren değildir
       const zaman = Number(d.ozellikler.zaman) || 0;
       const onceki = sonuc.get(evren);
       if (!onceki || onceki.sonGorulme < zaman) sonuc.set(evren, { kod: evren, ad: d.ozellikler.evrenAdi || 'Adsız evren', sonGorulme: zaman });
@@ -127,7 +134,14 @@ export class Esitleme {
       }
       return false;
     };
-    if (bosluk(elde) || !Object.keys(elde).length) {
+    // Parçaların ulaşamadığı işlemleri bir görüntü kapsıyorsa (ör. parçası hiç yüklenmemiş bir yazarın işlemleri) görüntü gerekir.
+    const eksikKapsam = () => {
+      const k = this.goruntuKapsami(dosyalar);
+      const ulasilan = { ...elde };
+      for (const p of [...parcalar].sort((a, b) => a.ilk - b.ilk)) if (p.ilk <= (ulasilan[p.kurulum] ?? 0) + 1) ulasilan[p.kurulum] = Math.max(ulasilan[p.kurulum] ?? 0, p.son);
+      return Object.entries(k).some(([x, s]) => (ulasilan[x] ?? 0) < s);
+    };
+    if (bosluk(elde) || !Object.keys(elde).length || eksikKapsam()) {
       const goruntu = dosyalar.filter((d) => d.ozellikler.tur === 'goruntu').sort((a, b) => Number(b.ozellikler.zaman) - Number(a.ozellikler.zaman))[0];
       if (goruntu) {
         const g = await this.dosyaOku(goruntu);
@@ -155,8 +169,22 @@ export class Esitleme {
   /** Bir evreni eşitler: önce alır, sonra gönderir; görseller, görüntü, kurulum dosyası ve temizlik. */
   async evreniEsitle(evren: string): Promise<void> {
     if (!this.esitlenirMi(evren)) return;
+    await this.birimEsitle(evren, null);
+    // Deneme kopyaları: bu cihazda olanlar ya da Drive'da dosyası olanlar.
+    for (const d of this.x.dallar(evren)) {
+      if (!d.yerel && !(await this.t.listele({ uygulama: UYGULAMA, evren: d.kod })).length) continue;
+      // Kopyanın açıldığı andaki işlemler ana evrenle birlikte zaten gider; gönderilecekler ondan sonrakilerdir.
+      const ben = this.kurulum.kod;
+      if (this.ayar(`gonderilen:${d.kod}`) === undefined) this.kurulum.ayarYaz(`gonderilen:${d.kod}`, String(d.gordu[ben] ?? 0));
+      await this.birimEsitle(d.kod, evren);
+    }
+  }
+
+  /** Bir evreni ya da deneme kopyasını (`ana` verilirse) eşitler. */
+  private async birimEsitle(evren: string, ana: string | null): Promise<void> {
     const e = this.x.evrenVt(evren);
     const ben = this.kurulum.kod;
+    const ozellik = (kod: string, tur: string, ek: Record<string, string> = {}) => ozellikYap(kod, tur, ana ? { ...ek, ana } : ek);
     let dosyalar = await this.t.listele({ uygulama: UYGULAMA, evren });
 
     // 1. Al.
@@ -185,7 +213,7 @@ export class Esitleme {
     this.kurulum.ayarYaz(`gonderilen:${evren}`, String(gonderilen));
 
     // 3. Görseller: eksik olanlar iki yönde (Windows ve tablette hepsi indirilir, §10.12).
-    await this.medyaEsitle(evren, e, dosyalar);
+    await this.medyaEsitle(evren, e, dosyalar, ozellik);
 
     // 4. Kurulum dosyaları: öbür cihazların adları ve neye kadar aldıkları.
     const kurulumDosyalari = await this.kurulumDosyalari(dosyalar);
@@ -269,7 +297,7 @@ export class Esitleme {
     return sonuc;
   }
 
-  private async medyaEsitle(evren: string, e: EvrenVt, dosyalar: UzakDosya[]) {
+  private async medyaEsitle(evren: string, e: EvrenVt, dosyalar: UzakDosya[], ozellik: typeof ozellikYap) {
     const depo = this.x.medya;
     if (!depo) return;
     const uzak = new Map(dosyalar.filter((d) => d.ozellikler.tur === 'medya').map((d) => [d.ozellikler.ad, d]));

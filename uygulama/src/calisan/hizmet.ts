@@ -124,7 +124,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
 
   /**
    * Kod bir evrenin adlandırılmış sürümüyse o sürümü salt okunur olarak kurar (bellekte, günlükten). Deneme kopyasıysa
-   * dalın kendi dosyasını açar; dosya bu cihazda yoksa dalın açıldığı andaki hâlden kurulur.
+   * dalın kendi dosyasını açar; dosya bu cihazda yoksa dalın açıldığı andaki hâlden kurulur. Dalda her cihaz kendi
+   * kurulum koduyla yazar; böylece iki cihazın dalda yaptıkları eşitlenince çakışmaz (eski dallarda yazar dalın kodudur).
    */
   private bagliAc(kod: string): EvrenVt {
     for (const x of this.kurulum.evrenler()) {
@@ -133,8 +134,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       const d = s ? undefined : ana.db.selectObject('SELECT gordu FROM dallar WHERE kod=?', [kod]);
       if (!s && !d) continue;
       const gordu = JSON.parse((s ?? d)!.gordu as string) as Record<string, number>;
-      const e = s ? new EvrenVt(this.gecici(), this.kurulum.kod) : new EvrenVt(this.ac(`/evren-${kod}.db`), kod);
+      const e = new EvrenVt(s ? this.gecici() : this.ac(`/evren-${kod}.db`), this.kurulum.kod);
       if (e.islemSayisi() === 0) e.disaridanAl(ana.islemler().filter((i) => i.sira <= (gordu[i.kurulum] ?? 0)));
+      if (!s) this.kurulum.ayarYaz(`dal_yerel:${kod}`, '1');
       this.acik.set(kod, e);
       this.bagli.set(kod, { tur: s ? 'surum' : 'dal', evren: x.kod });
       return e;
@@ -244,6 +246,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       kurulum: this.kurulum, medya: this.medya, evrenVt: (k) => this.evren(k), evrenler: () => this.kurulum.evrenler(),
       islemleriAl: (evren, islemler) => this.islemleriAl({ evren, islemler }),
       evreniDisaridanKur: (kod, islemler) => { this.evreniDisaridanKur({ kod, islemler }); },
+      dallar: (evren) => this.evren(evren).db.selectObjects('SELECT kod, gordu FROM dallar WHERE silindi IS NULL ORDER BY kod')
+        .map((r) => ({ kod: r.kod as string, gordu: JSON.parse(r.gordu as string) as Record<string, number>, yerel: this.kurulum.ayar(`dal_yerel:${r.kod}`) === '1' })),
     };
   }
 
@@ -2605,7 +2609,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       taban.disaridanAl(ana.islemler().filter((i) => i.sira <= (gordu[i.kurulum] ?? 0)));
       this.tabanlar.set(dal, taban);
     }
-    return { taban, dal: this.evren(dal), ana, dalKodu: dal };
+    return { taban, dal: this.evren(dal), ana, gordu: JSON.parse(r.gordu as string) as Record<string, number> };
   }
   /** Dalda ne değişti, ana evrende ne değişti (ikisi de ortak başlangıca göre) ve hangi birimler taşınabilir. */
   dalFarki({ evren, dal }: { evren: string; dal: string }) { return dalMod.dalFarki(this.dalUclari(evren, dal)); }

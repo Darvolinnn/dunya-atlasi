@@ -11,10 +11,11 @@ import type { EvrenVt } from './evren-vt';
 import { evrenFarki } from './fark';
 import { metinBelgesi } from './izdusum';
 
-export interface DalUclari { taban: EvrenVt; dal: EvrenVt; ana: EvrenVt; dalKodu: string }
+/** `gordu`: dalın açıldığı andaki görülenler (ortak başlangıç). */
+export interface DalUclari { taban: EvrenVt; dal: EvrenVt; ana: EvrenVt; gordu: Record<string, number> }
 
-/** Dalda yazılmış işlemler (ortak başlangıçtan sonra), yazıldıkları sırayla. */
-export const dalIslemleri = (u: DalUclari): Islem[] => u.dal.islemler().filter((i) => i.kurulum === u.dalKodu);
+/** Dalda yazılmış işlemler (ortak başlangıçtan sonra, hangi cihazda yazılmış olursa olsun), uygulama sırasıyla. */
+export const dalIslemleri = (u: DalUclari): Islem[] => u.dal.islemler().filter((i) => i.sira > (u.gordu[i.kurulum] ?? 0));
 
 const etkin = (e: EvrenVt, kod: string) => e.db.selectValue('SELECT 1 FROM kayitlar WHERE kod=? AND silindi IS NULL', [kod]) !== undefined;
 const var_ = (e: EvrenVt, kod: string) => e.db.selectValue('SELECT 1 FROM kayitlar WHERE kod=?', [kod]) !== undefined;

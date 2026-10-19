@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **45**. Sınama: 56 dosya, 304 sınama, hepsi geçiyor.*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **45**. Sınama: 57 dosya, 307 sınama, hepsi geçiyor.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -46,7 +46,8 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | F15 | Anlatı ve evren sözleşmesi (GPT paketi, birleştirildi; açık bırakılan kayıtlar "bahsedilenler" ve F33'te eksik sayılmıyor) | `dfa30d3`, `890822f` |
 | F26 | Haklar, yetkiler, yükümlülükler (GPT paketi, birleştirildi) | `6f1851c` |
 | F31 | Keşif sorularına ikinci şablon: aynı şey üzerinde çelişen hak iddiaları | `4430a31` |
-| F32 | Bakım ve tekrarlar (Argon paketi, birleştirildi) | bu dosyayı güncelleyen kayıt |
+| F32 | Bakım ve tekrarlar (Argon paketi, birleştirildi) | `9809403` |
+| §9.7 | Deneme kopyalarının cihazlar arası eşitlenmesi | bu dosyayı güncelleyen kayıt |
 
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
@@ -59,7 +60,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | `paket/sahne-okur` (GPT) | Sahne panelinde okur bilgisi (§5.5, §3.6) | yok | yok | `sahneBaglami`'nda `bakisBilgileri:` satırının ardına ekler |
 | `paket/kucuk-duzeltmeler` (Argon) | Göreli tarih iyelik eki, gökyüzü tarih hatasının yeri | yok | yok | `turkce-ek.ts`'e yeni işlev |
 
-Ana ajan aynı anda deneme kopyalarının eşitlenmesini (§3.3 boşluk 1) yapıyor. Promptlar proje klasöründe `paket-promptlari/` altındadır.
+Promptlar proje klasöründe `paket-promptlari/` altındadır.
 
 Bu paketlerin tam promptları kullanıcının proje klasöründedir; depoda değildir. Prompt yazarken kalıp olarak bu tablodaki bilgiler ve §6 yeterlidir.
 
@@ -68,7 +69,6 @@ Bu paketlerin tam promptları kullanıcının proje klasöründedir; depoda değ
 1. **F35 baskı ve uyarlama karşılaştırma**: yazar iki eser (ya da eser ile deneme kopyası) arasında eşlemeler tanımlar (iki karakter → tek karakter, olay sırası değişimi); sonraki değişiklikte etkilenebilecek eşlemeler listelenir. Hiçbir dal ötekini kendiliğinden güncellemez. Dallar için `calisan/dal.ts`, eser yapısı için `calisan/anlati.ts`.
 2. **F16 kural atölyesi**: önce **TK8** kararı gerekir. Bu karar kullanıcınındır; kodlamadan önce sor.
 3. **Bilinen boşluklar:**
-   - Deneme kopyası (dal) değişiklikleri yalnızca o cihazda kalıyor, eşitlenmiyor.
    - Göreli tarihlerde Türkçe iyelik eki eksik.
    - Zaman akışları arasında yaşanan zaman hesaplanmıyor.
    - Sahne panelinde okur bilgisi gösterilmiyor.
@@ -95,6 +95,8 @@ Yeni bir yazma isteği eklemek (sırayla):
 6. `alan/islem-metni.ts`: işlem günlüğünde görünen Türkçe açıklama.
 7. Arayüz bileşeni ve `KayitEkrani.tsx` ya da `EvrenEkrani.tsx` satırı; gerekirse `arayuz/stil.css` sonuna sınıflar.
 8. `test/<ad>.test.ts`: bellekte SQLite ile `Hizmet` (kalıp: `test/delil.test.ts`). İki cihaz çatışması kalıbı: `test/anlatim.test.ts`.
+
+Deneme kopyaları: dalda her cihaz kendi kurulum koduyla yazar (eski dallarda yazar dalın kodudur); dalın kendi işlemleri `gordu`'dan (açıldığı an) sonraki işlemlerdir (`dalIslemleri`). Eşitlemede dal, ana evreninin ardından kendi koduyla ve Drive dosyalarında `ana` özelliğiyle eşitlenir; bu cihazda hiç açılmamış ve Drive'da dosyası olmayan dal kurulmaz, silinen dal eşitlenmez. Eşitleme ekranı dalların bekleyen değişikliklerini ayrıca göstermiyor.
 
 Kurallar: veritabanına yalnızca `EvrenVt.islemYap()` (hizmette `this.yaz`) yazar; serbest metinden anlam çıkarılmaz; kayıt kodları `yonlendir` ile birleşmiş kayda çevrilir; yeni kod `yeniKod()`.
 
