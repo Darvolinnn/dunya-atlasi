@@ -245,14 +245,19 @@ export function useSahneBaglami(istemci: Istemci, evren: string, sahne: string |
   return useYukle<SahneBaglami | null>(istemci, evren, () => (sahne ? istemci.iste('sahneBaglami', { evren, sahne, parca }).catch(() => null) : Promise.resolve(null)), [sahne, parca])[0];
 }
 
-export function SahneBaglamPaneli({ evren, baglam, parca = false }: { evren: string; baglam: SahneBaglami | null; parca?: boolean }) {
+/** Sahnede tarih, yer, bakış, anlatıcı, odak ve sahnedeki kimse yoksa bağlam boştur. */
+export const sahneBaglamiBos = (b: SahneBaglami | null) =>
+  !!b && !b.tarih && !b.yer && !b.bakis && !b.anlatici && !b.odak && !b.katilimcilar.length;
+
+export function SahneBaglamPaneli({ evren, baglam, parca = false, bos = false }: { evren: string; baglam: SahneBaglami | null; parca?: boolean; bos?: boolean }) {
   if (!baglam) return null;
   const { tarih, yer, katilimcilar } = baglam;
   return (
     <section class="baglam-paneli" aria-label="Sahnenin bağlamı">
       <h2>{parca ? 'İmlecin bulunduğu parçanın bağlamı' : 'Sahnenin bağlamı'}</h2>
       {parca && <p class="soluk kucuk">Bu parçanın kendi tarihi, yeri ya da bakış açısı var ve aşağıdakiler ona göre gösteriliyor. İmleç parçanın dışına çıkınca sahnenin bağlamına dönülür.</p>}
-      {tarih
+      {bos ? <p class="soluk kucuk">Tarih ve mekân eklediğinizde sahnenin o andaki bağlamı burada görünür.</p>
+        : tarih
         ? <p class="soluk kucuk">Aşağıdakiler sahnenin evren tarihine göre gösteriliyor: <strong>{tarih.ifade}</strong>. “Belki” işaretli olanların bu tarihte geçerli olup olmadığı belli değil.</p>
         : <p class="uyari kucuk">Bu sahnenin evren tarihi girilmemiş, bu yüzden aşağıdakiler belirli bir ana göre süzülmedi. Tarihi girdiğinizde o andaki durum gösterilir.</p>}
       {yer && (
@@ -261,7 +266,7 @@ export function SahneBaglamPaneli({ evren, baglam, parca = false }: { evren: str
           <DurumOzeti durumlar={yer.durumlar} evren={evren} />
         </div>
       )}
-      {katilimcilar.length === 0 && !yer && <p class="soluk kucuk">Mekânı, bakış açısını ya da sahnedekileri girdiğinizde o andaki durumları burada toplanır.</p>}
+      {!bos && katilimcilar.length === 0 && !yer && <p class="soluk kucuk">Mekânı, bakış açısını ya da sahnedekileri girdiğinizde o andaki durumları burada toplanır.</p>}
       {baglam.bakis && <BakisBilgileri evren={evren} bakis={baglam.bakis} liste={baglam.bakisBilgileri} tarihVar={!!tarih} />}
       <SahneOkurPaneli evren={evren} baglam={baglam} />
       {katilimcilar.map((k) => (
@@ -559,11 +564,21 @@ function OkurSirasiTablosu({ sira, baglam, evren }: { sira: SahneOkurSirasi; bag
 }
 
 function SahneOkurPaneli({ evren, baglam }: { evren: string; baglam: SahneBaglami }) {
+  const aciklama = <p class="soluk kucuk">Okur için zaman evren tarihine göre değil, okuma sırasına göre ilerler. Okurun sahneye girerken bildikleri ile bu sahnede öğrendikleri ayrı gösterilir. Yalnızca sizin kaydettiğiniz bilgiler görünür; program metinden ya da ipuçlarından bilgi çıkarmaz.</p>;
+  const { siralar, uyari } = baglam.okurBilgileri;
+  // Okur bilgisi yokken bölüm katlı durur; içerik oluşunca açık gösterilir.
+  if (!uyari && siralar.every((s) => !s.once.length && !s.buSahnede.length) && !(baglam.bakis && baglam.bakisBilgileri.length)) {
+    return <details class="okur-bilgisi-katli" aria-label="Okurun bilgisi">
+      <summary><strong>Okurun bilgisi</strong> <span class="soluk kucuk">· bu sahneye kadar kayıt yok</span></summary>
+      {aciklama}
+      {siralar.map((s) => <OkurSirasiTablosu key={s.kod} sira={s} baglam={baglam} evren={evren} />)}
+    </details>;
+  }
   return <section aria-label="Okurun bilgisi">
     <h3>Okurun bilgisi</h3>
-    <p class="soluk kucuk">Okur için zaman evren tarihine göre değil, okuma sırasına göre ilerler. Okurun sahneye girerken bildikleri ile bu sahnede öğrendikleri ayrı gösterilir. Yalnızca sizin kaydettiğiniz bilgiler görünür; program metinden ya da ipuçlarından bilgi çıkarmaz.</p>
-    {baglam.okurBilgileri.uyari && <p class="uyari kucuk">{baglam.okurBilgileri.uyari}</p>}
-    {baglam.okurBilgileri.siralar.map((s) => <OkurSirasiTablosu key={s.kod} sira={s} baglam={baglam} evren={evren} />)}
+    {aciklama}
+    {uyari && <p class="uyari kucuk">{uyari}</p>}
+    {siralar.map((s) => <OkurSirasiTablosu key={s.kod} sira={s} baglam={baglam} evren={evren} />)}
     {baglam.bakis && <p class="soluk kucuk">Yan yana gösterim yalnızca kaydedilmiş iki listeyi karşılaştırır. “Kayıtlı bilgi yok” yazması, “bilmiyor” demek değildir.</p>}
   </section>;
 }

@@ -551,6 +551,8 @@ Açık sahnenin (ya da imlecin bulunduğu bağlam parçasının) evren tarihine,
 - Bakış açısı karakterinin o anda bildikleri ve eriştiği haberler.
 - Tarih girilmemişse bunu açıkça söyler.
 
+Sahnede tarih, mekân, bakış açısı, anlatıcı, odak karakter ve sahnedeki kimse yoksa sahne **boştur**. Yazma düzeninde (§5.10) panel, kullanıcı açıp kapatmayı seçmediyse boş sahnede kapalı, dolu sahnede açık başlar; seçim cihazda hatırlanır. Kapalıyken başlıktaki düğme boş sahnede "Bağlam ekle", doluda "Bağlamı göster" der. Boş sahnede panel uzun açıklamalar yerine tek cümle söyler; ayrıntı sayfa rehberindedir (§12.4). Okurun bilgisi, kayıt yokken katlı durur.
+
 ### 5.6 Süreklilik defteri
 
 Sahneye bağlı küçük bir panel: sahne başındaki durum, sahne içindeki değişimler ve sahne sonundaki durum. Yalnızca yazarın izlemek istediği ayrıntılar (yaralı el, kimdeki kılıç, kilitli kapı, ok sayısı) izlenir. Değişiklikleri kullanıcı işaretler, program metinden tahmin etmez.
@@ -600,7 +602,7 @@ Aynı verinin farklı görünümleridir; veri kopyalanmaz.
 
 Yazı merkezdedir (K24):
 - **Evren açılınca yazma düzeni gelir.** Solda sabit bir gezinti çubuğu bulunur: Yaz, Masa, Kayıtlar, Haritalar, Takvim, Görünümler ve İnceleme; az kullanılan sayfalar (çalışma masaları, açık meseleler, şablonlar, bahsedilenler, çöp kutusu, geçmiş, sürümler, yedek) "Diğer" altında katlanır.
-- **Yaz** seçiliyken gezinti çubuğunda eserlerin ağacı (eser › bölüm › sahne) görünür; yeni eser, bölüm ve sahne buradan eklenir. Seçili sahnenin metni ortada geniş ve okunaklı durur; sağda dar ve kapatılabilir bir bağlam paneli sahnenin tarihini, mekânını, bakış açısını, sahnedekileri ve o anki bağlamı (§5.5) gösterir. Sahnenin bütün alanları kayıt sayfasındadır; yazma ekranından bir bağlantıyla açılır.
+- **Yaz** seçiliyken gezinti çubuğunda eserlerin ağacı (eser › bölüm › sahne) görünür; yeni eser, bölüm ve sahne buradan eklenir. Seçili sahnenin metni ortada geniş ve okunaklı durur; sağda dar ve kapatılabilir bir bağlam paneli sahnenin tarihini, mekânını, bakış açısını, sahnedekileri ve o anki bağlamı (§5.5) gösterir. Gezinti çubuğunun altında kayıt, eşitleme ve yedek özeti durur (§10.8). Sahnenin bütün alanları kayıt sayfasındadır; yazma ekranından bir bağlantıyla açılır.
 - **Kayıt sayfasında** ad, tür, karar durumu, tarih, şablon alanları, kısa özet, metin ve ilişkiler açık durur; öbür bölümler türüne göre "Diğer bölümler" altında katlanır ve bir dokunuşla açılır.
 
 Yazma ekranında bütün evrenin panelleri ve uyarıları bulunmaz.
@@ -858,6 +860,7 @@ Dört sürüm ayrıdır: **uygulama sürümü**, **veri biçimi sürümü**, **k
 ### 10.8 Görünen durum ve geri alma
 
 - **Doğrulanabilir eşitleme durumları** her zaman görünür: *Bu cihaza kaydedildi · Drive'a gönderildi · Tablet / bilgisayar / iPhone şu değişikliğe kadar aldı · Yedek doğrulandı*. Drive'a gönderilmiş olmak öbür cihazın aldığı anlamına gelmez; çevrimdışı bir cihaz için "bütün cihazlar güncel" yazılmaz.
+- **Evren içindeki durum özeti** gezinti çubuğunun altında katlı durur. Başlığı en zayıf halkayı söyler ("Yalnız bu cihazda kayıtlı", "3 değişiklik gönderilecek", "Kaydedildi ve eşitlendi"); açılınca bu cihazdaki kayıt, Drive durumu ve son doğrulanan yedek ayrı satırlarda ve kendi eylemleriyle görünür. Eşitleme ile yedeğin farkı tek cümleyle söylenir. Yedek hiç yoksa ya da yedi günden eskiyse satır sarıdır; yazıyı kesen bir uyarı çıkmaz.
 - **Yalnızca bu cihazda olan değişiklikler** ayrıca görünür: "Son eşitlemeden beri 3 değişiklik yalnızca bu telefonda." Cihazın yerel verisi kaybolursa yalnızca Drive'a başarıyla gönderilmiş kısım geri gelir; gönderilmemiş iş uzak kopyada yoktur.
 - **Google oturumu düşünce yazma durmaz.** Üst çubukta "eşitlemek için dokun" görünür; dokununca izin yenilenir ve biriken değişiklikler gönderilir. Oturum modeli TK3'tür ve deneyle kesinleşir.
 - **Geri almanın türleri:** yerel geri al · eşitlenmiş bir değişikliğin tersini yeni işlem olarak yapmak (başka cihazın sonraki doğru işlemleri silinmez) · eski bir yedeği önce ayrı bir **kurtarma alanında** açıp incelemek ve ancak sonra mevcut evrenin yerine koymak. Dışarı yayımlanmış bir wikinin kopyası geri al düğmesiyle geri çağrılamaz.
