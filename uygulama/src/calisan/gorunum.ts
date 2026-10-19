@@ -46,7 +46,7 @@ function anCoz(e: EvrenVt, an: string | null | undefined): EvrenTarihi | null {
   if (!an || !String(an).trim()) return null;
   const t = tarihCoz(String(an).trim().slice(0, 120), zamanSetiOku(e.db));
   if (!t) return null;
-  if (!t.eksen) throw new Error('Bu tarih sıralamaya yerleşmiyor; başka bir tarih yaz.');
+  if (!t.eksen) throw new Error('Bu tarih zaman sırasına yerleşmiyor; başka bir tarih yazın.');
   return t;
 }
 
@@ -233,7 +233,7 @@ export function durumGecmisi(b: DurumBaglami, ozellik: string, anIfade?: string 
   const e = b.e;
   const an = anCoz(e, anIfade);
   const ad = String(ozellik ?? '').trim();
-  if (!ad) throw new Error('Bir özellik seç.');
+  if (!ad) throw new Error('Bir özellik seçin.');
   const anahtar = ad.toLocaleLowerCase('tr-TR');
   const konular = (e.db.selectObjects(
     `SELECT DISTINCT d.konu, k.ad FROM durumlar d JOIN kayitlar k ON k.kod=d.konu WHERE d.silindi IS NULL AND k.silindi IS NULL`) as { konu: string; ad: string }[]);

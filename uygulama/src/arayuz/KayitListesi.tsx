@@ -117,10 +117,10 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
               <option value="kultur">Kültürel aidiyet (bu kültürden olanlar)</option>
             </select>
             {kok && <button class="dugme sade kucuk" onClick={() => setKok(null)}>Kaldır</button>}
-            {kok && <span class="soluk">Alt birimler ve onlara bağlı kayıtlar; seçilen kaydın kendisi listede yok.</span>}
+            {kok && <span class="soluk">Alt birimler ve onlara bağlı kayıtlar listelenir; seçilen kaydın kendisi listede yer almaz.</span>}
           </div>
           <p class="soluk kucuk">{gorunen.length === kayitlar.length ? `${kayitlar.length} kayıt` : `${kayitlar.length} kayıttan ${gorunen.length} tanesi`}</p>
-          {gorunen.length === 0 ? <div class="bos"><p>Aramaya uyan kayıt yok.</p></div> : (
+          {gorunen.length === 0 ? <div class="bos"><p>Aramaya ya da seçimlere uyan kayıt yok.</p></div> : (
             <ul class="kayit-listesi">
               {gorunen.map(({ k, nereden, parca }) => <KayitSatiri key={k.kod} k={k} evren={evren} nereden={nereden} parca={parca} istemci={istemci} />)}
             </ul>
@@ -183,7 +183,7 @@ export function Bahsedilenler({ istemci, evren, surum }: { istemci: Istemci; evr
   return (
     <>
       <p class="soluk kucuk">Metinlerde bağlantı verilmiş ama kendi metni henüz yazılmamış kayıtlar. En çok anılan en üstte.</p>
-      {liste.length === 0 ? <div class="bos"><p>Bahsedilip yazılmamış kayıt yok.</p></div> : (
+      {liste.length === 0 ? <div class="bos"><p>Bahsedilip henüz yazılmamış kayıt yok.</p></div> : (
         <ul class="kayit-listesi">
           {liste.map((k) => <KayitSatiri key={k.kod} k={k} evren={evren} istemci={istemci} nereden={`${k.anilma} yerde anılıyor`} />)}
         </ul>

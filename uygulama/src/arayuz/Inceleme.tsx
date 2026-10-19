@@ -31,7 +31,7 @@ export function IncelemeKuyrugu({ istemci, evren, surum }: { istemci: Istemci; e
       <DenetimBolumu istemci={istemci} evren={evren} surum={surum} />
       <section aria-label="Sağlık taraması">
         <h2>Sağlık taraması</h2>
-        <p class="soluk kucuk">Kopuk bağlantılar, çöp kutusundaki ya da vazgeçilmiş kayıtlara giden bağlantılar, eksik görsel dosyaları ve var olmayan kayda bağlı satırlar. Kurgunun kendisini denetlemez; o yukarıdaki denetimlerin işidir.</p>
+        <p class="soluk kucuk">Kopuk bağlantıları, çöp kutusundaki ya da vazgeçilmiş kayıtlara giden bağlantıları, eksik görselleri ve artık var olmayan bir kayda bağlı bilgileri bulur. Kurgunun tutarlılığına yukarıdaki denetimler bakar.</p>
         {hata && <p class="hata kucuk">{hata}</p>}
         {t && !t.acik.length && <p class="soluk">Açık sorun yok.</p>}
         {t && t.acik.length > 0 && <ul class="bulgular">{t.acik.map((b) => <Bulgu key={b.anahtar} evren={evren} b={b} karar={karar} />)}</ul>}
@@ -52,7 +52,7 @@ export function IncelemeKuyrugu({ istemci, evren, surum }: { istemci: Istemci; e
         {!bilgi ? <button class="dugme kucuk" onClick={() => setBilgi(true)}>Bilgi listesini göster</button> : (
           <>
             <h2>Bilgi listesi</h2>
-            <p class="soluk kucuk">Bunlar hata değildir: hiçbir şeye bağlanmamış fikirler ve tarihi sıralamaya yerleşmeyen olaylar.</p>
+            <p class="soluk kucuk">Bunlar hata değil: hiçbir şeye bağlanmamış fikirler ve zaman sırasına yerleşemeyen olaylar.</p>
             {t?.bilgiler && !t.bilgiler.length && <p class="soluk">Listelenecek bir şey yok.</p>}
             <ul class="bulgular">
               {t?.bilgiler?.map((b) => (
@@ -91,7 +91,7 @@ function Bulgu({ evren, b, karar }: { evren: string; b: SaglikBulgusu; karar: (a
         </form>
       ) : (
         <div class="satir">
-          {b.karar ? <button class="dugme kucuk" onClick={() => karar(b.anahtar, null)}>{b.karar.durum === 'ertelendi' ? 'Kuyruğa geri koy' : 'Yeniden aç'}</button> : <>
+          {b.karar ? <button class="dugme kucuk" onClick={() => karar(b.anahtar, null)}>{b.karar.durum === 'ertelendi' ? 'İncelemeye geri al' : 'Yeniden aç'}</button> : <>
             <button class="dugme kucuk" onClick={() => setKabulYaz(true)}>Bu hâliyle kabul et…</button>
             <button class="dugme sade kucuk" onClick={() => karar(b.anahtar, 'ertelendi')}>Ertele</button>
           </>}
@@ -112,7 +112,7 @@ function EtkiBolumu({ istemci, evren, surum }: { istemci: Istemci; evren: string
   return (
     <section aria-label="Değişikliklerin etkisi">
       <h2>Değişikliklerin etkisi</h2>
-      <p class="soluk kucuk">Bir olayın tarihi değişince ya da bir katılımcısı çıkarılınca, açıkça bağlı olduğu kayıtlar (neden–sonuç bağları, onu anlatan sahneler) burada incelenir. Yalnızca bahseden metinler buraya düşmez.</p>
+      <p class="soluk kucuk">Bir olayın tarihi değişince ya da bir katılımcısı çıkarılınca, o olaya açıkça bağlı kayıtlar (neden–sonuç bağları, olayı anlatan sahneler) burada listelenir. Olaydan yalnızca söz eden metinler buraya gelmez.</p>
       {hata && <p class="hata kucuk">{hata}</p>}
       {!x.acik.length && <p class="soluk">İncelenecek etki yok.</p>}
       {x.acik.length > 0 && <ul class="bulgular">{x.acik.map((b) => <EtkiSatiri key={b.anahtar} evren={evren} b={b} karar={karar} />)}</ul>}
@@ -148,7 +148,7 @@ function EtkiSatiri({ evren, b, karar }: { evren: string; b: EtkiIncelemesi; kar
         </form>
       ) : (
         <div class="satir">
-          {b.karar ? <button class="dugme kucuk" onClick={() => karar(b.anahtar, null)}>{b.karar.durum === 'ertelendi' ? 'Kuyruğa geri koy' : 'Yeniden aç'}</button> : <>
+          {b.karar ? <button class="dugme kucuk" onClick={() => karar(b.anahtar, null)}>{b.karar.durum === 'ertelendi' ? 'İncelemeye geri al' : 'Yeniden aç'}</button> : <>
             <button class="dugme kucuk" onClick={() => karar(b.anahtar, 'duzeltildi')}>Düzelttim</button>
             <button class="dugme kucuk" onClick={() => setKabulYaz(true)}>Bu hâliyle kabul et…</button>
             <button class="dugme sade kucuk" onClick={() => karar(b.anahtar, 'ertelendi')}>Ertele</button>
@@ -176,20 +176,20 @@ export function DenetimBolumu({ istemci, evren, surum, paket: ilkPaket = null }:
   return (
     <section aria-label="Tutarlılık denetimleri">
       <h2>Tutarlılık denetimleri</h2>
-      <p class="soluk kucuk">Yalnızca kayıtlı tarihlere, katılım rollerine, sahne yerlerine ve ilişkilere bakar; metindeki mantık hatalarını bulmaz. “Sorun yok” yalnızca o kural ve listelenen kayıtlar için geçerlidir.</p>
+      <p class="soluk kucuk">Yalnızca kayıtlı tarihlere, katılım rollerine, sahne yerlerine ve ilişkilere bakar; metinlerdeki mantık hatalarını bulmaz. “Sorun yok” sonucu yalnızca o kural ve listelenen kayıtlar için geçerlidir.</p>
       {hata && <p class="hata kucuk">{hata}</p>}
       {paketler.length > 0 && (
         <div class="satir">
           <label class="soluk kucuk" for="denetim-paketi">Varsayım paketi</label>
           <select id="denetim-paketi" class="girdi" style="max-width:320px" value={paket ?? ''} onChange={(e) => setPaket((e.target as HTMLSelectElement).value || null)}>
-            <option value="">Yok (yalnızca kaydedilmiş veri)</option>
+            <option value="">Yok (yalnızca evrende kayıtlı olanlar)</option>
             {paketler.map((p) => <option value={p.kod}>{p.ad}</option>)}
           </select>
         </div>
       )}
       {x && <p class="soluk kucuk paket-notu">{x.paket
-        ? `“${x.paket.ad}” paketindeki varsayımlarla hesaplandı (${x.paket.kullanilan} varsayım kullanıldı${x.paket.kullanilmayan ? `, ${x.paket.kullanilmayan} varsayım bu denetimlere girmiyor` : ''}). Varsayımlar evrene yazılmadı.`
-        : 'Varsayım yok: yalnızca kaydedilmiş veriyle hesaplandı.'}</p>}
+        ? `“${x.paket.ad}” paketindeki varsayımlarla hesaplandı (${x.paket.kullanilan} varsayım kullanıldı${x.paket.kullanilmayan ? `, ${x.paket.kullanilmayan} varsayım bu denetimlerle ilgili değil` : ''}). Varsayımlar evrene kaydedilmedi.`
+        : 'Varsayım kullanılmadı; yalnızca evrende kayıtlı olanlarla hesaplandı.'}</p>}
       {x && (
         <ul class="denetim-kurallari">
           {x.kurallar.map((k) => (
@@ -204,7 +204,7 @@ export function DenetimBolumu({ istemci, evren, surum, paket: ilkPaket = null }:
       {x && x.acik.length > 0 && <ul class="bulgular">{x.acik.map((b) => <DenetimSatiri key={b.anahtar} evren={evren} b={b} karar={karar} />)}</ul>}
       {x && x.fikir.length > 0 && (
         <details class="bulgu-grubu"><summary>Fikirlerdeki uyuşmazlıklar ({x.fikir.length})</summary>
-          <p class="soluk kucuk">Fikir durumundaki değerlere dayanıyor; inceleme sayısına katılmaz.</p>
+          <p class="soluk kucuk">Fikir durumundaki değerlere dayanır; incelenecekler sayısına katılmaz.</p>
           <ul class="bulgular">{x.fikir.map((b) => <DenetimSatiri key={b.anahtar} evren={evren} b={b} karar={karar} />)}</ul></details>
       )}
       {x && x.ertelenen.length > 0 && (
@@ -243,7 +243,7 @@ function DenetimSatiri({ evren, b, karar }: { evren: string; b: DenetimBulgusu; 
         </form>
       ) : (
         <div class="satir">
-          {b.karar ? <button class="dugme kucuk" onClick={() => karar(b.anahtar, null)}>{b.karar.durum === 'ertelendi' ? 'Kuyruğa geri koy' : 'Yeniden aç'}</button> : <>
+          {b.karar ? <button class="dugme kucuk" onClick={() => karar(b.anahtar, null)}>{b.karar.durum === 'ertelendi' ? 'İncelemeye geri al' : 'Yeniden aç'}</button> : <>
             <button class="dugme kucuk" onClick={() => setKabulYaz(true)}>İstisna olarak kabul et…</button>
             <button class="dugme sade kucuk" onClick={() => karar(b.anahtar, 'ertelendi')}>Ertele</button>
           </>}

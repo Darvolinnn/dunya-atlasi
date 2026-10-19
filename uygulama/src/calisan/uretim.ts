@@ -48,7 +48,7 @@ export function dayaniklilikYaz(b: UretimBaglami, iliski: string, d: Dayaniklili
     const sayi = (x: unknown) => (x === null || x === undefined || x === '' ? null : Number(x));
     const enAz = sayi(d.enAz), enCok = sayi(d.enCok);
     for (const x of [enAz, enCok]) if (x !== null && (!Number.isFinite(x) || x < 0 || x > 100000)) throw new Error('Dayanma süresini sayı olarak yazın.');
-    if (enAz !== null && enCok !== null && enAz > enCok) throw new Error('En az, en çoktan büyük olamaz.');
+    if (enAz !== null && enCok !== null && enAz > enCok) throw new Error('En az süre, en çok süreden büyük olamaz.');
     if (!BIRIMLER.includes(d.birim)) throw new Error('Geçersiz birim.');
     if (d.ikame !== null) kayitTuru(b.e, d.ikame);
     const not = String(d.not ?? '').replace(/\s+/g, ' ').trim();
@@ -100,7 +100,7 @@ export function kesintiZinciri(e: EvrenVt, kaynak: string): KesintiZinciri {
       if (tur === 'rota') {
         for (const u of bag(e, x.kod, 'tasir', 'a')) {
           const digerYollar = bag(e, u.kod, 'tasir', 'b').map((y) => y.kod).filter((y) => y !== x.kod);
-          for (const g of bag(e, u.kod, 'acigi', 'b')) ekle(yeni, g.kod, [...x.yol, kisa(e, u.kod)], `“${kisa(e, u.kod).ad}” açığı var; “${ad}” onu taşıyan yollardan biri`, g.iliski, digerYollar, n);
+          for (const g of bag(e, u.kod, 'acigi', 'b')) ekle(yeni, g.kod, [...x.yol, kisa(e, u.kod)], `“${kisa(e, u.kod).ad}” açığı var, “${ad}” de onu taşıyan yollardan biri`, g.iliski, digerYollar, n);
         }
       }
     }
@@ -108,7 +108,7 @@ export function kesintiZinciri(e: EvrenVt, kaynak: string): KesintiZinciri {
   }
   return {
     kaynak: k0, adimlar,
-    not: 'Yalnızca kayıtlı bağlar izlendi. Neyin etkilenebileceğini gösterir; ne zaman ve ne kadar etkileneceğini ancak dayanma süresi girilen bağlarda aralık olarak söyler.',
+    not: 'Yalnızca kayıtlı bağlar izlendi. Neyin etkilenebileceği gösterilir. Ne zaman ve ne kadar etkileneceği ise yalnızca dayanma süresi yazılmış bağlarda, bir aralık olarak verilir.',
   };
 }
 

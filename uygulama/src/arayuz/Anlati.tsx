@@ -38,7 +38,7 @@ export function AnlatiYolu({ istemci, evren, kayit, yazma = false }: { istemci: 
   if (!yer.eser) {
     return (
       <div class="anlati-yolu">
-        <span class="soluk kucuk">Bu {kayit.tur === 'bolum' ? 'bölüm' : 'sahne'} henüz bir esere yerleşmedi.</span>
+        <span class="soluk kucuk">Bu {kayit.tur === 'bolum' ? 'bölüm' : 'sahne'} henüz bir esere yerleştirilmedi.</span>
         {!yerlestir && <button class="dugme kucuk" onClick={() => setYerlestir(true)}>Esere yerleştir</button>}
         {yerlestir && <YerSecici istemci={istemci} evren={evren} tur={kayit.tur} kapat={() => setYerlestir(false)}
           sec={async (ust) => { const r = await istemci.iste('anlatiYerlestir', { evren, kod: kayit.kod, ust }); setEtki(r.etki); setYerlestir(false); }} />}
@@ -98,11 +98,11 @@ export function EtkiOzeti({ evren, etki, kapat }: { evren: string; etki: AnlatiE
   return (
     <div class="kart etki-ozeti" role="status">
       <div class="satir"><strong>Okurun ilk karşılaştığı yer değişti</strong><span class="bosluk" /><button class="dugme sade kucuk" onClick={kapat}>Tamam</button></div>
-      <p class="soluk kucuk">Taşımadan sonra bu adlar eserde başka bir sahnede ilk kez anılıyor. Tanıtımı gerekiyorsa yeni ilk sahneye bakın.</p>
+      <p class="soluk kucuk">Taşımadan sonra bu adlar eserde ilk kez başka bir sahnede geçiyor. Tanıtılmaları gerekiyorsa yeni ilk sahneye bakın.</p>
       <ul>
         {etki.map((x) => (
           <li key={x.kayit.kod}>
-            {bag(evren, x.kayit)}: {x.onceki ? bag(evren, x.onceki) : <span class="soluk">hiç anılmıyordu</span>} → {x.yeni ? bag(evren, x.yeni) : <span class="soluk">artık anılmıyor</span>}
+            {bag(evren, x.kayit)}: {x.onceki ? bag(evren, x.onceki) : <span class="soluk">hiç geçmiyordu</span>} → {x.yeni ? bag(evren, x.yeni) : <span class="soluk">artık geçmiyor</span>}
           </li>
         ))}
       </ul>
@@ -154,7 +154,7 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
   return (
     <section class="eser-yapisi" aria-label="Eserin yapısı">
       <h2>Bölümler ve sahneler</h2>
-      <p class="soluk kucuk">Sıra okuma sırasıdır; bölüm numaraları buradan hesaplanır. Bir sahneyi taşımak evren tarihini değiştirmez.</p>
+      <p class="soluk kucuk">Buradaki sıra okuma sırasıdır ve bölüm numaraları buna göre verilir. Bir sahneyi taşımak evren tarihini değiştirmez.</p>
       {hata && <p class="hata kucuk">{hata}</p>}
       {etki && <EtkiOzeti evren={evren} etki={etki} kapat={() => setEtki(null)} />}
       {y.dogrudan.length > 0 && sahneListesi(y.eser.kod, y.dogrudan)}
@@ -178,7 +178,7 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
       </form>
       {disarida && disarida.length > 0 && (
         <details class="yerlesmemis">
-          <summary class="kucuk">Hiçbir esere yerleşmemiş {disarida.length} sahne ya da bölüm</summary>
+          <summary class="kucuk">Henüz bir esere yerleştirilmemiş {disarida.length} sahne ya da bölüm</summary>
           <ul>
             {disarida.map((s) => (
               <li key={s.kod} class="satir">
@@ -245,23 +245,28 @@ export function useSahneBaglami(istemci: Istemci, evren: string, sahne: string |
   return useYukle<SahneBaglami | null>(istemci, evren, () => (sahne ? istemci.iste('sahneBaglami', { evren, sahne, parca }).catch(() => null) : Promise.resolve(null)), [sahne, parca])[0];
 }
 
-export function SahneBaglamPaneli({ evren, baglam, parca = false }: { evren: string; baglam: SahneBaglami | null; parca?: boolean }) {
+/** Sahnede tarih, yer, bakış, anlatıcı, odak ve sahnedeki kimse yoksa bağlam boştur. */
+export const sahneBaglamiBos = (b: SahneBaglami | null) =>
+  !!b && !b.tarih && !b.yer && !b.bakis && !b.anlatici && !b.odak && !b.katilimcilar.length;
+
+export function SahneBaglamPaneli({ evren, baglam, parca = false, bos = false }: { evren: string; baglam: SahneBaglami | null; parca?: boolean; bos?: boolean }) {
   if (!baglam) return null;
   const { tarih, yer, katilimcilar } = baglam;
   return (
     <section class="baglam-paneli" aria-label="Sahnenin bağlamı">
       <h2>{parca ? 'İmlecin bulunduğu parçanın bağlamı' : 'Sahnenin bağlamı'}</h2>
-      {parca && <p class="soluk kucuk">Bu parçanın kendi tarihi, yeri ya da bakış açısı var; aşağıdakiler ona göre. Parçanın dışına çıkınca sahnenin bağlamı döner.</p>}
-      {tarih
-        ? <p class="soluk kucuk">Her şey sahnenin evren tarihine göre: <strong>{tarih.ifade}</strong>. “Belki” işaretliler bu tarihte geçerli olabilir de olmayabilir de.</p>
-        : <p class="uyari kucuk">Bu sahnenin evren tarihi girilmemiş. Aşağıdakiler belirli bir ana göre süzülmedi; tarih girince o andaki hâl gösterilir.</p>}
+      {parca && <p class="soluk kucuk">Bu parçanın kendi tarihi, yeri ya da bakış açısı var ve aşağıdakiler ona göre gösteriliyor. İmleç parçanın dışına çıkınca sahnenin bağlamına dönülür.</p>}
+      {bos ? <p class="soluk kucuk">Tarih ve mekân eklediğinizde sahnenin o andaki bağlamı burada görünür.</p>
+        : tarih
+        ? <p class="soluk kucuk">Aşağıdakiler sahnenin evren tarihine göre gösteriliyor: <strong>{tarih.ifade}</strong>. “Belki” işaretli olanların bu tarihte geçerli olup olmadığı belli değil.</p>
+        : <p class="uyari kucuk">Bu sahnenin evren tarihi girilmemiş, bu yüzden aşağıdakiler belirli bir ana göre süzülmedi. Tarihi girdiğinizde o andaki durum gösterilir.</p>}
       {yer && (
         <div class="baglam-kaydi">
           <div class="satir"><span class="soluk">Mekân:</span> {bag(evren, yer)}</div>
           <DurumOzeti durumlar={yer.durumlar} evren={evren} />
         </div>
       )}
-      {katilimcilar.length === 0 && !yer && <p class="soluk kucuk">Mekân, bakış açısı ya da sahnedekiler girilince burada o anki hâlleri toplanır.</p>}
+      {!bos && katilimcilar.length === 0 && !yer && <p class="soluk kucuk">Mekânı, bakış açısını ya da sahnedekileri girdiğinizde o andaki durumları burada toplanır.</p>}
       {baglam.bakis && <BakisBilgileri evren={evren} bakis={baglam.bakis} liste={baglam.bakisBilgileri} tarihVar={!!tarih} />}
       <SahneOkurPaneli evren={evren} baglam={baglam} />
       {katilimcilar.map((k) => (
@@ -401,10 +406,10 @@ function DegisiklikNiyeti({ istemci, evren, d, bekleyen, bitti }: {
   const [kisi, setKisi] = useState<Secim | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const SECENEKLER = [
-    { kod: 'eski_duzelt', ad: 'Eski kaydı düzelt', aciklama: 'Baştan beri böyleymiş; kayıt yerinde düzeltilir.' },
-    ...(d.kip !== 'anlik' ? [{ kod: 'bu_tarihten', ad: 'Bu tarihten itibaren değiştir', aciklama: 'Eski değer yazacağın tarihe kadar sürer, yenisi o tarihte başlar.' }] : []),
-    { kod: 'taslakta', ad: 'Taslakta dene', aciklama: 'Evren değişmez; değişiklik yeni bir taslakta yapılır ve oraya geçersin.' },
-    { kod: 'inanc', ad: 'Yalnızca bir kişinin inancını değiştir', aciklama: 'Gerçek aynı kalır; seçtiğin kişi yeni değere inanır.' },
+    { kod: 'eski_duzelt', ad: 'Eski kaydı düzelt', aciklama: 'Değer baştan beri böyleymiş gibi kayıt olduğu yerde düzeltilir.' },
+    ...(d.kip !== 'anlik' ? [{ kod: 'bu_tarihten', ad: 'Bu tarihten itibaren değiştir', aciklama: 'Eski değer yazacağınız tarihe kadar sürer, yenisi o tarihte başlar.' }] : []),
+    { kod: 'taslakta', ad: 'Taslakta dene', aciklama: 'Evren değişmez. Değişiklik yeni bir deneme kopyasında yapılır ve oraya geçersiniz.' },
+    { kod: 'inanc', ad: 'Yalnızca bir kişinin inancını değiştir', aciklama: 'Gerçek aynı kalır, yalnızca seçtiğiniz kişi yeni değere inanır.' },
   ] as const;
   const uygula = async (e: Event) => {
     e.preventDefault();
@@ -417,7 +422,7 @@ function DegisiklikNiyeti({ istemci, evren, d, bekleyen, bitti }: {
   };
   return (
     <form class="kart niyet-formu" onSubmit={uygula} aria-label="Değişiklik niyeti">
-      <p><strong>“{d.ozellik}” {aralikYazi(d)} için kesinleşmiş.</strong> “{bekleyen.yazi}” olarak değiştirmek ne anlama geliyor?</p>
+      <p><strong>“{d.ozellik}” değeri {aralikYazi(d)} için kesinleşmiş.</strong> “{bekleyen.yazi}” olarak değiştirmekle ne demek istiyorsunuz?</p>
       {SECENEKLER.map((s) => (
         <label class="secenek-satiri" key={s.kod}>
           <input type="radio" name={`niyet-${d.kod}`} checked={niyet === s.kod} onChange={() => setNiyet(s.kod as typeof niyet)} />
@@ -430,7 +435,7 @@ function DegisiklikNiyeti({ istemci, evren, d, bekleyen, bitti }: {
         <div class="alan"><span class="alan-adi">Kim inanıyor?</span>
           <span class="satir"><KayitSec istemci={istemci} evren={evren} secili={kisi} sec={setKisi} etiket="Kişi seç" /></span></div>
         <label class="alan"><span class="alan-adi">Ne zamandan beri? (isteğe bağlı)</span>
-          <input class="girdi" lang="tr" value={tarih} placeholder="Boş: her zaman" onInput={(e) => setTarih((e.target as HTMLInputElement).value)} /></label>
+          <input class="girdi" lang="tr" value={tarih} placeholder="Boşsa her zaman" onInput={(e) => setTarih((e.target as HTMLInputElement).value)} /></label>
       </>}
       {hata && <p class="hata kucuk">{hata}</p>}
       <div class="satir">
@@ -452,7 +457,7 @@ export function SinirAlani({ istemci, evren, etiket, deger, kaydet }: {
       <div class="alan"><span class="alan-adi">{etiket}</span>
         <span class="satir"><span>{bag(evren, olay)} <span class="soluk kucuk">({deger.tarih ? (deger.fark ? tarihAciklamasi(deger.tarih, z) : deger.tarih.ifade) : 'tarihsiz'})</span></span>
           <button class="dugme sade kucuk" onClick={() => kaydet(null).catch(() => {})}>Bağı kaldır</button></span>
-        <SatirGirdisi etiket="Olaya göre fark" deger={deger.fark ? farkYazisi(deger.fark) : ''} ipucu="Boş: olayın kendisi · 3 gün sonra · 2 yıl önce"
+        <SatirGirdisi etiket="Olaya göre fark" deger={deger.fark ? farkYazisi(deger.fark) : ''} ipucu="Örn. 3 gün sonra, 2 yıl önce. Boşsa olayın kendisi."
           kaydet={(v) => kaydet({ olay: olay.kod, fark: v.trim() || null })} />
       </div>
     );
@@ -527,7 +532,7 @@ export function SinirGirdi({ istemci, evren, etiket, ifade, setIfade, olay, setO
 function OkurBilgiHucre({ bilgi, evren }: { bilgi: AnBilgisi | undefined; evren: string }) {
   if (!bilgi) return <span class="soluk kucuk">Kayıtlı bilgi yok.</span>;
   return <>
-    {bilgi.durum === 'belirsiz' && <p class="soluk kucuk">Birden çok olası kayıt; birlikte gösteriliyor.</p>}
+    {bilgi.durum === 'belirsiz' && <p class="soluk kucuk">Birden çok kayıt geçerli olabilir, hepsi birlikte gösteriliyor.</p>}
     <ul class="baglam-listesi">{bilgi.satirlar.map((s) => <li key={s.kod}>
       <strong>{s.uyari ? 'Durum belirlenemiyor' : s.etiket.ad}</strong>{s.secenek && <> · {s.secenek.metin}</>}
       {s.gecerli === 'belirsiz' && <span> · bu tarihte geçerli olduğu belirsiz</span>} <KararRozeti karar={s.karar} />
@@ -545,7 +550,7 @@ function OkurSirasiTablosu({ sira, baglam, evren }: { sira: SahneOkurSirasi; bag
   return <div class="baglam-kaydi">
     <h4>{bag(evren, sira.eser)} · {sira.ad} · {sira.sira}. sahne</h4>
     {sira.notlar.map((n) => <p class="soluk kucuk" key={n}>{n}</p>)}
-    {!sira.once.length && !sira.buSahnede.length && <p class="soluk kucuk">Bu sahneye kadar okur için kayıtlı bilgi yok. Bu, okurun hiçbir şey bilmediği anlamına gelmez.</p>}
+    {!sira.once.length && !sira.buSahnede.length && <p class="soluk kucuk">Bu sahneye kadar okur için kayıtlı bilgi yok. Bu, okurun hiçbir şey bilmediğini göstermez.</p>}
     {sorular.size > 0 && <div style="overflow-x:auto"><table aria-label={`${sira.eser.ad} · ${sira.ad}: okur ve karakter bilgisi`}>
       <thead><tr><th>Soru</th><th>Okur sahneye girerken</th><th>Bu sahnede öğreniyor</th>{baglam.bakis && <th>{baglam.bakis.ad} · sahnenin evren tarihinde</th>}</tr></thead>
       <tbody>{[...sorular.values()].map((i) => <tr key={i.kod}>
@@ -559,11 +564,21 @@ function OkurSirasiTablosu({ sira, baglam, evren }: { sira: SahneOkurSirasi; bag
 }
 
 function SahneOkurPaneli({ evren, baglam }: { evren: string; baglam: SahneBaglami }) {
+  const aciklama = <p class="soluk kucuk">Okur için zaman evren tarihine göre değil, okuma sırasına göre ilerler. Okurun sahneye girerken bildikleri ile bu sahnede öğrendikleri ayrı gösterilir. Yalnızca sizin kaydettiğiniz bilgiler görünür; program metinden ya da ipuçlarından bilgi çıkarmaz.</p>;
+  const { siralar, uyari } = baglam.okurBilgileri;
+  // Okur bilgisi yokken bölüm katlı durur; içerik oluşunca açık gösterilir.
+  if (!uyari && siralar.every((s) => !s.once.length && !s.buSahnede.length) && !(baglam.bakis && baglam.bakisBilgileri.length)) {
+    return <details class="okur-bilgisi-katli" aria-label="Okurun bilgisi">
+      <summary><strong>Okurun bilgisi</strong> <span class="soluk kucuk">· bu sahneye kadar kayıt yok</span></summary>
+      {aciklama}
+      {siralar.map((s) => <OkurSirasiTablosu key={s.kod} sira={s} baglam={baglam} evren={evren} />)}
+    </details>;
+  }
   return <section aria-label="Okurun bilgisi">
     <h3>Okurun bilgisi</h3>
-    <p class="soluk kucuk">Okurun zamanı evren tarihi değil, okuma sırasıdır. Sahneye girişteki bilgi ile bu sahnede öğrenilenler ayrıdır. Yalnızca yazarın kaydettiği bilgi durumları gösterilir; ipucu veya metinden bilgi çıkarılmaz.</p>
-    {baglam.okurBilgileri.uyari && <p class="uyari kucuk">{baglam.okurBilgileri.uyari}</p>}
-    {baglam.okurBilgileri.siralar.map((s) => <OkurSirasiTablosu key={s.kod} sira={s} baglam={baglam} evren={evren} />)}
-    {baglam.bakis && <p class="soluk kucuk">Yan yana gösterim iki kayıtlı listenin karşılaştırılmasıdır. “Kayıtlı bilgi yok”, “bilmiyor” demek değildir.</p>}
+    {aciklama}
+    {uyari && <p class="uyari kucuk">{uyari}</p>}
+    {siralar.map((s) => <OkurSirasiTablosu key={s.kod} sira={s} baglam={baglam} evren={evren} />)}
+    {baglam.bakis && <p class="soluk kucuk">Yan yana gösterim yalnızca kaydedilmiş iki listeyi karşılaştırır. “Kayıtlı bilgi yok” yazması, “bilmiyor” demek değildir.</p>}
   </section>;
 }

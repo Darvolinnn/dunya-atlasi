@@ -27,7 +27,14 @@ export function TarihAlani({ istemci, evren, kayit }: { istemci: Istemci; evren:
   const [hata, setHata] = useState<string | null>(null);
   // Tarih değişince etki raporu (§9.2): önceki ifade saklanır, böylece tek dokunuşla geri dönülebilir (T4).
   const [etki, setEtki] = useState<{ once: string | null } | null>(null);
-  useEffect(() => { setYerel(kayit.tarih?.bicim === 'goreli' ? '' : kayit.tarih?.ifade ?? ''); setKip(kayit.tarih?.bicim === 'goreli' ? 'goreli' : 'yaz'); }, [kayit.tarih?.ifade, kayit.tarih?.bicim]);
+  // Kayıttaki tarih değişince girdi ona döner. İlk çizimde çalışmaz: açılır açılmaz yazılan tarih silinmesin.
+  const sonTarih = useRef(`${kayit.tarih?.bicim}|${kayit.tarih?.ifade}`);
+  useEffect(() => {
+    const t = `${kayit.tarih?.bicim}|${kayit.tarih?.ifade}`;
+    if (t === sonTarih.current) return;
+    sonTarih.current = t;
+    setYerel(kayit.tarih?.bicim === 'goreli' ? '' : kayit.tarih?.ifade ?? ''); setKip(kayit.tarih?.bicim === 'goreli' ? 'goreli' : 'yaz');
+  }, [kayit.tarih?.ifade, kayit.tarih?.bicim]);
   const [masa, setMasa] = useState(false);
   useEffect(() => { setEtki(null); setMasa(false); }, [kayit.kod]);
   const z = useTakvim(istemci, evren);
@@ -57,7 +64,7 @@ export function TarihAlani({ istemci, evren, kayit }: { istemci: Istemci; evren:
           onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
         <span class="soluk kucuk">
           {sahneden ? <>Tarih sahneden geliyor: <a href={`#/e/${evren}/k/${kayit.sahneOlayi}`}>{tarihAciklamasi(kayit.sahneTarihi!, z)}</a></>
-            : onizleme ? tarihAciklamasi(onizleme, z) : goreli ? <>Şu an bir olaya göre verilmiş; buraya yazarsan onun yerine geçer.</> : <>Takvimi evrenin “Takvim” sekmesinden tanımlayabilirsin.</>}
+            : onizleme ? tarihAciklamasi(onizleme, z) : goreli ? <>Tarih şu an bir olaya göre verilmiş; buraya yazarsanız onun yerine geçer.</> : <>Takvimi “Takvim” sayfasından tanımlayabilirsiniz.</>}
         </span>
       </> : <GoreliTarih istemci={istemci} evren={evren} kayit={kayit} z={z} />}
       {paralel.map((p) => <span class="soluk kucuk tarih-paralel">{p.takvim}: {p.yazi}</span>)}
@@ -95,7 +102,7 @@ function GoreliTarih({ istemci, evren, kayit, z }: { istemci: Istemci; evren: st
   const kaydet = async () => {
     try {
       const k = satirlar.filter((s) => s.olay);
-      if (!k.length) throw new Error('En az bir olay seç.');
+      if (!k.length) throw new Error('En az bir olay seçin.');
       await istemci.iste('kayitTarih', { evren, kod: kayit.kod, kisitlar: k.map((s) => ({ olay: s.olay!.kod, fark: s.fark })) });
       setHata(null); setDegisti(false);
     } catch (e) { setHata(hataYaz(e)); }
@@ -117,7 +124,7 @@ function GoreliTarih({ istemci, evren, kayit, z }: { istemci: Istemci; evren: st
         <button class="dugme kucuk" onClick={() => { setSatirlar([...satirlar, { olay: null, fark: 'önce' }]); setDegisti(true); }}>Kısıt ekle</button>
         <button class="dugme ana kucuk" disabled={!degisti} onClick={kaydet}>Kaydet</button>
       </div>
-      <p class="soluk kucuk">Fark yazılmazsa yalnızca önce ya da sonra olduğu bilinir. Yıl farkı yıl düzeyinde kalır; gün uydurulmaz. Olası aralık bir olasılık değildir; yalnızca kısıtların izin verdiği yerdir.</p>
+      <p class="soluk kucuk">Fark yazılmazsa yalnızca önce mi sonra mı olduğu bilinir. Yıl olarak yazılan fark yıl olarak kalır; program gün uydurmaz. Hesaplanan aralık bir olasılık değil, yalnızca kısıtların izin verdiği aralıktır.</p>
       {t && !degisti && <p class={t.celiski ? 'hata kucuk' : 'kucuk'}>
         {t.ifade}. {tarihAciklamasi(t, z)}{t.celiski && t.celiskiAdlari ? `. Çelişen kısıt zinciri: ${t.celiskiAdlari.join(' → ')}` : ''}.</p>}
       {hata && <span class="hata kucuk">{hata}</span>}
@@ -232,7 +239,7 @@ export function Iliskiler({ istemci, evren, kayit, surum }: { istemci: Istemci; 
         {!ekle && <button class="dugme kucuk" onClick={() => setEkle(true)}>İlişki ekle</button>}
       </div>
       {ekle && <IliskiFormu istemci={istemci} evren={evren} ben={kayit.kod} kapat={() => setEkle(false)} />}
-      {gorunen.length === 0 && !ekle && <p class="soluk kucuk">Henüz ilişki yok. Aile, üyelik, sahiplik, düşmanlık gibi bağları buradan kurun; metindeki bağlantılardan ayrıdır.</p>}
+      {gorunen.length === 0 && !ekle && <p class="soluk kucuk">Henüz ilişki yok. Aile, üyelik, sahiplik, düşmanlık gibi bağları buradan kurun. İlişkiler metindeki bağlantılardan ayrı tutulur.</p>}
       {gorunen.length > 0 && (
         <ul class="iliski-listesi">
           {gorunen.map((i) => <IliskiSatir key={i.kod} istemci={istemci} evren={evren} i={i} />)}
@@ -261,7 +268,7 @@ function IliskiSatir({ istemci, evren, i }: { istemci: Istemci; evren: string; i
       {ac && (
         <div class="iliski-duzenle">
           <SatirGirdisi etiket="Başlangıç" deger={i.baslangic?.ifade ?? ''} ipucu="Örn. 412" kaydet={(v) => istemci.iste('iliskiDegistir', { evren, kod: i.kod, alan: 'baslangic', deger: v })} />
-          <SatirGirdisi etiket="Bitiş" deger={i.bitis?.ifade ?? ''} ipucu="Sürüyorsa boş" kaydet={(v) => istemci.iste('iliskiDegistir', { evren, kod: i.kod, alan: 'bitis', deger: v })} />
+          <SatirGirdisi etiket="Bitiş" deger={i.bitis?.ifade ?? ''} ipucu="Sürüyorsa boş bırakın" kaydet={(v) => istemci.iste('iliskiDegistir', { evren, kod: i.kod, alan: 'bitis', deger: v })} />
           <SatirGirdisi etiket="Açıklama" deger={i.aciklama} kaydet={(v) => istemci.iste('iliskiDegistir', { evren, kod: i.kod, alan: 'aciklama', deger: v })} />
           {iliskiTuruBul(i.tur).roller && (
             <label class="alan"><span class="alan-adi">{iliskiTuruBul(i.tur).rolIstegeBagli ? 'Niteliği' : 'Rol'}</span>
@@ -370,7 +377,7 @@ export function SahneBolumu({ istemci, evren, kayit, surum }: { istemci: Istemci
       </ul>
 
       <h2 style="margin-top:16px">Bu sahnede olanlar</h2>
-      <p class="soluk kucuk">Sahnedeki değişimleri yazın (“eli yaralandı”, “kılıç Mira'ya geçti”). Olay açmanız gerekmez: değişim sahnenin kendi olayına bağlanır.</p>
+      <p class="soluk kucuk">Sahnedeki değişimleri yazın (“eli yaralandı”, “kılıç Mira'ya geçti”). Ayrı bir olay açmanız gerekmez; değişim sahnenin kendi olayına bağlanır.</p>
       {olaylar.map((o) => (
         <div class="sahne-olayi" key={o.kod}>
           <div class="satir">
@@ -443,7 +450,7 @@ export function KayitDegisimleri({ istemci, evren, kod, surum }: { istemci: Iste
   return (
     <section class="degisimler" aria-label="Geçirdiği değişimler">
       <h2>Geçirdiği değişimler</h2>
-      <p class="soluk kucuk">Sahnelerde kaydedilen değişimler, evren tarihine göre.</p>
+      <p class="soluk kucuk">Sahnelerde yazılan değişimler, evren tarihine göre sıralı.</p>
       <DegisimListesi istemci={istemci} evren={evren} liste={liste} olayGoster />
     </section>
   );
@@ -462,7 +469,7 @@ export function NotDonustur({ istemci, evren, kayit }: { istemci: Istemci; evren
       try { const { kod } = await istemci.iste('nottanKayit', { evren, not: kayit.kod, ad, tur }); git(`/e/${evren}/k/${kod}`); }
       catch (err) { setHata(hataYaz(err)); }
     }}>
-      <span class="soluk kucuk" style="flex-basis:100%">Notun metni yeni kayda kopyalanır; not yerinde kalır ve kayda bağlı olur.</span>
+      <span class="soluk kucuk" style="flex-basis:100%">Notun metni yeni kayda kopyalanır. Not yerinde kalır ve yeni kayda bağlanır.</span>
       <input class="girdi" style="flex:2;min-width:160px" aria-label="Yeni kaydın adı" value={ad} lang="tr" onInput={(e) => setAd((e.target as HTMLInputElement).value)} />
       <span style="flex:1;min-width:150px"><TurSecici deger={tur} onDegis={setTur} /></span>
       <button class="dugme ana" type="submit" disabled={!ad.trim()}>Dönüştür</button>

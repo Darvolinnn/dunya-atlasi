@@ -85,11 +85,11 @@ export function izSil(b: SureklilikBaglami, kod: string, geriYukle = false) {
 export function izGozlem(b: SureklilikBaglami, g: { iz: string; sahne: string; an: 'bas' | 'son'; deger: string }) {
   const iz = izBul(b.e, g.iz);
   const sahne = kayitVar(b.e, g.sahne, 'sahne');
-  if (g.an !== 'bas' && g.an !== 'son') throw new Error('Gözlem sahnenin başı ya da sonu içindir.');
+  if (g.an !== 'bas' && g.an !== 'son') throw new Error('Gözlem, sahnenin başına ya da sonuna yazılır.');
   let deger = temizAd(g.deger, 200);
   if (deger && iz.model === 'sayi') {
     const n = Number(deger.replace(',', '.'));
-    if (!Number.isFinite(n)) throw new Error('Sayılabilir bir ayrıntının durumu sayı olarak yazılır.');
+    if (!Number.isFinite(n)) throw new Error('Sayıyla izlenen bir ayrıntının durumunu sayı olarak yazın.');
     deger = String(n);
   }
   const onceki = (b.e.db.selectValue('SELECT deger FROM iz_gozlemleri WHERE iz=? AND sahne=? AND an=?', [iz.kod, sahne, g.an]) as string | undefined) ?? null;
@@ -288,9 +288,9 @@ function sahneIzi(b: SureklilikBaglami, iz: IzTanimi, sahne: string, olaylar: Se
     if (sd && sd.sayi !== null) hesaplanan = birimli(iz, sd.sayi);
     else if (sd?.sayiBilinmiyor && (basG !== null || bd?.sayi !== null)) notlar.push(`Sondaki durum hesaplanamadı: ${sd.sayiBilinmiyor}.`);
     if (basG !== null && bd && bd.sayi !== null && Math.abs(bd.sayi - Number(basG)) > 1e-9)
-      notlar.push(`Önceki sahnelerden hesaplanan ${birimli(iz, bd.sayi)}, burada başta gözlenen ${birimli(iz, Number(basG))}. İkisi de korunuyor; hangisinin doğru olduğuna siz karar verirsiniz.`);
+      notlar.push(`Önceki sahnelerden hesaplanan ${birimli(iz, bd.sayi)}, burada başta gözlenen ${birimli(iz, Number(basG))}. İkisi de korunuyor. Hangisinin doğru olduğuna siz karar verirsiniz.`);
     if (sonG !== null && sd && sd.sayi !== null && Math.abs(sd.sayi - Number(sonG)) > 1e-9)
-      notlar.push(`Hesaplanan ${birimli(iz, sd.sayi)}, sonda gözlenen ${birimli(iz, Number(sonG))}. İkisi de korunuyor; arada kaydedilmemiş bir değişim ya da yanlış sayım olabilir.`);
+      notlar.push(`Hesaplanan ${birimli(iz, sd.sayi)}, sonda gözlenen ${birimli(iz, Number(sonG))}. İkisi de korunuyor. Arada kaydedilmemiş bir değişim ya da yanlış bir sayım olabilir.`);
   } else if (iz.model === 'durum') {
     if (bd?.sonGozlem) {
       beklenen = bd.sonGozlem.deger;
@@ -305,12 +305,12 @@ function sahneIzi(b: SureklilikBaglami, iz: IzTanimi, sahne: string, olaylar: Se
   let netFark: number | null = null;
   if (iz.model === 'sayi' && basG !== null && sonG !== null) {
     netFark = Number(sonG) - Number(basG);
-    if (netFark !== 0) notlar.push(`Net fark ${netFark > 0 ? '+' : '−'}${sayiYaz(Math.abs(netFark))}: iki gözlemin farkıdır; kaçının harcandığını, verildiğini ya da yanlış sayıldığını söylemez.`);
+    if (netFark !== 0) notlar.push(`Net fark ${netFark > 0 ? '+' : '−'}${sayiYaz(Math.abs(netFark))}. Bu yalnızca iki gözlem arasındaki farktır. Ne kadarının harcandığını, verildiğini ya da yanlış sayıldığını göstermez.`);
   }
   if (basG !== null && sonG !== null && basG !== sonG && !degisimler.length)
-    notlar.push('Baştaki ve sondaki durum farklı ama bu sahnede değişimi yaratan bir olay kaydedilmedi. Program aradaki eylemi tahmin etmez.');
+    notlar.push('Baştaki ve sondaki durum farklı, ama bu sahnede değişime yol açan bir olay kaydedilmedi. Aradaki eylem tahmin edilmez.');
   if (iz.model === 'durum' && basG !== null && bd?.sonGozlem && bd.sonGozlem.deger !== basG && !bd.gozlemdenSonraDegisim)
-    notlar.push(`Önceki gözlem “${bd.sonGozlem.deger}”, burada başta “${basG}”; arada kayıtlı bir değişim yok.`);
+    notlar.push(`Önceki gözlem “${bd.sonGozlem.deger}”, burada başta “${basG}”. Arada kayıtlı bir değişim yok.`);
   return { iz, bas: { gozlenen: basG, beklenen, dayanak }, degisimler, son: { gozlenen: sonG, hesaplanan }, netFark, notlar };
 }
 

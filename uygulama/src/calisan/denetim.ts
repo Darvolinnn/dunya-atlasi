@@ -153,7 +153,7 @@ function dongu(e: EvrenVt): { bulgular: Ham[]; denetlenen: number } {
     bulgular.push({
       anahtar: `denetim:dongu:${anahtar}`, kural: 'dongu', hukum: 'celiski',
       baslik: `Birbirine göre verilmiş tarihler imkânsız bir sıra kuruyor: ${zincir.join(' → ')}`,
-      dayanak: `${ifadeler}. Bu kısıtların hepsini birlikte sağlayan bir tarih yok; birini değiştirmek döngüyü çözer.`,
+      dayanak: `${ifadeler}. Bu kısıtların hepsine birden uyan bir tarih yok. Birini değiştirirseniz döngü çözülür.`,
       kayitlar: uyeler.map((r) => kisa(r)),
       fikir: uyeler.some((r) => r.karar === 'fikir' || (JSON.parse(r.alan_kararlari as string) as Record<string, string>).tarih === 'fikir'),
       imza: JSON.stringify(uyeler.map((r) => oku(r.tarih)!.kisitlar ?? []).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))),
@@ -234,7 +234,7 @@ function konum(e: EvrenVt, b: Bulunma[], p: PaketEtkisi | null): { bulgular: Ham
           anahtar: `denetim:rota:${p.iliski}:${q.iliski}`, kural: 'konum', hukum: 'olasi',
           baslik: `${x.kisi.ad}, “${r.rota.ad}” için tanımlı süreden kısa sürede yer değiştiriyor`,
           dayanak: `${ilk.olay.ad} ${tirnak(ilk.tarih!)} ile ${son.olay.ad} ${tirnak(son.tarih!)} arasında en çok ${gunYaz(enCok)} var. `
-            + `“${r.rota.ad}” için tanımlı en kısa süre ${gunYaz(r.sure.gun)}${r.sure.kosul ? ` (${r.sure.kosul})` : ''}. Bu yalnızca kayıtlı rotalar için geçerlidir; başka bir yolla gelemeyeceği çıkarılmaz.`,
+            + `“${r.rota.ad}” için tanımlı en kısa süre ${gunYaz(r.sure.gun)}${r.sure.kosul ? ` (${r.sure.kosul})` : ''}. Bu yalnızca kayıtlı rotalar için geçerlidir; başka bir yoldan gelmiş olabilir.`,
           kayitlar: [x.kisi, ilk.olay, son.olay, { kod: r.rota.kod, ad: r.rota.ad, tur: 'rota' }], fikir,
           imza: JSON.stringify([ex, ey, r.rota.kod, r.sure.gun]),
         });
@@ -248,7 +248,7 @@ function konum(e: EvrenVt, b: Bulunma[], p: PaketEtkisi | null): { bulgular: Ham
         anahtar: `denetim:konum:${p.iliski}:${q.iliski}`, kural: 'konum', hukum: 'olasi',
         baslik: `${x.kisi.ad} aynı gün iki ayrı yerde görünüyor`,
         dayanak: `${x.olay.ad} ${tirnak(x.tarih!)}, ${yx.map((a) => a.yer.ad).join(', ')}; ${y.olay.ad} ${tirnak(y.tarih!)}, ${yy.map((a) => a.yer.ad).join(', ')}. `
-          + 'Bu yerler parçası olma ilişkisiyle birbirini kapsamıyor. İki yer arasında kayıtlı bir yol süresi olmadığı için aynı gün varılıp varılamayacağı bilinmiyor.',
+          + 'Bu yerlerden biri ötekinin parçası değil. İki yer arasında kayıtlı bir yol süresi olmadığı için aynı gün varılıp varılamayacağı bilinmiyor.',
         kayitlar: [x.kisi, x.olay, y.olay], fikir,
         imza: JSON.stringify([x.tarih!.eksen, y.tarih!.eksen, yx.map((a) => a.yer.kod).sort(), yy.map((a) => a.yer.kod).sort()]),
       });
@@ -260,7 +260,7 @@ function konum(e: EvrenVt, b: Bulunma[], p: PaketEtkisi | null): { bulgular: Ham
       bulgular.push({
         anahtar: `denetim:konum-kaba:${kisi.kod}`, kural: 'konum', hukum: 'olasi',
         baslik: kaba.length === 1 ? `${kisi.ad} aynı dönemde iki ayrı yerde olabilir` : `${kisi.ad} aynı dönemde ${kaba.length} kez iki ayrı yerde olabilir`,
-        dayanak: `${cumle}${kaba.length > 6 ? ` ve ${kaba.length - 6} çift daha` : ''}. Tarihler iki yeri ayıracak kadar kesin değil; günü verilirse ayrı ayrı denetlenir.`,
+        dayanak: `${cumle}${kaba.length > 6 ? ` ve ${kaba.length - 6} çift daha` : ''}. Tarihler iki yeri ayıracak kadar kesin değil. Günleri yazılırsa ayrı ayrı denetlenir.`,
         kayitlar: [kisi, ...[...new Map(kaba.flatMap((k) => [k.x.olay, k.y.olay]).map((o) => [o.kod, o])).values()].slice(0, 8)],
         fikir: kaba.every((k) => k.fikir),
         imza: JSON.stringify(kaba.map((k) => [k.x.iliski, k.y.iliski, k.x.tarih!.eksen, k.y.tarih!.eksen, k.yx.kod, k.yy.kod]).sort()),
@@ -297,7 +297,7 @@ function esya(e: EvrenVt): { bulgular: Ham[]; denetlenen: number } {
       bulgular.push({
         anahtar: `denetim:esya:${x.ik}:${y.ik}`, kural: 'esya', hukum: 'olasi',
         baslik: `“${esyaK.ad}” aynı dönemde iki kişide görünüyor`,
-        dayanak: `${x.ad} sahibi: ${donem(bx, sx)}; ${y.ad} sahibi: ${donem(by, sy)}. Bu dönemler kesin olarak örtüşüyor. Ortak sahiplik değilse sahipliklerden birinin bitişi eksik olabilir.`,
+        dayanak: `${x.ad} sahibi: ${donem(bx, sx)}; ${y.ad} sahibi: ${donem(by, sy)}. Bu dönemler kesin olarak örtüşüyor. Ortak sahiplik söz konusu değilse sahipliklerden birinin bitiş tarihi eksik olabilir.`,
         kayitlar: [esyaK, kisa(x), kisa(y)],
         fikir: [x, y].some((r) => r.ikarar === 'fikir' || r.pkarar === 'fikir') || x.skarar === 'fikir',
         imza: JSON.stringify([bx.eksen, by.eksen, sx?.eksen ?? null, sy?.eksen ?? null]),
@@ -319,7 +319,7 @@ function asamaDenetimi(e: EvrenVt, p: PaketEtkisi | null): Ham[] {
       if (!rota || !ek || !sure || sure.enCok >= ek.gun) return;
       bulgular.push({
         anahtar: `denetim:rota-asama:${r.kod}:${n}`, kural: 'konum', hukum: 'celiski',
-        baslik: `“${r.ad}” yolculuğunun ${n + 1}. aşaması kendi rotasının süresinden kısa`,
+        baslik: `“${r.ad}” yolculuğunun ${n + 1}. aşaması, rotası için tanımlı süreden kısa`,
         dayanak: `Çıkış ${tirnak(a.cikis!)}, varış ${tirnak(a.varis!)}: en çok ${gunYaz(sure.enCok)}. “${rota.ad}” için tanımlı en kısa süre ${gunYaz(ek.gun)}${ek.kosul ? ` (${ek.kosul})` : ''}.`,
         kayitlar: [{ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string }, { kod: rota.kod, ad: rota.ad, tur: 'rota' }],
         fikir: r.karar === 'fikir', imza: JSON.stringify([a.cikis?.eksen, a.varis?.eksen, ek.gun]),
@@ -366,9 +366,9 @@ function hesapla(e: EvrenVt, p: PaketEtkisi | null = null): { bulgular: Ham[]; k
       'Aynı kişinin tarihli ve yeri belli iki olayı ya da sahnesi yok.',
       `${k.denetlenen} olay çifti denetlendi${k.rotaDenetlenen ? `; ${k.rotaDenetlenen} çift kayıtlı rota süresiyle karşılaştırıldı` : ''}.${k.yersiz ? ` ${k.yersiz} bulunmanın tarihi ya da yeri olmadığı için denetlenemedi.` : ''} Rota süreleri yalnızca kayıtlı rotalar için geçerlidir.`),
     ozet('esya', 'Eşya', 'Bir eşyanın aynı dönemde iki ayrı sahibinin görünmesi.', s,
-      'İki ya da daha çok sahibi kayıtlı eşya yok.', `${s.denetlenen} eşya denetlendi. Başlangıcı yazılmamış sahiplikler denetlenmez; yok edilme henüz denetlenmiyor.`),
+      'İki ya da daha çok sahibi kayıtlı eşya yok.', `${s.denetlenen} eşya denetlendi. Başlangıcı yazılmamış sahiplikler denetlenmez. Eşyanın yok edilmesi henüz denetlenmiyor.`),
     { kural: 'bilgi', ad: 'Bilgi', tanim: 'Karakterin bir bilgiyi öğrenmeden önce ona göre davranması.', sonuc: 'denetlenemiyor', denetlenen: 0,
-      not: 'Bir karakterin bir bilgiye göre davrandığını gösteren kayıt henüz yok; program bunu metinden çıkarmaz.' },
+      not: 'Bir karakterin bir bilgiye göre davrandığını gösteren bir kayıt henüz yok. Program bunu metinden çıkarmaz.' },
     ozet('surec', 'Süreç', 'Bir olayda bir adımın, bağlı süreç kuralındaki önkoşul adımı yapılmadan gerçekleşmesi.', { bulgular: srH, denetlenen: sr.denetlenen },
       'Önkoşullu adımı olan bir süreç kuralına bağlı olay yok.', `${sr.denetlenen} olay–kural bağı denetlendi. Kaydedilmemiş adım “olmadı” sayılmaz; yalnızca “yapılmadı” ya da “yarıda kaldı” diye işaretlenen önkoşullar denetlenir.`),
   ];
@@ -407,8 +407,8 @@ export function kararVer(b: DenetimBaglami, anahtar: string, durum: 'kabul' | 'e
   const bulgu = hesapla(b.e).bulgular.find((x) => x.anahtar === anahtar);
   if (!bulgu && durum) throw new Error('Bu uyarı artık yok.');
   const g = String(gerekce ?? '').replace(/\s+/g, ' ').trim();
-  if (durum === 'kabul' && !g) throw new Error('Kabul ederken kısa bir gerekçe yaz.');
-  if (g.length > 500) throw new Error('Gerekçe çok uzun.');
+  if (durum === 'kabul' && !g) throw new Error('Kabul ederken kısa bir gerekçe yazın.');
+  if (g.length > 500) throw new Error('Gerekçe en çok 500 harf olabilir.');
   if (istisna !== null && istisna !== 'tercih' && istisna !== 'kapsam') throw new Error('Geçersiz istisna.');
   b.yaz([{ tur: 'inceleme_karari', veri: { anahtar, durum, gerekce: g, dayanak: bulgu?.imza ?? '', baslik: bulgu?.baslik ?? '', ...(durum === 'kabul' ? { istisna: istisna ?? 'tercih' } : {}) } }],
     bulgu ? bulgu.kayitlar.map((k) => k.kod) : []);

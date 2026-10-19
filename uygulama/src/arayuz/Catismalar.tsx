@@ -58,7 +58,7 @@ export function CatismaListesi({ istemci, evren, kod, surum, baslikGoster = true
           )}
           {c.tur === 'silme' && c.birlesti && (
             <>
-              <p>Bu kayıt <a href={`#/e/${evren}/k/${c.birlesti.kod}`}>{c.birlesti.ad}</a> ile birleştirilmişti, ama {c.kurulumlar.join(', ')} bunu bilmeden {c.duzenlemeSayisi} değişiklik yapmış. Değişiklikler kaybolmadı; birleştirilen kaydın kendi sayfasında duruyor.</p>
+              <p>Bu kayıt <a href={`#/e/${evren}/k/${c.birlesti.kod}`}>{c.birlesti.ad}</a> ile birleştirilmişti, ama {c.kurulumlar.join(', ')} bunu bilmeden {c.duzenlemeSayisi} değişiklik yapmış. Değişiklikler kaybolmadı, birleştirilen kaydın kendi sayfasında duruyor.</p>
               <div class="satir">
                 <button class="dugme" onClick={() => calistir(istemci.iste('silmeCatismasiCoz', { evren, kayit: c.kayit, geriYukle: false }))}>Birleştirilmiş kalsın</button>
                 <button class="dugme" onClick={() => calistir(istemci.iste('birlesmeyiGeriAl', { evren, kod: c.kayit }))}>Birleştirmeyi geri al</button>
@@ -67,8 +67,8 @@ export function CatismaListesi({ istemci, evren, kod, surum, baslikGoster = true
           )}
           {c.tur === 'ters_birlesme' && (
             <>
-              <p>Bu kayıt ile <a href={`#/e/${evren}/k/${c.diger.kod}`}>{c.diger.ad}</a> iki cihazda ters yönde birleştirilmiş. Önce yapılan birleştirme kaldı; ikincisi uygulanmadı.
-                Ad ve alanlar önce yapılan birleştirmedeki seçimlerle duruyor; istersen kayıtta düzeltebilirsin.</p>
+              <p>Bu kayıt ile <a href={`#/e/${evren}/k/${c.diger.kod}`}>{c.diger.ad}</a> iki cihazda ters yönde birleştirilmiş. Önce yapılan birleştirme geçerli kaldı, ikincisi uygulanmadı.
+                Ad ve alanlar ilk birleştirmede yapılan seçimlere göre duruyor. İsterseniz kayıtta düzeltebilirsiniz.</p>
               <div class="satir">
                 <button class="dugme" onClick={() => calistir(istemci.iste('tersBirlesmeCoz', { evren, islem: c.islem }))}>Tamam</button>
               </div>
@@ -76,10 +76,10 @@ export function CatismaListesi({ istemci, evren, kod, surum, baslikGoster = true
           )}
           {c.tur === 'silme' && !c.birlesti && (
             <>
-              <p>Bu kayıt silinmişti, ama {c.kurulumlar.join(', ')} silindiğini bilmeden {c.duzenlemeSayisi} değişiklik yapmış. Değişiklikler kaybolmadı; kayıtta duruyor.</p>
+              <p>Bu kayıt silinmişti, ama {c.kurulumlar.join(', ')} silindiğini bilmeden {c.duzenlemeSayisi} değişiklik yapmış. Değişiklikler kaybolmadı, kayıtta duruyor.</p>
               <div class="satir">
                 <button class="dugme ana" onClick={() => calistir(istemci.iste('silmeCatismasiCoz', { evren, kayit: c.kayit, geriYukle: true }))}>Kaydı geri getir</button>
-                <button class="dugme" onClick={() => onayla('Kayıt silinmiş kalsın mı? Çöp kutusundan sonra da geri getirebilirsin.') && calistir(istemci.iste('silmeCatismasiCoz', { evren, kayit: c.kayit, geriYukle: false }))}>Silinmiş kalsın</button>
+                <button class="dugme" onClick={() => onayla('Kayıt silinmiş kalsın mı? Daha sonra çöp kutusundan geri getirebilirsiniz.') && calistir(istemci.iste('silmeCatismasiCoz', { evren, kayit: c.kayit, geriYukle: false }))}>Silinmiş kalsın</button>
               </div>
               <p class="soluk kucuk">Silinmiş kalırsa kayıt, yazılanlarla birlikte çöp kutusunda durur.</p>
             </>

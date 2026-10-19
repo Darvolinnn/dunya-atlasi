@@ -93,12 +93,12 @@ function ilkTanitimlar(e: EvrenVt, sira: { kod: string; ad: string }[]) {
 export function yerlestir(b: AnlatiBaglami, kod: string, ust: string | null, sira: number | null): { etki: AnlatiEtkisi[] } {
   const { e } = b;
   const tur = turu(e, kod);
-  if (tur !== 'sahne' && tur !== 'bolum') throw new Error('Yalnızca sahne ve bölüm yerleştirilir.');
+  if (tur !== 'sahne' && tur !== 'bolum') throw new Error('Yalnızca sahneler ve bölümler yerleştirilebilir.');
   if (ust !== null) {
     const ustTur = turu(e, ust);
     if (ustTur === undefined) throw new Error('Kayıt bulunamadı.');
-    if (tur === 'bolum' && ustTur !== 'eser') throw new Error('Bölüm yalnızca bir esere yerleşir.');
-    if (tur === 'sahne' && ustTur !== 'eser' && ustTur !== 'bolum') throw new Error('Sahne bir esere ya da bölüme yerleşir.');
+    if (tur === 'bolum' && ustTur !== 'eser') throw new Error('Bölüm yalnızca bir eserin içine yerleştirilebilir.');
+    if (tur === 'sahne' && ustTur !== 'eser' && ustTur !== 'bolum') throw new Error('Sahne yalnızca bir eserin ya da bölümün içine yerleştirilebilir.');
   }
   const eserOf = (u: string | null) => (u && turu(e, u) === 'bolum' ? ustBul(e, u) : u);
   const etkilenenEserler = [...new Set([eserOf(ustBul(e, kod)), eserOf(ust)].filter((x): x is string => !!x && turu(e, x) === 'eser'))];
@@ -138,8 +138,8 @@ export function olusturVeYerlestir(b: AnlatiBaglami, ust: string, ad: string, tu
   const { e } = b;
   const ustTur = turu(e, ust);
   if (!ustTur) throw new Error('Kayıt bulunamadı.');
-  if (tur === 'bolum' && ustTur !== 'eser') throw new Error('Bölüm yalnızca bir esere eklenir.');
-  if (tur === 'sahne' && ustTur !== 'eser' && ustTur !== 'bolum') throw new Error('Sahne bir esere ya da bölüme eklenir.');
+  if (tur === 'bolum' && ustTur !== 'eser') throw new Error('Bölüm yalnızca bir esere eklenebilir.');
+  if (tur === 'sahne' && ustTur !== 'eser' && ustTur !== 'bolum') throw new Error('Sahne yalnızca bir esere ya da bölüme eklenebilir.');
   const kardes = cocuklar(e, ust).filter((r) => (tur === 'bolum' ? r.tur === 'bolum' : r.tur !== 'bolum'));
   const kod = yeniKod();
   const konum = araKonum(kardes.length ? kardes[kardes.length - 1].konum : null, null);

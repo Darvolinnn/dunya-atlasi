@@ -109,7 +109,7 @@ export function teknolojiDurumu(e: EvrenVt, yer: string, tarihIfade: string): Te
   }
   return {
     yer: kisa(e, yer), tarih, yerler: yerler.map((y) => kisa(e, y)), satirlar,
-    not: 'Yalnızca yazılmış keşif, yayılma ve gündelik hayata girme kayıtları. Kaydı olmayan teknoloji için “yok” denmez. Bir yere ulaşmış olması, bir kişinin onu tanıdığı ya da kullanabildiği anlamına gelmez.',
+    not: 'Yalnızca yazılmış keşif, yayılma ve gündelik hayata girme kayıtları gösterilir. Kaydı olmayan bir teknoloji için “yok” denmez. Bir teknolojinin bir yere ulaşmış olması, oradaki birinin onu tanıdığını ya da kullanabildiğini göstermez.',
   };
 }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GUN_PARCA, karsilastir, tarihCoz, tarihAciklamasi, tarihYenidenHesapla, VARSAYILAN_TAKVIM } from '../src/alan/tarih';
+import { GUN_PARCA, gunFarki, karsilastir, tarihCoz, tarihAciklamasi, tarihYenidenHesapla, VARSAYILAN_TAKVIM, type Takvim } from '../src/alan/tarih';
 
 const t = (s: string) => tarihCoz(s)!;
 
@@ -45,5 +45,14 @@ describe('evren tarihi', () => {
   it('açıklama görünür varsayımı söyler', () => {
     expect(tarihAciklamasi(t('yaklaşık 300'))).toBe('290–310 arası sayılıyor (±10 yıl)');
     expect(tarihAciklamasi(t('412 yazı'))).toBe('Yıl 412');
+  });
+
+  it('iki tarih arası gün sayısı aralık olarak verilir (komut paleti, §5.8)', () => {
+    const ay: Takvim = { kod: 'ana', surum: 1, ad: 'Yıl', yilGun: 0, aylar: [{ ad: 'Tohum', gun: 30 }, { ad: 'Hasat', gun: 30 }] };
+    expect(gunFarki(tarihCoz('3 Tohum 412', ay), tarihCoz('5 Hasat 412', ay))).toEqual({ enAz: 32, enCok: 32 });
+    expect(gunFarki(tarihCoz('5 Hasat 412', ay), tarihCoz('3 Tohum 412', ay))).toEqual({ enAz: -32, enCok: -32 });
+    expect(gunFarki(t('412'), t('414'))).toEqual({ enAz: 366, enCok: 1094 });
+    expect(gunFarki(t('412'), tarihCoz('412 sonrası'))).toBeNull();
+    expect(gunFarki(null, t('412'))).toBeNull();
   });
 });

@@ -14,7 +14,7 @@ export function BirlesmeBilgisi({ istemci, evren, kayit }: { istemci: Istemci; e
   if (kayit.birlesti) {
     return (
       <div class="uyari satir" style="margin-bottom:16px" role="status">
-        <span style="flex:1">Bu kayıt <a href={`#/e/${evren}/k/${kayit.birlesti.kod}`}>{kayit.birlesti.ad}</a> ile birleştirildi. Metni ve geçmişi burada okunur kalır; bu kayda giden bağlantılar {kayit.birlesti.ad} kaydına varır.</span>
+        <span style="flex:1">Bu kayıt <a href={`#/e/${evren}/k/${kayit.birlesti.kod}`}>{kayit.birlesti.ad}</a> ile birleştirildi. Metnini ve geçmişini burada okumaya devam edebilirsiniz. Bu kayda giden bağlantılar artık {kayit.birlesti.ad} kaydını açar.</span>
         <a class="dugme ana" href={`#/e/${evren}/k/${kayit.birlesti.kod}`}>{kayit.birlesti.ad} kaydına git</a>
         <button class="dugme" onClick={() => istemci.iste('birlesmeyiGeriAl', { evren, kod: kayit.kod }).then(() => setHata(null), (e) => setHata(hataYaz(e)))}>Birleştirmeyi geri al</button>
         {hata && <span class="hata kucuk">{hata}</span>}
@@ -63,7 +63,7 @@ function BirlesmePaneli({ istemci, evren, kayit, onceKaydet, kapat }: { istemci:
   return (
     <section class="kart birlesme" aria-label="Kayıtları birleştir">
       <h2>Kayıtları birleştir</h2>
-      <p class="soluk kucuk">Aynı şey için yanlışlıkla iki kayıt açıldıysa burada tek kayıtta toplanır. Evrende iki şeyin birleşmesi (iki loncanın birleşmesi gibi) bu değildir; o bir olaydır.</p>
+      <p class="soluk kucuk">Aynı şey için yanlışlıkla iki kayıt açtıysanız onları burada tek kayıtta toplayabilirsiniz. Evrende iki şeyin birleşmesi (örneğin iki loncanın) bu değildir; onu bir olay olarak kaydedin.</p>
       <div class="satir">
         <span>“{kayit.ad}” ile birleşecek kayıt:</span>
         <KayitSec istemci={istemci} evren={evren} secili={diger} sec={(s) => setDiger(s && s.kod !== kayit.kod ? s : null)} />
@@ -77,19 +77,19 @@ function BirlesmePaneli({ istemci, evren, kayit, onceKaydet, kapat }: { istemci:
       )}
       {o && (
         <div class="birlesme-onizleme">
-          <p><strong>“{o.kaynak.ad}”, “{o.hedef.ad}” kaydına katılacak.</strong> “{o.kaynak.ad}” silinmez; ona giden bağlantılar “{o.hedef.ad}” kaydına varır.</p>
+          <p><strong>“{o.kaynak.ad}”, “{o.hedef.ad}” kaydına katılacak.</strong> “{o.kaynak.ad}” silinmez, ona giden bağlantılar “{o.hedef.ad}” kaydını açar.</p>
           <ul>
             {o.adlar.length > 0 && <li>Lakap olarak kalacak adlar: {o.adlar.join(', ')}</li>}
             {tasinan.length > 0 && <li>Taşınacaklar: {tasinan.map(([n, ad]) => `${n} ${ad}`).join(', ')}</li>}
-            {o.baglantilar > 0 && <li>{o.baglantilar} metindeki bağlantı “{o.hedef.ad}” kaydına varacak; metinlerdeki yazılış değişmez.</li>}
-            {o.aradakiIliskiler > 0 && <li>İki kayıt arasındaki {o.aradakiIliskiler} ilişki kaldırılacak (kayıt kendisiyle ilişkili olamaz).</li>}
-            {dolan.length > 0 && <li>“{o.hedef.ad}” kaydında boş olan ve doldurulacak alanlar: {dolan.map((a) => `${a.etiket} (${a.kaynak})`).join(', ')}</li>}
-            {o.metinVar && <li>“{o.kaynak.ad}” kaydının metni kendi sayfasında okunur kalır; istediğin kısmı taşıyabilirsin.</li>}
+            {o.baglantilar > 0 && <li>Metinlerdeki {o.baglantilar} bağlantı “{o.hedef.ad}” kaydını açacak. Metinde yazılanlar değişmez.</li>}
+            {o.aradakiIliskiler > 0 && <li>İki kayıt arasındaki {o.aradakiIliskiler} ilişki kaldırılacak (bir kayıt kendisiyle ilişkili olamaz).</li>}
+            {dolan.length > 0 && <li>“{o.hedef.ad}” kaydında boş olup doldurulacak alanlar: {dolan.map((a) => `${a.etiket} (${a.kaynak})`).join(', ')}</li>}
+            {o.metinVar && <li>“{o.kaynak.ad}” kaydının metni kendi sayfasında okunur kalır; istediğiniz kısmı taşıyabilirsiniz.</li>}
           </ul>
           {celisen.length > 0 && (
             <>
               <h3>Farklı değerler</h3>
-              <p class="soluk kucuk">İki kayıtta farklı yazılmış alanlar. Hangisinin kalacağını seç.</p>
+              <p class="soluk kucuk">İki kayıtta farklı yazılmış alanlar. Hangisinin kalacağını seçin.</p>
               <table class="birlesme-tablosu">
                 <tbody>
                   {celisen.map((a) => (
@@ -103,7 +103,7 @@ function BirlesmePaneli({ istemci, evren, kayit, onceKaydet, kapat }: { istemci:
               </table>
             </>
           )}
-          <p class="soluk kucuk">Birleştirme, “{o.kaynak.ad}” kaydının sayfasındaki “Birleştirmeyi geri al” ile bir bütün olarak geri alınır.</p>
+          <p class="soluk kucuk">Birleştirmeyi daha sonra “{o.kaynak.ad}” kaydının sayfasındaki “Birleştirmeyi geri al” düğmesiyle tümüyle geri alabilirsiniz.</p>
         </div>
       )}
       {hata && <p class="hata kucuk">{hata}</p>}

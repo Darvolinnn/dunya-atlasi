@@ -6,7 +6,12 @@ on:
   pull_request:
 jobs:
   denetim:
-    runs-on: ubuntu-latest
+    # Windows'ta dosya adlarında büyük-küçük harf ayrılmaz; içe aktarma çakışmaları yalnız orada görünür.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: uygulama
@@ -21,3 +26,19 @@ jobs:
       - run: npm run denetle
       - run: npm test
       - run: npm run build
+  tarayici:
+    # Kullanıcı akışları gerçek tarayıcıda (inceleme 9): yazma, bağlantı, rehber, yedek, hata anları.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: uygulama
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: uygulama/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run sina:tarayici

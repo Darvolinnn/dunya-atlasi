@@ -21,7 +21,7 @@ export interface SinirVerisi { tarih?: EvrenTarihi | null; olay?: string | null;
 
 export const temiz = (s: unknown, uzunluk: number, bos = true) => {
   const x = String(s ?? '').replace(/\s+/g, ' ').trim();
-  if (!x && !bos) throw new Error('Boş olamaz.');
+  if (!x && !bos) throw new Error('Bu alan boş bırakılamaz.');
   if (x.length > uzunluk) throw new Error('Metin çok uzun.');
   return x;
 };
@@ -33,7 +33,7 @@ export function sinirCoz(b: DurumBaglami, girdi: { ifade?: string; olay?: string
     const f = String(girdi.fark ?? '').trim();
     if (!f) return { olay: girdi.olay };
     const fark = farkCoz(f);
-    if (!fark) throw new Error('Farkı “3 gün sonra” ya da “2 yıl önce” gibi yaz; boş bırakırsan olayın kendi tarihi kullanılır.');
+    if (!fark) throw new Error('Farkı “3 gün sonra” ya da “2 yıl önce” gibi yazın. Boş bırakırsanız olayın kendi tarihi kullanılır.');
     return { olay: girdi.olay, fark };
   }
   const t = tarihCoz(temiz(girdi.ifade, 120), zamanSetiOku(b.e.db));
@@ -86,7 +86,7 @@ export function durumlar(b: DurumBaglami, konu: string, an?: EvrenTarihi | null)
         d.sonraki = sonra?.baslangic ?? null;
       }
       if (d.baslangic?.tarih && d.bitis?.tarih && karsilastir(d.baslangic.tarih, d.bitis.tarih) === 'sonra') d.uyari = 'Bitiş, başlangıçtan önce görünüyor.';
-      if (d.baslangic?.olay && !d.baslangic.tarih) d.uyari = `Başlangıcın bağlı olduğu “${d.baslangic.olay.ad}” kaydının tarihi yok; zamanı belirsiz.`;
+      if (d.baslangic?.olay && !d.baslangic.tarih) d.uyari = `Başlangıcın bağlı olduğu “${d.baslangic.olay.ad}” kaydının tarihi yok, bu yüzden zamanı belirsiz.`;
       if (an !== undefined) d.gecerli = gecerlilik(d.kip, sinir(d.baslangic), d.kip === 'sonraki' ? sinir(d.sonraki) : sinir(d.bitis), an);
     });
     sirali.push(...grup);
@@ -99,7 +99,7 @@ export function durumEkle(b: DurumBaglami, konu: string, g: DurumGirdisi) {
   const deger = temiz(g.deger, 300);
   const hedef = g.hedef ?? null;
   if (hedef && (!kodGecerliMi(hedef) || b.e.db.selectValue('SELECT 1 FROM kayitlar WHERE kod=?', [hedef]) === undefined)) throw new Error('Seçilen kayıt bulunamadı.');
-  if (!deger && !hedef) throw new Error('Değer boş olamaz.');
+  if (!deger && !hedef) throw new Error('Bir değer yazın.');
   const kip = g.kip ?? 'sonraki';
   if (!durumKipiGecerli(kip)) throw new Error('Geçersiz süre biçimi.');
   const karar = g.karar ?? 'kesin';

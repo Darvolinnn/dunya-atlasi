@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { EserYapisi, EvrenBilgisi, KisaKayit, YapiSahnesi } from '../veri/api';
 import { git } from './Uygulama';
-import { EsitlemeOzeti } from './Esitleme';
+import { DurumOzeti } from './Esitleme';
 
 /** İnceleme görünümleri (§7): aynı verinin farklı çizimleri. */
 export const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy', 'Soy ağacı'], ['neden', 'Neden–sonuç'], ['durumlar', 'Durum geçmişi'],
@@ -69,7 +69,7 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
           <ul class="gezinti-listesi">{DIGER_SAYFALAR.filter(([k]) => !bagli || !['surumler', 'yedek'].includes(k)).map(([k, ad]) => oge(k, ad))}</ul>
         </details>
         <div class="gezinti-alti">
-          <EsitlemeOzeti />
+          <DurumOzeti istemci={istemci} evren={evren} yedekVar={!bagli} />
           <span>Komutlar: Ctrl+K</span>
         </div>
       </nav>
@@ -144,7 +144,7 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
       })}
       {disarida.length > 0 && (
         <details class="agac-disarida">
-          <summary>Esere yerleşmemiş ({disarida.length})</summary>
+          <summary>Esere yerleştirilmemiş ({disarida.length})</summary>
           <ul class="agac-liste">{sahneler(disarida)}</ul>
         </details>
       )}

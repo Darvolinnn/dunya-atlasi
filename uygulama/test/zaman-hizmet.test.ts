@@ -52,7 +52,7 @@ describe('zaman tanımları hizmette', () => {
     h.kayitTarih({ evren, kod: f, ifade: 'Fey 300. gün' });
     const ft = h.kayit({ evren, kod: f }).tarih!;
     expect(ft.akis).toBeTruthy();
-    expect(tarihAciklamasi(ft, h.zamanSeti({ evren }))).toContain('Fey akışının 300. günü; ana akışta');
+    expect(tarihAciklamasi(ft, h.zamanSeti({ evren }))).toContain('Fey akışının 300. günü. Ana akışta');
 
     // Paralel takvim kaldırılınca onunla yazılmış tarih silinmez; ana takvimle okunur (sembolik kalır).
     h.paralelTakvimYaz({ evren, kod: dongu, takvim: null });

@@ -55,7 +55,7 @@ export function surecKurallari(e: EvrenVt, sahip?: string): SurecKurali[] {
 
 export function surecKuraliOlustur(b: SurecBaglami, sahip: string, ad: string) {
   const t = kayitTuru(b.e, sahip);
-  if (!SUREC_SAHIPLERI.includes(t)) throw new Error('Bu türdeki kayda süreç kuralı eklenmez.');
+  if (!SUREC_SAHIPLERI.includes(t)) throw new Error('Bu türden bir kayda süreç kuralı eklenmez.');
   const kod = yeniKod();
   b.yaz([{ tur: 'surec_kurali_olustur', veri: { kod, sahip, ad: metin(ad, 120, false) } }], [sahip]);
   return { kod };
@@ -121,14 +121,14 @@ export function surecSonucu(k: SurecKurali, d: Record<string, AdimDurumu>): Sure
   for (const a of k.adimlar) if (a.esik && d[a.kod] === 'tamam') esik = a.ad;
   const gerekli = k.adimlar.filter((a) => a.sonuc);
   const ad = (l: SurecAdimi[]) => l.map((a) => `“${a.ad}”`).join(', ');
-  if (!gerekli.length) return { durum: 'tanimsiz', yazi: 'Bu kural sonucun hangi adımlarla doğduğunu söylemiyor.', esik };
+  if (!gerekli.length) return { durum: 'tanimsiz', yazi: 'Bu kural, sonucun hangi adımlarla doğduğunu belirtmiyor.', esik };
   const kalan = gerekli.filter((a) => d[a.kod] === 'yarida' || d[a.kod] === 'yapilmadi');
   if (kalan.length) return { durum: 'dogmadi', yazi: `Bu kurala göre sonuç doğmadı: ${kalan.map((a) => `“${a.ad}” ${DURUM_ADI[d[a.kod]]}`).join(', ')}.`, esik };
   if (gerekli.every((a) => d[a.kod] === 'tamam')) return { durum: 'dogdu', yazi: `Bu kurala göre sonuç doğdu: ${ad(gerekli)} tamamlandı.`, esik };
   const isaretli = k.adimlar.filter((a) => d[a.kod]);
-  if (isaretli.length && isaretli.every((a) => d[a.kod] === 'planlandi')) return { durum: 'plan', yazi: 'Süreç yalnızca planlandı; başladığı kaydedilmedi.', esik };
+  if (isaretli.length && isaretli.every((a) => d[a.kod] === 'planlandi')) return { durum: 'plan', yazi: 'Süreç yalnızca planlandı, başladığı kaydedilmedi.', esik };
   const bilinmeyen = gerekli.filter((a) => !d[a.kod] || d[a.kod] === 'planlandi' || d[a.kod] === 'basladi');
-  return { durum: 'bilinmiyor', yazi: `Sonuç bilinmiyor: ${bilinmeyen.map((a) => `“${a.ad}” ${d[a.kod] ? DURUM_ADI[d[a.kod]] : 'kaydedilmedi'}`).join(', ')}. Kaydedilmemiş adım “olmadı” sayılmaz.`, esik };
+  return { durum: 'bilinmiyor', yazi: `Sonuç bilinmiyor: ${bilinmeyen.map((a) => `“${a.ad}” ${d[a.kod] ? DURUM_ADI[d[a.kod]] : 'kaydedilmedi'}`).join(', ')}. Kaydedilmemiş bir adım “olmadı” sayılmaz.`, esik };
 }
 
 /** Bir adım gerçekleşmiş görünürken önkoşul adımı "yapılmadı" ya da "yarıda kaldı" ise. Önkoşulu bilinmeyen adım uyarı vermez. */
@@ -177,7 +177,7 @@ export function surecDenetimi(e: EvrenVt) {
       bulgular.push({
         anahtar: `denetim:surec:${olay}:${kural.kod}:${c.adim.kod}:${c.onkosul.kod}`, hukum: c.kesin ? 'celiski' : 'olasi',
         baslik: `“${o.ad}”: “${c.adim.ad}” önkoşulu olmadan ${DURUM_ADI[d[c.adim.kod]]}`,
-        dayanak: `“${kural.ad}” kuralına (${kural.sahip.ad}) göre “${c.adim.ad}” için önce “${c.onkosul.ad}” gerekir; bu olayda “${c.onkosul.ad}” ${DURUM_ADI[d[c.onkosul.kod]]} olarak işaretli. Olay kaydı değişmez; bir açıklama gerekebilir.`,
+        dayanak: `“${kural.ad}” kuralına (${kural.sahip.ad}) göre “${c.adim.ad}” için önce “${c.onkosul.ad}” gerekir. Bu olayda ise “${c.onkosul.ad}” ${DURUM_ADI[d[c.onkosul.kod]]} olarak işaretli. Olay kaydı değiştirilmez, ama bir açıklama gerekebilir.`,
         kayitlar: [o, kural.sahip], fikir: r.okarar === 'fikir', imza: JSON.stringify([d[c.adim.kod], d[c.onkosul.kod]]),
       });
     }
@@ -197,7 +197,7 @@ export function makamYurutenleri(e: EvrenVt, makam: string): MakamYurutucusu[] {
   for (let i = 1; i < l.length; i++) {
     const o = l[i - 1], s = l[i];
     const bit = o.bitis?.eksen?.enGec ?? null, bas = s.baslangic?.eksen?.enErken ?? null;
-    if (!o.bitis && s.baslangic) s.not = `“${o.kisi.ad}” için bitiş yazılmamış; bu dönemde iki yürüten görünüyor.`;
+    if (!o.bitis && s.baslangic) s.not = `“${o.kisi.ad}” için bitiş yazılmamış, bu yüzden bu dönemde iki yürüten görünüyor.`;
     else if (bit !== null && bas !== null && bas < (o.bitis?.eksen?.enErken ?? bit)) s.not = `“${o.kisi.ad}” ile aynı dönemde yürütüyor görünüyor.`;
     else if (bit !== null && bas !== null && bas > bit + 1) s.not = `Önceki yürütenden sonra boş dönem var: ${o.bitis!.ifade} – ${s.baslangic!.ifade}.`;
   }

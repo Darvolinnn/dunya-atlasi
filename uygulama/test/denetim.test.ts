@@ -165,7 +165,7 @@ describe('tutarlılık denetimleri (§9.1)', () => {
     expect(rb).toHaveLength(1);
     expect(rb[0].hukum).toBe('olasi');
     expect(rb[0].dayanak).toContain('en çok 2 gün');
-    expect(rb[0].dayanak).toContain('başka bir yolla gelemeyeceği çıkarılmaz');
+    expect(rb[0].dayanak).toContain('başka bir yoldan gelmiş olabilir');
     expect(d.kurallar.find((x) => x.kural === 'konum')!.not).toContain('rota süresiyle');
 
     // Planlanan aşama bulunma sayılmaz; yaşam süresi yolculuğu da kapsar.

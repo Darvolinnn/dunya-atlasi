@@ -5,7 +5,7 @@ export const KALABALIK_OLAY_ADLARI = { katilma: 'Katılma', ayrilma: 'Ayrılma',
 
 export function miktarDogrula(m: KalabalikMiktari): KalabalikMiktari {
   if (!m || !Number.isSafeInteger(m.enAz) || !Number.isSafeInteger(m.enCok) || m.enAz < 0 || m.enCok < m.enAz || typeof m.yaklasik !== 'boolean') {
-    throw new Error('Miktar, sıfır ya da daha büyük tam sayılardan oluşan bir sayı veya aralık olmalıdır.');
+    throw new Error('Miktar, sıfır ya da daha büyük bir tam sayı ya da böyle iki sayıdan oluşan bir aralık olmalı.');
   }
   return { enAz: m.enAz, enCok: m.enCok, yaklasik: m.yaklasik };
 }

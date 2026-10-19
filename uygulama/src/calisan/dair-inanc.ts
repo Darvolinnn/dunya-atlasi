@@ -37,11 +37,11 @@ function denetle(b: DurumBaglami, t: DairInancTanimi): DairInancTanimi {
   if (!t || typeof t !== 'object') throw new Error('Kayıt geçersiz.');
   // Birleştirilmiş kişinin eski kodu birleştiği kayda çevrilir.
   t = { ...t, sanan: typeof t.sanan === 'string' ? yonlendir(b.e.db, t.sanan) : t.sanan, hakkinda: typeof t.hakkinda === 'string' ? yonlendir(b.e.db, t.hakkinda) : t.hakkinda };
-  for (const [kod, ad] of [[t.sanan, 'Sanan kişi'], [t.hakkinda, 'Hakkında olunan kişi']] as const) {
+  for (const [kod, ad] of [[t.sanan, 'Sanan kişi'], [t.hakkinda, 'Hakkında sanılan kişi']] as const) {
     if (typeof kod !== 'string' || !kodGecerliMi(kod) || b.e.db.selectValue('SELECT 1 FROM kayitlar WHERE kod=? AND silindi IS NULL', [kod]) === undefined) throw new Error(`${ad} seçilmedi.`);
   }
-  if (t.sanan === t.hakkinda) throw new Error('Kişinin kendi bilgisi için “Kim ne biliyor?” kullanılır.');
-  if (!SANILAN_DURUMLAR.some((x) => x.kod === t.sanilan)) throw new Error('Ne sandığını seçin.');
+  if (t.sanan === t.hakkinda) throw new Error('Kişinin kendi bilgisi için “Kim ne biliyor?” bölümünü kullanın.');
+  if (!SANILAN_DURUMLAR.some((x) => x.kod === t.sanilan)) throw new Error('Kişinin ne sandığını seçin.');
   const tanim = { sanan: t.sanan, hakkinda: t.hakkinda, sanilan: t.sanilan, tarih: temiz(t.tarih, 80), aciklama: temiz(t.aciklama, 500) };
   tarihOku(b, tanim.tarih);
   return tanim;
@@ -79,11 +79,11 @@ function karsilastir(b: DurumBaglami, iddia: string, t: DairInancTanimi, hakkind
     satirlar = a ? a.satirlar : [];
   } else {
     satirlar = bilenBilgileri(b, hakkinda.kod).filter((x) => x.iddia.kod === iddia && x.karar !== 'vazgecildi');
-    if (satirlar.length > 1) return { gercekDurum: null, uyum: 'belirsiz', neden: `${hakkinda.ad} için birden çok kayıt var; karşılaştırmak için tarih yazın.` };
+    if (satirlar.length > 1) return { gercekDurum: null, uyum: 'belirsiz', neden: `${hakkinda.ad} için birden çok kayıt var. Karşılaştırmak için bir tarih yazın.` };
   }
-  if (!satirlar.length) return { gercekDurum: null, uyum: 'belirsiz', neden: `${hakkinda.ad} için bu konuda kayıtlı bilgi yok (bu, bilmediği anlamına gelmez).` };
+  if (!satirlar.length) return { gercekDurum: null, uyum: 'belirsiz', neden: `${hakkinda.ad} için bu konuda kayıtlı bilgi yok. Bu, bilmediğini göstermez.` };
   const e = satirlar[0].etiket;
-  if (e.kod === 'inaniyor' || e.kod === 'reddediyor') return { gercekDurum: e.ad, uyum: 'belirsiz', neden: 'Gerçek belirlenmediği için bildiği ya da bilmediği söylenemez.' };
+  if (e.kod === 'inaniyor' || e.kod === 'reddediyor') return { gercekDurum: e.ad, uyum: 'belirsiz', neden: 'Gerçek belirlenmediği için bilip bilmediği söylenemez.' };
   return { gercekDurum: e.ad, uyum: UYAN[t.sanilan].includes(e.kod) ? 'dogru' : 'yanlis', neden: '' };
 }
 

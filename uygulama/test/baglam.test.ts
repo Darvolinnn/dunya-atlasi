@@ -42,9 +42,9 @@ describe('bağlam karşılaştırma (F23)', () => {
     expect(k.sutunlar.map((x) => [x.kaynak, x.ad])).toEqual([['Sürüm: İlk taslak', 'Kara Kale'], ['Güncel', 'Kızıl Kale']]);
     expect(k.satirlar.find((x) => x.baslik === 'Ad')!.neden).toEqual(['kaynak (sürüm ya da deneme)']);
     expect(k.satirlar.find((x) => x.baslik === 'Sahibi')!.neden).toEqual(['kaynak (sürüm ya da deneme)', 'evren zamanı']);
-    expect(k.notlar.join(' ')).toContain('eski sürümün ya da denemenin kendisi değildir');
+    expect(k.notlar.join(' ')).toContain('eski sürümün ya da deneme kopyasının kendisi değildir');
 
-    expect(() => h.baglamKarsilastir({ evren, kayit: kale, baglamlar: [{ kaynak: null, tarih: null, bilen: null }] })).toThrow('İki ile dört');
+    expect(() => h.baglamKarsilastir({ evren, kayit: kale, baglamlar: [{ kaynak: null, tarih: null, bilen: null }] })).toThrow('İki ila dört');
     expect(() => h.baglamKarsilastir({ evren, kayit: kale, baglamlar: [{ kaynak: null, tarih: 'dün değil', bilen: null }, { kaynak: null, tarih: null, bilen: null }] })).toThrow('Tarih okunamadı');
   });
 

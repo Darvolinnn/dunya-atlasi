@@ -22,8 +22,8 @@ export function Masa({ istemci, evren, surum, ekler }: { istemci: Istemci; evren
   const son = kayitlar.slice(0, 8);
   return (
     <div class="masa">
-      <section class="kart masa-kaldigi" aria-label="Kaldığın yer">
-        <h2>Kaldığın yer</h2>
+      <section class="kart masa-kaldigi" aria-label="Kaldığınız yer">
+        <h2>Kaldığınız yer</h2>
         {kaldigi?.kayit ? (
           <>
             <p style="margin:6px 0">
@@ -34,9 +34,9 @@ export function Masa({ istemci, evren, surum, ekler }: { istemci: Istemci; evren
               <p class="soluk kucuk" style="margin:0 0 6px">Yan panelde: {kaldigi.yanPanelKayitlari.map((k) => k.ad).join(', ')}</p>
             )}
           </>
-        ) : <p class="soluk kucuk">Bir kaydı açıp yazmaya başlayınca burada görünür; başka cihazda kaldığın yer de eşitlemeyle gelir.</p>}
+        ) : <p class="soluk kucuk">Bir kaydı açıp yazmaya başladığınızda burada görünür. Başka bir cihazda kaldığınız yer de eşitlemeyle buraya gelir.</p>}
         <label class="alan">
-          <span class="alan-adi">Buradan devam notu</span>
+          <span class="alan-adi">Devam notu</span>
           <textarea class="girdi" rows={2} lang="tr" value={not} placeholder="Örn. Kuşatma sahnesinde Elin'in kararı kaldı"
             onInput={(e) => setNot((e.target as HTMLTextAreaElement).value)}
             onBlur={() => { if (not !== (kaldigi?.not ?? '')) calisma?.notYaz(not); }} />
@@ -44,7 +44,7 @@ export function Masa({ istemci, evren, surum, ekler }: { istemci: Istemci; evren
         {kaldigi?.kayit && (
           <div class="satir" style="margin-top:8px">
             <button class="dugme ana" onClick={() => calisma?.devamEt({ kayit: kaldigi.kayit, konum: kaldigi.konum, yanPanel: kaldigi.yanPanel, tur: kaldigi.kayitTuru })}>Devam et</button>
-            <span class="soluk kucuk">Kayıt, imleç ve yan paneldeki kayıtlar geri gelir.</span>
+            <span class="soluk kucuk">Kayıt, imlecin yeri ve yan paneldeki kayıtlar geri gelir.</span>
           </div>
         )}
       </section>
@@ -53,12 +53,12 @@ export function Masa({ istemci, evren, surum, ekler }: { istemci: Istemci; evren
 
       <section class="masa-bolum" aria-label="Son düzenlenenler">
         <h2>Son düzenlenenler</h2>
-        {son.length ? <KisaListe evren={evren} kayitlar={son} zamanli /> : <p class="soluk kucuk">Bu evrende henüz kayıt yok. <a href={`#/e/${evren}/kayitlar`}>Kayıtlar</a> sekmesinden ilk kaydı oluşturabilirsin.</p>}
+        {son.length ? <KisaListe evren={evren} kayitlar={son} zamanli /> : <p class="soluk kucuk">Bu evrende henüz kayıt yok. <a href={`#/e/${evren}/kayitlar`}>Kayıtlar</a> sayfasından ilk kaydı oluşturabilirsiniz.</p>}
       </section>
 
       <section class="masa-bolum" aria-label="Hızlı notlar">
         <div class="satir"><h2>Hızlı notlar</h2><span class="bosluk" /><button class="dugme kucuk" onClick={() => document.dispatchEvent(new Event('hizli-not-ac'))}>Yeni not</button></div>
-        {notlar.length ? <KisaListe evren={evren} kayitlar={notlar} zamanli /> : <p class="soluk kucuk">Not yok. Her ekrandan “+ Not” ya da Alt+N ile yazabilirsin.</p>}
+        {notlar.length ? <KisaListe evren={evren} kayitlar={notlar} zamanli /> : <p class="soluk kucuk">Henüz not yok. Her ekrandan “+ Not” düğmesiyle ya da Alt+N ile not yazabilirsiniz.</p>}
       </section>
 
       {bahsedilen.length > 0 && (

@@ -34,7 +34,7 @@ function ogelere(p: string, s: Map<string, string[]>, yer: string): Ogeler[] {
       const j = c.indexOf(']', i);
       if (j < 0) throw new Error(`${yer}: “[” kapanmamış.`);
       const icerik = c.slice(i + 1, j).map(kucuk);
-      if (!icerik.length) throw new Error(`${yer}: boş köşeli ayraç.`);
+      if (!icerik.length) throw new Error(`${yer}: köşeli ayracın içi boş.`);
       l.push({ tur: 'sinif', harfler: icerik });
       i = j;
       continue;
@@ -53,14 +53,14 @@ function ogelere(p: string, s: Map<string, string[]>, yer: string): Ogeler[] {
 export function kuralCoz(metin: string, tanimli: SesSinifi[] = []): Kural {
   const s = siniflar(tanimli);
   const m = metin.trim().match(/^(.*?)\s*(?:→|->|>)\s*(.*?)\s*(?:\/\s*(.*))?$/);
-  if (!m) throw new Error('Kural “a → b / bağlam” biçiminde olmalı.');
+  if (!m) throw new Error('Kural “a → b / bağlam” biçiminde yazılmalı.');
   const [, ac, bc, baglam] = m;
   const a = ogelere(ac, s, 'Sol taraf');
   const b = ogelere(bc, s, 'Sağ taraf');
   if (a.some((x) => x.tur === 'sinir') || b.some((x) => x.tur === 'sinir')) throw new Error('Sözcük sınırı (#) yalnızca bağlamda kullanılır.');
   if (b.some((x) => x.tur === 'sinif')) {
     const tek = b.length === 1 && a.length === 1 && a[0].tur === 'sinif' && b[0].tur === 'sinif';
-    if (!tek || (a[0] as { harfler: string[] }).harfler.length !== (b[0] as { harfler: string[] }).harfler.length) throw new Error('Sınıftan sınıfa kural iki yanda eşit uzunlukta birer sınıf ister.');
+    if (!tek || (a[0] as { harfler: string[] }).harfler.length !== (b[0] as { harfler: string[] }).harfler.length) throw new Error('Bir ses sınıfını başka bir sınıfa çeviren kuralda iki yanda da eşit uzunlukta birer sınıf olmalı.');
   }
   let sol: Ogeler[] = [], sag: Ogeler[] = [];
   if (baglam !== undefined) {
@@ -70,7 +70,7 @@ export function kuralCoz(metin: string, tanimli: SesSinifi[] = []): Kural {
     sag = ogelere(parca[1], s, 'Bağlam');
     if (sol.slice(1).some((x) => x.tur === 'sinir') || sag.slice(0, -1).some((x) => x.tur === 'sinir')) throw new Error('Sözcük sınırı (#) bağlamın yalnızca ucunda olabilir.');
   }
-  if (!a.length && baglam === undefined) throw new Error('Boştan ekleme kuralı bir bağlam ister.');
+  if (!a.length && baglam === undefined) throw new Error('Yeni ses ekleyen bir kural için bağlam yazılmalı.');
   return { a, b, sol, sag };
 }
 

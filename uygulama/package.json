@@ -9,7 +9,8 @@
     "test": "vitest run",
     "denetle": "tsc --noEmit",
     "uygulama": "tauri dev",
-    "kurulum": "tauri build"
+    "kurulum": "tauri build",
+    "sina:tarayici": "playwright test"
   },
   "dependencies": {
     "@automerge/automerge": "3.5.0",
@@ -26,6 +27,7 @@
     "prosemirror-view": "1.42.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tauri-apps/cli": "2.12.3",
     "@types/node": "24.19.1",
     "typescript": "5.9.3",

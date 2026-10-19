@@ -41,11 +41,11 @@ export function SozlukSekmesi({ istemci, evren, surum }: { istemci: Istemci; evr
   const guncel = sonuc?.surum === surum;
   return <section aria-label="Sözlük denetimi">
     <h2>Sözlük denetimi</h2>
-    <p class="soluk">Yalnızca yazdığınız sözcükler ve sözcük öbekleri aranır. Eşleşmeler bir yazarlık hükmü taşımaz.</p>
+    <p class="soluk">Yalnızca yazdığınız sözcükler ve sözcük öbekleri aranır. Bir eşleşme, metinde yanlışlık olduğu anlamına gelmez.</p>
     {hata && <p role="alert" class="hata">{hata}</p>}
-    <ul>{liste.map((s) => <li key={s.kod}>{s.ad} · {TUR[s.tur]}{s.catismali && ' · İki cihazdaki değerler seçilmeyi bekliyor'}{' '}
+    <ul>{liste.map((s) => <li key={s.kod}>{s.ad} · {TUR[s.tur]}{s.catismali && ' · İki cihazda farklı değerler var, birini seçin'}{' '}
       <button class="dugme" disabled={mesgul} onClick={() => { setKod(s.kod); setT({ ad: s.ad, tur: s.tur, kapsam: s.kapsam, girdiler: s.girdiler }); }}>Düzenle</button>{' '}
-      <button class="dugme" disabled={mesgul} onClick={() => onayla('Bu sözcük silinsin mi? Silinenlerden geri getirebilirsin.') && is(async () => { await istemci.iste('sozlukSil', { evren, kod: s.kod }); if (kod === s.kod) { setKod(null); setT(bos()); } })}>Sil</button>
+      <button class="dugme" disabled={mesgul} onClick={() => onayla('Bu sözlük silinsin mi? Kaldırılan sözlüklerden geri getirebilirsiniz.') && is(async () => { await istemci.iste('sozlukSil', { evren, kod: s.kod }); if (kod === s.kod) { setKod(null); setT(bos()); } })}>Sil</button>
     </li>)}</ul>
     {cop.length > 0 && <details><summary>Kaldırılan sözlükler</summary><ul>{cop.map((s) => <li key={s.kod}>{s.ad}{' '}
       <button class="dugme" disabled={mesgul} onClick={() => is(() => istemci.iste('sozlukGeriYukle', { evren, kod: s.kod }))}>Geri getir</button>
@@ -67,8 +67,8 @@ export function SozlukSekmesi({ istemci, evren, surum }: { istemci: Istemci; evr
           <input type="checkbox" checked={t.kapsam.tur === 'turler' && t.kapsam.turler.includes(k.kod)} onChange={(e) => {
             if (t.kapsam.tur === 'turler') setT({ ...t, kapsam: { tur: 'turler', turler: e.currentTarget.checked ? [...t.kapsam.turler, k.kod] : t.kapsam.turler.filter((x) => x !== k.kod) } });
           }} />{k.ad}</label>)}</div>}
-        {t.tur === 'hitap' && <p class="soluk">Yazdığınız izinli hitapların geçtiği yerler gösterilir; başka ifadeler hakkında yorum yapılmaz.</p>}
-        {t.tur === 'teknoloji' && <p class="soluk">Teknolojiye bağlanan sözcükler, sahnenin tarihi o bölgeye kayıtlı yayılma tarihinden önceyse gösterilir. İcat, gündelik kullanım ve kişinin tanıması ayrı bilgilerdir.</p>}
+        {t.tur === 'hitap' && <p class="soluk">Yalnızca yazdığınız izinli hitapların geçtiği yerler gösterilir. Diğer ifadeler değerlendirilmez.</p>}
+        {t.tur === 'teknoloji' && <p class="soluk">Bir teknolojiye bağlanan sözcük, sahnenin tarihi o teknolojinin o bölgeye yayıldığı tarihten önceyse gösterilir. İcat, gündelik kullanım ve kişinin teknolojiyi tanıması ayrı bilgilerdir.</p>}
         {t.girdiler.map((g, i) => {
           const degistir = (yeni: Partial<typeof g>) => setT({ ...t, girdiler: t.girdiler.map((x, j) => j === i ? { ...x, ...yeni } : x) });
           return <fieldset key={i}><legend>{i + 1}. girdi</legend>
@@ -83,12 +83,12 @@ export function SozlukSekmesi({ istemci, evren, surum }: { istemci: Istemci; evr
         {kod && <button class="dugme" type="button" onClick={() => { setKod(null); setT(bos()); }}>Vazgeç</button>}
       </fieldset>
     </form>
-    <p><button class="dugme ana" disabled={mesgul} onClick={() => is(denetle)}>{mesgul ? 'Bekleniyor…' : 'Denetimi çalıştır'}</button></p>
+    <p><button class="dugme ana" disabled={mesgul} onClick={() => is(denetle)}>{mesgul ? 'Bekleyin…' : 'Denetimi çalıştır'}</button></p>
     {sonuc && <div aria-live="polite">
-      <p>{guncel ? 'Güncel sonuç' : 'Önceki sonuç; kayıtlar değişti. Denetimi yeniden çalıştırın.'} · {sonuc.veri.denetlenen} kayıt tarandı.</p>
+      <p>{guncel ? 'Güncel sonuç' : 'Önceki sonuç. Kayıtlar o zamandan beri değişti, denetimi yeniden çalıştırın.'} · {sonuc.veri.denetlenen} kayıt tarandı.</p>
       <p class="soluk">{sonuc.veri.kapsam} {sonuc.veri.not}</p>
       {sonuc.veri.eksikler.length > 0 && <details open><summary>Denetlenemeyenler</summary><ul>{sonuc.veri.eksikler.map((s) => <li>{s}</li>)}</ul></details>}
-      {!sonuc.veri.sonuclar.length && <p>Bu kapsamda gösterilecek eşleşme bulunmadı.</p>}
+      {!sonuc.veri.sonuclar.length && <p>Bu kapsamda eşleşme bulunmadı.</p>}
       {[false, true].map((fikir) => <div>{sonuc.veri.sonuclar.some((s) => s.fikir === fikir) && <>
         <h3>{fikir ? 'Fikir durumundaki kayıtlar' : 'Kesinleşmiş kayıtlar'}</h3>
         <ul>{sonuc.veri.sonuclar.filter((s) => s.fikir === fikir).map((s) => <li key={s.anahtar}>
@@ -98,7 +98,7 @@ export function SozlukSekmesi({ istemci, evren, surum }: { istemci: Istemci; evr
           <button class="dugme" disabled={mesgul || !guncel} onClick={() => is(async () => { await istemci.iste('sozlukIsareti', { evren, sozluk: s.sozluk, anahtar: s.anahtar, bilerek: true }); await denetle(); })}>Bilerek bırakıldı</button>
         </li>)}</ul>
       </>}</div>)}
-      {sonuc.veri.dahaFazlasi && <p>İlk 500 eşleşme gösteriliyor; daha fazlası var.</p>}
+      {sonuc.veri.dahaFazlasi && <p>İlk 500 eşleşme gösteriliyor, daha fazlası var.</p>}
     </div>}
   </section>;
 }

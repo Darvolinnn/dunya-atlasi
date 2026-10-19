@@ -48,7 +48,7 @@ function ozetle(liste: BilgiSatiri[]): AnBilgisi[] {
 /** Sıralar birbirinden bağımsızdır; bir eserin okuru diğer eserin bilgilerini miras almaz. */
 export function sahneOkurBilgileri(b: DurumBaglami, sahne: string, siralar = mevcutOkurSiralari(b)): SahneOkurSonucu {
   const s = yonlendir(b.e.db, sahne);
-  if (siraCatismali(b, s)) return { siralar: [], uyari: 'Sahnenin eserdeki yeri seçilmeyi bekliyor; okurun bilgisi henüz gösterilemiyor.' };
+  if (siraCatismali(b, s)) return { siralar: [], uyari: 'Sahnenin eserdeki yeri için iki cihazda farklı değer var ve henüz biri seçilmedi. Seçilene kadar okurun bilgisi gösterilemiyor.' };
   const sonuc: SahneOkurSirasi[] = [];
   const onbellek = new Map<string, BilgiSatiri[]>();
   for (const okuma of siralar) {
@@ -60,7 +60,7 @@ export function sahneOkurBilgileri(b: DurumBaglami, sahne: string, siralar = mev
     const notlar = new Set<string>();
     // Aynı sahnenin tek sırada tekrarı mevcut modelde tanımlı değildir; görünmez seçim yapılmaz.
     if (new Set(dizi).size !== dizi.length) {
-      sonuc.push({ kod: okuma.kod, ad: okuma.ad, eser, sira: yer + 1, once: [], buSahnede: [], notlar: ['Bu okuma sırasında aynı sahne birden çok kez yer alıyor; hangi kullanım olduğu belirlenmeden bilgi gösterilemiyor.'] });
+      sonuc.push({ kod: okuma.kod, ad: okuma.ad, eser, sira: yer + 1, once: [], buSahnede: [], notlar: ['Bu okuma sırasında aynı sahne birden çok kez geçiyor. Hangisinin kastedildiği belirlenmeden bilgi gösterilemiyor.'] });
       continue;
     }
     const sira = new Map(dizi.map((k, i) => [k, i + 1]));
@@ -71,17 +71,17 @@ export function sahneOkurBilgileri(b: DurumBaglami, sahne: string, siralar = mev
       // Çatışmalı öğrenme sahnesinin izdüşümdeki değeri ileride olabilir; bunu seçip
       // eski bir duruma sessizce dönmeyiz. Kararın kaldırılması da aynı biçimde belirsizdir.
       if (catismali(b, x.kod, 'sahne') || catismali(b, x.kod, 'karar')) {
-        engellenen.add(x.iddia.kod); notlar.add('Bazı bilgi veya sıra değerleri seçilmeyi bekliyor; bunlar için kesin bir okur durumu gösterilmiyor.'); continue;
+        engellenen.add(x.iddia.kod); notlar.add('Bazı bilgi ya da sıra değerleri seçilmeyi bekliyor. Bunlarda okurun ne bildiği kesin olarak gösterilmiyor.'); continue;
       }
       if (x.karar === 'vazgecildi' || !x.sahne) continue;
       const anchor = yonlendir(b.e.db, x.sahne.kod), n = sira.get(anchor);
-      if (n === undefined) { notlar.add('Öğrenme sahnesi bu okuma sırasında bulunmayan bilgi kayıtları hesaba katılmadı.'); continue; }
+      if (n === undefined) { notlar.add('Öğrenildiği sahne bu okuma sırasında yer almayan bilgiler hesaba katılmadı.'); continue; }
       if (n > yer + 1) continue;
       if (!kayit(b, anchor)) continue;
       if (catismali(b, x.kod) || catismali(b, x.iddia.kod) || siraCatismali(b, anchor)) {
-        engellenen.add(x.iddia.kod); notlar.add('Bazı bilgi veya sıra değerleri seçilmeyi bekliyor; bunlar için kesin bir okur durumu gösterilmiyor.'); continue;
+        engellenen.add(x.iddia.kod); notlar.add('Bazı bilgi ya da sıra değerleri seçilmeyi bekliyor. Bunlarda okurun ne bildiği kesin olarak gösterilmiyor.'); continue;
       }
-      bilgi.push({ ...x, okumaSirasi: n, uyari: !x.secenek && x.inanc !== 'bilmiyor' ? 'İnandığı cevap sorudan çıkarılmış.' : null });
+      bilgi.push({ ...x, okumaSirasi: n, uyari: !x.secenek && x.inanc !== 'bilmiyor' ? 'İnandığı cevap artık soruda yok.' : null });
     }
     const uygun = bilgi.filter((x) => !engellenen.has(x.iddia.kod));
     sonuc.push({ kod: okuma.kod, ad: okuma.ad, eser, sira: yer + 1,
@@ -89,5 +89,5 @@ export function sahneOkurBilgileri(b: DurumBaglami, sahne: string, siralar = mev
       buSahnede: ozetle(uygun.filter((x) => x.okumaSirasi === yer + 1)), notlar: [...notlar] });
   }
   sonuc.sort((a, z) => turkceKarsilastir(a.eser.ad, z.eser.ad) || turkceKarsilastir(a.ad, z.ad) || a.kod.localeCompare(z.kod));
-  return { siralar: sonuc, uyari: sonuc.length ? null : 'Bu sahne hiçbir kayıtlı okuma sırasında yok; okurun bilgisi gösterilemiyor.' };
+  return { siralar: sonuc, uyari: sonuc.length ? null : 'Bu sahne hiçbir kayıtlı okuma sırasında yok, bu yüzden okurun bilgisi gösterilemiyor.' };
 }

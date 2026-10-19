@@ -819,3 +819,35 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
   .gezinti-alti { margin-top: 8px; }
   .yaz-metni { padding: 12px 16px 32px; }
 }
+
+/* Sayfa rehberi (§12.4, K25): başlığın yanında "?" düğmesi, sağdan açılan yan panel. */
+.baslik-satiri { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.baslik-satiri > h1 { margin: 0; }
+.yardim-dugmesi { flex: none; width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 1px solid var(--cizgi); background: var(--yuzey);
+  color: var(--vurgu); font: 600 0.95rem/1 var(--yazi); cursor: pointer; display: inline-grid; place-items: center; }
+.yardim-dugmesi:hover { border-color: var(--vurgu); }
+.yardim-dugmesi.acik { background: var(--vurgu-zemin); border-color: var(--vurgu); }
+.rehber-paneli { position: fixed; top: 0; right: 0; bottom: 0; width: min(400px, 100vw); z-index: 35; overflow-y: auto; background: var(--yuzey);
+  border-left: 1px solid var(--cizgi); box-shadow: -6px 0 24px rgb(60 45 20 / 0.08); padding: 18px 22px 32px; font-size: 0.95rem;
+  display: flex; flex-direction: column; gap: 8px; animation: rehber-gir 0.18s ease-out; }
+.rehber-paneli:focus { outline: none; }
+.rehber-paneli h2 { font-family: var(--metin-yazi); font-size: 1.35rem; margin: 2px 0 4px; }
+.rehber-paneli h3 { font-size: 0.95rem; margin-top: 10px; }
+.rehber-paneli p { margin: 0; }
+.rehber-paneli ol, .rehber-paneli ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
+.rehber-ust { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rehber-etiket { font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--metin-2); font-weight: 600; }
+@keyframes rehber-gir { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .rehber-paneli { animation: none; } }
+
+/* Yazma bağlamında katlı okur bilgisi ve gezinti altındaki durum özeti (§5.5, §10.8). */
+.okur-bilgisi-katli { margin-top: 10px; }
+.okur-bilgisi-katli > summary { cursor: pointer; padding: 4px 0; }
+.durum-ozeti > summary { cursor: pointer; color: var(--metin); padding: 4px 2px; border-radius: 6px; }
+.durum-ozeti > summary:hover { background: var(--yuzey-2); }
+.durum-satirlari { list-style: none; margin: 6px 0 4px; padding: 0 2px; display: flex; flex-direction: column; gap: 4px; }
+.durum-satirlari .dugme { min-height: 26px; padding: 2px 8px; }
+.durum-ozeti p { margin: 4px 2px 6px; }
+.durum-zayif { background: #f7e7b8; color: #5a3f00; border-radius: 6px; padding: 2px 6px; }
+:root[data-tema="koyu"] .durum-zayif { background: #4a3d1c; color: #f3dfa6; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="acik"]) .durum-zayif { background: #4a3d1c; color: #f3dfa6; } }

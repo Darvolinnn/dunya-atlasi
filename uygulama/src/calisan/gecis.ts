@@ -98,5 +98,5 @@ export function asamaIzinUyarisi(e: EvrenVt, rota: string, yolcular: KisaKayit[]
     if (d === 'gecerli' || d === 'tarih_yok') continue;
     sorunlar.push(`${y.ad}: ${kisa(e, s.kayit)?.ad ?? 'gereken izin'} ${d === 'yok' ? 'kayıtlı değil' : d === 'bitmis' ? 'geçide varıldığında bitmiş' : d === 'baslamamis' ? 'geçide varıldığında henüz başlamamış' : 'geçerliliği belirsiz'}`);
   }
-  return sorunlar.length ? `Geçiş izni: ${sorunlar.join('; ')}. Program geçişi engellemez; açıklama gerekebilir.` : null;
+  return sorunlar.length ? `Geçiş izni: ${sorunlar.join('; ')}. Program geçişi engellemez, ama bir açıklama gerekebilir.` : null;
 }

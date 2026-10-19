@@ -18,6 +18,7 @@ import { kararGecerli, turBul, turGecerli } from '../alan/turler';
 import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
+import type { DriveSecenekleri, YuklemeIlerlemesi } from './drive';
 import { KurulumVt } from './kurulum-vt';
 import { DonemselYedek, donemselDurum, type YedekTasiyici } from './donemsel-yedek';
 import { metinBelgesi, takvimOku, yonlendir, zamanSetiOku } from './izdusum';
@@ -119,7 +120,7 @@ const BILGI_ALAN_ADLARI: Record<string, string> = {
   sahne: 'Öğrendiği sahne', baslangic: 'Başlangıç', bitis: 'Bitiş', aciklama: 'Açıklama', karar: 'Karar durumu',
 };
 
-const katmanEtiketi = (alan: string) => ({ ad: 'Katmanın adı', silindi: 'Katmanın durumu', donusum: 'Katmanın oturtulması', gorsel: 'Katmanın görseli' } as Record<string, string>)[alan.split(':')[2]] ?? 'Katman';
+const katmanEtiketi = (alan: string) => ({ ad: 'Katmanın adı', silindi: 'Katmanın durumu', donusum: 'Katmanın hizalanması', gorsel: 'Katmanın görseli' } as Record<string, string>)[alan.split(':')[2]] ?? 'Katman';
 
 export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   private readonly kurulum: KurulumVt;
@@ -138,7 +139,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   }
 
   private evren(kod: string): EvrenVt {
-    if (!kodGecerliMi(kod)) throw new Error('Geçersiz evren kodu.');
+    if (!kodGecerliMi(kod)) throw new Error('Evren bulunamadı.');
     let e = this.acik.get(kod);
     if (!e) {
       if (!this.kurulum.evrenler().some((x) => x.kod === kod)) return this.bagliAc(kod);
@@ -173,7 +174,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   /** İşlemleri yazar ve arayüze bildirir. */
   private yaz(evren: string, girdiler: IslemGirdisi[], kayitlar: string[] = []) {
     this.evren(evren);
-    if (this.bagli.get(evren)?.tur === 'surum') throw new Error('Bu, evrenin sabit bir sürümü; değiştirilemez. Değişiklikler ana evrende yapılır.');
+    if (this.bagli.get(evren)?.tur === 'surum') throw new Error('Bu, evrenin sabit bir sürümü ve değiştirilemez. Değişiklikleri ana evrende yapın.');
     const yazilan = this.evren(evren).islemYap(girdiler);
     this.bildir(evren, [...new Set(yazilan.map((i) => i.tur))], kayitlar);
     return yazilan;
@@ -251,7 +252,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
 
   /** Başka cihazda oluşturulmuş bir evreni bu cihaza ilk kez kurar (işlemleriyle). */
   evreniDisaridanKur({ kod, islemler }: { kod: string; islemler: Islem[] }) {
-    if (!kodGecerliMi(kod)) throw new Error('Geçersiz evren kodu.');
+    if (!kodGecerliMi(kod)) throw new Error('Evren bulunamadı.');
     if (this.kurulum.evrenler().some((x) => x.kod === kod)) return { kod, yeni: false };
     const e = new EvrenVt(this.ac(`/evren-${kod}.db`), this.kurulum.kod);
     if (e.islemSayisi() === 0) e.disaridanAl(islemler);
@@ -274,6 +275,16 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       evreniDisaridanKur: (kod, islemler) => { this.evreniDisaridanKur({ kod, islemler }); },
       dallar: (evren) => this.evren(evren).db.selectObjects('SELECT kod, ad, gordu FROM dallar WHERE silindi IS NULL ORDER BY kod')
         .map((r) => ({ kod: r.kod as string, ad: r.ad as string, gordu: JSON.parse(r.gordu as string) as Record<string, number>, yerel: this.kurulum.ayar(`dal_yerel:${r.kod}`) === '1' })),
+    };
+  }
+
+  private yukleme: YuklemeIlerlemesi | null = null;
+
+  /** Drive taşıyıcısının büyük dosya yüklemesi için: yarım yükleme adresleri bu kurulumda, ilerleme eşitleme durumunda. */
+  yuklemeSecenekleri(): DriveSecenekleri {
+    return {
+      oturumlar: { oku: (k) => this.kurulum.ayar(k) ?? null, yaz: (k, v) => this.kurulum.ayarYaz(k, v), sil: (k) => this.kurulum.ayarSil(k) },
+      ilerleme: (i) => { this.yukleme = i; },
     };
   }
 
@@ -361,6 +372,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const es = this.esitleme ?? new Esitleme(this.esitlemeErisimi(), null);
     return {
       bagli: !!this.esitleme, calisiyor: !!this.esitlemeSuruyor, hata: this.esitlemeHatasi,
+      yukleme: this.yukleme && { gonderilen: this.yukleme.gonderilen, toplam: this.yukleme.toplam },
       kurulum: { kod: this.kurulum.kod, ad: this.kurulum.ad },
       evrenler: this.kurulum.evrenler().map((e) => es.durum(e.kod, e.ad)),
     };
@@ -556,7 +568,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (dir) {
         const san = (k: unknown) => SANILAN_DURUMLAR.find((x) => x.kod === k)?.ad ?? '';
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: dir.konu as string, baslik: `${kayitAdi(dir.konu as string)} · ${dir.soru}`, alanEtiketi: 'Başkasının bilgisine dair inanç',
-          degerler: degerler.map((d) => { const t = d.deger as DairInancTanimi | null; return { ...d, yazi: t ? `${kayitAdi(t.sanan)}, ${kayitAdi(t.hakkinda)} için “${san(t.sanilan)}” sanıyor${t.tarih ? ` (${t.tarih})` : ''}${t.aciklama ? `: ${t.aciklama}` : ''}` : '(boş)' }; }) });
+          degerler: degerler.map((d) => { const t = d.deger as DairInancTanimi | null; return { ...d, yazi: t ? `${kayitAdi(t.sanan)}, ${kayitAdi(t.hakkinda)} için “${san(t.sanilan)}” sanıyor${t.tarih ? ` (${t.tarih})` : ''}${t.aciklama ? `: ${t.aciklama}` : ''}` : 'Kaldırıldı' }; }) });
         continue;
       }
       const hkr = iliski || dr ? undefined : e.db.selectObject('SELECT sahip, tanim FROM hukuk_kurallari WHERE kod=?', [nesne]);
@@ -865,7 +877,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (alan.startsWith('katman:')) {
       const ka = alan.split(':')[2];
       if (ka === 'silindi') return deger ? 'Kaldırıldı' : 'Duruyor';
-      if (ka === 'donusum') { const n = (deger as { noktalar?: unknown[] } | null)?.noktalar?.length; return n ? `${n} nokta çiftiyle oturtma` : 'Önceki oturtma'; }
+      if (ka === 'donusum') { const n = (deger as { noktalar?: unknown[] } | null)?.noktalar?.length; return n ? `${n} nokta çiftiyle hizalama` : 'Önceki hizalama'; }
       if (ka === 'gorsel') return 'Başka bir görsel';
       return String(deger ?? '');
     }
@@ -1013,7 +1025,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     const bpr = alan === 'baglam_parcasi' ? e.db.selectObject('SELECT kayit, alan FROM baglam_parcalari WHERE kod=?', [nesne]) : undefined;
     if (bpr) { this.yaz(evren, [{ tur: 'baglam_parcasi_yaz', veri: { kod: nesne, kayit: bpr.kayit, alan: bpr.alan, tanim: deger, cozum: true } }], [bpr.kayit as string]); return; }
-    const dir = alan === 'dair_inanc' ? e.db.selectObject('SELECT d.iddia, i.konu FROM dair_inanclar d JOIN iddialar i ON i.kod=d.iddia WHERE d.kod=?', [nesne]) : undefined;
+    const dir = alan === 'dair_inanc' ? e.db.selectObject('SELECT d.iddia, d.tanim, i.konu FROM dair_inanclar d JOIN iddialar i ON i.kod=d.iddia WHERE d.kod=?', [nesne]) : undefined;
+    if (dir && deger === null) {
+      const t = JSON.parse(dir.tanim as string) as DairInancTanimi;
+      this.yaz(evren, [{ tur: 'dair_inanc_sil', veri: { kod: nesne, iddia: dir.iddia, konu: dir.konu, sanan: t.sanan, hakkinda: t.hakkinda, cozum: true } }], [dir.konu as string, t.sanan, t.hakkinda]);
+      return;
+    }
     if (dir) { this.yaz(evren, [{ tur: 'dair_inanc_yaz', veri: { kod: nesne, iddia: dir.iddia, tanim: deger, konu: dir.konu, cozum: true } }], [dir.konu as string]); return; }
     const hkr = e.db.selectObject('SELECT sahip FROM hukuk_kurallari WHERE kod=?', [nesne]);
     if (hkr && alan === 'hukuk') { this.yaz(evren, [{ tur: 'hukuk_kurali_yaz', veri: { kod: nesne, tanim: deger, sahip: hkr.sahip, cozum: true } }], [hkr.sahip as string]); return; }
@@ -1186,7 +1203,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     let onceki: unknown;
     if (nesne === 'kayit') { this.kayitVarMi(e, kod); ilgili = [kod]; onceki = e.db.selectValue('SELECT gorunurluk FROM kayitlar WHERE kod=?', [kod]); }
     else if (nesne === 'iliski') { const r = this.iliskiBul(e, kod); ilgili = [r.a as string, r.b as string]; onceki = r.gorunurluk; }
-    else throw new Error('Bilinmeyen nesne.');
+    else throw new Error('Değiştirilecek şey bulunamadı.');
     let yeni: Gorunurluk | null = null;
     if (deger) {
       const g: Gorunurluk = { katman: deger.katman || null, gizli: !!deger.gizli && !deger.katman, bilenler: deger.katman ? [] : [...new Set(deger.bilenler ?? [])] };
@@ -1194,7 +1211,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (!gorunurlukGecerli(g)) throw new Error('Bilgi katmanı okunamadı.');
       for (const k of [...(g.katman ? [g.katman] : []), ...g.bilenler]) this.kayitVarMi(e, k);
       if (g.katman && ilgili.includes(g.katman) && nesne === 'kayit') throw new Error('Bir kayıt kendi inancı olamaz.');
-      if (g.gizli && !g.bilenler.length) throw new Error('Gizli bir gerçeği kimlerin bildiğini seç.');
+      if (g.gizli && !g.bilenler.length) throw new Error('Gizli gerçeği kimlerin bildiğini seçin.');
       yeni = sadeGercekMi(g) ? null : g;
     }
     if (JSON.stringify(sadeGercekMi(gorunurlukOku(onceki)) ? null : gorunurlukOku(onceki)) === JSON.stringify(yeni)) return;
@@ -1244,16 +1261,20 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
 
   /** Yeni kaydın işlemleri. Kaydın gövde metni ilk değişiklikle birlikte doğar; bütün cihazlar aynı kökten başlar. */
   private kayitGirdileri(kod: string, v: { ad: string; tur: string; karar: string; ozet: string; spans?: Spans; sahneOlayi?: string }): IslemGirdisi[] {
+    // Geçici belgeler iş bitince bırakılır: Automerge belleği çöp toplayıcıya görünmez, kendiliğinden boşalmaz.
     const kok = A.from({ t: '' }, { actor: this.aktor });
-    const girdiler: IslemGirdisi[] = [
-      { tur: 'kayit_olustur', veri: { kod, tur: turGecerli(v.tur) ? v.tur : 'diger', ad: v.ad, karar: v.karar, ozet: v.ozet, ...(v.sahneOlayi ? { sahneOlayi: v.sahneOlayi } : {}) } },
-      { tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(kok), ilk: true }, ikili: A.save(kok) },
-    ];
-    if (v.spans && v.spans.length) {
-      const dolu = A.change(A.clone(kok, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], v.spans as never, spanAyari()));
-      girdiler.push({ tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(dolu) }, ikili: A.saveSince(dolu, A.getHeads(kok)) });
-    }
-    return girdiler;
+    try {
+      const girdiler: IslemGirdisi[] = [
+        { tur: 'kayit_olustur', veri: { kod, tur: turGecerli(v.tur) ? v.tur : 'diger', ad: v.ad, karar: v.karar, ozet: v.ozet, ...(v.sahneOlayi ? { sahneOlayi: v.sahneOlayi } : {}) } },
+        { tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(kok), ilk: true }, ikili: A.save(kok) },
+      ];
+      if (v.spans && v.spans.length) {
+        const dolu = A.change(A.clone(kok, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], v.spans as never, spanAyari()));
+        try { girdiler.push({ tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(dolu) }, ikili: A.saveSince(dolu, A.getHeads(kok)) }); }
+        finally { A.free(dolu); }
+      }
+      return girdiler;
+    } finally { A.free(kok); }
   }
 
   kayitOlustur({ evren, ad, tur, karar = 'kesin', ozet = '' }: { evren: string; ad: string; tur: string; karar?: string; ozet?: string }) {
@@ -1267,7 +1288,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   /** Hızlı not (§5.8): form yok; ilk satır adı olur, metin notun gövdesidir. */
   hizliNot({ evren, metin }: { evren: string; metin: string }) {
     const duz = String(metin ?? '').replace(/\r\n?/g, '\n').trim();
-    if (!duz) throw new Error('Not boş.');
+    if (!duz) throw new Error('Not boş olamaz.');
     if (duz.length > 100_000) throw new Error('Not çok uzun.');
     const ilk = duz.split('\n')[0].replace(/\s+/g, ' ').trim();
     const ad = ilk.length > 60 ? ilk.slice(0, 60).replace(/\s+\S*$/, '') + '…' : ilk;
@@ -1331,7 +1352,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         if (!kodGecerliMi(olay) || e.db.selectValue('SELECT 1 FROM kayitlar WHERE kod=? AND silindi IS NULL', [olay]) === undefined) throw new Error('Dayanak kayıt bulunamadı.');
         if (olay === kod) throw new Error('Bir kaydın tarihi kendisine göre verilemez.');
         const f = farkCoz(String(x?.fark ?? ''));
-        if (!f) throw new Error('Farkı “sonra”, “14 gün sonra” ya da “80–120 yıl önce” gibi yaz.');
+        if (!f) throw new Error('Farkı “sonra”, “14 gün sonra” ya da “80–120 yıl önce” gibi yazın.');
         return { olay, ...f };
       });
       tarih = goreliTarih(k, this.goreliIfade(e, k), takvimOku(e.db));
@@ -1375,7 +1396,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   kayitGeriYukle({ evren, kod }: { evren: string; kod: string }) {
     const e = this.evren(evren);
     this.kayitVarMi(e, kod);
-    if (e.db.selectValue('SELECT 1 FROM yonlendirmeler WHERE kod=?', [kod]) !== undefined) throw new Error('Bu kayıt başka bir kayıtla birleştirilmiş; geri getirmek için birleştirmeyi geri al.');
+    if (e.db.selectValue('SELECT 1 FROM yonlendirmeler WHERE kod=?', [kod]) !== undefined) throw new Error('Bu kayıt başka bir kayıtla birleştirilmiş; geri getirmek için önce birleştirmeyi geri alın.');
     this.yaz(evren, [{ tur: 'kayit_geri_yukle', veri: { kod } }], [kod]);
   }
 
@@ -1406,11 +1427,26 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   }
 
   /** Otomatik kaydetme: editördeki metin tek değişiklik olarak yazılır (TK2). */
-  metinKaydet({ evren, kayit, alan, spans, temel }: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar }) {
+  metinKaydet(a: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar; taslak?: { anahtar: string; zaman: number } }) {
+    const r = this.metniKaydet(a);
+    // Kayıt ile taslağın silinmesi aynı istekte: sayfa arada kapanırsa kayıtlı yazı için eski taslak kalıp
+    // "kurtar" ile ikinci kez eklenmesin. Kayıt isteğinden sonra yazılmış (daha yeni) taslak kalır.
+    if (a.taslak) {
+      const k = this.taslakAnahtari(a.taslak.anahtar);
+      let zaman: number;
+      try { zaman = Number(JSON.parse(this.kurulum.taslak(k) ?? 'null')?.zaman ?? 0); } catch { zaman = 0; }
+      if (zaman <= a.taslak.zaman) this.kurulum.taslakSil(k);
+    }
+    return r;
+  }
+
+  private metniKaydet({ evren, kayit, alan, spans, temel }: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar }) {
     const d = this.belge(this.evren(evren), kayit, alan);
     const simdiki = A.getHeads(d);
     const ayni = JSON.stringify([...simdiki].sort()) === JSON.stringify([...temel].sort());
     if (!Array.isArray(temel) || !temel.every((h) => typeof h === 'string' && A.hasHeads(d, [h]))) throw new Error('Metnin sürümü bulunamadı; sayfayı yenileyin.');
+    // Değişiklik geçici bir kopyada hesaplanır; kopya iş bitince bırakılır (Automerge belleği kendiliğinden boşalmaz,
+    // bırakılmazsa her kayıtta belge kadar bellek birikir).
     let yeni: A.Doc<{ t: string }>;
     if (ayni) yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], spans as never, spanAyari()));
     else {
@@ -1419,12 +1455,16 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       // Dal ayrı bir yazar koduyla açılır: aynı yazarın sonraki değişiklikleriyle sıra numarası çakışmasın.
       const ek = [...crypto.getRandomValues(new Uint8Array(4))].map((b) => b.toString(16).padStart(2, '0')).join('');
       const dal = A.change(A.clone(A.view(d, temel), { actor: this.aktor + ek }), (x) => A.updateSpans(x, ['t'], spans as never, spanAyari()));
-      yeni = A.merge(A.clone(d, { actor: this.aktor }), dal);
+      try { yeni = A.merge(A.clone(d, { actor: this.aktor }), dal); } finally { A.free(dal); }
     }
-    const basliklar = A.getHeads(yeni);
-    if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) return { basliklar: simdiki, degisti: false, birlesti: false };
-    this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar, temel }, ikili: A.saveSince(yeni, simdiki) }], [kayit]);
-    return { basliklar, degisti: true, birlesti: !ayni, ...(!ayni ? { spans: A.spans(yeni, ['t']) as Spans } : {}) };
+    try {
+      const basliklar = A.getHeads(yeni);
+      if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) return { basliklar: simdiki, degisti: false, birlesti: false };
+      const ikili = A.saveSince(yeni, simdiki);
+      const birlesik = !ayni ? { spans: A.spans(yeni, ['t']) as Spans } : {};
+      this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar, temel }, ikili }], [kayit]);
+      return { basliklar, degisti: true, birlesti: !ayni, ...birlesik };
+    } finally { A.free(yeni); }
   }
 
   /** Metnin geçmişteki bir hâli (sürüm geçmişinde göstermek için). */
@@ -1438,12 +1478,14 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const d = this.belge(this.evren(evren), kayit, alan);
     const simdiki = A.getHeads(d);
     const eski = A.spans(A.view(d, basliklar), ['t']);
-    const calisma = A.clone(d, { actor: this.aktor });
-    const yeni = A.change(calisma, (x) => A.updateSpans(x, ['t'], eski as never, spanAyari()));
-    const sonra = A.getHeads(yeni);
-    if (JSON.stringify(sonra) === JSON.stringify(A.getHeads(calisma))) return { basliklar: simdiki, degisti: false };
-    this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar: sonra, geriYukleme: true }, ikili: A.saveSince(yeni, simdiki) }], [kayit]);
-    return { basliklar: sonra, degisti: true };
+    const yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], eski as never, spanAyari()));
+    try {
+      const sonra = A.getHeads(yeni);
+      if (JSON.stringify(sonra) === JSON.stringify(simdiki)) return { basliklar: simdiki, degisti: false };
+      const ikili = A.saveSince(yeni, simdiki);
+      this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar: sonra, geriYukleme: true }, ikili }], [kayit]);
+      return { basliklar: sonra, degisti: true };
+    } finally { A.free(yeni); }
   }
 
   // ---------- Arama (§18 arama ve sıralama) ----------
@@ -1576,7 +1618,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       const yeniSpans = spans.filter((_, i) => !sil.has(i));
       const onceki = A.getHeads(d);
       const yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], yeniSpans as never, spanAyari()));
-      girdiler.push({ tur: 'metin', veri: { kayit: kaynak, alan: 'govde', basliklar: A.getHeads(yeni), adDuzeltme: kod }, ikili: A.saveSince(yeni, onceki) });
+      try { girdiler.push({ tur: 'metin', veri: { kayit: kaynak, alan: 'govde', basliklar: A.getHeads(yeni), adDuzeltme: kod }, ikili: A.saveSince(yeni, onceki) }); }
+      finally { A.free(yeni); }
     }
     if (girdiler.length) this.yaz(evren, girdiler, [kod, ...kaynaga.keys()]);
     return { degisen: [...kaynaga.values()].reduce((n, l) => n + l.length, 0) };
@@ -1803,7 +1846,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (niyet === 'bu_tarihten') { niyetMod.buTarihten(b, kod, alan, deger, tarih); return { evren }; }
     if (niyet === 'inanc') { niyetMod.inanc(b, kod, alan, deger, bilen ?? '', tarih); return { evren }; }
     if (niyet !== 'taslakta') throw new Error('Değişikliğin nasıl yazılacağını seçin.');
-    if (this.bagli.has(evren)) throw new Error('Zaten bir taslaktasınız; eski kaydı burada düzeltebilirsiniz.');
+    if (this.bagli.has(evren)) throw new Error('Zaten bir deneme kopyasındasınız; eski kaydı burada düzeltebilirsiniz.');
     const r = this.evren(evren).db.selectObject('SELECT ozellik, konu FROM durumlar WHERE kod=? AND silindi IS NULL', [kod]);
     if (!r) throw new Error('Durum bulunamadı.');
     const konuAd = this.evren(evren).db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [r.konu as string]) as string;
@@ -1958,7 +2001,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (!takvimGecerli(yeni)) {
       if (caglar.some((c) => !Number.isInteger(c.baslangic))) throw new Error('Çağın başladığı yıl bir tam sayı olmalı.');
       if (caglar.filter((c) => c.ters).length > 1) throw new Error('Geriye sayan en çok bir çağ olabilir.');
-      throw new Error('Takvimde boş, sayı içeren ya da tekrar eden bir ad, ya da geçersiz bir gün sayısı var. Geriye sayan çağ, ileri sayan çağların hepsinden önce başlamalı.');
+      throw new Error('Takvimdeki adlardan biri boş, rakam içeriyor ya da tekrar ediyor; ya da gün sayılarından biri geçersiz. Geriye sayan çağ, ileri sayan bütün çağlardan önce başlamalı.');
     }
     return yeni;
   }
@@ -1988,14 +2031,14 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const eski = kod ? z.diger.find((x) => x.kod === kod) : undefined;
     if (kod && !eski) throw new Error('Takvim bulunamadı.');
     const temel = this.takvimTemizle(t, kod ?? yeniKod(), (eski?.surum ?? 0) + 1);
-    if (!String(t.ad ?? '').trim()) throw new Error('Takvimin yıl için kullandığı sözü yaz (örn. “Döngü”).');
-    if (katla(temel.ad) === katla('Yıl')) throw new Error('Paralel takvimin yıl sözü ana takvimden ayırt edilebilmeli; “Yıl” dışında bir söz seç.');
+    if (!String(t.ad ?? '').trim()) throw new Error('Takvimin yıl için kullandığı sözü yazın (örn. “Döngü”).');
+    if (katla(temel.ad) === katla('Yıl')) throw new Error('Paralel takvimin yıl sözü ana takvimdekinden farklı olmalı; “Yıl” dışında bir söz seçin.');
     const capAna = String(t.cap?.ana ?? '').replace(/\s+/g, ' ').trim();
     const cap = t.cap && capAna ? { yil: Number(t.cap.yil), ana: capAna } : null;
     if (cap) {
       if (!Number.isInteger(cap.yil)) throw new Error('Başlangıç yılı bir tam sayı olmalı.');
       const c = tarihCoz(cap.ana, z.ana);
-      if (!c?.eksen || c.eksen.enErken === null || c.eksen.enGec === null) throw new Error('Başlangıç tarihi ana takvimde okunamadı; “1 Kar 101” ya da “101” gibi yaz.');
+      if (!c?.eksen || c.eksen.enErken === null || c.eksen.enGec === null) throw new Error('Başlangıç tarihi ana takvimde okunamadı; “1 Kar 101” ya da “101” gibi yazın.');
     }
     const bagli = t.bagli ? String(t.bagli) : null;
     if (bagli) this.kayitVarMi(e, bagli);
@@ -2011,8 +2054,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (kod && !z.akislar.some((x) => x.kod === kod)) throw new Error('Zaman akışı bulunamadı.');
     const metin = (x: unknown) => String(x ?? '').replace(/\s+/g, ' ').trim();
     const ad = metin(a.ad);
-    if (!ad) throw new Error('Zaman akışına bir ad ver (örn. “Fey”).');
-    if (/\d/.test(ad)) throw new Error('Akışın adı sayı içermemeli; tarih yazılırken ad ile gün sayısı karışır.');
+    if (!ad) throw new Error('Zaman akışına bir ad verin (örn. “Fey”).');
+    if (/\d/.test(ad)) throw new Error('Akışın adında rakam olmamalı; yoksa tarih yazarken ad ile gün sayısı karışır.');
     const okunur = (s: string) => { const t = tarihCoz(s, z.ana); return !!t?.eksen && t.eksen.enErken !== null; };
     const cap = metin(a.cap);
     if (!okunur(cap)) throw new Error('Akışın başladığı tarih ana takvimde okunamadı.');
@@ -2021,10 +2064,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (bas !== null && !okunur(bas)) throw new Error(`${i + 1}. dönemin başladığı tarih ana takvimde okunamadı.`);
       const akis = Number(o?.akis);
       const ana = o?.ana ? [Number(o.ana[0]), Number(o.ana[1] ?? o.ana[0])] as [number, number] : null;
-      if (!(akis > 0) || (ana && !(ana[0] >= 0 && ana[1] >= ana[0]))) throw new Error('Oran: akışta geçen gün sıfırdan büyük, ana akıştaki gün sıfır ya da daha büyük olmalı (aralıksa küçükten büyüğe).');
+      if (!(akis > 0) || (ana && !(ana[0] >= 0 && ana[1] >= ana[0]))) throw new Error('Oranda bu akışta geçen gün sayısı sıfırdan büyük, ana akışta geçen gün sayısı ise sıfır ya da daha büyük olmalı. Aralık yazdıysanız küçük sayıyı önce yazın.');
       return { bas, akis, ana };
     });
-    if (!oranlar.length) throw new Error('En az bir oran dönemi gir.');
+    if (!oranlar.length) throw new Error('En az bir oran dönemi girin.');
     const bagli = a.bagli ? String(a.bagli) : null;
     if (bagli) this.kayitVarMi(e, bagli);
     const yeni: Akis = { kod: kod ?? yeniKod(), ad, bagli, cap, oranlar };
@@ -2167,7 +2210,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const x = gorunum.etkiKarari(e, String(anahtar));
     if (durum !== null && !['kabul', 'ertelendi', 'duzeltildi'].includes(durum)) throw new Error('Geçersiz karar.');
     const g = String(gerekce ?? '').replace(/\s+/g, ' ').trim();
-    if (durum === 'kabul' && !g) throw new Error('Kabul ederken kısa bir gerekçe yaz.');
+    if (durum === 'kabul' && !g) throw new Error('Kabul ederken kısa bir gerekçe yazın.');
     if (g.length > 500) throw new Error('Gerekçe çok uzun.');
     this.yaz(evren, [{ tur: 'inceleme_karari', veri: { anahtar, durum, gerekce: g, dayanak: x.dayanak, baslik: x.baslik } }], [x.kayit]);
   }
@@ -2355,9 +2398,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       metinGirdisi: (kayit, alan, spans) => {
         const d = this.belge(e, kayit, alan), simdiki = A.getHeads(d);
         const yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], spans as never, spanAyari()));
-        const basliklar = A.getHeads(yeni);
-        if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) return null;
-        return { tur: 'metin', veri: { kayit, alan, basliklar, temel: simdiki }, ikili: A.saveSince(yeni, simdiki) };
+        try {
+          const basliklar = A.getHeads(yeni);
+          if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) return null;
+          return { tur: 'metin', veri: { kayit, alan, basliklar, temel: simdiki }, ikili: A.saveSince(yeni, simdiki) };
+        } finally { A.free(yeni); }
       },
     };
   }
@@ -3033,11 +3078,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const paket = JSON.parse(new TextDecoder().decode(p));
     if (paket.bicim !== 'dunya-atlasi-paket') throw new Error('Bu dosya bir Dünya Atlası yedeği değil.');
     if (Number(paket.veriBicimi) > VERI_BICIMI) throw new Error('Bu yedek programın daha yeni bir sürümüyle alınmış. Önce programı güncelleyin.');
-    if (!kodGecerliMi(paket.evren?.kod)) throw new Error('Yedekteki evren kodu bozuk.');
+    if (!kodGecerliMi(paket.evren?.kod)) throw new Error('Yedekteki evren bilgisi bozuk.');
     const metin = new TextDecoder().decode(g);
     const islemler: Islem[] = metin ? metin.split('\n').filter(Boolean).map((satir, n) => {
       const i = JSON.parse(satir);
-      if (!kodGecerliMi(i.kod) || !kodGecerliMi(i.kurulum) || typeof i.tur !== 'string' || !Number.isInteger(i.sira)) throw new Error(`Yedekte bozuk değişiklik (satır ${n + 1}).`);
+      if (!kodGecerliMi(i.kod) || !kodGecerliMi(i.kurulum) || typeof i.tur !== 'string' || !Number.isInteger(i.sira)) throw new Error(`Yedekte bozuk bir değişiklik var (satır ${n + 1}).`);
       return { ...i, ikili: i.ikili ? b64Coz(i.ikili) : null };
     }) : [];
     return { paket, islemler, dosyalar };
@@ -3071,7 +3116,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (!(await this.medya.var(dosya))) await this.medya.yaz(dosya, icerik);
     }
     const e = new EvrenVt(this.ac(`/evren-${kod}.db`), this.kurulum.kod);
-    if (e.islemSayisi() > 0) throw new Error('Bu cihazda aynı adlı bir evren dosyası zaten dolu.');
+    if (e.islemSayisi() > 0) throw new Error('Bu evren bu cihazda zaten var.');
     e.disaridanAl(islemler);
     const adi = (e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined) ?? String(paket.evren.ad);
     const gosterilen = ayri ? `${adi} (yedekten, ${new Date(Number(paket.olusturma)).toLocaleDateString('tr-TR')})` : adi;

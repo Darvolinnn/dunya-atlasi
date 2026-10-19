@@ -29,7 +29,7 @@ export function PaketSecimi({ istemci, evren, paket, sec, id }: { istemci: Istem
 
 const SART_DURUMLARI: Record<SartDurumu['durum'], string> = {
   gecerli: 'izni var, varışta geçerli', yok: 'izni kayıtlı değil', bitmis: 'izni varışta bitmiş', baslamamis: 'izni varışta henüz başlamamış',
-  belirsiz: 'iznin varışta geçerli olup olmadığı belirsiz', tarih_yok: 'izni var; geçerliliği için çıkış tarihi gerekir', kisi_yok: 'kimin geçeceği seçilmedi', ucret: 'ödenip ödenemeyeceği yazara kalır',
+  belirsiz: 'iznin varışta geçerli olup olmadığı belirsiz', tarih_yok: 'izni var; geçerli olup olmadığını görmek için çıkış tarihi gerekir', kisi_yok: 'kimin geçeceği seçilmedi', ucret: 'ödenip ödenemeyeceğine siz karar verirsiniz',
 };
 function Sartlar({ evren, l }: { evren: string; l: SartDurumu[] }) {
   return (
@@ -55,15 +55,18 @@ function Adimlar({ evren, adimlar }: { evren: string; adimlar: RotaAdimi[] }) {
 }
 
 function Cozum({ evren, r }: { evren: string; r: Pick<RotaSonucu, 'hukum' | 'kip' | 'toplam' | 'adimlar' | 'eksik'> }) {
-  if (r.hukum === 'bulunamadi') return <p class="kucuk">Kayıtlı rotalarda bağlantı bulunamadı. Bu, evrende yol olmadığı anlamına gelmez.</p>;
+  if (r.hukum === 'bulunamadi') return <p class="kucuk">Kayıtlı rotalar arasında bir bağlantı bulunamadı. Bu, evrende hiç yol olmadığını göstermez.</p>;
   return (
     <>
-      <p class="kucuk">{r.kip === 'sure' ? `En kısa: ${gun(r.toplam!)}` : 'Bağlantı var ama süre hesaplanamıyor (kroki): bazı rotaların süresi kayıtlı değil.'}</p>
+      <p class="kucuk">{r.kip === 'sure' ? `En kısa: ${gun(r.toplam!)}` : 'Bağlantı var, ama bazı rotaların süresi kayıtlı olmadığı için toplam süre hesaplanamıyor.'}</p>
       <Adimlar evren={evren} adimlar={r.adimlar} />
-      {r.eksik.length > 0 && <p class="soluk kucuk">Süresi eksik: {r.eksik.map((x, i) => <>{i > 0 && ', '}{bag(evren, x)}</>)}</p>}
+      {r.eksik.length > 0 && <p class="soluk kucuk">Süresi yazılmamış rotalar: {r.eksik.map((x, i) => <>{i > 0 && ', '}{bag(evren, x)}</>)}</p>}
     </>
   );
 }
+
+/** En kısa yolun sonucu; komut paletindeki yolculuk hesabı da kullanır. */
+export const RotaCozumu = Cozum;
 
 export function RotaAraci({ istemci, evren, kod, ad }: { istemci: Istemci; evren: string; kod: string; ad: string }) {
   const [nereye, setNereye] = useState<Secim | null>(null);
@@ -102,7 +105,7 @@ export function RotaAraci({ istemci, evren, kod, ad }: { istemci: Istemci; evren
                 <Cozum evren={evren} r={r.bilinen} />
               </div>
             )}
-            <p class="soluk kucuk">{r.kapsam}{r.paket ? ` “${r.paket.ad}” paketiyle hesaplandı; evrene yazılmadı.` : ''}</p>
+            <p class="soluk kucuk">{r.kapsam}{r.paket ? ` “${r.paket.ad}” varsayım paketiyle hesaplandı; evrende hiçbir şey değişmedi.` : ''}</p>
           </div>
         )}
       </details>
@@ -132,7 +135,7 @@ export function KanalBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; 
   return (
     <section class="surecler" aria-label="Haberleşme bağlantıları">
       <h2>Haberleşme bağlantıları</h2>
-      <p class="soluk kucuk">Haber yayılımı bu bağlantılarla hesaplanır. Süreler elle girilir; program süre uydurmaz.</p>
+      <p class="soluk kucuk">Haber yayılımı bu bağlantılarla hesaplanır. Süreleri siz yazarsınız; program tahmin yürütmez.</p>
       <div class="satir">
         <label class="kucuk"><input type="checkbox" checked={t.rotalar} onChange={(e) => yaz({ ...t, rotalar: (e.target as HTMLInputElement).checked })} /> Kayıtlı rotaları kullanır</label>
         {t.rotalar && (
@@ -199,14 +202,14 @@ export function HaberYayilimiBolumu({ istemci, evren, kod, surum }: { istemci: I
         ))}
         <button class="dugme ana kucuk" type="submit">Kaydet</button>
       </form>
-      {!kanallar.length && <p class="soluk kucuk">Kayıtlı haberleşme yöntemi yok. “Haberleşme yöntemi” türünde bir kayıt açıp bağlantılarını yazabilirsin.</p>}
-      {kanallar.length > 0 && !secili.length && <p class="soluk kucuk">Kanal seçilmezse bütün haberleşme yöntemleri kullanılır.</p>}
+      {!kanallar.length && <p class="soluk kucuk">Kayıtlı haberleşme yöntemi yok. “Haberleşme yöntemi” türünde bir kayıt açıp bağlantılarını yazabilirsiniz.</p>}
+      {kanallar.length > 0 && !secili.length && <p class="soluk kucuk">Hiçbir haberleşme yöntemi seçilmezse hepsi kullanılır.</p>}
       <div class="satir"><PaketSecimi istemci={istemci} evren={evren} paket={paket} sec={setPaket} id={`haber-paketi-${kod}`} /></div>
       {hata && <p class="hata kucuk">{hata}</p>}
       {y && y.durum !== 'hesaplandi' && <p class="soluk kucuk">{y.not}</p>}
       {y && y.durum === 'hesaplandi' && (
         <>
-          {!y.ulasilan.length && !y.suresiz.length ? <p class="kucuk">Kayıtlı kanallarla başka bir yere bağlantı yok.</p> : (
+          {!y.ulasilan.length && !y.suresiz.length ? <p class="kucuk">Kayıtlı haberleşme yöntemleriyle başka bir yere bağlantı yok.</p> : (
             <ul class="toplanan-listesi">
               {y.ulasilan.map((u) => (
                 <li key={u.yer.kod}>{bag(evren, u.yer)}: {u.yazi}{u.tarih ? ` (en erken ${u.tarih})` : ''} <span class="soluk kucuk">· {u.yol.join(' → ')}</span></li>

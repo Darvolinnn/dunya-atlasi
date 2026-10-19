@@ -17,16 +17,16 @@ export const EVRELER: { kod: AyEvresi; ad: string }[] = [
   { kod: 'dolunay', ad: 'Dolunay' }, { kod: 'kuculen_siskin', ad: 'Küçülen şişkin ay' },
   { kod: 'son_dordun', ad: 'Son dördün' }, { kod: 'kuculen_hilal', ad: 'Küçülen hilal' },
 ];
-export const SINIRLAR = 'Yalnızca takvim döngüsü hesaplanır. Aynı evre tutulma değildir; üç dolunay geceyi gündüz yapmaz. Gelgit kıyı ve derinlik ister; burada yalnızca kıyı notu ve tekrar süresi saklanır. Yıl çözünürlüğündeki tarih için gün uydurulmaz; aralığın olası evreleri gösterilir. Bir hesapta en çok 100.000 gün incelenir; çakışma araması en çok 50 gün gösterir.';
+export const SINIRLAR = 'Yalnızca takvim döngüleri hesaplanır. Ayların aynı evrede olması tutulma demek değildir; üç dolunay geceyi gündüze çevirmez. Gelgiti hesaplamak için kıyı ve derinlik bilgisi gerekir, burada yalnızca kıyı notu ve tekrar süresi saklanır. Yalnızca yılı bilinen bir tarih için gün uydurulmaz, o yıl içindeki olası evreler gösterilir. Bir hesapta en çok 100.000 gün incelenir. Çakışma araması en çok 50 gün gösterir.';
 const mod = (a: number, b: number) => ((a % b) + b) % b;
 const metin = (x: unknown, ad: string, sinir = 120) => {
-  if (typeof x !== 'string' || !x.trim() || x.length > sinir) throw new Error(`${ad} yazın; en çok ${sinir} harf kullanın.`);
+  if (typeof x !== 'string' || !x.trim() || x.length > sinir) throw new Error(`${ad} yazın. En çok ${sinir} harf olabilir.`);
   return x.trim();
 };
 const evreMi = (x: unknown): x is AyEvresi => EVRELER.some((e) => e.kod === x);
 function tarihOku(ifade: string, z: ZamanSeti): EvrenTarihi {
   const t = tarihCoz(metin(ifade, 'Tarihi'), z);
-  if (!t?.eksen || t.eksen.enErken === null || t.eksen.enGec === null) throw new Error('Tarihin iki sınırı da bilinen bir takvim aralığına çevrilebilmesi gerekir.');
+  if (!t?.eksen || t.eksen.enErken === null || t.eksen.enGec === null) throw new Error('Tarihin iki sınırı da takvimde belli olmalı.');
   if (![t.eksen.enErken, t.eksen.enGec].every(Number.isSafeInteger)) throw new Error('Tarih hesaplanabilecek aralığın dışında.');
   return t;
 }
@@ -43,7 +43,7 @@ function baslangic(a: GokyuzuTanimi['aylar'][number], z: ZamanSeti): number {
 export function tanimDogrula(x: unknown, z: ZamanSeti): GokyuzuTanimi {
   const t = x as GokyuzuTanimi | null;
   if (!t || !Array.isArray(t.aylar) || t.aylar.length < 1 || t.aylar.length > 32) throw new Error('Bir ile 32 arasında ay tanımlayın.');
-  if (!Array.isArray(t.mevsimler) || t.mevsimler.length > 100 || !Array.isArray(t.gelgitler) || t.gelgitler.length > 100) throw new Error('Mevsim ve kıyı listeleri en çok 100 öğe içerebilir.');
+  if (!Array.isArray(t.mevsimler) || t.mevsimler.length > 100 || !Array.isArray(t.gelgitler) || t.gelgitler.length > 100) throw new Error('En çok 100 mevsim ve 100 gelgit notu eklenebilir.');
   const aylar = t.aylar.map((a) => {
     if (!a || !kodGecerliMi(a.kod)) throw new Error('Ayı yeniden ekleyin.');
     if (!Number.isFinite(a.donem) || a.donem < 1) throw new Error('Ay dönemi 1 günden kısa olamaz.');

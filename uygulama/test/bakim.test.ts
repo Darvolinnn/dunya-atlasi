@@ -324,11 +324,11 @@ describe('F32 bakım ve tekrarlar', () => {
       evren,
       kayit: { tanim: tanimKod, tarih: '425', durum: 'yapildi', yapan: cirak },
     });
-    expect(eklenen.bilgiNotu).toBe('Bakımı yapan, tanımdaki uzmanlar arasında değil.');
+    expect(eklenen.bilgiNotu).toBe('Bakımı yapan, tanımdaki uzmanlardan biri değil.');
 
     const okuma = h.bakimOku({ evren, kayit: saat });
     expect(okuma.tanimlar[0].kayitlar[0].uzmanDisi).toBe(true);
-    expect(okuma.tanimlar[0].kayitlar[0].bilgiNotu).toBe('Bakımı yapan, tanımdaki uzmanlar arasında değil.');
+    expect(okuma.tanimlar[0].kayitlar[0].bilgiNotu).toBe('Bakımı yapan, tanımdaki uzmanlardan biri değil.');
 
     // 435 tarihinde usta yaşamıyor olabilir bilgi satırı döner ama durum hükmü değişmez:
     const durum435 = h.bakimDurumu({ evren, kayit: saat, tarih: '435' }).tanimlar[0];

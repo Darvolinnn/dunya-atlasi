@@ -28,35 +28,35 @@ export function KalabalikBolumu({ istemci, evren, kod, tur, surum, saltOkunur }:
   const kaldir = (bicim: Bicim, k: string, geriYukle: boolean) => istemci.iste('kalabalikKaldir', { evren, kod: k, bicim, geriYukle }).then(() => setHata(''), (e: Error) => setHata(e.message));
   const tarihYaz = (s: KalabalikSatiri<KalabalikGozlemi | KalabalikOlayi>) => <>{s.tarih?.olay && <a href={`#/e/${evren}/k/${s.tarih.olay.kod}`}>{s.tarih.olay.ad}: </a>}{s.tarih?.tarih?.ifade ?? s.tanim.tarih.ifade ?? 'Tarihi bilinmiyor'}</>;
   const islemler = (s: KalabalikSatiri<KalabalikGozlemi | KalabalikOlayi>, bicim: Bicim) => <>
-    {s.catismali && (saltOkunur ? <p>İki cihazda farklı yazılmış; bu sayım için inceleme bekleniyor.</p> : <CatismaListesi istemci={istemci} evren={evren} kod={s.kod} surum={surum} />)}
+    {s.catismali && (saltOkunur ? <p>Bu sayım iki cihazda farklı yazılmış; incelenmesi gerekiyor.</p> : <CatismaListesi istemci={istemci} evren={evren} kod={s.kod} surum={surum} />)}
     {!saltOkunur && !s.catismali && <div class="satir">
       {!s.silindi && <button type="button" class="dugme kucuk" onClick={() => setForm({ bicim, kod: s.kod, tanim: s.tanim })}>Düzenle</button>}
-      <button type="button" class="dugme sade kucuk" onClick={() => (s.silindi || onayla('Bu satır kaldırılsın mı?')) && kaldir(bicim, s.kod, s.silindi)}>{s.silindi ? 'Geri getir' : 'Kaldır'}</button>
+      <button type="button" class="dugme sade kucuk" onClick={() => (s.silindi || onayla(bicim === 'gozlem' ? 'Bu gözlem kaldırılsın mı?' : 'Bu sayım olayı kaldırılsın mı?')) && kaldir(bicim, s.kod, s.silindi)}>{s.silindi ? 'Geri getir' : 'Kaldır'}</button>
     </div>}
   </>;
   return <section class="surecler kalabalik-bolumu" aria-label="Kalabalık ve toplu sayım">
     <h2>Kalabalık ve toplu sayım</h2>
-    <p class="soluk">Gözlemler toplam için dayanak olur. Toplamı katılma, ayrılma ve ölüm olayları değiştirir.</p>
+    <p class="soluk">Toplam, gözlemlere dayanılarak hesaplanır. Katılma, ayrılma ve ölüm olayları toplamı değiştirir.</p>
     <label>Tahmin tarihi <input class="girdi" style="max-width:160px" value={tarih} placeholder="Örn. 450" onInput={(e) => setTarih(e.currentTarget.value)} /></label>
     {dosya.uyarilar.map((u) => <p class="soluk" key={u}>{u}</p>)}
     {dosya.tahminler.map((t) => <div class="kart" key={t.gozlem}>
-      <strong>{miktarYaz(t.miktar)}</strong>{t.belirsiz && ' · Tarih sırası belirsiz'}{t.uyusmaz && ' · Diğer dayanakla uyuşmuyor'}
+      <strong>{miktarYaz(t.miktar)}</strong>{t.belirsiz && ' · Tarih sırası belirsiz'}{t.uyusmaz && ' · Başka bir gözlemle uyuşmuyor'}
       <p>Dayanak: {t.sonGozlem ? 'son gözlem' : 'önceki gözlem'} ({tarihYaz(dosya.gozlemler.find((g) => g.kod === t.gozlem)!)}) + {t.olaylar.length} olay.</p>
       <ul>{t.olaylar.map((k) => { const o = dosya.olaylar.find((x) => x.kod === k)!; return <li key={k}>{KALABALIK_OLAY_ADLARI[o.tanim.tur]} · {miktarYaz(o.tanim.miktar)} · {tarihYaz(o)}</li>; })}</ul>
     </div>)}
     <h3>Adı bilinen üyeler: {dosya.uyeler.length}</h3>
-    <p class="soluk">Kesin üyelik bağı olan kişi kayıtları; üyelik geçmişinin tamamı gösterilir. Bu liste toplama eklenmez.</p>
+    <p class="soluk">Üyeliği kesin olan kişiler. Geçmişte üye olmuş olanlar da listelenir. Bu liste toplama katılmaz.</p>
     <ul>{dosya.uyeler.map((u) => <li key={u.kod}><a href={`#/e/${evren}/k/${u.kod}`}>{u.ad}</a></li>)}</ul>
     <div class="satir"><h3>Tarihli gözlemler</h3>{!saltOkunur && <button type="button" class="dugme" onClick={() => setForm({ bicim: 'gozlem', kod: null, tanim: yeni(kod) })}>Gözlem ekle</button>}</div>
     {dosya.gozlemler.map((g) => <article class="kart" key={g.kod}>
-      <p><strong>{g.catismali ? 'Gözlem inceleme bekliyor' : miktarYaz(g.tanim.miktar)}</strong> {!g.catismali && <>· {tarihYaz(g)}</>} {g.silindi && '· Kaldırıldı'}</p>
+      <p><strong>{g.catismali ? 'Gözlem incelenmeyi bekliyor' : miktarYaz(g.tanim.miktar)}</strong> {!g.catismali && <>· {tarihYaz(g)}</>} {g.silindi && '· Kaldırıldı'}</p>
       {!g.catismali && <p>{g.tanim.not}</p>}
       {!g.catismali && <AltGruplar key={JSON.stringify(g.tanim)} gozlem={g.tanim} />}
       {islemler(g, 'gozlem')}
     </article>)}
     <div class="satir"><h3>Toplamı değiştiren olaylar</h3>{!saltOkunur && <button type="button" class="dugme" onClick={() => setForm({ bicim: 'olay', kod: null, tanim: { kayit: kod, tarih: { ifade: '' }, miktar: sifir(), tur: 'katilma', not: '' } })}>Sayım olayı ekle</button>}</div>
     {dosya.olaylar.map((o) => <article class="kart" key={o.kod}>
-      <p><strong>{o.catismali ? 'Sayım olayı inceleme bekliyor' : `${KALABALIK_OLAY_ADLARI[o.tanim.tur]}: ${miktarYaz(o.tanim.miktar)}`}</strong> {!o.catismali && <>· {tarihYaz(o)}</>} {o.silindi && '· Kaldırıldı'}</p>{!o.catismali && <p>{o.tanim.not}</p>}{islemler(o, 'olay')}
+      <p><strong>{o.catismali ? 'Sayım olayı incelenmeyi bekliyor' : `${KALABALIK_OLAY_ADLARI[o.tanim.tur]}: ${miktarYaz(o.tanim.miktar)}`}</strong> {!o.catismali && <>· {tarihYaz(o)}</>} {o.silindi && '· Kaldırıldı'}</p>{!o.catismali && <p>{o.tanim.not}</p>}{islemler(o, 'olay')}
     </article>)}
     {hata && <p role="alert" class="hata">{hata}</p>}
     {form && !saltOkunur && <SayimFormu key={`${form.bicim}:${form.kod}`} istemci={istemci} evren={evren} {...form} kapat={() => setForm(null)} />}
@@ -81,7 +81,7 @@ function AltGruplar({ gozlem: g }: { gozlem: KalabalikGozlemi }) {
     <ul>{g.altGruplar.map((s) => <li key={s.kod}>{s.ad}: {miktarYaz(s.miktar)}</li>)}</ul>
     <ul>{g.ortusmeler.map((s) => <li key={s.a + s.b}>{g.altGruplar.find((x) => x.kod === s.a)?.ad} ve {g.altGruplar.find((x) => x.kod === s.b)?.ad} örtüşmesi: {miktarYaz(s.miktar)}</li>)}</ul>
     {g.altGruplar.length > 1 && <details><summary>Alt grup farkını hesapla</summary>
-      <p class="soluk">Bu hesap yalnızca gözlem anına aittir. Sonraki olaylar alt gruplara dağıtılmaz.</p>
+      <p class="soluk">Bu hesap yalnızca gözlemin yapıldığı an için geçerlidir. Sonraki olaylar alt gruplara dağıtılmaz.</p>
       <label>İçinden çıkarılacak grup <select value={a} onChange={(e) => setA(e.currentTarget.value)}><option value="">Seçin</option>{g.altGruplar.map((s) => <option value={s.kod} key={s.kod}>{s.ad}</option>)}</select></label>
       <label>Çıkarılacak grup <select value={b} onChange={(e) => setB(e.currentTarget.value)}><option value="">Seçin</option>{g.altGruplar.filter((s) => s.kod !== a).map((s) => <option value={s.kod} key={s.kod}>{s.ad}</option>)}</select></label>
       {sonuc && <p><strong>{x?.ad} içinde {y?.ad} dışında kalanlar: {sonuc}</strong> · {o ? 'Girilen örtüşme kullanıldı.' : 'Örtüşme bilinmiyor.'}</p>}
@@ -104,12 +104,12 @@ function SayimFormu({ istemci, evren, bicim, kod, tanim, kapat }: { istemci: Ist
   };
   return <div class="kart kalabalik-formu" role="region" aria-label={bicim === 'gozlem' ? 'Gözlem düzenle' : 'Sayım olayı düzenle'}><fieldset disabled={bekle}>
     <legend>{bicim === 'gozlem' ? 'Gözlem' : 'Sayım olayı'}</legend>
-    <label>Tarih dayanağı <select value={'olay' in t.tarih ? 'olay' : 'tarih'} onChange={(e) => { setDayanak(null); tarihYaz(e.currentTarget.value === 'olay' ? { olay: '' } : { ifade: '' }); }}>
-      <option value="tarih">Tarih ifadesi</option><option value="olay">Olay kaydı</option>
+    <label>Tarih neye göre <select value={'olay' in t.tarih ? 'olay' : 'tarih'} onChange={(e) => { setDayanak(null); tarihYaz(e.currentTarget.value === 'olay' ? { olay: '' } : { ifade: '' }); }}>
+      <option value="tarih">Tarih yazarak</option><option value="olay">Bir olaya göre</option>
     </select></label>
     {'olay' in t.tarih ? <>
       <KayitSec istemci={istemci} evren={evren} secili={dayanak} etiket="Tarihi alınacak olayı seç" sec={(s) => { setDayanak(s); tarihYaz({ olay: s?.kod ?? '', fark: t.tarih.fark }); }} />
-      <label>Olaya göre fark <input value={t.tarih.fark ?? ''} placeholder="Örn. 2 gün sonra; boşsa olayın tarihi" onInput={(e) => tarihYaz({ ...t.tarih, fark: e.currentTarget.value })} /></label>
+      <label>Olaya göre fark <input value={t.tarih.fark ?? ''} placeholder="Örn. 2 gün sonra (boşsa olayın tarihi kullanılır)" onInput={(e) => tarihYaz({ ...t.tarih, fark: e.currentTarget.value })} /></label>
     </> : <label>Sayım tarihi <input value={t.tarih.ifade ?? ''} placeholder="Örn. 450" onInput={(e) => tarihYaz({ ifade: e.currentTarget.value })} /></label>}
     {'tur' in t && <label>Olayın türü <select value={t.tur} onChange={(e) => setT({ ...t, tur: e.currentTarget.value as KalabalikOlayi['tur'] })}>{Object.entries(KALABALIK_OLAY_ADLARI).map(([k, ad]) => <option value={k} key={k}>{ad}</option>)}</select></label>}
     <MiktarAlani ad={g ? 'Toplam' : 'Olaydaki miktar'} deger={t.miktar} yaz={(miktar) => setT({ ...t, miktar })} />
@@ -121,7 +121,7 @@ function SayimFormu({ istemci, evren, bicim, kod, tanim, kapat }: { istemci: Ist
         <button type="button" class="dugme sade" onClick={() => setT({ ...g, altGruplar: g.altGruplar.filter((s) => s.kod !== a.kod), ortusmeler: g.ortusmeler.filter((o) => o.a !== a.kod && o.b !== a.kod) })}>Alt grubu çıkar</button>
       </div>)}
       <button type="button" class="dugme" onClick={() => setT({ ...g, altGruplar: [...g.altGruplar, { kod: yeniKod(), ad: '', miktar: sifir() }] })}>Alt grup ekle</button>
-      <h4>Örtüşmeler</h4><p class="soluk">Girilmemiş örtüşme bilinmiyor demektir. Hiç ortak üye yoksa sıfır girin.</p>
+      <h4>Örtüşmeler</h4><p class="soluk">Örtüşme girilmezse bilinmiyor sayılır. Hiç ortak üye yoksa sıfır yazın.</p>
       {g.ortusmeler.map((o, i) => <div class="kart" key={i}>
         <label>Birinci alt grup <select value={o.a} onChange={(e) => setT({ ...g, ortusmeler: g.ortusmeler.map((s, n) => n === i ? { ...s, a: e.currentTarget.value } : s) })}><option value="">Seçin</option>{g.altGruplar.map((s) => <option value={s.kod} key={s.kod}>{s.ad}</option>)}</select></label>
         <label>İkinci alt grup <select value={o.b} onChange={(e) => setT({ ...g, ortusmeler: g.ortusmeler.map((s, n) => n === i ? { ...s, b: e.currentTarget.value } : s) })}><option value="">Seçin</option>{g.altGruplar.filter((s) => s.kod !== o.a).map((s) => <option value={s.kod} key={s.kod}>{s.ad}</option>)}</select></label>

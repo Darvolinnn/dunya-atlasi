@@ -44,13 +44,13 @@ export function YedekSekmesi({ istemci, evren, surum }: { istemci: Istemci; evre
   return (
     <div class="kart" style="margin-top:12px">
       <h3>Dosyaya tam yedek</h3>
-      <p>Bu evrenin bütün kayıtları, metinleri, ilişkileri, sürüm geçmişi ve görselleri tek bir dosyaya yazılır. Dosyayı istediğin yerde sakla (bir bellek, başka bir disk).</p>
-      <p class="soluk kucuk">Yedek, programın “Evrenler” sayfasındaki “Yedekten geri yükle” ile hiçbir şey kaybetmeden geri gelir. Bu cihazda evren hâlâ duruyorsa var olana dokunulmaz; yedek ayrı bir evren olarak açılır.</p>
+      <p>Bu evrenin bütün kayıtları, metinleri, ilişkileri, sürüm geçmişi ve görselleri tek bir dosyaya yazılır. Dosyayı istediğiniz yerde saklayın (bir bellek ya da başka bir disk).</p>
+      <p class="soluk kucuk">Yedeği “Evrenler” sayfasındaki “Yedekten geri yükle” ile hiçbir şey kaybetmeden geri yükleyebilirsiniz. Evren bu cihazda hâlâ duruyorsa ona dokunulmaz, yedek ayrı bir evren olarak açılır.</p>
       <div class="satir" style="margin-top:8px">
         <button class="dugme ana" onClick={al} disabled={durum === 'aliniyor'}>{durum === 'aliniyor' ? 'Yedek hazırlanıyor…' : 'Yedek al'}</button>
         <span class="soluk kucuk">{son ? `Son yedek: ${zamanYaz(son)}` : 'Bu evrenin bu cihazdan alınmış yedeği yok.'}</span>
       </div>
-      {durum === 'alindi' && <p class="kucuk" role="status">Yedek dosyası indirildi. Tarayıcının indirilenler klasörüne bak.</p>}
+      {durum === 'alindi' && <p class="kucuk" role="status">Yedek dosyası indirildi. Tarayıcının indirilenler klasörüne bakın.</p>}
       {hata && <p class="hata" role="alert">{hata}</p>}
     </div>
   );
@@ -99,16 +99,16 @@ export function DriveYedekleri({ istemci, evren, surum }: { istemci: Istemci; ev
   return (
     <div class="kart" style="margin-top:12px">
       <h3>Drive'daki yedekler</h3>
-      <p class="soluk kucuk">Google Drive'ında görebildiğin “Dünya Atlası yedekleri” klasörüne her gün bir yedek alınır. Görseller o klasörün içindeki “medya” klasöründe bir kez durur.
+      <p class="soluk kucuk">Google Drive'ınızdaki “Dünya Atlası yedekleri” klasörüne her gün bir yedek alınır. Görseller bu klasörün içindeki “medya” klasöründe tek kopya olarak saklanır.
         Günlük yedekler {d.gunSayisi} gün, her ayın ilk yedeği {d.aySayisi} ay saklanır.</p>
       {!d.esitlenir
-        ? <p class="kucuk">Bu evren Drive'a gönderilmiyor; Drive'a yedeği de alınmaz. “Eşitleme ve cihazlar” sayfasından açabilirsin.</p>
+        ? <p class="kucuk">Bu evren Drive ile eşitlenmediği için Drive'a yedeği de alınmaz. Eşitlemeyi “Eşitleme ve cihazlar” sayfasından açabilirsiniz.</p>
         : <p class="kucuk">{d.son
             ? <>Son yedek: <strong>{zamanYaz(d.son.zaman)}</strong>{d.son.dogrulandi ? ' · geri okunup doğrulandı' : ' · doğrulanamadı'}
               {d.son.eksikGorsel ? ` · ${d.son.eksikGorsel} görsel bu cihazda olmadığı için yedekte yok` : ''}</>
             : 'Bu evrenin Drive\'da yedeği henüz yok.'}</p>}
       {d.hata && <p class="uyari kucuk">Son yedekleme denemesi başarısız oldu: {d.hata}</p>}
-      {!bagli && d.esitlenir && <p class="soluk kucuk">Yedekler Google Drive'a bağlıyken alınır; bağlantı yokken kaçan yedek bağlanınca alınır.</p>}
+      {!bagli && d.esitlenir && <p class="soluk kucuk">Yedekler Google Drive'a bağlıyken alınır. Bağlı değilken alınamayan yedek, bağlandığınızda alınır.</p>}
       {bagli && d.esitlenir && (
         <div class="satir" style="margin-top:8px">
           <button class="dugme" onClick={simdi} disabled={!!mesgul}>{mesgul === 'yedekleniyor' ? 'Yedekleniyor…' : 'Şimdi Drive\'a yedekle'}</button>
@@ -133,7 +133,7 @@ export function DriveYedekleri({ istemci, evren, surum }: { istemci: Istemci; ev
               <span>{gunMetni(y.gun)} <span class="soluk kucuk">{y.zaman ? saatMetni(y.zaman) : ''}</span></span>
               <span class="bosluk" />
               <button class="dugme sade" onClick={() => geriYukle(y)} disabled={!!mesgul}
-                title="Bu evrene dokunulmaz; yedek ayrı bir evren olarak açılır.">{mesgul === y.id ? 'Geri yükleniyor…' : 'Ayrı evren olarak aç'}</button>
+                title="Bu evren değişmez, yedek ayrı bir evren olarak açılır.">{mesgul === y.id ? 'Geri yükleniyor…' : 'Ayrı evren olarak aç'}</button>
             </li>
           ))}
         </ul>
@@ -197,7 +197,7 @@ export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci
       <div class="satir"><h3>Yedekten geri yükle</h3><span class="bosluk" /><button class="dugme sade" onClick={kapat}>Kapat</button></div>
       {!sonuc && (
         <>
-          <p class="soluk kucuk">“Yedek al” ile indirdiğin dosyayı seç. Önce içinde ne olduğu gösterilir; onaylamadan hiçbir şey yazılmaz.</p>
+          <p class="soluk kucuk">“Yedek al” ile indirdiğiniz dosyayı seçin. Önce içinde ne olduğu gösterilir, siz onaylamadan hiçbir şey yazılmaz.</p>
           <label class="dugme">Yedek dosyasını seç<input type="file" accept=".zip,application/zip" style="display:none" onChange={sec} /></label>
         </>
       )}
@@ -207,10 +207,10 @@ export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci
           <p><strong>{bilgi.evrenAdi}</strong></p>
           <p class="kucuk">Yedeğin alındığı an: {zamanYaz(bilgi.tarih)}<br />
             {bilgi.kayitSayisi} kayıt · {bilgi.islemSayisi} değişiklik · {bilgi.medyaSayisi} görsel</p>
-          {bilgi.eksikMedya > 0 && <p class="kucuk">Yedek alınırken {bilgi.eksikMedya} görsel o cihazda yoktu; bu görseller gelmeyecek.</p>}
+          {bilgi.eksikMedya > 0 && <p class="kucuk">Yedek alınırken {bilgi.eksikMedya} görsel o cihazda yoktu, bu görseller geri gelmeyecek.</p>}
           {bilgi.mevcut
-            ? <p class="uyari kucuk">Bu evren bu cihazda zaten var (“{bilgi.mevcut.ad}”). Ona dokunulmaz: yedek <strong>ayrı bir evren</strong> olarak açılır. İnceledikten sonra istersen asıl evrenin yerine koyabilirsin.</p>
-            : <p class="kucuk">Bu evren bu cihazda yok; olduğu gibi geri gelir.</p>}
+            ? <p class="uyari kucuk">Bu evren bu cihazda zaten var (“{bilgi.mevcut.ad}”). Var olan evren değişmez, yedek <strong>ayrı bir evren</strong> olarak açılır. İnceledikten sonra isterseniz asıl evrenin yerine koyabilirsiniz.</p>
+            : <p class="kucuk">Bu evren bu cihazda yok, olduğu gibi geri yüklenecek.</p>}
           <button class="dugme ana" onClick={yukle} disabled={mesgul}>Geri yükle</button>
         </div>
       )}
@@ -223,7 +223,7 @@ export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci
               <button class="dugme" onClick={yerineKoy} title="Hiçbir şey silinmez; asıl evren “eski” adıyla kalır.">Asıl evrenin yerine koy</button>
             )}
           </div>
-          {sonuc.ayri && <p class="soluk kucuk">“Yerine koy” hiçbir şey silmez: yedekten gelen evren asıl adı alır, şimdiki evren “eski” diye adlanıp listede kalır.</p>}
+          {sonuc.ayri && <p class="soluk kucuk">“Asıl evrenin yerine koy” hiçbir şeyi silmez. Yedekten gelen evren asıl adı alır, şimdiki evren “eski” adıyla listede kalır.</p>}
         </div>
       )}
       {hata && <p class="hata" role="alert">{hata}</p>}
@@ -279,7 +279,7 @@ export function IceAktar({ istemci, kapat, yenile }: { istemci: Istemci; kapat: 
       <div class="satir"><h3>Dışarıdan içe aktar</h3><span class="bosluk" /><button class="dugme sade" onClick={kapat}>Kapat</button></div>
       {!sonuc && (
         <>
-          <p class="soluk kucuk">Markdown notları (.md, .txt; Obsidian klasörü gibi) ya da eski prototipten dışa aktarılan .json dosyası. Görseller de seçilebilir. İçe alınanlar <strong>yeni ve ayrı bir evrene</strong> yazılır; var olan evrenlere dokunulmaz.</p>
+          <p class="soluk kucuk">Markdown notlarını (.md, .txt, örneğin bir Obsidian klasörü) ya da programın eski deneme hâlinden dışa aktarılan .json dosyasını seçin. Görselleri de seçebilirsiniz. İçe alınanlar <strong>yeni ve ayrı bir evrene</strong> yazılır, var olan evrenler değişmez.</p>
           <div class="satir">
             <label class="dugme">Dosyaları seç<input type="file" multiple accept=".md,.markdown,.txt,.json,image/*" style="display:none" onChange={sec} /></label>
             <label class="dugme">Klasör seç<input type="file" {...{ webkitdirectory: '' }} multiple style="display:none" onChange={sec} /></label>
@@ -327,7 +327,7 @@ function RaporGorunumu({ rapor }: { rapor: IceAktarimRaporu }) {
       {ayrinti('Aynı adlı kayıtlar (ikisi de alınır, bağlantılar ilkine gider)', rapor.tekrarAdlar)}
       {ayrinti('Tanınmayan türler (etiket olarak saklanacak)', rapor.taninmayanTurler)}
       {ayrinti('Tanınmayan alanlar (metnin sonuna yazılacak)', rapor.digerAlanlar)}
-      {ayrinti('Düz metne dönecek biçimler', rapor.kayiplar)}
+      {ayrinti('Düz metne dönüşecek biçimlendirmeler', rapor.kayiplar)}
       {ayrinti('Bulunamayan görseller', rapor.eksikGorseller)}
       {ayrinti('Okunamayan dosyalar', rapor.okunamayan)}
     </div>

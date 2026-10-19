@@ -38,7 +38,7 @@ export function kisiYasananSure(b: DurumBaglami, kisi: string, an: EvrenTarihi |
     if (sonradan(bas)) continue;
     const bit = r.bitis ? JSON.parse(r.bitis as string) as EvrenTarihi : an;
     for (const akis of yerAkislari(r.b as string)) {
-      if (varMi(r.kod as string)) nedenler.push('İkamet ilişkisinin iki cihazdaki değerleri seçilmeyi bekliyor.');
+      if (varMi(r.kod as string)) nedenler.push('İkamet ilişkisinin iki cihazda farklı değerleri var ve henüz biri seçilmedi.');
       kalislar.push({ akis: akis.kod, baslangic: bas, bitis: bit, dayanak: `İkamet: ${ad(r.b as string)}` });
     }
   }
@@ -46,8 +46,8 @@ export function kisiYasananSure(b: DurumBaglami, kisi: string, an: EvrenTarihi |
     WHERE i.a=? AND i.silindi IS NULL AND i.karar<>'vazgecildi' AND k.silindi IS NULL AND k.karar<>'vazgecildi'
     AND ((i.tur='sahnede' AND i.rol='bulunuyor') OR (i.tur='olayda' AND i.rol IN ('baslatan','katilan','tanik','zarar')))`, [kod])) {
     const t = tarih(r.b as string); if (sonradan(t) && !tarihCatismali(r.b as string)) continue;
-    if (tarihCatismali(r.b as string)) nedenler.push('Katılımın olay tarihinin iki cihazdaki değerleri seçilmeyi bekliyor.');
-    if (t?.akis && varMi(r.kod as string)) nedenler.push('Katılımın iki cihazdaki değerleri seçilmeyi bekliyor.');
+    if (tarihCatismali(r.b as string)) nedenler.push('Katıldığı olayın tarihi iki cihazda farklı ve henüz biri seçilmedi.');
+    if (t?.akis && varMi(r.kod as string)) nedenler.push('Katılım bilgisinin iki cihazda farklı değerleri var ve henüz biri seçilmedi.');
     gozlemler.push({ akis: t?.akis ?? null, tarih: t, dayanak: `Fiziksel katılım: ${ad(r.b as string)}` });
   }
   // Bir durum sınırı akış tarihindeyse, kendi ifadesi de yeniden çözülür; oran değişince eski hesap kullanılmaz.
@@ -56,14 +56,14 @@ export function kisiYasananSure(b: DurumBaglami, kisi: string, an: EvrenTarihi |
   }
   const baskaAkis = kalislar.length > 0 || gozlemler.some((g) => g.akis);
   if (baskaAkis) {
-    for (const a of z.akislar) if ((kalislar.some((k) => k.akis === a.kod) || gozlemler.some((g) => g.akis === a.kod)) && varMi('evren', `akis:${a.kod}`)) nedenler.push(`“${a.ad}”: akışın iki cihazdaki değerleri seçilmeyi bekliyor.`);
-    if (varMi('evren', 'takvim')) nedenler.push('Takvimin iki cihazdaki değerleri seçilmeyi bekliyor.');
+    for (const a of z.akislar) if ((kalislar.some((k) => k.akis === a.kod) || gozlemler.some((g) => g.akis === a.kod)) && varMi('evren', `akis:${a.kod}`)) nedenler.push(`“${a.ad}” zaman akışının iki cihazda farklı değerleri var ve henüz biri seçilmedi.`);
+    if (varMi('evren', 'takvim')) nedenler.push('Takvimin iki cihazda farklı değerleri var ve henüz biri seçilmedi.');
   }
   const dogumBelirsiz = varMi(kod, 'f:dogum');
   const anBelirsiz = !!anKodu && tarihCatismali(anKodu);
-  if (dogumBelirsiz) nedenler.push('Doğum tarihinin çözülmemiş iki değeri var; takvim yaşı da belirlenemiyor.');
-  if (anBelirsiz) nedenler.push('Bakılan olayın çözülmemiş iki tarihi var; takvim yaşı da belirlenemiyor.');
-  if (varMi(kod, 'f:olum') && baskaAkis) nedenler.push('Ölüm tarihinin çözülmemiş iki değeri var.');
+  if (dogumBelirsiz) nedenler.push('Doğum tarihi için iki farklı değer var ve henüz biri seçilmedi. Bu yüzden takvim yaşı da belirlenemiyor.');
+  if (anBelirsiz) nedenler.push('Bakılan olay için iki farklı tarih var ve henüz biri seçilmedi. Bu yüzden takvim yaşı da belirlenemiyor.');
+  if (varMi(kod, 'f:olum') && baskaAkis) nedenler.push('Ölüm tarihi için iki farklı değer var ve henüz biri seçilmedi.');
   const bitis = olum && an && karsilastir(olum, an) === 'once' ? olum : an;
   const sonuc = yasananSureHesapla(dogumBelirsiz ? null : dogum, bitis, z, kalislar, gozlemler, [...new Set(nedenler)]);
   sonuc.tarih = an?.ifade ?? null;

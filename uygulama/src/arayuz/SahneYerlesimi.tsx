@@ -70,7 +70,7 @@ export function SahneYerlesimi({ istemci, evren, kod, surum, saltOkunur }: { ist
     } else if (tur === 'karakter') {
       const k = okuma?.katilimcilar.find((k) => k.kod === kisi);
       if (!k) { setHata('Önce bir sahne katılımcısı seçin.'); return; }
-      if (y.ogeler.some((o) => o.tur === 'karakter' && o.kisi === kisi)) { setHata('Bu karakterin hareket adımlarını kullanın.'); return; }
+      if (y.ogeler.some((o) => o.tur === 'karakter' && o.kisi === kisi)) { setHata('Bu karakter yerleşimde zaten var. Yerini değiştirmek için hareket adımlarını kullanın.'); return; }
       o = { ...temel, ad: k.ad, tur, kisi, konum: p, yon: 0, aci: 90, uzaklik: 0.5, adimlar: [] };
     } else if (tur === 'isik') o = { ...temel, tur, konum: p, yaricap: 0.2 };
     else o = { ...temel, tur: 'ses', konum: p, duzey: 'Belirtilmemiş', uzaklik: null, azaltma: 0, gurultu: '' };
@@ -94,32 +94,32 @@ export function SahneYerlesimi({ istemci, evren, kod, surum, saltOkunur }: { ist
   }) : null;
   return <section aria-label="Sahne yerleşimi">
     <details open><summary><h2 style="display:inline">Sahne yerleşimi</h2></summary>
-      <p>Bu sahnenin geçici yerleşimi kalıcı planı değiştirmez. Kaydedilen görsel sürümü korunur.</p>
-      <p class="soluk kucuk">Uzaklık ve yarıçap birimi plan enidir: 1, görselin eni kadardır. Yön: 0° sağ, 90° aşağı. Görüş; açı, uzaklık ve engellerle sınırlıdır. Pencere ve açık kapı hattı kesmez; duvar, kapalı kapı ve siper keser. Ses uzaklığından kesilen her engel için yazdığın azaltma çıkarılır. Yansıma, kırılma, duvar malzemesi, ışığın algıya etkisi ve dikkat hesaba katılmaz. Renkli alan yaklaşık önizlemedir; sonuçlar yalnız bu varsayımlarla geçerlidir.</p>
+      <p>Bu sahne için yaptığınız yerleşim, mekânın kalıcı planını değiştirmez. Kullanılan plan görselinin o anki sürümü saklanır.</p>
+      <p class="soluk kucuk">Uzaklık ve yarıçap planın enine göre ölçülür: 1, görselin eni kadardır. Yönde 0° sağı, 90° aşağıyı gösterir. Görüş açıyla, uzaklıkla ve engellerle sınırlıdır. Duvar, kapalı kapı ve siper görüşü keser, pencere ve açık kapı kesmez. Sesin ulaştığı uzaklıktan, arada kalan her engel için yazdığınız miktar düşülür. Yansıma, kırılma, duvar malzemesi, ışığın algıya etkisi ve dikkat hesaba katılmaz. Renkli alan yaklaşık bir önizlemedir. Sonuçlar yalnızca bu varsayımlarla geçerlidir.</p>
       {hata && <p class="hata" role="alert">{hata}</p>}
       <p role="status">{bilgi}</p>
       {!okuma && !hata && <p>Açılıyor…</p>}
-      {okuma?.catismali && <p class="uyari">Sahne yerleşiminde iki farklı değer var. Önce yukarıdaki çatışma bölümünden birini seçin. Hesap gösterilmiyor.</p>}
-      {eski && <p class="uyari">Kaydedilmiş bilgiler değişti. Taslağın önceki bilgilere dayanıyor; yeniden yüklemeden kaydedemezsin.</p>}
+      {okuma?.catismali && <p class="uyari">Sahne yerleşiminde iki farklı değer var. Önce yukarıdaki çatışma bölümünden birini seçin. O zamana kadar hesap gösterilmez.</p>}
+      {eski && <p class="uyari">Kaydedilmiş bilgiler bu arada değişti ve taslağınız eski bilgilere dayanıyor. Kaydetmek için önce yeniden yükleyin.</p>}
       <div class="satir">
         <label>Kat planı <select class="girdi" disabled={kilit} value="" onChange={(e) => {
           const p = planlar[Number(e.currentTarget.value)]; if (!p) return;
-          if (y?.ogeler.length && !confirm('Plan değişirse bu taslaktaki öğeler kaldırılacak. Devam edilsin mi?')) return;
+          if (y?.ogeler.length && !confirm('Planı değiştirirseniz bu taslaktaki öğeler kaldırılır. Devam edilsin mi?')) return;
           degistir({ plan: { mekan: p.mekan, gorsel: p.gorsel, en: p.en, boy: p.boy }, ogeler: [] }); setSecili(''); setIlk(null);
         }}><option value="">{y ? 'Başka plan seç…' : 'Bir mekân görseli seç…'}</option>{planlar.map((p, i) => <option value={i}>{p.ad} · {i + 1}. görsel</option>)}</select></label>
         <button class="dugme" disabled={!kirli || kilit} onClick={() => void kaydet()}>{yaziliyor ? 'Kaydediliyor…' : 'Yerleşimi kaydet'}</button>
-        <button class="dugme" disabled={yaziliyor} onClick={() => { if (!kirli || confirm('Kaydedilmemiş değişiklikler bırakılsın mı?')) yukle(); }}>Yeniden yükle</button>
+        <button class="dugme" disabled={yaziliyor} onClick={() => { if (!kirli || confirm('Kaydedilmemiş değişikliklerden vazgeçilsin mi?')) yukle(); }}>Yeniden yükle</button>
       </div>
       {okuma && !planlar.length && !y && <p>Önce bir mekân kaydına kat planı görseli ekleyin.</p>}
       {y && <>
-        <p class="soluk">Kullanılan plan: {planlar.find((p) => p.mekan === y.plan.mekan)?.ad ?? 'Kaydedilmiş mekân görseli'} · {y.plan.en} × {y.plan.boy}. Bu sahnenin kaydettiği görsel gösterilir.</p>
+        <p class="soluk">Kullanılan plan: {planlar.find((p) => p.mekan === y.plan.mekan)?.ad ?? 'Kaydedilmiş mekân görseli'} · {y.plan.en} × {y.plan.boy}. Bu sahne için kaydedilen görsel gösteriliyor.</p>
         <div class="satir" role="toolbar" aria-label="Yerleşim kipleri">
           {(['sec', 'ciz', 'tasi', 'adim'] as const).map((k) => <button class="dugme" aria-pressed={kip === k} disabled={k !== 'sec' && (kilit || k === 'tasi' && !sec || k === 'adim' && sec?.tur !== 'karakter')} onClick={() => { setKip(k); setIlk(null); }}>{({ sec: 'Seç', ciz: 'Çiz', tasi: 'Taşı', adim: 'Hareket adımı ekle' })[k]}</button>)}
           <select class="girdi" aria-label="Eklenecek öğe" disabled={kilit} value={tur} onChange={(e) => { setTur(e.currentTarget.value as Oge['tur']); setIlk(null); }}>{Object.entries(ADLAR).map(([t, ad]) => <option value={t}>{ad}</option>)}</select>
           {tur === 'karakter' && <select class="girdi" aria-label="Sahne katılımcısı" value={kisi} onChange={(e) => setKisi(e.currentTarget.value)}><option value="">Katılımcı seç…</option>{okuma?.katilimcilar.map((k) => <option value={k.kod}>{k.ad}</option>)}</select>}
         </div>
-        <p>{kip === 'sec' ? 'Öğeye veya aşağıdaki adına dokunarak seç.' : kip === 'ciz' ? (ilk ? 'Çizginin ikinci ucuna dokun.' : 'Kalem veya fareyle konumu seç; çizgiler için iki ucuna sırayla dokun.') : kip === 'adim' ? 'Karakterin sonraki adımına kalem veya fareyle dokun.' : 'Seçilen öğenin yeni yerine kalem veya fareyle dokun. Çizginin ortası buraya taşınır.'} Parmakla kaydırabilirsin. Konumları aşağıdaki alanlardan da değiştirebilirsin.</p>
-        {!resim && <p class="uyari">Kaydedilen plan görseli bu cihazda açılamıyor. Yerleşim saklı; görsel açılana kadar çizim kapalı.</p>}
+        <p>{kip === 'sec' ? 'Seçmek için öğeye ya da aşağıdaki adına tıklayın.' : kip === 'ciz' ? (ilk ? 'Çizginin ikinci ucuna tıklayın.' : 'Kalem ya da fareyle konumu seçin. Çizgi için iki ucuna sırayla tıklayın.') : kip === 'adim' ? 'Kalem ya da fareyle karakterin sonraki adımının yerine tıklayın.' : 'Kalem ya da fareyle seçilen öğenin yeni yerine tıklayın. Çizgilerde çizginin ortası buraya taşınır.'} Parmakla sayfayı kaydırabilirsiniz. Konumları aşağıdaki alanlardan da değiştirebilirsiniz.</p>
+        {!resim && <p class="uyari">Kaydedilen plan görseli bu cihazda açılamıyor. Yerleşim saklanıyor, ama görsel açılana kadar çizim yapılamaz.</p>}
         <svg viewBox={`0 0 1 ${oran}`} role="img" aria-label="Sahnenin kat planı ve geçici öğeleri" style={{ display: 'block', width: '100%', height: 'auto', aspectRatio: `${y.plan.en}/${y.plan.boy}`, touchAction: 'pan-y', border: '1px solid #999' }} onPointerDown={tikla}>
           {resim && <image href={resim} width="1" height={oran} />}{alan}
           {y.ogeler.map((o) => <g key={o.kod} onPointerDown={(e) => { if (kip === 'sec') { e.stopPropagation(); setSecili(o.kod); } }}>
@@ -142,22 +142,22 @@ export function SahneYerlesimi({ istemci, evren, kod, surum, saltOkunur }: { ist
           {sec.tur === 'kapi' && <label><input type="checkbox" checked={sec.acik} onChange={(e) => duzenle({ ...sec, acik: e.currentTarget.checked })} /> Kapı açık</label>}
           {sec.tur === 'karakter' && <>
             <div class="satir">{sayi('Bakış yönü (derece)', sec.yon, (yon) => duzenle({ ...sec, yon }), 0, 360)}{sayi('Görüş açısı (derece)', sec.aci, (aci) => duzenle({ ...sec, aci }), 0, 360)}{sayi('Görüş uzaklığı', sec.uzaklik, (uzaklik) => duzenle({ ...sec, uzaklik }))}</div>
-            <button class="dugme" onClick={() => duzenle({ ...sec, adimlar: [...sec.adimlar, { ...sec.konum }] })}>Konumdan hareket adımı ekle</button>
-            <ol>{sec.adimlar.map((p, i) => <li><div class="satir">{sayi(`${i + 1}. adımın yatay oranı`, p.x, (x) => duzenle({ ...sec, adimlar: sec.adimlar.map((q, j) => j === i ? { ...q, x } : q) }), 0, 1)}{sayi(`${i + 1}. adımın düşey oranı`, p.y, (v) => duzenle({ ...sec, adimlar: sec.adimlar.map((q, j) => j === i ? { ...q, y: v } : q) }), 0, 1)}<button class="dugme" onClick={() => duzenle({ ...sec, konum: p })}>Bu adımdan incele</button><button class="dugme" onClick={() => duzenle({ ...sec, adimlar: sec.adimlar.filter((_, j) => j !== i) })}>Adımı sil</button></div></li>)}</ol>
+            <button class="dugme" onClick={() => duzenle({ ...sec, adimlar: [...sec.adimlar, { ...sec.konum }] })}>Bulunduğu yerden hareket adımı ekle</button>
+            <ol>{sec.adimlar.map((p, i) => <li><div class="satir">{sayi(`${i + 1}. adımın yatay oranı`, p.x, (x) => duzenle({ ...sec, adimlar: sec.adimlar.map((q, j) => j === i ? { ...q, x } : q) }), 0, 1)}{sayi(`${i + 1}. adımın düşey oranı`, p.y, (v) => duzenle({ ...sec, adimlar: sec.adimlar.map((q, j) => j === i ? { ...q, y: v } : q) }), 0, 1)}<button class="dugme" onClick={() => duzenle({ ...sec, konum: p })}>Bu adımdaki konumdan incele</button><button class="dugme" onClick={() => duzenle({ ...sec, adimlar: sec.adimlar.filter((_, j) => j !== i) })}>Adımı sil</button></div></li>)}</ol>
           </>}
           {sec.tur === 'isik' && sayi('Işığın yarıçapı', sec.yaricap, (yaricap) => duzenle({ ...sec, yaricap }))}
           {sec.tur === 'ses' && <>
             <label>Ses düzeyi <input class="girdi" maxLength={300} value={sec.duzey} onInput={(e) => duzenle({ ...sec, duzey: e.currentTarget.value })} /></label>
             <label>Arka plan gürültüsü varsayımı <input class="girdi" maxLength={300} value={sec.gurultu} onInput={(e) => duzenle({ ...sec, gurultu: e.currentTarget.value })} /></label>
             <label>Duyulma uzaklığı (boşsa hesaplanmaz) <input class="girdi" type="number" min="0" max="1000" step="any" value={sec.uzaklik ?? ''} onInput={(e) => duzenle({ ...sec, uzaklik: e.currentTarget.value === '' ? null : e.currentTarget.valueAsNumber })} /></label>
-            {sayi('Her engelde uzaklıktan azaltma', sec.azaltma, (azaltma) => duzenle({ ...sec, azaltma }))}
+            {sayi('Her engelde uzaklıktan düşülecek miktar', sec.azaltma, (azaltma) => duzenle({ ...sec, azaltma }))}
           </>}
           <button class="dugme" onClick={() => { degistir({ ...y, ogeler: y.ogeler.filter((o) => o.kod !== sec.kod) }); setSecili(''); }}>Öğeyi sil</button>
         </fieldset>}
         {sec?.tur === 'karakter' && !eski && !okuma?.catismali && <div aria-label="Görüş ve ses sonuçları">
-          <h3>Bu varsayımlarla tahmin · {kirli ? 'kaydedilmemiş yerleşim' : 'kaydedilmiş yerleşim'} · güncel</h3>
-          <p>Kapsam: bu sahne, seçilen plan sürümü ve {sec.ad} konumu. Dayanak: yukarıdaki açı, uzaklık ve çizgiler. Yalnız kayıtlı öğeler incelenir; bu liste evrenin tamamı değildir.</p>
-          <ul>{y.ogeler.filter((o) => o.kod !== sec.kod).map((o) => <li>{o.ad}: {gorusHatti(y, sec, konum(o)) ? 'görüş hattında' : 'görüş hattı kapalı'}{'a' in o ? ' (çizginin orta noktası)' : ''}{o.tur === 'ses' && (() => { const s = sesUlasir(y, o, sec.konum); return ` · ${s === null ? 'ses hesabı için duyulma uzaklığı ve arka plan gürültüsü yazılmalı' : s ? 'ses ulaşabilir' : 'ses ulaşamaz (bu varsayımlarla)'}`; })()}</li>)}</ul>
+          <h3>Bu varsayımlara dayanan tahmin · {kirli ? 'kaydedilmemiş yerleşim' : 'kaydedilmiş yerleşim'} · güncel</h3>
+          <p>Kapsam: bu sahne, seçilen plan sürümü ve {sec.ad} adlı karakterin konumu. Dayanak: yukarıdaki açı, uzaklık ve çizgiler. Yalnızca bu yerleşimdeki öğeler incelenir, liste evrenin tamamını kapsamaz.</p>
+          <ul>{y.ogeler.filter((o) => o.kod !== sec.kod).map((o) => <li>{o.ad}: {gorusHatti(y, sec, konum(o)) ? 'görüş hattında' : 'görüş hattı kapalı'}{'a' in o ? ' (çizginin orta noktası)' : ''}{o.tur === 'ses' && (() => { const s = sesUlasir(y, o, sec.konum); return ` · ${s === null ? 'ses hesabı için duyulma uzaklığını ve arka plan gürültüsünü yazın' : s ? 'ses ulaşabilir' : 'ses ulaşamaz (bu varsayımlarla)'}`; })()}</li>)}</ul>
         </div>}
       </>}
     </details>

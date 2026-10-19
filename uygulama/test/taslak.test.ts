@@ -36,4 +36,13 @@ describe('metin kurtarma taslağı (§10.7)', () => {
     const dolu: TaslakDeposu = { oku: async () => null, yaz: async () => { throw new Error('dolu'); }, sil: async () => {} };
     expect(await taslakYaz(dolu, a, { spans: metin('x'), temel: [], zaman: 1 })).toBe(false);
   });
+
+  it('kurtarma alanına yazılamazsa asıl taslak silinmez, sonraki açılışta yine bulunur', async () => {
+    const d = depo();
+    await taslakYaz(d, a, { spans: metin('Kuzeyde doğdu'), temel: ['x'], zaman: 1 });
+    const bozuk: TaslakDeposu = { oku: d.oku, sil: d.sil, yaz: async (k, v) => { if (k === kurtarmaAnahtari(a)) throw new Error('dolu'); await d.yaz(k, v); } };
+    expect((await acilistaTaslak(bozuk, a, metin('Kuzeyde')))?.spans).toEqual(metin('Kuzeyde doğdu'));
+    expect(await taslakOku(d, a)).not.toBeNull();
+    expect((await acilistaTaslak(d, a, metin('Kuzeyde')))?.spans).toEqual(metin('Kuzeyde doğdu'));
+  });
 });

@@ -22,7 +22,7 @@ export const boslukCumlesi = (ad: string) => `Bu kapsamda ${ad} için kayıtlı 
 const satir = (kod: string, ad: string): YogunlukSatiri => ({ kod, ad, enAz: bosSayilar(), enCok: bosSayilar(), aciklama: '' });
 interface Dilim extends YogunlukSatiri { bas: number; son: number }
 function aralik(z: ZamanSeti, s: YogunlukIstegi): { bas: number; son: number; dilimler: Dilim[] } {
-  if (![1, 10, 100].includes(s.adim)) throw new Error('Yıl, on yıl veya yüzyıl adımını seçin.');
+  if (![1, 10, 100].includes(s.adim)) throw new Error('Yıl, on yıl ya da yüzyıl adımını seçin.');
   const yil = (x: unknown) => {
     if (typeof x !== 'string' || !x.trim() || x.length > 120) throw new Error('Başlangıç ve bitiş yıllarını yazın.');
     const t = tarihCoz(x, z);
@@ -31,7 +31,7 @@ function aralik(z: ZamanSeti, s: YogunlukIstegi): { bas: number; son: number; di
   };
   const ilk = yil(s.baslangic), sonYil = yil(s.bitis);
   if (ilk > sonYil) throw new Error('Başlangıç yılı bitişten sonra olamaz.');
-  if (Math.ceil((sonYil - ilk + 1) / s.adim) > 1000) throw new Error('En çok 1.000 zaman dilimi gösterilir. Aralığı daraltın veya daha büyük bir adım seçin.');
+  if (Math.ceil((sonYil - ilk + 1) / s.adim) > 1000) throw new Error('En çok 1.000 zaman dilimi gösterilir. Aralığı daraltın ya da daha büyük bir adım seçin.');
   const yp = yilParcasi(z.ana), bas = ilk * yp, son = (sonYil + 1) * yp - 1;
   const dilimler: Dilim[] = [];
   for (let y = ilk; y <= sonYil; y += s.adim) {
@@ -155,7 +155,7 @@ export function oku(e: EvrenVt, s: YogunlukIstegi, cizelgeOku: () => CizelgeOges
   if (h) { ilgili.add(h.kod); for (const i of [...h.isaretler, ...h.cizimler]) { ilgili.add(i.kod); ilgili.add(i.kayit.kod); } }
   for (const i of iliskiler) if (ilgili.has(i.a as string) || ilgili.has(i.b as string)) ilgili.add(i.kod as string);
   const cakisma = e.db.selectObjects('SELECT nesne,alan FROM alan_yazanlari GROUP BY nesne,alan HAVING count(DISTINCT deger)>1');
-  if (cakisma.some((c) => c.nesne === 'evren' && /^(takvim|akis)/.test(c.alan as string) || ilgili.has(c.nesne as string) && ['tarih', 'anlati', 'konum', 'noktalar', 'kayit', 'baslangic', 'bitis', 'tur', 'karar', 'gorunurluk', 'a', 'b', 'kip'].includes(c.alan as string))) throw new Error('Saymadan önce kapsamın tarih, eser yapısı veya konum seçimlerindeki çelişkileri inceleyin.');
+  if (cakisma.some((c) => c.nesne === 'evren' && /^(takvim|akis)/.test(c.alan as string) || ilgili.has(c.nesne as string) && ['tarih', 'anlati', 'konum', 'noktalar', 'kayit', 'baslangic', 'bitis', 'tur', 'karar', 'gorunurluk', 'a', 'b', 'kip'].includes(c.alan as string))) throw new Error('Saymadan önce kapsamdaki tarih, eser yapısı ya da konum seçimlerindeki çelişkileri inceleyin.');
   const yerler = new Map<string, string[]>();
   for (const i of iliskiler) if (i.tur === 'sahne_yeri') yerler.set(i.a as string, [...(yerler.get(i.a as string) ?? []), i.b as string]);
   const kayitlar: SayimKaydi[] = secilen.map((k) => {
@@ -168,11 +168,11 @@ export function oku(e: EvrenVt, s: YogunlukIstegi, cizelgeOku: () => CizelgeOges
   return { ...sonuc, eserler, haritalar: haritaListesi.map((h) => ({ kod: h.kod, ad: h.ad })), turler: [...new Set(tum.map((k) => k.tur as string))].sort(turkceKarsilastir), harita: h ? { kod: h.kod, ad: h.ad } : null,
     zarf: { tur: 'bu kurallara göre zorunlu sonuç', hukum: 'çözüm bulundu', guncellik: 'güncel',
       kapsam: `${s.baslangic} – ${s.bitis}; ${s.adim} yıllık dilimler; ${s.eser ? eserler.find((e) => e.kod === s.eser)!.ad : 'bütün eserler ve kayıtlar'}; ${s.tur ?? 'bütün kayıt türleri'}; ${h?.ad ?? 'harita seçilmedi'}`,
-      dayanak: [`Ana takvim: ${z.ana.ad}, ${z.ana.surum}. sürüm.`, `${kayitlar.length} ayrı kayıt; her kaydın dağılımı ve sayıldığı yerler aşağıda listelenir.`, 'Sayım 1. kural: olay, sahne, kelime ve kayıt ayrı ölçülerdir.'],
+      dayanak: [`Ana takvim: ${z.ana.ad}, ${z.ana.surum}. sürüm.`, `${kayitlar.length} ayrı kayıt; her kaydın dağılımı ve sayıldığı yerler aşağıda listelenir.`, 'Olay, sahne, kelime ve kayıt ayrı ayrı sayılır; biri ötekinin yerine geçmez.'],
       varsayimlar: ['Zaman dilimleri seçilen başlangıç yılında başlar. Tarih bütünüyle tek dilimdeyse kesin sayılır; diğer olası dilimlerde yalnızca üst sınıra katılır. Üst sınırlar toplanamaz.',
         'Eser kapsamı: kendi sahneleri, bu sahnelerin metin bağlantıları, anlattığı olaylar, seçilmiş yerler ve açıkça bağlanmış katılımcılar. Serbest yazıdan anlam çıkarılmaz.',
-        'Kelime sayısı yalnızca sahnelerin gövde yazısındaki harf ve sayı kümelerini sayar; özet ve notlar dahil değildir.',
-        'Harita dağılımı zaman şeridinden bağımsızdır; aynı eser ve tür kapsamındaki bütün kayıtlı konumları sayar. Tarihli bölge çizimleri ayrı adlarıyla gösterilir; sınır dönemleri birleştirilmez.',
+        'Kelime sayısına yalnızca sahnelerin metni girer. Özet ve notlar sayılmaz.',
+        'Harita dağılımı zaman şeridinden bağımsızdır ve aynı eser ile tür kapsamındaki bütün kayıtlı konumları sayar. Tarihli bölge çizimleri ayrı adlarıyla gösterilir, sınırların dönemleri birleştirilmez.',
         'Yaklaşık konumun dairesi bütünüyle bölgedeyse kesin, sınırı kesiyorsa belirsizdir. Birden çok konum seçeneğinde ortak kesin bölgeler alt, olası bölgeler üst sınıra katılır. Konum seçeneklerinden biri bilinmiyorsa kayıt konumsuz grubunda tutulur.',
-        'Örtüşen bölgeler aynı kaydı içerebilir; bölge sayıları toplanamaz. Sayılmayan tarihsiz ve konumsuz kayıtlar yok sayılmaz.'] } };
+        'Örtüşen bölgeler aynı kaydı içerebilir, bu yüzden bölge sayıları toplanamaz. Tarihsiz ve konumsuz kayıtlar sayıma girmez ama ayrı bir grupta gösterilir.'] } };
 }

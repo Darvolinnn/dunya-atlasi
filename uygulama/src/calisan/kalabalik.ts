@@ -23,6 +23,7 @@ function sahip(b: DurumBaglami, kod: string): string {
 function tarihDogrula(b: DurumBaglami, g: SinirGirdisi): SinirGirdisi {
   if (!g || typeof g !== 'object') throw new Error('Bir tarih girin veya olay seçin.');
   if (g.olay && g.ifade?.trim()) throw new Error('Tarih ya da olay dayanağından birini seçin.');
+  if (!g.olay && !String(g.ifade ?? '').trim()) throw new Error('Bir tarih girin veya olay seçin.');
   const t: SinirGirdisi = g.olay ? { olay: yonlendir(b.e.db, g.olay), fark: temiz(g.fark, 120) } : { ifade: temiz(g.ifade, 120, false) };
   if (t.olay && b.e.db.selectValue("SELECT 1 FROM kayitlar WHERE kod=? AND tur='olay' AND silindi IS NULL", [t.olay]) === undefined) throw new Error('Bir olay kaydı seçin.');
   if (!sinirCoz(b, t)) throw new Error('Bir tarih girin veya olay seçin.');
@@ -41,6 +42,7 @@ export function yaz(b: DurumBaglami, bicim: Bicim, kod: string | null, t: Tanim)
       if (!a || !kodGecerliMi(a.kod)) throw new Error('Alt grup bulunamadı.');
       const miktar = miktarDogrula(a.miktar);
       if (miktar.enAz > ortak.miktar.enCok) throw new Error('Alt grup toplamdan büyük olamaz.');
+      if (!String(a.ad ?? '').trim()) throw new Error('Alt grubun adını yazın.');
       return { kod: a.kod, ad: temiz(a.ad, 100, false), miktar };
     });
     if (new Set(altGruplar.map((a) => a.kod)).size !== altGruplar.length) throw new Error('Aynı alt grup iki kez eklenemez.');
@@ -105,7 +107,7 @@ export function oku(b: DurumBaglami, kod: string, tarih: string | null): Kalabal
   const uyeler = b.e.db.selectObjects("SELECT DISTINCT k.kod,k.ad,k.tur FROM iliskiler i JOIN kayitlar k ON k.kod=i.a WHERE i.b=? AND i.tur='uye' AND i.silindi IS NULL AND k.silindi IS NULL AND k.tur='karakter' AND i.karar='kesin' ORDER BY k.ad", [kayit]).map((r) => ({ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string }));
   const sonuc: KalabalikSonucu = { gozlemler, olaylar, uyeler, tahminler: [], uyarilar: [] };
   const an = tarih ? eksen(tarihCoz(tarih, zamanSetiOku(b.e.db))) : null;
-  if (!an) { sonuc.uyarilar.push(tarih ? 'Seçilen tarih sayısal sıraya yerleştirilemiyor; tahmin hesaplanmadı.' : 'Tahmin için bir evren tarihi girin.'); return sonuc; }
+  if (!an) { sonuc.uyarilar.push(tarih ? 'Seçilen tarih zaman sırasına yerleşmiyor; tahmin hesaplanmadı.' : 'Tahmin için bir evren tarihi girin.'); return sonuc; }
   const etkinG = gozlemler.filter((g) => !g.silindi && !g.catismali);
   const etkinO = olaylar.filter((g) => !g.silindi && !g.catismali);
   if ([...gozlemler, ...olaylar].some((g) => g.catismali)) uyarilar.add('İki cihazda farklı yazılan sayımlar çözülene kadar tahmine katılmadı. Tahmin eksik olabilir.');
@@ -142,7 +144,7 @@ export function oku(b: DurumBaglami, kod: string, tarih: string | null): Kalabal
     for (const t of sonlar) t.uyusmaz = true;
     uyarilar.add('Gözlem ile olaylardan gelen sayım uyuşmuyor. Dayanaklar yan yana gösteriliyor; birine öncelik verilmedi.');
   }
-  if (sonuc.tahminler.some((t) => t.miktar.enAz < 0)) uyarilar.add('Olaylar toplamı sıfırın altına indiriyor; sayımları inceleyin.');
+  if (sonuc.tahminler.some((t) => t.miktar.enAz < 0)) uyarilar.add('Olaylar sayıyı sıfırın altına düşürüyor; sayımları gözden geçirin.');
   if (!sonuc.tahminler.length) uyarilar.add('Bu tarihte dayanak alınabilecek bir gözlem yok.');
   sonuc.uyarilar = [...uyarilar];
   return sonuc;

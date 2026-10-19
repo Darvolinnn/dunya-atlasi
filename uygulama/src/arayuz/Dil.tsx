@@ -40,7 +40,7 @@ export function DilBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; ev
       {(b.kaynaklar.length > 0 || b.turevler.length > 0) && (
         <p class="kucuk">{b.kaynaklar.length > 0 && <>Türediği ya da aldığı dil: {liste(evren, b.kaynaklar)}. </>}{b.turevler.length > 0 && <>Ondan türeyen: {liste(evren, b.turevler)}.</>}</p>
       )}
-      {!b.kaynaklar.length && <p class="soluk kucuk">Bu dilin bir önceki dönemi ya da kaynağı varsa İlişkiler bölümünden “Türediği ya da aldığı dil” bağını ekle; aşağıdaki kurallar o dilden gelen sözcüklere uygulanır.</p>}
+      {!b.kaynaklar.length && <p class="soluk kucuk">Bu dilin daha eski bir dönemi ya da kaynağı varsa İlişkiler bölümünden “Türediği ya da aldığı dil” ilişkisini ekleyin. Aşağıdaki kurallar o dilden gelen sözcüklere uygulanır.</p>}
       {hata && <p class="hata kucuk">{hata}</p>}
 
       <h3>Ses paleti</h3>
@@ -53,7 +53,7 @@ export function DilBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; ev
       </form>
 
       <h3>Ses sınıfları</h3>
-      <p class="soluk kucuk">Hazır: V = ünlüler, C = ünsüzler. Kurallarda büyük harf bir sınıfı, [ptk] adsız bir sınıfı, # sözcük sınırını, ∅ boşluğu gösterir.</p>
+      <p class="soluk kucuk">Hazır sınıflar: V ünlüleri, C ünsüzleri gösterir. Kurallarda büyük harf bir sınıfı, [ptk] adsız bir sınıfı, # sözcük sınırını, ∅ boşluğu gösterir.</p>
       {t.siniflar.length > 0 && <ul class="toplanan-listesi">{t.siniflar.map((s, i) => (
         <li key={s.ad}>{s.ad} = {s.harfler} <button class="dugme sade kucuk" onClick={() => onayla('Bu ses sınıfı kaldırılsın mı?') && yaz({ siniflar: t.siniflar.filter((_, j) => j !== i) })}>Kaldır</button></li>
       ))}</ul>}
@@ -64,7 +64,7 @@ export function DilBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; ev
       </form>
 
       <h3>Ses değişim kuralları</h3>
-      <p class="soluk kucuk">Sırayla uygulanır{b.kaynaklar.length ? `. Şuradan gelen sözcüklere uygulanır: ${b.kaynaklar.map((k) => k.ad).join(', ')}` : ''}. Biçim: a → b / sol_sağ.</p>
+      <p class="soluk kucuk">Kurallar sırayla uygulanır{b.kaynaklar.length ? ` ve şu dillerden gelen sözcükleri değiştirir: ${b.kaynaklar.map((k) => k.ad).join(', ')}` : ''}. Yazılışı: a → b / sol_sağ.</p>
       {t.kurallar.length > 0 && <ol class="toplanan-listesi">{t.kurallar.map((k, i) => (
         <li key={i}><code>{k.kural}</code>{k.not && <span class="soluk kucuk"> · {k.not}</span>}
           {hataOf(i) && <span class="hata kucuk"> · {hataOf(i)}</span>}{' '}
@@ -78,15 +78,15 @@ export function DilBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; ev
         <button class="dugme kucuk" type="submit" disabled={!kural.trim()}>Kural ekle</button>
       </form>
       <form class="satir" onSubmit={(e) => { e.preventDefault(); istemci.iste('sesDene', { evren, dil: kod, bicim: dene }).then(setDeneme, (x) => setHata(hataYaz(x))); }}>
-        <input class="girdi" lang="tr" aria-label="Denenecek sözcük" placeholder="Bir sözcük dene" value={dene} onInput={(e) => setDene((e.target as HTMLInputElement).value)} />
+        <input class="girdi" lang="tr" aria-label="Denenecek sözcük" placeholder="Bir sözcük deneyin" value={dene} onInput={(e) => setDene((e.target as HTMLInputElement).value)} />
         <button class="dugme kucuk" type="submit" disabled={!dene.trim()}>Kuralları uygula</button>
         {deneme && <span class="kucuk"><strong>{deneme.sonuc}</strong> <Iz iz={deneme.iz} /></span>}
       </form>
 
       <h3>Örnekler</h3>
-      <p class="soluk kucuk">Kurallar örneklerle tutmalı. Tutmayan örnek işaretlenir; program kuralı kendisi düzeltmez.</p>
+      <p class="soluk kucuk">Örnekler, kuralların beklendiği gibi işleyip işlemediğini gösterir. Tutmayan örnek işaretlenir; kuralı siz düzeltirsiniz.</p>
       {b.ornekler.length > 0 && <ul class="toplanan-listesi">{b.ornekler.map((o, i) => (
-        <li key={i}>{o.kaynak} → <strong>{o.sonuc}</strong>{o.tutuyor === false && <span class="hata kucuk"> · beklenen “{o.beklenen}”, tutmuyor</span>}{o.tutuyor === true && <span class="kucuk"> · tutuyor</span>}
+        <li key={i}>{o.kaynak} → <strong>{o.sonuc}</strong>{o.tutuyor === false && <span class="hata kucuk"> · “{o.beklenen}” bekleniyordu, tutmuyor</span>}{o.tutuyor === true && <span class="kucuk"> · tutuyor</span>}
           <div><Iz iz={o.iz} /></div>
           <button class="dugme sade kucuk" onClick={() => onayla('Bu örnek kaldırılsın mı?') && yaz({ ornekler: t.ornekler.filter((_, j) => j !== i) })}>Kaldır</button></li>
       ))}</ul>}
@@ -187,13 +187,13 @@ export function AdBicimleriBolumu({ istemci, evren, kod, ad, surum }: { istemci:
         ))}</ul>}
         <form class="satir" onSubmit={(e) => { e.preventDefault(); void turet(); }}>
           <select class="girdi kucuk-secim" aria-label="Kaynak dil" value={kaynak} onChange={(e) => setKaynak((e.target as HTMLSelectElement).value)}>
-            <option value="">Kaynak dil seç</option>
+            <option value="">Kaynak dili seçin</option>
             {diller.map((d) => <option value={d.kod}>{d.ad}</option>)}
           </select>
           <input class="girdi" lang="tr" aria-label="Kaynak biçim" value={bicim} onInput={(e) => setBicim((e.target as HTMLInputElement).value)} />
           <button class="dugme kucuk" type="submit" disabled={!kaynak || !bicim.trim()}>Türet</button>
         </form>
-        {turetilen && (!turetilen.length ? <p class="soluk kucuk">Bu dilden türeyen dil kayıtlı değil.</p> : (
+        {turetilen && (!turetilen.length ? <p class="soluk kucuk">Bu dilden türeyen bir dil kaydı yok.</p> : (
           <ul class="toplanan-listesi">{turetilen.map((x) => (
             <li key={x.dil.kod}>{bag(evren, x.dil)}: <strong>{x.bicim}</strong> <span class="soluk kucuk">· {x.yol.map((y) => y.ad).join(' → ')}</span>
               {x.hata && <span class="hata kucuk"> · {x.hata}</span>}
@@ -205,10 +205,10 @@ export function AdBicimleriBolumu({ istemci, evren, kod, ad, surum }: { istemci:
         ))}
         <form class="satir" onSubmit={(e) => { e.preventDefault(); void bagla(elle.dil, elle.bicim, null, null).then(() => setElle({ dil: '', bicim: '' })); }}>
           <select class="girdi kucuk-secim" aria-label="Elle biçim için dil" value={elle.dil} onChange={(e) => setElle({ ...elle, dil: (e.target as HTMLSelectElement).value })}>
-            <option value="">Dil seç</option>
+            <option value="">Dil seçin</option>
             {diller.map((d) => <option value={d.kod}>{d.ad}</option>)}
           </select>
-          <input class="girdi" lang="tr" aria-label="Elle biçim" placeholder="o dildeki biçimi" value={elle.bicim} onInput={(e) => setElle({ ...elle, bicim: (e.target as HTMLInputElement).value })} />
+          <input class="girdi" lang="tr" aria-label="Elle biçim" placeholder="O dildeki biçimi" value={elle.bicim} onInput={(e) => setElle({ ...elle, bicim: (e.target as HTMLInputElement).value })} />
           <button class="dugme kucuk" type="submit" disabled={!elle.dil || !elle.bicim.trim()}>Elle ekle</button>
         </form>
         {hata && <p class="hata kucuk">{hata}</p>}
@@ -232,7 +232,7 @@ export function KisiDilleriBolumu({ istemci, evren, kod, surum }: { istemci: Ist
   return (
     <section class="surecler" aria-label="Bildiği diller">
       <h2>Bildiği diller</h2>
-      <p class="soluk kucuk">Dil bilmek tek bir yüzde değildir: konuşma, anlama, okuma ve yazma ayrı tutulur. Boş bırakılan bilinmiyor demektir.</p>
+      <p class="soluk kucuk">Dil bilgisi tek bir ölçüyle verilmez. Konuşma, anlama, okuma ve yazma ayrı ayrı tutulur. Boş bırakılan beceri bilinmiyor sayılır.</p>
       <ul class="toplanan-listesi">{l.map((x) => (
         <li key={x.iliski}>{bag(evren, x.dil)}
           <div class="satir">

@@ -33,11 +33,11 @@ export function TeknolojiBolumu({ istemci, evren, kod, surum }: { istemci: Istem
       ))}</ul>}
       <form class="satir" onSubmit={(e) => { e.preventDefault(); void yaz(girdi({ duzeyler: [...t.duzeyler, duzey] })).then((ok) => ok && setDuzey({ alan: '', duzey: '' })); }}>
         <input class="girdi" style="width:140px" lang="tr" aria-label="Alan" placeholder="savaş, tarım…" value={duzey.alan} onInput={(e) => setDuzey({ ...duzey, alan: (e.target as HTMLInputElement).value })} />
-        <input class="girdi" style="flex:1;min-width:140px" lang="tr" aria-label="Düzey" placeholder="o alandaki düzeyi" value={duzey.duzey} onInput={(e) => setDuzey({ ...duzey, duzey: (e.target as HTMLInputElement).value })} />
+        <input class="girdi" style="flex:1;min-width:140px" lang="tr" aria-label="Düzey" placeholder="O alandaki düzey" value={duzey.duzey} onInput={(e) => setDuzey({ ...duzey, duzey: (e.target as HTMLInputElement).value })} />
         <button class="dugme kucuk" type="submit" disabled={!duzey.alan.trim() && !duzey.duzey.trim()}>Düzey ekle</button>
       </form>
       <h3>Keşif, yayılma, gündelik hayat</h3>
-      <p class="soluk kucuk">Her biri ayrı bir tarihtir. Yer seçilmezse evrenin genelinde sayılır.</p>
+      <p class="soluk kucuk">Her birinin tarihi ayrıdır. Yer seçilmezse evrenin geneli için geçerli sayılır.</p>
       {t.asamalar.length > 0 && <ul class="toplanan-listesi">{t.asamalar.map((a, i) => (
         <li key={i}><strong>{asamaAdi(a.asama)}</strong>: {a.yer ? bag(evren, a.yer) : 'genel'}, {a.tarih?.ifade ?? <span class="soluk">tarihsiz</span>}{a.not && <span class="soluk kucuk"> · {a.not}</span>}{' '}
           <button class="dugme sade kucuk" onClick={() => onayla('Bu aşama kaldırılsın mı?') && yaz(girdi({ asamalar: t.asamalar.filter((_, j) => j !== i) }))}>Kaldır</button></li>
@@ -52,11 +52,11 @@ export function TeknolojiBolumu({ istemci, evren, kod, surum }: { istemci: Istem
           {ASAMALAR.map((x) => <option value={x.kod}>{x.ad}</option>)}
         </select>
         <KayitSec istemci={istemci} evren={evren} secili={asama.yer} etiket="Yer (isteğe bağlı)" sec={(s) => setAsama({ ...asama, yer: s })} />
-        <input class="girdi" style="width:140px" lang="tr" aria-label="Aşamanın tarihi" placeholder="tarih" value={asama.tarih} onInput={(e) => setAsama({ ...asama, tarih: (e.target as HTMLInputElement).value })} />
+        <input class="girdi" style="width:140px" lang="tr" aria-label="Aşamanın tarihi" placeholder="Tarih" value={asama.tarih} onInput={(e) => setAsama({ ...asama, tarih: (e.target as HTMLInputElement).value })} />
         <input class="girdi" style="flex:1;min-width:120px" lang="tr" aria-label="Aşamanın notu" placeholder="Not (isteğe bağlı)" value={asama.not} onInput={(e) => setAsama({ ...asama, not: (e.target as HTMLInputElement).value })} />
         <button class="dugme kucuk" type="submit">Ekle</button>
       </form>
-      <p class="soluk kucuk">Kimin bildiği, üretebildiği ve kullanabildiği İlişkiler bölümünden ayrı ayrı bağlanır.</p>
+      <p class="soluk kucuk">Teknolojiyi kimin bildiği, üretebildiği ve kullanabildiği İlişkiler bölümünden ayrı ayrı bağlanır.</p>
       {hata && <p class="hata kucuk">{hata}</p>}
     </section>
   );
@@ -71,7 +71,7 @@ export function TeknolojiDurumuAraci({ istemci, evren, kod }: { istemci: Istemci
       <details>
         <summary><h2 style="display:inline">Bu yerde hangi teknolojiler?</h2></summary>
         <form class="satir" onSubmit={(e) => { e.preventDefault(); istemci.iste('teknolojiDurumu', { evren, yer: kod, tarih }).then((x) => { setD(x); setHata(null); }, (x) => { setD(null); setHata(hataYaz(x)); }); }}>
-          <input class="girdi" style="width:160px" lang="tr" aria-label="Hangi tarihte" placeholder="tarih" value={tarih} onInput={(e) => setTarih((e.target as HTMLInputElement).value)} />
+          <input class="girdi" style="width:160px" lang="tr" aria-label="Hangi tarihte" placeholder="Tarih" value={tarih} onInput={(e) => setTarih((e.target as HTMLInputElement).value)} />
           <button class="dugme kucuk" type="submit" disabled={!tarih.trim()}>Göster</button>
         </form>
         {hata && <p class="hata kucuk">{hata}</p>}
@@ -79,7 +79,7 @@ export function TeknolojiDurumuAraci({ istemci, evren, kod }: { istemci: Istemci
           <>
             {!d.satirlar.length ? <p class="kucuk">Yayılma kaydı olan teknoloji yok.</p> : (
               <ul class="toplanan-listesi">{d.satirlar.map((s) => (
-                <li key={s.teknoloji.kod}>{bag(evren, s.teknoloji)}: {s.kesin ? <strong>{asamaAdi(s.kesin)}</strong> : <span class="soluk">bu yer için kayıt yetmiyor</span>}
+                <li key={s.teknoloji.kod}>{bag(evren, s.teknoloji)}: {s.kesin ? <strong>{asamaAdi(s.kesin)}</strong> : <span class="soluk">bu yer için yeterli kayıt yok</span>}
                   {s.belki && <span class="kucuk"> · belki {asamaAdi(s.belki).toLocaleLowerCase('tr-TR')} (tarih belirsiz)</span>}
                   {s.baskaYerde.length > 0 && <span class="soluk kucuk"> · başka yerde bilinir: {s.baskaYerde.map((x) => x.ad).join(', ')}</span>}
                   {s.dayanak.length > 0 && <div class="soluk kucuk">{s.dayanak.join(' · ')}</div>}</li>
@@ -104,7 +104,7 @@ export function MotifBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; 
   return (
     <section class="surecler" aria-label="Motifin yorumları">
       <h2>Yorumları</h2>
-      <p class="soluk kucuk">Aynı motif kültüre ve döneme göre farklı yorumlanabilir; yorumlar yan yana durur.</p>
+      <p class="soluk kucuk">Aynı motif kültüre ve döneme göre farklı yorumlanabilir. Yorumlar yan yana gösterilir.</p>
       {m.yorumlar.length > 0 && <ul class="toplanan-listesi">{m.yorumlar.map((y, i) => (
         <li key={i}><span class="soluk">{y.yorumlayan ? y.yorumlayan.ad : 'Genel'}{y.donem ? ` (${y.donem.ad})` : ''}:</span> {y.anlam}{' '}
           <button class="dugme sade kucuk" onClick={() => onayla('Bu yorum kaldırılsın mı?') && yaz(kodlar(m.yorumlar.filter((_, j) => j !== i)))}>Kaldır</button></li>
@@ -120,7 +120,7 @@ export function MotifBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; 
       </form>
       {hata && <p class="hata kucuk">{hata}</p>}
       <h3>Geçtiği sahneler</h3>
-      {!m.sahneler.length ? <p class="soluk kucuk">Sahne bağlı değil. Sahnenin İlişkiler bölümünden “Geçen motif” bağını ekleyebilirsin.</p> : (
+      {!m.sahneler.length ? <p class="soluk kucuk">Sahne bağlı değil. Sahnenin İlişkiler bölümünden “Geçen motif” bağını ekleyebilirsiniz.</p> : (
         <ol class="toplanan-listesi">{m.sahneler.map((s) => (
           <li key={s.sahne.kod}>{bag(evren, s.sahne)} <span class="soluk kucuk">· {s.eser ? `${s.eser.ad}, ${s.sira}. sahne` : 'esere yerleşmemiş'}</span></li>
         ))}</ol>

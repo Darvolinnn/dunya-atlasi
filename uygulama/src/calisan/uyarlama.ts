@@ -43,7 +43,7 @@ function kayit(e: EvrenVt | null, kod: string): UyarlamaKaydi {
 function etkinKayit(e: EvrenVt, kod: unknown, eser = false): string {
   if (!kodGecerliMi(kod)) throw new Error(eser ? 'Eseri seçin.' : 'Eşlenecek kaydı seçin.');
   const k = kayit(e, kod);
-  if (k.bulunamadi || k.silindi || eser && k.tur !== 'eser') throw new Error(eser ? 'Eser bulunamadı veya kaldırılmış.' : 'Eşlenecek kayıt bulunamadı veya kaldırılmış.');
+  if (k.bulunamadi || k.silindi || eser && k.tur !== 'eser') throw new Error(eser ? 'Eser bulunamadı ya da kaldırılmış.' : 'Eşlenecek kayıt bulunamadı ya da kaldırılmış.');
   return k.kod;
 }
 function dogrula(b: UyarlamaBaglami, t: UyarlamaTanimi): UyarlamaTanimi {
@@ -61,7 +61,7 @@ function dogrula(b: UyarlamaBaglami, t: UyarlamaTanimi): UyarlamaTanimi {
   };
   const a = taraf(t.a), c = taraf(t.b);
   if (!a.kayitlar.length || (t.tur !== 'cikarildi' && !c.kayitlar.length)) throw new Error('Karşılaştırılacak kayıtları seçin.');
-  if (t.tur === 'cikarildi' && c.kayitlar.length) throw new Error('Çıkarılmış karşılıkta ikinci tarafın kayıt listesi boş olmalı.');
+  if (t.tur === 'cikarildi' && c.kayitlar.length) throw new Error('Çıkarılmış bir karşılıkta ikinci tarafta kayıt seçilmemeli.');
   if (t.tur === 'indirgeme' && (a.kayitlar.length < 2 || c.kayitlar.length !== 1)) throw new Error('İndirgeme için ilk tarafta en az iki, ikinci tarafta tek kayıt seçin.');
   if (t.tur === 'sira' && (a.kayitlar.length < 2 || c.kayitlar.length < 2)) throw new Error('Sıra karşılaştırması için iki tarafta da en az iki kayıt seçin.');
   if (a.eser === c.eser && !c.dal) throw new Error('İkinci tarafta başka bir eser veya deneme kopyası seçin.');
@@ -84,7 +84,7 @@ function gerideMi(b: UyarlamaBaglami, d: Deger): boolean {
 export function yaz(b: UyarlamaBaglami, kod: string | null, tanim: UyarlamaTanimi) {
   if (kod && sakli(b.e, kod).silindi) throw new Error('Kaldırılmış eşleme değiştirilemez.');
   if (kod && catismali(b.e, kod)) throw new Error('Önce eşlemenin çelişen seçimlerini inceleyin.');
-  if (kod && gerideMi(b, sakli(b.e, kod).deger)) throw new Error('Son gözden geçirmenin dayandığı değişiklikler bu cihaza ulaşmadan eşlemeyi değiştirmeyin.');
+  if (kod && gerideMi(b, sakli(b.e, kod).deger)) throw new Error('Son gözden geçirmenin dayandığı değişiklikler henüz bu cihaza ulaşmadı. Onlar gelmeden eşlemeyi değiştirmeyin.');
   const t = dogrula(b, tanim), yeni = kod ?? yeniKod();
   b.yaz([{ tur: 'uyarlama_yaz', veri: { kod: yeni, deger: { tanim: t, gorulen: gorulen(b, t) } } }], ilgili(t));
   return { kod: yeni };
@@ -97,7 +97,7 @@ export function gozdenGecir(b: UyarlamaBaglami, kod: string) {
   const r = sakli(b.e, kod);
   if (r.silindi) throw new Error('Kaldırılmış eşleme gözden geçirilemez.');
   if (catismali(b.e, kod)) throw new Error('Önce eşlemenin çelişen seçimlerini inceleyin.');
-  if (gerideMi(b, r.deger)) throw new Error('Son gözden geçirmenin dayandığı değişiklikler bu cihaza ulaşmadan yeniden onaylanamaz.');
+  if (gerideMi(b, r.deger)) throw new Error('Son gözden geçirmenin dayandığı değişiklikler henüz bu cihaza ulaşmadı. Onlar gelmeden eşleme yeniden onaylanamaz.');
   b.yaz([{ tur: 'uyarlama_gozden_gecir', veri: { kod, deger: { tanim: r.deger.tanim, gorulen: gorulen(b, r.deger.tanim, r.deger.gorulen) } } }], ilgili(r.deger.tanim));
 }
 export function adaylar(b: UyarlamaBaglami, dal: string | null): UyarlamaAdaylari {
@@ -127,8 +127,8 @@ function tarafOku(b: UyarlamaBaglami, s: UyarlamaTarafi, eski: Gorulen, taraf: '
   const x = dalOku(b, s.dal), e = x.e;
   const gorunum: UyarlamaTarafGorunumu = { eser: kayit(e, s.eser), dal: x.dal, kayitlar: s.kayitlar.map((k) => kayit(e, k)) };
   const uyarilar: string[] = x.sorun ? [x.sorun] : [];
-  if (gorunum.eser.bulunamadi || gorunum.eser.silindi) uyarilar.push('Tarafın eseri bulunamıyor veya kaldırılmış.');
-  if (gorunum.kayitlar.some((k) => k.silindi || k.bulunamadi)) uyarilar.push('Eşlenen kayıtlardan biri bulunamıyor veya kaldırılmış.');
+  if (gorunum.eser.bulunamadi || gorunum.eser.silindi) uyarilar.push('Bu taraftaki eser bulunamıyor ya da kaldırılmış.');
+  if (gorunum.kayitlar.some((k) => k.silindi || k.bulunamadi)) uyarilar.push('Eşlenen kayıtlardan biri bulunamıyor ya da kaldırılmış.');
   const degisiklikler: UyarlamaEslemesi['degisiklikler'] = [];
   if (e) {
     const simdi = e.gorulenler();

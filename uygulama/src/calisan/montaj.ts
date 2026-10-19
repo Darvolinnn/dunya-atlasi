@@ -33,7 +33,7 @@ export function niyetlerOku(e: EvrenVt, sahne: string): SahneNiyeti[] {
 }
 
 export function sahneNiyetleriYaz(b: MontajBaglami, sahne: string, l: SahneNiyeti[]) {
-  if (kayitTuru(b.e, sahne) !== 'sahne') throw new Error('Niyet bir sahneye yazılır.');
+  if (kayitTuru(b.e, sahne) !== 'sahne') throw new Error('Niyet yalnızca bir sahneye eklenebilir.');
   if (!Array.isArray(l) || l.length > 50) throw new Error('Liste çok uzun ya da geçersiz.');
   const yeni = l.map((n) => {
     const r = typeof n.iddia === 'string' ? b.e.db.selectObject('SELECT secenekler FROM iddialar WHERE kod=? AND silindi IS NULL', [n.iddia]) : undefined;
@@ -54,7 +54,7 @@ function hedeflerOku(e: EvrenVt, eser: string): Record<string, MontajHedefi> {
 }
 
 export function montajHedefiYaz(b: MontajBaglami, eser: string, iddia: string, hedef: MontajHedefi | null) {
-  if (kayitTuru(b.e, eser) !== 'eser') throw new Error('Hedef bir eser için yazılır.');
+  if (kayitTuru(b.e, eser) !== 'eser') throw new Error('Hedef yalnızca bir eser için belirlenebilir.');
   if (b.e.db.selectValue('SELECT 1 FROM iddialar WHERE kod=? AND silindi IS NULL', [iddia]) === undefined) throw new Error('Soru bulunamadı.');
   if (hedef !== null && hedef !== 'surpriz' && hedef !== 'gerilim') throw new Error('Geçersiz hedef.');
   b.yaz([{ tur: 'montaj_hedefi_yaz', veri: { eser, iddia, hedef } }], [eser]);
@@ -113,15 +113,15 @@ export function kurguMontaji(e: EvrenVt, eser: string): KurguMontaji {
     const ogrenir = l.find((x) => x.tur === 'okur' && x.gercegi) ?? null;
     const uyarilar: string[] = [];
     if (hedef === 'surpriz') {
-      if (!aciklama) uyarilar.push('Hedef sürpriz: açıklama sahnesi işaretlenmemiş.');
+      if (!aciklama) uyarilar.push('Hedef sürpriz, ama açıklama sahnesi işaretlenmemiş.');
       else {
-        if (!i.gercek) uyarilar.push('Gerçek seçilmemiş; ipucu ile yanıltmaca ayrılamıyor.');
-        else if (!l.some((x) => x.tur === 'ipucu' && x.sira < aciklama.sira)) uyarilar.push(`Hedef sürpriz: açıklamadan (${aciklama.sira}. sahne) önce gerçeğe işaret eden ipucu yok.`);
-        if (ogrenir && ogrenir.sira < aciklama.sira) uyarilar.push(`Hedef sürpriz: okur gerçeği açıklamadan önce, ${ogrenir.sira}. sahnede öğreniyor.`);
+        if (!i.gercek) uyarilar.push('Gerçek seçilmediği için ipucu ile yanıltmaca ayırt edilemiyor.');
+        else if (!l.some((x) => x.tur === 'ipucu' && x.sira < aciklama.sira)) uyarilar.push(`Hedef sürpriz, ama açıklamadan (${aciklama.sira}. sahne) önce gerçeğe işaret eden bir ipucu yok.`);
+        if (ogrenir && ogrenir.sira < aciklama.sira) uyarilar.push(`Hedef sürpriz, ama okur gerçeği açıklamadan önce, ${ogrenir.sira}. sahnede öğreniyor.`);
       }
     } else if (hedef === 'gerilim') {
-      if (!ogrenir) uyarilar.push('Hedef gerilim: okurun gerçeği hangi sahnede öğrendiği işaretlenmemiş.');
-      else if (aciklama && ogrenir.sira >= aciklama.sira) uyarilar.push(`Hedef gerilim: okur gerçeği açıklamadan önce öğrenmiyor (${ogrenir.sira}. sahne).`);
+      if (!ogrenir) uyarilar.push('Hedef gerilim, ama okurun gerçeği hangi sahnede öğrendiği işaretlenmemiş.');
+      else if (aciklama && ogrenir.sira >= aciklama.sira) uyarilar.push(`Hedef gerilim, ama okur gerçeği açıklamadan önce öğrenmiyor (${ogrenir.sira}. sahne).`);
     }
     return { iddia: { kod: k, soru: i.soru, konu: kisa(e, i.konu), gercek: i.secenekler.find((x) => x.kod === i.gercek)?.metin ?? null }, hedef, olaylar: l, okurOgrenir: ogrenir?.sira ?? null, uyarilar };
   }).sort((a, b) => (a.olaylar[0]?.sira ?? 1e9) - (b.olaylar[0]?.sira ?? 1e9));
@@ -161,7 +161,7 @@ export function kurguMontaji(e: EvrenVt, eser: string): KurguMontaji {
 
   return {
     eser: kisa(e, eser), sahneler: sahneler.map((s) => ({ kod: s.kod, ad: s.ad, sira: s.sira, bolum: s.bolum })), sorular, izler, yokluk,
-    not: 'Okurun öğrenmesi okur bilgisi kayıtlarından, niyetler sahnelere yazılan işaretlerden okunur; okurun zihni ölçülmez. Uyarılar yalnızca hedef seçilen sorular içindir.',
+    not: 'Okurun ne öğrendiği okur bilgisi kayıtlarından, niyetler de sahnelere eklenen işaretlerden alınır. Okurun zihni ölçülmez. Uyarılar yalnızca hedefi seçilmiş sorular için verilir.',
   };
 }
 

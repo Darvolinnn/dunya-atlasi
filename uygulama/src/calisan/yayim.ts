@@ -11,9 +11,9 @@ import { metinBelgesi } from './izdusum';
 import { kayitSablonu } from './sablon';
 
 export const YAYIM_KARARLARI = [
-  { kod: 'gecmisi_duzelt', ad: 'Geçmişi düzelt', aciklama: 'Evrende doğrusu bu; yayımlanan eser bu noktada eskide kaldı.' },
-  { kod: 'yeni_olay', ad: 'Yeni olay', aciklama: 'Değişiklik eserden sonra evrende olan bir şey; tarihini eserin sonrasına koyun.' },
-  { kod: 'alternatif', ad: 'Alternatif devamlılık', aciklama: 'Değişiklik başka bir devamlılığa ait; ana çizgi eserdeki gibi kalır.' },
+  { kod: 'gecmisi_duzelt', ad: 'Geçmişi düzelt', aciklama: 'Evrende doğrusu bu. Yayımlanan eser bu noktada artık eskide kaldı.' },
+  { kod: 'yeni_olay', ad: 'Yeni olay', aciklama: 'Değişiklik, eserden sonra evrende olan bir şey. Tarihini eserin sonrasına koyun.' },
+  { kod: 'alternatif', ad: 'Alternatif devamlılık', aciklama: 'Değişiklik başka bir devamlılığa ait. Ana devamlılık eserdeki gibi kalır.' },
   { kod: 'baski', ad: 'Baskı düzeltmesi', aciklama: 'Eser sonraki baskıda düzeltilecek.' },
 ] as const;
 export type YayimKarari = typeof YAYIM_KARARLARI[number]['kod'];

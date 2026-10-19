@@ -48,7 +48,7 @@ export const BAKIM_HESAP_DURUM_ADLARI: Record<BakimHesapDurumu, string> = {
 };
 
 export const BAKIM_SONUC_NOTU =
-  'Bu bir hesap; evrende bir şey olduğu anlamına gelmez. Grev, ihmal ya da sabotaj kendiliğinden eklenmez.';
+  'Bu yalnızca bir hesaptır, evrende gerçekten bir şey olduğunu göstermez. Grev, ihmal ya da sabotaj kendiliğinden eklenmez.';
 
 export function siklikYazisi(s: BakimSuresi | null): string {
   if (!s) return 'Sıklığı belirtilmemiş';

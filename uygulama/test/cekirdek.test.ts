@@ -57,7 +57,7 @@ describe('evrenler ve işlem günlüğü', () => {
   it('başka cihazda olmayan evren açılmaz', () => {
     const h = new Hizmet(bellek(), 'Deneme', 'x');
     expect(() => h.evrenBilgisi({ evren: yeniKod() })).toThrow('Bu evren bu cihazda yok');
-    expect(() => h.evrenBilgisi({ evren: "x'; DROP TABLE evren; --" })).toThrow('Geçersiz evren kodu');
+    expect(() => h.evrenBilgisi({ evren: "x'; DROP TABLE evren; --" })).toThrow('Evren bulunamadı');
   });
 });
 

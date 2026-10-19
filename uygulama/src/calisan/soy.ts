@@ -94,7 +94,7 @@ export function kalitim(e: EvrenVt, kisi: string): { ozellikler: KalitimSatiri[]
   const kendi = degerlerOku(e, kisi);
   const ozellikler = kalitimOzellikleri(e).map((o): KalitimSatiri => {
     const deger = kendi[o.kod] ?? null;
-    if (o.kip === 'cok_genli') return { ozellik: o, deger, olasilik: null, aciklama: 'Çok genli özellik: olasılık hesaplanmaz.', beklenmez: false };
+    if (o.kip === 'cok_genli') return { ozellik: o, deger, olasilik: null, aciklama: 'Çok genli özelliklerde olasılık hesaplanmaz.', beklenmez: false };
     if (!biyo.length) return { ozellik: o, deger, olasilik: null, aciklama: 'Biyolojik ebeveyn kayıtlı değil.', beklenmez: false };
     const k1 = olasiKopyalar(o, degerlerOku(e, biyo[0].kod)[o.kod]);
     const k2 = biyo[1] ? olasiKopyalar(o, degerlerOku(e, biyo[1].kod)[o.kod]) : [0, 1, 2];
@@ -108,9 +108,9 @@ export function kalitim(e: EvrenVt, kisi: string): { ozellikler: KalitimSatiri[]
     const kendiK = deger?.kopya ?? null;
     const gelebilir = kendiK === null || k1.some((a) => k2.some((b) => (kendiK === 0 ? a < 2 && b < 2 : kendiK === 2 ? a > 0 && b > 0 : (a > 0 || b > 0) && (a < 2 || b < 2))));
     const beklenmez = (deger?.gorunur === true && enCok === 0) || (deger?.gorunur === false && enAz === 1) || !gelebilir;
-    const eksik = biyo.length < 2 ? ' Bir ebeveyn kayıtlı değil; onun için her olasılık sayıldı.' : '';
+    const eksik = biyo.length < 2 ? ' Ebeveynlerden biri kayıtlı değil, onun için bütün olasılıklar hesaba katıldı.' : '';
     return { ozellik: o, deger, olasilik: { enAz, enCok },
-      aciklama: `Tek genli kurala göre görünme olasılığı.${eksik}${beklenmez ? ' Kayıtlı ebeveynlerle beklenmez; bu, gizli bir ebeveynin kanıtı sayılmaz.' : ''}`, beklenmez };
+      aciklama: `Tek genli kurala göre görünme olasılığı.${eksik}${beklenmez ? ' Kayıtlı ebeveynlerle beklenmeyen bir sonuç, ama bu gizli bir ebeveyn olduğunu kanıtlamaz.' : ''}`, beklenmez };
   });
   return { ozellikler, ebeveynler: biyo.map((x) => kisa(e, x.kod)), evlatlik: ebs.filter((x) => !biyolojik(x.rol)).map((x) => kisa(e, x.kod)) };
 }
@@ -124,7 +124,7 @@ export function verasetOku(e: EvrenVt, makam: string): VerasetKurali | null {
 }
 
 export function verasetYaz(b: SoyBaglami, makam: string, k: VerasetKurali | null) {
-  if (!['makam', 'siyasi'].includes(kayitTuru(b.e, makam))) throw new Error('Veraset kuralı bir makam ya da siyasi varlık için yazılır.');
+  if (!['makam', 'siyasi'].includes(kayitTuru(b.e, makam))) throw new Error('Veraset kuralı yalnızca bir makam ya da siyasi varlık için yazılabilir.');
   let tanim: VerasetKurali | null = null;
   if (k) {
     if (!['ilk_dogan', 'kardes_once', 'secim'].includes(k.tur)) throw new Error('Geçersiz veraset kuralı.');
@@ -154,7 +154,7 @@ export function tahtSirasi(e: EvrenVt, makam: string, tarihIfade: string): TahtS
   // Başlangıcı yazılmamış yürütme bu tarihte de sürüyor sayılır (bitişi önce değilse); başlangıcı sonraysa sayılmaz.
   const simdiki = yurutenler.filter((y) => !(y.baslangic && karsilastir(y.baslangic, tarih) === 'sonra') && !(y.bitis && karsilastir(y.bitis, tarih) === 'once'));
   const sonrakiler = yurutenler.filter((y) => y.baslangic && karsilastir(y.baslangic, tarih) === 'sonra').map((y) => ({ kisi: y.kisi, baslangic: y.baslangic!.ifade }));
-  const not = 'Hukuken varis olmak fiilen tahta çıkmak değildir. Sıra yalnızca kayıtlı ebeveyn bağlarından, doğum ve ölüm tarihlerinden hesaplandı; cinsiyet ve başka koşullar sayılmaz.';
+  const not = 'Hukuken varis olmak, fiilen tahta çıkmak değildir. Sıra yalnızca kayıtlı ebeveyn bağlarından ve doğum ile ölüm tarihlerinden hesaplandı. Cinsiyet ve başka koşullar hesaba katılmaz.';
   const temel = { makam: kisa(e, makam), tarih, kural, sonrakiler, not };
   if (!simdiki.length) return { ...temel, yuruten: null, sira: [], durum: 'yuruten_yok' };
   if (simdiki.length > 1) return { ...temel, yuruten: simdiki[0].kisi, sira: [], durum: 'birden_cok' };
@@ -179,7 +179,7 @@ export function tahtSirasi(e: EvrenVt, makam: string, tarihIfade: string): TahtS
     if (d === 'dogmamis' || d === 'olmus') return;
     const uyarilar: string[] = [];
     if (d === 'belirsiz') uyarilar.push('bu tarihte yaşayıp yaşamadığı belirsiz');
-    if (d === 'dogum_bilinmiyor') uyarilar.push('doğum tarihi yok; sıradaki yeri kesin değil');
+    if (d === 'dogum_bilinmiyor') uyarilar.push('doğum tarihi yok, sıradaki yeri kesin değil');
     if (rol === 'evlatlik') uyarilar.push('evlatlık');
     if (rol === 'evlilik_disi') uyarilar.push('evlilik dışı');
     sira.push({ kisi: kisa(e, kod), yakinlik, uyarilar });

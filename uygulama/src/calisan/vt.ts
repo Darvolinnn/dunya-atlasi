@@ -54,19 +54,24 @@ const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', '
 
 // Drive izni yalnızca bu çalışanın belleğinde durur; hiçbir yere yazılmaz.
 let jeton: string | null = null;
+let tasiyicilar: DriveTasiyici[] = [];
 const ozel = {
   async jetonVer(h: Hizmet, a: { jeton: string; bitis: number }) {
     if (typeof a?.jeton !== 'string' || !Number.isFinite(a.bitis)) throw new Error('Geçersiz izin.');
-    const t = new DriveTasiyici(a.jeton, a.bitis);
+    const t = new DriveTasiyici(a.jeton, a.bitis, 'appDataFolder', h.yuklemeSecenekleri());
     const hesap = await t.hesap();
     jeton = a.jeton;
-    h.tasiyiciAyarla(t, new DriveTasiyici(a.jeton, a.bitis, 'drive'));
+    const yedek = new DriveTasiyici(a.jeton, a.bitis, 'drive', h.yuklemeSecenekleri());
+    h.tasiyiciAyarla(t, yedek);
+    tasiyicilar = [t, yedek];
     return hesap;
   },
   baglantiyiKes(h: Hizmet) {
     const j = jeton;
     jeton = null;
     h.tasiyiciAyarla(null);
+    for (const t of tasiyicilar) t.iptal();
+    tasiyicilar = [];
     return { jeton: j };
   },
 };

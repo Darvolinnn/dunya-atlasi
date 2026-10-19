@@ -19,13 +19,13 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
     const once = deger(alan, v.onceki), sonra = deger(alan, v.deger);
     return `${ad(v.kod)}: ${ALAN_ADI[alan] ?? alan} ${once ? `“${once}” → ` : ''}“${sonra}”`;
   },
-  kayit_lakap: (v, ad) => v.ekle ? `${ad(v.kod)}: lakap eklendi “${v.ekle}”` : `${ad(v.kod)}: lakap çıkarıldı “${v.cikar}”`,
-  kayit_etiket: (v, ad) => v.ekle ? `${ad(v.kod)}: etiket eklendi “${v.ekle}”` : `${ad(v.kod)}: etiket çıkarıldı “${v.cikar}”`,
+  kayit_lakap: (v, ad) => v.ekle ? `${ad(v.kod)}: lakap eklendi: “${v.ekle}”` : `${ad(v.kod)}: lakap çıkarıldı: “${v.cikar}”`,
+  kayit_etiket: (v, ad) => v.ekle ? `${ad(v.kod)}: etiket eklendi: “${v.ekle}”` : `${ad(v.kod)}: etiket çıkarıldı: “${v.cikar}”`,
   kayit_sil: (v, ad) => `${ad(v.kod)}: çöp kutusuna taşındı`,
   kayit_geri_yukle: (v, ad) => `${ad(v.kod)}: çöp kutusundan geri getirildi`,
   kayit_tarih: (v, ad) => {
     const t = (x: unknown) => (x as { ifade?: string } | null)?.ifade ?? '';
-    return t(v.tarih) ? `${ad(v.kod)}: evren tarihi “${t(v.tarih)}”` : `${ad(v.kod)}: evren tarihi kaldırıldı`;
+    return t(v.tarih) ? `${ad(v.kod)}: evren tarihi “${t(v.tarih)}” oldu` : `${ad(v.kod)}: evren tarihi kaldırıldı`;
   },
   kayit_alan_karar: (v, ad) => `${ad(v.kod)}: ${(ALAN_ADI[String(v.alan)] ?? (v.alan === 'tarih' ? 'Evren tarihi' : String(v.ad ?? 'bir alan'))).toLocaleLowerCase('tr-TR')} artık “${kararAdi(v.karar)}”`,
   kayit_gorsel: (v, ad) => v.ekle ? `${ad(v.kod)}: görsel eklendi` : `${ad(v.kod)}: görsel çıkarıldı`,
@@ -37,8 +37,8 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   },
   iliski_sil: (v, ad) => `İlişki kaldırıldı: ${ad(v.a)} – ${ad(v.b)}`,
   iliski_geri_yukle: (v, ad) => `İlişki geri getirildi: ${ad(v.a)} – ${ad(v.b)}`,
-  degisim_ekle: (v, ad) => `${ad(v.olay)}: değişim kaydedildi “${v.metin}”${v.konu ? ` (${ad(v.konu)})` : ''}`,
-  degisim_sil: (v, ad) => `${ad(v.olay)}: değişim kaldırıldı “${v.metin}”`,
+  degisim_ekle: (v, ad) => `${ad(v.olay)}: değişim kaydedildi: “${v.metin}”${v.konu ? ` (${ad(v.konu)})` : ''}`,
+  degisim_sil: (v, ad) => `${ad(v.olay)}: değişim kaldırıldı: “${v.metin}”`,
   surum_olustur: (v) => `Evren sürümü adlandırıldı: “${v.ad}”`,
   surum_yaz: (v) => `“${v.surumAd}” sürümünün ${v.alan === 'ad' ? 'adı' : 'açıklaması'} değişti`,
   surum_sil: (v) => `“${v.surumAd}” sürümü kaldırıldı`,
@@ -69,16 +69,16 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   sozlesme_madde_yaz: (v) => `Sözleşme maddesi kaydedildi: “${(v.tanim as { metin: string }).metin}”`,
   sozlesme_madde_sil: () => 'Sözleşme maddesi kaldırıldı',
   sozlesme_madde_geri_yukle: () => 'Sözleşme maddesi geri getirildi',
-  sozlesme_disarida_yaz: (v, ad) => `${ad(v.eser)}: sözleşme maddesi ${v.disarida ? 'dışarıda bırakıldı' : 'yeniden geçerli'}`,
+  sozlesme_disarida_yaz: (v, ad) => `${ad(v.eser)}: sözleşme maddesi ${v.disarida ? 'dışarıda bırakıldı' : 'yeniden geçerli sayıldı'}`,
   hak_ekle: () => 'Hak veya yükümlülük kaydı eklendi',
   hak_degistir: (v) => v.cozum ? 'Hak kaydı için iki cihazdaki değerlerden biri seçildi' : 'Hak veya yükümlülük kaydı düzenlendi',
   hak_sil: () => 'Hak veya yükümlülük kaydı kaldırıldı',
   hak_geri_yukle: () => 'Hak veya yükümlülük kaydı geri getirildi',
-  hak_tanima_yaz: () => 'Bir otoritenin hakkı tanıma durumu kaydedildi',
-  bakim_tanim_yaz: (v) => `“${v.ad ?? 'Bakım'}” bakım tanımı ${v.cozum ? 'için iki cihazdaki değerlerden biri seçildi' : 'yazıldı'}`,
+  hak_tanima_yaz: () => 'Bir otoritenin hakkı tanıyıp tanımadığı kaydedildi',
+  bakim_tanim_yaz: (v) => `“${v.ad ?? 'Bakım'}” bakım tanımı ${v.cozum ? 'için iki cihazdaki değerlerden biri seçildi' : 'kaydedildi'}`,
   bakim_tanim_sil: () => 'Bakım tanımı kaldırıldı',
   bakim_tanim_geri_yukle: () => 'Bakım tanımı geri getirildi',
-  bakim_kaydi_yaz: () => 'Bakım kaydı yazıldı',
+  bakim_kaydi_yaz: () => 'Bakım kaydedildi',
   bakim_kaydi_sil: () => 'Bakım kaydı kaldırıldı',
   bakim_kaydi_geri_yukle: () => 'Bakım kaydı geri getirildi',
   derleme_yaz: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'}: ${v.alan === 'ad' ? (v.derlemeAd === v.deger ? 'oluşturuldu' : `adı “${v.deger}” oldu`) : v.derlemeTuru === 'pano' ? 'görseller değişti' : 'adımlar değişti'}`,
@@ -92,45 +92,45 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   paket_yaz: (v) => `“${v.paketAd}” paketi: ${({ ad: 'adı', aciklama: 'açıklaması', varsayimlar: 'varsayımları' } as Record<string, string>)[String(v.alan)] ?? 'bir alanı'} değişti`,
   paket_sil: (v) => `“${v.paketAd}” varsayım paketi kaldırıldı`,
   paket_geri_yukle: (v) => `“${v.paketAd}” varsayım paketi geri getirildi`,
-  iz_olustur: (v, ad) => `${ad(v.konu)}: izlenen ayrıntı eklendi “${v.ad}”`,
-  iz_degistir: (v, ad) => `${v.konu ? `${ad(v.konu)}: ` : ''}izlenen ayrıntının tanımı değişti “${(v.tanim as { ad?: string } | null)?.ad ?? ''}”`,
-  iz_sil: (v, ad) => `${ad(v.konu)}: izlenen ayrıntı kaldırıldı “${v.ad}”`,
-  iz_geri_yukle: (v, ad) => `${ad(v.konu)}: izlenen ayrıntı geri getirildi “${v.ad}”`,
+  iz_olustur: (v, ad) => `${ad(v.konu)}: izlenen ayrıntı eklendi: “${v.ad}”`,
+  iz_degistir: (v, ad) => `${v.konu ? `${ad(v.konu)}: ` : ''}izlenen ayrıntının tanımı değişti: “${(v.tanim as { ad?: string } | null)?.ad ?? ''}”`,
+  iz_sil: (v, ad) => `${ad(v.konu)}: izlenen ayrıntı kaldırıldı: “${v.ad}”`,
+  iz_geri_yukle: (v, ad) => `${ad(v.konu)}: izlenen ayrıntı geri getirildi: “${v.ad}”`,
   alan_boslugu: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” ${({ acik: 'bilerek açık bırakıldı', bilinmiyor: 'evrende bilinmiyor olarak işaretlendi', gecersiz: 'bu kayıt için geçersiz sayıldı' } as Record<string, string>)[String(v.tur)] ?? 'yeniden düşünülecekler arasına alındı'}`,
-  varsayilan_karari: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” için kaynaklar ${({ birlikte: 'birlikte geçerli sayıldı', kapsam: 'kapsamları farklı sayıldı', oncelik: 'arasında öncelik seçildi' } as Record<string, string>)[String((v.karar as { durum?: string } | null)?.durum)] ?? 'yeniden çözülmemiş sayıldı'}`,
+  varsayilan_karari: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” için kaynaklar ${({ birlikte: 'birlikte geçerli sayıldı', kapsam: 'kapsamları farklı sayıldı', oncelik: 'arasında öncelik seçildi' } as Record<string, string>)[String((v.karar as { durum?: string } | null)?.durum)] ?? 'arasındaki karar geri alındı'}`,
   dayaniklilik_yaz: (v, ad) => `${v.a ? `${ad(v.a)} – ${ad(v.b)}: ` : ''}${v.deger ? 'dayanma süresi ya da ikamesi yazıldı' : 'dayanma süresi kaldırıldı'}`,
   kanal_yaz: (v, ad) => `${ad(v.kod)}: haberleşme bağlantıları değişti`,
-  haber_cikis_yaz: (v, ad) => `${ad(v.kod)}: haberin çıkışı ${(v.cikis as { yer?: string } | null)?.yer ? `“${ad((v.cikis as { yer: string }).yer)}” olarak ` : ''}yazıldı`,
+  haber_cikis_yaz: (v, ad) => `${ad(v.kod)}: haberin çıkış yeri ${(v.cikis as { yer?: string } | null)?.yer ? `“${ad((v.cikis as { yer: string }).yer)}” olarak ` : ''}kaydedildi`,
   dil_yaz: (v, ad) => `${ad(v.kod)}: dil tanımı değişti`,
-  ad_bicimi_yaz: (v, ad) => `${ad(v.kayit)}: ${ad(v.dil)} dilindeki biçimi ${v.deger ? `“${(v.deger as { bicim?: string }).bicim ?? ''}” olarak yazıldı` : 'kaldırıldı'}`,
-  dil_yeterliligi_yaz: (v, ad) => `${v.a ? `${ad(v.a)} – ${ad(v.b)}: ` : ''}dil yeterliliği ${v.deger ? 'yazıldı' : 'kaldırıldı'}`,
+  ad_bicimi_yaz: (v, ad) => `${ad(v.kayit)}: ${ad(v.dil)} dilindeki biçimi ${v.deger ? `“${(v.deger as { bicim?: string }).bicim ?? ''}” olarak kaydedildi` : 'kaldırıldı'}`,
+  dil_yeterliligi_yaz: (v, ad) => `${v.a ? `${ad(v.a)} – ${ad(v.b)}: ` : ''}dil yeterliliği ${v.deger ? 'kaydedildi' : 'kaldırıldı'}`,
   teknoloji_yaz: (v, ad) => `${ad(v.kod)}: teknolojinin düzeyleri ya da yayılma kayıtları değişti`,
   motif_yorum_yaz: (v, ad) => `${ad(v.kod)}: motifin yorumları değişti`,
-  kalitim_ozelligi_yaz: (v) => v.tanim ? `kalıtım özelliği yazıldı “${(v.tanim as { ad?: string }).ad ?? ''}”` : 'kalıtım özelliği kaldırıldı',
-  kalitim_degeri_yaz: (v, ad) => `${ad(v.kisi)}: kalıtım özelliğindeki değeri ${v.deger ? 'yazıldı' : 'kaldırıldı'}`,
-  veraset_yaz: (v, ad) => `${ad(v.kod)}: veraset kuralı ${v.tanim ? 'yazıldı' : 'kaldırıldı'}`,
+  kalitim_ozelligi_yaz: (v) => v.tanim ? `Kalıtım özelliği kaydedildi: “${(v.tanim as { ad?: string }).ad ?? ''}”` : 'Kalıtım özelliği kaldırıldı',
+  kalitim_degeri_yaz: (v, ad) => `${ad(v.kisi)}: kalıtım özelliğindeki değeri ${v.deger ? 'kaydedildi' : 'kaldırıldı'}`,
+  veraset_yaz: (v, ad) => `${ad(v.kod)}: veraset kuralı ${v.tanim ? 'kaydedildi' : 'kaldırıldı'}`,
   sahne_niyeti_yaz: (v, ad) => `${ad(v.sahne)}: sahnenin niyet işaretleri değişti`,
-  montaj_hedefi_yaz: (v, ad) => `${ad(v.eser)}: bir soru için hedef ${v.hedef === 'surpriz' ? 'sürpriz' : v.hedef === 'gerilim' ? 'gerilim' : 'kaldırıldı'}`,
+  montaj_hedefi_yaz: (v, ad) => `${ad(v.eser)}: bir sorunun hedefi ${v.hedef === 'surpriz' ? 'sürpriz oldu' : v.hedef === 'gerilim' ? 'gerilim oldu' : 'kaldırıldı'}`,
   gundelik_yaz: (v, ad) => `${ad(v.yer)}: gündelik hayat kartları değişti`,
-  hukuk_kurali_olustur: (v, ad) => `${ad(v.sahip)}: hukuk kuralı eklendi “${(v.tanim as { ad?: string } | null)?.ad ?? ''}”`,
+  hukuk_kurali_olustur: (v, ad) => `${ad(v.sahip)}: hukuk kuralı eklendi: “${(v.tanim as { ad?: string } | null)?.ad ?? ''}”`,
   hukuk_kurali_yaz: (v, ad) => `${v.sahip ? `${ad(v.sahip)}: ` : ''}“${(v.tanim as { ad?: string } | null)?.ad ?? 'hukuk'}” kuralının tanımı değişti`,
-  hukuk_kurali_sil: (v, ad) => `${ad(v.sahip)}: hukuk kuralı kaldırıldı “${v.ad}”`,
-  hukuk_kurali_geri_yukle: (v, ad) => `${ad(v.sahip)}: hukuk kuralı geri getirildi “${v.ad}”`,
-  kural_ornegi_yaz: (v, ad) => `${v.sahip ? `${ad(v.sahip)}: ` : ''}“${v.kuralAd ?? 'kural'}” kuralının örnek durumu yazıldı${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
+  hukuk_kurali_sil: (v, ad) => `${ad(v.sahip)}: hukuk kuralı kaldırıldı: “${v.ad}”`,
+  hukuk_kurali_geri_yukle: (v, ad) => `${ad(v.sahip)}: hukuk kuralı geri getirildi: “${v.ad}”`,
+  kural_ornegi_yaz: (v, ad) => `${v.sahip ? `${ad(v.sahip)}: ` : ''}“${v.kuralAd ?? 'kural'}” kuralının örnek durumu kaydedildi${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
   kural_ornegi_sil: (v, ad) => `${v.sahip ? `${ad(v.sahip)}: ` : ''}“${v.kuralAd ?? 'kural'}” kuralının bir örnek durumu kaldırıldı`,
-  baglam_parcasi_yaz: (v, ad) => `${ad(v.kayit)}: sahnedeki bir parçanın bağlamı yazıldı${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
-  metin_kullanim_yaz: (v, ad) => `${ad(v.hedef)}: “${ad(v.kaynak)}” metninin kullanımı yazıldı${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
+  baglam_parcasi_yaz: (v, ad) => `${ad(v.kayit)}: sahnedeki bir parçanın bağlamı kaydedildi${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
+  metin_kullanim_yaz: (v, ad) => `${ad(v.hedef)}: “${ad(v.kaynak)}” metninin kullanımı kaydedildi${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
   metin_kullanim_sil: (v, ad) => `${ad(v.hedef)}: “${ad(v.kaynak)}” metniyle bağ kaldırıldı`,
   baglam_parcasi_sil: (v, ad) => `${ad(v.kayit)}: sahnedeki bir parçanın bağlamı kaldırıldı`,
-  dair_inanc_yaz: (v, ad) => `${v.konu ? `${ad(v.konu)}: ` : ''}${ad((v.tanim as { sanan?: string } | null)?.sanan)}, ${ad((v.tanim as { hakkinda?: string } | null)?.hakkinda)} hakkında ne sandığı yazıldı${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
-  dair_inanc_sil: (v, ad) => `${v.konu ? `${ad(v.konu)}: ` : ''}${ad(v.sanan)}, ${ad(v.hakkinda)} hakkında ne sandığı kaldırıldı`,
-  surec_kurali_olustur: (v, ad) => `${ad(v.sahip)}: süreç kuralı eklendi “${v.ad}”`,
+  dair_inanc_yaz: (v, ad) => `${v.konu ? `${ad(v.konu)}: ` : ''}${ad((v.tanim as { sanan?: string } | null)?.sanan)}, ${ad((v.tanim as { hakkinda?: string } | null)?.hakkinda)} hakkında ne sandığı kaydedildi${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
+  dair_inanc_sil: (v, ad) => `${v.konu ? `${ad(v.konu)}: ` : ''}${ad(v.sanan)}, ${ad(v.hakkinda)} hakkında ne sandığı kaldırıldı${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
+  surec_kurali_olustur: (v, ad) => `${ad(v.sahip)}: süreç kuralı eklendi: “${v.ad}”`,
   surec_kurali_yaz: (v, ad) => `${v.sahip ? `${ad(v.sahip)}: ` : ''}“${(v.tanim as { ad?: string } | null)?.ad ?? 'süreç'}” kuralının tanımı değişti`,
-  surec_kurali_sil: (v, ad) => `${ad(v.sahip)}: süreç kuralı kaldırıldı “${v.ad}”`,
-  surec_kurali_geri_yukle: (v, ad) => `${ad(v.sahip)}: süreç kuralı geri getirildi “${v.ad}”`,
+  surec_kurali_sil: (v, ad) => `${ad(v.sahip)}: süreç kuralı kaldırıldı: “${v.ad}”`,
+  surec_kurali_geri_yukle: (v, ad) => `${ad(v.sahip)}: süreç kuralı geri getirildi: “${v.ad}”`,
   surec_bagla: (v, ad) => `${ad(v.olay)}: “${v.ad ?? 'süreç'}” kuralı ${v.bagli ? 'bağlandı' : 'çıkarıldı'}`,
   surec_adimi: (v, ad) => `${ad(v.olay)}: “${v.kuralAd ?? 'süreç'}” kuralında “${v.adimAd ?? 'adım'}” ${({ planlandi: 'planlandı', basladi: 'başladı', tamam: 'tamamlandı', yarida: 'yarıda kaldı', yapilmadi: 'yapılmadı' } as Record<string, string>)[String(v.durum)] ?? 'kaydı kaldırıldı'}`,
-  surec_fiili: (v, ad) => `${ad(v.olay)}: ${v.ad ? `fiilen uygulanan kural “${v.ad}”` : 'fiilen uygulanan kural seçimi kaldırıldı'}`,
+  surec_fiili: (v, ad) => `${ad(v.olay)}: ${v.ad ? `fiilen uygulanan kural “${v.ad}” olarak seçildi` : 'fiilen uygulanan kural seçimi kaldırıldı'}`,
   fetih_cevabi: (v, ad) => {
     const c = v.cevap as { durum?: string; tarih?: { ifade?: string } | null } | null;
     const ne = !c ? 'henüz karar verilmedi' : c.durum === 'suruyor' ? 'eski uygulama sürüyor' : c.durum === 'birlikte' ? 'eski ve yeni uygulama birlikte geçerli' : `yeni uygulama ${c.tarih?.ifade ? `${c.tarih.ifade} tarihinde ` : ''}başladı`;
@@ -138,7 +138,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   },
   iz_gozlem: (v, ad) => `${ad(v.sahne)}: “${v.izAd ?? 'ayrıntı'}” ${v.an === 'bas' ? 'başta' : 'sonda'} ${v.deger ? `“${v.deger}” olarak gözlendi` : 'gözlemi kaldırıldı'}`,
   anlati_yerlestir: (v, ad) => v.ust ? `${ad(v.kod)}: ${ad(v.ust)} içinde yeri değişti` : `${ad(v.kod)}: eser yapısından çıkarıldı`,
-  durum_ekle: (v, ad) => v.niyet === 'bu_tarihten' ? `${ad(v.konu)}: “${v.ozellik}” yeni tarihten itibaren “${v.hedef ? ad(v.hedef) : v.deger}” oldu` : `${ad(v.konu)}: durum eklendi “${v.ozellik}: ${v.hedef ? ad(v.hedef) : v.deger}”`,
+  durum_ekle: (v, ad) => v.niyet === 'bu_tarihten' ? `${ad(v.konu)}: “${v.ozellik}” yeni tarihten itibaren “${v.hedef ? ad(v.hedef) : v.deger}” oldu` : `${ad(v.konu)}: durum eklendi: “${v.ozellik}: ${v.hedef ? ad(v.hedef) : v.deger}”`,
   durum_degistir: (v, ad) => `${ad(v.konu)}: “${v.ozellik}” durumunun ${({ deger: 'değeri', hedef: 'değeri', kip: 'süresi', baslangic: 'başlangıcı', bitis: 'bitişi', karar: 'karar durumu', ozellik: 'adı' } as Record<string, string>)[String(v.alan)] ?? 'bir alanı'} değişti`,
   durum_sil: (v, ad) => `${ad(v.konu)}: “${v.ozellik}” durumu kaldırıldı`,
   durum_geri_yukle: (v, ad) => `${ad(v.konu)}: “${v.ozellik}” durumu geri getirildi`,
@@ -148,7 +148,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   harita_katman: (v) => v.alan === 'ad' ? `“${v.haritaAd}” haritasında katmanın adı değişti: “${v.deger}”`
     : v.alan === 'silindi' ? `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” ${v.deger ? 'kaldırıldı' : 'geri getirildi'}`
       : v.alan === 'gorsel' ? `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” görseli değişti`
-        : `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” yeniden oturtuldu`,
+        : `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” yeniden hizalandı`,
   cizim_ekle: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasına ${v.bicim === 'yol' ? 'yol çizildi' : v.kip === 'iddia' ? 'iddia ettiği bölge çizildi' : 'bölgesi çizildi'}`,
   cizim_degistir: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki ${v.bicim === 'yol' ? 'yolun' : 'bölgenin'} ${({ noktalar: 'sınırı', kayit: 'bağlı olduğu kayıt', kip: 'türü', baslangic: 'başlangıcı', bitis: 'bitişi' } as Record<string, string>)[v.alan as string] ?? 'bilgisi'} değişti`,
   cizim_sil: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki ${v.bicim === 'yol' ? 'yol' : 'bölge'} kaldırıldı`,
@@ -164,28 +164,28 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   isaret_geri_yukle: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki işareti geri getirildi`,
   kayit_birlestir: (v, ad) => `“${v.kaynakAd}” kaydı ${ad(v.hedef)} ile birleştirildi`,
   birlesme_geri_al: (v, ad) => `“${v.kaynakAd}” ile ${ad(v.hedef)} birleştirmesi geri alındı`,
-  inceleme_karari: (v) => v.durum === 'kabul' ? `İnceleme: “${v.baslik}” ${v.istisna === 'kapsam' ? 'bu kuralın kapsamı dışında sayıldı' : 'gerekçeyle kabul edildi'}` : v.durum === 'ertelendi' ? `İnceleme: “${v.baslik}” ertelendi` : v.durum === 'duzeltildi' ? `İnceleme: “${v.baslik}” düzeltildi olarak kapandı` : `İnceleme: “${v.baslik}” yeniden açıldı`,
+  inceleme_karari: (v) => v.durum === 'kabul' ? `İnceleme: “${v.baslik}” ${v.istisna === 'kapsam' ? 'bu kuralın kapsamı dışında sayıldı' : 'gerekçesiyle kabul edildi'}` : v.durum === 'ertelendi' ? `İnceleme: “${v.baslik}” ertelendi` : v.durum === 'duzeltildi' ? `İnceleme: “${v.baslik}” düzeltildiği için kapandı` : `İnceleme: “${v.baslik}” yeniden açıldı`,
   takvim_yaz: (v) => v.kod
-    ? (v.takvim ? `“${(v.takvim as { ad: string }).ad}” takvimi ${(v.takvim as { surum: number }).surum === 1 ? 'eklendi' : 'değişti'}` : `“${v.ad ?? 'Paralel'}” takvimi kaldırıldı`)
-    : v.takvim ? `Evrenin takvimi değişti (sürüm ${(v.takvim as { surum: number }).surum}); tarihlerin yeri yeniden hesaplandı` : 'Evrenin takvimi varsayılana döndü',
-  akis_yaz: (v) => v.akis ? `“${(v.akis as { ad: string }).ad}” zaman akışı tanımlandı ya da değişti` : `“${v.ad ?? 'Bir'}” zaman akışı kaldırıldı`,
+    ? (v.takvim ? `“${(v.takvim as { ad: string }).ad}” takvimi ${(v.takvim as { surum: number }).surum === 1 ? 'eklendi' : 'değişti'}` : (v.ad ? `“${v.ad}” takvimi kaldırıldı` : 'Bir takvim kaldırıldı'))
+    : v.takvim ? `Evrenin takvimi değişti (sürüm ${(v.takvim as { surum: number }).surum}). Tarihlerin yeri yeniden hesaplandı` : 'Evrenin takvimi varsayılana döndü',
+  akis_yaz: (v) => v.akis ? `“${(v.akis as { ad: string }).ad}” zaman akışı kaydedildi` : (v.ad ? `“${v.ad}” zaman akışı kaldırıldı` : 'Bir zaman akışı kaldırıldı'),
   sablon_yaz: (v) => v.sablon ? `“${turBul(String(v.tur)).ad}” şablonu değişti` : `“${turBul(String(v.tur)).ad}” şablonu varsayılana döndü`,
   kayit_alan: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” ${v.deger === null || v.deger === '' || v.deger === false ? 'boşaltıldı' : 'değişti'}`,
   soru_cevapla: (v, ad) => {
     const kim = v.kod === 'evren' ? 'Evren' : ad(v.kod);
     const s = v.metin ? `“${v.metin}”` : 'bir soru';
     return v.durum === 'cevaplandi' ? `${kim}: ${s} cevaplandı` : v.durum === 'sonra' ? `${kim}: ${s} sonraya bırakıldı`
-      : v.durum === 'ilgisiz' ? `${kim}: ${s} ilgisiz işaretlendi` : `${kim}: ${s} yeniden açıldı`;
+      : v.durum === 'ilgisiz' ? `${kim}: ${s} ilgisiz olarak işaretlendi` : `${kim}: ${s} yeniden açıldı`;
   },
   kayit_soru_seti: (v, ad) => `${ad(v.kod)}: soru seti ${v.ekle ? 'eklendi' : 'çıkarıldı'}`,
-  catisma_coz: (v, ad) => v.tur === 'silme' ? `${ad(v.kayit)}: silinmiş kalması kararlaştırıldı (başka cihazdaki değişiklikler incelendi)`
+  catisma_coz: (v, ad) => v.tur === 'silme' ? `${ad(v.kayit)}: silinmiş olarak kalmasına karar verildi (başka cihazdaki değişiklikler incelendi)`
     : `${ad(v.kayit)}: iki cihazda birlikte değişen metin incelendi`,
   gorunurluk_yaz: (v, ad) => {
     const g = v.deger as { katman: string | null; bilenler: string[] } | null;
     const ne = v.nesne === 'iliski' ? 'Bir ilişki' : ad(v.kod);
-    return !g ? `${ne}: evrenin gerçeği olarak işaretlendi` : g.katman ? `${ne}: yalnızca ${ad(g.katman)} böyle sanıyor` : `${ne}: gizli; yalnızca ${g.bilenler.map(ad).join(', ')} biliyor`;
+    return !g ? `${ne}: evrenin gerçeği olarak işaretlendi` : g.katman ? `${ne}: yalnızca ${ad(g.katman)} böyle sanıyor` : `${ne}: gizli. Yalnızca şunlar biliyor: ${g.bilenler.map(ad).join(', ')}`;
   },
-  iddia_ekle: (v, ad) => `${ad(v.konu)}: soru eklendi “${v.soru}”`,
+  iddia_ekle: (v, ad) => `${ad(v.konu)}: soru eklendi: “${v.soru}”`,
   iddia_degistir: (v, ad) => `${ad(v.konu)}: “${v.soru}” sorusunun ${({ soru: 'metni', secenekler: 'olası cevapları', gercek: 'gerçeği', karar: 'karar durumu' } as Record<string, string>)[String(v.alan)] ?? 'bir alanı'} değişti`,
   iddia_sil: (v, ad) => `${ad(v.konu)}: “${v.soru}” sorusu kaldırıldı`,
   iddia_geri_yukle: (v, ad) => `${ad(v.konu)}: “${v.soru}” sorusu geri getirildi`,
@@ -205,7 +205,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   kalabalik_olay_sil: (v) => v.silindi === false ? 'Kalabalık olayı geri getirildi' : 'Kalabalık olayı kaldırıldı',
   harita_kunye_yaz: (v) => `“${v.haritaAd || 'Harita'}” haritası: künye ${v.tanim ? 'kaydedildi' : 'kaldırıldı'}`,
   surec_sorumlu_adim_yaz: (v, ad) => `${ad(v.olay)}: “${v.kuralAd ?? 'süreç'}” kuralında “${v.adimAd ?? 'adım'}” adımının sorumlusu ${v.sorumlu ? ad(v.sorumlu) + ' olarak kaydedildi' : 'kaldırıldı'}`,
-  surec_sorumlu_engel_yaz: (v, ad) => `${ad(v.olay)}: “${v.kuralAd ?? 'süreç'}” kuralında ${v.engelTuru === 'veto' ? 'fiilî veto' : 'durdurabilir'} listesi güncellendi`,
+  surec_sorumlu_engel_yaz: (v, ad) => `${ad(v.olay)}: “${v.kuralAd ?? 'süreç'}” kuralında ${v.engelTuru === 'veto' ? 'fiilî veto' : 'durdurabilecekler'} listesi güncellendi`,
   iz_kaydi_yaz: (v, ad) => `${ad(v.olay)}: “${v.ad}” ${v.tur === 'kisa_vadeli' ? 'kısa vadeli sonucu' : 'kalıcı izi'} kaydedildi`,
   iz_kaydi_sil: (v, ad) => `${ad(v.olay)}: “${v.ad ?? 'iz kaydı'}” kaldırıldı`,
   iz_kaydi_geri_yukle: (v, ad) => `${ad(v.olay)}: “${v.ad ?? 'iz kaydı'}” geri getirildi`,
@@ -220,7 +220,7 @@ export const gizliAdimMi = (tur: string, veri: Record<string, unknown>) => tur =
 
 /** Bir işlemin açıklaması. `ad`, kayıt kodunu kullanıcının tanıdığı ada çevirir. */
 export function islemAciklamasi(tur: string, veri: Record<string, unknown>, ad: (kod: unknown) => string = () => 'Kayıt'): string {
-  return ACIKLAMALAR[tur]?.(veri, ad) ?? 'Bu sürümün tanımadığı bir değişiklik (korunuyor)';
+  return ACIKLAMALAR[tur]?.(veri, ad) ?? 'Programın bu sürümünün tanımadığı bir değişiklik (korunuyor)';
 }
 
 const saatBicimi = new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' });

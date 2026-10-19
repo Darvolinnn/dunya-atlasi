@@ -88,7 +88,7 @@ export function siradanGun(e: EvrenVt, yer: string, donem: string | null, statu:
   }
   return {
     yer: kisa(e, yer), donem: donem ? kisa(e, donem) : null, statu: statu ? kisa(e, statu) : null, yerler: yerler.map((y) => kisa(e, y)), konular,
-    not: 'Yalnızca yazılmış kartlar; boş konu, o yerde böyle bir şey olmadığı anlamına gelmez. Kapsayan yerlerin kartları da gösterilir.',
+    not: 'Yalnızca yazılmış kartlar görünür; kapsayan yerlerin kartları da eklenir. Boş kalan konu, o yerde böyle bir şey olmadığını söylemez.',
   };
 }
 
@@ -144,6 +144,6 @@ export function karsilastirmaliOkuma(e: EvrenVt, sutunlar: { kayit: string; tari
   return {
     sutunlar: basliklar,
     satirlar: [...satirlar.values()].filter((s) => s.degerler.some((d) => d !== null)),
-    not: 'Şablon alanları, cevaplanmış sorular ve zamanla değişenler yan yana. Boş hücre “yok” değil, yazılmamış demektir. Aynı soru ya da alan kodu eşleşir; anlamdan eşleştirme yapılmaz.',
+    not: 'Şablon alanları, cevaplanmış sorular ve zamanla değişen özellikler yan yana. Boş hücre “yok” demek değil, henüz yazılmamış demek. Yalnızca aynı soru ya da aynı alan eşleşir; anlamı benzeyenler eşleştirilmez.',
   };
 }

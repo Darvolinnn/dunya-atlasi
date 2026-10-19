@@ -57,7 +57,7 @@ describe('sonuçtan koşullara masası (§15-13)', () => {
     expect(m.hukum).toBe('kayıtlı seçeneklerde bulunamadı');
     expect(m.planlar).toEqual([]);
     expect(m.nedenler).toEqual(['Bu koşullarla en kısa kayıtlı yol 2,5 gün; sınır 2 gün.', 'Yasaklanan rota ya da yerler kullanılabilseydi 1 gün süren bir yol vardı.']);
-    expect(m.varsayimlar.join(' ')).toContain('imkânsız olduğu söylenmez');
+    expect(m.varsayimlar.join(' ')).toContain('imkânsız olduğu demek değil');
     // Uğranmayacak yer.
     const y = h.kosulMasasi({ evren, nereden: koy, nereye: kale, enCokGun: 5, yasakRotalar: [tunel], yasakYerler: [gecit] });
     expect(y.planlar.map((p) => p.toplam)).toEqual([4]);

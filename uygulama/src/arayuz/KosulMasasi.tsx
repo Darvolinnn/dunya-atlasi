@@ -43,7 +43,7 @@ export function KosulMasasiSekmesi({ istemci, evren }: { istemci: Istemci; evren
   return (
     <section class="kosul-masasi" aria-label="Sonuçtan koşullara">
       <h2>Sonuçtan koşullara</h2>
-      <p class="soluk kucuk">Varmak istediğin yeri, süre sınırını ve kullanılamayacak yolları yaz; kayıtlı rotalardan uyan planları görürsün. Yeni yol ya da süre uydurulmaz; evrene bir şey yazılmaz.</p>
+      <p class="soluk kucuk">Nereden nereye gidileceğini, süre sınırını ve kullanılamayacak yolları yazın; kayıtlı rotalardan uyan planlar listelenir. Program yeni yol ya da süre uydurmaz, evrene de hiçbir şey kaydetmez.</p>
       <form class="kart" onSubmit={ara}>
         <div class="satir">
           <KayitSec istemci={istemci} evren={evren} secili={nereden} etiket="Nereden?" sec={setNereden} />
@@ -70,7 +70,7 @@ export function KosulMasasiSekmesi({ istemci, evren }: { istemci: Istemci; evren
       {hata && <p class="hata kucuk">{hata}</p>}
       {m && (
         <div class="kosul-sonucu">
-          <p><strong>{m.hukum === 'çözüm bulundu' ? `Uyan plan: ${m.planlar.length}${m.dahaFazla ? ' (daha fazlası var)' : ''}` : 'Kayıtlı seçeneklerde bulunamadı'}</strong> <span class="soluk kucuk">· {m.tur}</span></p>
+          <p><strong>{m.hukum === 'çözüm bulundu' ? `Uyan plan sayısı: ${m.planlar.length}${m.dahaFazla ? ' (daha fazlası var)' : ''}` : 'Kayıtlı rotalarla uyan bir plan bulunamadı'}</strong> <span class="soluk kucuk">· {m.tur}</span></p>
           {m.nedenler.map((n) => <p class="kucuk">{n}</p>)}
           <ol class="kosul-planlari">{m.planlar.map((p, i) => (
             <li key={i} class="kart">

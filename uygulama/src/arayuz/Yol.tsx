@@ -31,7 +31,7 @@ export function RotaBolumu({ istemci, evren, kayit }: { istemci: Istemci; evren:
   return (
     <section class="yol-bolumu" aria-label="Rota">
       <h2>Rota</h2>
-      <p class="soluk kucuk">Rotanın süresi elle girilir; harita ölçeğinden süre üretilmez. Koşul yalnızca bir etikettir (yaz, kış, yaya, atlı). Denetimler en kısa tanımlı süreyi kullanır.</p>
+      <p class="soluk kucuk">Rotanın süresini elle girersiniz, harita ölçeğinden süre hesaplanmaz. Koşul yalnızca bir etikettir (yaz, kış, yaya, atlı). Denetimler en kısa tanımlı süreyi kullanır.</p>
       <div class="satir">
         <span class="alan-adi">Uçlar</span> {bag(evren, r.a)}
         <KayitSec istemci={istemci} evren={evren} secili={null} etiket={r.a ? 'Değiştir' : 'Bir uç seç'} sec={(s) => { if (s) sessiz(yaz({ a: s.kod })); }} />
@@ -55,7 +55,7 @@ export function RotaBolumu({ istemci, evren, kayit }: { istemci: Istemci; evren:
           ))}
         </ul>
         <form class="satir" onSubmit={(e) => { e.preventDefault(); yaz({ sureler: [...r.sureler, { kosul: yeniKosul, gun: Number(yeniGun) }] }).then(() => { setYeniKosul(''); setYeniGun(''); }, () => {}); }}>
-          <input class="girdi" lang="tr" aria-label="Koşul" placeholder="Koşul (isteğe bağlı): yazın, atlı" value={yeniKosul} onInput={(e) => setYeniKosul((e.target as HTMLInputElement).value)} />
+          <input class="girdi" lang="tr" aria-label="Koşul" placeholder="Koşul (isteğe bağlı, ör. kışın, atlı)" value={yeniKosul} onInput={(e) => setYeniKosul((e.target as HTMLInputElement).value)} />
           <input class="girdi" type="number" min={0} step="any" style="width:90px" aria-label="Gün" placeholder="Gün" value={yeniGun} onInput={(e) => setYeniGun((e.target as HTMLInputElement).value)} />
           <button class="dugme kucuk" disabled={!(Number(yeniGun) > 0)}>Süre ekle</button>
         </form>
@@ -84,7 +84,7 @@ function GecisSartlari({ istemci, evren, rota }: { istemci: Istemci; evren: stri
   const yaz = (sartlar: GecisSartiGirdisi[]) => istemci.iste('rotaSartlariYaz', { evren, rota, sartlar }).then(() => { setHata(null); setAciklama(''); }, (e) => setHata(hataYaz(e)));
   return (
     <div class="alan genis"><span class="alan-adi">Geçiş şartları</span>
-      <p class="soluk kucuk">Gereken izin (mühür, belge, makam) ya da ücret. Kişinin izni, kişiden o kayda “taşıdığı izin” ilişkisiyle ve tarihleriyle girilir; rotanın başına varış anında değerlendirilir. Program geçişi engellemez.</p>
+      <p class="soluk kucuk">Geçiş için gereken izin (mühür, belge, makam) ya da ücret. Bir kişinin izni, kişiden izin kaydına “taşıdığı izin” ilişkisiyle ve tarihleriyle girilir. İzin, kişinin rotanın başına vardığı ana göre değerlendirilir. Program geçişi engellemez.</p>
       {l.length > 0 && (
         <ul class="yol-listesi">
           {l.map((s, i) => (
@@ -118,7 +118,7 @@ export function YolculukBolumu({ istemci, evren, kayit }: { istemci: Istemci; ev
   return (
     <section class="yol-bolumu" aria-label="Yolculuğun aşamaları">
       <h2>Aşamalar</h2>
-      <p class="soluk kucuk">Her aşama bir yerden ötekine gider; rota seçilirse süresi rotanın tanımlı süresiyle karşılaştırılır. Planlanan aşamalar denetimlerde yolcunun bulunduğu yer sayılmaz.</p>
+      <p class="soluk kucuk">Her aşama bir yerden ötekine gider. Rota seçilirse aşamanın süresi rotanın tanımlı süresiyle karşılaştırılır. Planlanan aşamalar, denetimlerde yolcunun bulunduğu yer olarak sayılmaz.</p>
       {y.asamalar.length === 0 && <p class="soluk">Henüz aşama yok.</p>}
       <ol class="yolculuk-asamalari">
         {y.asamalar.map((a, i) => (
@@ -148,7 +148,7 @@ export function YolculukBolumu({ istemci, evren, kayit }: { istemci: Istemci; ev
       </ol>
       <button class="dugme kucuk" onClick={() => { const l = girdiler(); const son = l[l.length - 1]; void yaz([...l, { nereden: son?.nereye ?? null, nereye: null, rota: null, cikis: son?.varis ?? '', varis: '', durum: 'gerceklesti' }]); }}>Aşama ekle</button>
       <h3>Yolcular</h3>
-      {y.yolcular.length === 0 ? <p class="soluk kucuk">Yolcu yok. Aşağıdaki ilişkilerden “Yolculuktakiler” ile ekle; katılma ve ayrılma tarihleri ilişkinin başlangıcı ve bitişidir.</p>
+      {y.yolcular.length === 0 ? <p class="soluk kucuk">Yolcu yok. Yolcuları aşağıdaki ilişkilerden “Yolculuktakiler” ile ekleyebilirsiniz. Katılma ve ayrılma tarihleri, ilişkinin başlangıç ve bitiş tarihleridir.</p>
         : <p class="kucuk">{y.yolcular.map((k, i) => <span key={k.kod}>{i > 0 && ', '}{bag(evren, k)}{k.rol === 'tasinan' ? ' (taşınan)' : ''}</span>)}</p>}
       {hata && <p class="hata kucuk">{hata}</p>}
     </section>

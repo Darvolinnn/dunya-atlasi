@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026 (Windows uygulaması başladı). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 76 dosya, 441 sınama, hepsi geçiyor. GitHub Actions'ta otomatik denetim var.*
+*Son güncelleme: 19 Ekim 2026 (akşam). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 81 dosya, 456 sınama; tarayıcıda 11 akış sınaması, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -16,11 +16,11 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 
 ## 2. Kullanıcı ve çalışma tercihi
 
-- Kullanıcı Türkçe yazar; ona Türkçe, kısa ve sade cevap ver. Arayüzdeki ve hata iletilerindeki her metin Türkçedir; kullanıcıya görünen metinde programlama terimi olmaz.
+- Kullanıcı Türkçe yazar; ona Türkçe, kısa ve sade cevap ver. Programdaki metinlerde hitap "siz"dir (kullanıcı kararı, 19 Ekim 2026; §12.4). Arayüzdeki ve hata iletilerindeki her metin Türkçedir; kullanıcıya görünen metinde programlama terimi olmaz.
 - Her adım bitince DEVIR.md'de yapılan ve yapılacak adımlar güncellenir ve gönderilir (kullanıcı isteği, 19 Ekim 2026).
 - Kullanıcının açık tercihi: **bir aşama ya da madde bitince onay beklemeden sıradakine geç.** Yalnızca geri alınamaz işlerde (zorla gönderme, toplu silme, dışarıya mesaj) ya da kullanıcının vermesi gereken bir kararda dur ve sor.
 - **Arayüz değişikliklerinde önce taslak:** görünüşü ya da düzeni değiştiren bir işe kodlayarak başlama; önce seçenekli bir taslak göster, kullanıcı seçince kodla (kullanıcı isteği, 19 Ekim 2026).
-- **Her değişiklik kullanıcının bilgisayarına da yüklenir** (19 Ekim 2026): gönderdikten sonra bilgisayarındaki proje klasöründe (yolu proje belleğinde) `main` dalında `git fetch` ve `git merge --ff-only origin/main`; bağımlılıklar değiştiyse PowerShell'de `$env:NODE_ENV='development'; npm install --include=dev` (uygulama klasöründe; ortam üretim modunda olduğundan aksi hâlde geliştirme araçları silinir); `npm run dev` 5173'te çalışır kalsın.
+- **Tamamen bulut (kullanıcı kararı, 19 Ekim 2026, öncekinin yerine):** bütün iş bulut oturumunda yapılır; kullanıcının bilgisayarındaki proje klasörüne, masaüstüne ve oradaki programa dokunulmaz, zip oraya konmaz. Kullanıcı programı denemek isterse klasörü kendisi günceller. Windows denetimini GitHub'daki Windows işi yapar.
 - Tablet ve iPhone denemeleri süresiz ertelendi; yalnız Windows (19 Ekim 2026).
 - Kullanıcı bazen başka ajanları (GPT/Codex, Argon) ayrı dallarda paralel çalıştırır. Onlara verilecek promptları sen yazarsın; dalları sen birleştirir, sürümü sen artırır, denetimi sen yaparsın (bkz. §6).
 
@@ -76,25 +76,21 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | Güvenilirlik | Otomatik denetim: `.github/workflows/denetim.yml` (tür denetimi, sınamalar, derleme; `main` ve `paket/**`) | `60bdc1b` |
 | Güvenilirlik | Metin kurtarma taslağı (§10.7): `arayuz/taslak.ts`; taslaklar kurulum veritabanında `taslaklar` tablosunda (istekler `taslakOku/Yaz/Sil`); açılışta "kaydedilmemiş yazı bulundu" → Kurtar / Vazgeç. Tarayıcı süreci zorla öldürülerek denendi | `1bc1d87` |
 | K24 | Arayüz yenileme, kullanıcının seçtiği "A · Üç sütun" taslağı (§5.10): evren açılınca **Yaz** gelir (`#/e/<evren>` ve `#/e/<evren>/yaz/<kod>`, `arayuz/YazEkrani.tsx`); solda gezinti çubuğu ve Yaz seçiliyken eser ağacı, oradan eser / bölüm / sahne eklenir (`arayuz/Kabuk.tsx`, `EvrenKabugu`); ortada metin, sağda kapatılabilir bağlam paneli. Az kullanılan sayfalar "Diğer" altında, kayıt sayfasında okunuş / başka adlar / etiketler ve sahne dışı bölümler katlanır. Krem renkler, Literata (metin) ve Source Sans 3 (arayüz) yazı tipleri pakette (`@fontsource-variable/*`, çevrimdışı çalışır). Komut paleti aramada bütün sayfaları ve görünümleri bulur. Ek: yazma ekranında "Çöp kutusuna taşı"; 1700 ve 2200 piksel üstü geniş ekranda yan sütunlar ve yazıları büyür (`--gezinti-gen`, `--baglam-gen`) | `4e98bc9`, `5fe80e8` |
-| Onay | Bütün silme ve kaldırma düğmeleri (kayıt, harita, çizim, işaret, ilişki, bilgi, kural, masa, paket, sözcük, liste satırları), metni eski hâline döndürme, dönüşümü geri alma ve "Silinmiş kalsın" artık onay soruyor (`arayuz/onay.ts`) | bu kayıt |
+| Onay | Bütün silme ve kaldırma düğmeleri (kayıt, harita, çizim, işaret, ilişki, bilgi, kural, masa, paket, sözcük, liste satırları), metni eski hâline döndürme, dönüşümü geri alma ve "Silinmiş kalsın" artık onay soruyor (`arayuz/onay.ts`) | `1966ff0` |
+| İnceleme 2 | Kalan dört şüphe: inanç kaldırma ile eşzamanlı düzenleme çatışma olur (izdüşüm 58); çöp kutusundaki yere bağlı iz düzenlenince bağ düşmez; kayıt dönüşümdeki kendi devamıyla birleştirilemez; toplu sayımda açık boş alan iletileri | `b22b861` |
+| §5.8 | Komut paletinde "Yolculuk süresi" (kayıtlı rotalarla en kısa yol) ve "Takvim günü hesabı" (tarihe gün/yıl ekleme, iki tarih arası; `alan/tarih.ts` `gunFarki`), `arayuz/Hesaplar.tsx` | `b7601cd` |
+| Hız | `disaridanAl` adayları her turda baştan tarıyordu (kareli). 52.500 işlemde evreni başka cihazda kurma 101 sn → 22 sn; yerelde baştan kurma 25 sn, arama 63 ms, tek değişiklik 1 ms | `7a876b0` |
+| §10.1 | Metnin toplu uygulanması ve bellekte en çok 32 metin belgesi; 21.800 gerçekçi işlemde yeni cihazda kurma 154 sn → 9,3 sn (ayrıntı §3.3-2) | `99ba813` |
+| Bellek | Automerge geçici kopyaları bırakılmıyordu (uzun yazma oturumunda bellek sınırsız büyüyor, 4 GB'da çöküyordu); kapatıldı | `2253aa4` |
 | F19 | İnceleme: ayırt etme satırı var, sahne hatırlatıcısını sahne paneli karşılıyor; okur tanıtımı ve "sır yayına girmez" yayına (§11) bağlı, K20 gereği kapsam dışı | — |
-### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
+### 3.2 Açık PR'lar ve dallar
 
-19 Ekim 2026'daki ilk dört paket birleştirildi. Aynı gün ikinci tur beş paket verildi; beşi de birleştirildi. Üçüncü turdaki Argon paketi (§15-2) birleştirildi; GPT inceleme paketi hak bittiği için yarım kaldı, yerine yardımcı ajan inceledi. Bekleyen paket yok. Dalı uzak depoda belirince birleştir (§6). Paketler `IZDUSUM_SURUMU`'nu artırmaz; artırmayı birleştiren yapar. Promptlar kullanıcının proje klasöründe `paket-promptlari/tur2/` altındadır; depoda değildir.
+| PR | Dal | Ne | Durum |
+|---|---|---|---|
+| [#2](https://github.com/Darvolinnn/dunya-atlasi/pull/2) (birleştirildi) | `claude/modest-lovelace-ozltpf` | 19 Ekim akşam oturumu: inceleme 5–6 (bağlam paneli, durum özeti), İnceleme 2'nin dört şüphesi, komut paleti hesapları, kırmızı tarayıcı denetiminin onarımı, `disaridanAl` hızı, metnin toplu uygulanması (§10.1), Türkçe düzeltmeler, bu DEVIR | 19 Ekim akşam `main`'e birleştirildi |
+| [#1](https://github.com/Darvolinnn/dunya-atlasi/pull/1) | `claude/project-thread-hdk5g6` | Windows uygulaması (TK6, Tauri 2). Kurulum dosyası: [windows ön sürümü](https://github.com/Darvolinnn/dunya-atlasi/releases/tag/windows) (`Dunya-Atlasi-kurulum.exe`); dal her gönderimde yeniden derlenir. İş listesi §3.2b; aynı dalda karar: iPhone plandan çıktı (K3) | Güncel `main` 19 Ekim akşam alındı (PR #2 dahil). Kullanıcı kurup dener, onaylayınca birleşir |
 
-Bütün "Tasarım" maddeleri kodlandı (F16 formülü de, 19 Ekim 2026). Promptlar `paket-promptlari/tur3/`.
-
-### 3.2a Biten iş: F16 formül dili (adım adım)
-
-Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yapılan ve yapılacak adımlar burada görünür.
-
-- [x] Kullanıcı TK8 taslağını onayladı, sayılarla birlikte seçti (19 Ekim 2026)
-- [x] Sözleşmeyi tasarım belgesine yaz (§18.1 "Kural ve formül dili", §1.3 TK8 satırı, geçmiş dosyasına bir satır)
-- [x] Şablonlara birimli sayı alanı ekle (nicelik türü, birim, hassasiyet): `alan/nicelik.ts`, değer alanın birimine çevrilip `{ enAz, enCok, birim }` olarak saklanır; boşken varsayılan ayarı şablon kaydında artık korunuyor
-- [x] Formül çözümleyici ve üç değerli değerlendirme (`alan/formul.ts`: `formulOku` adları çözer ve türleri denetler, `formulDegerlendir` bir `FormulOrtami` ile çalışır, `formulYazisi` güncel adlarla yazar; sınama `test/formul.test.ts`)
-- [x] Hukuk kuralının "kimlere" kısmına formül alanı; kural atölyesi örnekleriyle sınama (`test/kural-atolyesi.test.ts`)
-- [x] Arayüz: formül yazma, hatanın yerini gösterme, yazım kılavuzu; uygulanan kurallarda formülün belirsiz nedenleri ve "hesaplanamadı" (`arayuz/Hukuk.tsx`)
-- [x] Sınamalar (435), izdüşüm sürümü (gerekmedi: tanım JSON olarak saklanıyor), DEVIR güncellemesi, gönderme
+Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok. Promptlar kullanıcının proje klasöründe `paket-promptlari/` altındadır, depoda değildir.
 
 ### 3.2b Süren iş: Windows uygulaması (TK6, Tauri 2)
 
@@ -103,18 +99,64 @@ Kullanıcı 19 Ekim 2026'da programın site gibi durduğunu söyledi; Windows i�
 - [x] Kabuk: `uygulama/src-tauri/` (Rust). Kurulu sürüm dosyaları `http://localhost:41730`'dan sunar (`tauri-plugin-localhost`, `.wasm` için doğru tür); bu adres veritabanının kökenidir, **değiştirme** (§17.4). Geliştirmede `npm run uygulama` 5173'ü kullanır. Tek örnek (ikinci açılış pencereyi öne getirir). Yalnız `accounts.google.com` yeni pencere açabilir.
 - [x] GitHub: `.github/workflows/windows.yml` Windows'ta derler, `windows` ön sürüm sayfasına `Dunya-Atlasi-kurulum.exe` koyar (main ve `claude/**` dallarında).
 - [x] Tasarım: K3, K7, K16, K17, TK3, TK6, §10.7, §10.9, §12.3, §14.3, §17 iPhone'suz ve Tauri'li.
+- [x] Güncel `main` dala alındı (19 Ekim akşam; bağlam paneli, durum özeti, hız ve bellek düzeltmeleri dahil). `package-lock.json` npm ile yeniden üretildi (Tauri ve Playwright birlikte).
 - [ ] Kullanıcının bilgisayarında kur, aç, veritabanı ve yazma çalışıyor mu bak.
 - [ ] Google: `http://localhost:41730` Google projesinde izinli adreslere eklenmeli (kullanıcı yapar). Sonra izin penceresi uygulama içinde açılıyor mu dene. Açılmazsa TK3'ü "sistem tarayıcısında giriş + yenileme jetonu" olarak değiştir.
 - [ ] Veriyi tarayıcı kurulumundan uygulamaya taşı (Drive eşitlemesi ya da Taşıma ekranı); tarayıcı kurulumunu "kullanılmıyor" işaretle.
-- [ ] APK (kullanıcı Windows'u onaylayınca): `tauri android init`, imza anahtarı (depoya girmez), dokunmatik düzen.
+- [ ] APK (kullanıcı Windows'u onaylayınca): `tauri android init`, imza anahtarı (depoya girmez), dokunmatik düzen. Tablette bellek 4 GB altı (§3.3-2).
 
-### 3.3 Kalan işler (önerilen sıra)
+### 3.3 Açık işler (önerilen sıra)
 
-1. **Windows uygulaması, sonra tablet APK'sı** (§3.2b, §14.3). iPhone plandan çıktı (K3).
-2. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
-3. **Dış güvenilirlik eleştirisinin kalanları** (analiz: proje klasöründe `analiz/guvenilirlik-plani-analizi.md`): yapılanlar yukarıda. Ana ekran uygulaması ve Cloudflare yayını artık gerekmiyor (Tauri kabuğu, TK6). Bekleyen: büyük dosyada gerçekten kaldığı yerden yükleme (`drive.ts` tek parça gönderiyor, TK5 tersini söylüyor). Komut paleti §5.8'deki "iki mekân arası yolculuk süresi" ve "takvim günü hesabı" komutlarını henüz açmıyor (sayfalar ve görünümler artık bulunuyor). İsteğe bağlı: yeniden kurma süresini 50.000 işlemle ölçmek (`evren-vt.ts` geçmişe düşen işlem gelince bütün günlüğü baştan uygular)
+**Kullanıcının kararı ya da işi gereken:**
+1. **PR #2'yi incele ve birleştir.**
+2. **Büyük evrende hız ve bellek.** Kullanıcı kararı (19 Ekim): seri büyüklüğünde (Red Rising gibi, ~1 milyon kelime; taslak ve düzeltmelerle 300.000–1.500.000 işlem) evren dakikalar içinde kurulmalı; bellek bilgisayarda 16 GB'a kadar kabul, **tablette 4 GB altı şart**. Tanım §10.1 "Tablolar günlükten baştan kurulabilir".
+   - [x] **Adım 1: metni toplu uygula, bellekte yalnız son kullanılanlar** (`99ba813`). Ölçüm (gerçekçi karışım: 400 sahne, sahne başına 2.500 kelimeye kadar cümle cümle yazma, sonra düzeltme turları, işlemlerin %80'i metin):
+
+     | İşlem | Önce: yeni cihaz | Şimdi: yeni cihaz | Şimdi: baştan kurma | Bellek artışı (yeni cihaz) |
+     |---|---|---|---|---|
+     | 21.800 | 154 sn | 9,3 sn | 10,2 sn | 253 MB → 192 MB |
+     | 40.800 | 319 sn | — | — | — |
+     | 63.400 | — | 25 sn | 21 sn | +247 MB |
+     | 150.000 | — | ölçülüyor (19 Ekim akşam) | | |
+
+     Neden yavaştı: her metin kaydı uygulanırken belge baştan okunuyor (`A.spans`) ve baştan paketleniyordu (`A.save`); Automerge'ün değişikliği işlemesi (`A.loadIncremental`) de değişiklik başına pahalıydı. Toplu yolun kuralları `izdusum.ts` "Toplu uygulama" yorumunda; eşdeğerlik sınaması `test/toplu-metin.test.ts`.
+   - [x] **Automerge bellek sızıntısı kapatıldı** (`2253aa4`): her metin kaydı belgenin tam kopyasını (`A.clone`) alıp bırakıyordu; Automerge belleği çöp toplayıcıya görünmediği için birikiyordu (3.000 kayıtta +1,2 GB; 70.000 kayıtta modül 4 GB sınırında çöktü). Geçici kopyalar `try/finally` ile `A.free`; 32'yi aşıp bellekten çıkan belge de bırakılır. Şimdi 3.000 kayıtta +26 MB. **Yeni bir `A.clone`/`A.from`/`A.load` yazarken sonucu iş bitince `A.free` ile bırak** (`A.view`, `A.change`, `A.loadIncremental`, `A.merge` yeni bellek açmaz).
+   - [ ] **Tablette gerçek bellek ölçümü:** yukarıdaki bellek sayıları Node sınama sürecinin (iki cihaz birden). Tarayıcıda büyük bir evrenle (açılış, yazma, baştan kurma) ölçülmeli; tablet 4 GB'ın altında kalmalı. Wasm belleği büyüyünce küçülmez; tepe değer önemli.
+   - [ ] **Adım 2 (öneri, kullanıcıya sunulacak): anlık görüntüden kurma.** Evren belli aralıklarla tabloların anlık görüntüsünü saklar; geçmişe düşen işlem ve yedekten dönüş baştan değil görüntüden işler. **Program güncellemesi** ayrıca düşünülmeli: (a) tabloları silmeden yerinde dönüştürme ya da (b) yeni tabloları arka planda kurarken eskileriyle yazmaya devam. Kullanıcıya iki seçenek somut örneklerle anlatılmalı (kullanıcı yazılımcı değil; günlük hayat ya da bilgisayar örnekleri tercih ediyor, laboratuvar benzetmesi istemiyor).
+   - [ ] **Adım 3 (öneri): yeni cihaza günlük yerine anlık görüntü gönderme.** Eşitleme biçimi değişir; yalnız Adım 1–2'den sonra yeni cihaza indirme hâlâ yavaşsa.
+   Ölçüm kalıbı: geçici vitest dosyası (`test/_*.test.ts`, depoya girmez); `Hizmet` bellekte; `metinKaydet` dönüşündeki `basliklar` sonraki kaydın `temel`'i; işlemler JSON'a (ikili base64) yazılıp ayrı süreçte `evreniDisaridanKur` ve `evren(...).yenidenKur()` ölçülür.
+3. **Rehberli arayüz (§3.5):** dört kararı bekliyor. Kademeli açılış (dış rapor madde 4) bunun içinde.
+4. **Windows uygulaması (PR #1):** kurup denemek; Google izinli adreslerine `http://localhost:41730` eklemek. Kabul akışı: tam yedek → uygulamaya ayrı evren olarak yükle → metin ve görsel denetimi; eski kopya korunur. Gerçek kurulumda denenecekler: açılış, yeniden açılış, ikinci başlatma, yedek, geri yükleme, EPUB/PDF, Google izin yenilemesi. Ayarlarda görünen sürüm ve derleme tarihi.
+5. **K16:** iki haftalık gerçek kullanım (kod işi değil).
+
+**Ajanın yapabileceği (karar gerekmeyen):**
+6. **Gerçek Drive'da büyük görsel yükleme denemesi:** parça parça ve kaldığı yerden yükleme yalnız sahte Drive'la sınandı. 308 yanıtındaki `Range` başlığı tarayıcıdan okunamazsa ulaşan kısım 0 sayılır (doğru ama baştan gönderir). Google hesabı gerektirir.
+7. **Türkçe:** ~5.800 kullanıcıya görünen metnin bilinen kalıpları tarandı (sen hitabı yok, programlama terimi birkaç tane kalmıştı, düzeltildi) ve 70 uzun açıklama örneklemi okundu; çoğu doğal. Tek tek okunmadı. Kullanıcı garip bulduğu ekranları bildirdikçe düzeltilir. `alan/sablon.ts` varsayılan sorudaki "söz" tekrarı ("Söylenmemiş bir söz … tutulmamış bir söz") kayıtlı şablon değeri olduğu için bilerek değiştirilmedi.
+
+**Sıradaki platform:** Windows onaylanınca tablet APK'sı (§3.2b). iPhone plandan çıktı (K3). Ana ekran uygulaması ve Cloudflare yayını artık gerekmiyor (Tauri kabuğu, TK6).
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
+
+### 3.4 Biten işlerden kalan dersler
+
+- **Sayfa rehberi (K25, §12.4):** yeni sayfa eklerken `rehber-metinleri.ts`'e rehberini ekle, başlığa `<SayfaYardimi sayfa="…" />` koy. Metinler "siz" hitabıyla; düğmeler kısa. Kaydedilen değerler (seçenek adları, şablon alan adları, gerekçe ve sonuç sabitleri) Türkçe düzeltmelerinde bilerek değiştirilmez.
+- **Dosya adları:** aynı klasörde yalnız harf büyüklüğüyle ayrılan iki dosya Windows derlemesini kırar; `test/dosya-adlari.test.ts` yakalar.
+- **Esc ve odak dinleyicileri `useLayoutEffect` ile bağlanır.** Preact `useEffect` bir sonraki kareyi bekler; görüntüsüz tarayıcıda kare geç gelince panel göründüğü an basılan Esc kaçıyordu. Açılışta değeri sıfırlayan etkiler ilk çizimde çalışmamalı (`TarihAlani`). Tarayıcı sınamaları bu durumu `window.requestAnimationFrame = () => 0` ile üretir.
+- **Bağlam paneli** tercihi üç değerli (`dunya-atlasi:yazma-baglami-kapali`: `1` kapalı, `0` açık, yok = seçilmedi); seçilmemişse boş sahnede kapalı. Sahne "boş" = `sahneBaglamiBos` (`Anlati.tsx`).
+- **Durum özeti** evren içinde `Esitleme.tsx` `DurumOzeti`; Evrenler sayfasında eski tek satır (`EsitlemeOzeti`).
+- **Tarayıcı sınamaları:** `uygulama/e2e/akislar.spec.ts`, `npm run sina:tarayici`; bulutta `PW_CHROMIUM=/opt/pw-browsers/chromium`. "Rehberli arayüz" kodlanırsa ilk açılışta başlangıç sorusu gelir; `e2e/yardimci.ts` `sahneAc` ona göre güncellenmeli.
+- **Kurtarma taslağı:** `metinKaydet` taslağı aynı istekte siler (kayıt isteğinden önce yazılmışsa); kurtarma alanına yazılamazsa asıl taslak silinmez.
+- **İstemci:** çalışan yüklenemez ya da çökerse bekleyen istekler hatayla biter; açılış hata ekranında "Yeniden dene".
+- **Masaüstü dili:** fareyle kullanılan ekranlarda "dokunun" değil "tıklayın" (`dddfbda`, başka oturum); "Vazgeçilmişler" → "Vazgeçilen kayıtlar", başlangıç sorusunda "merkez çatışması" → "ana çatışması".
+- `test/kural-atolyesi.test.ts` "tarih ve geçerlilik aralığı" sınaması bütün sınamalar birlikte çalışınca ara sıra kırılıyormuş, tek başına hep geçiyor (başka oturumun notu; nedeni bulunmadı).
+- Windows'ta bir kez görülen `esitleme.test.ts` "kullanım dışı cihaz temizliği bekletmez" kırılması (yük altında süre); GitHub'daki Windows işinde yinelenirse kök nedeni aranır.
+
+### 3.5 Rehberli arayüz (kullanıcı isteği, 19 Ekim 2026; karar bekliyor, kodlanmadı)
+
+Kullanıcı etkileşimli bir taslak ve gerekçe belgesi gönderdi (ekler depoda değil): program kullanıcıyı küçük, atlanabilir adımlarla yönlendirsin, yalnız o anda gereken alanları göstersin, sonraki adımı anlaşılır kılsın. Öneri proje klasöründe `analiz/rehberli-arayuz-uyarlama.md`. Özeti: boş evrende "Nereden başlamak istersiniz?" ve üç kısa akış (sahne, kayıt, not) + sonuç kartında tek sonraki adım (Aşama A); gezinti Yaz / Evren / İncele / Masa / Yönetim, seyrek işler "⋯" menüsünde (Aşama B, önce resimli taslak); kayıt sayfasında boş bölümlerin gizlenmesi (Aşama C). Yeni veri yok; onaylanırsa tasarıma K26 olarak girer. Boş bağlam panelinin kapalı olması ve durum özeti artık kodda (PR #2), öneri bunlarla uyumlu.
+
+- [ ] Kullanıcı kararları: Aşama A'ya başlansın mı; gezinti gruplaması; Masa ayrı mı kalsın
+- [ ] Onaylanırsa: tasarım belgesi (K26, §5.10, §12.4, §13), sonra Aşama A kodu
 
 ## 4. Kod yapısı ve yeni bir özellik ekleme tarifi
 
@@ -142,7 +184,7 @@ Kurallar: veritabanına yalnızca `EvrenVt.islemYap()` (hizmette `this.yaz`) yaz
 
 - `cd uygulama && npm ci`, sonra `npm test` (bütün sınamalar) ve `npm run denetle` (tür denetimi). İkisi de hatasız olmadan kayıt yapma.
 - `npm run dev` → http://localhost:5173 (Google girişine izin verilen adres bu).
-- Windows uygulaması: `npm run uygulama` (geliştirme penceresi, Rust gerekir), `npm run kurulum` (kurulum dosyası). Kullanıcının bilgisayarında Rust yok; kurulum dosyasını GitHub derler (`windows` sürüm sayfası).
+- Windows uygulaması: `npm run uygulama` (geliştirme penceresi, Rust gerekir), `npm run kurulum` (kurulum dosyası). Kullanıcının bilgisayarında Rust yok; kurulum dosyasını GitHub derler (`windows.yml`, `windows` sürüm sayfası; `main` ve `claude/**` dallarına her gönderimde).
 - Arayüzü denemek için Playwright kullanılabilir: yeni evren oluştur, kayıt oluştur, bölümü kullan, tarayıcı konsolunda hata olmadığını gör. Ekran görüntülerini depoya koyma.
 
 ## 6. Paralel ajan dallarını birleştirme
@@ -158,7 +200,7 @@ Kurallar: veritabanına yalnızca `EvrenVt.islemYap()` (hizmette `this.yaz`) yaz
 
 ## 7. Git
 
-- Doğrudan `main` üzerinde çalışılıyor; kullanıcı bunu onayladı. Paralel ajanlar `paket/<ad>` dallarında çalışır.
+- Doğrudan `main` üzerinde çalışılıyor; kullanıcı bunu onayladı. Bulut oturumu kendisine verilen dalda (`claude/...`) çalışıp taslak PR açabilir; kullanıcı birleştirir. Paralel ajanlar `paket/<ad>` dallarında çalışır.
 - Kayıt mesajları Türkçedir: ilk satır kısa başlık (ör. "Delil geçmişi ve soruşturma masası (F08)"), altında ne değiştiği ve yeni tablo varsa izdüşüm sürümü.
 - Zorla gönderme (force push) yapma; başkasının dalının geçmişini yeniden yazma.
 - Depo herkese açıktır: sır, gerçek evren içeriği, dışa aktarılmış veri, ekran görüntüsü ve lisans dosyası girmez. Test ve örnek adları uydurmadır.

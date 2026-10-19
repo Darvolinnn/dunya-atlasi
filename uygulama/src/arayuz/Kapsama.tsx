@@ -13,8 +13,8 @@ export function AltBirimlerdenToplananlar({ istemci, evren, kod, tur, surum }: {
   if (!l.length) return null;
   return (
     <section class="toplananlar" aria-label="Alt birimlerden toplananlar">
-      <h2>Alt birimlerde kayıtlı gördüklerimiz</h2>
-      <p class="soluk kucuk">{tur === 'siyasi' ? 'Bağlı yönetimlerde ve yerlerde' : 'Parçalarında'} yazılmış kayıtlar. Bunlar {turBul(tur).ad.toLocaleLowerCase('tr-TR')} kaydının özelliği değildir; bir kayıt birden çok yere bağlıysa bir kez sayılır.</p>
+      <h2>Alt birimlerde kayıtlı olanlar</h2>
+      <p class="soluk kucuk">{tur === 'siyasi' ? 'Bağlı yönetimlerde ve yerlerde' : 'Bu yerin parçalarında'} yazılmış kayıtlar. Bunlar {turBul(tur).ad.toLocaleLowerCase('tr-TR')} kaydının kendi özelliği sayılmaz. Birden çok yere bağlı bir kayıt bir kez sayılır.</p>
       {GRUPLAR.map(([t, ad]) => {
         const g = l.filter((x) => x.kayit.tur === t).sort((a, b) => turkceKarsilastir(a.kayit.ad, b.kayit.ad));
         if (!g.length) return null;

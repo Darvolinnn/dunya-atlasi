@@ -42,7 +42,7 @@ describe('kalıtım (§15-8)', () => {
     h.kalitimDegeriYaz({ evren, kod: baba, ozellik: goz, deger: { gorunur: false, kopya: 0 } });
     h.kalitimDegeriYaz({ evren, kod: cocuk, ozellik: goz, deger: { gorunur: true, kopya: null } });
     k = h.kalitim({ evren, kod: cocuk });
-    expect(k.ozellikler.find((x) => x.ozellik.kod === goz)).toMatchObject({ beklenmez: true, aciklama: expect.stringMatching(/kanıtı sayılmaz/) });
+    expect(k.ozellikler.find((x) => x.ozellik.kod === goz)).toMatchObject({ beklenmez: true, aciklama: expect.stringMatching(/kanıtlamaz/) });
     const e = h.kalitim({ evren, kod: evlatlik });
     expect(e.ebeveynler).toEqual([]);
     expect(e.evlatlik.map((x) => x.ad)).toEqual(['Ana']);

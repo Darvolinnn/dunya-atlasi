@@ -10,7 +10,7 @@ import { Gorsel, gorselAdresi } from './gorsel';
 const hataYaz = (e: unknown) => (e as Error).message;
 type Tur = 'gezinti' | 'pano';
 const ADLAR: Record<Tur, { tekil: string; yeni: string; ornek: string; bos: string }> = {
-  gezinti: { tekil: 'gezinti', yeni: 'Yeni gezinti', ornek: 'Başkentte bir gün', bos: 'Henüz gezinti yok. Gezinti, uzun aradan sonra evrene dönerken sırayla okuyacağınız kayıtlardır.' },
+  gezinti: { tekil: 'gezinti', yeni: 'Yeni gezinti', ornek: 'Başkentte bir gün', bos: 'Henüz gezinti yok. Gezinti, uzun bir aradan sonra evrene dönerken sırayla okuyacağınız kayıtların listesidir.' },
   pano: { tekil: 'görsel panosu', yeni: 'Yeni pano', ornek: 'Kıyafetler', bos: 'Henüz pano yok. Panoya eskizleri, kıyafetleri, armaları ve mimari örnekleri toplayabilirsiniz.' },
 };
 
@@ -74,7 +74,7 @@ function Gezinti({ istemci, evren, kod, surum }: { istemci: Istemci; evren: stri
       <AdVeSil istemci={istemci} evren={evren} d={d} />
       <div class="satir">
         <button class="dugme ana" disabled={!d.adimlar.length} onClick={() => setGez(0)}>Gez</button>
-        <span class="soluk kucuk">Adımları sırayla, her birinin notuyla birlikte okursunuz.</span>
+        <span class="soluk kucuk">Adımları notlarıyla birlikte sırayla okursunuz.</span>
       </div>
       <ol class="gezinti-adimlari">
         {d.adimlar.map((a, i) => (
@@ -125,7 +125,7 @@ function GezintiAdimi({ istemci, evren, d, i, sec }: { istemci: Istemci; evren: 
       {k && (
         <>
           {k.tarih && <p class="soluk kucuk">{k.tarih.ifade}</p>}
-          {k.ozet ? <p>{k.ozet}</p> : <p class="soluk kucuk">Özeti yazılmamış.</p>}
+          {k.ozet ? <p>{k.ozet}</p> : <p class="soluk kucuk">Özet yazılmamış.</p>}
           {k.gorseller.length > 0 && <div class="gorsel-izgara">{k.gorseller.slice(0, 6).map((g) => <span class="gorsel-kucuk"><Gorsel istemci={istemci} evren={evren} ad={g} /></span>)}</div>}
         </>
       )}
@@ -189,19 +189,19 @@ function Pano({ istemci, evren, kod, surum }: { istemci: Istemci; evren: string;
       )}
       {hata && <p class="hata kucuk">{hata}</p>}
       {karsilastir.length > 0 && (
-        <p class="kucuk">Karşılaştırma için seçilen: {kars.map((o) => o.baslik || o.kayit?.ad || 'adsız').join(' ve ')}.
-          {kars.length === 2 ? ' Aşağıda yan yana.' : ' Bir görsel daha seçin.'} <button class="dugme sade kucuk" onClick={() => setKarsilastir([])}>Temizle</button></p>
+        <p class="kucuk">Karşılaştırmak için seçilenler: {kars.map((o) => o.baslik || o.kayit?.ad || 'adsız').join(' ve ')}.
+          {kars.length === 2 ? ' Aşağıda yan yana gösteriliyor.' : ' Bir görsel daha seçin.'} <button class="dugme sade kucuk" onClick={() => setKarsilastir([])}>Temizle</button></p>
       )}
       {kars.length === 2 && (
         <div class="pano-karsilastirma">
           {kars.map((o) => <PanoBuyuk key={o.kod} istemci={istemci} evren={evren} o={o} />)}
         </div>
       )}
-      {!d.ogeler.length && <p class="soluk kucuk">Pano boş. Bir kaydın görsellerinden seçebilir ya da dosyadan ekleyebilirsiniz; dosyadan eklenen görsel bir kayda bağlanmaz.</p>}
+      {!d.ogeler.length && <p class="soluk kucuk">Pano boş. Bir kaydın görsellerinden seçebilir ya da dosyadan görsel ekleyebilirsiniz. Dosyadan eklenen görsel hiçbir kayda bağlanmaz.</p>}
       <div class="pano-izgara">
         {gorunen.map((o) => (
           <div key={o.kod} class={`pano-ogesi${o.durum === 'eski' ? ' eski' : ''}`}>
-            <button class="gorsel-kucuk" aria-label={`${o.baslik || 'Görseli'} aç`} onClick={() => setAcik(o.kod)}><Gorsel istemci={istemci} evren={evren} ad={o.gorsel} /></button>
+            <button class="gorsel-kucuk" aria-label={o.baslik ? `“${o.baslik}” görselini aç` : 'Görseli aç'} onClick={() => setAcik(o.kod)}><Gorsel istemci={istemci} evren={evren} ad={o.gorsel} /></button>
             <div class="kucuk">{o.baslik || <span class="soluk">Başlıksız</span>}</div>
             {o.kayit && <div class="soluk kucuk"><a href={`#/e/${evren}/k/${o.kayit.kod}`}>{o.kayit.ad}</a></div>}
             <div class="kucuk">
@@ -276,7 +276,7 @@ function PanoOgesiPerdesi({ istemci, evren, d, o, kapat, yaz, ac }: {
         <PanoBuyuk istemci={istemci} evren={evren} o={o} tikla={notKipi ? (x, y) => { setBekleyen({ x, y }); setMetin(''); } : undefined} />
         {bekleyen && (
           <form class="satir" onSubmit={(e) => { e.preventDefault(); void degistir({ notlar: [...o.notlar, { ...bekleyen, metin }] }).then(() => setBekleyen(null)); }}>
-            <input class="girdi" style="flex:1" lang="tr" aria-label="Not" placeholder="Bu noktaya not" value={metin} autoFocus onInput={(e) => setMetin((e.target as HTMLInputElement).value)} />
+            <input class="girdi" style="flex:1" lang="tr" aria-label="Not" placeholder="Bu noktaya bir not yazın" value={metin} autoFocus onInput={(e) => setMetin((e.target as HTMLInputElement).value)} />
             <button class="dugme kucuk" type="submit" disabled={!metin.trim()}>Notu ekle</button>
             <button class="dugme sade kucuk" type="button" onClick={() => setBekleyen(null)}>Vazgeç</button>
           </form>
@@ -288,7 +288,7 @@ function PanoOgesiPerdesi({ istemci, evren, d, o, kapat, yaz, ac }: {
           <div>
             <h3>{o.kayit!.ad}: gelişim geçmişi</h3>
             <div class="gorsel-izgara">{gecmis.map((y) => (
-              <button class="gorsel-kucuk" aria-label={`${y.baslik || 'Görseli'} aç`} title={`${y.baslik}${y.durum === 'guncel' ? ' (güncel)' : y.durum === 'eski' ? ' (eski)' : ''}`} onClick={() => ac(y.kod)}><Gorsel istemci={istemci} evren={evren} ad={y.gorsel} /></button>
+              <button class="gorsel-kucuk" aria-label={y.baslik ? `“${y.baslik}” görselini aç` : 'Görseli aç'} title={`${y.baslik}${y.durum === 'guncel' ? ' (güncel)' : y.durum === 'eski' ? ' (eski)' : ''}`} onClick={() => ac(y.kod)}><Gorsel istemci={istemci} evren={evren} ad={y.gorsel} /></button>
             ))}</div>
           </div>
         )}

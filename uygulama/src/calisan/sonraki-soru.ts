@@ -65,16 +65,16 @@ function yolGirdileri(e: EvrenVt, nereden: string | null, nereye: string | null,
     if (s.kip === 'sure') {
       g.push(var_('Süre ağı', `Kayıtlı rotalarla en kısa ${s.toplam!.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} gün.`));
       const kosullar = new Set(s.adimlar.flatMap((a) => rotalar(e).find((r) => r.kod === a.rota.kod)?.sureler.map((x) => x.kosul).filter(Boolean) ?? []));
-      g.push(kosullar.size > 1 ? kismen('Ulaşım biçimi', `Yoldaki rotalarda birden çok koşul var (${[...kosullar].join(', ')}); hangisiyle gidildiği seçilirse süre kesinleşir.`, null, ['yerler arası en kısa yol', 'sonuçtan koşullara masası'])
+      g.push(kosullar.size > 1 ? kismen('Ulaşım biçimi', `Yoldaki rotalarda birden çok koşul var (${[...kosullar].join(', ')}). Hangisiyle gidildiğini seçerseniz süre kesinleşir.`, null, ['yerler arası en kısa yol', 'sonuçtan koşullara masası'])
         : var_('Ulaşım biçimi', kosullar.size ? `Tek koşul: ${[...kosullar][0]}.` : 'Rotalarda koşul ayrımı yok.'));
     } else if (s.kip === 'kroki') {
-      for (const r of s.eksik) g.push(eksik('Rota süresi', `“${r.ad}” rotasının süresi yazılmamış; bağlantı var ama süre bilinmiyor.`, r, rotaKullanimi(e, r.kod)));
+      for (const r of s.eksik) g.push(eksik('Rota süresi', `“${r.ad}” rotasının süresi yazılmamış. Bağlantı var ama süre bilinmiyor.`, r, rotaKullanimi(e, r.kod)));
     } else {
       g.push(eksik('Süre ağı', 'Bu iki yer arasında kayıtlı rota zinciri yok. Bir rota kaydı ekleyip uçlarını ve süresini yazın.', null, ['yerler arası en kısa yol', 'haber yayılımı', 'sonuçtan koşullara masası']));
-      for (const r of ucsuz.slice(0, 5)) g.push(kismen('Rota uçları', `“${r.ad}” rotasının uçları yazılmamış; hesaba katılamıyor.`, kisa(e, r.kod), rotaKullanimi(e, r.kod)));
+      for (const r of ucsuz.slice(0, 5)) g.push(kismen('Rota uçları', `“${r.ad}” rotasının uçları yazılmamış, bu yüzden hesaba katılamıyor.`, kisa(e, r.kod), rotaKullanimi(e, r.kod)));
     }
   }
-  g.push(tarih?.eksen ? var_('Başlangıç ya da varış tarihi', tarih.ifade, tarihKaydi) : eksik('Başlangıç ya da varış tarihi', 'Tarih olmadan süre gün olarak verilir, takvimde yere oturmaz.', tarihKaydi, TARIH_KULLANIMI));
+  g.push(tarih?.eksen ? var_('Başlangıç ya da varış tarihi', tarih.ifade, tarihKaydi) : eksik('Başlangıç ya da varış tarihi', 'Tarih olmadan süre yalnızca gün sayısı olarak verilir, takvime yerleşmez.', tarihKaydi, TARIH_KULLANIMI));
   return g;
 }
 
@@ -87,7 +87,7 @@ export function sonrakiSoru(e: EvrenVt, b: SoruBaglami, hesap: Hesap, kodGirdi: 
   let girdiler: SonrakiSoruGirdisi[] = [];
   if (hesap === 'yolculuk') {
     const a = asamalarOku(e, kod);
-    if (!a.length) girdiler.push(eksik('Aşamalar', 'Yolculuğun hiç aşaması yok; nereden nereye gidildiğini yazın.', kayit, ['harita üzerinde yolculuk', 'yolcuların bulunduğu yer denetimi']));
+    if (!a.length) girdiler.push(eksik('Aşamalar', 'Yolculuğun hiç aşaması yok. Nereden nereye gidildiğini yazın.', kayit, ['harita üzerinde yolculuk', 'yolcuların bulunduğu yer denetimi']));
     const rs = new Map(rotalar(e).map((r) => [r.kod, r]));
     a.forEach((x, i) => {
       const ad = `${i + 1}. aşama`;
@@ -95,7 +95,7 @@ export function sonrakiSoru(e: EvrenVt, b: SoruBaglami, hesap: Hesap, kodGirdi: 
       if (!x.cikis?.eksen) girdiler.push(eksik(`${ad}: çıkış tarihi`, 'Çıkış tarihi yok ya da takvime çevrilemiyor.', kayit, ['yolcuların bulunduğu yer denetimi', ...TARIH_KULLANIMI.slice(0, 1)]));
       if (!x.varis?.eksen) {
         const r = x.rota ? rs.get(x.rota) : undefined;
-        if (r?.sureler.length) girdiler.push(kismen(`${ad}: varış tarihi`, `Varış yazılmamış; “${r.ad}” rotasının süresinden varış günü bulunabilir.`, kayit, ['yolcuların bulunduğu yer denetimi']));
+        if (r?.sureler.length) girdiler.push(kismen(`${ad}: varış tarihi`, `Varış yazılmamış, ama “${r.ad}” rotasının süresinden varış günü bulunabilir.`, kayit, ['yolcuların bulunduğu yer denetimi']));
         else if (r) girdiler.push(eksik(`${ad}: rota süresi`, `Varış yazılmamış ve “${r.ad}” rotasının süresi yok.`, kisa(e, r.kod), rotaKullanimi(e, r.kod)));
         else if (x.nereden && x.nereye) girdiler.push(...yolGirdileri(e, x.nereden, x.nereye, x.cikis, kayit).filter((g) => g.durum !== 'var' && !['Nereden', 'Nereye', 'Başlangıç ya da varış tarihi'].includes(g.ad)).map((g) => ({ ...g, ad: `${ad}: ${g.ad.toLocaleLowerCase('tr-TR')}` })));
         else girdiler.push(eksik(`${ad}: varış tarihi`, 'Varış tarihi de rota da yok.', kayit, ['yolcuların bulunduğu yer denetimi']));
@@ -112,12 +112,12 @@ export function sonrakiSoru(e: EvrenVt, b: SoruBaglami, hesap: Hesap, kodGirdi: 
   } else if (hesap === 'haber') {
     const c = haberCikisiOku(e, kod);
     girdiler.push(c.yer ? var_('Çıkış yeri', '', c.yer) : eksik('Çıkış yeri', 'Haberin nereden çıktığı yazılmamış.', kayit, ['haber yayılımı']));
-    girdiler.push(c.tarih?.eksen ? var_('Çıkış tarihi', c.tarih.ifade) : eksik('Çıkış tarihi', 'Tarih olmadan yalnızca gün sayısı verilir, takvimde yere oturmaz.', kayit, ['haber yayılımı']));
+    girdiler.push(c.tarih?.eksen ? var_('Çıkış tarihi', c.tarih.ifade) : eksik('Çıkış tarihi', 'Tarih olmadan yalnızca gün sayısı verilir, takvime yerleşmez.', kayit, ['haber yayılımı']));
     const kanallar = c.kanallar.length ? c.kanallar.map((k) => k.kod) : e.db.selectObjects("SELECT kod FROM kayitlar WHERE tur='haberlesme' AND silindi IS NULL AND karar<>'vazgecildi'").map((r) => r.kod as string);
     if (!kanallar.length) girdiler.push(eksik('Haberleşme yöntemi', 'Evrende haberleşme yöntemi kaydı yok (ulak, güvercin…).', null, ['haber yayılımı']));
     for (const k of kanallar) {
       const t = kanalOku(e, k);
-      if (!t.rotalar && !t.baglantilar.length) girdiler.push(eksik('Haberleşme yöntemi', `“${kisa(e, k).ad}” yönteminin bağlantısı tanımlı değil (rotaları kullanmıyor, elle bağlantı da yok).`, kisa(e, k), ['haber yayılımı']));
+      if (!t.rotalar && !t.baglantilar.length) girdiler.push(eksik('Haberleşme yöntemi', `“${kisa(e, k).ad}” yönteminin bağlantısı tanımlı değil. Rotaları kullanmıyor, elle eklenmiş bir bağlantısı da yok.`, kisa(e, k), ['haber yayılımı']));
       else if (t.rotalar && !rotalar(e).some((r) => r.a && r.b && r.sureler.length)) girdiler.push(eksik('Rota süreleri', `“${kisa(e, k).ad}” rotaları kullanıyor ama süresi yazılmış rota yok.`, null, ['yerler arası en kısa yol', 'yolculuk', 'sonuçtan koşullara masası']));
       else girdiler.push(var_('Haberleşme yöntemi', '', kisa(e, k)));
     }
@@ -125,7 +125,7 @@ export function sonrakiSoru(e: EvrenVt, b: SoruBaglami, hesap: Hesap, kodGirdi: 
     const dogum = tarihDegeri(e, kod, 'dogum');
     girdiler.push(dogum?.eksen ? var_('Doğum', dogum.ifade) : eksik('Doğum', dogum ? 'Doğum tarihi takvime çevrilemiyor.' : 'Doğum tarihi yazılmamış.', kayit, DOGUM_KULLANIMI));
     const olum = tarihDegeri(e, kod, 'olum');
-    girdiler.push(olum ? var_('Ölüm', olum.ifade) : var_('Ölüm', 'Yazılmamış; yaşadığı varsayılmaz, yalnızca yaş verilir.'));
+    girdiler.push(olum ? var_('Ölüm', olum.ifade) : var_('Ölüm', 'Ölüm tarihi yazılmamış. Yaşadığı varsayılmaz, yalnızca yaşı verilir.'));
     if (secenek.tarih?.trim()) girdiler.push(tarihCoz(secenek.tarih, z)?.eksen ? var_('Hangi tarihte', secenek.tarih.trim()) : eksik('Hangi tarihte', 'Yazdığınız tarih okunamadı.', null, []));
   } else if (hesap === 'yaslar') {
     const tarih = b.olayTarihi(kod);
@@ -150,6 +150,6 @@ export function sonrakiSoru(e: EvrenVt, b: SoruBaglami, hesap: Hesap, kodGirdi: 
   return {
     hesap, ad: HESAP_ADLARI[hesap], kayit, girdiler, hazir: !eksikler.some((g) => g.durum === 'eksik'),
     siradaki: eksikler[0] ?? null,
-    not: '“Kaç hesapta kullanıldığı” bir önem puanı değildir; boş alanlar eksik sayılmaz. Yalnızca seçtiğiniz hesap için gerekenler gösterilir.',
+    not: '“Kaç hesapta kullanıldığı” bir önem puanı değildir. Boş alanlar eksik sayılmaz. Yalnızca seçtiğiniz hesap için gerekenler gösterilir.',
   };
 }

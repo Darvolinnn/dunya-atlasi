@@ -41,7 +41,7 @@ export function dilOku(e: EvrenVt, kod: string): DilTanimi {
 const temiz = (x: unknown, n = 200) => String(x ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 export function dilYaz(b: DilBaglami, kod: string, t: DilTanimi) {
   dilMi(b.e, kod);
-  const liste = <T>(x: unknown, n: number): T[] => { if (!Array.isArray(x) || x.length > n) throw new Error('Liste çok uzun ya da geçersiz.'); return x as T[]; };
+  const liste = <T>(x: unknown, n: number): T[] => { if (!Array.isArray(x) || x.length > n) throw new Error('Liste çok uzun ya da okunamadı.'); return x as T[]; };
   const siniflar = liste<{ ad: string; harfler: string }>(t.siniflar, 30).map((s) => {
     const ad = temiz(s.ad, 2);
     if (!/^\p{Lu}$/u.test(ad)) throw new Error('Ses sınıfının adı tek büyük harf olmalı.');
@@ -106,7 +106,7 @@ export function adTuret(e: EvrenVt, dil: string, bicim: string, kayit: string | 
         const r = uygula(dilOku(e, t), x.bicim);
         const yol = [...x.yol, kisa(e, t)];
         sonuc.push({ dil: kisa(e, t), kaynakBicim: x.bicim, bicim: r.sonuc, yol, iz: r.iz,
-          hata: r.hatalar.length ? `${r.hatalar.length} kural okunamadı; onlar atlandı.` : null,
+          hata: r.hatalar.length ? `${r.hatalar.length} kural okunamadı ve atlandı.` : null,
           kayitli: kayitli.find((k) => k.dil.kod === t)?.bicim ?? null });
         yeni.push({ dil: t, bicim: r.sonuc, yol });
       }
@@ -166,7 +166,7 @@ export function adBicimiYaz(b: DilBaglami, kayit: string, dil: string, bicim: st
   kayitTuru(b.e, kayit); dilMi(b.e, dil);
   if (kaynakDil) dilMi(b.e, kaynakDil);
   const x = bicim === null ? null : temiz(bicim, 60);
-  if (x === '') throw new Error('Biçim boş olamaz.');
+  if (x === '') throw new Error('Bir biçim yazın.');
   const deger = x === null ? null : { bicim: x, kaynakDil: kaynakDil ?? null, kaynakBicim: kaynakDil ? temiz(kaynakBicim, 60) : null };
   b.yaz([{ tur: 'ad_bicimi_yaz', veri: { kayit, dil, deger } }], [kayit]);
 }

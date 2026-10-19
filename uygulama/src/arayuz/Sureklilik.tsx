@@ -27,9 +27,9 @@ export function SureklilikDefteri({ istemci, evren, sahne, olaylar, surum }: { i
         <span class="bosluk" />
         {!yeniAcik && <button class="dugme kucuk" onClick={() => setYeniAcik(true)}>Yeni ayrıntı izle</button>}
       </div>
-      <p class="soluk kucuk">İzlemek istediğiniz ayrıntıların (ok sayısı, yaralı el, kimdeki kılıç) sahne başındaki ve sonundaki durumunu yazın. Program metinden tahmin etmez; aradaki eylemi siz kaydedersiniz.</p>
+      <p class="soluk kucuk">İzlemek istediğiniz ayrıntıların (ok sayısı, yaralı el, kimdeki kılıç) sahne başındaki ve sonundaki durumunu yazın. Program metinden tahminde bulunmaz, arada olanları siz kaydedersiniz.</p>
       {yeniAcik && <YeniIzFormu istemci={istemci} evren={evren} kapat={(kod) => { setYeniAcik(false); if (kod) setEk((l) => [...l, kod]); }} />}
-      {!veri.tarihli && veri.izler.length > 0 && <p class="soluk kucuk">Sahnenin tarihi yok; önceki sahnelerden gelen durum hesaplanamaz.</p>}
+      {!veri.tarihli && veri.izler.length > 0 && <p class="soluk kucuk">Sahnenin tarihi olmadığı için önceki sahnelerden gelen durum hesaplanamaz.</p>}
       {veri.izler.map((x) => <IzKarti key={x.iz.kod} istemci={istemci} evren={evren} sahne={sahne} olaylar={olaylar} x={x} />)}
       {veri.eklenebilir.length > 0 && (
         <div class="satir" style="margin-top:8px">
@@ -204,7 +204,7 @@ function IzGecmisiKarti({ istemci, evren, g }: { istemci: Istemci; evren: string
       <span class="soluk kucuk iz-tarih">{a.tarih?.ifade ?? 'tarihsiz'}</span>
       {a.tur === 'gozlem'
         ? <span>{a.sahne && <a href={`#/e/${evren}/k/${a.sahne.kod}`}>{a.sahne.ad}</a>} {a.an === 'bas' ? 'başında' : 'sonunda'}: <strong>{a.deger}{iz.birim && iz.model === 'sayi' ? ` ${iz.birim}` : ''}</strong>
-          {a.uyusmaz && a.hesap !== null && <span class="rozet uyari-rozet" title="Gözlem ile hesap farklı; ikisi de korunuyor">hesap {a.hesap}</span>}</span>
+          {a.uyusmaz && a.hesap !== null && <span class="rozet uyari-rozet" title="Gözlem ile hesap farklı, ikisi de saklanıyor">hesap {a.hesap}</span>}</span>
         : <span>{a.miktar !== null && <strong>{miktarYaz(a.miktar)} </strong>}{a.deger} <span class="soluk kucuk">· <a href={`#/e/${evren}/k/${a.olay!.kod}`}>{a.olay!.ad}</a></span></span>}
     </li>
   );

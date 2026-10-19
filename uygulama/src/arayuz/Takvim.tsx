@@ -42,14 +42,14 @@ export function TakvimSekmesi({ istemci, evren }: { istemci: Istemci; evren: str
   const z = useTakvim(istemci, evren);
   const [acik, setAcik] = useState<string | null>(null);
   const [akisAcik, setAkisAcik] = useState<string | null>(null);
-  const capYazisi = (p: ParalelTakvim) => p.cap ? `${p.ad} ${p.cap.yil}, ana takvimde ${p.cap.ana} ile başlar` : 'Ana takvimle eşlemesi bilinmiyor; tarihleri sıralamaya giremez';
+  const capYazisi = (p: ParalelTakvim) => p.cap ? `${p.ad} ${p.cap.yil}, ana takvimde ${p.cap.ana} ile başlar` : 'Ana takvimle eşlemesi bilinmediği için tarihleri sıralamaya giremez';
   return (
     <div class="takvim-editoru">
       <h2>Ana takvim</h2>
       <TakvimDuzenleyici istemci={istemci} evren={evren} z={z} takvim={z.ana} paralel={false} />
 
       <h2>Paralel takvimler</h2>
-      <p class="soluk kucuk">Bir kültürün, kurumun ya da boyutun kendi takvimi. Tarihi onun yıl sözüyle yazarsın (“Döngü 12”); ana takvimle eşlemesi biliniyorsa ana sıraya yerleşir ve her tarihin öbür takvimlerdeki karşılığı da gösterilir. Eşleme bilinmiyorsa kesin dönüşüm uydurulmaz.</p>
+      <p class="soluk kucuk">Bir kültürün, kurumun ya da boyutun kendi takvimi. Tarihi o takvimin yıl sözüyle yazarsınız (“Döngü 12”). Ana takvimle eşlemesi biliniyorsa tarih ana sıraya yerleşir ve her tarihin öbür takvimlerdeki karşılığı da gösterilir. Eşleme bilinmiyorsa kesin bir dönüşüm yapılmaz.</p>
       <ul class="takvim-listesi">
         {z.diger.map((p) => (
           <li key={p.kod}>
@@ -67,12 +67,12 @@ export function TakvimSekmesi({ istemci, evren }: { istemci: Istemci; evren: str
         : <button class="dugme" onClick={() => setAcik('yeni')}>Paralel takvim ekle</button>}
 
       <h2>Zaman akışları</h2>
-      <p class="soluk kucuk">Zamanın kendi hızıyla aktığı yerler: bir peri boyutu, rüya alemi, bir lanetin içi. Akıştaki tarihi akışın adıyla yazarsın (“Fey 30. gün”, “Fey 2. yıl”); oranla ana akışa çevrilir. Oran aralıksa sonuç da aralıktır; oran bilinmiyorsa yalnızca önce–sonra bilinir.</p>
+      <p class="soluk kucuk">Zamanın kendi hızıyla aktığı yerler: bir peri boyutu, rüya âlemi, bir lanetin içi. Akıştaki bir tarihi akışın adıyla yazarsınız (“Fey 30. gün”, “Fey 2. yıl”). Tarih, yazdığınız oranla ana akışa çevrilir. Oran bir aralıksa sonuç da aralık olur. Oran bilinmiyorsa yalnızca neyin önce, neyin sonra olduğu bilinir.</p>
       <ul class="takvim-listesi">
         {z.akislar.map((a) => (
           <li key={a.kod}>
             <div class="satir">
-              <strong>{a.ad}</strong><span class="soluk kucuk">{a.cap} başlangıçlı · {a.oranlar.map(oranYazisi).join('; ')}</span><span class="bosluk" />
+              <strong>{a.ad}</strong><span class="soluk kucuk">başlangıç: {a.cap} · {a.oranlar.map(oranYazisi).join('; ')}</span><span class="bosluk" />
               <button class="dugme sade kucuk" onClick={() => setAkisAcik(akisAcik === a.kod ? null : a.kod)}>{akisAcik === a.kod ? 'Kapat' : 'Düzenle'}</button>
             </div>
             {akisAcik === a.kod && <div class="kart"><AkisDuzenleyici istemci={istemci} evren={evren} z={z} akis={a} kapat={() => setAkisAcik(null)} /></div>}
@@ -86,7 +86,7 @@ export function TakvimSekmesi({ istemci, evren }: { istemci: Istemci; evren: str
   );
 }
 
-const oranYazisi = (o: Akis['oranlar'][number]) => `${o.bas ? `${o.bas}'dan itibaren ` : ''}${o.ana ? `${o.akis} gün = ana akışta ${o.ana[0] === o.ana[1] ? o.ana[0] : `${o.ana[0]}–${o.ana[1]}`} gün` : 'oran bilinmiyor'}`;
+const oranYazisi = (o: Akis['oranlar'][number]) => `${o.bas ? `${o.bas} tarihinden itibaren ` : ''}${o.ana ? `${o.akis} gün = ana akışta ${o.ana[0] === o.ana[1] ? o.ana[0] : `${o.ana[0]}–${o.ana[1]}`} gün` : 'oran bilinmiyor'}`;
 
 // ---------- Takvim düzenleyici (ana ya da paralel) ----------
 type Taslak = Takvim & { cap?: { yil: number; ana: string } | null; bagli?: string | null };
@@ -166,8 +166,8 @@ function TakvimDuzenleyici({ istemci, evren, z, takvim, paralel, yeni = false, k
 
   return (
     <div>
-      {!paralel && <p class="soluk kucuk">Tarihleri bu takvimle yazarsın. Takvimi sonradan değiştirmek yazdığın tarihleri silmez: yazılışları aynı kalır, evrendeki yerleri yeni takvime göre yeniden hesaplanır.
-        {!ozelMi(takvim) && ' Şu an varsayılan takvim kullanılıyor: yalnızca yıl, yılda 365 gün.'}</p>}
+      {!paralel && <p class="soluk kucuk">Tarihleri bu takvimle yazarsınız. Takvimi sonradan değiştirirseniz yazdığınız tarihler silinmez. Yazılışları aynı kalır, evrendeki yerleri yeni takvime göre yeniden hesaplanır.
+        {!ozelMi(takvim) && ' Şu an varsayılan takvim kullanılıyor: ay yok, bir yıl 365 gün.'}</p>}
 
       <div class="alanlar">
         <label class="alan"><span class="alan-adi">Yıl için kullanılan söz</span>
@@ -191,14 +191,14 @@ function TakvimDuzenleyici({ istemci, evren, z, takvim, paralel, yeni = false, k
               onInput={(e) => guncelle((t) => { t.cap!.ana = (e.target as HTMLInputElement).value; })} />
           </div>
         )}
-        {taslak.cap && <p class="soluk kucuk">{capOnizleme ? `${tarihAciklamasi(capOnizleme, z.ana)}. Yalnızca yılı yazarsan dönüşüm bir yıl genişliğinde aralık verir.` : 'Ana takvimde bir tarih yaz.'}</p>}
+        {taslak.cap && <p class="soluk kucuk">{capOnizleme ? `${tarihAciklamasi(capOnizleme, z.ana)}. Yalnızca yılı yazarsanız dönüşüm bir yıllık bir aralık verir.` : 'Ana takvimde bir tarih yazın.'}</p>}
         <div class="satir"><span class="soluk kucuk">Bağlı olduğu kayıt (isteğe bağlı):</span>
           <KayitSec istemci={istemci} evren={evren} secili={bagli} sec={(s) => { setBagli(s); setEtki(null); setKaydedildi(false); }} etiket="Kültür, kurum ya da boyut seç" />
           {bagli && <button class="dugme sade kucuk" onClick={() => setBagli(null)}>Bağı kaldır</button>}</div>
       </>}
 
       <h3>Aylar</h3>
-      {!taslak.aylar!.length && <p class="soluk kucuk">Ay tanımlanmadı. Ay eklersen yılın uzunluğu ayların toplamı olur.</p>}
+      {!taslak.aylar!.length && <p class="soluk kucuk">Ay tanımlanmadı. Ay eklerseniz yılın uzunluğu ayların toplamı olur.</p>}
       <ul class="takvim-listesi">
         {taslak.aylar!.map((a, i) => (
           <li class="satir" key={i}>
@@ -213,12 +213,12 @@ function TakvimDuzenleyici({ istemci, evren, z, takvim, paralel, yeni = false, k
         ))}
       </ul>
       <button class="dugme" onClick={() => guncelle((t) => { t.aylar!.push({ ad: '', gun: 30 }); })}>Ay ekle</button>
-      {taslak.aylar!.length > 0 && <p class="soluk kucuk">Yıl {yilGunu(hedef)} gün.</p>}
+      {taslak.aylar!.length > 0 && <p class="soluk kucuk">Bir yıl {yilGunu(hedef)} gün.</p>}
 
       <h3>Gün bölümleri</h3>
       <label class="alan genis"><span class="alan-adi">Virgülle ayırarak, günün başından sonuna doğru</span>
         <input class="girdi" lang="tr" value={bolumYazi} placeholder="Örn. sabah, öğle, akşam, gece" onInput={(e) => { setBolumYazi((e.target as HTMLInputElement).value); setEtki(null); setKaydedildi(false); }} />
-        <span class="soluk kucuk">Gün eşit parçalara bölünür. “12 Hasat 412 öğle” gibi yazılır; gün bölümü yalnızca günü belli tarihe eklenir.</span></label>
+        <span class="soluk kucuk">Gün eşit parçalara bölünür. Tarih “12 Hasat 412 öğle” gibi yazılır. Gün bölümü yalnızca günü belli olan tarihlere eklenebilir.</span></label>
 
       {taslak.aylar!.length > 0 && <>
         <h3>Mevsimler</h3>
@@ -240,11 +240,11 @@ function TakvimDuzenleyici({ istemci, evren, z, takvim, paralel, yeni = false, k
           ))}
         </ul>
         <button class="dugme" onClick={() => guncelle((t) => { t.mevsimler!.push({ ad: '', ilkAy: 0, sonAy: 0 }); })}>Mevsim ekle</button>
-        <p class="soluk kucuk">Son ayı ilk aydan önce gelen mevsim yılın sonundan ertesi yıla taşar.</p>
+        <p class="soluk kucuk">Son ayı ilk ayından önce gelen bir mevsim, yıl sonunu aşıp ertesi yıla uzanır.</p>
       </>}
 
       <h3>Çağlar</h3>
-      <p class="soluk kucuk">Çağ, yılların adlandırılmış bir bölümüdür: “İkinci Çağ 12” diye yazarsın. Her çağ için ilk yılının düz sayımdaki karşılığını gir. Geriye sayan çağ (“Kuruluş öncesi 30”) o yıldan geriye doğru sayılır ve öbür çağlardan önce gelir; en çok bir tane olabilir.</p>
+      <p class="soluk kucuk">Çağ, yılların adlandırılmış bir bölümüdür. Tarihi “İkinci Çağ 12” diye yazarsınız. Her çağ için ilk yılının düz sayımdaki karşılığını girin. Geriye sayan çağ (“Kuruluş öncesi 30”) o yıldan geriye doğru sayılır ve öbür çağlardan önce gelir. Geriye sayan en çok bir çağ olabilir.</p>
       {!taslak.caglar!.length && <p class="soluk kucuk">Çağ tanımlanmadı.</p>}
       <ul class="takvim-listesi">
         {taslak.caglar!.map((c, i) => (
@@ -260,12 +260,12 @@ function TakvimDuzenleyici({ istemci, evren, z, takvim, paralel, yeni = false, k
       <button class="dugme" onClick={() => guncelle((t) => { t.caglar!.push({ ad: '', baslangic: (t.caglar!.filter((x) => !x.ters).reduce((a, x) => Math.max(a, x.baslangic), 0) || 0) + 1 }); })}>Çağ ekle</button>
 
       <h3>Dene</h3>
-      <label class="alan genis"><span class="alan-adi">Bir tarih yaz, bu takvimle nasıl okunduğunu gör</span>
+      <label class="alan genis"><span class="alan-adi">Bir tarih yazın, bu takvimle nasıl okunduğunu görün</span>
         <input class="girdi" lang="tr" value={deneme} placeholder={paralel ? `Örn. ${hedef.ad || 'Döngü'} 12` : takvimOrnegi(hedef)} onInput={(e) => setDeneme((e.target as HTMLInputElement).value)} />
         <span class="soluk kucuk">{denemeSonucu ? tarihAciklamasi(denemeSonucu, deneSet) : ' '}</span>
         {denemeSonucu && paralelYazilar(denemeSonucu, deneSet).map((p) => <span class="soluk kucuk">{p.takvim}: {p.yazi}</span>)}</label>
 
-      {!gecerli && <p class="hata kucuk">{paralel && !hedef.ad ? 'Yıl için kullanılan sözü yaz. ' : ''}Her ayın, gün bölümünün, mevsimin ve çağın bir adı olmalı; adlar birbirini tekrar etmemeli ve sayı içermemeli. Gün sayıları 1 ya da daha büyük olmalı. Geriye sayan çağ öbür çağlardan önce başlamalı.</p>}
+      {!gecerli && <p class="hata kucuk">{paralel && !hedef.ad ? 'Yıl için kullanılan sözü yazın. ' : ''}Her ayın, gün bölümünün, mevsimin ve çağın bir adı olmalı. Adlar birbirini tekrar etmemeli ve sayı içermemeli. Gün sayıları 1 ya da daha büyük olmalı. Geriye sayan çağ öbür çağlardan önce başlamalı.</p>}
       {hata && <p class="hata kucuk">{hata}</p>}
 
       {etki ? <TakvimEtkiPaneli evren={evren} etki={etki.e} onOnay={() => yaz(etki.hedef)} onVazgec={() => setEtki(null)} />
@@ -274,7 +274,7 @@ function TakvimDuzenleyici({ istemci, evren, z, takvim, paralel, yeni = false, k
             <button class="dugme ana" disabled={!gecerli || ayni} onClick={() => onizle(hedef)}>{yeni ? 'Takvimi ekle' : 'Kaydet'}</button>
             {!paralel && ozelMi(takvim) && <button class="dugme" onClick={() => onizle(null)}>Varsayılan takvime dön</button>}
             {paralel && !yeni && <button class="dugme tehlikeli" onClick={() => onizle(null)}>Takvimi kaldır</button>}
-            {!ayni && !yeni && <button class="dugme sade" onClick={() => { setTaslak(kopya(takvim)); setBolumYazi((takvim.gunBolumleri ?? []).join(', ')); }}>Değişiklikleri bırak</button>}
+            {!ayni && !yeni && <button class="dugme sade" onClick={() => { setTaslak(kopya(takvim)); setBolumYazi((takvim.gunBolumleri ?? []).join(', ')); }}>Değişikliklerden vazgeç</button>}
             {yeni && <button class="dugme sade" onClick={kapat}>Vazgeç</button>}
             {kaydedildi && ayni && <span class="soluk kucuk" role="status">Kaydedildi.</span>}
           </div>
@@ -327,12 +327,12 @@ function AkisDuzenleyici({ istemci, evren, z, akis, kapat }: { istemci: Istemci;
         <KayitSec istemci={istemci} evren={evren} secili={bagli} sec={(s) => { setBagli(s); setEtki(null); }} etiket="Mekân ya da boyut seç" />
         {bagli && <button class="dugme sade kucuk" onClick={() => setBagli(null)}>Bağı kaldır</button>}</div>
       <h3>Oran</h3>
-      <p class="soluk kucuk">Akışta geçen gün ile ana akışta geçen gün. Ana akıştaki gün bir aralık olabilir (“1–2 gün”). Oran zamanla değiştiyse yeni bir dönem ekleyip başladığı tarihi yaz.</p>
+      <p class="soluk kucuk">Akışta geçen günlerin ana akışta kaç güne denk geldiği. Ana akıştaki gün sayısı bir aralık olabilir (“1–2 gün”). Oran zamanla değiştiyse yeni bir dönem ekleyip başladığı tarihi yazın.</p>
       <ul class="takvim-listesi">
         {oranlar.map((o, i) => (
           <li class="satir" key={i}>
             {i === 0 ? <span class="soluk kucuk">Akışın başından</span>
-              : <input class="girdi" style="min-width:120px" lang="tr" aria-label={`${i + 1}. dönemin başladığı tarih`} value={o.bas} placeholder="itibaren (ana takvimde)" onInput={(e) => degis(i, (x) => { x.bas = (e.target as HTMLInputElement).value; })} />}
+              : <input class="girdi" style="min-width:120px" lang="tr" aria-label={`${i + 1}. dönemin başladığı tarih`} value={o.bas} placeholder="Başlangıç (ana takvimde)" onInput={(e) => degis(i, (x) => { x.bas = (e.target as HTMLInputElement).value; })} />}
             <span class="soluk kucuk">akışta</span>
             <input class="girdi" style="width:80px" type="number" min={0} aria-label="Akışta geçen gün" value={o.akis} onInput={(e) => degis(i, (x) => { x.akis = (e.target as HTMLInputElement).value; })} />
             <span class="soluk kucuk">gün =</span>
@@ -349,7 +349,7 @@ function AkisDuzenleyici({ istemci, evren, z, akis, kapat }: { istemci: Istemci;
       </ul>
       <button class="dugme" onClick={() => setOranlar([...oranlar, { bas: '', akis: '1', ana1: '1', ana2: '', bilinmiyor: false }])}>Dönem ekle</button>
       <h3>Dene</h3>
-      <label class="alan genis"><span class="alan-adi">Akışta bir tarih yaz</span>
+      <label class="alan genis"><span class="alan-adi">Akışta bir tarih yazın</span>
         <input class="girdi" lang="tr" value={deneme} placeholder={`Örn. ${ad.trim() || 'Fey'} 30. gün`} onInput={(e) => setDeneme((e.target as HTMLInputElement).value)} />
         <span class="soluk kucuk">{denemeSonucu ? tarihAciklamasi(denemeSonucu, deneSet) : ' '}</span></label>
       {hata && <p class="hata kucuk">{hata}</p>}
@@ -369,8 +369,8 @@ function TakvimEtkiPaneli({ evren, etki, onOnay, onVazgec }: { evren: string; et
   return (
     <div class="uyari takvim-etkisi" role="region" aria-label="Takvim değişikliğinin etkisi">
       <p><strong>{etki.toplam} tarihten {etki.degisenSayisi} tanesinin okunuşu ya da sıradaki yeri değişecek.</strong> Yazılışları aynı kalır.</p>
-      {etki.cozulemezSayisi > 0 && <p class="hata kucuk">{etki.cozulemezSayisi} tarih yeni tanıma çevrilemeyecek (örneğin artık olmayan bir ay, gün ya da takvim). Bu tarihler silinmez; sıralamadaki yerleri belirsiz olur ve tanımı düzeltince geri gelir.</p>}
-      {etki.goreliSayisi > 0 && <p class="kucuk">{etki.goreliSayisi} tarih bir olaya göre verilmiş (“Tufan'dan 80 yıl sonra”). Yazılışları değişmez; olası yerleri dayandıkları tarihlerden yeniden hesaplanır.</p>}
+      {etki.cozulemezSayisi > 0 && <p class="hata kucuk">{etki.cozulemezSayisi} tarih yeni tanıma çevrilemeyecek (örneğin artık olmayan bir ay, gün ya da takvim). Bu tarihler silinmez. Sıralamadaki yerleri belirsiz kalır, tanımı düzelttiğinizde geri gelir.</p>}
+      {etki.goreliSayisi > 0 && <p class="kucuk">{etki.goreliSayisi} tarih bir olaya göre verilmiş (“Tufan'dan 80 yıl sonra”). Yazılışları değişmez, olası yerleri dayandıkları tarihlerden yeniden hesaplanır.</p>}
       <ul class="etki-listesi">
         {etki.degisen.map((d) => (
           <li class={d.cozulemez ? 'cozulemez' : ''}>
@@ -469,7 +469,7 @@ export function ZamanCizelgesi({ istemci, evren }: { istemci: Istemci; evren: st
         <BakisSecici istemci={istemci} evren={evren} bakis={bakis} sec={setBakis} />
       </div>
       <BakisAciklamasi bakis={bakis} />
-      {!ogeler.length && <p class="soluk">Henüz evren tarihi verilmiş kayıt yok. Bir kaydın sayfasında “Evren tarihi” alanına yazabilirsin.</p>}
+      {!ogeler.length && <p class="soluk">Henüz evren tarihi verilmiş kayıt yok. Bir kaydın sayfasında “Evren tarihi” alanına yazabilirsiniz.</p>}
       {ogeler.length > 0 && !suzulmus.length && <p class="soluk">Bu süzgece uyan kayıt yok.</p>}
       {yerlesen.length > 0 && (
         <ol class="cizelge-listesi" aria-label="Zaman çizelgesi">
@@ -487,7 +487,7 @@ export function ZamanCizelgesi({ istemci, evren }: { istemci: Istemci; evren: st
       {yerlesmeyen.length > 0 && (
         <section>
           <h2>Sıralamaya yerleşmeyenler</h2>
-          <p class="soluk kucuk">Bu tarihler takvime çevrilemedi, bilinmiyor, ana takvimle eşlemesi olmayan bir takvimde yazıldı ya da kısıtları çelişiyor; yazdığın hâliyle duruyorlar.</p>
+          <p class="soluk kucuk">Bu tarihler takvime çevrilemedi, bilinmiyor, ana takvimle eşlemesi olmayan bir takvimde yazıldı ya da kısıtları birbiriyle çelişiyor. Yazdığınız hâliyle saklanıyorlar.</p>
           <ul>
             {yerlesmeyen.map((o) => <li key={o.kod}><a class="satir-ad" href={`#/e/${evren}/k/${o.kod}`}>{o.ad}</a> <span class="soluk kucuk">{turBul(o.tur).ad} · {o.tarih.bicim === 'bilinmiyor' ? 'bilinmiyor' : `“${o.tarih.ifade}” · ${tarihAciklamasi(o.tarih, z)}`}</span> <KararRozeti karar={o.karar} /></li>)}
           </ul>

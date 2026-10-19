@@ -130,12 +130,12 @@ export function formulOku(yazi: string, c: FormulCozucu): Formul {
     if (!kodlar.size) throw new FormulHatasi(`“${x.s}” adlı bir alan hiçbir şablonda yok.`, x.k, x.n);
     if (kodlar.size > 1) throw new FormulHatasi(`“${ad}” adını taşıyan birden çok alan var (${l.map((y) => y.turAdi).join(', ')}). Hangisi olduğunu {${ad} (${l[0].turAdi})} biçiminde yazın.`, x.k, x.n);
     const turler = new Set(l.map((y) => `${y.tur}|${y.birim ?? ''}`));
-    if (turler.size > 1) throw new FormulHatasi(`“${ad}” alanı şablonlarda farklı türlerle tanımlı; formülde kullanılamaz.`, x.k, x.n);
+    if (turler.size > 1) throw new FormulHatasi(`“${ad}” alanı şablonlarda farklı türlerle tanımlı, bu yüzden formülde kullanılamaz.`, x.k, x.n);
     return l[0];
   };
 
   const veya = (d: number): Dugum => {
-    if (d > EN_DERIN) throw new FormulHatasi('Formül çok iç içe.', j[i]?.k ?? 0);
+    if (d > EN_DERIN) throw new FormulHatasi('Formülde çok fazla iç içe parantez var.', j[i]?.k ?? 0);
     const l = [ve(d)];
     while (kk(j[i]) === 'veya') { i++; l.push(ve(d)); }
     return l.length > 1 ? { t: 'veya', l } : l[0];
@@ -196,9 +196,9 @@ export function formulOku(yazi: string, c: FormulCozucu): Formul {
       i++;
       const a = alanCoz(x);
       const op = j[i]?.t === 'op' ? (j[i++] as Extract<Jeton, { t: 'op' }>) : null;
-      if (a.tur === 'metin' || a.tur === 'uzun') throw new FormulHatasi('Metin alanları formülde kullanılamaz; program yazıdan anlam çıkarmaz.', x.k, x.n);
+      if (a.tur === 'metin' || a.tur === 'uzun') throw new FormulHatasi('Metin alanları formülde kullanılamaz, çünkü program yazıdan anlam çıkarmaz.', x.k, x.n);
       if (a.tur === 'onay') {
-        if (op) throw new FormulHatasi('Evet / hayır alanı karşılaştırılmaz; yalnızca adını yazın.', op.k, op.n);
+        if (op) throw new FormulHatasi('Evet / hayır alanı karşılaştırılmaz, yalnızca adını yazın.', op.k, op.n);
         return { t: 'onay', alan: a.kod };
       }
       if (!op) return bekle('bir karşılaştırma (=, !=, <, >, <=, >=)');

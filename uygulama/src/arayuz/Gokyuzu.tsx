@@ -21,7 +21,7 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
   const kirliRef = useRef(false), sira = useRef(0);
   const [hata, setHata] = useState<string | null>(null);
   const [tarihHatasi, setTarihHatasi] = useState<string | null>(null);
-  const [durum, setDurum] = useState('Henüz çalıştırılmadı.');
+  const [durum, setDurum] = useState('Henüz hesaplanmadı.');
   const [bekliyor, setBekliyor] = useState(false);
   const [tarih, setTarih] = useState('');
   const [bas, setBas] = useState(''), [son, setSon] = useState('');
@@ -31,7 +31,7 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
   const [c, setC] = useState<GokyuzuCakismalari | null>(null);
   const [kiyi, setKiyi] = useState<Secim | null>(null), [not, setNot] = useState(''), [saat, setSaat] = useState('12');
   const [kiyilar, setKiyilar] = useState<Record<string, string>>({});
-  const temizle = () => { sira.current++; setO(null); setC(null); setBekliyor(false); setDurum('Henüz çalıştırılmadı.'); setHata(null); setTarihHatasi(null); };
+  const temizle = () => { sira.current++; setO(null); setC(null); setBekliyor(false); setDurum('Henüz hesaplanmadı.'); setHata(null); setTarihHatasi(null); };
   useEffect(() => {
     let etkin = true;
     temizle();
@@ -54,14 +54,14 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
         if (n === sira.current) { setC(x); setDurum(`Güncel · ${x.zarf.hukum}`); }
       } else {
         const x = await istemci.iste('gokyuzuHesapla', { evren, tarih });
-        if (n === sira.current) { setO(x); setDurum('Güncel · çözüm bulundu'); }
+        if (n === sira.current) { setO(x); setDurum('Güncel · hesaplandı'); }
       }
     } catch (e) {
       if (n === sira.current) {
         const ileti = (e as Error).message;
         if (arama) setHata(ileti);
         else setTarihHatasi(ileti);
-        setDurum('Denetlenemiyor.');
+        setDurum('Hesaplanamadı.');
       }
     }
     finally { if (n === sira.current) setBekliyor(false); }
@@ -74,7 +74,7 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
   };
   return <section aria-label="Gökyüzü">
     <h2>Gökyüzü</h2><p class="soluk">{SINIRLAR}</p>
-    <p>Hesap ana zaman akışında, kaydedilmiş tanımla yapılır. Tarihleri Takvim bölümündeki adlarla yazın. Ay başlangıcı için günü bilinen bir tarih gerekir; örneğin “12 Hasat 412”.</p>
+    <p>Hesap, ana zaman akışında kaydedilmiş tanıma göre yapılır. Tarihleri Takvim bölümündeki adlarla yazın. Ayın başlangıcı için günü belli bir tarih gerekir, örneğin “12 Hasat 412”.</p>
     {!yuklendi ? <p>Açılıyor…</p> : <>
       <fieldset disabled={bekliyor}><legend>Gökyüzü tanımı</legend>
         {t.aylar.map((a, i) => {
@@ -88,7 +88,7 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
           </div></fieldset>;
         })}
         <button class="dugme" onClick={() => degis({ ...t, aylar: [...t.aylar, { kod: yeniKod(), ad: '', donem: 28, baslangic: '', evre: 'yeni' }] })}>Ay ekle</button>
-        <h3>Mevsimler (isteğe bağlı)</h3><p>Başlangıç günü ana takvimin yılındaki sıradır; ilk gün 1'dir. İlk başlangıçtan önce geçen yılın son mevsimi sürer.</p>
+        <h3>Mevsimler (isteğe bağlı)</h3><p>Başlangıç günü, mevsimin ana takvimde yılın kaçıncı gününde başladığını gösterir; yılın ilk günü 1'dir. Yılın ilk mevsimi başlayana kadar önceki yılın son mevsimi sürer.</p>
         {t.mevsimler.map((m, i) => <div class="satir" key={i}>
           <label>Mevsimin adı <input class="girdi" value={m.ad} onInput={(e) => degis({ ...t, mevsimler: t.mevsimler.map((x, j) => j === i ? { ...x, ad: e.currentTarget.value } : x) })} /></label>
           <label>Yıl içindeki başlangıç günü <input class="girdi" type="number" min="1" step="1" value={m.baslangicGunu} onInput={(e) => degis({ ...t, mevsimler: t.mevsimler.map((x, j) => j === i ? { ...x, baslangicGunu: e.currentTarget.valueAsNumber } : x) })} /></label>
@@ -96,10 +96,10 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
         </div>)}
         <button class="dugme" onClick={() => degis({ ...t, mevsimler: [...t.mevsimler, { ad: '', baslangicGunu: 1 }] })}>Mevsim ekle</button>
         <h3>Gelgit notları (isteğe bağlı)</h3>
-        <ul>{t.gelgitler.map((g, i) => <li key={i}><a href={`#/e/${evren}/k/${g.kiyi}`}>{kiyilar[g.kiyi] ?? 'Kıyı kaydı'}</a>: {g.not} · her {g.saat} saatte <button class="dugme" onClick={() => degis({ ...t, gelgitler: t.gelgitler.filter((_, j) => j !== i) })}>Notu kaldır</button></li>)}</ul>
+        <ul>{t.gelgitler.map((g, i) => <li key={i}><a href={`#/e/${evren}/k/${g.kiyi}`}>{kiyilar[g.kiyi] ?? 'Kıyı kaydı'}</a>: {g.not} · {g.saat} saatte bir <button class="dugme" onClick={() => degis({ ...t, gelgitler: t.gelgitler.filter((_, j) => j !== i) })}>Notu kaldır</button></li>)}</ul>
         <div class="satir"><KayitSec istemci={istemci} evren={evren} secili={kiyi} sec={setKiyi} etiket="Kıyı kaydını seç" />
           <label>Kıyı notu <textarea class="girdi" value={not} onInput={(e) => setNot(e.currentTarget.value)} /></label>
-          <label>Her kaç saatte <input class="girdi" type="number" min="0" step="any" value={saat} onInput={(e) => setSaat(e.currentTarget.value)} /></label>
+          <label>Kaç saatte bir <input class="girdi" type="number" min="0" step="any" value={saat} onInput={(e) => setSaat(e.currentTarget.value)} /></label>
           <button class="dugme" disabled={!kiyi || !not.trim()} onClick={() => { if (kiyi) { degis({ ...t, gelgitler: [...t.gelgitler, { kiyi: kiyi.kod, not, saat: Number(saat) }] }); setNot(''); } }}>Kıyı notu ekle</button>
         </div>
         <p><button class="dugme ana" onClick={() => void kaydet()} disabled={!kirli}>Tanımı kaydet</button></p>
@@ -113,7 +113,7 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
         {tarihHatasi && <p id="gokyuzu-tarih-hatasi" class="hata" role="alert">{tarihHatasi}</p>}
       </fieldset>
       <fieldset disabled={kirli || bekliyor}><legend>Çakışma ara</legend>
-        <p>Seçilen koşulların tamamı aynı gün sağlanmalıdır. Aralıkta başlangıcın en erken, bitişin en geç günü kullanılır.</p>
+        <p>Seçtiğiniz koşulların hepsinin aynı gün gerçekleştiği günler aranır. Başlangıç ya da bitiş bir aralıksa başlangıç için en erken, bitiş için en geç gün alınır.</p>
         <form onSubmit={(e) => { e.preventDefault(); void calistir(true); }}>
           <div class="satir"><label>Arama başlangıcı <input class="girdi" value={bas} onInput={(e) => { temizle(); setBas(e.currentTarget.value); }} /></label><label>Arama bitişi <input class="girdi" value={son} onInput={(e) => { temizle(); setSon(e.currentTarget.value); }} /></label></div>
           {t.aylar.map((a) => <label key={a.kod}>{a.ad} <select class="girdi" aria-label={`${a.ad} için aranacak evre`} value={kosullar[a.kod] ?? ''} onChange={(e) => { temizle(); setKosullar({ ...kosullar, [a.kod]: e.currentTarget.value as AyEvresi | '' }); }}><option value="">Koşul yok</option>{EVRELER.map((x) => <option value={x.kod}>{x.ad}</option>)}</select></label>)}
@@ -123,7 +123,7 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
       </fieldset>
     </>}
     <p role="status">{durum}</p>{hata && <p class="hata" role="alert">{hata}</p>}
-    {o && <div><h3>{o.tarih.ifade}</h3><p>{o.aralik ? 'Bu aralıkta şu evreler görülür; belirli bir gün seçilmedi.' : 'Bu günün evreleri:'}</p><ul>{o.aylar.map((a) => <li key={a.kod}>{a.ad}: {a.evreler.map(ad).join(', ')}</li>)}</ul><p>Mevsim: {o.mevsimler.join(', ') || 'Tanımlanmamış'}</p><Dayanak zarf={o.zarf} /></div>}
-    {c && <div><h3>Çakışan günler</h3><ul>{c.gunler.map((g) => <li key={g.eksen!.enErken!}>{g.ifade}</li>)}</ul>{!c.gunler.length && <p>Kayıtlı koşullarda bu aralıkta bulunamadı.</p>}{c.dahaFazla && <p>Daha fazlası var. İlk 50 gün gösteriliyor.</p>}<Dayanak zarf={c.zarf} /></div>}
+    {o && <div><h3>{o.tarih.ifade}</h3><p>{o.aralik ? 'Tarih belirli bir gün değil. Bu aralıkta görülen evreler:' : 'Bu günün evreleri:'}</p><ul>{o.aylar.map((a) => <li key={a.kod}>{a.ad}: {a.evreler.map(ad).join(', ')}</li>)}</ul><p>Mevsim: {o.mevsimler.join(', ') || 'tanımlanmamış'}</p><Dayanak zarf={o.zarf} /></div>}
+    {c && <div><h3>Çakışan günler</h3><ul>{c.gunler.map((g) => <li key={g.eksen!.enErken!}>{g.ifade}</li>)}</ul>{!c.gunler.length && <p>Bu aralıkta koşulların hepsine uyan bir gün bulunamadı.</p>}{c.dahaFazla && <p>Daha fazlası var. İlk 50 gün gösteriliyor.</p>}<Dayanak zarf={c.zarf} /></div>}
   </section>;
 }

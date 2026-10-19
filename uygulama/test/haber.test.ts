@@ -84,7 +84,7 @@ describe('haber yayılımı (§15-3)', () => {
     expect(gun[y]).toBe(3);
     expect(s.suresiz.map((x) => x.kod)).toEqual([d]);
     expect(s.ulasilan.find((u) => u.yer.kod === y)!.yol).toEqual(['Atlı ulak (Kıyı yolu)', 'Atlı ulak (Geçit)', 'İşaret kulesi']);
-    expect(s.not).toMatch(/biliyor demek değildir/);
+    expect(s.not).toMatch(/bildiği demek değil/);
     // Yalnızca kule seçilirse çıkış yerinden ağ kurulamaz.
     h.haberCikisiYaz({ evren, kod: haber, yer: c, tarih: '', kanallar: [kule] });
     const k = h.haberYayilimi({ evren, kod: haber });

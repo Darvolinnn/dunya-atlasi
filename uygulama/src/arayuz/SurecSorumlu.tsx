@@ -65,7 +65,7 @@ export function SurecSorumluBolumu({ istemci, evren, olay, surum }: { istemci: I
                       istemci={istemci}
                       evren={evren}
                       secili={null}
-                      etiket="Sorumlu seç (kişi / makam)"
+                      etiket="Sorumlu seç (kişi ya da makam)"
                       sec={(secim) => {
                         if (secim) void isle(istemci.iste('surecAdimSorumlusuYaz', { evren, olay, kural: s.kural, adim: a.kod, sorumlu: secim.kod }));
                       }}
@@ -219,7 +219,7 @@ function EngelSatirGorunumu({
         type="button"
         class="dugme sade kucuk"
         aria-label={`${satir.kayit.ad}: listeden kaldır`}
-        onClick={() => onayla('Bu satır kaldırılsın mı?') && isle(istemci.iste('surecEngelSil', { evren, olay, kural, tur, kod: satir.kod }))}
+        onClick={() => onayla('Bu kayıt listeden kaldırılsın mı?') && isle(istemci.iste('surecEngelSil', { evren, olay, kural, tur, kod: satir.kod }))}
       >
         Kaldır
       </button>

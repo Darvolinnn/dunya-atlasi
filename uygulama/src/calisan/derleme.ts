@@ -33,7 +33,7 @@ export function derlemeler(e: EvrenVt, tur: DerlemeTuru): DerlemeOzeti[] {
 
 function bul(e: EvrenVt, kod: unknown) {
   const r = typeof kod === 'string' && kodGecerliMi(kod) ? e.db.selectObject('SELECT * FROM derlemeler WHERE kod=? AND silindi IS NULL', [kod]) : undefined;
-  if (!r) throw new Error('Bulunamadı; silinmiş olabilir.');
+  if (!r) throw new Error('Bulunamadı, silinmiş olabilir.');
   return r;
 }
 
@@ -53,7 +53,7 @@ export function derleme(e: EvrenVt, kod: string): Derleme {
 export function derlemeOlustur(b: DerlemeBaglami, tur: DerlemeTuru, ad: string) {
   if (!TURLER.includes(tur)) throw new Error('Geçersiz tür.');
   const a = temiz(ad, 120);
-  if (!a) throw new Error('Ad boş olamaz.');
+  if (!a) throw new Error('Bir ad yazın.');
   const kod = yeniKod();
   b.yaz([{ tur: 'derleme_yaz', veri: { kod, derlemeTuru: tur, alan: 'ad', deger: a, derlemeAd: a } }], []);
   return { kod };
@@ -62,7 +62,7 @@ export function derlemeOlustur(b: DerlemeBaglami, tur: DerlemeTuru, ad: string) 
 export function derlemeAdYaz(b: DerlemeBaglami, kod: string, ad: string) {
   const r = bul(b.e, kod);
   const a = temiz(ad, 120);
-  if (!a) throw new Error('Ad boş olamaz.');
+  if (!a) throw new Error('Bir ad yazın.');
   if (a === r.ad) return;
   b.yaz([{ tur: 'derleme_yaz', veri: { kod, derlemeTuru: r.tur, alan: 'ad', deger: a, derlemeAd: r.ad } }], []);
 }

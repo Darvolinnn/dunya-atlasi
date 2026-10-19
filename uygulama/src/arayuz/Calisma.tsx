@@ -18,9 +18,10 @@ import { Gorsel } from './gorsel';
 import { MetinGorunumu } from './MetinEditoru';
 import { git } from './Uygulama';
 import { ANA_SAYFALAR, DIGER_SAYFALAR, GORUNUMLER } from './Kabuk';
+import { HesapPenceresi, type HesapTuru } from './Hesaplar';
 import type { YasananSure } from '../veri/api';
 
-export interface PaletBaglami { bagla?: () => void }
+export interface PaletBaglami { bagla?: () => void; hesap?: (h: HesapTuru) => void }
 
 export interface CalismaDenetimi {
   evren: string | null;
@@ -56,6 +57,7 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
   const [aktif, setAktif] = useState<string | null>(null);
   const [kart, setKart] = useState<{ kod: string; yer: DOMRect } | null>(null);
   const [palet, setPalet] = useState<PaletBaglami | null>(null);
+  const [hesap, setHesap] = useState<HesapTuru | null>(null);
   const [kucuk, setKucuk] = useState(() => { try { return localStorage.getItem(panelAnahtari) === '1'; } catch { return false; } });
   const kucult = (v: boolean) => { setKucuk(v); try { localStorage.setItem(panelAnahtari, v ? '1' : '0'); } catch { /* yok */ } };
   const yer = useRef<{ evren: string; kayit: string | null; konum: number | null; not: string } | null>(null);
@@ -208,7 +210,8 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
       )}
       {evren && kart && <OzetKarti istemci={istemci} evren={evren} kod={kart.kod} yer={kart.yer} kapat={() => setKart(null)}
         yanPanelde={() => denetim.yanPanelAc(kart.kod)} />}
-      {palet && <KomutPaleti istemci={istemci} evren={evren} baglam={palet} kapat={() => setPalet(null)} />}
+      {palet && <KomutPaleti istemci={istemci} evren={evren} baglam={{ ...palet, hesap: setHesap }} kapat={() => setPalet(null)} />}
+      {evren && hesap && <HesapPenceresi istemci={istemci} evren={evren} tur={hesap} kapat={() => setHesap(null)} />}
     </Baglam.Provider>
   );
 }
@@ -359,7 +362,7 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
       )}
       {yas && !yasanan?.takvimBelirsiz && <p class="kucuk">{yas} <span class="soluk">({an!.tarih!.ifade} itibarıyla)</span></p>}
       {yasanan?.goster && <p class="kucuk">{yasanan.metin} <span class="soluk">({yasanan.tarih ?? 'tarih yazılmamış'} itibarıyla)</span></p>}
-      {an && <p class="kucuk yan-an">{an.tarih ? <>“{an.ad}” tarihinde (<strong>{an.tarih.ifade}</strong>) gösteriliyor.</> : <>“{an.ad}” için evren tarihi girilmemiş; o anki hâl bilinemiyor, bütün değerler gösteriliyor.</>}</p>}
+      {an && <p class="kucuk yan-an">{an.tarih ? <>“{an.ad}” anındaki hâliyle (<strong>{an.tarih.ifade}</strong>) gösteriliyor.</> : <>“{an.ad}” için evren tarihi girilmemiş. O anki durum bilinemediği için bütün değerler gösteriliyor.</>}</p>}
       {durumlar.length > 0 && (
         <ul class="yan-iliskiler">
           {durumlar.map((x) => (
@@ -427,16 +430,20 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
   } else {
     const komutlar: Oge[] = [];
     if (baglam.bagla) komutlar.push({ anahtar: 'bagla', baslik: 'Bağla', aciklama: 'Seçili metni ya da imleçteki yeri bir kayda bağla', yap: () => baglam.bagla!() });
-    komutlar.push({ anahtar: 'not', baslik: 'Hızlı not', aciklama: 'Aklına geleni yaz', yap: () => { document.dispatchEvent(new Event('hizli-not-ac')); } });
+    komutlar.push({ anahtar: 'not', baslik: 'Hızlı not', aciklama: 'Aklınıza geleni yazın', yap: () => { document.dispatchEvent(new Event('hizli-not-ac')); } });
     if (evren) {
-      if (sorgu.trim()) komutlar.push({ anahtar: 'yeni', baslik: `Yeni kayıt: “${sorgu.trim()}”`, aciklama: 'Türünü seçersin', yap: () => { setTurSec(sorgu.trim().replace(/\s+/g, ' ')); setSorgu(''); } });
+      if (sorgu.trim()) komutlar.push({ anahtar: 'yeni', baslik: `Yeni kayıt: “${sorgu.trim()}”`, aciklama: 'Ardından türünü seçersiniz', yap: () => { setTurSec(sorgu.trim().replace(/\s+/g, ' ')); setSorgu(''); } });
       // Gezinti çubuğundaki bütün sayfalar ve görünümler paletten de açılır.
       // Arama boşken yalnızca en sık kullanılanlar listelenir.
       for (const [k, ad] of [...ANA_SAYFALAR.filter(([x]) => x !== 'gorunumler'), ...DIGER_SAYFALAR]) {
         if (!sorgu.trim() && !['yaz', 'masa', 'kayitlar'].includes(k)) continue;
-        komutlar.push({ anahtar: 's-' + k, baslik: ad, aciklama: k === 'masa' ? 'Kaldığın yer, son düzenlenenler' : k === 'yaz' ? 'Eserler, bölümler ve sahneler' : 'Sayfa', yap: () => git(`/e/${evren}/${k}`) });
+        komutlar.push({ anahtar: 's-' + k, baslik: ad, aciklama: k === 'masa' ? 'Kaldığınız yer, son düzenlenenler' : k === 'yaz' ? 'Eserler, bölümler ve sahneler' : 'Sayfa', yap: () => git(`/e/${evren}/${k}`) });
       }
       if (sorgu.trim()) for (const [k, ad] of GORUNUMLER) komutlar.push({ anahtar: 'g-' + k, baslik: ad, aciklama: 'Görünüm', yap: () => git(`/e/${evren}/${k}`) });
+      if (baglam.hesap) {
+        komutlar.push({ anahtar: 'h-yolculuk', baslik: 'Yolculuk süresi', aciklama: 'İki yer arası, kayıtlı rotalarla', yap: () => baglam.hesap!('yolculuk') });
+        komutlar.push({ anahtar: 'h-takvim', baslik: 'Takvim günü hesabı', aciklama: 'Tarihe gün ya da yıl ekleme, iki tarih arası gün sayısı', yap: () => baglam.hesap!('takvim') });
+      }
       if (d.yanPanel.length) komutlar.push({ anahtar: 'panel-kapat', baslik: 'Yan paneli kapat', yap: () => d.yanPanelKapat() });
     }
     komutlar.push({ anahtar: 'evrenler', baslik: 'Evrenler', yap: () => git('/') });
@@ -480,7 +487,7 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
               {o.kayit && <button class="dugme sade kucuk palet-yan" onClick={(e) => { e.stopPropagation(); void calistir(o, true); }}>Yan panel</button>}
             </li>
           ))}
-          {!ogeler.length && <li class="soluk kucuk">Uyan bir şey yok.</li>}
+          {!ogeler.length && <li class="soluk kucuk">Eşleşen bir şey yok.</li>}
         </ul>
         <p class="soluk kucuk" style="margin:6px 0 0">Enter: aç · Shift+Enter: yan panelde aç · Esc: kapat</p>
         {hata && <p class="hata kucuk">{hata}</p>}

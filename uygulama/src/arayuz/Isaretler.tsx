@@ -8,7 +8,7 @@ import { onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const DURUM: Record<MetinIsareti['durum'], string> = {
-  yerinde: '', metinde_yok: 'Artık metinde yok', belirsiz: 'Bağlantı belirsiz: metinde birden çok yerde',
+  yerinde: '', metinde_yok: 'Artık metinde yok', belirsiz: 'Bağlantı belirsiz: metinde birden çok yerde geçiyor',
 };
 
 function Satir({ istemci, evren, x, kaynakGoster, saltOkunur, yenile }: { istemci: Istemci; evren: string; x: MetinIsareti; kaynakGoster: boolean; saltOkunur: boolean; yenile: () => void }) {
@@ -22,7 +22,7 @@ function Satir({ istemci, evren, x, kaynakGoster, saltOkunur, yenile }: { istemc
     <li>
       <span>{x.kritik && <strong>Kritik · </strong>}
         {x.yerler[0] ? `“${x.yerler[0].slice(0, 160)}”` : <em class="soluk">(işaretli parça metinde yok)</em>}
-        {' → '}{kaynakGoster ? <a href={`#/e/${evren}/k/${x.kayit.kod}`}>{x.kayit.ad}</a> : x.hedef ? <a href={`#/e/${evren}/k/${x.hedef.kod}`}>{x.hedef.ad}</a> : 'bağsız'}
+        {' → '}{kaynakGoster ? <a href={`#/e/${evren}/k/${x.kayit.kod}`}>{x.kayit.ad}</a> : x.hedef ? <a href={`#/e/${evren}/k/${x.hedef.kod}`}>{x.hedef.ad}</a> : 'bağlantısız'}
         {!kaynakGoster && x.hedefAlanAdi && ` · ${x.hedefAlanAdi}`}
         {x.iddia && <span class="soluk"> · {x.iddia}</span>}
       </span>
@@ -32,12 +32,12 @@ function Satir({ istemci, evren, x, kaynakGoster, saltOkunur, yenile }: { istemc
         <div class="satir" style="margin:6px 0 10px">
           {x.hedef && (
             <select class="girdi kucuk-secim" aria-label="Bağlı olduğu bilgi" value={x.hedefAlan ?? ''} onChange={(e) => yaz('hedefAlan', (e.target as HTMLSelectElement).value || null)}>
-              <option value="">Belirtmeden (kaydın kendisi)</option>
+              <option value="">Belirtilmedi (kaydın tamamı)</option>
               {(alanlar ?? []).map((a) => <option key={a.kod} value={a.kod}>{a.grup}: {a.ad}</option>)}
               {x.hedefAlan && alanlar && !alanlar.some((a) => a.kod === x.hedefAlan) && <option value={x.hedefAlan}>{x.hedefAlanAdi}</option>}
             </select>
           )}
-          <input class="girdi" lang="tr" maxLength={300} aria-label="İddia" placeholder="Cümlenin söylediği, kısaca" value={iddia} onInput={(e) => setIddia((e.target as HTMLInputElement).value)}
+          <input class="girdi" lang="tr" maxLength={300} aria-label="İddia" placeholder="Cümle kısaca ne söylüyor?" value={iddia} onInput={(e) => setIddia((e.target as HTMLInputElement).value)}
             onBlur={() => { if (iddia.trim() !== x.iddia) yaz('iddia', iddia); }} />
           <label class="kucuk"><input type="checkbox" checked={x.kritik} onChange={(e) => yaz('kritik', (e.target as HTMLInputElement).checked)} /> Kritik</label>
           <button class="dugme sade kucuk" onClick={() => onayla('Bu işaret kaldırılsın mı?') && istemci.iste('metinIsaretiSil', { evren, kod: x.kod }).then(yenile, (e) => setHata(hataYaz(e)))}>İşareti kaldır</button>
@@ -57,7 +57,7 @@ export function IsaretlerBolumu({ istemci, evren, kod, surum, saltOkunur }: { is
   return (
     <section class="surecler" aria-label="İşaretli cümleler">
       <h2>İşaretli cümleler</h2>
-      <p class="soluk kucuk">Metinde işaretlenen cümleler ve bağlandıkları bilgi. Cümleyi metinden silmek bağlı bilgiyi silmez.</p>
+      <p class="soluk kucuk">Metinde işaretlenen cümleler ve bağlı oldukları bilgiler. Bir cümleyi metinden silerseniz bağlı bilgi silinmez.</p>
       <IsaretIncelemeBolumu istemci={istemci} evren={evren} surum={surum + n} kayit={kod} baslikGoster={false} />
       {v.metindekiler.length > 0 && <ul class="toplanan-listesi">{v.metindekiler.map((x) => <Satir key={x.kod} istemci={istemci} evren={evren} x={x} kaynakGoster={false} saltOkunur={saltOkunur} yenile={yenile} />)}</ul>}
       {v.buKayda.length > 0 && <>
@@ -69,9 +69,9 @@ export function IsaretlerBolumu({ istemci, evren, kod, surum, saltOkunur }: { is
 }
 
 const NIYETLER = [
-  { kod: 'eski_duzelt', ad: 'Eski kaydı düzelt', aciklama: 'Evrende doğrusu bu; bağlı bilgiyi buna göre düzeltin.' },
-  { kod: 'bu_tarihten', ad: 'Bu tarihten itibaren değiştir', aciklama: 'Önceki hâl doğruydu; değişikliği zamanla değişen değer olarak yazın.' },
-  { kod: 'taslakta', ad: 'Taslakta dene', aciklama: 'Ana çizgiye değil, bir deneme kopyasına ait.' },
+  { kod: 'eski_duzelt', ad: 'Eski kaydı düzelt', aciklama: 'Evrende doğrusu bu. Bağlı bilgiyi buna göre düzeltin.' },
+  { kod: 'bu_tarihten', ad: 'Bu tarihten itibaren değiştir', aciklama: 'Önceki hâli de doğruydu. Değişikliği, zamanla değişen bir değer olarak yazın.' },
+  { kod: 'taslakta', ad: 'Taslakta dene', aciklama: 'Bu değişiklik ana evrene değil, bir deneme kopyasına ait.' },
   { kod: 'inanc', ad: 'Yalnızca bu kişinin inancını değiştir', aciklama: 'Gerçek değişmedi; bir karakterin bildiği ya da sandığı değişti.' },
 ] as const;
 type Niyet = typeof NIYETLER[number]['kod'];
@@ -92,13 +92,13 @@ export function IsaretIncelemeSatiri({ evren, x, karar, kaldir }: { evren: strin
       {x.tur === 'metin' ? (
         <p class="kucuk">Önce: “{x.once}”<br />Şimdi: “{x.sonra}”</p>
       ) : (
-        <p class="kucuk">“{i.yerler[0] ?? '(metinde yok)'}” → {i.hedef ? <a href={`#/e/${evren}/k/${i.hedef.kod}`}>{i.hedef.ad}</a> : 'bağsız'}{i.hedefAlanAdi && ` · ${i.hedefAlanAdi}`}. Şimdi: {x.sonra}</p>
+        <p class="kucuk">“{i.yerler[0] ?? '(metinde yok)'}” → {i.hedef ? <a href={`#/e/${evren}/k/${i.hedef.kod}`}>{i.hedef.ad}</a> : 'bağlantısız'}{i.hedefAlanAdi && ` · ${i.hedefAlanAdi}`}. Şimdi: {x.sonra}</p>
       )}
       {x.karar && <p class="kucuk">{x.karar.durum === 'ertelendi' ? 'Ertelendi' : niyet ? niyet.ad : x.karar.durum === 'kabul' ? `Kabul edildi: ${x.karar.gerekce}` : x.karar.gerekce || 'Düzeltildi'} ({zamanYaz(x.karar.zaman)}).
         {niyet && niyet.kod !== 'taslakta' && i.hedef && <> <a href={`#/e/${evren}/k/${i.hedef.kod}`}>{i.hedef.ad} kaydını aç</a>.</>}
         {niyet?.kod === 'taslakta' && <> <a href={`#/e/${evren}/surumler`}>Deneme kopyaları</a>.</>}</p>}
       {x.karar ? (
-        <div class="satir"><button class="dugme kucuk" onClick={() => karar(x.anahtar, null)}>{x.karar.durum === 'ertelendi' ? 'Kuyruğa geri koy' : 'Yeniden aç'}</button></div>
+        <div class="satir"><button class="dugme kucuk" onClick={() => karar(x.anahtar, null)}>{x.karar.durum === 'ertelendi' ? 'İncelemeye geri al' : 'Yeniden aç'}</button></div>
       ) : x.tur === 'metin' ? (
         <div class="satir">
           {NIYETLER.map((n) => <button key={n.kod} class="dugme kucuk" title={n.aciklama} onClick={() => karar(x.anahtar, 'kabul', '', n.kod)}>{n.ad}</button>)}
@@ -114,9 +114,9 @@ export function IsaretIncelemeSatiri({ evren, x, karar, kaldir }: { evren: strin
       ) : (
         <div class="satir">
           <button class="dugme kucuk" onClick={() => karar(x.anahtar, 'duzeltildi', 'Metin düzeltildi')}>Metni düzelttim</button>
-          <button class="dugme kucuk" onClick={() => karar(x.anahtar, 'duzeltildi', 'Evren verisi düzeltildi')}>Evren verisini düzelttim</button>
+          <button class="dugme kucuk" onClick={() => karar(x.anahtar, 'duzeltildi', 'Evrendeki kayıt düzeltildi')}>Evrendeki kaydı düzelttim</button>
           <button class="dugme kucuk" onClick={() => setKabulYaz(true)}>Bu hâliyle kabul et…</button>
-          <button class="dugme sade kucuk" onClick={() => onayla('Bu işaret kaldırılsın mı?') && kaldir(i.kod)}>Yanlış bağlantı: işareti kaldır</button>
+          <button class="dugme sade kucuk" onClick={() => onayla('Bu işaret kaldırılsın mı?') && kaldir(i.kod)}>Bağlantı yanlış, işareti kaldır</button>
           <button class="dugme sade kucuk" onClick={() => karar(x.anahtar, 'ertelendi')}>Ertele</button>
         </div>
       )}
@@ -139,7 +139,7 @@ export function IsaretIncelemeBolumu({ istemci, evren, surum, kayit = null, basl
   return (
     <section aria-label="İşaretli cümlelerin incelemesi">
       {baslikGoster ? <h2>İşaretli cümleler</h2> : <h3>İncelenmesi gerekenler</h3>}
-      {baslikGoster && <p class="soluk kucuk">Bir işaret yalnızca bağlı olduğu bilgi değişince açılır; bilgisi belirtilmemiş işaret yalnızca kayıt silinince ya da birleştirilince. Kritik cümle değişince program düzeltme mi, yeni bir şey mi olduğunu sorar.</p>}
+      {baslikGoster && <p class="soluk kucuk">Bir işaret yalnızca bağlı olduğu bilgi değişince incelemeye gelir. Hangi bilgiye bağlı olduğu belirtilmemiş bir işaret ise yalnızca kayıt silinince ya da başka bir kayıtla birleştirilince gelir. Kritik bir cümle değişince program bunun bir düzeltme mi, yoksa yeni bir durum mu olduğunu sorar.</p>}
       {hata && <p class="hata kucuk">{hata}</p>}
       {baslikGoster && !x.acik.length && <p class="soluk">İncelenecek işaret yok.</p>}
       {x.acik.length > 0 && <ul class="bulgular">{x.acik.map((b) => <IsaretIncelemeSatiri key={b.anahtar} evren={evren} x={b} karar={karar} kaldir={kaldir} />)}</ul>}

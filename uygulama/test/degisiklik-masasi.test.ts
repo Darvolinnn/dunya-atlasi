@@ -46,7 +46,7 @@ describe('değişiklik masası (F04)', () => {
     const m = h.degisiklikMasasi({ evren, kod: olum, ifade: '428', koru: [`tarih:${tac}`] });
     expect(m.hesap.find((x) => x.ad === 'Taç giyme')!.sonra).toBe('Yıl 431 (korunuyor)');
     expect(m.hesap.some((x) => x.ad === 'Mira')).toBe(false);
-    expect(m.celisen.find((x) => x.ad === 'Taç giyme')!.aciklama).toContain('kuralı artık tutmaz');
+    expect(m.celisen.find((x) => x.ad === 'Taç giyme')!.aciklama).toContain('kurala artık uymaz');
     h.degisiklikUygula({ evren, kod: olum, ifade: '428', koru: [`tarih:${tac}`] });
     expect(h.kayit({ evren, kod: olum }).tarih!.ifade).toBe('428');
     const t = h.kayit({ evren, kod: tac }).tarih!;
@@ -64,7 +64,7 @@ describe('değişiklik masası (F04)', () => {
     h.degisiklikUygula({ evren, kod: olum, ifade: '440', koru: [`durum:${d.kod}:baslangic`] });
     const s = h.durumlar({ evren, kod: kale }).durumlar[0].baslangic!;
     expect([s.olay, s.tarih!.ifade]).toEqual([null, 'Yıl 430']);
-    expect(() => h.degisiklikMasasi({ evren, kod: olum, ifade: 'bir gün', koru: [] })).toThrow('eksene yerleşmiyor');
+    expect(() => h.degisiklikMasasi({ evren, kod: olum, ifade: 'bir gün', koru: [] })).toThrow('zaman akışına yerleşmiyor');
     expect(() => h.degisiklikMasasi({ evren, kod: olum, ifade: '', koru: [] })).toThrow('Yeni tarihi');
   });
 

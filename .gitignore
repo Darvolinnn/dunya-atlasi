@@ -6,3 +6,5 @@ dist/
 # Windows kabuğunun derleme çıktıları
 uygulama/src-tauri/target/
 uygulama/src-tauri/gen/
+test-results/
+playwright-report/

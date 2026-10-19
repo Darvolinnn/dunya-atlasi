@@ -7,6 +7,7 @@ import type { Istemci } from '../veri/istemci';
 import type { EsitlemeDurumu } from '../veri/api';
 import { zamanYaz, saatYaz } from '../alan/islem-metni';
 import { epostaKaydet, googleHazirla, izinAl, izniGeriAl, kayitliEposta } from './google';
+import { SayfaYardimi } from './SayfaYardimi';
 import { git } from './Uygulama';
 
 const YOKLAMA = 3 * 60_000;
@@ -38,11 +39,14 @@ export function EsitlemeSaglayici({ istemci, children }: { istemci: Istemci; chi
   const esitle = async () => {
     if (!bagliRef.current) { yenile(); return; }
     setDurum((d) => d && { ...d, calisiyor: true });
+    // Büyük görsel gönderilirken ilerleme görünsün.
+    const izle = setInterval(yenile, 2000);
     try {
       const d = await istemci.iste('esitle');
       bagliRef.current = d.bagli;
       setDurum(d);
     } catch (e) { setHata((e as Error).message); yenile(); }
+    finally { clearInterval(izle); }
   };
 
   const baglan = async () => {
@@ -92,14 +96,14 @@ export function EsitlemeSeridi() {
   if (e.eposta && !e.durum.bagli) {
     return (
       <div class="esitleme-seridi" role="status">
-        <span>Değişiklikler bu cihaza kaydediliyor. Drive ile eşitlemek için dokun.</span>
+        <span>Değişiklikler bu cihaza kaydediliyor. Drive ile eşitlemek için tıklayın.</span>
         <button class="dugme ana" onClick={() => void e.baglan()} disabled={e.baglaniyor}>{e.baglaniyor ? 'Bekleniyor…' : 'Eşitle'}</button>
         {e.hata && <span class="hata">{e.hata}</span>}
       </div>
     );
   }
   if (guncelleme) {
-    return <div class="esitleme-seridi" role="status"><span>Başka bir cihaz programın daha yeni bir sürümünü kullanıyor. Veriler korundu, güncelleme bekliyor: sayfayı yenileyin.</span></div>;
+    return <div class="esitleme-seridi" role="status"><span>Başka bir cihaz programın daha yeni bir sürümünü kullanıyor. Verileriniz korunuyor. Güncellemek için sayfayı yenileyin.</span></div>;
   }
   return null;
 }
@@ -114,11 +118,73 @@ export function EsitlemeOzeti() {
   let metin: string;
   if (!d.bagli && !e.eposta) metin = 'Drive\'a bağlı değil';
   else if (!d.bagli) metin = yalniz ? `${yalniz} değişiklik yalnızca bu cihazda` : 'Drive izni yenilenmeli';
-  else if (d.calisiyor) metin = 'Eşitleniyor…';
+  else if (d.calisiyor) metin = d.yukleme ? `Büyük dosya gönderiliyor · %${Math.floor((100 * d.yukleme.gonderilen) / d.yukleme.toplam)}` : 'Eşitleniyor…';
   else if (d.hata) metin = `Eşitlenemedi: ${d.hata.mesaj}`;
   else if (yalniz) metin = `${yalniz} değişiklik yalnızca bu cihazda`;
   else metin = son ? `Drive'a gönderildi · ${saatYaz(son)}` : 'Drive\'a bağlı';
   return <a href="#/esitleme" class="alt-baglanti">Eşitleme: {metin}</a>;
+}
+
+const GUN = 24 * 60 * 60_000;
+
+/** Evren içindeki kayıt, eşitleme ve yedek özeti (§10.8): başlıkta en zayıf halka, açılınca üç ayrı satır. */
+export function DurumOzeti({ istemci, evren, yedekVar }: { istemci: Istemci; evren: string; yedekVar: boolean }) {
+  const e = useEsitleme();
+  const d = e.durum;
+  const [yedek, setYedek] = useState<{ zaman: number; drive: boolean } | null | undefined>(undefined);
+  const [acik, setAcik] = useState(false);
+  const sonYedekZamani = d?.evrenler.map((x) => x.sonEsitleme ?? 0).join();
+  useEffect(() => {
+    let iptal = false;
+    Promise.all([
+      istemci.iste('sonYedek', { evren }).catch(() => null),
+      istemci.iste('donemselYedekDurumu', { evren }).catch(() => null),
+    ]).then(([dosya, donemsel]) => {
+      if (iptal) return;
+      const drive = donemsel?.son?.dogrulandi ? donemsel.son.zaman : 0;
+      const en = Math.max(dosya ?? 0, drive);
+      setYedek(en ? { zaman: en, drive: drive >= (dosya ?? 0) } : null);
+    });
+    return () => { iptal = true; };
+  }, [evren, acik, sonYedekZamani]);
+  if (!d || yedek === undefined) return null;
+
+  const v = d.evrenler.find((x) => x.kod === evren) ?? d.evrenler.find((x) => x.denemeler.some((y) => y.kod === evren));
+  const esitlenir = !!v?.esitlenir;
+  const yalniz = v ? v.yalnizBuCihazda + v.denemeler.reduce((n, y) => n + y.yalnizBuCihazda, 0) : 0;
+  const driveYok = !esitlenir || (!d.bagli && !e.eposta);
+  const eskiYedek = !yedek || Date.now() - yedek.zaman > 7 * GUN;
+
+  let baslik: string;
+  if (d.calisiyor && !driveYok) baslik = d.yukleme ? `Büyük dosya gönderiliyor · %${Math.floor((100 * d.yukleme.gonderilen) / d.yukleme.toplam)}` : 'Eşitleniyor…';
+  else if (driveYok) baslik = yedek ? 'Bu cihazda kayıtlı · yedek var' : 'Yalnız bu cihazda kayıtlı';
+  else if (d.hata && d.bagli) baslik = 'Eşitlenemedi';
+  else if (yalniz) baslik = `${yalniz} değişiklik gönderilecek`;
+  else if (!d.bagli) baslik = 'Drive izni yenilenmeli';
+  else baslik = 'Kaydedildi ve eşitlendi';
+
+  let drive: preact.ComponentChildren;
+  if (!esitlenir && v) drive = <>Bu evren Drive ile eşitlenmiyor. <a href="#/esitleme">Ayarlar</a></>;
+  else if (!d.bagli && !e.eposta) drive = <>Drive'a bağlı değil. <button class="dugme sade kucuk" onClick={() => void e.baglan()} disabled={e.baglaniyor}>Bağlan</button></>;
+  else if (!d.bagli) drive = <>{yalniz ? `${yalniz} değişiklik Drive'a gönderilecek; izin yenilenmeli.` : 'Drive izni yenilenmeli.'} <button class="dugme sade kucuk" onClick={() => void e.baglan()} disabled={e.baglaniyor}>Bağlan</button></>;
+  else drive = <>{d.hata ? `Eşitlenemedi: ${d.hata.mesaj}` : yalniz ? `${yalniz} değişiklik Drive'a gönderilecek.` : v?.sonEsitleme ? `Drive'a gönderildi · ${saatYaz(v.sonEsitleme)}` : 'Henüz eşitlenmedi.'}
+    {' '}<button class="dugme sade kucuk" onClick={() => void e.esitle()} disabled={d.calisiyor}>{d.calisiyor ? 'Eşitleniyor…' : 'Şimdi eşitle'}</button></>;
+
+  return (
+    <details class="durum-ozeti" open={acik} onToggle={(x) => setAcik((x.target as HTMLDetailsElement).open)}>
+      <summary class={eskiYedek && driveYok ? 'durum-zayif' : undefined}>{baslik}</summary>
+      <ul class="durum-satirlari">
+        <li>Bu cihazda kaydedildi.</li>
+        <li>{drive}</li>
+        <li class={eskiYedek ? 'durum-zayif' : undefined}>
+          {yedek ? `Son yedek: ${zamanYaz(yedek.zaman)}${yedek.drive ? ' (Drive, doğrulandı)' : ' (dosya)'}` : 'Henüz yedek yok.'}
+          {yedekVar && <>{' '}<a class="dugme sade kucuk" href={`#/e/${evren}/yedek`}>Yedek al</a></>}
+        </li>
+      </ul>
+      <p class="kucuk">Eşitleme başka cihazlara taşır; yedek, geri dönebileceğiniz ayrı bir kopyadır.</p>
+      <a class="kucuk" href="#/esitleme">Eşitleme ve cihazlar →</a>
+    </details>
+  );
 }
 
 export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
@@ -137,13 +203,13 @@ export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
     <>
       <header class="ust"><a href="#/" class="dugme sade">← Evrenler</a><span class="ad">Eşitleme ve cihazlar</span></header>
       <main class="sayfa">
-        <h1>Eşitleme ve cihazlar</h1>
+        <div class="baslik-satiri"><h1>Eşitleme ve cihazlar</h1><SayfaYardimi sayfa="esitleme" /></div>
         <div class="kart" style="margin-top:12px">
           <h3>Google Drive</h3>
           {!e.eposta && !d.bagli && (
             <>
-              <p>Evrenler Drive'ına, programın kendi klasörüne eşitlenir; bu klasörü Drive'da göremezsin ve program Drive'daki başka dosyalarını göremez. Yedekler ayrıca görebildiğin bir klasöre alınır.</p>
-              <p class="soluk kucuk">Google'ın açtığı pencerede hesabını seç ve izin ver. İzin yaklaşık bir saat geçerli; süresi dolunca üstte “eşitlemek için dokun” çıkar, tek dokunuşla yenilenir. Bu arada yazmaya devam edebilirsin.</p>
+              <p>Evrenler Drive'ınızda programa ayrılmış bir klasöre eşitlenir. Bu klasörü Drive'da göremezsiniz; program da Drive'daki öbür dosyalarınızı göremez. Yedekler ise görebildiğiniz ayrı bir klasöre alınır.</p>
+              <p class="soluk kucuk">Google'ın açtığı pencerede hesabınızı seçip izin verin. İzin yaklaşık bir saat geçerlidir. Süresi dolunca üstte “eşitlemek için tıklayın” uyarısı çıkar ve izin tek tıklamayla yenilenir. Bu arada yazmaya devam edebilirsiniz.</p>
               <button class="dugme ana" onClick={() => void e.baglan()} disabled={e.baglaniyor}>{e.baglaniyor ? 'Google penceresi bekleniyor…' : 'Google Drive\'a bağlan'}</button>
             </>
           )}
@@ -184,17 +250,17 @@ export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
                 <li>Bu cihaza kaydedildi.</li>
                 <li>{v.yalnizBuCihazda ? <strong>{v.yalnizBuCihazda} değişiklik yalnızca bu cihazda (henüz Drive'a gönderilmedi).</strong> : v.sonEsitleme ? 'Bütün değişiklikler Drive\'a gönderildi.' : 'Henüz eşitlenmedi.'}</li>
                 {v.sonEsitleme && <li>Son eşitleme: {zamanYaz(v.sonEsitleme)}</li>}
-                {v.bekleyen > 0 && <li>Başka cihazdan {v.bekleyen} değişiklik eksik parçası gelince uygulanacak.</li>}
+                {v.bekleyen > 0 && <li>Başka bir cihazdan gelen {v.bekleyen} değişiklik, eksik parçaları da gelince uygulanacak.</li>}
                 {v.denemeler.map((y) => (
                   <li key={y.kod}>Deneme kopyası “{y.ad}”: {y.yalnizBuCihazda ? <strong>{y.yalnizBuCihazda} değişiklik yalnızca bu cihazda.</strong> : 'bütün değişiklikler Drive\'a gönderildi.'}
-                    {y.bekleyen > 0 && ` Başka cihazdan ${y.bekleyen} değişiklik eksik parçası gelince uygulanacak.`}</li>
+                    {y.bekleyen > 0 && ` Başka bir cihazdan gelen ${y.bekleyen} değişiklik, eksik parçaları da gelince uygulanacak.`}</li>
                 ))}
                 {v.cihazlar.filter((c) => !c.buCihaz).map((c) => (
                   <li key={c.kod} class={c.kullanimDisi ? 'soluk' : ''}>
                     {c.ad}: {c.kullanimDisi ? 'kullanılmıyor olarak işaretli' : c.bekleyen ? `bu cihazın ${c.bekleyen} değişikliğini henüz almadı` : 'bu cihazın gönderdiği her şeyi aldı'}
-                    {' '}<span class="soluk">(son görülme {zamanYaz(c.sonGorulme)})</span>
+                    {' '}<span class="soluk">(son görülme: {zamanYaz(c.sonGorulme)})</span>
                     {' '}<button class="dugme sade kucuk" onClick={() => void calistir(() => istemci.iste('kurulumKullanimDisi', { kod: c.kod, disi: !c.kullanimDisi }))}>
-                      {c.kullanimDisi ? 'Yeniden etkin say' : 'Artık kullanılmıyor'}</button>
+                      {c.kullanimDisi ? 'Yeniden kullanılıyor' : 'Artık kullanılmıyor'}</button>
                   </li>
                 ))}
               </ul>
@@ -207,7 +273,7 @@ export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
             <h2 style="margin-top:20px">Drive'da olup bu cihazda olmayan evrenler</h2>
             {uzak.map((u) => (
               <div class="kart satir" style="margin-top:10px" key={u.kod}>
-                <span style="flex:1"><strong>{u.ad}</strong> <span class="soluk kucuk">son değişiklik {zamanYaz(u.sonGorulme)}</span></span>
+                <span style="flex:1"><strong>{u.ad}</strong> <span class="soluk kucuk">son değişiklik: {zamanYaz(u.sonGorulme)}</span></span>
                 <button class="dugme ana" disabled={!!indiriliyor} onClick={() => void calistir(async () => {
                   setIndiriliyor(u.kod);
                   try { await istemci.iste('evreniIndir', { kod: u.kod }); git(`/e/${u.kod}`); } finally { setIndiriliyor(null); }

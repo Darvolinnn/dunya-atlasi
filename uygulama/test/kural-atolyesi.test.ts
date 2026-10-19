@@ -124,7 +124,7 @@ describe('kural atölyesi (F16)', () => {
     expect(h.formulDenetle({ evren, yazi: 'üyesi [Kılıççılar loncası] ve {Rütbe} = "General"' })).toMatchObject({ konum: 40, uzunluk: 9 });
     expect(h.formulDenetle({ evren, yazi: 'üyesi [kılıççılar LONCASI] veya {Boy}>=180' })).toEqual({ yazi: 'üyesi [Kılıççılar loncası] veya {Boy} >= 180 cm' });
     expect(() => yaz({ kimlere: [], formul: '{Rütbe} = ' })).toThrow(/Formül okunamadı/);
-    expect(() => yaz({ kimlere: [{ iliski: 'uye', hedef: lonca, degil: false }], formul: '{Boy} > 1 m' })).toThrow(/birlikte kullanılmaz/);
+    expect(() => yaz({ kimlere: [{ iliski: 'uye', hedef: lonca, degil: false }], formul: '{Boy} > 1 m' })).toThrow(/birlikte kullanılamaz/);
 
     yaz({ kimlere: [], formul: '[Kılıççılar loncası] üyesi ve ({Rütbe} = "Subay" veya yaş < 16 yıl)' });
     const k = h.hukukKurallari({ evren }).find((x) => x.kod === kural)!;

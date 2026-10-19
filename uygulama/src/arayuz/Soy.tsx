@@ -22,7 +22,7 @@ export function KalitimBolumu({ istemci, evren, kod, surum }: { istemci: Istemci
     <section class="surecler" aria-label="Kalıtım">
       <details open={k.ozellikler.length > 0}>
         <summary><h2 style="display:inline">Kalıtım</h2></summary>
-        <p class="soluk kucuk">Yalnızca biyolojik ebeveynlerden hesaplanır{k.ebeveynler.length ? ` (${k.ebeveynler.map((x) => x.ad).join(', ')})` : ''}.{k.evlatlik.length ? ` Evlatlık ilişkisi (${k.evlatlik.map((x) => x.ad).join(', ')}) kalıtımda sayılmaz.` : ''} Olasılık bir aralıktır; kesin sonuç değildir.</p>
+        <p class="soluk kucuk">Yalnızca biyolojik ebeveynlerden hesaplanır{k.ebeveynler.length ? ` (${k.ebeveynler.map((x) => x.ad).join(', ')})` : ''}.{k.evlatlik.length ? ` Evlatlık ilişkisi (${k.evlatlik.map((x) => x.ad).join(', ')}) kalıtımda sayılmaz.` : ''} Olasılık bir aralık olarak verilir, kesin sonuç değildir.</p>
         {k.ozellikler.length > 0 && <ul class="toplanan-listesi">{k.ozellikler.map((s) => {
           const d: KalitimDegeri = s.deger ?? { gorunur: null, kopya: null };
           return (
@@ -85,16 +85,16 @@ export function VerasetBolumu({ istemci, evren, kod, surum }: { istemci: Istemci
         )}
       </div>
       <form class="satir" onSubmit={(e) => { e.preventDefault(); void goster(); }}>
-        <input class="girdi" style="width:140px" lang="tr" aria-label="Taht sırası tarihi" placeholder="tarih" value={tarih} onInput={(e) => setTarih((e.target as HTMLInputElement).value)} />
+        <input class="girdi" style="width:140px" lang="tr" aria-label="Taht sırası tarihi" placeholder="Tarih" value={tarih} onInput={(e) => setTarih((e.target as HTMLInputElement).value)} />
         <button class="dugme kucuk" type="submit" disabled={!tarih.trim()}>Bu tarihte sıra</button>
       </form>
       {hata && <p class="hata kucuk">{hata}</p>}
       {t && (
         <div class="taht-sirasi">
           {t.durum === 'yuruten_yok' && <p class="kucuk">Bu tarihte yürüten kayıtlı değil. Yürütenler makamın “Yürüten” ilişkilerinden okunur.</p>}
-          {t.durum === 'birden_cok' && <p class="kucuk">Bu tarihte birden çok yürüten görünüyor; sıra hesaplanmadı.</p>}
+          {t.durum === 'birden_cok' && <p class="kucuk">Bu tarihte birden çok yürüten görünüyor, bu yüzden sıra hesaplanmadı.</p>}
           {t.durum === 'kural_yok' && <p class="kucuk">Veraset kuralı seçilmemiş. Yürüten: {bag(evren, t.yuruten!)}.</p>}
-          {t.durum === 'secim' && <p class="kucuk">Seçimle belirlenir; sıra hesaplanmaz. Yürüten: {bag(evren, t.yuruten!)}.</p>}
+          {t.durum === 'secim' && <p class="kucuk">Bu makam seçimle belirlenir, sıra hesaplanmaz. Yürüten: {bag(evren, t.yuruten!)}.</p>}
           {t.durum === 'hesaplandi' && (
             <>
               <p class="kucuk">Yürüten: {bag(evren, t.yuruten!)}. Hukuki sıra:</p>

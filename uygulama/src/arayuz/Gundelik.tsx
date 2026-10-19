@@ -29,7 +29,7 @@ export function GundelikBolumu({ istemci, evren, kod, surum }: { istemci: Istemc
     <section class="surecler" aria-label="Gündelik hayat">
       <details open={kartlar.length > 0}>
         <summary><h2 style="display:inline">Gündelik hayat</h2></summary>
-        <p class="soluk kucuk">Barınma, yemek, ulaşım, iş, ibadet ve eğlence için kısa kartlar. Dönemi ya da statüsü seçilmeyen kart herkes ve her zaman için geçerli sayılır. “Sıradan bir gün” görünümü bu kartları toplar.</p>
+        <p class="soluk kucuk">Barınma, yemek, ulaşım, iş, ibadet ve eğlence üzerine kısa kartlar yazabilirsiniz. Dönem ya da statü seçilmeyen kart herkes için ve her zaman geçerli sayılır. “Sıradan bir gün” görünümü bu kartları bir araya getirir.</p>
         {KONULAR.filter((x) => kartlar.some((k) => k.konu === x.kod)).map((x) => (
           <div key={x.kod}>
             <h3>{x.ad}</h3>
@@ -82,7 +82,7 @@ function GunSutunu({ istemci, evren, s, setS, surum }: { istemci: Istemci; evren
           {g.konular.map((k) => (
             <div key={k.konu}>
               <h3>{k.ad}</h3>
-              {!k.kartlar.length ? <p class="soluk kucuk">Yazılmamış.</p> : (
+              {!k.kartlar.length ? <p class="soluk kucuk">Henüz yazılmamış.</p> : (
                 <ul class="toplanan-listesi">{k.kartlar.map((c) => (
                   <li key={c.kod}>{c.metin} <span class="soluk kucuk">· {c.yer.ad}{c.genel ? ' · genel' : ''}{c.donem ? ` · ${c.donem.ad}` : ''}{c.statu ? ` · ${c.statu.ad}` : ''}</span></li>
                 ))}</ul>
@@ -103,7 +103,7 @@ export function SiradanGunSekmesi({ istemci, evren, surum }: { istemci: Istemci;
   const [b, setB] = useState<Secimler>(bos);
   return (
     <section aria-label="Sıradan bir gün">
-      <p class="soluk kucuk">Bir yer seçin; isterseniz dönem ve statü de. Yerin ve onu kapsayan yerlerin gündelik hayat kartları toplanır. Kartlar yer sayfalarındaki “Gündelik hayat” bölümünden yazılır.</p>
+      <p class="soluk kucuk">Bir yer seçin; isterseniz dönem ve statü de seçebilirsiniz. O yerin ve onu kapsayan yerlerin gündelik hayat kartları bir araya getirilir. Kartları yer sayfalarındaki “Gündelik hayat” bölümünden yazabilirsiniz.</p>
       <div class="gun-yan-yana">
         <GunSutunu istemci={istemci} evren={evren} s={a} setS={setA} surum={surum} />
         <GunSutunu istemci={istemci} evren={evren} s={b} setS={setB} surum={surum} />
@@ -125,7 +125,7 @@ export function KarsilastirmaSekmesi({ istemci, evren, surum }: { istemci: Istem
   const GRUP = { alan: 'Şablon alanları', soru: 'Cevaplanmış sorular', durum: 'Zamanla değişenler' } as const;
   return (
     <section aria-label="Karşılaştırmalı okuma">
-      <p class="soluk kucuk">Üç şehrin yönetimi, iki kültürün ölüm anlayışı ya da bir karakterin farklı dönemleri: en çok altı sütun. Aynı kaydı iki kez seçip farklı tarihler yazabilirsiniz.</p>
+      <p class="soluk kucuk">Üç şehrin yönetimini, iki kültürün ölüm anlayışını ya da bir karakterin farklı dönemlerini yan yana okuyabilirsiniz. En çok altı sütun eklenebilir. Bir kaydın farklı dönemleri için aynı kaydı birden çok kez seçip farklı tarihler yazın.</p>
       <form class="satir" onSubmit={(e) => { e.preventDefault(); void goster(); }}>
         {sutunlar.map((c, i) => (
           <span class="satir karsilastirma-secimi" key={i}>

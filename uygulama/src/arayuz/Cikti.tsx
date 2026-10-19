@@ -36,8 +36,8 @@ export function MarkdownCiktisi({ istemci, evren }: { istemci: Istemci; evren: s
   return (
     <div class="kart" style="margin-top:12px">
       <h3>Okumak için dışa aktar (Markdown)</h3>
-      <p>Her kayıt bir Markdown dosyası olur; bağlantılar [[Ad]] biçiminde korunur, Obsidian gibi programlarda açılır.</p>
-      <p class="soluk kucuk">Bu çıktı okumak içindir: değişiklik geçmişi, tarihli inançlar, haritalar, takvim hesapları ve hesap kuralları girmez (klasördeki OKUBENI dosyası tam listeyi verir). Kayıpsız taşımak için yukarıdaki tam yedeği kullanın.</p>
+      <p>Her kayıt ayrı bir Markdown dosyası olur. Bağlantılar [[Ad]] biçiminde korunur; dosyalar Obsidian gibi programlarda açılabilir.</p>
+      <p class="soluk kucuk">Bu çıktı okumak içindir. Değişiklik geçmişi, tarihli inançlar, haritalar, takvim hesapları ve hesap kuralları buna girmez; eksiklerin tam listesi klasördeki OKUBENI dosyasındadır. Her şeyi kayıpsız taşımak için yukarıdaki tam yedeği kullanın.</p>
       <div class="satir"><button class="dugme" onClick={al} disabled={calisiyor}>{calisiyor ? 'Hazırlanıyor…' : 'Markdown olarak indir'}</button></div>
       {durum && <p class="kucuk" role="status">{durum}</p>}
       {hata && <p class="hata" role="alert">{hata}</p>}
@@ -58,7 +58,7 @@ export function EserCiktisi({ istemci, evren, eser }: { istemci: Istemci; evren:
   return (
     <section class="surecler" aria-label="Eserin çıktısı">
       <h2>Çıktı</h2>
-      <p class="soluk kucuk">Bölümler ve sahneler okuma sırasıyla; sahneler arasında ayraç. Vazgeçilmiş sahneler girmez. PDF için yazdırma penceresinde “PDF olarak kaydet”i seçin.</p>
+      <p class="soluk kucuk">Bölümler ve sahneler okuma sırasıyla yazılır, sahnelerin arasına ayraç konur. Vazgeçilmiş sahneler çıktıya girmez. PDF için yazdırma penceresinde “PDF olarak kaydet”i seçin.</p>
       <div class="satir">
         <label class="kucuk"><input type="checkbox" checked={basliklar} onChange={(e) => setBasliklar((e.target as HTMLInputElement).checked)} /> Sahne adlarını başlık olarak yaz</label>
         <button class="dugme kucuk" onClick={epub} disabled={calisiyor}>EPUB indir</button>

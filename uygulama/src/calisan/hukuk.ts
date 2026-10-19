@@ -91,7 +91,7 @@ export function hukukKuraliYaz(b: HukukBaglami, kod: string, g: HukukTanimGirdis
     if (x instanceof FormulHatasi) throw new Error(`Formül okunamadı: ${x.message}`);
     throw x;
   }
-  if (formul && kimlere.length) throw new Error('Koşul listesi ile formül birlikte kullanılmaz; birini boşaltın.');
+  if (formul && kimlere.length) throw new Error('Koşul listesiyle formül birlikte kullanılamaz; birini boşaltın.');
   if (g.yer !== null && !YER_TURLERI.includes(kayitTuru(b.e, g.yer))) throw new Error('Kuralın geçtiği yer bir mekân ya da şehir olmalı.');
   const z = zamanSetiOku(b.e.db);
   const tarih = (s: string, ad: string) => {

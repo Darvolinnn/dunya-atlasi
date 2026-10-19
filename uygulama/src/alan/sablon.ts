@@ -43,7 +43,7 @@ const set = (kod: string, ad: string, sorular: (string | [string, string])[]): S
 /** Ek A: başlangıç seti. Kodlar değişmez; cevaplar bu kodlarla saklanır. */
 export const SORU_SETLERI: SoruSeti[] = [
   set('pusula', 'Dünya Pusulası', [
-    ['Bu evrenin merkez çatışması ne?', 'Kıtlık, inanç, iktidar, hayatta kalma, özgürlük, intikam…'],
+    ['Bu evrenin ana çatışması ne?', 'Kıtlık, inanç, iktidar, hayatta kalma, özgürlük, intikam…'],
     ['İnsanlar burada nasıl yaşıyor?', 'Geçim, ritüeller, korkular, alışkanlıklar'],
     ['Güç kimde ve bedeli ne?', 'Büyü, bilgi, para, soy…'],
     'Hangi kural kırılırsa her şey değişir?',
@@ -52,7 +52,7 @@ export const SORU_SETLERI: SoruSeti[] = [
   set('baslangic', 'Yeni evren başlangıcı', [
     ['Temel fikir', 'Evreni farklı kılan tek kural'],
     ['Çatışma', 'İki taraf'],
-    ['Ortadaki karakter', 'Yeni bir karakter kaydıyla da cevaplayabilirsin'],
+    ['Ortadaki karakter', 'Yeni bir karakter kaydıyla da cevaplayabilirsiniz'],
   ]),
   set('karakter', 'Karakter: temel altı soru', [
     'En çok ne istiyor?', 'En büyük korkusu ne?', 'En büyük kusuru ne?', 'Ne saklıyor?',
@@ -87,7 +87,7 @@ export const SORU_SETLERI: SoruSeti[] = [
   ]),
   set('haritasiz', 'Haritasız evren büyütme', ['Uzak yerlerden nasıl söz ettiriliyor?', 'Hangi ticaret izleri var?', 'Hangi farklı diller duyuluyor?', 'Hangi eski olaylar anılıyor?', 'Hangi söylentiler dolaşıyor?']),
   set('rehber', 'Evren kurma rehberi', [
-    ['Kim hüküm sürüyor?', 'Bir topluluk kaydıyla da cevaplayabilirsin'], 'Büyünün bedeli ne?', ['İnsanlar neye inanıyor?', 'Bir inanç kaydıyla da cevaplayabilirsin'],
+    ['Kim hüküm sürüyor?', 'Bir topluluk kaydıyla da cevaplayabilirsiniz'], 'Büyünün bedeli ne?', ['İnsanlar neye inanıyor?', 'Bir inanç kaydıyla da cevaplayabilirsiniz'],
   ]),
 ];
 const setler = new Map(SORU_SETLERI.map((s) => [s.kod, s]));
@@ -122,7 +122,7 @@ const VARSAYILANLAR: Record<string, Sablon> = {
   acik_mesele: {
     alanlar: [
       { kod: 'durum', ad: 'Durum', tur: 'secim', secenekler: MESELE_DURUMLARI, sabit: true },
-      { kod: 'onemli', ad: 'Önemli', tur: 'onay', sabit: true, ipucu: 'Önemli işaretli düşünülecek meseleler Masa\'da öne çıkar' },
+      { kod: 'onemli', ad: 'Önemli', tur: 'onay', sabit: true, ipucu: 'Önemli olarak işaretlenen meseleler Masa\'da öne çıkar' },
     ],
     sorular: [],
   },

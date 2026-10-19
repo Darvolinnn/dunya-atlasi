@@ -361,6 +361,15 @@ export function karsilastir(a: EvrenTarihi | null, b: EvrenTarihi | null): Karsi
   return 'belirsiz';
 }
 
+/** İki tarih arasındaki gün sayısı [en az, en çok]; b, a'dan önceyse eksi. Uçlardan biri bilinmiyorsa null. */
+export function gunFarki(a: EvrenTarihi | null, b: EvrenTarihi | null): { enAz: number; enCok: number } | null {
+  if (!a?.eksen || !b?.eksen) return null;
+  const { enErken: a1, enGec: a2 } = a.eksen, { enErken: b1, enGec: b2 } = b.eksen;
+  if (a1 === null || a2 === null || b1 === null || b2 === null) return null;
+  const g = (n: number) => Math.floor(n / GUN_PARCA);
+  return { enAz: g(b1) - g(a2), enCok: g(b2) - g(a1) };
+}
+
 /** Eksendeki bir noktanın yılı (ana takvimde). */
 export const eksenYili = (n: number, t: TakvimYa = VARSAYILAN_TAKVIM) => Math.floor(n / yilParcasi(anaTakvim(t)));
 
@@ -392,16 +401,16 @@ export function eksenAraligi(e: { enErken: number | null; enGec: number | null }
 export function tarihAciklamasi(t: EvrenTarihi, x: TakvimYa = VARSAYILAN_TAKVIM): string {
   const ana = anaTakvim(x);
   if (t.bicim === 'goreli') {
-    if (t.celiski?.length) return 'Kısıtlar birbiriyle çelişiyor; olası tarih yok';
+    if (t.celiski?.length) return 'Kısıtlar birbiriyle çelişiyor, olası bir tarih yok';
     if (!t.eksen || (t.eksen.enErken === null && t.eksen.enGec === null)) return 'Yalnızca göreli sırası biliniyor';
     return `Olası: ${eksenAraligi(t.eksen, ana)}`;
   }
   if (t.akis) {
     const a = setMi(x) ? x.akislar.find((y) => y.kod === t.akis) : undefined;
     const ad = a?.ad ?? 'Akış';
-    if (!t.yerel || t.yerel.enErken === null) return `${ad}: akış içinde yeri okunamadı (örn. “${ad} 30. gün”)`;
+    if (!t.yerel || t.yerel.enErken === null) return `${ad}: akış içindeki yeri okunamadı (ör. “${ad} 30. gün”)`;
     const yerel = t.hassasiyet === 'yil' ? `${Math.floor(t.yerel.enErken / yilParcasi(ana)) + 1}. yılı` : `${Math.floor(t.yerel.enErken / GUN_PARCA) + 1}. günü`;
-    return `${ad} akışının ${yerel}; ana akışta ${t.eksen ? eksenAraligi(t.eksen, ana) : 'yeri hesaplanamıyor (başlangıç ya da oran eksik)'}`;
+    return `${ad} akışının ${yerel}. Ana akışta ${t.eksen ? eksenAraligi(t.eksen, ana) : 'yeri hesaplanamıyor (başlangıç ya da oran eksik)'}`;
   }
   if (setMi(x) && t.takvim !== ana.kod) {
     const p = x.diger.find((y) => y.kod === t.takvim);

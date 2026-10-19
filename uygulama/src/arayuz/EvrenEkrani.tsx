@@ -22,6 +22,7 @@ import { BagSeridi, SurumlerSekmesi } from './Surumler';
 import { MarkdownCiktisi } from './Cikti';
 import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
 
+import { SayfaYardimi } from './SayfaYardimi';
 import { ANA_SAYFALAR, DIGER_SAYFALAR, EvrenKabugu, GORUNUMLER, gorunumMu } from './Kabuk';
 
 const SAYFA_ADLARI = new Map<string, string>([...ANA_SAYFALAR, ...DIGER_SAYFALAR, ...GORUNUMLER]);
@@ -44,11 +45,11 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
         <BagSeridi bag={bilgi.bag} />
         {sekme === 'masa' && (
           <>
-            {bilgi.bag ? <h1>{bilgi.ad}</h1> : <AdBasligi istemci={istemci} bilgi={bilgi} />}
-            <p class="soluk kucuk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
+            {bilgi.bag ? <div class="baslik-satiri"><h1>{bilgi.ad}</h1><SayfaYardimi sayfa="masa" /></div> : <AdBasligi istemci={istemci} bilgi={bilgi} />}
+            <p class="soluk kucuk">Oluşturulma: {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik</p>
           </>
         )}
-        {baslik && <h1 class="sayfa-basligi">{gorunumMu(sekme) ? <><span class="soluk">Görünümler · </span>{baslik}</> : baslik}</h1>}
+        {baslik && <div class="baslik-satiri sayfa-basligi"><h1>{gorunumMu(sekme) ? <><span class="soluk">Görünümler · </span>{baslik}</> : baslik}</h1><SayfaYardimi sayfa={sekme} /></div>}
         {sekme === 'inceleme' ? <IncelemeKuyrugu istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><MarkdownCiktisi istemci={istemci} evren={kod} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
           : sekme === 'surumler' && !bilgi.bag ? <SurumlerSekmesi istemci={istemci} evren={kod} surum={surum} />
@@ -97,6 +98,7 @@ function AdBasligi({ istemci, bilgi }: { istemci: Istemci; bilgi: EvrenBilgisi }
     return (
       <div class="satir">
         <h1>{bilgi.ad}</h1>
+        <SayfaYardimi sayfa="masa" />
         <button class="dugme sade" onClick={() => { setAd(bilgi.ad); setDuzenle(true); }}>Adı değiştir</button>
       </div>
     );
@@ -123,7 +125,7 @@ function Gecmis({ istemci, kod, surum }: { istemci: Istemci; kod: string; surum:
   if (!satirlar) return null;
   return (
     <>
-      <p class="soluk kucuk">Bu evrende yapılan her değişiklik, yapıldığı sırayla burada tutulur. En yenisi en üstte.</p>
+      <p class="soluk kucuk">Bu evrende yapılan bütün değişiklikler burada sırayla listelenir. En yenisi en üsttedir.</p>
       <ul class="gunluk">
         {satirlar.filter((s) => !gizliAdimMi(s.tur, s.veri)).map((s) => (
           <li key={s.kod}>

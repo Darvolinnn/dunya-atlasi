@@ -6,14 +6,17 @@ import type { EserYapisi, EvrenBilgisi, Kayit, KaldigiYerBilgisi, KisaKayit } fr
 import { zamanYaz } from '../alan/islem-metni';
 import { EvrenKabugu } from './Kabuk';
 import { MetinEditoru, type EditorDenetimi } from './MetinEditoru';
-import { AnlatiYolu, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
+import { AnlatiYolu, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, sahneBaglamiBos, useSahneBaglami } from './Anlati';
 import { TarihAlani } from './KayitBolumleri';
 import { AlanGirdisi } from './KayitEkrani';
 import { CatismaListesi } from './Catismalar';
 import { YAZMA_TURLERI, useCalisma } from './Calisma';
 import { git } from './Uygulama';
 import { onayla } from './onay';
+import { SayfaYardimi } from './SayfaYardimi';
 
+// Bağlam panelinin tercihi üç değerlidir: '1' kapalı, '0' açık, yoksa kullanıcı seçmemiştir. Seçmediyse panel boş
+// sahnede kapalı, dolu sahnede açık durur.
 const baglamAnahtari = 'dunya-atlasi:yazma-baglami-kapali';
 const okuYerel = (a: string) => { try { return localStorage.getItem(a); } catch { return null; } };
 const yazYerel = (a: string, v: string) => { try { localStorage.setItem(a, v); } catch { /* yok */ } };
@@ -31,7 +34,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const [hata, setHata] = useState<string | null>(null);
   const [surum, setSurum] = useState(0);
   const [bag, setBag] = useState<EvrenBilgisi['bag']>(null);
-  const [baglamKapali, setBaglamKapali] = useState(() => okuYerel(baglamAnahtari) === '1');
+  const [baglamTercihi, setBaglamTercihi] = useState<boolean | null>(() => { const v = okuYerel(baglamAnahtari); return v === '1' ? true : v === '0' ? false : null; });
   const denetim = useRef<EditorDenetimi | null>(null);
   const calisma = useCalisma();
   const [baslangic] = useState(() => calisma?.konumAl(kod) ?? null);
@@ -47,7 +50,10 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
 
   if (hata) return <main class="sayfa"><p class="hata">{hata}</p></main>;
   if (!kayit) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
-  const baglamAc = (acik: boolean) => { setBaglamKapali(!acik); yazYerel(baglamAnahtari, acik ? '0' : '1'); };
+  const baglamAc = (acik: boolean) => { setBaglamTercihi(!acik); yazYerel(baglamAnahtari, acik ? '0' : '1'); };
+  const bos = sahneBaglamiBos(sahneBaglami);
+  // Seçilmemişken bağlam okunana kadar panel açılmaz; dolu sahnede okununca açılır.
+  const baglamKapali = baglamTercihi ?? (!sahneBaglami || bos);
   const baglamGorunur = sahne && !baglamKapali;
   const saltOkunur = bag?.tur === 'surum';
 
@@ -57,10 +63,11 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
         <div class="yaz-ust">
           {YAZMA_TURLERI.includes(kayit.tur) && kayit.tur !== 'eser' ? <AnlatiYolu istemci={istemci} evren={evren} kayit={kayit} yazma /> : <span />}
           <span class="bosluk" />
-          {sahne && baglamKapali && <button class="dugme sade kucuk" onClick={() => baglamAc(true)}>Bağlamı göster</button>}
+          {sahne && baglamKapali && <button class="dugme sade kucuk" onClick={() => baglamAc(true)}>{bos ? 'Bağlam ekle' : 'Bağlamı göster'}</button>}
           <a class="dugme sade kucuk" href={`#/e/${evren}/k/${kod}`}>Bütün alanlar</a>
+          <SayfaYardimi sayfa="yaz" />
           {!kayit.silindi && !saltOkunur && (
-            <button class="dugme sade kucuk tehlikeli" title="Çöp kutusundan geri getirilebilir" onClick={async () => { if (!(onayla(`“${kayit.ad}” çöp kutusuna taşınsın mı? Çöp kutusundan geri getirebilirsin.`))) return;
+            <button class="dugme sade kucuk tehlikeli" title="Çöp kutusundan geri getirilebilir" onClick={async () => { if (!(onayla(`“${kayit.ad}” çöp kutusuna taşınsın mı? Çöp kutusundan geri getirebilirsiniz.`))) return;
               await denetim.current?.kaydet();
               await istemci.iste('kayitSil', { evren, kod });
               git(`/e/${evren}/yaz`);
@@ -87,7 +94,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
           </div>
           <TarihAlani istemci={istemci} evren={evren} kayit={kayit} />
           <SahneAlanlari istemci={istemci} evren={evren} kayit={kayit} baglam={sahneBaglami} />
-          <SahneBaglamPaneli evren={evren} baglam={imlecParcasi && parcaBaglami ? parcaBaglami : sahneBaglami} parca={!!(imlecParcasi && parcaBaglami)} />
+          <SahneBaglamPaneli evren={evren} baglam={imlecParcasi && parcaBaglami ? parcaBaglami : sahneBaglami} parca={!!(imlecParcasi && parcaBaglami)} bos={bos && !(imlecParcasi && parcaBaglami)} />
           <a class="kucuk" href={`#/e/${evren}/k/${kod}`}>Sahnedekiler, süreklilik ve bütün alanlar →</a>
         </aside>
       )}
@@ -119,10 +126,10 @@ function YaziMasasi({ istemci, evren }: { istemci: Istemci; evren: string }) {
 
   return (
     <main class="sayfa yazi-masasi">
-      <h1 class="sayfa-basligi">Yaz</h1>
+      <div class="baslik-satiri sayfa-basligi"><h1>Yaz</h1><SayfaYardimi sayfa="yaz" /></div>
       {kaldigi?.kayit && kaldigi.kayitAdi && (
         <section class="kart kaldigin-yer">
-          <div class="soluk kucuk">Kaldığın yer · {zamanYaz(kaldigi.zaman)}{kaldigi.cihaz ? ` · ${kaldigi.cihaz} cihazında` : ''}</div>
+          <div class="soluk kucuk">Kaldığınız yer · {zamanYaz(kaldigi.zaman)}{kaldigi.cihaz ? ` · ${kaldigi.cihaz} cihazında` : ''}</div>
           <div class="satir">
             <strong class="kaldigin-ad">{kaldigi.kayitAdi}</strong>
             <span class="bosluk" />
@@ -132,7 +139,7 @@ function YaziMasasi({ istemci, evren }: { istemci: Istemci; evren: string }) {
         </section>
       )}
       <h2 class="ara-baslik">Eserler</h2>
-      {!eserler.length && <p class="soluk">Henüz bir eserin yok. Romanının ya da öykünün adını yazarak başla; bölümleri ve sahneleri soldaki listeden eklersin.</p>}
+      {!eserler.length && <p class="soluk">Henüz bir eseriniz yok. Romanınızın ya da öykünüzün adını yazarak başlayın. Bölümleri ve sahneleri soldaki listeden eklersiniz.</p>}
       <div class="kartlar">
         {eserler.map((e) => (
           <a class="kart eser-karti" key={e.kod} href={`#/e/${evren}/yaz/${e.kod}`}>

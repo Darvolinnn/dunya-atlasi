@@ -40,7 +40,7 @@ export function DegisiklikMasasiPaneli({ istemci, evren, kayit, kapat }: { istem
         <span class="bosluk" />
         <button class="dugme sade kucuk" onClick={kapat}>Kapat</button>
       </div>
-      <p class="soluk kucuk">Yeni tarihi yaz; uygulamadan önce neyin kayacağını gör ve korunacakları seç. Önizleme hiçbir şeyi değiştirmez.</p>
+      <p class="soluk kucuk">Yeni tarihi yazın. Uygulamadan önce nelerin kayacağını görün ve korunacakları seçin. Önizleme hiçbir şeyi değiştirmez.</p>
       <label class="alan"><span class="alan-adi">Yeni tarih (şimdiki: {kayit.tarih?.ifade ?? '—'})</span>
         <input class="girdi" lang="tr" value={ifade} placeholder="Örn. 432" onInput={(e) => setIfade((e.target as HTMLInputElement).value)} /></label>
       {hata && <p class="hata kucuk">{hata}</p>}
@@ -48,7 +48,7 @@ export function DegisiklikMasasiPaneli({ istemci, evren, kayit, kapat }: { istem
         <p class="kucuk">{m.olay.ad}: {m.once} → <strong>{m.sonra}</strong></p>
         <div class="etki-grubu">
           <strong class="kucuk">Hesapla değişenler ({m.hesap.length})</strong>
-          <p class="soluk kucuk">Bu olaya bağlı tarihler ve yaşlar. Korumak istediğini işaretle; korunan tarih bugünkü yerinde yazılı tarih olur.</p>
+          <p class="soluk kucuk">Bu olaya bağlı tarihler ve yaşlar. Korumak istediklerinizi işaretleyin. Korunan tarih, şimdiki değeriyle yazılı bir tarih olarak kalır.</p>
           {m.hesap.length > 0 && <ul class="kucuk masa-listesi">{m.hesap.map((x, i) => (
             <li key={(x.anahtar ?? x.kod) + i}>
               {x.anahtar && x.korunabilir && <label class="satir"><input type="checkbox" checked={koru.includes(x.anahtar)}
@@ -60,11 +60,11 @@ export function DegisiklikMasasiPaneli({ istemci, evren, kayit, kapat }: { istem
         </div>
         <div class="etki-grubu">
           <strong class="kucuk">Sabit kararla çelişenler ({m.celisen.length})</strong>
-          <p class="soluk kucuk">Yazılı tarihler, neden–sonuç sırası ve korunan kararlarla uyuşmayanlar. Uygulamak yine mümkündür.</p>
+          <p class="soluk kucuk">Yazılı tarihler, neden–sonuç sırası ve korunan kararlarla uyuşmayanlar. Yine de değişikliği uygulayabilirsiniz.</p>
           {m.celisen.length > 0 && <ul class="kucuk">{m.celisen.map((x, i) => <li key={x.kod + i}>{bag(x)}: {x.aciklama}</li>)}</ul>}
         </div>
-        {liste('İncelenecekler', 'Açıkça kurduğun bağlar yüzünden; uygulayınca inceleme listesine eklenir.', m.incelenecek)}
-        {liste('Yalnızca bahsedenler', 'Metninde bu kayda bağlantı olanlar; bilgi içindir, incelemeye açılmaz.', m.bahseden)}
+        {liste('İncelenecekler', 'Sizin açıkça kurduğunuz bağlar yüzünden etkilenenler. Uygulayınca inceleme listesine eklenir.', m.incelenecek)}
+        {liste('Yalnızca bahsedenler', 'Metninde bu kayda bağlantı olanlar. Yalnızca bilgi içindir, inceleme listesine eklenmez.', m.bahseden)}
         <div class="satir">
           <button class="dugme ana" onClick={uygula}>Uygula</button>
           <button class="dugme" onClick={kapat}>Vazgeç</button>

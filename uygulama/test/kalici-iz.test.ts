@@ -207,6 +207,25 @@ describe('geçmişin bugünkü izleri (F11)', () => {
     ]);
   });
 
+  it('yeri çöp kutusundaki iz düzenlenince bağ düşmez; yer geri gelince yine görünür', () => {
+    const { h, evren, meydan, sehir, kusatma } = kur();
+    const { kod } = h.izKaydiYaz({ evren, olay: kusatma, tur: 'kalici', ad: 'Yıkık Kemer', yer: meydan });
+    h.kayitSil({ evren, kod: meydan });
+    const iz = h.olayIzleri({ evren, olay: kusatma }).kalici[0];
+    expect(iz.yer).toBeNull();
+    expect(iz.silinmisYer).toMatchObject({ kod: meydan, ad: 'Bakır Meydanı' });
+    // Arayüz formu açarken çöp kutusundaki yeri seçili bırakır; yalnız ad değişir.
+    h.izKaydiYaz({ evren, kod, olay: kusatma, tur: 'kalici', ad: 'Yıkık Kemer ve Sur', yer: iz.silinmisYer!.kod });
+    expect(h.olayIzleri({ evren, olay: kusatma }).kalici[0].silinmisYer?.kod).toBe(meydan);
+    // Başka bir silinmiş yer yeni bağ olarak seçilemez.
+    h.kayitSil({ evren, kod: sehir });
+    expect(() => h.izKaydiYaz({ evren, kod, olay: kusatma, tur: 'kalici', ad: 'Yıkık Kemer', yer: sehir })).toThrow(/Yer kaydı bulunamadı/);
+    h.kayitGeriYukle({ evren, kod: meydan });
+    const geri = h.olayIzleri({ evren, olay: kusatma }).kalici[0];
+    expect(geri.yer?.kod).toBe(meydan);
+    expect(geri.silinmisYer).toBeNull();
+  });
+
   it('iki cihazda aynı iz kaydının farklı yazımı çatışma olarak görünür ve çözülür', () => {
     const { h, evren, sehir, kusatma } = kur();
     const { kod: izKod } = h.izKaydiYaz({

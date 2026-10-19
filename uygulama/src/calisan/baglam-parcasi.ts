@@ -29,8 +29,8 @@ function kisa(e: EvrenVt, kod: string | null): KisaKayit | null {
 }
 
 function denetle(e: EvrenVt, t: BaglamParcasiTanimi): SakliParca {
-  if (!t || typeof t !== 'object') throw new Error('Bağlam geçersiz.');
-  for (const a of [t.tarih, t.yer, t.bakis]) if (!a || !KIPLER.includes(a.kip)) throw new Error('Her alan için bir seçenek seçin.');
+  if (!t || typeof t !== 'object') throw new Error('Bağlam okunamadı.');
+  for (const a of [t.tarih, t.yer, t.bakis]) if (!a || !KIPLER.includes(a.kip)) throw new Error('Her alan için bir seçim yapın.');
   let tarih: EvrenTarihi | null = null;
   if (t.tarih.kip === 'deger') {
     const ifade = String(t.tarih.ifade ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
@@ -55,7 +55,7 @@ function denetle(e: EvrenVt, t: BaglamParcasiTanimi): SakliParca {
 export function parcaOlustur(b: ParcaBaglami, kayit: string, alan: string, t: BaglamParcasiTanimi) {
   const r = kodGecerliMi(kayit) ? b.e.db.selectObject('SELECT tur FROM kayitlar WHERE kod=? AND silindi IS NULL', [kayit]) : undefined;
   if (!r) throw new Error('Sahne bulunamadı.');
-  if (r.tur !== 'sahne') throw new Error('Bağlam parçası yalnızca sahne metninde açılır.');
+  if (r.tur !== 'sahne') throw new Error('Bağlam parçası yalnızca sahne metninde açılabilir.');
   if (typeof alan !== 'string' || !/^[a-z_]{1,40}$/.test(alan)) throw new Error('Geçersiz metin.');
   const kod = yeniKod();
   b.yaz([{ tur: 'baglam_parcasi_yaz', veri: { kod, kayit, alan, tanim: denetle(b.e, t) } }], [kayit]);

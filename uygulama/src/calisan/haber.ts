@@ -110,7 +110,7 @@ export function enKisaRota(e: EvrenVt, nereden: string, nereye: string, kosul: s
   return {
     nereden: kisa(e, nereden), nereye: kisa(e, nereye), kosul, ...genel, bilinen,
     paket: p ? { kod: p.kod, ad: p.ad } : null,
-    kapsam: `Kayıtlı rotalar ve elle girilmiş süreler${kosul ? ` (“${kosul}” koşulunda)` : ' (her rotanın en kısa tanımlı süresi)'}. Molalar sürelerin içinde sayılır, ayrıca eklenmez.${cikis ? ` İzinler her rotanın başına varış anında değerlendirildi (çıkış: ${cikis.ifade}).` : ''}${kapali ? ` Pakete göre ${kapali} rota kapalı.` : ''}`,
+    kapsam: `Kayıtlı rotalar ve elle girilmiş süreler${kosul ? ` (“${kosul}” koşulunda)` : ' (her rotanın en kısa tanımlı süresi)'}. Molalar sürelerin içinde sayılır, ayrıca eklenmez.${cikis ? ` İzinler, her rotanın başına varılan ana göre değerlendirildi (çıkış: ${cikis.ifade}).` : ''}${kapali ? ` Pakete göre ${kapali} rota kapalı.` : ''}`,
   };
 }
 
@@ -131,7 +131,7 @@ export function kanalYaz(b: HaberBaglami, kod: string, t: KanalTanimi) {
     kayitTuru(b.e, x.a); kayitTuru(b.e, x.b);
     if (x.a === x.b) throw new Error('Bir bağlantının iki ucu aynı olamaz.');
     const gun = Number(x.gun);
-    if (!Number.isFinite(gun) || gun < 0 || gun > 100000) throw new Error('Bağlantı süresi gün olarak bir sayı olmalı.');
+    if (!Number.isFinite(gun) || gun < 0 || gun > 100000) throw new Error('Bağlantı süresini gün sayısı olarak yazın.');
     return { a: x.a, b: x.b, gun };
   });
   const yeni: KanalTanimi = { rotalar: !!t.rotalar, kosul: t.kosul ? String(t.kosul).trim().slice(0, 80) || null : null, carpan, baglantilar };
@@ -183,6 +183,6 @@ export function haberYayilimi(e: EvrenVt, kod: string, p: PaketEtkisi | null): H
   const suresiz = [...ag.erisilen.keys()].filter((y) => y !== c.yer!.kod && !ag.uzak.has(y)).map((y) => kisa(e, y));
   return {
     cikis: c, kanallar, ulasilan, suresiz, durum: 'hesaplandi',
-    not: `Yalnızca kayıtlı kanallar. “Ulaşabilir” biri onu biliyor demek değildir; teslim, okuma, inanma ve aktarma ayrı kayıtlardır. Listede olmayan yerlere ulaşamayacağı söylenmez.${p ? ` “${p.ad}” paketiyle hesaplandı.` : ''}`,
+    not: `Yalnızca kayıtlı kanallar hesaba katıldı. “Ulaşabilir”, orada birinin haberi bildiği demek değil; teslim, okuma, inanma ve aktarma ayrıca kaydedilir. Listede olmayan bir yere ulaşamayacağı da söylenemez.${p ? ` “${p.ad}” paketiyle hesaplandı.` : ''}`,
   };
 }

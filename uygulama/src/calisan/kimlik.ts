@@ -101,7 +101,7 @@ export function kimlikBirlestirOnizle(e: EvrenVt, kisi: string, diger: string): 
   if (kullanimlar(e, 'a', k.kod).some((x) => x.kimlik.kod === d.kod)) throw new Error(`“${d.ad}” zaten ${k.ad} kişisinin kimliği.`);
   if (kullanimlar(e, 'a', d.kod).length) throw new Error(`“${d.ad}” kendisi başka kimlikler kullanıyor; önce o bağları kaldırın.`);
   const l: string[] = [];
-  if (d.tur !== KIMLIK_TURU) l.push(`“${d.ad}” kaydının türü ${turBul(d.tur).ad} → Kimlik olur. Kodu, geçmişi, ilişkileri ve metinleri yerinde kalır.`);
+  if (d.tur !== KIMLIK_TURU) l.push(`“${d.ad}” kaydının türü ${turBul(d.tur).ad} → Kimlik olur. Kaydın kendisi, geçmişi, ilişkileri ve metinleri yerinde kalır.`);
   l.push(`${k.ad} ile “${d.ad}” arasında “kullandığı kimlik” bağı kurulur.`);
   const { olaylar, sahneler } = katilimlar(e, d.kod);
   if (olaylar.length || sahneler.length) l.push(`“${d.ad}” olarak yer aldığı ${olaylar.length} olay ve ${sahneler.length} sahne ${k.ad} kişisinin sayfasında da görünür.`);

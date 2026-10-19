@@ -115,8 +115,8 @@ export async function markdownDosyalari(e: EvrenVt, evrenAdi: string, medyaOku: 
   }
   const okubeni = [
     `# ${evrenAdi}`, '',
-    'Bu klasör Dünya Atlası\'ndan okunmak için dışa aktarıldı. Her kayıt bir Markdown dosyasıdır; kayıtlar türlerine göre klasörlerdedir.',
-    'Bağlantılar [[Ad]] biçimindedir; Obsidian gibi programlarda tıklanabilir. Ön bilgide tür, karar durumu, lakaplar, etiketler, tarih ve şablon alanları vardır.',
+    'Bu klasör, okunabilmesi için Dünya Atlası\'ndan dışa aktarıldı. Her kayıt bir Markdown dosyasıdır; kayıtlar türlerine göre klasörlerdedir.',
+    'Bağlantılar [[Ad]] biçimindedir; Obsidian gibi programlarda tıklanabilir. Her dosyanın başındaki bilgi bölümünde tür, karar durumu, lakaplar, etiketler, tarih ve şablon alanları vardır.',
     '', '## Bu çıktıda olmayanlar', '', ...KAYIPLAR.map((k) => `- ${k}`),
     ...(eksikGorsel ? ['', `${eksikGorsel} görsel bu cihazda olmadığı için klasöre konamadı.`] : []),
     '', 'Hiçbir şey kaybetmeden taşımak ya da geri yüklemek için evrenin "Yedek" sekmesindeki tam yedeği kullanın.', '',

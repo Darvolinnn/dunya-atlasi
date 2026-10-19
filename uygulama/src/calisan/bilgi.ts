@@ -163,8 +163,8 @@ function bilgiBul(e: EvrenVt, kod: string) {
 const secenekMetinleri = (l: unknown): string[] => {
   if (!Array.isArray(l)) throw new Error('Cevaplar okunamadı.');
   const m = l.map((x) => temiz(x, 300)).filter(Boolean);
-  if (!m.length) throw new Error('En az bir olası cevap yaz.');
-  if (m.length > 30) throw new Error('Cevap sayısı çok fazla.');
+  if (!m.length) throw new Error('En az bir olası cevap yazın.');
+  if (m.length > 30) throw new Error('En çok 30 cevap yazılabilir.');
   if (new Set(m.map((x) => x.toLocaleLowerCase('tr-TR'))).size !== m.length) throw new Error('Aynı cevap iki kez yazılmış.');
   return m;
 };
@@ -199,8 +199,8 @@ export function iddiaDegistir(b: DurumBaglami, kod: string, alan: string, girdi:
       }));
       const kalan = new Set(liste.map((s) => s.kod));
       const kullanilan = b.e.db.selectValue(`SELECT count(*) FROM bilgiler WHERE iddia=? AND silindi IS NULL AND secenek IS NOT NULL AND secenek NOT IN (${liste.map(() => '?').join(',')})`, [kod, ...kalan]) as number;
-      if (kullanilan) throw new Error('Çıkarmak istediğin cevaba inanan ya da onu bilen biri kayıtlı; önce o bilgiyi değiştir.');
-      if (r.gercek && !kalan.has(r.gercek as string)) throw new Error('Gerçek olarak belirlenen cevap çıkarılamaz; önce gerçeği değiştir.');
+      if (kullanilan) throw new Error('Çıkarmak istediğiniz cevaba inanan ya da onu bilen biri kayıtlı. Önce o bilgiyi değiştirin.');
+      if (r.gercek && !kalan.has(r.gercek as string)) throw new Error('Gerçek olarak belirlenen cevap çıkarılamaz. Önce gerçeği değiştirin.');
       deger = liste; break;
     }
     default: throw new Error('Bu alan değiştirilemez.');
@@ -220,7 +220,7 @@ function bilgiAlani(b: DurumBaglami, iddia: Satir, alan: string, girdi: unknown,
   const e = b.e;
   switch (alan) {
     case 'secenek': {
-      if (girdi === null || girdi === undefined || girdi === '') { if (inanc !== 'bilmiyor') throw new Error('Hangi cevaba inandığını seç.'); return null; }
+      if (girdi === null || girdi === undefined || girdi === '') { if (inanc !== 'bilmiyor') throw new Error('Hangi cevaba inandığını seçin.'); return null; }
       if (!(JSON.parse(iddia.secenekler as string) as IddiaSecenegi[]).some((s) => s.kod === girdi)) throw new Error('Bu cevap soruda yok.');
       return girdi;
     }
@@ -234,7 +234,7 @@ function bilgiAlani(b: DurumBaglami, iddia: Satir, alan: string, girdi: unknown,
     case 'sahne': {
       if (!girdi) return null;
       const k = kayitVar(e, girdi, 'Sahne bulunamadı.');
-      if (e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [k]) !== 'sahne') throw new Error('Bir sahne seç.');
+      if (e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [k]) !== 'sahne') throw new Error('Bir sahne seçin.');
       return k;
     }
     case 'baslangic': case 'bitis': return sinirCoz(b, girdi as SinirGirdisi | null);
@@ -262,7 +262,7 @@ export function bilgiEkle(b: DurumBaglami, g: BilgiGirdisi) {
     aciklama: bilgiAlani(b, iddia, 'aciklama', g.aciklama ?? '', inanc),
     karar: bilgiAlani(b, iddia, 'karar', g.karar ?? 'kesin', inanc),
   };
-  if (okur && !veri.sahne) throw new Error('Okurun bunu hangi sahnede öğrendiğini seç.');
+  if (okur && !veri.sahne) throw new Error('Okurun bunu hangi sahnede öğrendiğini seçin.');
   b.yaz([{ tur: 'bilgi_ekle', veri: { ...veri, soru: iddia.soru } }], [bilen, iddia.konu as string]);
   return { kod: veri.kod as string };
 }
@@ -279,7 +279,7 @@ export function bilgiDegistir(b: DurumBaglami, kod: string, alan: BilgiAlani, gi
   const girdiler = [{ tur: 'bilgi_degistir', veri: { kod, alan, deger, bilen: r.bilen, soru: iddia.soru } }];
   // "Bilmiyor"a dönen kaydın cevabı boşalır; inançtan "bilmiyor"dan çıkarken cevap ayrıca seçilir.
   if (alan === 'inanc' && deger === 'bilmiyor' && r.secenek) girdiler.push({ tur: 'bilgi_degistir', veri: { kod, alan: 'secenek', deger: null, bilen: r.bilen, soru: iddia.soru } });
-  if (alan === 'inanc' && deger !== 'bilmiyor' && !r.secenek) throw new Error('Önce hangi cevaba inandığını seç.');
+  if (alan === 'inanc' && deger !== 'bilmiyor' && !r.secenek) throw new Error('Önce hangi cevaba inandığını seçin.');
   b.yaz(girdiler, [r.bilen as string]);
 }
 

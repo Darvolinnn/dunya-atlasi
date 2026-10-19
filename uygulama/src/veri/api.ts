@@ -621,6 +621,8 @@ export type KaliciIzTuru = 'kisa_vadeli' | 'kalici';
 export interface IzKaydi {
   kod: string; olay: KisaKayit; olayTarihi: EvrenTarihi | null; tur: KaliciIzTuru; ad: string;
   yer: KisaKayit | null; bitis: EvrenTarihi | null; gercekKoken: string; anlatilanHikaye: string; silindi: boolean;
+  /** Bağlı yer çöp kutusundaysa: bağ korunur, düzenlemede düşmez. */
+  silinmisYer: KisaKayit | null;
 }
 export interface OlayIzleri { kisaVadeli: IzKaydi[]; kalici: IzKaydi[]; silinenler: IzKaydi[]; yerAdaylari: KisaKayit[] }
 export interface MekanIzKatmani { anahtar: string; baslik: string; tarihsiz: boolean; siraAnahtari: number | null; izler: IzKaydi[] }
@@ -779,6 +781,8 @@ export type Catisma =
       a: { basliklar: Basliklar; kurulum: string; zaman: number }; b: { basliklar: Basliklar; kurulum: string; zaman: number } };
 export interface EsitlemeDurumu {
   bagli: boolean; calisiyor: boolean; hata: { mesaj: string; izin: boolean; zaman: number } | null;
+  /** Sürmekte olan büyük dosya yüklemesi (TK5). */
+  yukleme?: { gonderilen: number; toplam: number } | null;
   kurulum: { kod: string; ad: string };
   evrenler: EvrenEsitlemeDurumu[];
 }
@@ -1139,7 +1143,8 @@ export interface Istekler {
   kayitGecmisi(a: { evren: string; kod: string }): GunlukSatiri[];
 
   metinAc(a: { evren: string; kayit: string; alan: string }): { spans: Spans; basliklar: Basliklar };
-  metinKaydet(a: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar }): { basliklar: Basliklar; degisti: boolean; birlesti: boolean; spans?: Spans };
+  /** taslak: bu kayıtla aynı anda silinecek kurtarma taslağı; yalnız kayıt isteğinden önce yazılmışsa silinir (§10.7). */
+  metinKaydet(a: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar; taslak?: { anahtar: string; zaman: number } }): { basliklar: Basliklar; degisti: boolean; birlesti: boolean; spans?: Spans };
   metinSurumu(a: { evren: string; kayit: string; alan: string; basliklar: Basliklar }): { spans: Spans };
   kayitTarih(a: { evren: string; kod: string; ifade?: string; kisitlar?: { olay: string; fark: string }[] | null }): { tarih: EvrenTarihi | null };
   alanKarari(a: { evren: string; kod: string; alan: string; karar: string }): void;

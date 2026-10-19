@@ -95,7 +95,7 @@ export function BakimBolumu({
       {etkinTanimlar.length === 0 && tanimFormu === null && (
         <div class="satir">
           <p class="soluk kucuk" style="margin:0">
-            Bu yerin ya da düzenin bakımı tanımlanmamış. İsterseniz sıklığını, uzmanını ve bakım yapılmazsa ne olduğunu yazabilirsiniz.
+            Bu yerin ya da düzenin bakımı tanımlanmamış. İsterseniz sıklığını, uzmanını ve bakım yapılmazsa ne olacağını yazabilirsiniz.
           </p>
           {!saltOkunur && (
             <button type="button" class="dugme sade kucuk" onClick={() => setTanimFormu('yeni')}>
@@ -214,7 +214,7 @@ export function BakimBolumu({
                 <div>
                   <strong>Bakım yapılmazsa: </strong>
                   <span>{t.kesinti}</span>
-                  {t.kesintiSuresi && <span class="soluk"> (gecikmeden {sureYazisi(t.kesintiSuresi)} sonra)</span>}
+                  {t.kesintiSuresi && <span class="soluk"> (bakım geciktikten {sureYazisi(t.kesintiSuresi)} sonra)</span>}
                 </div>
               )}
             </div>
@@ -390,7 +390,7 @@ function BakimTanimFormu({
 
       <div class="satir">
         <label class="alan">
-          <span class="alan-adi">Ne sıklıkla gerekir? (boşsa bilinmiyor)</span>
+          <span class="alan-adi">Ne sıklıkla yapılmalı? (Boşsa bilinmiyor)</span>
           <span class="satir">
             <input
               class="girdi"
@@ -415,7 +415,7 @@ function BakimTanimFormu({
         </label>
 
         <label class="alan">
-          <span class="alan-adi">Gecikmeden ne kadar sonra kesinti başlar?</span>
+          <span class="alan-adi">Bakım geciktikten ne kadar sonra sorun başlar?</span>
           <span class="satir">
             <input
               class="girdi"
@@ -441,7 +441,7 @@ function BakimTanimFormu({
       </div>
 
       <div class="alan">
-        <span class="alan-adi">Uzmanlar (bakımı yapabilen kişi, topluluk ya da makamlar)</span>
+        <span class="alan-adi">Uzmanlar (bakımı yapabilen kişiler, topluluklar ya da makamlar)</span>
         <div class="satir">
           {uzmanlar.map((u) => (
             <span class="rozet" key={u.kod}>
