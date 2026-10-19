@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -31,6 +31,7 @@ import * as saglik from './saglik';
 import * as denetim from './denetim';
 import * as yol from './yol';
 import * as sureklilik from './sureklilik';
+import * as masaMod from './masa';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -385,6 +386,16 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           alanEtiketi: `“${cz.ad}” haritasındaki ${ne} ${({ noktalar: 'sınırı', kayit: 'bağlı olduğu kayıt', kip: 'türü', baslangic: 'başlangıcı', bitis: 'bitişi' } as Record<string, string>)[alan] ?? alan}`, degerler });
         continue;
       }
+      const msr = iliski || dr ? undefined : e.db.selectObject('SELECT ad FROM masalar WHERE kod=?', [nesne]);
+      const pkr = iliski || dr || msr ? undefined : e.db.selectObject('SELECT ad FROM paketler WHERE kod=?', [nesne]);
+      if (msr || pkr) {
+        const etiket = msr ? ({ ad: 'Adı', amac: 'Çözmeye çalışılan soru', notlar: 'Notlar', bas: 'Aralığın başı', bit: 'Aralığın sonu', paket: 'Seçili varsayım paketi', uyeler: 'Bağlı kayıtlar' } as Record<string, string>)[alan]
+          : ({ ad: 'Adı', aciklama: 'Açıklaması', varsayimlar: 'Varsayımları' } as Record<string, string>)[alan];
+        const yazi = (d: unknown) => (Array.isArray(d) ? `${d.length} öge` : d && typeof d === 'object' ? (d as { ifade?: string }).ifade ?? '' : d === null ? '(boş)' : alan === 'paket' ? ((e.db.selectValue('SELECT ad FROM paketler WHERE kod=?', [String(d)]) as string | undefined) ?? 'silinmiş paket') : String(d));
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: msr ? `“${msr.ad}” çalışma masası` : `“${pkr!.ad}” varsayım paketi`,
+          alanEtiketi: etiket ?? alan, degerler: degerler.map((d) => ({ ...d, yazi: yazi(d.deger) })) });
+        continue;
+      }
       const izr = iliski || dr ? undefined : e.db.selectObject('SELECT konu, ad FROM izler WHERE kod=?', [nesne]);
       if (izr) {
         const g = alan.startsWith('gozlem:') ? alan.split(':') : null;
@@ -555,6 +566,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const deger = JSON.parse(r.deger as string);
     if (alan === 'rota') { this.yaz(evren, [{ tur: 'rota_yaz', veri: { kod: nesne, rota: deger, cozum: true } }], [nesne]); return; }
     if (alan === 'asamalar') { this.yaz(evren, [{ tur: 'yolculuk_yaz', veri: { kod: nesne, asamalar: deger, cozum: true } }], [nesne]); return; }
+    const msr = e.db.selectObject('SELECT ad FROM masalar WHERE kod=?', [nesne]);
+    if (msr) { this.yaz(evren, [{ tur: 'masa_yaz', veri: { kod: nesne, alan, deger, masaAd: msr.ad, cozum: true } }]); return; }
+    const pkr = e.db.selectObject('SELECT ad FROM paketler WHERE kod=?', [nesne]);
+    if (pkr) { this.yaz(evren, [{ tur: 'paket_yaz', veri: { kod: nesne, alan, deger, paketAd: pkr.ad, cozum: true } }]); return; }
     const izr = e.db.selectObject('SELECT konu FROM izler WHERE kod=?', [nesne]);
     if (izr && alan === 'iz') { this.yaz(evren, [{ tur: 'iz_degistir', veri: { kod: nesne, konu: izr.konu, tanim: deger, cozum: true } }], [izr.konu as string]); return; }
     if (izr && alan.startsWith('gozlem:')) {
@@ -1729,7 +1744,37 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   }
 
   /** Kural tabanlı tutarlılık denetimleri (§9.1). */
-  denetimler({ evren }: { evren: string }) { return denetim.denetimler(this.evren(evren)); }
+  denetimler({ evren, paket = null }: { evren: string; paket?: string | null }) {
+    const e = this.evren(evren);
+    return denetim.denetimler(e, masaMod.paketEtkisi(e, paket));
+  }
+
+  // ---------- Çalışma masaları (§5.9) ve varsayım paketleri (§3.11) ----------
+  private masaBaglami(evren: string): masaMod.MasaBaglami {
+    const e = this.evren(evren);
+    return { e, yaz: (g, k) => { this.yaz(evren, g, k); }, tarih: (kod) => this.olayTarihi(e, kod) };
+  }
+  masalar({ evren }: { evren: string }) { return masaMod.masalar(this.evren(evren)); }
+  masa({ evren, kod }: { evren: string; kod: string }) { return masaMod.masa(this.masaBaglami(evren), kod); }
+  masaOlustur({ evren, ad }: { evren: string; ad: string }) { return masaMod.masaOlustur(this.masaBaglami(evren), ad); }
+  masaYaz({ evren, kod, alan, deger }: { evren: string; kod: string; alan: masaMod.MasaAlani; deger: string | null }) { masaMod.masaYaz(this.masaBaglami(evren), kod, alan, deger); }
+  masaUyeleri({ evren, kod, ...islem }: { evren: string; kod: string; ekle?: { tur: 'kayit' | 'harita'; kod: string }; cikar?: { tur: 'kayit' | 'harita'; kod: string }; tasi?: { uye: { tur: 'kayit' | 'harita'; kod: string }; sira: number } }) {
+    masaMod.masaUyeleri(this.masaBaglami(evren), kod, islem);
+  }
+  masaSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { masaMod.masaSil(this.masaBaglami(evren), kod, !!geriYukle); }
+  kayitMasalari({ evren, kod }: { evren: string; kod: string }) { return masaMod.kayitMasalari(this.evren(evren), kod); }
+  paketler({ evren }: { evren: string }) { return masaMod.paketler(this.evren(evren)); }
+  paket({ evren, kod }: { evren: string; kod: string }) { return masaMod.paket(this.evren(evren), kod); }
+  paketOlustur({ evren, ad }: { evren: string; ad: string }) { return masaMod.paketOlustur(this.masaBaglami(evren), ad); }
+  paketAlanYaz({ evren, kod, alan, deger }: { evren: string; kod: string; alan: 'ad' | 'aciklama'; deger: string }) { masaMod.paketYaz(this.masaBaglami(evren), kod, alan, deger); }
+  varsayimEkle({ evren, paket, varsayim }: { evren: string; paket: string; varsayim: VarsayimGirdisi }) { return masaMod.varsayimEkle(this.masaBaglami(evren), paket, varsayim); }
+  varsayimCikar({ evren, paket, kod }: { evren: string; paket: string; kod: string }) { masaMod.varsayimCikar(this.masaBaglami(evren), paket, kod); }
+  /** Varsayımı evrene yazmak ayrı bir işlemdir; paket değişmez. */
+  varsayimiEvreneYaz({ evren, paket, kod }: { evren: string; paket: string; kod: string }) {
+    const x = masaMod.varsayimiEvreneYaz(this.masaBaglami(evren), paket, kod);
+    if (x) this.kayitDegistir({ evren, kod: x.olay, alan: 'karar', deger: x.karar });
+  }
+  paketSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { masaMod.paketSil(this.masaBaglami(evren), kod, !!geriYukle); }
 
   // ---------- Görseller (§10.12) ----------
   /** Görseli içerik adıyla saklar; medya tablosunda yoksa eklenecek işlemi verir (TK5). */

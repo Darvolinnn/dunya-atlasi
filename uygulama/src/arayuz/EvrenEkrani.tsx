@@ -6,6 +6,7 @@ import { git } from './Uygulama';
 import { DriveYedekleri, YedekSekmesi } from './Tasima';
 import { Bahsedilenler, CopKutusu, KayitListesi } from './KayitListesi';
 import { Masa } from './Masa';
+import { MasalarSekmesi } from './Masalar';
 import { TakvimSekmesi, ZamanCizelgesi } from './Takvim';
 import { HaritalarSekmesi } from './Harita';
 import { AgGorunumu, BolumMatrisiGorunumu, DurumGecmisiSekmesi, KurguHatlariGorunumu, NedenSonucGorunumu, SoyAgaciGorunumu } from './Gorunumler';
@@ -40,7 +41,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
         <AdBasligi istemci={istemci} bilgi={bilgi} />
         <p class="soluk kucuk">Oluşturuldu {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik kayıtlı</p>
         <div class="sekmeler" role="tablist">
-          {([['masa', 'Masa'], ['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['meseleler', 'Açık meseleler'], ['sablonlar', 'Şablonlar'], ['haritalar', 'Haritalar'], ['gorunumler', 'Görünümler'], ['takvim', 'Takvim'], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
+          {([['masa', 'Masa'], ['masalar', 'Çalışma masaları'], ['kayitlar', `Kayıtlar (${bilgi.kayitSayisi})`], ['meseleler', 'Açık meseleler'], ['sablonlar', 'Şablonlar'], ['haritalar', 'Haritalar'], ['gorunumler', 'Görünümler'], ['takvim', 'Takvim'], ['bahsedilen', 'Bahsedilen ama yazılmamış'], ['cop', `Çöp kutusu (${bilgi.copSayisi})`], ['gecmis', 'Geçmiş'], ['yedek', 'Yedek'],
             ['inceleme', bilgi.catismaSayisi + bilgi.sorunSayisi ? `İnceleme (${bilgi.catismaSayisi + bilgi.sorunSayisi})` : 'İnceleme']] as const).map(([k, ad]) => (
             <button class="sekme" role="tab" aria-selected={k === 'gorunumler' ? GORUNUMLER.some(([g]) => g === sekme) : sekme === k}
               onClick={() => git(`/e/${kod}/${k === 'gorunumler' ? sonGorunum : k}`)}>{ad}</button>
@@ -56,6 +57,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           : sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
           : sekme === 'bahsedilen' ? <Bahsedilenler istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'cop' ? <CopKutusu istemci={istemci} evren={kod} surum={surum} />
+          : sekme === 'masalar' ? <MasalarSekmesi istemci={istemci} evren={kod} alt={alt} surum={surum} />
           : sekme === 'kayitlar' ? <KayitListesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'meseleler' ? <MeseleSekmesi istemci={istemci} evren={kod} />
           : sekme === 'haritalar' ? <HaritalarSekmesi istemci={istemci} evren={kod} kod={alt} />

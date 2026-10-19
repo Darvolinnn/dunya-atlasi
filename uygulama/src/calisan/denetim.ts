@@ -9,6 +9,7 @@ import { asamaSuresi, asamalarOku, enKisaSure, rotalar, yolculukBulunmalari } fr
 import { turkceKarsilastir } from '../alan/turkce';
 import type { DenetimBulgusu, DenetimKurali, DenetimOzeti, Denetimler, IncelemeKarari, KisaKayit } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
+import type { PaketEtkisi } from './masa';
 
 export interface DenetimBaglami {
   e: EvrenVt;
@@ -137,7 +138,7 @@ function dongu(e: EvrenVt): { bulgular: Ham[]; denetlenen: number } {
 }
 
 /** Konum: aynı zamanda, parçası olma ilişkisiyle birbirini kapsamayan iki yerde fiziksel olarak bulunma. */
-function konum(e: EvrenVt, b: Bulunma[]): { bulgular: Ham[]; denetlenen: number; yersiz: number; rotaDenetlenen: number } {
+function konum(e: EvrenVt, b: Bulunma[], p: PaketEtkisi | null): { bulgular: Ham[]; denetlenen: number; yersiz: number; rotaDenetlenen: number } {
   const yerler = new Map<string, { yer: KisaKayit; fikir: boolean }[]>();
   for (const r of e.db.selectObjects(`SELECT i.a olay, i.karar ikarar, y.kod, y.ad, y.tur, y.karar FROM iliskiler i JOIN kayitlar y ON y.kod=i.b
       WHERE i.tur='sahne_yeri' AND i.silindi IS NULL AND y.silindi IS NULL AND i.karar<>'vazgecildi' AND y.karar<>'vazgecildi'`)) {
@@ -173,7 +174,7 @@ function konum(e: EvrenVt, b: Bulunma[]): { bulgular: Ham[]; denetlenen: number;
   const bulgular: Ham[] = [];
   let denetlenen = 0, rotaDenetlenen = 0;
   // Kayıtlı rota süreleri (§8.4 süre ağı): iki yer arasında doğrudan kayıtlı rotaların en kısa süresi.
-  const rs = rotalar(e).filter((r) => r.a && r.b && r.sureler.length);
+  const rs = rotalar(e).filter((r) => r.a && r.b && r.sureler.length && p?.rota.get(r.kod) !== false);
   const enHizli = (p: string, q: string) => {
     let en: { rota: (typeof rs)[number]; sure: { kosul: string; gun: number } } | null = null;
     for (const r of rs) {
@@ -282,8 +283,8 @@ function esya(e: EvrenVt): { bulgular: Ham[]; denetlenen: number } {
 }
 
 /** Yolculuk aşaması kendi seçtiği rotanın tanımlı en kısa süresinden kısa sürüyorsa: yazarın kendi verisi çelişiyor. */
-function asamaDenetimi(e: EvrenVt): Ham[] {
-  const rs = new Map(rotalar(e).map((r) => [r.kod, r]));
+function asamaDenetimi(e: EvrenVt, p: PaketEtkisi | null): Ham[] {
+  const rs = new Map(rotalar(e).filter((r) => p?.rota.get(r.kod) !== false).map((r) => [r.kod, r]));
   const bulgular: Ham[] = [];
   for (const r of e.db.selectObjects(`SELECT y.kod, k.ad, k.tur, k.karar FROM yolculuklar y JOIN kayitlar k ON k.kod=y.kod WHERE k.silindi IS NULL AND k.karar<>'vazgecildi'`)) {
     asamalarOku(e, r.kod as string).forEach((a, n) => {
@@ -303,14 +304,27 @@ function asamaDenetimi(e: EvrenVt): Ham[] {
   return bulgular;
 }
 
-function hesapla(e: EvrenVt): { bulgular: Ham[]; kurallar: DenetimOzeti[] } {
-  const b: Bulunma[] = [...bulunmalar(e), ...yolculukBulunmalari(e).map((x) => {
+/**
+ * Paketle hesap (§3.11): "gerçekleşmedi" denen olayın bulunmaları denetime girmez; "gerçekleşti" denen fikir olayı
+ * kesin sayılır. "Kapalı" rota süre karşılaştırmasına girmez. Paketsiz hesap yalnızca kaydedilmiş veriyle yapılır.
+ */
+function pakettenGecir(b: Bulunma[], p: PaketEtkisi | null): Bulunma[] {
+  if (!p) return b;
+  return b.flatMap((x) => {
+    const v = p.olay.get(x.olay.kod) ?? (x.sahneOlayi ? p.olay.get(x.sahneOlayi) : undefined);
+    if (v === false) return [];
+    return [v === true ? { ...x, fikir: false } : x];
+  });
+}
+
+function hesapla(e: EvrenVt, p: PaketEtkisi | null = null): { bulgular: Ham[]; kurallar: DenetimOzeti[] } {
+  const b: Bulunma[] = pakettenGecir([...bulunmalar(e), ...yolculukBulunmalari(e).map((x) => {
     const yer = e.db.selectObject('SELECT kod, ad, tur FROM kayitlar WHERE kod=?', [x.yer]);
     return { kisi: x.kisi, olay: x.yolculuk, iliski: x.iliski, rol: 'yolcu', tarih: x.tarih, fikir: x.fikir, sahneOlayi: null,
       yer: yer ? { kod: yer.kod as string, ad: yer.ad as string, tur: yer.tur as string } : { kod: x.yer, ad: 'Silinmiş kayıt', tur: 'diger' } };
-  })];
-  const y = yasam(e, b), d = dongu(e), k = konum(e, b), s = esya(e);
-  k.bulgular.push(...asamaDenetimi(e));
+  })], p);
+  const y = yasam(e, b), d = dongu(e), k = konum(e, b, p), s = esya(e);
+  k.bulgular.push(...asamaDenetimi(e, p));
   const ozet = (kural: DenetimKurali, ad: string, tanim: string, x: { bulgular: Ham[]; denetlenen: number }, bos: string, not: string): DenetimOzeti => ({
     kural, ad, tanim, denetlenen: x.denetlenen, not: x.denetlenen ? not : bos,
     sonuc: x.bulgular.length ? 'bulgu_var' : x.denetlenen ? 'sorun_yok' : 'konu_degil',
@@ -338,8 +352,8 @@ const sirala = (l: DenetimBulgusu[]) => l.sort((a, b) => (a.hukum === b.hukum ? 
   || turkceKarsilastir(a.kayitlar[0]?.ad ?? '', b.kayitlar[0]?.ad ?? '') || a.baslik.localeCompare(b.baslik));
 
 /** Denetimler ve kuyruk kararları. Kabul edilen bulgu, dayanağı değişmedikçe açılmaz; ertelenen ayrı durur (§9.3). */
-export function denetimler(e: EvrenVt): Denetimler {
-  const { bulgular, kurallar } = hesapla(e);
+export function denetimler(e: EvrenVt, p: PaketEtkisi | null = null): Denetimler {
+  const { bulgular, kurallar } = hesapla(e, p);
   const kararlar = new Map(e.db.selectObjects("SELECT * FROM inceleme_kararlari WHERE anahtar LIKE 'denetim:%'").map((r) => [r.anahtar as string, r]));
   const acik: DenetimBulgusu[] = [], ertelenen: DenetimBulgusu[] = [], kabul: DenetimBulgusu[] = [], fikir: DenetimBulgusu[] = [];
   for (const { imza, ...b } of bulgular) {
@@ -356,7 +370,8 @@ export function denetimler(e: EvrenVt): Denetimler {
     if (![...acik, ...ertelenen, ...fikir].some((b) => b.kural === k.kural)) k.sonuc = 'sorun_yok';
     if (n) k.not += ` ${n} gerekçeli istisna var.`;
   }
-  return { kurallar, acik: sirala(acik), ertelenen: sirala(ertelenen), kabul: sirala(kabul), fikir: sirala(fikir) };
+  const paket = p ? { kod: p.kod, ad: p.ad, kullanilan: p.olay.size + p.rota.size, kullanilmayan: p.kullanilmayan } : null;
+  return { paket, kurallar, acik: sirala(acik), ertelenen: sirala(ertelenen), kabul: sirala(kabul), fikir: sirala(fikir) };
 }
 
 export const acikDenetimSayisi = (e: EvrenVt) => denetimler(e).acik.length;

@@ -86,6 +86,10 @@ function tarihleriYenidenHesapla(db: Database) {
       db.exec({ sql: `UPDATE ${tablo} SET baslangic=?, bitis=? WHERE kod=?`, bind: [sinir(r.baslangic), sinir(r.bitis), r.kod as string] });
     }
   }
+  for (const r of db.selectObjects('SELECT kod, bas, bit FROM masalar WHERE bas IS NOT NULL OR bit IS NOT NULL')) {
+    const t = (x: unknown) => (x ? JSON.stringify(tz(db, JSON.parse(x as string), z)) : null);
+    db.exec({ sql: 'UPDATE masalar SET bas=?, bit=? WHERE kod=?', bind: [t(r.bas), t(r.bit), r.kod as string] });
+  }
   for (const r of db.selectObjects('SELECT kod, asamalar FROM yolculuklar')) {
     const l = (JSON.parse(r.asamalar as string) as Record<string, unknown>[]).map((a) => ({ ...a, cikis: tz(db, a.cikis, z), varis: tz(db, a.varis, z) }));
     db.exec({ sql: 'UPDATE yolculuklar SET asamalar=? WHERE kod=?', bind: [JSON.stringify(l), r.kod as string] });
@@ -98,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 18;
+export const IZDUSUM_SURUMU = 19;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -174,6 +178,28 @@ CREATE TABLE IF NOT EXISTS iz_gozlemleri(
   PRIMARY KEY(iz, sahne, an)
 );
 CREATE INDEX IF NOT EXISTS iz_gozlemleri_sahne ON iz_gozlemleri(sahne);
+CREATE TABLE IF NOT EXISTS masalar(
+  kod TEXT PRIMARY KEY,
+  ad TEXT NOT NULL,
+  amac TEXT NOT NULL DEFAULT '',
+  notlar TEXT NOT NULL DEFAULT '',
+  bas TEXT,
+  bit TEXT,
+  paket TEXT,
+  uyeler TEXT NOT NULL DEFAULT '[]',
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE TABLE IF NOT EXISTS paketler(
+  kod TEXT PRIMARY KEY,
+  ad TEXT NOT NULL,
+  aciklama TEXT NOT NULL DEFAULT '',
+  varsayimlar TEXT NOT NULL DEFAULT '[]',
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
 CREATE INDEX IF NOT EXISTS degisimler_konu ON degisimler(konu);
 CREATE TABLE IF NOT EXISTS medya(
   ad TEXT PRIMARY KEY,
@@ -415,10 +441,24 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
+
+/** Varsayımlar: serbest metin, olay gerçekleşti/gerçekleşmedi, rota açık/kapalı, bilen bir iddiayı biliyor/bilmiyor. */
+function varsayimlarTemiz(db: Database, d: unknown) {
+  const k = (x: unknown) => (typeof x === 'string' ? yonlendir(db, x) : null);
+  return (Array.isArray(d) ? d : []).slice(0, 100).flatMap((v: Record<string, unknown>): Record<string, unknown>[] => {
+    const kod = typeof v?.kod === 'string' ? v.kod : null;
+    if (!kod) return [];
+    if (v.tur === 'metin') return [{ kod, tur: 'metin', metin: String(v.metin ?? '').slice(0, 300) }];
+    if (v.tur === 'olay' && k(v.olay)) return [{ kod, tur: 'olay', olay: k(v.olay), deger: !!v.deger }];
+    if (v.tur === 'rota' && k(v.rota)) return [{ kod, tur: 'rota', rota: k(v.rota), deger: !!v.deger }];
+    if (v.tur === 'bilgi' && k(v.bilen) && typeof v.iddia === 'string') return [{ kod, tur: 'bilgi', bilen: k(v.bilen), iddia: v.iddia, deger: !!v.deger }];
+    return [];
+  });
+}
 
 function katilimciEtkisi(db: Database, i: Islem, olay: string, kisi: string, ne: string) {
   const o = yonlendir(db, olay), k = yonlendir(db, kisi);
@@ -773,6 +813,52 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   iz_geri_yukle(db, i) {
     db.exec({ sql: 'UPDATE izler SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+  /** Çalışma masası (§5.9): kayıtlar kopyalanmaz, masa onlara bağlanır. */
+  masa_olustur(db, i) {
+    const v = i.veri as { kod?: unknown; ad?: unknown };
+    if (typeof v.kod !== 'string') return;
+    db.exec({ sql: 'INSERT OR IGNORE INTO masalar(kod, ad, olusturma, duzenleme) VALUES(?,?,?,?)', bind: [v.kod, String(v.ad ?? '').slice(0, 120), i.zaman, i.zaman] });
+  },
+  masa_yaz(db, i) {
+    const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
+    if (typeof kod !== 'string') return;
+    const metin = (n: number) => String(deger ?? '').slice(0, n);
+    const deg: Record<string, () => unknown> = {
+      ad: () => metin(120), amac: () => metin(300), notlar: () => metin(10000),
+      bas: () => (deger ? JSON.stringify(tz(db, deger)) : null), bit: () => (deger ? JSON.stringify(tz(db, deger)) : null),
+      paket: () => (typeof deger === 'string' ? deger : null),
+      uyeler: () => JSON.stringify((Array.isArray(deger) ? deger : []).filter((u: { tur?: unknown; kod?: unknown }) => (u?.tur === 'kayit' || u?.tur === 'harita') && typeof u.kod === 'string')
+        .slice(0, 500).map((u: { tur: string; kod: string }) => ({ tur: u.tur, kod: u.tur === 'kayit' ? yonlendir(db, u.kod) : u.kod }))),
+    };
+    if (!deg[alan]) return;
+    db.exec({ sql: `UPDATE masalar SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [deg[alan]() as string | null, i.zaman, kod] });
+    alanYaz(db, i, kod, alan, deger ?? null);
+  },
+  masa_sil(db, i) {
+    db.exec({ sql: 'UPDATE masalar SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  masa_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE masalar SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+  /** Varsayım paketi (§3.11): birlikte geçerli sayılan varsayımlar; kanona yazılmaz. */
+  paket_olustur(db, i) {
+    const v = i.veri as { kod?: unknown; ad?: unknown };
+    if (typeof v.kod !== 'string') return;
+    db.exec({ sql: 'INSERT OR IGNORE INTO paketler(kod, ad, olusturma, duzenleme) VALUES(?,?,?,?)', bind: [v.kod, String(v.ad ?? '').slice(0, 120), i.zaman, i.zaman] });
+  },
+  paket_yaz(db, i) {
+    const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
+    if (typeof kod !== 'string' || !['ad', 'aciklama', 'varsayimlar'].includes(alan)) return;
+    const v = alan === 'varsayimlar' ? JSON.stringify(varsayimlarTemiz(db, deger)) : String(deger ?? '').slice(0, alan === 'ad' ? 120 : 1000);
+    db.exec({ sql: `UPDATE paketler SET ${alan}=?, duzenleme=? WHERE kod=?`, bind: [v, i.zaman, kod] });
+    alanYaz(db, i, kod, alan, deger ?? null);
+  },
+  paket_sil(db, i) {
+    db.exec({ sql: 'UPDATE paketler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  paket_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE paketler SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
   },
   iz_gozlem(db, i) {
     const { iz, sahne, an, deger } = i.veri as { iz: string; sahne: string; an: string; deger: unknown };

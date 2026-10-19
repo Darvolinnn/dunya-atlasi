@@ -70,6 +70,25 @@ export interface SahneIzi {
   notlar: string[];
 }
 export interface SahneSurekliligi { izler: SahneIzi[]; eklenebilir: IzTanimi[]; tarihli: boolean }
+/** Varsayım paketi (§3.11) ve çalışma masası (§5.9). */
+export type Varsayim =
+  | { kod: string; tur: 'metin'; metin: string }
+  | { kod: string; tur: 'olay'; olay: string; deger: boolean }
+  | { kod: string; tur: 'rota'; rota: string; deger: boolean }
+  | { kod: string; tur: 'bilgi'; bilen: string; iddia: string; deger: boolean };
+export type VarsayimGirdisi =
+  | { tur: 'metin'; metin: string } | { tur: 'olay'; olay: string; deger: boolean }
+  | { tur: 'rota'; rota: string; deger: boolean } | { tur: 'bilgi'; bilen: string; iddia: string; deger: boolean };
+export interface VarsayimSatiri { v: Varsayim; yazi: string; kayitlar: KisaKayit[]; evrendeki: string | null; kullanan: string; evreneYazilabilir: boolean }
+export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
+export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
+export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
+export interface MasaUyesi { tur: 'kayit' | 'harita'; kod: string; ad: string; kayitTuru: string | null; grup: string; silindi: boolean }
+export interface Masa {
+  kod: string; ad: string; amac: string; notlar: string; bas: EvrenTarihi | null; bit: EvrenTarihi | null;
+  paket: PaketOzeti | null; paketSilinmis: boolean; uyeler: MasaUyesi[];
+  olaylar: { kod: string; ad: string; tarih: EvrenTarihi | null; belirsiz: boolean }[];
+}
 export interface SahneOlayBilgisi { kod: string; ad: string; sahneOlayi: boolean; tarih: EvrenTarihi | null; degisimler: DegisimSatiri[] }
 export type GorselSonucu =
   | { durum: 'var'; veri: Uint8Array; tur: string; en: number; boy: number; dosyaAdi: string }
@@ -333,7 +352,10 @@ export interface DenetimOzeti {
   sonuc: 'sorun_yok' | 'bulgu_var' | 'konu_degil' | 'denetlenemiyor';
   denetlenen: number; not: string;
 }
-export interface Denetimler { kurallar: DenetimOzeti[]; acik: DenetimBulgusu[]; ertelenen: DenetimBulgusu[]; kabul: DenetimBulgusu[]; fikir: DenetimBulgusu[] }
+export interface Denetimler {
+  /** Hesabın dayandığı varsayım paketi; yoksa yalnızca kaydedilmiş veri. */
+  paket: { kod: string; ad: string; kullanilan: number; kullanilmayan: number } | null;
+  kurallar: DenetimOzeti[]; acik: DenetimBulgusu[]; ertelenen: DenetimBulgusu[]; kabul: DenetimBulgusu[]; fikir: DenetimBulgusu[] }
 export interface SaglikBulgusu {
   anahtar: string; tur: 'kopuk_baglanti' | 'silinmis_baglanti' | 'vazgecilmis_baglanti' | 'eksik_gorsel' | 'kod_sorunu' | 'baglantisiz_fikir' | 'belirsiz_tarih';
   baslik: string; aciklama: string; kayit: KisaKayit | null; hedef: KisaKayit | null; harita?: { kod: string; ad: string }; dayanak: string; karar: IncelemeKarari | null;
@@ -555,6 +577,21 @@ export interface Istekler {
   izSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   izGozlem(a: { evren: string; iz: string; sahne: string; an: 'bas' | 'son'; deger: string }): void;
   sahneSurekliligi(a: { evren: string; sahne: string; ek?: string[] }): SahneSurekliligi;
+  masalar(a: { evren: string }): MasaOzeti[];
+  masa(a: { evren: string; kod: string }): Masa;
+  masaOlustur(a: { evren: string; ad: string }): { kod: string };
+  masaYaz(a: { evren: string; kod: string; alan: 'ad' | 'amac' | 'notlar' | 'bas' | 'bit' | 'paket'; deger: string | null }): void;
+  masaUyeleri(a: { evren: string; kod: string; ekle?: { tur: 'kayit' | 'harita'; kod: string }; cikar?: { tur: 'kayit' | 'harita'; kod: string }; tasi?: { uye: { tur: 'kayit' | 'harita'; kod: string }; sira: number } }): void;
+  masaSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  kayitMasalari(a: { evren: string; kod: string }): { kod: string; ad: string }[];
+  paketler(a: { evren: string }): PaketOzeti[];
+  paket(a: { evren: string; kod: string }): Paket;
+  paketOlustur(a: { evren: string; ad: string }): { kod: string };
+  paketAlanYaz(a: { evren: string; kod: string; alan: 'ad' | 'aciklama'; deger: string }): void;
+  varsayimEkle(a: { evren: string; paket: string; varsayim: VarsayimGirdisi }): { kod: string };
+  varsayimCikar(a: { evren: string; paket: string; kod: string }): void;
+  varsayimiEvreneYaz(a: { evren: string; paket: string; kod: string }): void;
+  paketSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   kayitIzleri(a: { evren: string; kod: string }): IzGecmisi[];
   haritaYukle(a: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ kod: string }>;
   gorseldenHarita(a: { evren: string; kayit: string; gorsel: string }): { kod: string };
@@ -575,7 +612,7 @@ export interface Istekler {
   parcadanKayit(a: { evren: string; kaynak: string; ad: string; tur: string; spans: Spans }): { kod: string };
   saglikTaramasi(a: { evren: string; bilgi?: boolean }): SaglikTaramasi;
   incelemeKarari(a: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | null; gerekce?: string; istisna?: 'tercih' | 'kapsam' | null }): void;
-  denetimler(a: { evren: string }): Denetimler;
+  denetimler(a: { evren: string; paket?: string | null }): Denetimler;
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];
   bahsedilenler(a: { evren: string }): (KayitOzeti & { anilma: number })[];

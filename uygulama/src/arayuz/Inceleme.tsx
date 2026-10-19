@@ -3,7 +3,7 @@
 // gerekçeyle kabul edilen, dayanağı değişmedikçe yeniden açılmaz.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { DenetimBulgusu, Denetimler, EtkiIncelemeleri, EtkiIncelemesi, SaglikBulgusu, SaglikTaramasi } from '../veri/api';
+import type { DenetimBulgusu, Denetimler, EtkiIncelemeleri, EtkiIncelemesi, PaketOzeti, SaglikBulgusu, SaglikTaramasi } from '../veri/api';
 import { zamanYaz } from '../alan/islem-metni';
 import { CatismaListesi } from './Catismalar';
 
@@ -159,10 +159,14 @@ const SONUC_ADI = { sorun_yok: 'Sorun yok', bulgu_var: 'Uyarı var', konu_degil:
 type DenetimKarari = (a: string, d: 'kabul' | 'ertelendi' | null, g?: string, i?: 'tercih' | 'kapsam') => Promise<unknown>;
 
 /** Kural tabanlı tutarlılık denetimleri (§9.1): hüküm ve kapsam ayrı; her uyarı dayanağını gösterir. */
-function DenetimBolumu({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
+export function DenetimBolumu({ istemci, evren, surum, paket: ilkPaket = null }: { istemci: Istemci; evren: string; surum: number; paket?: string | null }) {
   const [x, setX] = useState<Denetimler | null>(null);
   const [hata, setHata] = useState<string | null>(null);
-  useEffect(() => { istemci.iste('denetimler', { evren }).then((d) => { setX(d); setHata(null); }, (e) => setHata(hataYaz(e))); }, [evren, surum]);
+  const [paket, setPaket] = useState<string | null>(ilkPaket);
+  const [paketler, setPaketler] = useState<PaketOzeti[]>([]);
+  useEffect(() => { setPaket(ilkPaket); }, [ilkPaket]);
+  useEffect(() => { istemci.iste('paketler', { evren }).then(setPaketler); }, [evren, surum]);
+  useEffect(() => { istemci.iste('denetimler', { evren, paket }).then((d) => { setX(d); setHata(null); }, (e) => setHata(hataYaz(e))); }, [evren, surum, paket]);
   const karar: DenetimKarari = (anahtar, durum, gerekce = '', istisna) =>
     istemci.iste('incelemeKarari', { evren, anahtar, durum, gerekce, istisna: istisna ?? null }).then(() => setHata(null), (e) => { setHata(hataYaz(e)); throw e; });
   return (
@@ -170,6 +174,18 @@ function DenetimBolumu({ istemci, evren, surum }: { istemci: Istemci; evren: str
       <h2>Tutarlılık denetimleri</h2>
       <p class="soluk kucuk">Yalnızca kayıtlı tarihlere, katılım rollerine, sahne yerlerine ve ilişkilere bakar; metindeki mantık hatalarını bulmaz. “Sorun yok” yalnızca o kural ve listelenen kayıtlar için geçerlidir.</p>
       {hata && <p class="hata kucuk">{hata}</p>}
+      {paketler.length > 0 && (
+        <div class="satir">
+          <label class="soluk kucuk" for="denetim-paketi">Varsayım paketi</label>
+          <select id="denetim-paketi" class="girdi" style="max-width:320px" value={paket ?? ''} onChange={(e) => setPaket((e.target as HTMLSelectElement).value || null)}>
+            <option value="">Yok (yalnızca kaydedilmiş veri)</option>
+            {paketler.map((p) => <option value={p.kod}>{p.ad}</option>)}
+          </select>
+        </div>
+      )}
+      {x && <p class="soluk kucuk paket-notu">{x.paket
+        ? `“${x.paket.ad}” paketindeki varsayımlarla hesaplandı (${x.paket.kullanilan} varsayım kullanıldı${x.paket.kullanilmayan ? `, ${x.paket.kullanilmayan} varsayım bu denetimlere girmiyor` : ''}). Varsayımlar evrene yazılmadı.`
+        : 'Varsayım yok: yalnızca kaydedilmiş veriyle hesaplandı.'}</p>}
       {x && (
         <ul class="denetim-kurallari">
           {x.kurallar.map((k) => (

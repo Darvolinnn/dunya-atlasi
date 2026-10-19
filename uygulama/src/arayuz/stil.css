@@ -547,3 +547,21 @@ label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; 
 .yol-bolumu > .dugme, .yol-bolumu > form .dugme { justify-self: start; }
 .yolculuk-asamasi select.girdi, .yol-bolumu input.girdi { width: auto; }
 .rozet.uyari-rozet { border-color: var(--tehlike); color: var(--tehlike); margin-left: 6px; }
+
+/* Çalışma masaları ve varsayım paketleri */
+.masalar { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px 28px; }
+.masa-listesi, .masa-uyeleri, .varsayimlar { list-style: none; padding: 0; margin: 8px 0 0; }
+.masa-listesi li { padding: 8px 0; border-bottom: 1px solid var(--cizgi); }
+.masa-uyeleri li { padding: 4px 0; border-bottom: 1px dashed var(--cizgi); }
+.varsayimlar li { padding: 8px 0; border-bottom: 1px solid var(--cizgi); }
+.masa-adi .girdi { font-size: 1.4rem; font-weight: 600; width: 100%; border-color: transparent; background: transparent; padding-left: 0; }
+.masa-adi .girdi:focus { border-color: var(--cizgi); background: var(--yuzey); padding-left: 8px; }
+.masa-amac { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 12px; }
+.masa-amac .girdi { width: 100%; }
+.masa-ust { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 12px; }
+.masa-ust label { display: flex; flex-direction: column; gap: 2px; }
+.masa-grubu h3 { font-size: 0.95rem; margin: 12px 0 2px; color: var(--metin-2); }
+.masa-notlari { width: 100%; min-height: 140px; font: inherit; resize: vertical; }
+.silinmis { text-decoration: line-through; }
+.varsayim-formu { margin-top: 10px; }
+.paket-notu { margin: 4px 0 8px; }
