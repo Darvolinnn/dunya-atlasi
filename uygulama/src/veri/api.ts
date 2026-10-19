@@ -518,6 +518,21 @@ export interface UyarlamaEslemesi {
   degisiklikler: { taraf: 'a' | 'b'; islem: string; aciklama: string }[]; uyarilar: string[];
 }
 export interface UyarlamaAdaylari { eserler: KisaKayit[]; kayitlar: KisaKayit[]; sorun: string | null }
+export interface KalabalikMiktari { enAz: number; enCok: number; yaklasik: boolean }
+export interface KalabalikAltGrubu { kod: string; ad: string; miktar: KalabalikMiktari }
+export interface KalabalikOrtusmesi { a: string; b: string; miktar: KalabalikMiktari }
+export interface KalabalikGozlemi {
+  kayit: string; tarih: SinirGirdisi; miktar: KalabalikMiktari; altGruplar: KalabalikAltGrubu[]; ortusmeler: KalabalikOrtusmesi[]; not: string;
+}
+export interface KalabalikOlayi {
+  kayit: string; tarih: SinirGirdisi; miktar: KalabalikMiktari; tur: 'katilma' | 'ayrilma' | 'olum'; not: string;
+}
+export interface KalabalikSatiri<T> { kod: string; tanim: T; tarih: SinirBilgisi | null; silindi: boolean; catismali: boolean }
+export interface KalabalikSonucu {
+  gozlemler: KalabalikSatiri<KalabalikGozlemi>[]; olaylar: KalabalikSatiri<KalabalikOlayi>[];
+  tahminler: { gozlem: string; miktar: KalabalikMiktari; olaylar: string[]; sonGozlem: boolean; uyusmaz: boolean; belirsiz: boolean }[];
+  uyeler: KisaKayit[]; uyarilar: string[];
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1239,6 +1254,10 @@ export interface Istekler {
   uyarlamaYaz(a: { evren: string; kod?: string | null; tanim: UyarlamaTanimi }): { kod: string };
   uyarlamaSil(a: { evren: string; kod: string }): void;
   uyarlamaGozdenGecir(a: { evren: string; kod: string }): void;
+  kalabalikOku(a: { evren: string; kayit: string; tarih?: string | null }): KalabalikSonucu;
+  kalabalikGozlemYaz(a: { evren: string; kod?: string | null; tanim: KalabalikGozlemi }): { kod: string };
+  kalabalikOlayYaz(a: { evren: string; kod?: string | null; tanim: KalabalikOlayi }): { kod: string };
+  kalabalikKaldir(a: { evren: string; kod: string; bicim: 'gozlem' | 'olay'; geriYukle?: boolean }): void;
 }
 
 export type IstekAdi = keyof Istekler;

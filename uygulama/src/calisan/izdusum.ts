@@ -713,6 +713,12 @@ CREATE TABLE IF NOT EXISTS uyarlama_eslemeleri(
   deger TEXT NOT NULL,
   silindi INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS kalabalik_gozlemleri(
+  kod TEXT PRIMARY KEY, deger TEXT NOT NULL, silindi INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS kalabalik_olaylari(
+  kod TEXT PRIMARY KEY, deger TEXT NOT NULL, silindi INTEGER NOT NULL DEFAULT 0
+);
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'gokyuzu_tanimi',
@@ -725,6 +731,7 @@ IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi', 'kul
 IZDUSUM_TABLOLARI.push('bakim_tanimlari', 'bakim_kayitlari');
 IZDUSUM_TABLOLARI.push('kural_ornekleri');
 IZDUSUM_TABLOLARI.push('uyarlama_eslemeleri');
+IZDUSUM_TABLOLARI.push('kalabalik_gozlemleri', 'kalabalik_olaylari');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -2046,5 +2053,29 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const silindi = i.veri.silindi !== false;
     db.exec({ sql: 'UPDATE uyarlama_eslemeleri SET silindi=? WHERE kod=?', bind: [silindi ? 1 : 0, kod] });
     alanYaz(db, i, kod, 'uyarlama_silindi', silindi);
+  },
+  kalabalik_gozlem_yaz(db, i) {
+    const { kod, deger } = i.veri as { kod: string; deger: unknown };
+    db.exec({ sql: 'INSERT INTO kalabalik_gozlemleri(kod,deger) VALUES(?,?) ON CONFLICT(kod) DO UPDATE SET deger=excluded.deger', bind: [kod, JSON.stringify(deger)] });
+    alanYaz(db, i, kod, 'kalabalik_gozlem', deger);
+    if (i.veri.ilk) alanYaz(db, i, kod, 'kalabalik_gozlem_silindi', false);
+  },
+  kalabalik_olay_yaz(db, i) {
+    const { kod, deger } = i.veri as { kod: string; deger: unknown };
+    db.exec({ sql: 'INSERT INTO kalabalik_olaylari(kod,deger) VALUES(?,?) ON CONFLICT(kod) DO UPDATE SET deger=excluded.deger', bind: [kod, JSON.stringify(deger)] });
+    alanYaz(db, i, kod, 'kalabalik_olay', deger);
+    if (i.veri.ilk) alanYaz(db, i, kod, 'kalabalik_olay_silindi', false);
+  },
+  kalabalik_gozlem_sil(db, i) {
+    const { kod } = i.veri as { kod: string };
+    const silindi = i.veri.silindi !== false;
+    db.exec({ sql: 'UPDATE kalabalik_gozlemleri SET silindi=? WHERE kod=?', bind: [silindi ? 1 : 0, kod] });
+    alanYaz(db, i, kod, 'kalabalik_gozlem_silindi', silindi);
+  },
+  kalabalik_olay_sil(db, i) {
+    const { kod } = i.veri as { kod: string };
+    const silindi = i.veri.silindi !== false;
+    db.exec({ sql: 'UPDATE kalabalik_olaylari SET silindi=? WHERE kod=?', bind: [silindi ? 1 : 0, kod] });
+    alanYaz(db, i, kod, 'kalabalik_olay_silindi', silindi);
   },
 };
