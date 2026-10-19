@@ -142,7 +142,7 @@ export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; e
   return (
     <div class="gorunum">
       {secim}
-      <p class="soluk kucuk">Odaktaki kayıt vurgulanır. Bir kayda dokunarak onu seçebilirsiniz. Seçili kaydı odağa alabilir ya da dalını kapatabilirsiniz. Çizgiler yer yer kesişebilir.</p>
+      <p class="soluk kucuk">Odaktaki kayıt vurgulanır. Bir kayda tıklayarak onu seçebilirsiniz. Seçili kaydı odağa alabilir ya da dalını kapatabilirsiniz. Çizgiler yer yer kesişebilir.</p>
       <BakisAciklamasi bakis={t.bakis} />
       {t.kesildi && <p class="uyari kucuk">Aile çok büyük; yalnızca odağa en yakın {t.dugumler.length} kayıt çizildi.</p>}
       <div class="cizim-alani" role="region" aria-label="Soy ağacı çizimi">
@@ -252,7 +252,7 @@ export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren
         <CokluSecim etiket="Kayıt türleri" secili={kTur} setSecili={setKTur}
           gruplar={GRUPLAR.map((g) => ({ ad: g, secenekler: TURLER.filter((t) => t.grup === g).map((t) => ({ kod: t.kod, ad: t.ad })) }))} />
         <label class="satir kucuk"><input type="checkbox" checked={baglantilar} onChange={(e) => setBaglantilar((e.target as HTMLInputElement).checked)} /> Metindeki bağlantılar</label>
-        <label class="satir kucuk"><input type="checkbox" checked={vazgecilmis} onChange={(e) => setVazgecilmis((e.target as HTMLInputElement).checked)} /> Vazgeçilmişler</label>
+        <label class="satir kucuk"><input type="checkbox" checked={vazgecilmis} onChange={(e) => setVazgecilmis((e.target as HTMLInputElement).checked)} /> Vazgeçilen kayıtlar</label>
         {r && <Yakinlastir olcek={olcek} setOlcek={setOlcek} />}
       </div>
     </div>

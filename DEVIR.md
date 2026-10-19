@@ -111,6 +111,9 @@ Kullanıcı isteği: her sekmeye "?" ile açılan ayrıntılı rehber; programı
 - [x] Sınamalar (441) ve tür denetimi yeşil; tarayıcıda denendi (panel açılıyor, Esc ile kapanıyor, konsolda hata yok)
 - [x] Kaynak kodlar zip'lendi (`main` ve Windows dalı, .git hariç): proje klasöründe `kaynak/dunya-atlasi-kaynak.zip`, kullanıcının masaüstünde `dunya-atlasi-kaynak.zip`
 
+- [x] Ek düzeltme: masaüstünde "dokunun" yerine "tıklayın" (harita, sahne yerleşimi, ağ, yoğunluk, eşitleme şeridi, rehber); "Vazgeçilmişler" → "Vazgeçilen kayıtlar"; başlangıç sorusunda "merkez çatışması" → "ana çatışması"
+- Not: `test/kural-atolyesi.test.ts` içindeki "tarih ve geçerlilik aralığı" sınaması bütün sınamalar birlikte çalışınca ara sıra kırılıyor, tek başına hep geçiyor (zamanlama değil, eşzamanlı sınama; nedeni bulunmadı)
+
 **Yeni sayfa eklerken:** `rehber-metinleri.ts`'e o sayfanın rehberini ekle; başlığa `<SayfaYardimi sayfa="…" />` koy. Yeni metinler "siz" hitabıyla yazılır (§12.4).
 
 ### 3.2d Biten iş: dış inceleme raporunun ilk üç maddesi (19 Ekim 2026)

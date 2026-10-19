@@ -43,7 +43,7 @@ const set = (kod: string, ad: string, sorular: (string | [string, string])[]): S
 /** Ek A: başlangıç seti. Kodlar değişmez; cevaplar bu kodlarla saklanır. */
 export const SORU_SETLERI: SoruSeti[] = [
   set('pusula', 'Dünya Pusulası', [
-    ['Bu evrenin merkez çatışması ne?', 'Kıtlık, inanç, iktidar, hayatta kalma, özgürlük, intikam…'],
+    ['Bu evrenin ana çatışması ne?', 'Kıtlık, inanç, iktidar, hayatta kalma, özgürlük, intikam…'],
     ['İnsanlar burada nasıl yaşıyor?', 'Geçim, ritüeller, korkular, alışkanlıklar'],
     ['Güç kimde ve bedeli ne?', 'Büyü, bilgi, para, soy…'],
     'Hangi kural kırılırsa her şey değişir?',

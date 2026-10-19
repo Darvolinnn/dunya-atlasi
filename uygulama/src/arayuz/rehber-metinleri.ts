@@ -47,7 +47,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       'Başka bir cihazda oluşturduğunuz evren “Drive’da olup bu cihazda olmayan evrenler” altında görünür; buradan bu cihaza alabilirsiniz.',
     ],
     ipuclari: [
-      'Google izni yaklaşık bir saat geçerlidir. Süresi dolunca ekranın üstünde “eşitlemek için dokunun” uyarısı çıkar; bu arada yazmaya devam edebilirsiniz, hiçbir şey kaybolmaz.',
+      'Google izni yaklaşık bir saat geçerlidir. Süresi dolunca ekranın üstünde “eşitlemek için tıklayın” uyarısı çıkar; bu arada yazmaya devam edebilirsiniz, hiçbir şey kaybolmaz.',
       'Aynı bilgisayardaki iki farklı tarayıcı ayrı cihaz sayılır.',
       'İki cihazda aynı şey farklı değiştirilirse program birini seçmez; İnceleme sayfasında ikisini yan yana gösterir, siz seçersiniz.',
     ],
@@ -335,7 +335,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     adimlar: [
       'Bir merkez kayıt seçin ya da “Bütün evren”i açın.',
       'Uzaklığı seçin: yalnızca doğrudan bağlılar, iki adım ya da üç adım.',
-      'İsterseniz metindeki bahsedişleri ve vazgeçilmiş kayıtları da gösterin.',
+      'İsterseniz metindeki bağlantıları ve vazgeçilen kayıtları da gösterin.',
       'Bir kayda basıp “Merkeze al” ile ağı ondan yeniden çizin ya da “Kaydı aç” ile sayfasına gidin.',
     ],
   },

@@ -10,7 +10,7 @@ type Secim = { tur: 'dilim' | 'bolge'; kod: string; ad: string } | { tur: 'tarih
 
 function SayimTablosu({ satirlar, olcu, sec, etiket }: { satirlar: YogunlukSatiri[]; olcu: YogunlukOlcutu; sec: (s: YogunlukSatiri) => void; etiket: string }) {
   const enCok = Math.max(1, ...satirlar.map((s) => s.enCok[olcu]));
-  return <div class="tablo-kap"><table class="karsilastirma"><caption>{etiket} · bir sayıya dokunursanız dayandığı kayıtlar açılır</caption>
+  return <div class="tablo-kap"><table class="karsilastirma"><caption>{etiket} · bir sayıya tıklarsanız dayandığı kayıtlar açılır</caption>
     <thead><tr><th>{etiket}</th>{OLCULER.map((o) => <th key={o.kod} scope="col">{o.ad}</th>)}<th>Açıklama</th></tr></thead>
     <tbody>{satirlar.map((s) => <tr key={s.kod} style={`background-color:rgba(65,115,165,${0.04 + 0.3 * s.enCok[olcu] / enCok})`}>
       <th scope="row"><button class="dugme sade" onClick={() => sec(s)}>{s.ad}</button></th>

@@ -216,11 +216,11 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
         <button class="dugme kucuk" aria-label="Yakınlaştır" disabled={yakinlik >= 12} onClick={() => setYakinlik((z) => Math.min(12, z * 1.5))}>+</button>
       </div>
       <p class="soluk kucuk" role="status">
-        {kip.tur === 'ciz' ? `${kip.bicim === 'bolge' ? 'Bölgenin sınırı' : 'Yol'} boyunca haritaya sırayla dokunun. Bitince yandaki düğmeye basın. Vazgeçmek için Esc tuşuna basın.`
-          : kip.tur === 'hizala' ? (kip.bekleyen ? 'Şimdi bu noktanın haritada olması gereken yere dokunun.' : 'Hizalanan görselde tanıdık bir noktaya dokunun (bir kıyı köşesi, bir kale gibi).')
-          : kip.tur === 'koy' ? `Haritada bir yere dokunun, sonra bağlanacak kaydı seçin. Bitirmek için “Gez ve seç” düğmesine ya da Esc tuşuna basın.`
-          : kip.tur === 'tasi' ? `“${h.isaretler.find((x) => x.kod === kip.isaret)?.kayit.ad}” için yeni yere dokunun. Vazgeçmek için Esc tuşuna basın.`
-            : 'Seçmek için bir işarete dokunun. İşaret koymak için yukarıdaki araçlardan birini seçin.'}
+        {kip.tur === 'ciz' ? `${kip.bicim === 'bolge' ? 'Bölgenin sınırı' : 'Yol'} boyunca haritaya sırayla tıklayın. Bitince yandaki düğmeye basın. Vazgeçmek için Esc tuşuna basın.`
+          : kip.tur === 'hizala' ? (kip.bekleyen ? 'Şimdi bu noktanın haritada olması gereken yere tıklayın.' : 'Hizalanan görselde tanıdık bir noktaya tıklayın (bir kıyı köşesi, bir kale gibi).')
+          : kip.tur === 'koy' ? `Haritada bir yere tıklayın, sonra bağlanacak kaydı seçin. Bitirmek için “Gez ve seç” düğmesine ya da Esc tuşuna basın.`
+          : kip.tur === 'tasi' ? `“${h.isaretler.find((x) => x.kod === kip.isaret)?.kayit.ad}” için yeni yere tıklayın. Vazgeçmek için Esc tuşuna basın.`
+            : 'Seçmek için bir işarete tıklayın. İşaret koymak için yukarıdaki araçlardan birini seçin.'}
       </p>
       {hata && <p class="hata kucuk">{hata}</p>}
       <BakisAciklamasi bakis={h.bakis} />
@@ -436,7 +436,7 @@ function HizalamaPaneli({ istemci, evren, h, kip, sonuc, setKip, hata }: {
   return (
     <div class="hizalama-paneli" aria-label="Hizalama">
       <h2>“{k.ad}” hizalanıyor</h2>
-      <p class="soluk kucuk">Her çift için önce bu görselde bir noktaya, sonra o noktanın haritada olması gereken yere dokunun. İki çift, görseli taşımaya, döndürmeye ve büyütmeye yeter. Üç çift, eğikliği ve farklı oranlı esnemeyi de düzeltir. Daha fazla çift eklerseniz her noktanın hatası ayrıca gösterilir.</p>
+      <p class="soluk kucuk">Her çift için önce bu görselde bir noktaya, sonra o noktanın haritada olması gereken yere tıklayın. İki çift, görseli taşımaya, döndürmeye ve büyütmeye yeter. Üç çift, eğikliği ve farklı oranlı esnemeyi de düzeltir. Daha fazla çift eklerseniz her noktanın hatası ayrıca gösterilir.</p>
       {kip.ciftler.length === 0 && !kip.bekleyen && <p class="kucuk">Henüz nokta yok.</p>}
       <ol class="hizalama-ciftleri">
         {kip.ciftler.map((_, i) => (
