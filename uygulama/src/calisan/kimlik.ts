@@ -39,7 +39,7 @@ function katilimlar(e: EvrenVt, kod: string) {
 
 function kullanimlar(e: EvrenVt, alan: 'a' | 'b', kod: string): KimlikKullanimi[] {
   return e.db.selectObjects(`SELECT i.kod, i.a, i.b, i.baslangic, i.bitis FROM iliskiler i JOIN kayitlar p ON p.kod=i.a JOIN kayitlar k ON k.kod=i.b
-      WHERE i.tur=? AND i.${alan}=? AND i.silindi IS NULL AND p.silindi IS NULL AND k.silindi IS NULL ORDER BY i.olusturma, i.kod`, [KIMLIK_ILISKISI, kod]).map((r) => ({
+      WHERE i.tur=? AND i.${alan}=? AND i.silindi IS NULL AND p.silindi IS NULL AND k.silindi IS NULL ORDER BY i.olusturma, i.rowid`, [KIMLIK_ILISKISI, kod]).map((r) => ({
     iliski: r.kod as string, kisi: kayit(e, r.a), kimlik: kayit(e, r.b), baslangic: ifade(r.baslangic), bitis: ifade(r.bitis),
     ...katilimlar(e, r.b as string),
   }));

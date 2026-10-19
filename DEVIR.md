@@ -19,6 +19,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 - Kullanıcı Türkçe yazar; ona Türkçe, kısa ve sade cevap ver. Programdaki metinlerde hitap "siz"dir (kullanıcı kararı, 19 Ekim 2026; §12.4). Arayüzdeki ve hata iletilerindeki her metin Türkçedir; kullanıcıya görünen metinde programlama terimi olmaz.
 - Her adım bitince DEVIR.md'de yapılan ve yapılacak adımlar güncellenir ve gönderilir (kullanıcı isteği, 19 Ekim 2026).
 - Kullanıcının açık tercihi: **bir aşama ya da madde bitince onay beklemeden sıradakine geç.** Yalnızca geri alınamaz işlerde (zorla gönderme, toplu silme, dışarıya mesaj) ya da kullanıcının vermesi gereken bir kararda dur ve sor.
+- **PR'ları ajan birleştirir (kullanıcı kararı, 19 Ekim 2026):** otomatik denetim (Ubuntu, Windows, tarayıcı) yeşil ve çakışma yoksa PR'ı ajan kendisi `main`'e birleştirir; kırmızıysa önce düzeltir. Görünüşü değiştiren işlerde birleştirmeden önce ekran görüntüsü gösterilip onay alınır (aşağıdaki taslak kuralı). Kullanıcı yazılımcı değil; kod incelemesi beklenmez.
 - **Arayüz değişikliklerinde önce taslak:** görünüşü ya da düzeni değiştiren bir işe kodlayarak başlama; önce seçenekli bir taslak göster, kullanıcı seçince kodla (kullanıcı isteği, 19 Ekim 2026).
 - **Tamamen bulut (kullanıcı kararı, 19 Ekim 2026, öncekinin yerine):** bütün iş bulut oturumunda yapılır; kullanıcının bilgisayarındaki proje klasörüne, masaüstüne ve oradaki programa dokunulmaz, zip oraya konmaz. Kullanıcı programı denemek isterse klasörü kendisi günceller. Windows denetimini GitHub'daki Windows işi yapar.
 - Tablet ve iPhone denemeleri süresiz ertelendi; yalnız Windows (19 Ekim 2026).
@@ -117,15 +118,19 @@ Kullanıcı 19 Ekim 2026'da programın site gibi durduğunu söyledi; Windows i�
      | 21.800 | 154 sn | 9,3 sn | 10,2 sn | 253 MB → 192 MB |
      | 40.800 | 319 sn | — | — | — |
      | 63.400 | — | 25 sn | 21 sn | +247 MB |
-     | 150.000 | — | ölçülüyor (19 Ekim akşam) | | |
+     | 153.400 | — | 60 sn | 49 sn | süreç toplamı ~0,8 GB (iki cihaz + 106 MB işlem dosyası aynı süreçte) |
+
+     153.400 işlemde (19 Ekim): veritabanı 146 MB, iki anlık görüntüyle 165 MB; geç gelen işlemle eşitleme 0,12 sn (görüntüden, 20 işlem uygulandı); arama 115 ms. Ölçüm Node'da; gerçek tarayıcı belleği (tablet sınırı 4 GB) ayrıca ölçülmeli.
 
      Neden yavaştı: her metin kaydı uygulanırken belge baştan okunuyor (`A.spans`) ve baştan paketleniyordu (`A.save`); Automerge'ün değişikliği işlemesi (`A.loadIncremental`) de değişiklik başına pahalıydı. Toplu yolun kuralları `izdusum.ts` "Toplu uygulama" yorumunda; eşdeğerlik sınaması `test/toplu-metin.test.ts`.
    - [x] **Automerge bellek sızıntısı kapatıldı** (`2253aa4`): her metin kaydı belgenin tam kopyasını (`A.clone`) alıp bırakıyordu; Automerge belleği çöp toplayıcıya görünmediği için birikiyordu (3.000 kayıtta +1,2 GB; 70.000 kayıtta modül 4 GB sınırında çöktü). Geçici kopyalar `try/finally` ile `A.free`; 32'yi aşıp bellekten çıkan belge de bırakılır. Şimdi 3.000 kayıtta +26 MB. **Yeni bir `A.clone`/`A.from`/`A.load` yazarken sonucu iş bitince `A.free` ile bırak** (`A.view`, `A.change`, `A.loadIncremental`, `A.merge` yeni bellek açmaz).
    - [ ] **Tablette gerçek bellek ölçümü:** yukarıdaki bellek sayıları Node sınama sürecinin (iki cihaz birden). Tarayıcıda büyük bir evrenle (açılış, yazma, baştan kurma) ölçülmeli; tablet 4 GB'ın altında kalmalı. Wasm belleği büyüyünce küçülmez; tepe değer önemli.
-   - [ ] **Adım 2 (öneri, kullanıcıya sunulacak): anlık görüntüden kurma.** Evren belli aralıklarla tabloların anlık görüntüsünü saklar; geçmişe düşen işlem ve yedekten dönüş baştan değil görüntüden işler. **Program güncellemesi** ayrıca düşünülmeli: (a) tabloları silmeden yerinde dönüştürme ya da (b) yeni tabloları arka planda kurarken eskileriyle yazmaya devam. Kullanıcıya iki seçenek somut örneklerle anlatılmalı (kullanıcı yazılımcı değil; günlük hayat ya da bilgisayar örnekleri tercih ediyor, laboratuvar benzetmesi istemiyor).
+   - [x] **Program güncellemesinde ilerleme şeridi** (kullanıcı kararı "A", 19 Ekim; §10.7): `EvrenVt` ilerleme bildirir (5.000 işlemden büyük evrende, 2.000 işlemde bir), çalışan `postMessage({ ilerleme })`, `arayuz/Hazirlanma.tsx` şerit. Sınama `test/ilerleme.test.ts`.
+   - [x] **Adım 2: anlık görüntüden kurma** (`calisan/anlik-goruntu.ts`). Her 5.000 işlemde (`EvrenVt.goruntuAraligi`) iki yuvalı görüntü (`goruntuler` tablosu, `goruntu<yuva>_<tablo>` kopyaları, `rowid` korunur). `disaridanAl` geç gelen işlemin anahtarından önceki görüntüyü yükleyip yalnız sonrasını uygular, sonrakileri siler; izdüşüm sürümü değişince hepsi silinir. 63.400 işlemde iki cihaz eşitlemesi 20,8 sn → 0,05 sn; görüntü alma 0,02 sn, görüntü başına ~9 MB. Eşdeğerlik sınaması `test/anlik-goruntu.test.ts` (bütün tablolar, satır sırasıyla; yanlış görüntü seçildiğinde kırıldığı denendi). Not: metin çatışma tabloları sahne sahne işlendiği için sahneler arası satır sırası yola göre değişir; yalnızca sahne içinde okunur, çatışma listesi tam sıralanır.
+   - [ ] **Yedekten geri yükleme ve yeni cihaz** hâlâ bütün günlüğü uygular (63.400 işlemde ~25 sn). Hızlanması için görüntünün yedekle / Drive'la taşınması gerekir (Adım 3). Evren belli aralıklarla tabloların anlık görüntüsünü saklar; geçmişe düşen işlem ve yedekten dönüş baştan değil görüntüden işler. **Program güncellemesi** ayrıca düşünülmeli: (a) tabloları silmeden yerinde dönüştürme ya da (b) yeni tabloları arka planda kurarken eskileriyle yazmaya devam. Kullanıcı A'yı seçti (beklenir, şerit gösterilir); yerinde dönüştürme ileriye. Kullanıcı yazılımcı değil; günlük hayat ya da bilgisayar örnekleri tercih ediyor, laboratuvar benzetmesi istemiyor.
    - [ ] **Adım 3 (öneri): yeni cihaza günlük yerine anlık görüntü gönderme.** Eşitleme biçimi değişir; yalnız Adım 1–2'den sonra yeni cihaza indirme hâlâ yavaşsa.
    Ölçüm kalıbı: geçici vitest dosyası (`test/_*.test.ts`, depoya girmez); `Hizmet` bellekte; `metinKaydet` dönüşündeki `basliklar` sonraki kaydın `temel`'i; işlemler JSON'a (ikili base64) yazılıp ayrı süreçte `evreniDisaridanKur` ve `evren(...).yenidenKur()` ölçülür.
-3. **Rehberli arayüz (§3.5):** dört kararı bekliyor. Kademeli açılış (dış rapor madde 4) bunun içinde.
+3. **Rehberli arayüz (DEVIR §3.5):** kullanıcı başlangıç akışında taslak B'yi seçti; "İlk adımlar" listesi kodlandı (K26, `YazEkrani.tsx` `IlkAdimlar`, istek `ilkAdimlar`). Sol menü K24'teki gibi kalır (kullanıcı kararı). Bekleyen: menü adlarının yenilenmesi (kullanıcı "Masa" gibi adları anlamsız buldu; öneri tablosu sunuldu, seçim bekleniyor) ve Aşama C (kayıt sayfasında boş bölümlerin gizlenmesi; önce taslak).
 4. **Windows uygulaması (PR #1):** kurup denemek; Google izinli adreslerine `http://localhost:41730` eklemek. Kabul akışı: tam yedek → uygulamaya ayrı evren olarak yükle → metin ve görsel denetimi; eski kopya korunur. Gerçek kurulumda denenecekler: açılış, yeniden açılış, ikinci başlatma, yedek, geri yükleme, EPUB/PDF, Google izin yenilemesi. Ayarlarda görünen sürüm ve derleme tarihi.
 5. **K16:** iki haftalık gerçek kullanım (kod işi değil).
 
@@ -155,8 +160,20 @@ Kullanıcı 19 Ekim 2026'da programın site gibi durduğunu söyledi; Windows i�
 
 Kullanıcı etkileşimli bir taslak ve gerekçe belgesi gönderdi (ekler depoda değil): program kullanıcıyı küçük, atlanabilir adımlarla yönlendirsin, yalnız o anda gereken alanları göstersin, sonraki adımı anlaşılır kılsın. Öneri proje klasöründe `analiz/rehberli-arayuz-uyarlama.md`. Özeti: boş evrende "Nereden başlamak istersiniz?" ve üç kısa akış (sahne, kayıt, not) + sonuç kartında tek sonraki adım (Aşama A); gezinti Yaz / Evren / İncele / Masa / Yönetim, seyrek işler "⋯" menüsünde (Aşama B, önce resimli taslak); kayıt sayfasında boş bölümlerin gizlenmesi (Aşama C). Yeni veri yok; onaylanırsa tasarıma K26 olarak girer. Boş bağlam panelinin kapalı olması ve durum özeti artık kodda (PR #2), öneri bunlarla uyumlu.
 
-- [ ] Kullanıcı kararları: Aşama A'ya başlansın mı; gezinti gruplaması; Masa ayrı mı kalsın
-- [ ] Onaylanırsa: tasarım belgesi (K26, §5.10, §12.4, §13), sonra Aşama A kodu
+- [x] Kullanıcı kararları (19 Ekim): başlangıç akışı taslak B ("İlk adımlar"), menü yapısı K24 gibi kalır
+- [x] Menü adları: kullanıcı önerilen tabloyu seçti (aşağıda); kodlanacak
+
+**Rehberli yazarlık ve roman serisi (kullanıcı isteği, 19 Ekim 2026; öneri, karar bekliyor, kodlanmadı).** Kullanıcı roman yazma yöntemini bilmediğini, programın bu konuda yol göstermesini istediğini yazdı ve iki brif gönderdi (depoda değil): önce istek, sonra ilk sürümün eleştirisi. İkinci brif üzerine ilk sürümün tasarım, akış ve farklar belgeleri kaldırıldı (git geçmişinde, `6fa89ac`). Şimdiki belgeler `analiz/` altında; hiçbiri bağlayıcı değil:
+- `yazarlik-ve-roman-serisi-calisma-rehberi.md`: 24 konuluk yazarlık rehberi, yöntem haritası (A.6), uydurma örnek seri *Hatıra İmparatorluğu*. Kod beklemeden okunabilir.
+- `roman-serisi-veri-ve-kavram-modeli.md`: **kavramların tek tanımı**: düzeyler (evren kuralı / seri sorusu / hikâye çekirdeği), adım durumları (yapıldı · geçildi · ilgisiz · başlanmadı) ve dayanakları, seri üyeliği ve silme/geri yükleme, plan–alternatif–gerçek, kitap sonunda açık olanlar (montaja dayanır), karakterin kitaptaki yolu, çalışma durumları.
+- `rehberli-yazarlik-urun-tasarimi-v2.md`: ekranlar (İlk adımlar yolları, Şimdi kartı, sahne planı, seri sayfası, olay örgüsü masası), paketler P1–P10, kararlar D1–D13.
+- `yaratici-calisma-akislari-v2.md`: senaryolar ve kabul ölçütleri.
+- `rehberli-yazarlik-revizyon-analizi.md`: eleştirinin kodla doğrulanması, eski çelişkiler, `main` ile #5'teki özellikler.
+
+Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda açık olanlar" montajdaki okur soruları ve sahne niyetleri üzerinden hesaplanmalı. (2) Plan için ayrı katman gerekmez; kayıt ve alan düzeyi karar durumu var, eksik olan `alternatif` ilişkisi. (3) Olay örgüsü masası yeni veri istemez; var olan dört görünümü birleştirir. Onaylanırsa K11 gereği önce §16'ya *Öneri* olarak girer. Sıradaki adım: kullanıcı D1–D13'ü seçer; ilk kodlanacak P1 (rehber) ve P2 (soru setleri).
+- [x] Kullanıcı kararları (19 Ekim, gece): D1–D13'ün hepsi önerildiği gibi; sıra önce rehber ve sorular (P1, P2). Menü adları önerilen tablo (Masa → Genel bakış, İnceleme → Uyarılar, Görünümler → Grafikler, Çalışma masaları → Konu dosyaları, Açık meseleler → Karar bekleyenler, Bahsedilen ama yazılmamış → Eksik kayıtlar, Geçmiş → Değişiklik geçmişi, Sürümler → Kayıtlı anlar). #5'in üç görünüşü onaylandı; şerit sarısı deve tüyü oldu.
+- [ ] Kararları tasarıma işlemek (§0.2: ilgili bölümler, §1.1 K27, §16) ve P1+P2'yi kodlamak; menü adlarını kodlamak.
+- [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
 
 ## 4. Kod yapısı ve yeni bir özellik ekleme tarifi
 
@@ -200,7 +217,7 @@ Kurallar: veritabanına yalnızca `EvrenVt.islemYap()` (hizmette `this.yaz`) yaz
 
 ## 7. Git
 
-- Doğrudan `main` üzerinde çalışılıyor; kullanıcı bunu onayladı. Bulut oturumu kendisine verilen dalda (`claude/...`) çalışıp taslak PR açabilir; kullanıcı birleştirir. Paralel ajanlar `paket/<ad>` dallarında çalışır.
+- Bulut oturumu kendisine verilen dalda (`claude/...`) çalışır, PR açar ve denetim yeşilse kendisi birleştirir (§2). Birleşen PR'ın dalı yeni iş için güncel `main`'den yeniden başlatılır. Aynı anda birden çok oturum çalışıyorsa DEVIR.md gibi ortak dosyalarda çakışma çıkar; birleştirmeden önce `main` dala alınır. Paralel ajanlar `paket/<ad>` dallarında çalışır.
 - Kayıt mesajları Türkçedir: ilk satır kısa başlık (ör. "Delil geçmişi ve soruşturma masası (F08)"), altında ne değiştiği ve yeni tablo varsa izdüşüm sürümü.
 - Zorla gönderme (force push) yapma; başkasının dalının geçmişini yeniden yazma.
 - Depo herkese açıktır: sır, gerçek evren içeriği, dışa aktarılmış veri, ekran görüntüsü ve lisans dosyası girmez. Test ve örnek adları uydurmadır.

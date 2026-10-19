@@ -1129,6 +1129,9 @@ export interface Istekler {
   baslat(): KurulumBilgisi;
   evrenler(): EvrenOzeti[];
   evrenOlustur(a: { ad: string }): { kod: string };
+  evrenKaldir(a: { evren: string }): void;
+  /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
+  ilkAdimlar(a: { evren: string }): { eser: boolean; sahne: boolean; baglanti: boolean; baglam: boolean };
   evrenAdlandir(a: { evren: string; ad: string }): void;
   evrenBilgisi(a: { evren: string }): EvrenBilgisi;
   islemGunlugu(a: { evren: string; sinir: number }): GunlukSatiri[];
@@ -1510,4 +1513,6 @@ export type IstekArg<K extends IstekAdi> = Parameters<Istekler[K]>[0];
 export type IstekSonuc<K extends IstekAdi> = Awaited<ReturnType<Istekler[K]>>;
 
 /** Çalışandan arayüze: bir evrende işlem yazıldı (ekranlar yenilensin). */
+/** Uzun süren baştan kurmanın ilerlemesi (§10.1, §10.7): neden program güncellemesi ya da dışarıdan gelen günlüktür. */
+export interface IlerlemeBildirimi { evren: string; /** Bu cihazda henüz yoksa boş. */ ad: string; neden: 'guncelleme' | 'kurulum'; yapilan: number; toplam: number }
 export interface DegisiklikBildirimi { degisti: { evren: string; turler: string[]; kayitlar: string[]; uzaktan?: boolean } }
