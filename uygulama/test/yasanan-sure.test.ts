@@ -33,6 +33,11 @@ describe('zaman akışlarında yaşanan süre (§3.4)', () => {
     expect(s.enAz).toBe(60); expect(s.enCok).toBe(67); // Geçiş beşinci yılın herhangi bir anında olabilir.
     expect(s.gunEnCok).toBeGreaterThan(60 * 365);
   });
+  it('aynı tam yıl içine düşen oran aralığını tek sayı gibi göstermez', () => {
+    const z = zaman(akis([{ bas: null, akis: 132, ana: [10, 10.1] }]));
+    const s = yasananSureHesapla(nokta(0), nokta(40 * yp), z, [kalis(10 * yp, 11 * yp)]);
+    expect(s.enAz).toBe(s.enCok); expect(s.metin).toMatch(/–.*gün/); expect(s.goster).toBe(true);
+  });
   it('bilinmeyen ya da ana akışta sıfır gün süren oranı kesin süreye çeviremez', () => {
     for (const ana of [null, [0, 0]] as (null | [number, number])[]) {
       const s = yasananSureHesapla(nokta(0), nokta(2 * yp), zaman(akis([{ bas: null, akis: 10, ana }])), [kalis(yp, 2 * yp)]);

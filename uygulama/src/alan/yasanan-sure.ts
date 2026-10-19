@@ -92,7 +92,7 @@ export function yasananSureHesapla(dogum: EvrenTarihi | null, an: EvrenTarihi | 
   sonuc.gunEnAz = en / GUN_PARCA; sonuc.gunEnCok = cok / GUN_PARCA;
   sonuc.metin = `Yaşadığı süre ${sonuc.enAz === sonuc.enCok ? sonuc.enAz : `${sonuc.enAz}–${sonuc.enCok}`} yıl`;
   // Yıl gösteriminin saklayacağı fark gün aralığıyla gösterilir; günün ortası seçilmez.
-  if (sonuc.enCok < 1 || (sonuc.enAz === takvim?.enAz && sonuc.enCok === takvim?.enCok)) {
+  if (sonuc.enCok < 1 || (sonuc.enAz === sonuc.enCok && cok - en > 1e-7) || (sonuc.enAz === takvim?.enAz && sonuc.enCok === takvim?.enCok)) {
     const alt = Math.floor(sonuc.gunEnAz), ust = Math.ceil(sonuc.gunEnCok);
     sonuc.metin = `Yaşadığı süre ${alt === ust ? alt : `${alt}–${ust}`} gün`;
   }
