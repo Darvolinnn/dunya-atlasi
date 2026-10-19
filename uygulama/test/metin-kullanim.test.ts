@@ -39,6 +39,19 @@ function kur() {
 }
 
 describe('metin ile kullanım yeri (F30)', () => {
+  it('kaynak editoryal birleşmeyle yönlenince güncelleme korunan kaynağın metnini alır', () => {
+    const { h, evren, kayit, yaz, oku, ekle, efsane, sahne } = kur();
+    const korunan = kayit('Efsanenin aslı', 'belge');
+    yaz(korunan, paragraf('Çiy perisi vadiye indi.'));
+    const k = h.metinKullanimOlustur({ evren, kaynak: efsane, hedef: sahne, alan: 'govde', bicim: 'bagli' });
+    ekle(sahne, k.kod, k.spans);
+    h.birlestir({ evren, kaynak: efsane, hedef: korunan, secimler: {} });
+    expect(h.metinKullanimlari({ evren, hedef: sahne })[0].kaynakDegisti).toBe(true);
+    h.metinKullanimGuncelle({ evren, kod: k.kod });
+    expect(oku(sahne)).toContain('Çiy perisi vadiye indi.');
+    expect(oku(sahne)).not.toContain('Ay kızı');
+    expect(h.metinKullanimlari({ evren, hedef: sahne })[0].kaynakDegisti).toBe(false);
+  });
   it('ortak kaynağa bağlı kullanım kaynağın değiştiğini bildirir ve kaynaktan güncellenir', () => {
     const { h, evren, yaz, oku, ekle, efsane, sahne } = kur();
     const { kod, spans } = h.metinKullanimOlustur({ evren, kaynak: efsane, hedef: sahne, alan: 'govde', bicim: 'bagli' });

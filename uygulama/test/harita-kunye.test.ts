@@ -33,6 +33,34 @@ function cihaz(ad = 'Cihaz A') {
 const gorsel = (n: number) => new Uint8Array([0x89, 0x50, 0x4e, 0x47, n]);
 
 describe('F17 haritalar da iddia taşır (harita künyesi, §8.3)', () => {
+  it('iki cihaz aynı künyeyi yazınca çatışma rozeti gösterilmez', async () => {
+    const h = cihaz(), diger = cihaz('Cihaz B');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Uydurma künye denemesi' });
+    const { kod: harita } = await h.haritaYukle({ evren, ad: 'Çiy Haritası', yer: null, dosyaAdi: 'ciy.png', tur: 'image/png', veri: gorsel(4) });
+    diger.evreniDisaridanKur({ kod: evren, islemler: h.islemleriVer({ evren, gorulen: {} }) });
+    const tanim = { tarih: '', yapan: null, amac: 'Konak yerleri', bilinenHatalar: [] };
+    h.haritaKunyeYaz({ evren, harita, tanim });
+    diger.haritaKunyeYaz({ evren, harita, tanim });
+    h.islemleriAl({ evren, islemler: diger.islemleriVer({ evren, gorulen: h.gorulenler({ evren }) }) });
+    expect(h.catismalar({ evren })).toEqual([]);
+    expect(h.haritaKunyesi({ evren, harita })?.catismali).toBe(false);
+  });
+
+  it('aynı sayıda farklı bilinen hatalar çatışma seçeneklerinde içerikleriyle ayırt edilir', async () => {
+    const h = cihaz(), diger = cihaz('Cihaz B');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Uydurma farklılık denemesi' });
+    const { kod: harita } = await h.haritaYukle({ evren, ad: 'Çiy Haritası', yer: null, dosyaAdi: 'ciy.png', tur: 'image/png', veri: gorsel(5) });
+    diger.evreniDisaridanKur({ kod: evren, islemler: h.islemleriVer({ evren, gorulen: {} }) });
+    const tanim = { tarih: '', yapan: null, amac: 'Konak yerleri', bilinenHatalar: ['Doğu geçidi eksik'] };
+    h.haritaKunyeYaz({ evren, harita, tanim });
+    diger.haritaKunyeYaz({ evren, harita, tanim: { ...tanim, bilinenHatalar: ['Batı kıyısı eksik'] } });
+    h.islemleriAl({ evren, islemler: diger.islemleriVer({ evren, gorulen: h.gorulenler({ evren }) }) });
+    const c = h.catismalar({ evren }).find((x) => x.tur === 'alan' && x.alan === 'harita_kunye');
+    if (!c || c.tur !== 'alan') throw new Error('Çatışma bulunamadı.');
+    expect(c.degerler.map((d) => d.yazi).join(' / ')).toContain('Doğu geçidi eksik');
+    expect(c.degerler.map((d) => d.yazi).join(' / ')).toContain('Batı kıyısı eksik');
+    expect(new Set(c.degerler.map((d) => d.yazi)).size).toBe(2);
+  });
   it('künye yazılır, okunur, değiştirilir; boş künye hiçbir şey eklemez; tarih okunamazsa hata verir', async () => {
     const h = cihaz();
     const { kod: evren } = h.evrenOlustur({ ad: 'Atlas' });

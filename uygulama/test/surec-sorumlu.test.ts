@@ -46,6 +46,14 @@ function kur() {
 }
 
 describe('süreç adımlarının sorumluları ve engeller (F07)', () => {
+  it('kaldırılan süreç kuralı sorumlular listesinde görünmez; geri yüklenince seçimler korunur', () => {
+    const { h, evren, olay, kural, alaz, oku } = kur();
+    h.surecAdimSorumlusuYaz({ evren, olay, kural, adim: 'a1', sorumlu: alaz });
+    h.surecKuraliSil({ evren, kod: kural });
+    expect(oku().surecler).toEqual([]);
+    h.surecKuraliSil({ evren, kod: kural, geriYukle: true });
+    expect(oku().surecler[0].adimlar[0].sorumlu?.kod).toBe(alaz);
+  });
   it('adım sorumlusu yazılır, değiştirilir, kaldırılır; silinen kayıt "silinmiş" görünür', () => {
     const { h, evren, muhurdar, alaz, lonca, olay, kural, oku } = kur();
 

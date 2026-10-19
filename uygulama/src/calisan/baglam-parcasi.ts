@@ -42,11 +42,13 @@ function denetle(e: EvrenVt, t: BaglamParcasiTanimi): SakliParca {
     if (!kodGecerliMi(a.kod) || e.db.selectValue('SELECT 1 FROM kayitlar WHERE kod=? AND silindi IS NULL', [a.kod]) === undefined) throw new Error(`${ad} seçilmedi.`);
     return a.kod as string;
   };
+  const not = String(t.not ?? '').replace(/\s+/g, ' ').trim();
+  if (not.length > 300) throw new Error('Not en çok 300 harf olabilir.');
   return {
     tarih: { kip: t.tarih.kip, deger: tarih },
     yer: { kip: t.yer.kip, kod: kayit(t.yer, 'Yer') },
     bakis: { kip: t.bakis.kip, kod: kayit(t.bakis, 'Bakış açısı') },
-    not: String(t.not ?? '').replace(/\s+/g, ' ').trim().slice(0, 300),
+    not,
   };
 }
 

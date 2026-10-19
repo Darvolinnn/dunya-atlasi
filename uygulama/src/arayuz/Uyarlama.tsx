@@ -31,6 +31,7 @@ export function UyarlamaBolumu({ istemci, evren, eser, surum = 0 }: { istemci: I
   const [dallar, setDallar] = useState<EvrenDali[]>([]);
   const [t, setT] = useState<UyarlamaTanimi>(() => bos(eser)), [kod, setKod] = useState<string | null>(null);
   const [hata, setHata] = useState<string | null>(null), [bekliyor, setBekliyor] = useState(false), [yenile, setYenile] = useState(0);
+  const [acik, setAcik] = useState(false);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren || d.evren === t.b.dal || liste.some((r) => r.tanim.b.dal === d.evren)) setYenile((n) => n + 1); }), [istemci, evren, t.b.dal, liste]);
   useEffect(() => {
     let etkin = true;
@@ -51,11 +52,15 @@ export function UyarlamaBolumu({ istemci, evren, eser, surum = 0 }: { istemci: I
     finally { setBekliyor(false); }
   };
   const etkilenmis = liste.filter((r) => r.etkilenmis);
+  if (!liste.length && !acik && kod === null) return <div class="satir kucuk">
+    <button type="button" class="dugme sade kucuk" onClick={() => setAcik(true)}>Uyarlama eşlemesi ekle…</button>
+    {hata && <p class="hata" role="alert">{hata}</p>}
+  </div>;
   return <section aria-label="Uyarlama eşlemeleri">
     <h2>Uyarlama eşlemeleri</h2>
     <p>İki eserin ya da bir eser ile deneme kopyasının kayıtlarını kendiniz eşleyin. Program yalnızca değişiklikleri listeler; hiçbir taraf diğerini kendiliğinden güncellemez. Eşleme, yayın izni veya okurun bildiği bir bilgi değildir.</p>
     {hata && <p class="hata" role="alert">{hata}</p>}
-    <details open={kod !== null}><summary>{kod ? 'Eşlemeyi düzenle' : 'Eşleme ekle'}</summary>
+    <details open={kod !== null || acik}><summary>{kod ? 'Eşlemeyi düzenle' : 'Eşleme ekle'}</summary>
       <form onSubmit={(e) => { e.preventDefault(); void yap(() => istemci.iste('uyarlamaYaz', { evren, kod, tanim: t }), true); }}>
         <fieldset disabled={bekliyor}><legend>{kod ? 'Eşlemeyi düzenle' : 'Yeni eşleme'}</legend>
           <label>Eşleme türü <select class="girdi" value={t.tur} onChange={(e) => setT({ ...t, tur: e.currentTarget.value as UyarlamaTanimi['tur'], b: { ...t.b, kayitlar: e.currentTarget.value === 'cikarildi' ? [] : t.b.kayitlar } })}>{UYARLAMA_TURLERI.map((x) => <option key={x.kod} value={x.kod}>{x.ad}</option>)}</select></label>
