@@ -11,6 +11,7 @@ import { KayitSec, SatirGirdisi } from './KayitBolumleri';
 import type { Secim } from './BaglantiSecici';
 import { BakisBilgileri } from './Bilgiler';
 import { useTakvim } from './Takvim';
+import { git } from './Uygulama';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: { kod: string; ad: string }) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
@@ -333,11 +334,20 @@ export function DurumGecmisi({ istemci, evren, kayit }: { istemci: Istemci; evre
   );
 }
 
+/** F24: tarihi olan ve kesinleşmiş değer önemlidir; değeri değişirken niyet sorulur. */
+const onemliDeger = (d: DurumSatiri) => d.karar === 'kesin' && !!d.baslangic?.tarih;
+
 function DurumSatir({ istemci, evren, d }: { istemci: Istemci; evren: string; d: DurumSatiri }) {
   const [ac, setAc] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
+  const [bekleyen, setBekleyen] = useState<{ alan: 'deger' | 'hedef'; deger: string | null; yazi: string } | null>(null);
+  const [surum, setSurum] = useState(0);
   const degistir = (alan: DurumAlani, deger: unknown) =>
     istemci.iste('durumDegistir', { evren, kod: d.kod, alan, deger }).then(() => setHata(null), (e) => { setHata(hataYaz(e)); throw e; });
+  const degerDegistir = async (alan: 'deger' | 'hedef', deger: string | null, yazi: string) => {
+    if (!onemliDeger(d)) return degistir(alan, deger);
+    setBekleyen({ alan, deger, yazi });
+  };
   return (
     <li class={`karar-satir-${d.karar}`}>
       <div class="satir">
@@ -351,10 +361,11 @@ function DurumSatir({ istemci, evren, d }: { istemci: Istemci; evren: string; d:
       {ac && (
         <div class="iliski-duzenle">
           <SatirGirdisi etiket="Özellik" deger={d.ozellik} kaydet={(v) => degistir('ozellik', v)} />
-          <SatirGirdisi etiket="Değer" deger={d.deger} kaydet={(v) => degistir('deger', v)} />
+          <SatirGirdisi key={surum} etiket="Değer" deger={d.deger} kaydet={(v) => degerDegistir('deger', v, v)} />
           <div class="alan"><span class="alan-adi">Değer olan kayıt</span>
-            <span class="satir"><KayitSec istemci={istemci} evren={evren} secili={d.hedef} sec={(s) => degistir('hedef', s?.kod ?? null)} etiket="Seç (isteğe bağlı)" />
-              {d.hedef && <button class="dugme sade kucuk" aria-label="Kaydı kaldır" onClick={() => degistir('hedef', null)}>×</button>}</span></div>
+            <span class="satir"><KayitSec istemci={istemci} evren={evren} secili={d.hedef} sec={(s) => { degerDegistir('hedef', s?.kod ?? null, s?.ad ?? 'kayıt yok').catch(() => {}); }} etiket="Seç (isteğe bağlı)" />
+              {d.hedef && <button class="dugme sade kucuk" aria-label="Kaydı kaldır" onClick={() => { degerDegistir('hedef', null, 'kayıt yok').catch(() => {}); }}>×</button>}</span></div>
+          {bekleyen && <DegisiklikNiyeti istemci={istemci} evren={evren} d={d} bekleyen={bekleyen} bitti={() => { setBekleyen(null); setSurum((x) => x + 1); }} />}
           <label class="alan"><span class="alan-adi">Süre</span>
             <select class="girdi" value={d.kip} onChange={(e) => degistir('kip', (e.target as HTMLSelectElement).value)}>
               {DURUM_KIPLERI.map((k) => <option value={k.kod} title={k.aciklama}>{k.ad}</option>)}
@@ -368,6 +379,58 @@ function DurumSatir({ istemci, evren, d }: { istemci: Istemci; evren: string; d:
         </div>
       )}
     </li>
+  );
+}
+
+/**
+ * F24 değişiklik niyeti: önemli bir değer değişirken kısa seçenek. Hiçbiri seçilmeden kayıt değişmez;
+ * "Vazgeç" her şeyi olduğu gibi bırakır.
+ */
+function DegisiklikNiyeti({ istemci, evren, d, bekleyen, bitti }: {
+  istemci: Istemci; evren: string; d: DurumSatiri; bekleyen: { alan: 'deger' | 'hedef'; deger: string | null; yazi: string }; bitti: () => void;
+}) {
+  const [niyet, setNiyet] = useState<'eski_duzelt' | 'bu_tarihten' | 'taslakta' | 'inanc'>('eski_duzelt');
+  const [tarih, setTarih] = useState('');
+  const [kisi, setKisi] = useState<Secim | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  const SECENEKLER = [
+    { kod: 'eski_duzelt', ad: 'Eski kaydı düzelt', aciklama: 'Baştan beri böyleymiş; kayıt yerinde düzeltilir.' },
+    ...(d.kip !== 'anlik' ? [{ kod: 'bu_tarihten', ad: 'Bu tarihten itibaren değiştir', aciklama: 'Eski değer yazacağın tarihe kadar sürer, yenisi o tarihte başlar.' }] : []),
+    { kod: 'taslakta', ad: 'Taslakta dene', aciklama: 'Evren değişmez; değişiklik yeni bir taslakta yapılır ve oraya geçersin.' },
+    { kod: 'inanc', ad: 'Yalnızca bir kişinin inancını değiştir', aciklama: 'Gerçek aynı kalır; seçtiğin kişi yeni değere inanır.' },
+  ] as const;
+  const uygula = async (e: Event) => {
+    e.preventDefault();
+    try {
+      const r = await istemci.iste('durumNiyeti', { evren, kod: d.kod, alan: bekleyen.alan, deger: bekleyen.deger, niyet,
+        tarih: tarih.trim() ? { ifade: tarih } : null, bilen: kisi?.kod ?? null });
+      bitti();
+      if (r.evren !== evren) git(`/e/${r.evren}/k/${d.konu}`);
+    } catch (x) { setHata(hataYaz(x)); }
+  };
+  return (
+    <form class="kart niyet-formu" onSubmit={uygula} aria-label="Değişiklik niyeti">
+      <p><strong>“{d.ozellik}” {aralikYazi(d)} için kesinleşmiş.</strong> “{bekleyen.yazi}” olarak değiştirmek ne anlama geliyor?</p>
+      {SECENEKLER.map((s) => (
+        <label class="secenek-satiri" key={s.kod}>
+          <input type="radio" name={`niyet-${d.kod}`} checked={niyet === s.kod} onChange={() => setNiyet(s.kod as typeof niyet)} />
+          <span>{s.ad} <span class="soluk kucuk">· {s.aciklama}</span></span>
+        </label>
+      ))}
+      {niyet === 'bu_tarihten' && <label class="alan"><span class="alan-adi">Hangi tarihten itibaren?</span>
+        <input class="girdi" lang="tr" value={tarih} placeholder="Örn. 430" onInput={(e) => setTarih((e.target as HTMLInputElement).value)} /></label>}
+      {niyet === 'inanc' && <>
+        <div class="alan"><span class="alan-adi">Kim inanıyor?</span>
+          <span class="satir"><KayitSec istemci={istemci} evren={evren} secili={kisi} sec={setKisi} etiket="Kişi seç" /></span></div>
+        <label class="alan"><span class="alan-adi">Ne zamandan beri? (isteğe bağlı)</span>
+          <input class="girdi" lang="tr" value={tarih} placeholder="Boş: her zaman" onInput={(e) => setTarih((e.target as HTMLInputElement).value)} /></label>
+      </>}
+      {hata && <p class="hata kucuk">{hata}</p>}
+      <div class="satir">
+        <button class="dugme ana" type="submit" disabled={(niyet === 'bu_tarihten' && !tarih.trim()) || (niyet === 'inanc' && !kisi)}>Uygula</button>
+        <button class="dugme" type="button" onClick={bitti}>Vazgeç</button>
+      </div>
+    </form>
   );
 }
 

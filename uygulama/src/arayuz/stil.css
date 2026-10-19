@@ -635,3 +635,7 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .aktarim { border: 1px solid var(--cizgi); border-radius: var(--yaricap); padding: 8px 12px; margin: 8px 0; }
 .aktarim-gerekenler { margin: 8px 0; }
 .yayim { border-top: 1px solid var(--cizgi); padding-top: 8px; margin-top: 8px; }
+
+/* Değişiklik niyeti (F24) */
+.niyet-formu { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.niyet-formu .secenek-satiri { display: flex; gap: 8px; align-items: baseline; cursor: pointer; }

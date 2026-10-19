@@ -751,6 +751,7 @@ export interface Istekler {
   durumEkle(a: { evren: string; kod: string; durum: DurumGirdisi }): { kod: string };
   durumDegistir(a: { evren: string; kod: string; alan: DurumAlani; deger: unknown }): void;
   durumSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  durumNiyeti(a: { evren: string; kod: string; alan: 'deger' | 'hedef'; deger: unknown; niyet: 'eski_duzelt' | 'bu_tarihten' | 'taslakta' | 'inanc'; tarih?: SinirGirdisi | null; bilen?: string | null }): { evren: string };
   ozellikAdlari(a: { evren: string }): string[];
   sahneAlaniAyarla(a: { evren: string; sahne: string; alan: SahneAlani; kayit: string | null }): void;
   sahneBaglami(a: { evren: string; sahne: string }): SahneBaglami;

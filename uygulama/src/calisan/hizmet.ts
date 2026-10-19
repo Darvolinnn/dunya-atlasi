@@ -44,6 +44,7 @@ import * as soyMod from './soy';
 import * as montaj from './montaj';
 import * as gundelik from './gundelik';
 import * as sozluk from './sozluk';
+import * as niyetMod from './degisiklik-niyeti';
 import * as yerlesim from './yerlesim';
 import * as derlemeMod from './derleme';
 import * as fark from './fark';
@@ -1564,6 +1565,27 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   }
   durumDegistir({ evren, kod, alan, deger }: { evren: string; kod: string; alan: DurumAlani; deger: unknown }) {
     durum.durumDegistir(this.durumBaglami(evren), kod, alan, deger);
+  }
+  /**
+   * F24: tarihli ve kesinleşmiş bir değer değişirken yazarın seçtiği niyet. "Taslakta dene" yeni bir taslak dal
+   * açar ve değişikliği orada yapar; dönen `evren` o dalın kodudur.
+   */
+  durumNiyeti({ evren, kod, alan, deger, niyet, tarih = null, bilen = null }: {
+    evren: string; kod: string; alan: 'deger' | 'hedef'; deger: unknown; niyet: 'eski_duzelt' | 'bu_tarihten' | 'taslakta' | 'inanc'; tarih?: SinirGirdisi | null; bilen?: string | null;
+  }): { evren: string } {
+    if (alan !== 'deger' && alan !== 'hedef') throw new Error('Yalnızca değer değiştirilebilir.');
+    const b = this.durumBaglami(evren);
+    if (niyet === 'eski_duzelt') { durum.durumDegistir(b, kod, alan, deger); return { evren }; }
+    if (niyet === 'bu_tarihten') { niyetMod.buTarihten(b, kod, alan, deger, tarih); return { evren }; }
+    if (niyet === 'inanc') { niyetMod.inanc(b, kod, alan, deger, bilen ?? '', tarih); return { evren }; }
+    if (niyet !== 'taslakta') throw new Error('Değişikliğin nasıl yazılacağını seçin.');
+    if (this.bagli.has(evren)) throw new Error('Zaten bir taslaktasınız; eski kaydı burada düzeltebilirsiniz.');
+    const r = this.evren(evren).db.selectObject('SELECT ozellik, konu FROM durumlar WHERE kod=? AND silindi IS NULL', [kod]);
+    if (!r) throw new Error('Durum bulunamadı.');
+    const konuAd = this.evren(evren).db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [r.konu as string]) as string;
+    const dal = this.dalOlustur({ evren, ad: `Deneme: ${konuAd} · ${r.ozellik}`.slice(0, 120), aciklama: 'Değeri değiştirmeden önce taslakta denemek için açıldı.' }).kod;
+    durum.durumDegistir(this.durumBaglami(dal), kod, alan, deger);
+    return { evren: dal };
   }
   durumSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) {
     durum.durumSil(this.durumBaglami(evren), kod, geriYukle);
