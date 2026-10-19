@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AdBicimi, DilBilgisi, DilSozcugu, DilTanimi, DilYeterliligi, KisaKayit, KisiDili, SesIzi, TuretilenBicim, UretilenAd, YeterlilikDuzeyi } from '../veri/api';
+import { onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: KisaKayit) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
@@ -54,7 +55,7 @@ export function DilBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; ev
       <h3>Ses sınıfları</h3>
       <p class="soluk kucuk">Hazır: V = ünlüler, C = ünsüzler. Kurallarda büyük harf bir sınıfı, [ptk] adsız bir sınıfı, # sözcük sınırını, ∅ boşluğu gösterir.</p>
       {t.siniflar.length > 0 && <ul class="toplanan-listesi">{t.siniflar.map((s, i) => (
-        <li key={s.ad}>{s.ad} = {s.harfler} <button class="dugme sade kucuk" onClick={() => yaz({ siniflar: t.siniflar.filter((_, j) => j !== i) })}>Kaldır</button></li>
+        <li key={s.ad}>{s.ad} = {s.harfler} <button class="dugme sade kucuk" onClick={() => onayla('Bu ses sınıfı kaldırılsın mı?') && yaz({ siniflar: t.siniflar.filter((_, j) => j !== i) })}>Kaldır</button></li>
       ))}</ul>}
       <form class="satir" onSubmit={(e) => { e.preventDefault(); void yaz({ siniflar: [...t.siniflar.filter((s) => s.ad !== sinif.ad.trim()), { ad: sinif.ad.trim(), harfler: sinif.harfler }] }).then((ok) => ok && setSinif({ ad: '', harfler: '' })); }}>
         <input class="girdi" style="width:50px" aria-label="Sınıfın harfi" placeholder="L" value={sinif.ad} onInput={(e) => setSinif({ ...sinif, ad: (e.target as HTMLInputElement).value })} />
@@ -69,7 +70,7 @@ export function DilBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; ev
           {hataOf(i) && <span class="hata kucuk"> · {hataOf(i)}</span>}{' '}
           <button class="dugme sade kucuk" disabled={i === 0} aria-label={`${i + 1}. kuralı yukarı al`} onClick={() => tasi(i, -1)}>↑</button>
           <button class="dugme sade kucuk" disabled={i === t.kurallar.length - 1} aria-label={`${i + 1}. kuralı aşağı al`} onClick={() => tasi(i, 1)}>↓</button>
-          <button class="dugme sade kucuk" onClick={() => yaz({ kurallar: t.kurallar.filter((_, j) => j !== i) })}>Kaldır</button></li>
+          <button class="dugme sade kucuk" onClick={() => onayla('Bu kural kaldırılsın mı?') && yaz({ kurallar: t.kurallar.filter((_, j) => j !== i) })}>Kaldır</button></li>
       ))}</ol>}
       <form class="satir" onSubmit={(e) => { e.preventDefault(); void yaz({ kurallar: [...t.kurallar, { kural, not: kuralNotu }] }).then((ok) => { if (ok) { setKural(''); setKuralNotu(''); } }); }}>
         <input class="girdi" style="width:180px" lang="tr" aria-label="Kural" placeholder="k → h / #_" value={kural} onInput={(e) => setKural((e.target as HTMLInputElement).value)} />
@@ -87,7 +88,7 @@ export function DilBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; ev
       {b.ornekler.length > 0 && <ul class="toplanan-listesi">{b.ornekler.map((o, i) => (
         <li key={i}>{o.kaynak} → <strong>{o.sonuc}</strong>{o.tutuyor === false && <span class="hata kucuk"> · beklenen “{o.beklenen}”, tutmuyor</span>}{o.tutuyor === true && <span class="kucuk"> · tutuyor</span>}
           <div><Iz iz={o.iz} /></div>
-          <button class="dugme sade kucuk" onClick={() => yaz({ ornekler: t.ornekler.filter((_, j) => j !== i) })}>Kaldır</button></li>
+          <button class="dugme sade kucuk" onClick={() => onayla('Bu örnek kaldırılsın mı?') && yaz({ ornekler: t.ornekler.filter((_, j) => j !== i) })}>Kaldır</button></li>
       ))}</ul>}
       <form class="satir" onSubmit={(e) => { e.preventDefault(); void yaz({ ornekler: [...t.ornekler, ornek] }).then((ok) => ok && setOrnek({ kaynak: '', beklenen: '' })); }}>
         <input class="girdi" lang="tr" aria-label="Örneğin kaynak biçimi" placeholder="kaynak biçim" value={ornek.kaynak} onInput={(e) => setOrnek({ ...ornek, kaynak: (e.target as HTMLInputElement).value })} />
@@ -181,7 +182,7 @@ export function AdBicimleriBolumu({ istemci, evren, kod, ad, surum }: { istemci:
         <summary><h2 style="display:inline">Adın dillerdeki biçimleri</h2></summary>
         {bicimler.length > 0 && <ul class="toplanan-listesi">{bicimler.map((x) => (
           <li key={x.dil.kod}>{bag(evren, x.dil)}: <strong>{x.bicim}</strong>{x.turetildi && <span class="soluk kucuk"> · {x.turetildi.kaynakDil.ad} “{x.turetildi.kaynakBicim}” biçiminden türetildi</span>}{' '}
-            <button class="dugme sade kucuk" onClick={() => istemci.iste('adBicimiYaz', { evren, kod, dil: x.dil.kod, bicim: null }).catch((e) => setHata(hataYaz(e)))}>Kaldır</button>
+            <button class="dugme sade kucuk" onClick={() => onayla('Bu ad biçimi kaldırılsın mı?') && istemci.iste('adBicimiYaz', { evren, kod, dil: x.dil.kod, bicim: null }).catch((e) => setHata(hataYaz(e)))}>Kaldır</button>
             <button class="dugme sade kucuk" onClick={() => istemci.iste('kayitListe', { evren, kod, liste: 'lakap', ekle: x.bicim }).then(() => setHata(null), (e) => setHata(hataYaz(e)))}>Lakaplara ekle</button></li>
         ))}</ul>}
         <form class="satir" onSubmit={(e) => { e.preventDefault(); void turet(); }}>

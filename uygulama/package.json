@@ -12,6 +12,8 @@
   "dependencies": {
     "@automerge/automerge": "3.5.0",
     "@automerge/prosemirror": "0.2.0",
+    "@fontsource-variable/literata": "^5.3.0",
+    "@fontsource-variable/source-sans-3": "^5.3.1",
     "@sqlite.org/sqlite-wasm": "3.53.4-build2",
     "preact": "10.29.8",
     "prosemirror-commands": "1.7.2",

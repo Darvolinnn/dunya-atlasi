@@ -3,6 +3,7 @@ import type { Islem } from '../alan/islem';
 import type { Akis, EvrenTarihi, Fark, Karsilastirma, ParalelTakvim, Takvim, ZamanSeti } from '../alan/tarih';
 import type { DurumKipi, Gecerlilik } from '../alan/durum';
 import type { Sablon, Soru, SoruDurumu } from '../alan/sablon';
+import type { Formul } from '../alan/formul';
 import type { BilgiEtiketi, BilgiKaynagi, Inanc, SanilanDurum } from '../alan/bilgi';
 import type { Gorunurluk } from '../alan/gorunurluk';
 import type { YasananSure } from '../alan/yasanan-sure';
@@ -115,11 +116,21 @@ export interface HukukKosulu { iliski: string; hedef: string; degil: boolean }
 export interface HukukTanimi {
   ad: string; tur: 'yasak' | 'hak' | 'yukumluluk'; konu: string; kimlere: HukukKosulu[]; yer: string | null; yaptirim: string;
   fiili: 'uygulaniyor' | 'gevsek' | 'uygulanmiyor' | null; fiiliNot: string; baslangic: EvrenTarihi | null; bitis: EvrenTarihi | null;
+  /** "Kimlere" kısmı formülle yazıldıysa (TK8); koşul listesiyle birlikte kullanılmaz. */
+  formul?: Formul | null;
 }
-export interface HukukKurali { kod: string; sahip: KisaKayit; tanim: HukukTanimi; yer: KisaKayit | null; kimlere: (HukukKosulu & { hedefKayit: KisaKayit })[] }
+/** Kural tanımı yazarın yazdığı biçimde: tarihler ve formül yazı olarak. */
+export type HukukTanimGirdisi = Omit<HukukTanimi, 'baslangic' | 'bitis' | 'formul'> & { baslangic: string; bitis: string; formul?: string | null };
+export interface HukukKurali {
+  kod: string; sahip: KisaKayit; tanim: HukukTanimi; yer: KisaKayit | null; kimlere: (HukukKosulu & { hedefKayit: KisaKayit })[];
+  /** Formülün güncel adlarla yazısı; formül yoksa null. */
+  formulYazisi: string | null;
+}
 export interface UygulananKural {
   kural: HukukKurali; nedenYer: string; kosullar: { ad: string; durum: 'tutuyor' | 'tutmuyor' | 'kayitsiz' }[];
-  durum: 'uygulanir' | 'kosul_kayitsiz'; zaman: 'gecerli' | 'tarihsiz' | 'belirsiz';
+  durum: 'uygulanir' | 'kosul_kayitsiz' | 'hesaplanamadi'; zaman: 'gecerli' | 'tarihsiz' | 'belirsiz';
+  /** Formül belirsiz kaldıysa nedenleri; hesaplanamadıysa nedeni. */
+  formulNedenleri?: string[]; hesaplanamadi?: string;
 }
 export interface UygulananKurallar {
   kisi: KisaKayit; yer: KisaKayit; tarih: EvrenTarihi | null; kurallar: UygulananKural[];
@@ -773,7 +784,7 @@ export interface EsitlemeDurumu {
 }
 export interface DriveYedegi { id: string; gun: string; zaman: number; ad: string; kurulum: string }
 export interface DonemselYedekDurumu {
-  son: { zaman: number; gun: string; dogrulandi: boolean } | null; gunSayisi: number; aySayisi: number; hata: string | null;
+  son: { zaman: number; gun: string; dogrulandi: boolean; eksikGorsel?: number } | null; gunSayisi: number; aySayisi: number; hata: string | null;
   bagli: boolean; esitlenir: boolean;
 }
 export interface EvrenEsitlemeDurumu {
@@ -1175,7 +1186,7 @@ export interface Istekler {
   donemselYedekDurumu(a: { evren: string }): DonemselYedekDurumu;
   driveYedekleri(a: { evren: string }): Promise<DriveYedegi[]>;
   drivedaYedekAl(a: { evren: string }): Promise<DonemselYedekDurumu>;
-  drivedanGeriYukle(a: { id: string }): Promise<{ kod: string; ayri: boolean }>;
+  drivedanGeriYukle(a: { id: string }): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] }>;
   yedekAyarlari(a: { gunSayisi: number; aySayisi: number }): void;
   esitle(): Promise<EsitlemeDurumu>;
   esitlemeDurumu(): EsitlemeDurumu;
@@ -1187,6 +1198,9 @@ export interface Istekler {
 
   kaldigiYer(a: { evren: string }): KaldigiYerBilgisi | null;
   kaldigiYerYaz(a: { evren: string; yer: Omit<KaldigiYer, 'zaman'> }): void;
+  taslakOku(a: { anahtar: string }): string | null;
+  taslakYaz(a: { anahtar: string; deger: string }): void;
+  taslakSil(a: { anahtar: string }): void;
   eserYapisi(a: { evren: string; eser: string }): EserYapisi;
   anlatiYeri(a: { evren: string; kod: string }): AnlatiYeri;
   yerlesmemisler(a: { evren: string }): YapiSahnesi[];
@@ -1285,7 +1299,8 @@ export interface Istekler {
   makamYurutenleri(a: { evren: string; makam: string }): MakamYurutucusu[];
   hukukKurallari(a: { evren: string; sahip?: string }): HukukKurali[];
   hukukKuraliOlustur(a: { evren: string; sahip: string; ad: string }): { kod: string };
-  hukukKuraliYaz(a: { evren: string; kod: string; tanim: Omit<HukukTanimi, 'baslangic' | 'bitis'> & { baslangic: string; bitis: string } }): void;
+  hukukKuraliYaz(a: { evren: string; kod: string; tanim: HukukTanimGirdisi }): void;
+  formulDenetle(a: { evren: string; yazi: string }): { yazi: string } | { hata: string; konum: number; uzunluk: number };
   hukukKuraliSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   uygulananKurallar(a: { evren: string; kisi: string; yer: string; tarih?: string | null }): UygulananKurallar;
   kuralOrnekleri(a: { evren: string; kural: string }): KuralOrnekleri;

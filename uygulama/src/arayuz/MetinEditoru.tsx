@@ -1,6 +1,6 @@
 // Serbest metin editörü (ProseMirror). Metin çalışana parça listesi olarak gider; çalışan bunu Automerge
 // belgesine tek değişiklik olarak yazar (TK2). Otomatik kaydetme: yazmaya ara verilince ya da en geç
-// birkaç saniyede bir; sekme gizlenince hemen.
+// birkaç saniyede bir; sekme gizlenince hemen. Kayda geçmemiş yazı ayrıca kurtarma taslağında durur (§10.7).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { EditorState, TextSelection, type Command, type Transaction } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
@@ -21,10 +21,18 @@ import { useCalisma } from './Calisma';
 import { TurSecici } from './ortak';
 import { BaglamParcasiFormu, parcaYazisi } from './BaglamParcasi';
 import { KullanimSeridi, MetinAlFormu } from './MetinKullanim';
+import { acilistaTaslak, kurtarmaAnahtari, taslakAnahtari, taslakSil, taslakYaz, type Taslak, type TaslakDeposu } from './taslak';
 
 const sema = metinSemasi.schema;
 const ARA = 1200;        // yazmaya bu kadar ara verilince kaydedilir
 const EN_GEC = 8000;     // sürekli yazarken bile en geç bu aralıkla kaydedilir
+
+/** Taslaklar çalışan üzerinden bu cihazın veritabanına yazılır (ani kapanmada kaybolmaz). */
+const taslakDeposu = (istemci: Istemci): TaslakDeposu => ({
+  oku: (anahtar) => istemci.iste('taslakOku', { anahtar }),
+  yaz: async (anahtar, deger) => { await istemci.iste('taslakYaz', { anahtar, deger }); },
+  sil: async (anahtar) => { await istemci.iste('taslakSil', { anahtar }); },
+});
 
 export const belgeYap = (spans: Spans): PmNode => pmDocFromSpans(metinSemasi, spans as never);
 const isaretTuru = sema.marks.isaret;
@@ -45,7 +53,7 @@ const KISAYOLLAR: Record<string, Command> = {
   'Mod-b': toggleMark(sema.marks.strong), 'Mod-i': toggleMark(sema.marks.em),
 };
 
-type Durum = { tur: 'kayitli'; zaman: number | null } | { tur: 'bekliyor' } | { tur: 'kaydediliyor' } | { tur: 'hata'; mesaj: string };
+type Durum = { tur: 'kayitli'; zaman: number | null } | { tur: 'bekliyor' } | { tur: 'kaydediliyor' } | { tur: 'hata'; mesaj: string; taslak?: boolean };
 
 export interface EditorDenetimi { kaydet(): Promise<void> }
 
@@ -95,7 +103,9 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   /** Metin ile kullanım yeri (F30): bu metne alınmış başka metinler. */
   const [kullanimlar, setKullanimlar] = useState<MetinKullanimi[]>([]);
   const [alFormu, setAlFormu] = useState<{ from: number; to: number; belge: PmNode } | null>(null);
-  const metinIslemi = useRef<{ kaydet(): Promise<void>; yeniden(): Promise<void> } | null>(null);
+  const metinIslemi = useRef<{ kaydet(): Promise<void>; yeniden(): Promise<void>; kurtar(t: Taslak): Promise<void> } | null>(null);
+  /** Önceki oturumdan kalan, kaydedilmemiş yazı (§10.7). */
+  const [bulunanTaslak, setBulunanTaslak] = useState<Taslak | null>(null);
   useEffect(() => {
     if (alan !== 'govde') return;
     let iptal = false;
@@ -160,6 +170,17 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     let ilkKirlilik = 0;
     let zamanlayici: ReturnType<typeof setTimeout> | null = null;
     let suren: Promise<void> | null = null;
+    // Kurtarma taslağı: yazı asıl kayda geçene kadar cihazda ayrıca durur (§10.7).
+    const anahtar = taslakAnahtari(evren, kayit, alan);
+    const depo = taslakDeposu(istemci);
+    let taslakZamanlayici: ReturnType<typeof setTimeout> | null = null;
+    let taslakVar = false;
+    let acilisBitti = false; // önceki oturumun taslağına bakılmadan yeni taslak yazılmaz
+    const taslakKaydet = async () => {
+      if (taslakZamanlayici) { clearTimeout(taslakZamanlayici); taslakZamanlayici = null; }
+      if (!acilisBitti || !kirli || !gorunum.current || saltRef.current) return;
+      taslakVar = await taslakYaz(depo, anahtar, { spans: pmNodeToSpans(metinSemasi, gorunum.current.state.doc) as Spans, temel, zaman: Date.now() });
+    };
 
     const kaydet = async (): Promise<void> => {
       if (zamanlayici) { clearTimeout(zamanlayici); zamanlayici = null; }
@@ -174,10 +195,11 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           temel = r.basliklar;
           // Bu arada başka cihazdan gelen değişiklikle birleşti: editör birleşmiş metni gösterir.
           if (r.birlesti && r.spans && !kirli) icerigiDegistir(r.spans);
-          if (!kirli) setDurum({ tur: 'kayitli', zaman: Date.now() });
+          if (!kirli) { void taslakSil(depo, anahtar); taslakVar = false; setDurum({ tur: 'kayitli', zaman: Date.now() }); }
         } catch (e) {
           kirli = true;
-          setDurum({ tur: 'hata', mesaj: (e as Error).message });
+          await taslakKaydet();
+          setDurum({ tur: 'hata', mesaj: (e as Error).message, taslak: taslakVar });
         } finally { suren = null; }
       })();
       await suren;
@@ -191,11 +213,25 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       if (zamanlayici) clearTimeout(zamanlayici);
       const bekle = Math.min(ARA, Math.max(0, ilkKirlilik + EN_GEC - simdi));
       zamanlayici = setTimeout(() => { void kaydet(); }, bekle);
+      taslakZamanlayici ??= setTimeout(() => { void taslakKaydet(); }, 300);
     };
 
     if (denetim) denetim.current = { kaydet };
     metinIslemi.current = {
       kaydet,
+      // Kurtarılan taslak kendi temel sürümüyle yazılır: o zamandan beri kaydedilenle birleşir, üzerine yazmaz.
+      kurtar: async (t) => {
+        await kaydet();
+        const v = gorunum.current;
+        if (!v || iptal) return;
+        const simdiki = temel;
+        temel = t.temel;
+        v.dispatch(v.state.tr.replaceWith(0, v.state.doc.content.size, belgeYap(t.spans).content));
+        await kaydet();
+        // Taslağın temel sürümü bu cihazda yoksa (evren yedekten yeniden kurulmuş) taslak şimdiki metnin yerine yazılır.
+        if (kirli && !iptal) { temel = simdiki; await kaydet(); }
+        if (!kirli) await taslakSil(depo, kurtarmaAnahtari(anahtar));
+      },
       yeniden: async () => {
         const m = await istemci.iste('metinAc', { evren, kayit, alan });
         if (iptal || kirli || suren) return;
@@ -231,6 +267,8 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     istemci.iste('metinAc', { evren, kayit, alan }).then((m) => {
       if (iptal || !kap.current) return;
       temel = m.basliklar;
+      if (saltRef.current) acilisBitti = true;
+      else void acilistaTaslak(depo, anahtar, m.spans).then((t) => { acilisBitti = true; if (!iptal) setBulunanTaslak(t); if (kirli) void taslakKaydet(); });
       const state = EditorState.create({
         doc: belgeYap(m.spans),
         plugins: [
@@ -280,15 +318,21 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       setHazir(true);
     }, (e) => setDurum({ tur: 'hata', mesaj: (e as Error).message }));
 
-    const gizlenince = () => { if (document.visibilityState === 'hidden') void kaydet(); };
-    const ayrilirken = (e: BeforeUnloadEvent) => { if (kirli || suren) { void kaydet(); e.preventDefault(); } };
+    // Kapanırken asıl kayıt yetişmeyebilir; taslak ise hemen ve eşzamanlı yazılır.
+    const gizlenince = () => { if (document.visibilityState === 'hidden') { void taslakKaydet(); void kaydet(); } };
+    const ayrilirken = (e: BeforeUnloadEvent) => { if (kirli || suren) { void taslakKaydet(); void kaydet(); e.preventDefault(); } };
+    const sayfaKapaninca = () => { void taslakKaydet(); };
     document.addEventListener('visibilitychange', gizlenince);
     addEventListener('beforeunload', ayrilirken);
+    addEventListener('pagehide', sayfaKapaninca);
     return () => {
       iptal = true;
       birakDinle();
       document.removeEventListener('visibilitychange', gizlenince);
       removeEventListener('beforeunload', ayrilirken);
+      removeEventListener('pagehide', sayfaKapaninca);
+      void taslakKaydet();
+      setBulunanTaslak(null);
       void kaydet();
       gorunum.current?.destroy();
       gorunum.current = null;
@@ -548,6 +592,19 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           {ayirma.hata && <span class="hata kucuk">{ayirma.hata}</span>}
         </form>
       )}
+      {bulunanTaslak && (
+        <div class="uyari" role="alert" style="margin:8px 0">
+          <p class="kucuk"><strong>Bu metinde kaydedilmemiş yazı bulundu</strong> ({new Date(bulunanTaslak.zaman).toLocaleString('tr-TR')}). Program o sırada kaydedemeden kapanmış olabilir.</p>
+          <details class="kucuk"><summary>Kaydedilmemiş hâlini göster</summary>
+            <p style="white-space:pre-wrap">{belgeYap(bulunanTaslak.spans).textBetween(0, belgeYap(bulunanTaslak.spans).content.size, '\n')}</p>
+          </details>
+          <div class="satir" style="margin-top:6px">
+            <button type="button" class="dugme ana kucuk" onClick={async () => { const t = bulunanTaslak; setBulunanTaslak(null); await metinIslemi.current?.kurtar(t); }}>Kurtar</button>
+            <button type="button" class="dugme sade kucuk" onClick={() => { void taslakSil(taslakDeposu(istemci), kurtarmaAnahtari(taslakAnahtari(evren, kayit, alan))); setBulunanTaslak(null); }}>Vazgeç, kayıtlı metin kalsın</button>
+          </div>
+          <p class="soluk kucuk">Kurtar, o yazıyı şimdiki metinle birleştirir; sonradan kaydedilmiş yazı silinmez.</p>
+        </div>
+      )}
       <p class="soluk" style={{ padding: '0 20px', display: hazir || durum.tur === 'hata' ? 'none' : '' }}>Metin açılıyor…</p>
       <div ref={kap} />
       {secici && <BaglantiSecici key={`${secici.from}-${secici.canli ? '' : secici.sorgu}`} istemci={istemci} evren={evren} sorgu={secici.sorgu} konum={secici.konum}
@@ -562,7 +619,7 @@ function durumYazisi(d: Durum): string {
     case 'kayitli': return d.zaman ? `Kaydedildi · ${saatYaz(d.zaman)}` : 'Kaydedildi';
     case 'bekliyor': return 'Yazıyorsunuz…';
     case 'kaydediliyor': return 'Kaydediliyor…';
-    case 'hata': return `Kaydedilemedi: ${d.mesaj}`;
+    case 'hata': return `Kaydedilemedi: ${d.mesaj}${d.taslak ? ' Yazdıkların bu cihazda taslak olarak korunuyor.' : ''}`;
   }
 }
 

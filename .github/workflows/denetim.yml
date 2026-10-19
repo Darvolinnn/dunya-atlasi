@@ -1,0 +1,23 @@
+# Her gönderimde ve birleştirme isteğinde: tür denetimi, bütün sınamalar ve derleme.
+name: Denetim
+on:
+  push:
+    branches: [main, 'paket/**']
+  pull_request:
+jobs:
+  denetim:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: uygulama
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: uygulama/package-lock.json
+      - run: npm ci
+      - run: npm run denetle
+      - run: npm test
+      - run: npm run build

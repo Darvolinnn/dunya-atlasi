@@ -10,6 +10,7 @@ import { eserYapisi } from './anlati';
 import type { EvrenVt } from './evren-vt';
 import { metinBelgesi } from './izdusum';
 import { kayitSablonu } from './sablon';
+import { sayiDegeriMi, sayiMetni } from '../alan/nicelik';
 
 const yazi = (s: string) => new TextEncoder().encode(s);
 const json = (s: unknown) => (typeof s === 'string' && s ? JSON.parse(s) : null);
@@ -66,6 +67,7 @@ export async function markdownDosyalari(e: EvrenVt, evrenAdi: string, medyaOku: 
         const v = ks.degerler[a.kod];
         if (v === null || v === undefined || v === '') continue;
         const d = typeof v === 'object' && v && 'ifade' in v ? (v as { ifade: string }).ifade
+          : sayiDegeriMi(v) ? sayiMetni(v)
           : a.secenekler && typeof v === 'string' ? a.secenekler.find((s) => s.kod === v)?.ad ?? v : v === true ? 'Evet' : String(v);
         if (!on.some(([k]) => k === a.ad)) on.push([a.ad, d]);
       }

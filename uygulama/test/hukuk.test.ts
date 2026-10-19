@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { Hizmet } from '../src/calisan/hizmet';
-import type { HukukTanimi } from '../src/veri/api';
+import type { HukukTanimGirdisi } from '../src/veri/api';
 
 let sqlite3: Awaited<ReturnType<typeof sqlite3InitModule>>;
 beforeAll(async () => { sqlite3 = await sqlite3InitModule(); });
@@ -12,7 +12,7 @@ function cihaz(ad: string) {
   const ac = (d: string) => { let x = dosyalar.get(d); if (!x) { x = new sqlite3.oo1.DB(':memory:'); dosyalar.set(d, x); } return x; };
   return new Hizmet(ac, ad, 'x');
 }
-type Girdi = Omit<HukukTanimi, 'baslangic' | 'bitis'> & { baslangic: string; bitis: string };
+type Girdi = HukukTanimGirdisi;
 const tanim = (x: Partial<Girdi>): Girdi => ({ ad: 'Kural', tur: 'yasak', konu: '', kimlere: [], yer: null, yaptirim: '', fiili: null, fiiliNot: '', baslangic: '', bitis: '', ...x });
 
 describe('hukuk ve statü (§15-11)', () => {

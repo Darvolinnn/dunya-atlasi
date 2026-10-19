@@ -6,6 +6,7 @@ import type { EvrenFarki, FarkAlani, IliskiFarki, KayitFarki } from '../veri/api
 import type { EvrenVt } from './evren-vt';
 import { metinBelgesi } from './izdusum';
 import { kayitSablonu } from './sablon';
+import { sayiDegeriMi, sayiMetni } from '../alan/nicelik';
 
 type Satir = Record<string, unknown>;
 const ifade = (ham: unknown): string | null => {
@@ -24,6 +25,7 @@ const liste = (ham: unknown) => (JSON.parse(String(ham ?? '[]')) as string[]).jo
 const deger = (d: unknown): string | null => {
   if (d === null || d === undefined || d === '') return null;
   if (typeof d === 'object' && d && 'ifade' in d) return (d as { ifade: string }).ifade;
+  if (sayiDegeriMi(d)) return sayiMetni(d);
   if (d === true) return 'Evet';
   if (d === false) return 'Hayır';
   return typeof d === 'string' ? d : JSON.stringify(d);

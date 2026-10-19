@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { Hizmet } from '../src/calisan/hizmet';
-import type { HukukTanimi, KuralOrnegiTanimi } from '../src/veri/api';
+import type { HukukTanimGirdisi, KuralOrnegiTanimi } from '../src/veri/api';
 
 let sqlite3: Awaited<ReturnType<typeof sqlite3InitModule>>;
 beforeAll(async () => { sqlite3 = await sqlite3InitModule(); });
@@ -12,7 +12,7 @@ function cihaz() {
   const ac = (d: string) => { let x = dosyalar.get(d); if (!x) { x = new sqlite3.oo1.DB(':memory:'); dosyalar.set(d, x); } return x; };
   return new Hizmet(ac, 'Deneme', 'x');
 }
-type Girdi = Omit<HukukTanimi, 'baslangic' | 'bitis'> & { baslangic: string; bitis: string };
+type Girdi = HukukTanimGirdisi;
 const tanim = (x: Partial<Girdi>): Girdi => ({ ad: 'Kural', tur: 'yasak', konu: '', kimlere: [], yer: null, yaptirim: '', fiili: null, fiiliNot: '', baslangic: '', bitis: '', ...x });
 
 function kur() {
@@ -31,7 +31,7 @@ function kur() {
   return { h, evren, sehir, lonca, koy, elin, daran, kural, yaz, ornek, liste };
 }
 
-describe('kural atölyesi (F16, formülsüz)', () => {
+describe('kural atölyesi (F16)', () => {
   it('örnek durumlar beklentiyle karşılaştırılır; kayıtlı olmayan "değil" belirsiz kalır', () => {
     const { elin, daran, koy, ornek, liste } = kur();
     ornek({ kisi: elin, beklenen: 'uygulanmaz', not: 'Lonca üyesi muaf' });
@@ -108,5 +108,53 @@ describe('kural atölyesi (F16, formülsüz)', () => {
     h.alanCatismasiCoz({ evren, nesne: a, alan: 'kural_ornegi', islem: ikinci.islem });
     expect(h.catismalar({ evren })).toHaveLength(0);
     expect(liste().ornekler[0].tanim).toMatchObject({ beklenen: 'uygulanir', not: 'Tabletten' });
+  });
+
+  it('formülle yazılan "kimlere": üç değerli sonuç, hata yeri ve sonradan bozulma', () => {
+    const { h, evren, elin, daran, lonca, sehir, kural, yaz, ornek, liste } = kur();
+    const s = h.sablon({ evren, tur: 'karakter' }).sablon;
+    h.sablonYaz({ evren, tur: 'karakter', sablon: { ...s, alanlar: [...s.alanlar,
+      { kod: 'rutbe', ad: 'Rütbe', tur: 'secim', secenekler: [{ kod: 'subay', ad: 'Subay' }, { kod: 'er', ad: 'Er' }] },
+      { kod: 'boy', ad: 'Boy', tur: 'sayi', nicelik: 'uzunluk', birim: 'cm', hassasiyet: 0 }] } });
+    h.kayitAlanYaz({ evren, kod: elin, alan: 'rutbe', deger: 'subay' });
+    h.kayitAlanYaz({ evren, kod: elin, alan: 'dogum', deger: '380' });
+    h.kayitAlanYaz({ evren, kod: daran, alan: 'boy', deger: '1,9 m' });
+
+    // Hata yeri gösterilir; okunamayan formül kaydedilmez.
+    expect(h.formulDenetle({ evren, yazi: 'üyesi [Kılıççılar loncası] ve {Rütbe} = "General"' })).toMatchObject({ konum: 40, uzunluk: 9 });
+    expect(h.formulDenetle({ evren, yazi: 'üyesi [kılıççılar LONCASI] veya {Boy}>=180' })).toEqual({ yazi: 'üyesi [Kılıççılar loncası] veya {Boy} >= 180 cm' });
+    expect(() => yaz({ kimlere: [], formul: '{Rütbe} = ' })).toThrow(/Formül okunamadı/);
+    expect(() => yaz({ kimlere: [{ iliski: 'uye', hedef: lonca, degil: false }], formul: '{Boy} > 1 m' })).toThrow(/birlikte kullanılmaz/);
+
+    yaz({ kimlere: [], formul: '[Kılıççılar loncası] üyesi ve ({Rütbe} = "Subay" veya yaş < 16 yıl)' });
+    const k = h.hukukKurallari({ evren }).find((x) => x.kod === kural)!;
+    expect(k.formulYazisi).toBe('üyesi [Kılıççılar loncası] ve ({Rütbe} = "Subay" veya yaş < 16 yıl)');
+    // Formül yazısı gelmezse saklanan formül korunur.
+    h.hukukKuraliYaz({ evren, kod: kural, tanim: { ...tanim({ ad: 'Silah yasağı', konu: 'kılıç taşımak' }), formul: undefined } });
+    expect(h.hukukKurallari({ evren }).find((x) => x.kod === kural)!.formulYazisi).not.toBeNull();
+
+    ornek({ kisi: elin, beklenen: 'uygulanir' });                 // üye ve subay: evet
+    ornek({ kisi: daran, beklenen: 'uygulanmaz' });               // üyeliği kayıtlı değil: belirsiz
+    const o = liste().ornekler;
+    expect(o.map((x) => [x.sonuc, x.hukum])).toEqual([['uygulanir', 'geciyor'], ['belirsiz', 'belirsiz']]);
+    expect(o[1].neden).toMatch(/Formül kesin sonuç vermiyor: “Kılıççılar loncası” üyesi olduğu kayıtlı değil/);
+    expect(h.uygulananKurallar({ evren, kisi: elin, yer: sehir }).kurallar[0].durum).toBe('uygulanir');
+
+    // Rütbe "Er" olunca: yaş tarihsiz bilinmez → belirsiz; tarih verilince 16'dan büyük → uygulanmaz.
+    h.kayitAlanYaz({ evren, kod: elin, alan: 'rutbe', deger: 'er' });
+    expect(liste().ornekler[0]).toMatchObject({ sonuc: 'belirsiz', neden: expect.stringMatching(/Yaş için tarih verilmedi/) });
+    h.kuralOrnegiYaz({ evren, kural, kod: liste().ornekler[0].kod, tanim: { ...liste().ornekler[0].tanim, tarih: '420' } });
+    expect(liste().ornekler[0]).toMatchObject({ sonuc: 'uygulanmaz', hukum: 'uyariyor' });
+
+    // Formülün kullandığı seçenek kaldırılınca hesaplanamadı; kendiliğinden düzeltilmez.
+    const s2 = h.sablon({ evren, tur: 'karakter' }).sablon;
+    h.sablonYaz({ evren, tur: 'karakter', sablon: { ...s2, alanlar: s2.alanlar.map((a) => a.kod === 'rutbe' ? { ...a, secenekler: [{ kod: 'er', ad: 'Er' }] } : a) } });
+    expect(liste().ornekler[0]).toMatchObject({ sonuc: 'hesaplanamadi', neden: expect.stringMatching(/seçenek kaldırıldı/) });
+    expect(h.uygulananKurallar({ evren, kisi: elin, yer: sehir }).kurallar[0].durum).toBe('hesaplanamadi');
+    expect(h.hukukKurallari({ evren }).find((x) => x.kod === kural)!.formulYazisi).toMatch(/Kaldırılmış seçenek/);
+
+    // Formül boşaltılınca koşul listesine dönülebilir.
+    yaz({ kimlere: [{ iliski: 'uye', hedef: lonca, degil: false }], formul: '' });
+    expect(h.hukukKurallari({ evren }).find((x) => x.kod === kural)!.formulYazisi).toBeNull();
   });
 });

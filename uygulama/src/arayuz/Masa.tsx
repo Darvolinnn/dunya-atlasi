@@ -43,7 +43,7 @@ export function Masa({ istemci, evren, surum, ekler }: { istemci: Istemci; evren
         </label>
         {kaldigi?.kayit && (
           <div class="satir" style="margin-top:8px">
-            <button class="dugme ana" onClick={() => calisma?.devamEt({ kayit: kaldigi.kayit, konum: kaldigi.konum, yanPanel: kaldigi.yanPanel })}>Devam et</button>
+            <button class="dugme ana" onClick={() => calisma?.devamEt({ kayit: kaldigi.kayit, konum: kaldigi.konum, yanPanel: kaldigi.yanPanel, tur: kaldigi.kayitTuru })}>Devam et</button>
             <span class="soluk kucuk">Kayıt, imleç ve yan paneldeki kayıtlar geri gelir.</span>
           </div>
         )}

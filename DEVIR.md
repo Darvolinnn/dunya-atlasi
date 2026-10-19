@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 73 dosya, 427 sınama, hepsi geçiyor.*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 76 dosya, 441 sınama, hepsi geçiyor. GitHub Actions'ta otomatik denetim var.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -19,6 +19,9 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 - Kullanıcı Türkçe yazar; ona Türkçe, kısa ve sade cevap ver. Arayüzdeki ve hata iletilerindeki her metin Türkçedir; kullanıcıya görünen metinde programlama terimi olmaz.
 - Her adım bitince DEVIR.md'de yapılan ve yapılacak adımlar güncellenir ve gönderilir (kullanıcı isteği, 19 Ekim 2026).
 - Kullanıcının açık tercihi: **bir aşama ya da madde bitince onay beklemeden sıradakine geç.** Yalnızca geri alınamaz işlerde (zorla gönderme, toplu silme, dışarıya mesaj) ya da kullanıcının vermesi gereken bir kararda dur ve sor.
+- **Arayüz değişikliklerinde önce taslak:** görünüşü ya da düzeni değiştiren bir işe kodlayarak başlama; önce seçenekli bir taslak göster, kullanıcı seçince kodla (kullanıcı isteği, 19 Ekim 2026).
+- **Her değişiklik kullanıcının bilgisayarına da yüklenir** (19 Ekim 2026): gönderdikten sonra bilgisayarındaki proje klasöründe (yolu proje belleğinde) `main` dalında `git fetch` ve `git merge --ff-only origin/main`; bağımlılıklar değiştiyse PowerShell'de `$env:NODE_ENV='development'; npm install --include=dev` (uygulama klasöründe; ortam üretim modunda olduğundan aksi hâlde geliştirme araçları silinir); `npm run dev` 5173'te çalışır kalsın.
+- Tablet ve iPhone denemeleri süresiz ertelendi; yalnız Windows (19 Ekim 2026).
 - Kullanıcı bazen başka ajanları (GPT/Codex, Argon) ayrı dallarda paralel çalıştırır. Onlara verilecek promptları sen yazarsın; dalları sen birleştirir, sürümü sen artırır, denetimi sen yaparsın (bkz. §6).
 
 ## 3. Durum
@@ -68,30 +71,38 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | İnceleme | GPT paketi: kimlikte yönlendirme ve taşınan ilişkinin görünürlüğü, birleşen kaynakla metin güncelleme, silinmiş süreç kuralı, harita künyesi çatışma gösterimi, boş uyarlama bölümü, bağlam notu sınırı (9 sınama). GPT hakkı bittiği için listedeki öteki özellikler (F05, F25, F40, F11) incelenmemiş olabilir | `f00cb2f` |
 | §15-2 | Argon paketi: ölçekli geometri ve erişim konturları (izdüşüm 57, tablolar `olcekli_olcekler`, `olcekli_araziler`). Sınır: çizim kendi kutusunda yapılır, haritanın görseli altına konmaz | `b3db094` |
 | İnceleme 2 | Yardımcı ajan F05, F25, F40, F11'i inceledi: inanç ve dönüşüm kayıtlarında birleşmiş kayda yönlendirme düzeltildi. Düzeltilmeyen küçük şüpheler: inanç silme `alanYaz` ile yazılmıyor; F11'de silinmiş mekânla düzenlemede bağ sessizce düşüyor; F40 "Boş olamaz" iletisi belirsiz; F25'te kayıt kendi ardılına birleştirilebiliyor | `1af1e74` |
+| F16 | Formül dili (TK8): şablonda birimli sayı alanı (`alan/nicelik.ts`); formül okuyucu ve üç değerli değerlendirme (`alan/formul.ts`); hukuk kuralının "kimlere" kısmı koşul listesi ya da formülle (`calisan/formul-ortami.ts`, `tanim.formul`); yazarken denetim ve hata yeri (`formulDenetle`); kural atölyesi formülü de değerlendirir. Tablo değişmedi, izdüşüm sürümü artmadı. Sınır: kayıt silme ve birleştirme uyarıları formüldeki kayıtları saymıyor (formül "hesaplanamadı" der; birleşmede kod yönlendirilir); süreç kurallarında formül yok | `da885c9`, `645367a`, `201f6d7`, `5986447` |
+| Güvenilirlik | Dönemsel yedek: yeni yedek her zaman yeni dosya; geri okunup her değişiklik satırı denetlenmeden ve sayısı tutmadan ne aynı günün önceki yedeği ne saklama süresi dolanlar silinir; doğrulanamayan kopya kaldırılır. Drive yedeğinden geri yüklemede bulunamayan / bozuk görseller listelenir (`eksikGorseller`, `bozukGorseller`) | `ceca7fb` |
+| Güvenilirlik | Otomatik denetim: `.github/workflows/denetim.yml` (tür denetimi, sınamalar, derleme; `main` ve `paket/**`) | `60bdc1b` |
+| Güvenilirlik | Metin kurtarma taslağı (§10.7): `arayuz/taslak.ts`; taslaklar kurulum veritabanında `taslaklar` tablosunda (istekler `taslakOku/Yaz/Sil`); açılışta "kaydedilmemiş yazı bulundu" → Kurtar / Vazgeç. Tarayıcı süreci zorla öldürülerek denendi | `1bc1d87` |
+| K24 | Arayüz yenileme, kullanıcının seçtiği "A · Üç sütun" taslağı (§5.10): evren açılınca **Yaz** gelir (`#/e/<evren>` ve `#/e/<evren>/yaz/<kod>`, `arayuz/YazEkrani.tsx`); solda gezinti çubuğu ve Yaz seçiliyken eser ağacı, oradan eser / bölüm / sahne eklenir (`arayuz/Kabuk.tsx`, `EvrenKabugu`); ortada metin, sağda kapatılabilir bağlam paneli. Az kullanılan sayfalar "Diğer" altında, kayıt sayfasında okunuş / başka adlar / etiketler ve sahne dışı bölümler katlanır. Krem renkler, Literata (metin) ve Source Sans 3 (arayüz) yazı tipleri pakette (`@fontsource-variable/*`, çevrimdışı çalışır). Komut paleti aramada bütün sayfaları ve görünümleri bulur. Ek: yazma ekranında "Çöp kutusuna taşı"; 1700 ve 2200 piksel üstü geniş ekranda yan sütunlar ve yazıları büyür (`--gezinti-gen`, `--baglam-gen`) | `4e98bc9`, `5fe80e8` |
+| Onay | Bütün silme ve kaldırma düğmeleri (kayıt, harita, çizim, işaret, ilişki, bilgi, kural, masa, paket, sözcük, liste satırları), metni eski hâline döndürme, dönüşümü geri alma ve "Silinmiş kalsın" artık onay soruyor (`arayuz/onay.ts`) | `1966ff0` |
 | F19 | İnceleme: ayırt etme satırı var, sahne hatırlatıcısını sahne paneli karşılıyor; okur tanıtımı ve "sır yayına girmez" yayına (§11) bağlı, K20 gereği kapsam dışı | — |
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
 19 Ekim 2026'daki ilk dört paket birleştirildi. Aynı gün ikinci tur beş paket verildi; beşi de birleştirildi. Üçüncü turdaki Argon paketi (§15-2) birleştirildi; GPT inceleme paketi hak bittiği için yarım kaldı, yerine yardımcı ajan inceledi. Bekleyen paket yok. Dalı uzak depoda belirince birleştir (§6). Paketler `IZDUSUM_SURUMU`'nu artırmaz; artırmayı birleştiren yapar. Promptlar kullanıcının proje klasöründe `paket-promptlari/tur2/` altındadır; depoda değildir.
 
-Bütün "Tasarım" maddeleri kodlandı (F16 formülü hariç; TK8 onaylandı, sırada). Promptlar `paket-promptlari/tur3/`.
+Bütün "Tasarım" maddeleri kodlandı (F16 formülü de, 19 Ekim 2026). Promptlar `paket-promptlari/tur3/`.
 
-### 3.2a Süren iş: F16 formül dili (adım adım)
+**Birleşmeyi bekleyen dal (19 Ekim 2026):** Windows uygulaması (TK6, Tauri 2) başka bir oturumda `claude/project-thread-hdk5g6` dalında yapıldı, PR #1 açık; denetim yeşil, kurulum dosyası `windows` ön sürüm sayfasında (`Dunya-Atlasi-kurulum.exe`). Dalın DEVIR'inde iş listesi §3.2b olarak var; kalanlar: kullanıcının bilgisayarında kurup deneme, Google izinli adreslerine `http://localhost:41730` ekleme (kullanıcı yapar), verinin tarayıcıdan uygulamaya taşınması, sonra tablet APK'sı. Aynı dalda karar: iPhone plandan çıktı (K3). Kullanıcı kurulumu deneyip onaylayınca PR birleştirilir; birleşince bu paragraf silinir.
+
+### 3.2a Biten iş: F16 formül dili (adım adım)
 
 Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yapılan ve yapılacak adımlar burada görünür.
 
 - [x] Kullanıcı TK8 taslağını onayladı, sayılarla birlikte seçti (19 Ekim 2026)
-- [x] Sözleşmeyi tasarım belgesine yaz: §18.3 (sayı alanı, formül dili, üç değer, hata, sürüm, kabul örneği); §1 TK8 "karar verildi"; geçmiş dosyasına satır
-- [ ] Şablonlara birimli sayı alanı ekle (nicelik türü, birim, hassasiyet)
-- [ ] Formül çözümleyici ve üç değerli değerlendirme (alan/formul.ts)
-- [ ] Hukuk kuralının "kimlere" kısmına formül alanı; kural atölyesi örnekleriyle sınama
-- [ ] Arayüz: formül yazma, hatanın yerini gösterme
-- [ ] Sınamalar, izdüşüm sürümü, DEVIR güncellemesi, gönderme
+- [x] Sözleşmeyi tasarım belgesine yaz (§18.1 "Kural ve formül dili", §1.3 TK8 satırı, geçmiş dosyasına bir satır)
+- [x] Şablonlara birimli sayı alanı ekle (nicelik türü, birim, hassasiyet): `alan/nicelik.ts`, değer alanın birimine çevrilip `{ enAz, enCok, birim }` olarak saklanır; boşken varsayılan ayarı şablon kaydında artık korunuyor
+- [x] Formül çözümleyici ve üç değerli değerlendirme (`alan/formul.ts`: `formulOku` adları çözer ve türleri denetler, `formulDegerlendir` bir `FormulOrtami` ile çalışır, `formulYazisi` güncel adlarla yazar; sınama `test/formul.test.ts`)
+- [x] Hukuk kuralının "kimlere" kısmına formül alanı; kural atölyesi örnekleriyle sınama (`test/kural-atolyesi.test.ts`)
+- [x] Arayüz: formül yazma, hatanın yerini gösterme, yazım kılavuzu; uygulanan kurallarda formülün belirsiz nedenleri ve "hesaplanamadı" (`arayuz/Hukuk.tsx`)
+- [x] Sınamalar (435), izdüşüm sürümü (gerekmedi: tanım JSON olarak saklanıyor), DEVIR güncellemesi, gönderme
 
 ### 3.3 Kalan işler (önerilen sıra)
 
-1. **F16 formül yazımı (TK8)**: kullanıcı 19 Ekim 2026'da taslağı onayladı ve **sayılarla birlikte** yapılmasını seçti. Kapsam: formül, hukuk kuralının "kimlere" kısmını yazar; ilişkiler, şablon seçim/onay alanları, tarih karşılaştırması, **birimli sayı alanları** (şablona yeni alan türü; nicelik türü ve birim tanımlı, birimler uyuşmazsa hesap durur, §18.1), "ve / veya / değil" ve parantez kullanılabilir. Sonuç üç değerli (evet · hayır · belirsiz; kayıtsız bilgi "hayır" sayılmaz). Hatalı formül kaydedilmez, hatanın yeri gösterilir; sonradan bozulan formül "hesaplanamadı" der, kendiliğinden düzeltilmez. Her formül dil sürümüyle saklanır. Sözleşme tasarım belgesine §18'e yazılır, sonra kodlanır. Süreç kuralları için örnek durumlar henüz yok.
-2. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
-3. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
+1. **Tablet ve iPhone** (§14.3): kullanıcı 19 Ekim 2026'da süresiz erteledi; şimdilik yalnız Windows tarafına odaklanılıyor.
+2. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
+3. **Dış güvenilirlik eleştirisinin kalanları** (analiz: proje klasöründe `analiz/guvenilirlik-plani-analizi.md`): yapılanlar yukarıda. Tablet / iPhone ertelendiği için bekleyenler: ana ekran uygulaması (uygulama tanımı, çevrimdışı katman, Cloudflare Pages yayını, "güncelleme hazır" davranışı) ve büyük dosyada gerçekten kaldığı yerden yükleme (`drive.ts` tek parça gönderiyor, TK5 tersini söylüyor). Komut paleti §5.8'deki "iki mekân arası yolculuk süresi" ve "takvim günü hesabı" komutlarını henüz açmıyor (sayfalar ve görünümler artık bulunuyor). İsteğe bağlı: yeniden kurma süresini 50.000 işlemle ölçmek (`evren-vt.ts` geçmişe düşen işlem gelince bütün günlüğü baştan uygular)
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
 
@@ -101,7 +112,7 @@ Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yap
 - `alan/`: tarayıcıdan bağımsız kurallar ve arayüzün de kullandığı sabitler (ör. `alan/anlatim.ts`, `alan/delil.ts`). Arayüz `calisan/` altından içe aktarma yapmaz.
 - `calisan/`: veritabanı çalışanı. `hizmet.ts` (bütün istekler), `izdusum.ts` (işlemlerin tablolara uygulanması), her özellik için ayrı modül.
 - `veri/api.ts`: istek ve veri tipleri; `Istekler` arayüzü.
-- `arayuz/`: ekranlar. Kayıt sayfası `KayitEkrani.tsx`, evren sekmeleri `EvrenEkrani.tsx` (`GORUNUMLER`).
+- `arayuz/`: ekranlar. Ortak çerçeve (gezinti çubuğu, eser ağacı, sayfa ve görünüm listeleri `ANA_SAYFALAR`, `DIGER_SAYFALAR`, `GORUNUMLER`) `Kabuk.tsx`; yazma ekranı `YazEkrani.tsx`; kayıt sayfası `KayitEkrani.tsx`; öteki sayfalar `EvrenEkrani.tsx`. Yeni bir sayfa ya da görünüm `Kabuk.tsx` listesine ve `EvrenEkrani.tsx`'e eklenir; komut paleti listeyi kendisi okur.
 
 Yeni bir yazma isteği eklemek (sırayla):
 1. `veri/api.ts`: tipler `export interface EvrenDali {` satırının önüne; istek satırı `Istekler` içine.
@@ -130,6 +141,7 @@ Kurallar: veritabanına yalnızca `EvrenVt.islemYap()` (hizmette `this.yaz`) yaz
 - **Çakışma eklemlerine dikkat:** iki taraf aynı yere satır eklediğinde git ortak kapanış satırlarını (`}`, `},`, `);`) bir kez yazıp diğerini düşürebilir. Her çakışma bölgesini elle oku; özellikle `izdusum.ts` içindeki SQL dizgelerinde kapanmayan `);` tür denetiminde görünmez, yalnızca çalışırken bozulur. Birleştirmeden sonra `npm test` mutlaka çalışsın.
 - Tablolu her paket için `IZDUSUM_SURUMU`'nu 1 artır ve birleştirme kaydına yaz.
 - Satır içi `import('../veri/api').Tip` gibi yazımları dosya başındaki içe aktarmaya çevir.
+- **Silme, kaldırma ve geri dönüşü zor her düğme önce sorar:** `arayuz/onay.ts` içindeki `onayla('… kaldırılsın mı?')` ile (kullanıcı isteği, 19 Ekim 2026). Yeni eklenen her silme düğmesi de böyle olmalı.
 - Kayıt sayfasına eklenen bölüm boşken sayfayı kalabalıklaştırmasın: tek bir sade düğmeye iner ya da hiç görünmez (ör. `Donusum.tsx`, `Kalabalik.tsx`).
 - Birleştirdikten sonra tarayıcıda dene, sonra bu dosyanın §3'ünü güncelle.
 

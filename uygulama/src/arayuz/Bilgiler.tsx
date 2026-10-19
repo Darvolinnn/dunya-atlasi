@@ -11,6 +11,7 @@ import { KayitSec, SatirGirdisi } from './KayitBolumleri';
 import { SinirAlani, SinirGirdi, sinirYazi, useYukle } from './Anlati';
 import type { Secim } from './BaglantiSecici';
 import { IddiaDosyasiBolumu } from './IddiaDosyasi';
+import { onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: { kod: string; ad: string }) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
@@ -130,7 +131,7 @@ function IddiaKarti({ istemci, evren, iddia }: { istemci: Istemci; evren: string
             </select></label>
           <label class="alan"><span class="alan-adi">Karar durumu</span>
             <KararSecici etiket="Soru" karar={iddia.karar} onDegis={(k) => degistir('karar', k).catch(() => {})} /></label>
-          <button class="dugme tehlikeli kucuk" onClick={() => istemci.iste('iddiaSil', { evren, kod: iddia.kod })}>Soruyu kaldır</button>
+          <button class="dugme tehlikeli kucuk" onClick={() => onayla('Bu soru kaldırılsın mı?') && istemci.iste('iddiaSil', { evren, kod: iddia.kod })}>Soruyu kaldır</button>
           {hata && <p class="hata kucuk">{hata}</p>}
         </div>
       )}
@@ -181,7 +182,7 @@ function DairInanclar({ istemci, evren, iddia }: { istemci: Istemci; evren: stri
               <strong>{d.sanan.ad}</strong>, {d.hakkinda.ad} için “{ad(d.tanim.sanilan)}” sanıyor{d.tanim.tarih ? ` (${d.tanim.tarih})` : ''}.
               <div class="kucuk">{d.uyum === 'dogru' ? `Doğru sanıyor: ${d.gercekDurum?.toLocaleLowerCase('tr-TR')}.` : d.uyum === 'yanlis' ? `Yanılıyor: kayıtlara göre ${d.gercekDurum?.toLocaleLowerCase('tr-TR')}.` : d.neden}</div>
               {d.tanim.aciklama && <div class="kucuk soluk">{d.tanim.aciklama}</div>}
-              <button class="dugme sade kucuk" onClick={() => istemci.iste('dairInancSil', { evren, kod: d.kod }).catch((x) => setHata(hataYaz(x)))}>Kaldır</button>
+              <button class="dugme sade kucuk" onClick={() => onayla('Bu inanç kaldırılsın mı?') && istemci.iste('dairInancSil', { evren, kod: d.kod }).catch((x) => setHata(hataYaz(x)))}>Kaldır</button>
             </li>
           ))}
         </ul>
@@ -289,7 +290,7 @@ function BilgiOgesi({ istemci, evren, b, soruGoster }: { istemci: Istemci; evren
           <SatirGirdisi etiket="Açıklama" deger={b.aciklama} kaydet={(v) => degistir('aciklama', v)} />
           <label class="alan"><span class="alan-adi">Karar durumu</span>
             <KararSecici etiket="Bilgi" karar={b.karar} onDegis={(k) => degistir('karar', k).catch(() => {})} /></label>
-          <button class="dugme tehlikeli kucuk" onClick={() => istemci.iste('bilgiSil', { evren, kod: b.kod })}>Kaldır</button>
+          <button class="dugme tehlikeli kucuk" onClick={() => onayla('Bu bilgi kaldırılsın mı?') && istemci.iste('bilgiSil', { evren, kod: b.kod })}>Kaldır</button>
           {hata && <p class="hata kucuk">{hata}</p>}
         </div>
       )}

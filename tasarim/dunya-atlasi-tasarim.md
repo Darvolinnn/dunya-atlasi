@@ -134,6 +134,7 @@ Aşağıdaki sözcükler belgede yalnızca bu anlamlarda kullanılır. Kodu yaza
 | K21 | **Dönemsel yedek (eski A2):** Günlük yedek alınır ve 30 gün saklanır; her ayın ilk yedeği bir yıl saklanır. Ayrıntı §10.10. | 18 Ekim |
 | K22 | **Evren ile dünya:** Programdaki tek sabit üst birim evrendir. Dünya, gezegen, boyut ya da alem kurguya göre kayıtlarla esnek biçimde kurulur; program bir seviye dayatmaz (§0.5, §3.7). | 18 Ekim |
 | K23 | **F37 (varsayım paketleri) ve F40 (kalabalıklar) tasarıma alındı** (eski A13'ün bir kısmı). Tanımları §3.11 ve §3.8. | 18 Ekim |
+| K24 | **Arayüzde yazı merkezdedir.** Evren açılınca yazma düzeni gelir; ekran sadeleşir, az kullanılan araçlar katlanır ve görünüş yenilenir. Ayrıntı §5.10, §12.1. | 19 Ekim |
 
 ### 1.2 Açık kararlar
 
@@ -166,7 +167,7 @@ Kodlamadan önce kapanması gereken teknik kararlardır. Numaraları §13'teki T
 | TK5 | Medya saklama | **Karar verildi (18 Ekim, Windows deneyi):** içerikle adlandırılmış değişmez dosyalar; parça parça ve kaldığı yerden sürdürülebilen yükleme; cihaz başına indirme politikası, telefon için küçük önizleme. Yedekte her görsel bir kez saklanır. Konum bilgisi silinir. Büyük görsellerin gidip gelmesi arka planda yürür ve "indirilmemiş" durumu ekranda görünür (§10.8) | Karar verildi. 26 MB harita: yükleme 26 sn, yarıda kopunca 16 MB'tan sürdü; indirme 20 sn; önizleme 0,5 MB; günlük yedek başına 195 KB. Ayrıntı: `deneyler/tk3-tk4-google/SONUC.md` | §10.12 |
 | TK6 | Uygulama kabuğu (mağaza uygulaması) | Şimdilik yok; PWA yeter | Tablet ve iPhone deneylerinden sonra | §17.1 |
 | TK7 | Yayın mekanizması | Wiki yapılırsa uygulama paketi zip olarak üretir; yükleme ayrı ve bilinçli bir adımdır | K20 değişirse | §11 |
-| TK8 | Kural ve formül dili (F16) | **Karar verildi (19 Ekim, kullanıcı onayı):** formül, hukuk kuralının "kimlere" kısmını yazar; ilişkiler, şablon alanları ve birimli sayılar kullanılır; sonuç üç değerlidir; hatalı formül kaydedilmez; her formül dil sürümüyle saklanır | Karar verildi | §18.3 |
+| TK8 | Kural ve formül dili (F16) | **Karar verildi (19 Ekim, kullanıcı onayı):** formül hukuk kuralının "kimlere" kısmını yazar; ilişkiler, şablon alanları, tarih ve birimli sayılar kullanılabilir; sonuç üç değerlidir; hatalı formül kaydedilmez | Karar verildi. Sözleşme §18.1 "Kural ve formül dili" | §18.1, §16.1 F16 |
 
 ---
 
@@ -592,9 +593,14 @@ Aynı verinin farklı görünümleridir; veri kopyalanmaz.
 
 | Düzen | Öne çıkanlar |
 |---|---|
-| Evren kayıtlarını düzenleme | Kayıt listesi, ilişkiler, harita |
 | Sahne yazma | Metin, dar bağlam paneli, hızlı not |
+| Evren kayıtlarını düzenleme | Kayıt listesi, ilişkiler, harita |
 | Tutarlılık inceleme | İnceleme kuyruğu, zaman çizelgesi, etkilenen kayıtlar |
+
+Yazı merkezdedir (K24):
+- **Evren açılınca yazma düzeni gelir.** Solda sabit bir gezinti çubuğu bulunur: Yaz, Masa, Kayıtlar, Haritalar, Takvim, Görünümler ve İnceleme; az kullanılan sayfalar (çalışma masaları, açık meseleler, şablonlar, bahsedilenler, çöp kutusu, geçmiş, sürümler, yedek) "Diğer" altında katlanır.
+- **Yaz** seçiliyken gezinti çubuğunda eserlerin ağacı (eser › bölüm › sahne) görünür; yeni eser, bölüm ve sahne buradan eklenir. Seçili sahnenin metni ortada geniş ve okunaklı durur; sağda dar ve kapatılabilir bir bağlam paneli sahnenin tarihini, mekânını, bakış açısını, sahnedekileri ve o anki bağlamı (§5.5) gösterir. Sahnenin bütün alanları kayıt sayfasındadır; yazma ekranından bir bağlantıyla açılır.
+- **Kayıt sayfasında** ad, tür, karar durumu, tarih, şablon alanları, kısa özet, metin ve ilişkiler açık durur; öbür bölümler türüne göre "Diğer bölümler" altında katlanır ve bir dokunuşla açılır.
 
 Yazma ekranında bütün evrenin panelleri ve uyarıları bulunmaz.
 
@@ -843,6 +849,7 @@ Dört sürüm ayrıdır: **uygulama sürümü**, **veri biçimi sürümü**, **k
 
 - **Anlaşılmayan veri korunur.** Eski uygulama yeni bir alan türünü ya da ilişki biçimini okuduğunda onu atmaz ve üzerine yanlış yazmaz. Güvenle düzenleyemediği kaydı salt okunur açar ve "bu kayıt için güncelleme gerekli" der. Yazmaya devam etmek isteyen kullanıcı, evren verisini bozmayan ayrı bir not alanına yazabilir.
 - **Güncelleme yazıyı kesmez.** Kaydedilmemiş metin varken uygulama zorla yeniden yüklenmez. "Güncelleme hazır, yazın kaydedilince uygulanacak" denir.
+- **Kaydedilmemiş yazı kaybolmaz (yerel taslak).** Editördeki yazı asıl kayda geçene kadar bu cihazda ayrıca bir kurtarma taslağında durur: yazarken kısa aralıklarla, sayfa gizlenirken ve kapanırken hemen. Taslak evren verisi değildir, eşitlenmez ve kendiliğinden uygulanmaz; asıl kayıt başarılı olunca silinir. Program aniden kapandıysa metin açılınca "kaydedilmemiş yazı bulundu" denir ve kaydedilmemiş hâli gösterilir. Yazar kurtarır (taslak, yazıldığı sürümün üzerine yapılmış değişiklik olarak birleşir; sonradan kaydedilen silinmez) ya da vazgeçer. Karar verilene kadar taslak saklanır; yeni yazı onu ezmez. Kayıt başarısızsa bu söylenir ve taslağın korunduğu belirtilir.
 - **Veri biçimi dönüşümü** öncesinde yerel taslaklar ve gönderilmemiş işlemler güvenli bir kopyaya alınır; günlük sıkıştırması bekleyen işi kaybetmez.
 - Kurtarma paketi ve yedek, hangi veri biçimi sürümüyle açılabildiğini taşır.
 - Kullanıcıya programlama dili kullanılmaz: "veriler korundu, güncelleme bekliyor" ya da "bu kayıt için güncelleme gerekli" yeterlidir.
@@ -862,7 +869,7 @@ Tarayıcı depolaması tek başına güvence değildir: iPhone'daki Safari bazı
 
 ### 10.10 Dönemsel yedek
 
-Drive'da eşitlemeden ayrı, kullanıcının görebildiği bir klasöre alınır (TK4). Varsayılan: günlük yedek 30 gün, her ayın ilk yedeği bir yıl saklanır (K21); ayardan değiştirilebilir. Her evren ayrı yedeklenir. Her medya dosyası yedeklerde bir kez saklanır; aynı görsel her günlük yedekte yeniden kopyalanmaz (§10.12). Son başarılı yedek tarihi gösterilir; uygulama kapalıyken kaçan yedek bir sonraki açılışta alınır. Takvimde bir tarihin görünmesi yedeğin alındığını göstermez. Kullanıcı istediğinde elle de yedek alır.
+Drive'da eşitlemeden ayrı, kullanıcının görebildiği bir klasöre alınır (TK4). Varsayılan: günlük yedek 30 gün, her ayın ilk yedeği bir yıl saklanır (K21); ayardan değiştirilebilir. Her evren ayrı yedeklenir. Her medya dosyası yedeklerde bir kez saklanır; aynı görsel her günlük yedekte yeniden kopyalanmaz (§10.12). Son başarılı yedek tarihi gösterilir; uygulama kapalıyken kaçan yedek bir sonraki açılışta alınır. Takvimde bir tarihin görünmesi yedeğin alındığını göstermez. Kullanıcı istediğinde elle de yedek alır. Yedek ancak geri indirilip açıldıktan, her değişiklik satırı okunup sayısı tuttuktan sonra **doğrulandı** sayılır. Doğrulanamayan yedek başarılı sayılmaz: hiçbir eski yedek silinmez, aynı günün önceki yedeği de yerinde kalır ve hata gösterilir. Bu cihazda olmadığı için yedeğe giremeyen görsellerin sayısı yazılır. Drive yedeğinden geri yüklemede bulunamayan ya da bozuk görseller sessizce atlanmaz; listesi verilir.
 
 ### 10.11 Dışa aktarma ve taşınabilir paket
 
@@ -1279,7 +1286,7 @@ Tarayıcı, yerel veriyi (yerel veritabanı, tarayıcı depolaması) adres klas�
 | **Şema sürümü** | Şablon, alan türü, kural ve takvim değişikliklerinin sürümü; her değerin girildiği şema sürümü (§9.5, §10.3) | Dönüşemeyen değer silinmez |
 | **Medya** | İçerik adı, boyut, cihaz politikası, yayın izni (§10.12) | İndirilmemiş ile silinmiş ayrı |
 | **Arama ve sıralama** | Türkçe harf kuralları, toleranslı arama, eski adlar | Aşağıda |
-| **Kural ve formül dili** | F16'nın formül yazımı: izin verilen işlemler, alan anlamına bağlılık, hata davranışı, sürüm (TK8) | §18.3 |
+| **Kural ve formül dili** | F16'nın formül yazımı: izin verilen işlemler, alan anlamına bağlılık, hata davranışı, sürüm (TK8) | Aşağıda |
 
 **Nicelik ve alan anlamı:**
 - Mesafe, süre, miktar, oran, hız ve kapasite ayrı nicelik türleridir. "10" tek başına anlamsızdır: 10 gün, 10 saatlik emek, 10 kişi, 10 kullanım hakkı ve 10 para birimi farklı işlemlere izin verir.
@@ -1302,6 +1309,21 @@ Tarayıcı, yerel veriyi (yerel veritabanı, tarayıcı depolaması) adres klas�
 - Uydurma adlardaki ä, é, ø gibi harfler için aksan duyarsız arama bir seçenektir ve varsayılan olarak açıktır.
 - Eski adlar, lakaplar ve okunuşlar aramaya girer; sonuçta hangi addan bulunduğu gösterilir.
 - Arama yalnızca yazarın kaydettiği veride çalışır; serbest metinden anlam çıkarmaz (K1).
+
+**Kural ve formül dili (TK8):**
+- **Kapsam.** Formül yalnızca hukuk kuralının "kimlere uygulanır" kısmını yazar (§15-11). Bir kural ya koşul listesini ya da formülü kullanır; formül yazılıysa liste kullanılmaz. Süreç kuralları ve öteki hesaplar formül kullanmaz.
+- **Yapı taşları.** Formülde yalnızca şunlar bulunur; her biri değerlendirildiği kişi için *evet · hayır · belirsiz* verir:
+  - *İlişki:* kişinin bir kayda kayıtlı ilişkisi, hukuk koşullarındaki ilişki adlarıyla: `üyesi [Kuzey Loncası]`, `kültüründen [Göçebeler]`, `türünden [...]`, `makamını yürüten [...]`, `hizmetinde [...]`, `orada yaşayan [...]`. Kayıtlı ilişki "evet"tir; kayıt yoksa sonuç "hayır" değil "belirsiz"dir, neden "kayıtlı değil" diye yazılır (§2.2 kural 4).
+  - *Seçim alanı:* `{Rütbe} = "Subay"`; *evet / hayır alanı:* `{Mühürlü}`.
+  - *Tarih alanı:* `{Doğum tarihi} < "400"`; sağdaki yazı evren tarihi olarak okunur (§3.4). Karşılaştırma tarih karşılaştırmasının üç değerli kuralıyla yapılır.
+  - *Birimli sayı alanı:* `{Boy} >= 180 cm`. *Yaş:* `yaş >= 16 yıl`, kişinin doğum tarihinden ve kuralın değerlendirildiği tarihten hesaplanır.
+  - *Bağlaçlar:* `ve`, `veya`, `değil` ve parantez. Öncelik: değil, sonra ve, sonra veya.
+- **Alan anlamına bağlılık.** Alan ve kayıt adla yazılır, kodla saklanır; ad değişince formül bozulmaz, gösterimde güncel ad görünür. Aynı adı taşıyan iki alan ya da iki kayıt varsa formül kaydedilmez ve hangisinin kastedildiği seçtirilir. Alan, kişinin kendi şablonundan okunur; kişinin şablonunda o alan yoksa sonuç "belirsiz", neden "bu kayıt için geçerli değil"dir.
+- **Birimli sayı alanı.** Şablona yeni bir alan türü eklenir: nicelik türü (uzunluk, kütle, süre, miktar, para, diğer), birim ve hassasiyet (ondalık basamak sayısı). Değer tek sayı ya da aralıktır ("170–180"); aralık karşılaştırmanın iki yanına düşerse sonuç "belirsiz"dir. Uzunluk ve kütle birimleri kendi içinde çevrilir; süre yalnızca dakika, saat, gün ve hafta arasında çevrilir (ay ve yıl takvime bağlıdır, çevrilmez). Para ve "diğer" çevrilmez, yalnızca aynı birimle karşılaştırılır. Birimler uyuşmazsa formül kaydedilmez; değer sonradan uyuşmaz hale gelirse hesap durur ve nedenini söyler (Nicelik ve alan anlamı, yukarıda).
+- **Üç değerli sonuç.** "ve": biri hayırsa hayır, hepsi evetse evet, öteki durumlarda belirsiz. "veya": biri evetse evet, hepsi hayırsa hayır, öteki durumlarda belirsiz. "değil" evet ile hayırı değiştirir, belirsizi belirsiz bırakır. Boş, çelişkili (iki cihazda farklı) ya da bilinmeyen değer "hayır" sayılmaz, "belirsiz"dir; nedeni sonuçla birlikte gösterilir. Kural formülü "evet" verirse uygulanır, "hayır" verirse uygulanmaz, "belirsiz" verirse koşulu kayıtsız kural olarak listelenir (§15-11).
+- **Hata davranışı.** Okunamayan formül kaydedilmez; hatanın yeri işaretlenir ve sade bir Türkçe açıklama verilir ("şu kelimeden sonra bir karşılaştırma bekleniyor"). Sonradan bozulan formül (alan silindi, alanın türü değişti, seçenek kaldırıldı, kayıt silindi) o kural için "hesaplanamadı" der ve nedenini yazar; program formülü kendiliğinden düzeltmez. Birleştirilen kayda giden bağ yönlendirmeyle sürer (§18.1 Kod ve kimlik).
+- **Sürüm.** Her formül yazıldığı dil sürümüyle saklanır (ilk sürüm 1). Program bilmediği bir sürümü değerlendirmez, "bu formül daha yeni bir program sürümüyle yazılmış" der. Dil değişirse eski sürümler okunmaya devam eder.
+- **Yapmadıkları.** Formül hesap yapmaz (toplama, çarpma yok), metin içinde arama yapmaz, kendi kendine kayıt değiştirmez ve serbest metinden anlam çıkarmaz (K1). Kural atölyesinin örnek durumları (F16) formüllü kuralda da aynı biçimde çalışır.
 
 ### 18.2 Özellik kullanım sözleşmesi
 

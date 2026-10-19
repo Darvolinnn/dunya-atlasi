@@ -7,6 +7,7 @@ import { ANLATIM_TURLERI, DAYANAK_TURLERI } from '../alan/anlatim';
 import { KararRozeti, KararSecici } from './ortak';
 import { KayitSec } from './KayitBolumleri';
 import { useYukle } from './Anlati';
+import { onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const turAdi = (k: string) => ANLATIM_TURLERI.find((x) => x.kod === k)?.ad ?? k;
@@ -48,7 +49,7 @@ export function IddiaDosyasiBolumu({ istemci, evren, iddia }: { istemci: Istemci
             {a.ozet && <div class="kucuk soluk">{a.ozet}</div>}
             <span class="satir">
               <button class="dugme sade kucuk" onClick={() => setForm(a)}>Düzenle</button>
-              <button class="dugme sade kucuk tehlikeli" onClick={() => kaldir(a.kod, false)}>Kaldır</button>
+              <button class="dugme sade kucuk tehlikeli" onClick={() => onayla('Bu iddia kaldırılsın mı? Kaldırılanlardan geri getirebilirsin.') && kaldir(a.kod, false)}>Kaldır</button>
             </span>
           </li>
         ))}</ul>

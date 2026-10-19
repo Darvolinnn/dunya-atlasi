@@ -284,6 +284,56 @@ describe('dönemsel yedek (§10.10)', () => {
     expect([...yedek.dosyalar.values()].some((x) => x.ozellikler.evren === gizli)).toBe(false);
   });
 
+  it('doğrulanamayan yedek başarılı sayılmaz; eski yedekler ve bugünün sağlam yedeği silinmez', async () => {
+    const yedek = new BellekTasiyici();
+    const m = cihaz('Masaüstü', new BellekTasiyici(), yedek);
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    m.h.kayitOlustur({ evren, ad: 'Velkar', tur: 'karakter' });
+    const ana = await yedek.klasor('Dünya Atlası yedekleri', { uygulama: 'dunya-atlasi', tur: 'yedek-klasoru' });
+    // Saklama süresi dolmuş iki eski yedek.
+    for (const gun of ['2020-01-01', '2020-01-02']) await yedek.yukle('x.zip', { uygulama: 'dunya-atlasi', tur: 'yedek', evren, gun, zaman: '1', kurulum: 'x' }, new Uint8Array([1]), undefined, ana);
+    await m.h.esitle();
+    const ilk = (await m.h.driveYedekleri({ evren })).find((y) => y.gun === gunYaz(Date.now()))!;
+    expect(ilk).toBeTruthy();
+    // Bundan sonra Drive'dan geri okunan her dosya bozuk gelsin.
+    const asilIndir = yedek.indir.bind(yedek);
+    yedek.indir = async (id: string) => { const v = await asilIndir(id); v[v.length - 30] ^= 0xff; return v; };
+    m.h.kayitOlustur({ evren, ad: 'Arin', tur: 'karakter' });
+    await expect(m.h.drivedaYedekAl({ evren })).rejects.toThrow(/doğrulanamadı.*hiçbiri silinmedi/);
+    const sonra = await m.h.driveYedekleri({ evren });
+    expect(sonra.map((y) => y.id)).toContain(ilk.id); // bugünün sağlam yedeği yerinde
+    expect(sonra.length).toBe(1); // bozuk yeni kopya kaldırıldı
+    expect(m.h.donemselYedekDurumu({ evren }).hata).toMatch(/doğrulanamadı/);
+  });
+
+  it('elle alınan yedek doğrulanınca bugünün eski yedeğinin yerini alır', async () => {
+    const yedek = new BellekTasiyici();
+    const m = cihaz('Masaüstü', new BellekTasiyici(), yedek);
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    await m.h.esitle();
+    const ilk = (await m.h.driveYedekleri({ evren }))[0];
+    await m.h.drivedaYedekAl({ evren });
+    const liste = await m.h.driveYedekleri({ evren });
+    expect(liste.length).toBe(1);
+    expect(liste[0].id).not.toBe(ilk.id);
+    expect(m.h.donemselYedekDurumu({ evren }).son).toMatchObject({ dogrulandi: true });
+  });
+
+  it('geri yüklemede yedek klasöründe olmayan görsel sessizce atlanmaz', async () => {
+    const yedek = new BellekTasiyici();
+    const m = cihaz('Masaüstü', new BellekTasiyici(), yedek);
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    const v = m.h.kayitOlustur({ evren, ad: 'Velkar', tur: 'karakter' }).kod;
+    await m.h.gorselEkle({ evren, kod: v, dosyaAdi: 'v.png', tur: 'image/png', veri: new Uint8Array([1, 2, 3]) });
+    await m.h.esitle();
+    const ad = m.h.kayit({ evren, kod: v }).gorseller[0];
+    for (const [id, d] of yedek.dosyalar) if (d.ozellikler.tur === 'yedek-medya' && d.ozellikler.ad === ad) yedek.dosyalar.delete(id);
+    const y = cihaz('Yeni bilgisayar', new BellekTasiyici(), yedek);
+    const r = await y.h.drivedanGeriYukle({ id: (await y.h.driveYedekleri({ evren }))[0].id });
+    expect(r).toMatchObject({ kod: evren, ayri: false, eksikGorseller: [ad], bozukGorseller: [] });
+    expect(y.h.kayit({ evren, kod: v }).ad).toBe('Velkar');
+  });
+
   it('saklama süresi dolan yedekler silinir', async () => {
     const yedek = new BellekTasiyici();
     const m = cihaz('Masaüstü', new BellekTasiyici(), yedek);

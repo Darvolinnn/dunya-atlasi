@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ayrilmaYazisi, kokAdaylari } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -100,6 +100,7 @@ import * as kaliciIz from './kalici-iz';
 import type { KaliciIzTuru } from '../veri/api';
 import * as olcekli from './olcekli';
 import type { OlcekliAraziGirdisi, OlcekliHizKurali, OlcekliOlcekTanimi } from '../veri/api';
+import { sayiDegeriMi, sayiMetni } from '../alan/nicelik';
 
 export type DosyaAcici = (ad: string) => Database;
 export type Bildirici = (evren: string, turler: string[], kayitlar: string[], uzaktan?: boolean) => void;
@@ -282,6 +283,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     this.donemsel = t && yedek ? new DonemselYedek({
       kurulum: this.kurulum, medya: this.medya,
       paketYaz: (evren, medyaDahil) => this.paketYaz(evren, medyaDahil),
+      yedekIncele: (veri) => this.yedekIncele({ veri }),
       yedektenYukle: (veri) => this.yedektenYukle({ veri }),
     }, yedek) : null;
     if (t && this.esitlemeHatasi?.izin) this.esitlemeHatasi = null;
@@ -409,6 +411,18 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       yanPanelKayitlari: (y.yanPanel ?? []).map(bilgi).filter(Boolean).map((r) => ({ kod: r!.kod as string, ad: r!.ad as string, tur: r!.tur as string })),
     };
   }
+
+  // ---------- Metin kurtarma taslağı (§10.7) ----------
+  private taslakAnahtari(anahtar: unknown): string {
+    if (typeof anahtar !== 'string' || !anahtar || anahtar.length > 200) throw new Error('Geçersiz taslak.');
+    return anahtar;
+  }
+  taslakOku({ anahtar }: { anahtar: string }) { return this.kurulum.taslak(this.taslakAnahtari(anahtar)); }
+  taslakYaz({ anahtar, deger }: { anahtar: string; deger: string }) {
+    if (typeof deger !== 'string' || deger.length > 20_000_000) throw new Error('Taslak çok büyük.');
+    this.kurulum.taslakYaz(this.taslakAnahtari(anahtar), deger);
+  }
+  taslakSil({ anahtar }: { anahtar: string }) { this.kurulum.taslakSil(this.taslakAnahtari(anahtar)); }
 
   kaldigiYerYaz({ evren, yer }: { evren: string; yer: Omit<KaldigiYer, 'zaman'> }) {
     this.evren(evren);
@@ -859,6 +873,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (deger === null || deger === undefined) return '(boş)';
       if (deger === true) return 'Evet';
       if (typeof deger === 'object' && 'ifade' in (deger as object)) return (deger as { ifade: string }).ifade;
+      if (sayiDegeriMi(deger)) return sayiMetni(deger);
       const secenek = MESELE_DURUMLARI.find((x) => x.kod === deger);
       if (alan === 'f:durum' && secenek) return secenek.ad;
       const tur = e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [nesne]) as string | undefined;
@@ -2312,7 +2327,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   private hukukBaglami(evren: string): hukuk.HukukBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
   hukukKurallari({ evren, sahip }: { evren: string; sahip?: string }) { return hukuk.hukukKurallari(this.evren(evren), sahip); }
   hukukKuraliOlustur({ evren, sahip, ad }: { evren: string; sahip: string; ad: string }) { return hukuk.hukukKuraliOlustur(this.hukukBaglami(evren), sahip, ad); }
-  hukukKuraliYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: Omit<HukukTanimi, 'baslangic' | 'bitis'> & { baslangic: string; bitis: string } }) { hukuk.hukukKuraliYaz(this.hukukBaglami(evren), kod, tanim); }
+  hukukKuraliYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: HukukTanimGirdisi }) { hukuk.hukukKuraliYaz(this.hukukBaglami(evren), kod, tanim); }
+  formulDenetle({ evren, yazi }: { evren: string; yazi: string }) { return hukuk.formulDenetle(this.evren(evren), yazi); }
   hukukKuraliSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { hukuk.hukukKuraliSil(this.hukukBaglami(evren), kod, !!geriYukle); }
   uygulananKurallar({ evren, kisi, yer, tarih = null }: { evren: string; kisi: string; yer: string; tarih?: string | null }) { return hukuk.uygulananKurallar(this.evren(evren), kisi, yer, tarih); }
   // Kural atölyesi (F16)
@@ -3000,7 +3016,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const gun = new Date(simdi).toISOString().slice(0, 10);
     // Dosya adı yalnız İngiliz harfleriyle: bazı tarayıcılar Türkçe harfli indirme adını yok sayıyor.
     const dosyaAdi = `${katla(bilgi.ad).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'evren'}-yedek-${gun}.zip`;
-    return { dosyaAdi, veri: zip, zaman: simdi, medyaAdlari, ad: bilgi.ad };
+    return { dosyaAdi, veri: zip, zaman: simdi, medyaAdlari, ad: bilgi.ad, islemSayisi: islemler.length };
   }
 
   sonYedek({ evren }: { evren: string }) {

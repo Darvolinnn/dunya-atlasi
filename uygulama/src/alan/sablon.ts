@@ -2,19 +2,24 @@
 // listesidir; değerler kayıtta durur. Şablondan bir alan kaldırılınca değerler silinmez, kayıtta
 // "Şablonda olmayan alanlar" altında kalır (§3.1). Bütün sorular isteğe bağlıdır; doluluk ölçülmez.
 
-/** metin: tek satır · uzun: paragraf · tarih: evren tarihi · secim: seçeneklerden biri · onay: evet/hayır */
-export type AlanTuru = 'metin' | 'uzun' | 'tarih' | 'secim' | 'onay';
+import { birimGecerli, EN_COK_HASSASIYET, type NicelikTuru } from './nicelik';
+
+/** metin: tek satır · uzun: paragraf · tarih: evren tarihi · secim: seçeneklerden biri · onay: evet/hayır · sayi: birimli sayı */
+export type AlanTuru = 'metin' | 'uzun' | 'tarih' | 'secim' | 'onay' | 'sayi';
 export const ALAN_TURLERI: { kod: AlanTuru; ad: string }[] = [
   { kod: 'metin', ad: 'Kısa metin' },
   { kod: 'uzun', ad: 'Uzun metin' },
   { kod: 'tarih', ad: 'Evren tarihi' },
   { kod: 'secim', ad: 'Seçeneklerden biri' },
   { kod: 'onay', ad: 'Evet / hayır' },
+  { kod: 'sayi', ad: 'Birimli sayı' },
 ];
 
 export interface Secenek { kod: string; ad: string }
 export interface SablonAlani {
   kod: string; ad: string; tur: AlanTuru; ipucu?: string; secenekler?: Secenek[];
+  /** Birimli sayı alanında nicelik türü, birim ve ondalık basamak sayısı (§18.1). */
+  nicelik?: NicelikTuru; birim?: string; hassasiyet?: number;
   /** Programın anlamını bildiği alan (doğum tarihi, açık meselenin durumu); adı değişebilir, kaldırılamaz. */
   sabit?: boolean;
   /** Boşken hangi eksenden varsayılan alır (§3.7); yoksa varsayılan almaz. */
@@ -168,6 +173,8 @@ export function sablonGecerli(s: unknown, tur?: string): s is Sablon {
     if (a.varsayilan !== undefined && !VARSAYILAN_EKSENLERI.some((x) => x.kod === a.varsayilan)) return false;
     if (a.tur === 'secim' && (!Array.isArray(a.secenekler) || !a.secenekler.length || a.secenekler.length > 30
       || a.secenekler.some((x) => !KOD.test(x?.kod) || !metinMi(x.ad, 80)) || new Set(a.secenekler.map((x) => x.kod)).size !== a.secenekler.length)) return false;
+    if (a.tur === 'sayi' && (!birimGecerli(a.nicelik, a.birim) || !Number.isInteger(a.hassasiyet ?? 0) || (a.hassasiyet ?? 0) < 0 || (a.hassasiyet ?? 0) > EN_COK_HASSASIYET)) return false;
+    if (a.tur !== 'sayi' && (a.nicelik !== undefined || a.birim !== undefined || a.hassasiyet !== undefined)) return false;
     kodlar.add(a.kod);
   }
   const sk = new Set<string>();

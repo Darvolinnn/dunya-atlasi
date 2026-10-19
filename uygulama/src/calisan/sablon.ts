@@ -3,6 +3,7 @@ import type { IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
 import { tarihCoz, type EvrenTarihi } from '../alan/tarih';
 import { turGecerli } from '../alan/turler';
+import { birimAdi, sayiCoz } from '../alan/nicelik';
 import {
   EVREN_SETLERI, MESELE_DURUMLARI, sablonGecerli, soruDurumuGecerli, soruSetiBul, varsayilanSablon,
   type Sablon, type SablonAlani,
@@ -41,6 +42,8 @@ export function sablonYaz(b: SablonBaglami, tur: string, sablon: Sablon | null) 
       alanlar: sablon.alanlar.map((a) => ({
         kod: a.kod, ad: String(a.ad ?? '').trim(), tur: a.tur, ...(a.ipucu?.trim() ? { ipucu: a.ipucu.trim() } : {}),
         ...(a.tur === 'secim' ? { secenekler: (a.secenekler ?? []).map((x) => ({ kod: x.kod, ad: String(x.ad ?? '').trim() })) } : {}),
+        ...(a.tur === 'sayi' ? { nicelik: a.nicelik, birim: birimAdi(String(a.birim ?? '')), hassasiyet: Number(a.hassasiyet ?? 0) } : {}),
+        ...(a.varsayilan ? { varsayilan: a.varsayilan } : {}),
         ...(a.sabit ? { sabit: true } : {}),
       })),
       sorular: sablon.sorular.map((q) => ({ kod: q.kod, metin: String(q.metin ?? '').trim(), ...(q.ipucu?.trim() ? { ipucu: q.ipucu.trim() } : {}) })),
@@ -112,6 +115,7 @@ function degerCoz(e: EvrenVt, a: SablonAlani, girdi: unknown): unknown {
       if (!a.secenekler?.some((x) => x.kod === girdi)) throw new Error('Geçersiz seçenek.');
       return girdi;
     case 'onay': return girdi === true ? true : null;
+    case 'sayi': return sayiCoz(girdi, a.birim ?? '', a.hassasiyet ?? 0);
   }
 }
 
