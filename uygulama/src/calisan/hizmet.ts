@@ -204,6 +204,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const db = this.evren(evren).db;
     const var_ = (sql: string) => db.selectValue(sql) !== undefined;
     const sahneler = "SELECT kod, tarih, sahne_olayi FROM kayitlar WHERE tur='sahne' AND silindi IS NULL";
+    const cevapli = (soru: string, kayitlar: string) => var_(`SELECT 1 FROM soru_cevaplari WHERE soru='${soru}' AND durum='cevaplandi' AND kayit IN (${kayitlar}) LIMIT 1`);
+    const YER_TURLERI = "'mekan','sehir','siyasi'";
     return {
       eser: var_("SELECT 1 FROM kayitlar WHERE tur='eser' AND silindi IS NULL LIMIT 1"),
       sahne: var_(`${sahneler} LIMIT 1`),
@@ -212,6 +214,24 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       baglam: var_(`SELECT 1 FROM (${sahneler}) s LEFT JOIN kayitlar o ON o.kod=s.sahne_olayi
         WHERE s.tarih IS NOT NULL OR o.tarih IS NOT NULL
           OR EXISTS (SELECT 1 FROM iliskiler i WHERE i.tur='sahne_yeri' AND i.silindi IS NULL AND (i.a=s.kod OR i.b=s.kod OR i.a=s.sahne_olayi OR i.b=s.sahne_olayi)) LIMIT 1`),
+      // Başlangıç yollarının dayanakları (K27). Hepsi varlık sorgusudur; evren büyüklüğünden bağımsızdır.
+      not: var_("SELECT 1 FROM kayitlar WHERE tur='not' AND silindi IS NULL LIMIT 1"),
+      nottanEser: var_(`SELECT 1 FROM iliskiler i JOIN kayitlar k ON k.kod=i.b WHERE i.tur='nottan' AND i.silindi IS NULL AND k.tur='eser' AND k.silindi IS NULL LIMIT 1`),
+      cekirdek: cevapli('cekirdek.1', "SELECT kod FROM kayitlar WHERE tur='eser' AND silindi IS NULL"),
+      karakter: var_("SELECT 1 FROM kayitlar WHERE tur='karakter' AND silindi IS NULL LIMIT 1"),
+      istek: cevapli('karakter.1', "SELECT kod FROM kayitlar WHERE tur='karakter' AND silindi IS NULL"),
+      karsit: cevapli('karsit.1', "SELECT kod FROM kayitlar WHERE tur='karakter' AND silindi IS NULL")
+        || var_(`SELECT 1 FROM iliskiler i JOIN kayitlar k ON k.kod IN (i.a, i.b) WHERE i.tur IN ('dusman','rakip','nefret') AND i.silindi IS NULL AND k.tur='karakter' AND k.silindi IS NULL LIMIT 1`),
+      karakterSahnede: var_(`SELECT 1 FROM iliskiler i JOIN kayitlar k ON k.kod=i.a JOIN kayitlar s ON s.kod=i.b
+        WHERE i.tur='sahnede' AND i.rol='bulunuyor' AND i.silindi IS NULL AND k.tur='karakter' AND k.silindi IS NULL AND s.tur='sahne' AND s.silindi IS NULL LIMIT 1`),
+      kural: cevapli('pusula.4', "SELECT 'evren'") || var_("SELECT 1 FROM kayitlar WHERE tur IN ('evren_kurali','buyu_sistemi') AND silindi IS NULL LIMIT 1"),
+      guc: cevapli('pusula.3', "SELECT 'evren'"),
+      yer: var_(`SELECT 1 FROM kayitlar WHERE tur IN (${YER_TURLERI}) AND silindi IS NULL LIMIT 1`),
+      yerdeIs: var_(`SELECT 1 FROM iliskiler i WHERE i.tur='sahne_yeri' AND i.silindi IS NULL LIMIT 1`)
+        || var_(`SELECT 1 FROM baglantilar b JOIN kayitlar n ON n.kod=b.kaynak JOIN kayitlar y ON y.kod=b.hedef
+          WHERE n.tur='not' AND n.silindi IS NULL AND y.tur IN (${YER_TURLERI}) AND y.silindi IS NULL LIMIT 1`),
+      /** Evren sorularının durumu (yalnız başlangıç yollarında geçen sorular). */
+      sorular: Object.fromEntries((db.selectObjects("SELECT soru, durum FROM soru_cevaplari WHERE kayit='evren' AND soru IN ('pusula.3','pusula.4')") as { soru: string; durum: string }[]).map((r) => [r.soru, r.durum])),
     };
   }
 

@@ -882,3 +882,7 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .sahne-plani { border-bottom: 1px solid var(--cizgi); padding-bottom: 8px; margin-bottom: 8px; }
 .sahne-plani > summary { cursor: pointer; }
 .sahne-plani .soru-listesi { margin-top: 6px; }
+.ilk-adim-yollari { border: 0; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.ilk-adim-yollari legend { padding: 0; margin-bottom: 4px; width: 100%; }
+.ilk-adim-yollari label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.ilk-adimlar li.gecildi { color: var(--metin-2); }

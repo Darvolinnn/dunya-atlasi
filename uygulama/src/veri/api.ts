@@ -904,6 +904,13 @@ export interface SoruSatiri extends Soru {
   /** Şablondan çıkarılmış ama cevabı olan soru. */
   eski: boolean;
 }
+/** İlk adımların dayanakları (K26, K27): her adım kayıtlı veriden anlaşılır. */
+export interface IlkAdimDayanaklari {
+  eser: boolean; sahne: boolean; baglanti: boolean; baglam: boolean;
+  not: boolean; nottanEser: boolean; cekirdek: boolean; karakter: boolean; istek: boolean; karsit: boolean; karakterSahnede: boolean;
+  kural: boolean; guc: boolean; yer: boolean; yerdeIs: boolean;
+  sorular: Record<string, string>;
+}
 export interface KayitSablonu {
   tur: string; sablon: Sablon; degerler: Record<string, unknown>;
   /** Şablonda olmayan (tür değişmiş ya da alan kaldırılmış) değerler; silinmez. */
@@ -1131,7 +1138,7 @@ export interface Istekler {
   evrenOlustur(a: { ad: string }): { kod: string };
   evrenKaldir(a: { evren: string }): void;
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
-  ilkAdimlar(a: { evren: string }): { eser: boolean; sahne: boolean; baglanti: boolean; baglam: boolean };
+  ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
   evrenAdlandir(a: { evren: string; ad: string }): void;
   evrenBilgisi(a: { evren: string }): EvrenBilgisi;
   islemGunlugu(a: { evren: string; sinir: number }): GunlukSatiri[];

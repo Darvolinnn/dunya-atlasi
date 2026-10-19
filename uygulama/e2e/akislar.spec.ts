@@ -258,3 +258,21 @@ test('sahne planı bağlam panelinde katlı; cevap kaydedilir ve yeniden açınc
   await p.locator('.sahne-plani summary').click();
   await expect(p.locator('.sahne-plani textarea').first()).toHaveValue('Lale dosyayı arıyor.');
 });
+
+test('İlk adımlarda yol seçilir; "Geç" adımı yapılmış saymaz; seçim yeniden açılışta korunur', async ({ page: p }) => {
+  await p.goto('/');
+  await p.getByRole('button', { name: 'Yeni evren' }).click();
+  await p.locator('#yeni-evren-adi').fill('Yol Evreni');
+  await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
+  const liste = p.getByRole('region', { name: 'İlk adımlar' });
+  await liste.getByLabel('Bir dünyayla').check();
+  await expect(liste).toContainText('Dünyanızın kuralını yazın');
+  await liste.locator('li').nth(1).getByRole('button', { name: 'Geç' }).click();
+  await expect(liste.locator('li').nth(1)).toContainText('Geçildi');
+  await expect(liste).toContainText('0 / 4 tamam');
+  await p.reload();
+  await expect(liste.getByLabel('Bir dünyayla')).toBeChecked();
+  await expect(liste.locator('li').nth(1)).toContainText('Geçildi');
+  await liste.getByLabel('Bir sahneyle').check();
+  await expect(liste).toContainText('Bir eser oluşturun');
+});
