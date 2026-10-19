@@ -92,6 +92,8 @@ import * as kalabalik from './kalabalik';
 import type { KalabalikGozlemi, KalabalikOlayi } from '../veri/api';
 import * as haritaKunye from './harita-kunye';
 import type { HaritaKunyeTanimi } from '../veri/api';
+import * as surecSorumlu from './surec-sorumlu';
+import type { SurecEngelTuru } from '../veri/api';
 
 export type DosyaAcici = (ad: string) => Database;
 export type Bildirici = (evren: string, turler: string[], kayitlar: string[], uzaktan?: boolean) => void;
@@ -634,6 +636,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         sonuc.push(haritaKunye.catismaSatiri(e, nesne, alan, degerler, kayitAdi));
         continue;
       }
+      if (!iliski && alan.startsWith('surec_sorumlu_')) {
+        sonuc.push(surecSorumlu.catismaSatiri(e, nesne, alan, degerler, kayitAdi));
+        continue;
+      }
       if (!iliski && alan === 'delil') {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: 'Delil geçmişi',
           degerler: degerler.map((d) => {
@@ -906,6 +912,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     if (alan === 'harita_kunye') {
       this.yaz(evren, [haritaKunye.cozumGirdisi(e, nesne, deger)]);
+      return;
+    }
+    if (alan.startsWith('surec_sorumlu_')) {
+      this.yaz(evren, [surecSorumlu.catismaCozumGirdisi(e, nesne, alan, deger)], [nesne]);
       return;
     }
     if (alan === 'delil') { this.yaz(evren, [{ tur: 'delil_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
@@ -3022,5 +3032,21 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   haritaKunyeYaz({ evren, harita, tanim }: { evren: string; harita: string; tanim: HaritaKunyeTanimi | null }) {
     const e = this.evren(evren);
     haritaKunye.haritaKunyeYaz(e, (is, k) => { this.yaz(evren, is, k); }, harita, tanim);
+  }
+  private surecSorumluBaglami(evren: string): surecSorumlu.SurecSorumluBaglami {
+    return { e: this.evren(evren), yaz: (g, k) => this.yaz(evren, g, k) };
+  }
+  olaySurecSorumlulari({ evren, olay }: { evren: string; olay: string }) { return surecSorumlu.olaySurecSorumlulari(this.evren(evren), olay); }
+  surecAdimSorumlusuYaz({ evren, olay, kural, adim, sorumlu }: { evren: string; olay: string; kural: string; adim: string; sorumlu: string | null }) {
+    surecSorumlu.surecAdimSorumlusuYaz(this.surecSorumluBaglami(evren), olay, kural, adim, sorumlu);
+  }
+  surecEngelEkle({ evren, olay, kural, tur, kayit, not }: { evren: string; olay: string; kural: string; tur: SurecEngelTuru; kayit: string; not?: string }) {
+    return surecSorumlu.surecEngelEkle(this.surecSorumluBaglami(evren), olay, kural, tur, kayit, not);
+  }
+  surecEngelDegistir({ evren, olay, kural, tur, kod, kayit, not }: { evren: string; olay: string; kural: string; tur: SurecEngelTuru; kod: string; kayit?: string; not?: string }) {
+    surecSorumlu.surecEngelDegistir(this.surecSorumluBaglami(evren), olay, kural, tur, kod, { kayit, not });
+  }
+  surecEngelSil({ evren, olay, kural, tur, kod }: { evren: string; olay: string; kural: string; tur: SurecEngelTuru; kod: string }) {
+    surecSorumlu.surecEngelSil(this.surecSorumluBaglami(evren), olay, kural, tur, kod);
   }
 }

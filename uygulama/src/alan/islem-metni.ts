@@ -201,6 +201,8 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   kalabalik_gozlem_sil: (v) => v.silindi === false ? 'Kalabalık gözlemi geri getirildi' : 'Kalabalık gözlemi kaldırıldı',
   kalabalik_olay_sil: (v) => v.silindi === false ? 'Kalabalık olayı geri getirildi' : 'Kalabalık olayı kaldırıldı',
   harita_kunye_yaz: (v) => `“${v.haritaAd || 'Harita'}” haritası: künye ${v.tanim ? 'kaydedildi' : 'kaldırıldı'}`,
+  surec_sorumlu_adim_yaz: (v, ad) => `${ad(v.olay)}: “${v.kuralAd ?? 'süreç'}” kuralında “${v.adimAd ?? 'adım'}” adımının sorumlusu ${v.sorumlu ? ad(v.sorumlu) + ' olarak kaydedildi' : 'kaldırıldı'}`,
+  surec_sorumlu_engel_yaz: (v, ad) => `${ad(v.olay)}: “${v.kuralAd ?? 'süreç'}” kuralında ${v.engelTuru === 'veto' ? 'fiilî veto' : 'durdurabilir'} listesi güncellendi`,
 };
 
 /** Kullanıcının yaptığı bir değişiklik sayılmayan, başka bir işlemin parçası olan adımlar (listelerde gösterilmez). */

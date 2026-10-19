@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AdimDurumu, MakamYurutucusu, OlaySurecleri, SurecAdimi, SurecKurali } from '../veri/api';
+import { SurecSorumluBolumu } from './SurecSorumlu';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const DURUMLAR: { kod: AdimDurumu; ad: string }[] = [
@@ -137,6 +138,7 @@ export function OlaySurecBolumu({ istemci, evren, kod, surum }: { istemci: Istem
         </select>
       )}
       {!tum.length && <p class="soluk kucuk">Henüz süreç kuralı yok. Bir makam, kurum, kültür ya da ritüel sayfasından ekleyebilirsin.</p>}
+      <SurecSorumluBolumu istemci={istemci} evren={evren} olay={kod} surum={surum} />
       {hata && <p class="hata kucuk">{hata}</p>}
     </section>
   );
