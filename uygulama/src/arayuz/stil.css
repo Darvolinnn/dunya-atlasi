@@ -684,3 +684,20 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .kalici-iz-karti { padding: 6px 8px; border-left: 3px solid var(--cizgi, #ccc); display: flex; flex-direction: column; gap: 4px; }
 .kalici-iz-katman-listesi { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 .kalici-iz-katman > h3 { margin: 0 0 4px; }
+
+/* Ölçekli geometri ve erişim konturları (§8.4, §15-2) */
+.olcekli-harita { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.olcekli-onizleme-kutu { border: 1px solid var(--cizgi, #ccc); border-radius: 6px; padding: 4px; background: var(--yuzey-2, #f8f6f2); }
+.olcekli-svg { width: 100%; height: auto; display: block; cursor: crosshair; }
+.olcekli-zemin { fill: rgba(0, 0, 0, 0.03); }
+.olcekli-arazi-cokgen { fill: rgba(110, 140, 95, 0.25); stroke: rgba(80, 110, 65, 0.75); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.olcekli-kontur { stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.olcekli-kontur.gun-3 { fill: rgba(210, 165, 75, 0.22); stroke: rgba(185, 135, 45, 0.75); }
+.olcekli-kontur.gun-2 { fill: rgba(95, 155, 195, 0.26); stroke: rgba(65, 125, 165, 0.8); }
+.olcekli-kontur.gun-1 { fill: rgba(75, 165, 115, 0.32); stroke: rgba(45, 130, 85, 0.85); }
+.olcekli-yol { fill: none; stroke: #b84a39; stroke-width: 2.5; stroke-dasharray: 5 3; vector-effect: non-scaling-stroke; }
+.olcekli-olcek-cizgi { stroke: #555; stroke-width: 1.5; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.olcekli-nokta.bas { fill: #2b7a4b; stroke: #fff; stroke-width: 1.5; }
+.olcekli-nokta.bit { fill: #b84a39; stroke: #fff; stroke-width: 1.5; }
+.olcekli-nokta.kontur-merkez { fill: #3b6ea5; stroke: #fff; stroke-width: 1.5; }
+.olcekli-sonuc { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--cizgi, #ccc); }

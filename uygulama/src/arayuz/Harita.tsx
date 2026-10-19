@@ -16,6 +16,7 @@ import { git } from './Uygulama';
 import { BakisAciklamasi, BakisSecici } from './Bilgiler';
 import type { Secim } from './BaglantiSecici';
 import { HaritaKunyeBolumu } from './HaritaKunye';
+import { OlcekliHaritaBolumu } from './OlcekliHarita';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const KESINLIKLER: { kod: IsaretGirdisi['kesinlik']; ad: string }[] = [
@@ -291,6 +292,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
             : (
               <>
                 <HaritaKunyeBolumu istemci={istemci} evren={evren} harita={h.kod} saltOkunur={h.silindi} />
+                <OlcekliHaritaBolumu istemci={istemci} evren={evren} h={h} />
                 <KatmanPaneli istemci={istemci} evren={evren} h={h} gizli={gizli} setGizli={setGizli} saydamlik={saydamlik} setSaydamlik={setSaydamlik}
                   hizala={(k) => { setSecili(null); setKip({ tur: 'hizala', katman: k.kod, ciftler: k.noktalar, bekleyen: null }); }} hata={setHata} />
                 {turler.length > 1 && (
