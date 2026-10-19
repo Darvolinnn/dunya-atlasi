@@ -120,7 +120,9 @@ Kullanıcı bir dış inceleme raporu (`INCELEME-VE-ONERILER.md`, kullanıcını
 - [x] **Windows derlemesi:** `Rehber.tsx` ile `rehber.ts` yalnız harf büyüklüğüyle ayrılıyordu; Windows'ta `./Rehber` içe aktarması metin dosyasına gidiyor, derleme kırılıyordu. Dosyalar `SayfaYardimi.tsx` ve `rehber-metinleri.ts` oldu. Sınama `test/dosya-adlari.test.ts` aynı klasörde böyle iki dosya bulununca kırılır. Otomatik denetim artık Ubuntu ve Windows'ta çalışıyor (`denetim.yml`, `matrix.os`)
 - [x] **Kurtarma taslağı kaybı:** `acilistaTaslak` kurtarma alanına yazamadığında asıl taslağı yine de siliyordu. Artık yazım başarılı değilse asıl taslak yerinde kalır, sonraki açılışta yine bulunur (`test/taslak.test.ts`)
 - [x] **"Açılıyor…"da takılma:** `Istemci` çalışanın `error` ve `messageerror` olaylarını dinlemiyordu. Artık çalışan yüklenemez ya da çökerse bekleyen istekler Türkçe bir iletiyle hata verir, sonraki istekler beklemeden reddedilir; okunamayan yanıtta bekleyenler hatayla biter. Açılış hata ekranına "Yeniden dene" eklendi. İstemci sınamada sahte çalışan alabiliyor (`test/istemci.test.ts`)
-- [ ] Windows'ta derlemenin gerçekten geçtiğini otomatik denetimin Windows işinde gör (ilk gönderimden sonra)
+- [x] Kullanıcının Windows bilgisayarında denendi: `npm run build` geçiyor, 446 sınama geçiyor. İlk soğuk çalıştırmada `esitleme.test.ts` "kullanım dışı cihaz temizliği bekletmez" bir kez kırıldı, tek başına ve ikinci tam çalıştırmada geçti; yük altında süreye bağlı olabilir, Windows denetim işinde yinelenirse kök nedeni aranır
+- [ ] Otomatik denetimin Windows işinin sonucunu gör (gönderimde sırada bekliyordu)
+- [x] Bilgisayardaki proje klasörü `main`'e alındı, bağımlılıklar kuruldu, `npm run dev` 5173'te çalışıyor; güncel zip masaüstünde ve proje klasöründe (`kaynak/`)
 
 ### 3.2e Dış inceleme raporunun 4–10. maddeleri (yapılacak / öneri; kodlanmadı)
 
