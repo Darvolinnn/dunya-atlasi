@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **44**. Sınama: 55 dosya, 293 sınama, hepsi geçiyor.*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **45**. Sınama: 56 dosya, 304 sınama, hepsi geçiyor.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -45,31 +45,31 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | F22 | Yoğunluk ve boşluk (GPT paketi, birleştirildi) | `9165e25` |
 | F15 | Anlatı ve evren sözleşmesi (GPT paketi, birleştirildi; açık bırakılan kayıtlar "bahsedilenler" ve F33'te eksik sayılmıyor) | `dfa30d3`, `890822f` |
 | F26 | Haklar, yetkiler, yükümlülükler (GPT paketi, birleştirildi) | `6f1851c` |
-| F31 | Keşif sorularına ikinci şablon: aynı şey üzerinde çelişen hak iddiaları | bu dosyayı güncelleyen kayıt |
+| F31 | Keşif sorularına ikinci şablon: aynı şey üzerinde çelişen hak iddiaları | `4430a31` |
+| F32 | Bakım ve tekrarlar (Argon paketi, birleştirildi) | bu dosyayı güncelleyen kayıt |
 
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
-Bu dallar uzak depoda belirince birleştir (§6). Hiçbiri `IZDUSUM_SURUMU`'nu artırmamalı; artırmayı birleştiren yapar.
+Şu an bekleyen paket yok. Yeni paket açılırsa dalı uzak depoda belirince birleştir (§6). Hiçbiri `IZDUSUM_SURUMU`'nu artırmamalı; artırmayı birleştiren yapar.
 
 | Dal | Madde | İşlem adı öneki | Tablolar | Not |
 |---|---|---|---|---|
-| `paket/bakim` | F32 bakım ve tekrarlar | `bakim_` | `bakim_tanimlari`, `bakim_kayitlari` | Argon ajanında. Birleşince `IZDUSUM_SURUMU`'nu 45 yap. |
+| (yok) | | | | |
 
 Bu paketlerin tam promptları kullanıcının proje klasöründedir; depoda değildir. Prompt yazarken kalıp olarak bu tablodaki bilgiler ve §6 yeterlidir.
 
 ### 3.3 Kalan işler (önerilen sıra)
 
-1. **`paket/bakim` uzak depoda belirince birleştir** (§3.2), sonra sınama ve tarayıcıda deneme. Haklar, anlatı sözleşmesi ve yoğunluk paketleri birleştirildi.
-2. **F35 baskı ve uyarlama karşılaştırma**: yazar iki eser (ya da eser ile deneme kopyası) arasında eşlemeler tanımlar (iki karakter → tek karakter, olay sırası değişimi); sonraki değişiklikte etkilenebilecek eşlemeler listelenir. Hiçbir dal ötekini kendiliğinden güncellemez. Dallar için `calisan/dal.ts`, eser yapısı için `calisan/anlati.ts`.
-3. **F16 kural atölyesi**: önce **TK8** kararı gerekir. Bu karar kullanıcınındır; kodlamadan önce sor.
-4. **Bilinen boşluklar:**
+1. **F35 baskı ve uyarlama karşılaştırma**: yazar iki eser (ya da eser ile deneme kopyası) arasında eşlemeler tanımlar (iki karakter → tek karakter, olay sırası değişimi); sonraki değişiklikte etkilenebilecek eşlemeler listelenir. Hiçbir dal ötekini kendiliğinden güncellemez. Dallar için `calisan/dal.ts`, eser yapısı için `calisan/anlati.ts`.
+2. **F16 kural atölyesi**: önce **TK8** kararı gerekir. Bu karar kullanıcınındır; kodlamadan önce sor.
+3. **Bilinen boşluklar:**
    - Deneme kopyası (dal) değişiklikleri yalnızca o cihazda kalıyor, eşitlenmiyor.
    - Göreli tarihlerde Türkçe iyelik eki eksik.
    - Zaman akışları arasında yaşanan zaman hesaplanmıyor.
    - Sahne panelinde okur bilgisi gösterilmiyor.
    - Gökyüzü sekmesinde tarih hatası sekmenin en altında görünüyor; girdinin yanına taşınmalı.
-5. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
-6. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
+4. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
+5. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
 

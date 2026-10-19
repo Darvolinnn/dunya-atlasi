@@ -44,8 +44,9 @@ import * as soyMod from './soy';
 import * as montaj from './montaj';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
-import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu } from '../veri/api';
+import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
+import * as bakim from './bakim';
 import * as sozluk from './sozluk';
 import * as anlatim from './anlatim';
 import * as delil from './delil';
@@ -579,6 +580,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           }) });
         continue;
       }
+      if (!iliski && (alan === 'bakim_tanim' || alan === 'bakim_tanim_silindi' || alan === 'bakim_kaydi' || alan === 'bakim_kaydi_silindi')) {
+        sonuc.push(bakim.catismaSatiri(e, nesne, alan, degerler, kayitAdi));
+        continue;
+      }
       if (!iliski && alan === 'delil') {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: 'Delil geçmişi',
           degerler: degerler.map((d) => {
@@ -832,6 +837,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (!r) throw new Error('Bu çatışma artık yok.');
     const deger = JSON.parse(r.deger as string);
     if (alan === 'kullanim_masasi') { this.yaz(evren, [{ tur: 'kullanim_masasi_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
+    if (alan === 'bakim_tanim' || alan === 'bakim_tanim_silindi' || alan === 'bakim_kaydi' || alan === 'bakim_kaydi_silindi') {
+      this.yaz(evren, [bakim.catismaCozumGirdisi(nesne, alan, deger)]);
+      return;
+    }
     if (alan === 'delil') { this.yaz(evren, [{ tur: 'delil_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
     if (alan === 'sozlesme_tanim') { this.yaz(evren, [{ tur: 'sozlesme_madde_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }]); return; }
     if (alan === 'sozlesme_silindi') { this.yaz(evren, [{ tur: deger ? 'sozlesme_madde_sil' : 'sozlesme_madde_geri_yukle', veri: { kod: nesne, cozum: true } }]); return; }
@@ -2371,6 +2380,33 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   hakSil({ evren, kod }: { evren: string; kod: string }) { haklar.hakSil(this.durumBaglami(evren), kod); }
   hakGeriYukle({ evren, kod }: { evren: string; kod: string }) { haklar.hakSil(this.durumBaglami(evren), kod, true); }
   hakTanimaYaz({ evren, hak, kod, otorite, durum }: { evren: string; hak: string; kod?: string | null; otorite: string; durum: HakTanimaDurumu }) { return haklar.hakTanimaYaz(this.durumBaglami(evren), hak, kod ?? null, otorite, durum); }
+  bakimTanimYaz({ evren, kod, tanim }: { evren: string; kod?: string | null; tanim: BakimTanimi }) {
+    return bakim.bakimTanimYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod ?? null, tanim);
+  }
+  bakimTanimSil({ evren, kod }: { evren: string; kod: string }) {
+    bakim.bakimTanimKaldir({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod, false);
+  }
+  bakimTanimGeriYukle({ evren, kod }: { evren: string; kod: string }) {
+    bakim.bakimTanimKaldir({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod, true);
+  }
+  bakimKaydiYaz({ evren, kod, kayit, tanim }: { evren: string; kod?: string | null; kayit?: BakimKaydiTanimi; tanim?: BakimKaydiTanimi }) {
+    return bakim.bakimKaydiYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod ?? null, (kayit ?? tanim)!);
+  }
+  bakimKaydiSil({ evren, kod }: { evren: string; kod: string }) {
+    bakim.bakimKaydiKaldir({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod, false);
+  }
+  bakimKaydiGeriYukle({ evren, kod }: { evren: string; kod: string }) {
+    bakim.bakimKaydiKaldir({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod, true);
+  }
+  bakimOku({ evren, kayit, kod, cop }: { evren: string; kayit?: string; kod?: string; cop?: boolean }) {
+    return bakim.bakimOku(this.evren(evren), (kayit ?? kod)!, cop);
+  }
+  bakimDurumu({ evren, kayit, kod, tarih }: { evren: string; kayit?: string; kod?: string; tarih?: string | null }) {
+    return bakim.bakimDurumu(this.evren(evren), (kayit ?? kod)!, tarih ?? null);
+  }
+  bakimUzmanligi({ evren, kayit, kod }: { evren: string; kayit?: string; kod?: string }) {
+    return bakim.bakimUzmanligi(this.evren(evren), (kayit ?? kod)!);
+  }
   // ---------- Adlandırılmış evren sürümleri (§9.7) ----------
   private anaEvren(evren: string) {
     const e = this.evren(evren);

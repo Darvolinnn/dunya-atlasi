@@ -38,6 +38,7 @@ import { RotaBolumu, YolculukBolumu } from './Yol';
 import { DelilBolumu } from './Delil';
 import { KullanimMasasiBolumu } from './KullanimMasasi';
 import { KULLANIM_SAHIPLERI } from '../alan/kullanim-masasi';
+import { BakimBolumu, BakimUzmanligiBolumu } from './Bakim';
 import { BirlesmeBilgisi, BirlestirDugmesi } from './Birlesme';
 import { KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
 import { BilinenlerBolumu, GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
@@ -167,6 +168,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {kayit.tur === 'eser' && <EserSozlesmesiBolumu key={kod} istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
         {kayit.tur !== 'eser' && <SozlesmeHatirlatmasiSatiri key={kod} istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         <HaklarBolumu key={kod} istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} surum={surum} saltOkunur={!!bag} />
+        <BakimBolumu istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} saltOkunur={!!bag} />
+        <BakimUzmanligiBolumu istemci={istemci} evren={evren} kod={kod} />
         {kayit.tur === 'belge' && <BelgeSunumBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
         {kayit.tur === 'belge' && <DelilBolumu istemci={istemci} evren={evren} kod={kod} saltOkunur={!!bag} />}
         {KULLANIM_SAHIPLERI.includes(kayit.tur) && <KullanimMasasiBolumu istemci={istemci} evren={evren} kod={kod} saltOkunur={!!bag} />}

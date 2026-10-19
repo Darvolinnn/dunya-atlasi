@@ -19,6 +19,7 @@ const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', '
   'haklar', 'hakEkle', 'hakDegistir', 'hakSil', 'hakGeriYukle', 'hakTanimaYaz',
   'gokyuzuTanimi', 'gokyuzuYaz', 'gokyuzuHesapla', 'gokyuzuCakismaAra',
   'durumNiyeti', 'iddiaDosyasi', 'anlatimYaz', 'anlatimSil', 'anlatimGeriYukle', 'delilGecmisi', 'delilYaz', 'sorulabilirHesaplar', 'sonrakiSoru', 'kesifSorusu', 'kullanimMasasi', 'kullanimMasasiYaz', 'kesifAdayiKaydet', 'baglamKarsilastir', 'kosulMasasi', 'degisiklikMasasi', 'degisiklikUygula', 'sozlukler', 'sozlukYaz', 'sozlukSil', 'sozlukGeriYukle', 'sozlukDenetle', 'sozlukIsareti',
+  'bakimTanimYaz', 'bakimTanimSil', 'bakimTanimGeriYukle', 'bakimKaydiYaz', 'bakimKaydiSil', 'bakimKaydiGeriYukle', 'bakimOku', 'bakimDurumu', 'bakimUzmanligi',
   'yerlesim', 'yerlesimPlanlari', 'yerlesimYaz',
   'kayitlar', 'kayit', 'kayitOlustur', 'kayitDegistir', 'kayitListe', 'kayitSil', 'kayitGeriYukle', 'kayitGecmisi',
   'metinAc', 'metinKaydet', 'metinSurumu', 'metinGeriYukle',
