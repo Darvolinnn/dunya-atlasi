@@ -39,6 +39,7 @@ const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', '
   'sablon', 'sablonYaz', 'kayitSablonu', 'kayitAlanYaz', 'soruCevapla', 'soruKayitla', 'kayitSoruSeti', 'evrenSorulari', 'meseleler', 'yazarKaydiEkle',
   'takvim', 'takvimEtkisi', 'takvimYaz', 'zamanCizelgesi', 'zamanSeti', 'paralelTakvimYaz', 'akisYaz', 'akisEtkisi',
   'jetonVer', 'baglantiyiKes']);
+['uyarlamaListesi', 'uyarlamaAdaylari', 'uyarlamaYaz', 'uyarlamaSil', 'uyarlamaGozdenGecir'].forEach((ad) => (IZINLI as Set<IstekAdi>).add(ad as IstekAdi));
 
 // Drive izni yalnızca bu çalışanın belleğinde durur; hiçbir yere yazılmaz.
 let jeton: string | null = null;

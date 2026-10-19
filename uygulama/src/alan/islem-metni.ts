@@ -185,6 +185,9 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   bilgi_sil: (v, ad) => `${ad(v.bilen)}: “${v.soru}” hakkındaki bilgisi kaldırıldı`,
   bilgi_geri_yukle: (v, ad) => `${ad(v.bilen)}: “${v.soru}” hakkındaki bilgisi geri getirildi`,
   metin: (v, ad) => v.adDuzeltme ? `${ad(v.kayit)}: bağlantıda “${ad(v.adDuzeltme)}” adı düzeltildi` : v.geriYukleme ? `${ad(v.kayit)}: metnin eski bir sürümü geri getirildi` : `${ad(v.kayit)}: metin kaydedildi`,
+  uyarlama_yaz: () => 'Uyarlama eşlemesi kaydedildi',
+  uyarlama_gozden_gecir: () => 'Uyarlama eşlemesi gözden geçirildi',
+  uyarlama_sil: (v) => v.silindi === false ? 'Uyarlama eşlemesi geri getirildi' : 'Uyarlama eşlemesi kaldırıldı',
 };
 
 /** Kullanıcının yaptığı bir değişiklik sayılmayan, başka bir işlemin parçası olan adımlar (listelerde gösterilmez). */

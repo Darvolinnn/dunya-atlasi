@@ -482,6 +482,20 @@ export interface BakimUzmanligiSonucu {
   uzmanOldugu: { tanimKod: string; ad: string; siklik: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null; kesinti: string; yer: KisaKayit }[];
   malzemeOldugu: { tanimKod: string; ad: string; siklik: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null; metin: string; yer: KisaKayit }[];
 }
+export type UyarlamaTuru = 'karsilik' | 'indirgeme' | 'sira' | 'cikarildi';
+export interface UyarlamaTarafi { eser: string; dal: string | null; kayitlar: string[] }
+export interface UyarlamaTanimi { a: UyarlamaTarafi; b: UyarlamaTarafi; tur: UyarlamaTuru; not: string }
+export interface UyarlamaKaydi extends KisaKayit { sakliKod: string; silindi: boolean; bulunamadi: boolean }
+export interface UyarlamaTarafGorunumu {
+  eser: UyarlamaKaydi; dal: { kod: string; ad: string; durum: 'etkin' | 'silindi' | 'yok' } | null;
+  kayitlar: UyarlamaKaydi[];
+}
+export interface UyarlamaEslemesi {
+  kod: string; tanim: UyarlamaTanimi; a: UyarlamaTarafGorunumu; b: UyarlamaTarafGorunumu;
+  etkilenmis: boolean; catismali: boolean; silindi: boolean;
+  degisiklikler: { taraf: 'a' | 'b'; islem: string; aciklama: string }[]; uyarilar: string[];
+}
+export interface UyarlamaAdaylari { eserler: KisaKayit[]; kayitlar: KisaKayit[]; sorun: string | null }
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1189,6 +1203,11 @@ export interface Istekler {
   adDuzeltmeOnizle(a: { evren: string; kod: string; eskiAd: string; yeniAd: string; eskiOkunus?: string }): AdDuzeltmesi[];
   adDuzeltmeUygula(a: { evren: string; kod: string; eskiAd: string; yeniAd: string; eskiOkunus?: string; secilenler: string[] }): { degisen: number };
   metinGeriYukle(a: { evren: string; kayit: string; alan: string; basliklar: Basliklar }): { basliklar: Basliklar; degisti: boolean };
+  uyarlamaListesi(a: { evren: string; eser?: string | null }): UyarlamaEslemesi[];
+  uyarlamaAdaylari(a: { evren: string; dal?: string | null }): UyarlamaAdaylari;
+  uyarlamaYaz(a: { evren: string; kod?: string | null; tanim: UyarlamaTanimi }): { kod: string };
+  uyarlamaSil(a: { evren: string; kod: string }): void;
+  uyarlamaGozdenGecir(a: { evren: string; kod: string }): void;
 }
 
 export type IstekAdi = keyof Istekler;
