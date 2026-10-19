@@ -28,5 +28,5 @@ describe('baştan kurmanın ilerlemesi (§10.7)', () => {
     expect(yeni.at(-1)).toMatchObject({ yapilan: yeni[0].toplam, toplam: yeni[0].toplam });
     expect(yeni.length).toBeGreaterThan(2);
     expect(yeni.slice(0, -1).every((d) => d.yapilan < d.toplam)).toBe(true);
-  });
+  }, 60_000); // 5.200 gerçek işlem yazılır; yük altındaki makinede 5 sn'yi aşıyor
 });
