@@ -1,6 +1,6 @@
 # Dünya Atlası: Tasarım
 
-**Sürüm 6 · 18 Ekim 2026 · Aşama: tasarım.** Program kodu yazılmadı. Kullanıcı "geç" demeden tasarım aşaması kapanmaz ve kullanıcının açık onayı olmadan kodlamaya geçilmez (K9).
+**Sürüm 6 · 19 Ekim 2026 · Aşama: kodlama.** Kodlama kullanıcının onayıyla başladı (K9); geliştirme sırası §14'tedir, güncel durum `DEVIR.md`'dedir. Yeni bir davranış kullanıcının onayı olmadan kodlanmaz.
 
 Bu belge programın **bugün geçerli** davranışını anlatır. Bir davranışın nereden geldiği, eskiden nasıl yazıldığı, hangi eleştiriyle değiştiği ve kaynak belgeler ayrı dosyadadır: [tasarim-gecmisi.md](tasarim-gecmisi.md). Geçmiş dosyası davranış tanımlamaz; iki dosya çelişirse bu belge geçerlidir.
 
