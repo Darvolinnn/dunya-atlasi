@@ -150,14 +150,15 @@ Kullanıcı etkileşimli bir taslak ve gerekçe belgesi gönderdi (ekler depoda 
 - [x] Kullanıcı kararları (19 Ekim): başlangıç akışı taslak B ("İlk adımlar"), menü yapısı K24 gibi kalır
 - [ ] Menü adları (Masa → Özet? İnceleme → Uyarılar? …): kullanıcının seçimi bekleniyor
 
-**Rehberli yazarlık ve roman serisi (kullanıcı isteği, 19 Ekim 2026; öneri, karar bekliyor, kodlanmadı).** Kullanıcı roman yazma yöntemini bilmediğini, programın bu konuda yol göstermesini istediğini yazdı ve ayrıntılı bir brif gönderdi (depoda değil). Brif önce belge istedi, kod değil. Hazırlananlar `analiz/` altında; hiçbiri bağlayıcı değil:
-- `yazarlik-ve-roman-serisi-calisma-rehberi.md`: 24 konuluk yazarlık rehberi (uydurma örnek seri *Hatıra İmparatorluğu*), en küçük yeterli hazırlık, takılınca yan yollar. Kod beklemeden okunabilir.
-- `rehberli-yazarlik-urun-tasarimi.md`: öneriler Ö1–Ö12, seri veri modeli karşılaştırması, açık kararlar D1–D11, önerilen sıra. Başta tek sayfalık özet var.
-- `rehberli-yazarlik-kullanim-akislari.md`: 22 akış ve kabul sınamaları.
-- `rehberli-yazarlik-mevcut-sistem-farklari.md`: kodla doğrulanmış mevcut durum, keşfettirilmeyen özellikler, eski ifadeler.
+**Rehberli yazarlık ve roman serisi (kullanıcı isteği, 19 Ekim 2026; öneri, karar bekliyor, kodlanmadı).** Kullanıcı roman yazma yöntemini bilmediğini, programın bu konuda yol göstermesini istediğini yazdı ve iki brif gönderdi (depoda değil): önce istek, sonra ilk sürümün eleştirisi. İkinci brif üzerine ilk sürümün tasarım, akış ve farklar belgeleri kaldırıldı (git geçmişinde, `6fa89ac`). Şimdiki belgeler `analiz/` altında; hiçbiri bağlayıcı değil:
+- `yazarlik-ve-roman-serisi-calisma-rehberi.md`: 24 konuluk yazarlık rehberi, yöntem haritası (A.6), uydurma örnek seri *Hatıra İmparatorluğu*. Kod beklemeden okunabilir.
+- `roman-serisi-veri-ve-kavram-modeli.md`: **kavramların tek tanımı**: düzeyler (evren kuralı / seri sorusu / hikâye çekirdeği), adım durumları (yapıldı · geçildi · ilgisiz · başlanmadı) ve dayanakları, seri üyeliği ve silme/geri yükleme, plan–alternatif–gerçek, kitap sonunda açık olanlar (montaja dayanır), karakterin kitaptaki yolu, çalışma durumları.
+- `rehberli-yazarlik-urun-tasarimi-v2.md`: ekranlar (İlk adımlar yolları, Şimdi kartı, sahne planı, seri sayfası, olay örgüsü masası), paketler P1–P10, kararlar D1–D13.
+- `yaratici-calisma-akislari-v2.md`: senaryolar ve kabul ölçütleri.
+- `rehberli-yazarlik-revizyon-analizi.md`: eleştirinin kodla doğrulanması, eski çelişkiler, `main` ile #5'teki özellikler.
 
-Ana bulgu: soru kütüphanesi ve soru durumları rehberin çoğunu yeni veri olmadan taşır (Ö3–Ö5). Seri tek gerçek yeni kavram (Ö7, öneri: yeni tür, eserler anlatı ağacında altına). K26 (taslak B) bozulmaz, genişletilir (Ö2). Onaylanırsa K11 gereği önce §16'ya *Öneri* olarak girer. Sıradaki adım: kullanıcı D1–D11'i okuyup seçer; ilk kodlanacak paket Ö4+Ö5 (yalnız soru tanımları).
-- [ ] Kullanıcı kararları D1–D11 (`analiz/rehberli-yazarlik-urun-tasarimi.md` §0.6, §7)
+Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda açık olanlar" montajdaki okur soruları ve sahne niyetleri üzerinden hesaplanmalı. (2) Plan için ayrı katman gerekmez; kayıt ve alan düzeyi karar durumu var, eksik olan `alternatif` ilişkisi. (3) Olay örgüsü masası yeni veri istemez; var olan dört görünümü birleştirir. Onaylanırsa K11 gereği önce §16'ya *Öneri* olarak girer. Sıradaki adım: kullanıcı D1–D13'ü seçer; ilk kodlanacak P1 (rehber) ve P2 (soru setleri).
+- [ ] Kullanıcı kararları D1–D13 (`analiz/rehberli-yazarlik-urun-tasarimi-v2.md` §8)
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
 
 ## 4. Kod yapısı ve yeni bir özellik ekleme tarifi

@@ -73,6 +73,24 @@ Sahne (14) → sahne → sahne → "bunlar neyin hikâyesi?" (2, 4) → karakter
 
 İkisi de geçerlidir. Bir projede bile bazı bölümleri planlayıp bazılarını keşfederek yazabilirsiniz (Konu 20).
 
+### A.6 Farklı anlatı biçimleri için yöntem haritası
+
+Bu rehberdeki araçlar (dönüm noktaları, amaç–engel–sonuç, hazırlık–karşılık) çoğu romanda işe yarar ama hepsine aynı ölçüde uymaz. Hangisinin ne zaman öne çıktığına dair kaba bir harita; ders kitabı değil, başlangıç noktası:
+
+| Biçim | Öne çıkan araçlar | Geri planda kalabilecek | Rehberde |
+|---|---|---|---|
+| **Keşfederek yazma** | İlk taslak, devam notu, planı sonradan çıkarmak | Önceden dönüm noktası | 20, 12 (sonradan), 23 |
+| **Doğrusal olmayan kurgu** | Okuma sırası ile kronoloji ayrımı, bağlam parçaları | Tek zaman çizgisi | 18, 16 |
+| **Çok bakış açılı** | Her bakış açısı için ayrı çekirdek cümlesi, bilgi farkı | Tek "ana karakter" | 2, 16, 8 |
+| **Episodik** (her bölüm bir macera) | Çatışma motoru, kurgu hatları | Kitap boyu tek doruk | 4, 15 |
+| **Karakter merkezli edebî kurgu** | İç çatışma, ilişkiler, değişmeyen karakter | Dış olay zinciri, sekiz durak | 5, 6, 8 |
+| **Polisiye / gizem** | Okur soruları, ipucu ve yanıltmaca, okuma sırası | Dünya inşası | 17, 18, 13 |
+| **Romantik kurgu** | İlişkinin dönüm noktaları, iki tarafın beklentisi | Çatışma motorunun siyasi yanı | 8, 12 |
+| **Tarihsel kurgu** | Gerçek kronoloji, kim neyi biliyordu, araştırma kaynakları | Uydurma dünya kuralı | 18, 16, 19 |
+| **Yalnız dünya kurmak** | Dünyanın kuralı ve bedeli, kurumlar, gündelik hayat | Bu rehberin roman konularının çoğu | 9, 19, Dünya Pusulası |
+
+**Dünya kurmak romanın ön hazırlığı değildir.** Tarih, siyaset, din, ekonomi ve gündelik hayatı kendi başına kuran biri için Dünya Atlası'nın kayıtları, Dünya Pusulası ve tür soru setleri yeterlidir; bu rehberin roman konuları yalnız isterseniz devreye girer.
+
 ---
 
 ## B. Konular
@@ -85,7 +103,7 @@ Her konu aynı biçimdedir:
 - **Küçük adım:** ilk kez deneyen için beş dakikalık iş.
 - **Derinleştirmek isterseniz:** isteğe bağlı sorular.
 - **İşe yarayan örnek / yanıltıcı örnek:** karşılaştırma.
-- **Dünya Atlası'nda:** hangi araca gider. *(bugün var)* ya da *(öneri)* diye işaretlidir. Öneriler henüz programda yoktur.
+- **Uygulamada deneyin:** programda hangi araca gider. *(bugün var)* programın `main` dalında olanı, *(öneri, Pn)* [ürün tasarımı v2](rehberli-yazarlik-urun-tasarimi-v2.md) §7'deki paketi gösterir; öneriler henüz programda yoktur.
 - **Takılırsanız:** yan yol.
 - **Sonraki iki olası adım.**
 - **Sınır:** yöntemin evrensel olmadığı yer.
@@ -113,7 +131,7 @@ Her sorunun cevabı "henüz bilmiyorum" olabilir. Dünya Atlası'nda her soru *c
 
 **Yanıltıcı örnek:** "Epik bir fantastik seri, 5 kitap, karanlık ton, büyük savaşlar." Bu bir fikir değil, bir ambalaj tarifidir; içinde kimse bir şey yaşamıyor.
 
-**Dünya Atlası'nda:** Hızlı not *(bugün var: her ekrandan, `Ctrl+K` → hızlı not)*. Not sonradan tek dokunuşla karaktere, sahneye ya da evren kuralına dönüşür, bağı korunur *(bugün var)*. Yeni evrende "Bir fikirle başla" yolu *(öneri, ürün tasarımı Ö2)*.
+**Uygulamada deneyin:** Hızlı not *(bugün var: her ekrandan, `Ctrl+K` → hızlı not)*. Not sonradan tek dokunuşla karaktere, sahneye ya da evren kuralına dönüşür, bağı korunur *(bugün var)*. İlk adımlarda "Bir hikâye fikriyle" yolu *(öneri, P3)*.
 
 **Takılırsanız:** Hiç fikriniz yoksa bir hafta boyunca sizi kızdıran, şaşırtan ya da merak ettiren üç şeyi not alın. Bunlardan biri "ya bu kural olsaydı?" sorusuna dönüşebilir.
 
@@ -142,7 +160,7 @@ Her sorunun cevabı "henüz bilmiyorum" olabilir. Dünya Atlası'nda her soru *c
 
 **Yanıltıcı örnek:** "Bu bir kimlik, bellek ve özgürlük hikâyesi." Bu tema (Konu 3) ve kimin ne yaptığını söylemiyor.
 
-**Dünya Atlası'nda:** Masa'daki "Başlamak için" sorularından *Temel fikir* *(bugün var)*. Eser kaydında "Bu kitabın çekirdeği" sorusu *(öneri: eser soru seti, ürün tasarımı Ö4)*.
+**Uygulamada deneyin:** Fikri önce bir not olarak yazıp sonra nottan eser oluşturabilirsiniz *(bugün var)*. Eser kaydında "Hikâye çekirdeği" soruları *(öneri, P2)*. Dikkat: Masa'daki "Başlamak için" sorularından *Temel fikir* hikâyenin değil **evrenin** ayırt edici kuralını sorar (Konu 9).
 
 **Takılırsanız:** Çekirdek yazamıyorsanız iki şeyden biri eksiktir: ya *kişi* ya *engel*. Hangisinin daha bulanık olduğunu kendinize sorun ve oraya gidin (Konu 4 ya da 5).
 
@@ -172,7 +190,7 @@ Her sorunun cevabı "henüz bilmiyorum" olabilir. Dünya Atlası'nda her soru *c
 
 **Yanıltıcı örnek:** Tema hüküm olarak: "Devlet kötüdür." Bu durumda karşıt güç karikatürleşir (Konu 7).
 
-**Dünya Atlası'nda:** Dünya Pusulası'nın "Bu evren karakteri nasıl dönüştürüyor?" sorusu temaya yakındır *(bugün var)*. Eser soru setinde "Bu kitap hangi soruyu soruyor?" *(öneri, Ö4)*.
+**Uygulamada deneyin:** Dünya Pusulası'nın "Bu evren karakteri nasıl dönüştürüyor?" sorusu temaya yakındır *(bugün var)*. Hikâye çekirdeği sorularında "Bu hikâye hangi soruyu soruyor?" *(öneri, P2)*.
 
 **Takılırsanız:** Temayı zorlamayın. Karakterin en zor kararını yazın (Konu 5); tema genellikle orada saklıdır.
 
@@ -202,7 +220,7 @@ Her sorunun cevabı "henüz bilmiyorum" olabilir. Dünya Atlası'nda her soru *c
 
 **Yanıltıcı örnek:** "Kötü imparator dünyayı ele geçirmek istiyor, kahraman onu durdurmalı." Tek bir kişi yenilince motor durur; ikinci kitap için yeni bir kötü gerekir.
 
-**Dünya Atlası'nda:** Dünya Pusulası "Bu evrenin ana çatışması ne?" ve "Güç kimde ve bedeli ne?" *(bugün var)*. "Başlamak için" soruları: *Çatışma (iki taraf)* *(bugün var)*. Güç dengesi görünümü: topluluk × sahip olduğu / ihtiyacı / karşısına alamayacağı *(bugün var, Görünümler)*. Kurumlar topluluk ya da siyasi varlık kaydı olarak kurulur.
+**Uygulamada deneyin:** Dünya Pusulası "Bu evrenin ana çatışması ne?" ve "Güç kimde ve bedeli ne?" *(bugün var)*. "Başlamak için" soruları: *Çatışma (iki taraf)* *(bugün var)*. Güç dengesi görünümü: topluluk × sahip olduğu / ihtiyacı / karşısına alamayacağı *(bugün var, Görünümler)*. Kurumlar topluluk ya da siyasi varlık kaydı olarak kurulur.
 
 **Takılırsanız:** Karşı tarafın da haklı olduğu bir yer bulun. Haklı karşıtlık motor üretir; haksız karşıtlık yalnızca engel üretir.
 
@@ -235,7 +253,7 @@ Her sorunun cevabı "henüz bilmiyorum" olabilir. Dünya Atlası'nda her soru *c
 
 **Yanıltıcı örnek:** "Lale cesur, zeki ve inatçıdır; mavi gözleri vardır; çocukluğu zor geçmiştir." Bunlar sıfat; hiçbiri bir sahnede ne yapacağını söylemiyor.
 
-**Dünya Atlası'nda:** Karakter kaydının "Karakter: temel altı soru" seti: *En çok ne istiyor? En büyük korkusu? Kusuru? Ne saklıyor? Sınırı nerede? Geçmişi onu nasıl değiştirdi?* *(bugün var, her karakterde)*. "Karakter geçmişindeki bir olay" seti, isteğe göre eklenir *(bugün var)*. Korur / İster / Korkar bileşeni *(tasarımda var)*.
+**Uygulamada deneyin:** Karakter kaydının "Karakter: temel altı soru" seti: *En çok ne istiyor? En büyük korkusu? Kusuru? Ne saklıyor? Sınırı nerede? Geçmişi onu nasıl değiştirdi?* *(bugün var, her karakterde)*. "Karakter geçmişindeki bir olay" seti, isteğe göre eklenir *(bugün var)*. Korur / İster / Korkar bileşeni *(tasarımda var)*.
 
 **Takılırsanız:** İsteği bulamıyorsanız karakteri bir sahneye koyun ve ona bir şey verin, sonra elinden alın. Neyi geri almak için çabaladığına bakın.
 
@@ -259,7 +277,7 @@ Her sorunun cevabı "henüz bilmiyorum" olabilir. Dünya Atlası'nda her soru *c
 
 **Yanıltıcı örnek:** İç çatışma hiçbir sahnede karara dönüşmüyor, yalnızca iç sesle anlatılıyor: "Lale bir kez daha ne yapması gerektiğini düşündü."
 
-**Dünya Atlası'nda:** Karakter soruları "En büyük korkusu", "Sınırı nerede" *(bugün var)*. Sahne soru seti "Bu sahnede karakter neyle ikiye bölünüyor?" *(öneri, Ö5)*.
+**Uygulamada deneyin:** Karakter soruları "En büyük korkusu", "Sınırı nerede" *(bugün var)*. Sahne planı soruları *(öneri, P2)*.
 
 **Takılırsanız:** İç çatışmayı bulmak için "Karakter neyi yaparsa kendinden utanır?" diye sorun.
 
@@ -289,7 +307,7 @@ Her sorunun cevabı "henüz bilmiyorum" olabilir. Dünya Atlası'nda her soru *c
 
 **Yanıltıcı örnek:** "Orhun güç sarhoşu bir zalimdir ve Lale'den nefret eder." Neden nefret ettiği, neyi koruduğu yok.
 
-**Dünya Atlası'nda:** "Karşıt karakter" soru seti: *Ne istiyor? Neden kendini haklı görüyor? Neyi kaybetmekten korkuyor? Hangi sınırı aşmaz? Ana karakterle ortak yanı ne?* *(bugün var; karakter kaydına "Bu kayda soru seti ekle" ile eklenir)*. Kurum karşıt güçse topluluk ya da siyasi varlık kaydı ve onların soru setleri *(bugün var)*.
+**Uygulamada deneyin:** "Karşıt karakter" soru seti: *Ne istiyor? Neden kendini haklı görüyor? Neyi kaybetmekten korkuyor? Hangi sınırı aşmaz? Ana karakterle ortak yanı ne?* *(bugün var; karakter kaydına "Bu kayda soru seti ekle" ile eklenir)*. Kurum karşıt güçse topluluk ya da siyasi varlık kaydı ve onların soru setleri *(bugün var)*.
 
 **Takılırsanız:** Karşıt gücü hikâyenin kahramanı yapıp aynı olayları onun gözünden üç cümleyle anlatın.
 
@@ -313,7 +331,7 @@ Her sorunun cevabı "henüz bilmiyorum" olabilir. Dünya Atlası'nda her soru *c
 
 **Yanıltıcı örnek:** "Lale ve Deniz birbirini çok sever." Gerilim yok.
 
-**Dünya Atlası'nda:** İlişki kaydı ve "İlişki" soru seti: *Geçmişlerini ne bağlıyor? İki tarafın beklentisi? Gerilim noktası?* *(bugün var)*. İlişki dönüm noktaları (ilk karşılaşma, kırılma, barışma) zamanla tutulur *(tasarım §3.2)*. Ağ görünümü *(bugün var)*.
+**Uygulamada deneyin:** İlişki kaydı ve "İlişki" soru seti: *Geçmişlerini ne bağlıyor? İki tarafın beklentisi? Gerilim noktası?* *(bugün var)*. İlişki dönüm noktaları (ilk karşılaşma, kırılma, barışma) zamanla tutulur *(tasarım §3.2)*. Ağ görünümü *(bugün var)*.
 
 **Takılırsanız:** İki karakteri aynı odaya kapatıp ikisinin de birbirine söylemek istemediği tek bir cümleyi yazın.
 
@@ -341,12 +359,12 @@ Her sorunun cevabı "henüz bilmiyorum" olabilir. Dünya Atlası'nda her soru *c
 **İşe yarayan örnek:**
 - **Kural:** Anılar bir kâtibin dokunuşuyla bedenden alınıp mühürlü şişelerde saklanabilir.
 - **Bedel:** Alınan anının etrafındaki duygular da silinir. Kayıp bir çocuğu unutan anne, neden üzgün olduğunu bilmeden üzgün kalır.
-- **Sınır:** Anı geri verilebilir ama ancak alındığı kişiye; başkasına konursa yabancı bir rüya gibi kalır.
+- **Sınır:** Anı geri verilebilir ama ancak alındığı kişiye; başkasına konursa yabancı bir rüya gibi kalır. Bu yüzden "anıları halka geri vermek", Divan'ın arşivindeki şişeleri **sahiplerine** dağıtmak demektir. Lale'nin bir yabancının anısını görmesi (aşağıda) onu yaşamak değil, rüya gibi izlemektir.
 - **Yan sonuç:** Zenginler acı anılarını vergi diye gönüllü verir; yoksullar zorla verir. Anı kaçakçılığı bir yeraltı ekonomisidir.
 
 **Yanıltıcı örnek:** "Kâtipler anılarla her şeyi yapabilir." Sınır yok; her sorun bir kâtiple çözülür.
 
-**Dünya Atlası'nda:** "Büyü sistemi" soru seti: *Kuralı, bedeli, sınırı, riski, sonucu, dengesi* *(bugün var)*. Dünya Pusulası: "Güç kimde ve bedeli ne?", "Hangi kural kırılırsa her şey değişir?" *(bugün var)*. Kural Atölyesi: evren kuralını yapılandırılmış biçimde tanımlama ve denetleme *(bugün var)*.
+**Uygulamada deneyin:** "Büyü sistemi" soru seti: *Kuralı, bedeli, sınırı, riski, sonucu, dengesi* *(bugün var)*. Dünya Pusulası: "Güç kimde ve bedeli ne?", "Hangi kural kırılırsa her şey değişir?" *(bugün var)*. Kural Atölyesi: evren kuralını yapılandırılmış biçimde tanımlama ve denetleme *(bugün var)*.
 
 **Takılırsanız:** Kuralı bir sahnede bir karakterin başına getirin: "Bugün vergi günü; Lale hangi anısını verecek?"
 
@@ -381,7 +399,7 @@ Her sorunun cevabı "henüz bilmiyorum" olabilir. Dünya Atlası'nda her soru *c
 
 **Yanıltıcı örnek:** "1. kitap: kardeşini bulur. 2. kitap: isyan. 3. kitap: büyük savaş." Bunlar olaylar; büyük soru yok, dolayısıyla neden bu üç kitabın aynı seride olduğu belli değil.
 
-**Dünya Atlası'nda:** Bugün seri kavramı yok; büyük soru Dünya Pusulası'na ya da bir açık meseleye yazılabilir *(bugün var)*. Seri kaydı ve "Serinin büyük planı" soruları *(öneri, Ö7)*. Olası finaller için iki *fikir* durumunda olay kaydı açılabilir; biri seçilince öbürü *vazgeçilmiş* olur, silinmez *(bugün var: karar durumu, tasarım §3.6)*.
+**Uygulamada deneyin:** Bugün seri kavramı yok; büyük soru Dünya Pusulası'na ya da bir açık meseleye yazılabilir *(bugün var)*. Seri kaydı ve büyük soru *(öneri, P4)*. Olası finaller için iki *fikir* durumunda olay kaydı açılabilir; biri seçilince öbürü *vazgeçilmiş* yapılır, silinmez *(bugün var: karar durumu)*. İkisini "birbirinin alternatifi" diye bağlamak *(öneri, P5)*.
 
 **Takılırsanız:** Finali değil son **görüntüyü** düşünün: son sayfada Lale nerede, ne yapıyor? Görüntüden geriye doğru gidin.
 
@@ -418,7 +436,7 @@ Her sorunun cevabı "henüz bilmiyorum" olabilir. Dünya Atlası'nda her soru *c
 
 **Yanıltıcı örnek:** I. kitabın sonunda Deniz'in ne olduğu da açıklanmıyor; "ikinci kitapta öğreneceksiniz" deniyor. Okur kendini aldatılmış hisseder.
 
-**Dünya Atlası'nda:** Her eser ayrı bir eser kaydıdır; bölümleri, sahneleri ve açık meseleleri vardır *(bugün var)*. Eser kaydında "Anlatı sözleşmesi" bölümü: tür, ton, okura verilen sözler *(bugün var, F15)*. Eser soru seti "Bu kitabın görevi" *(öneri, Ö4)*. Seri sayfasında kitap kartları *(öneri, Ö7)*.
+**Uygulamada deneyin:** Her eser ayrı bir eser kaydıdır; bölümleri, sahneleri ve açık meseleleri vardır *(bugün var)*. Eser kaydında "Anlatı sözleşmesi" bölümü: tür, ton, okura verilen sözler *(bugün var, F15)*. "Bu kitabın görevi" soruları *(öneri, P2)*. Seri sayfasında kitap kartları *(öneri, P4)*.
 
 **Takılırsanız:** Her kitabın son sahnesini birer cümleyle yazın. Kapanış eksikse orada görünür.
 
@@ -457,12 +475,12 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 4. Şişede Deniz'in değil, bir yabancının anısı vardır: silinmiş bir isyan.
 5. **Orta nokta:** Lale kendi çocukluk anılarından birinin de silinmiş olduğunu fark eder: o isyanda annesi oradaydı.
 6. Orhun arşive gece denetimi getirir; Lale'nin yardımcısı yakalanır.
-7. Lale Deniz'i isyancıların arasında bulur; Deniz anıları halka geri dağıtmak ister, Lale ise yalnızca kardeşini kurtarmak.
-8. Lale isyanın anısını halka veren kişi olur; Deniz'i kurtarır ama artık devletin aradığı kişidir.
+7. Lale Deniz'i isyancıların arasında bulur; Deniz arşivdeki isyan şişelerini sahiplerine geri dağıtmak ister, Lale ise yalnızca kardeşini kurtarmak.
+8. Lale arşivin mühür defterini isyancılara verir; şişeler sahiplerini bulmaya başlar. Deniz'i kurtarır ama artık devletin aradığı kişidir.
 
 **Yanıltıcı örnek:** Sekiz durak sırayla dolduruldu ama karakter hiçbirinde karar vermiyor; olaylar yalnızca başına geliyor (Konu 13).
 
-**Dünya Atlası'nda:** Dönüm noktaları metni olmayan sahne kartları olarak eser ağacına eklenebilir; sahne metni sonra yazılır *(bugün var)*. Evrende olan olaylar olay kaydıdır; henüz kesin değilse *fikir* durumunda tutulur *(bugün var, K13)*. Kurgu hattına "Hattı ilerletir" diye bağlanır *(bugün var)*. "Dönüm noktaları" soru seti *(öneri, Ö4)*.
+**Uygulamada deneyin:** Dönüm noktaları metni olmayan sahne kartları olarak eser ağacına eklenebilir; sahne metni sonra yazılır *(bugün var)*. Evrende olan olaylar olay kaydıdır; henüz kesin değilse *fikir* durumunda tutulur *(bugün var, K13)*. Kurgu hattına "Hattı ilerletir" diye bağlanır *(bugün var)*. Dönüm noktalarını kitap boyunca tek ekranda görüp sürükleyerek taşımak: olay örgüsü masası *(öneri, P6)*.
 
 **Takılırsanız:** Ortadan başlayın. Orta noktadaki değişim çoğu zaman kitabın kalbidir; başını ve sonunu ondan türetin.
 
@@ -486,7 +504,7 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 
 **Yanıltıcı örnek:** Lale şişeyi kaçırdı. Sonra şehirde bir yangın çıktı. Sonra Deniz'le karşılaştı. Yangın hiçbir şeye bağlı değil.
 
-**Dünya Atlası'nda:** Neden–sonuç ağı: olaylar arasında *neden oldu / engelledi* bağları *(bugün var, Görünümler)*. Program neden–sonucu kendisi çıkarmaz; yalnızca sizin kurduğunuz bağları gösterir. Olay sırası ile anlatım sırası ayrı görünür *(bugün var: zaman çizelgesi ile eser sırası)*.
+**Uygulamada deneyin:** Neden–sonuç ağı: olaylar arasında *neden oldu / engelledi* bağları *(bugün var, Görünümler)*. Program neden–sonucu kendisi çıkarmaz; yalnızca sizin kurduğunuz bağları gösterir. Olay sırası ile anlatım sırası ayrı görünür *(bugün var: zaman çizelgesi ile eser sırası)*.
 
 **Takılırsanız:** Zincirdeki boş halkada karakterin bir kararı eksiktir. "Bu noktada karakter ne seçti?" diye sorun.
 
@@ -522,7 +540,7 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 
 **Yanıltıcı örnek:** "Lale arşive gider. Etrafı tarif edilir. Bir arkadaşıyla konuşur. Eve döner." Hiçbir şey değişmiyor, hiçbir şey istenmiyor.
 
-**Dünya Atlası'nda:** Sahnenin tarihi, mekânı, bakış açısı, anlatıcısı, odak karakteri ve sahnedekiler bağlam panelindedir *(bugün var)*. Süreklilik defteri: sahne başında ve sonunda izlemek istediğiniz durumlar *(bugün var)*. "Sahne planı" soru seti (amaç, engel, değişim) ve bağlam panelinde katlı gösterimi *(öneri, Ö5)*. Okura açıklanan bilgi okur modeliyle tutulur *(bugün var)*.
+**Uygulamada deneyin:** Sahnenin tarihi, mekânı, bakış açısı, anlatıcısı, odak karakteri ve sahnedekiler bağlam panelindedir *(bugün var)*. Süreklilik defteri: sahne başında ve sonunda izlemek istediğiniz durumlar *(bugün var)*. "Sahne planı" soruları (amaç, engel, değişim) bağlam panelinde katlı *(öneri, P2)*. Sahnenin çalışma durumu (planlandı, ilk taslak…) *(öneri, P8)*. Okura açıklanan bilgi okur modeliyle tutulur *(bugün var)*.
 
 **Takılırsanız:** Sahneyi karşı tarafın gözünden bir paragrafla yazın. Engel netleşir.
 
@@ -551,7 +569,7 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 
 **Yanıltıcı örnek:** Her karaktere ayrı bir "hat" açıp yirmi hat kurmak. Hat sayısı bir başarı ölçüsü değildir.
 
-**Dünya Atlası'nda:** Kurgu hattı kaydı; sahneler hatta "Hattı ilerletir" ya da ipucu rolleriyle bağlanır *(bugün var)*. Kurgu hatları görünümü: hat başına sahne ve ipucu dizisi, "son bağlantılı sahne sekiz sahne önceydi" gibi somut bilgi. Program tempo yargısı vermez *(bugün var)*. "Kurgu hattı" soru seti (merkez sorusu, şu anki durum, olası karşılık) *(öneri, Ö4)*.
+**Uygulamada deneyin:** Kurgu hattı kaydı; sahneler hatta "Hattı ilerletir" ya da ipucu rolleriyle bağlanır *(bugün var)*. Kurgu hatları görünümü: hat başına sahne ve ipucu dizisi, "son bağlantılı sahne sekiz sahne önceydi" gibi somut bilgi. Program tempo yargısı vermez *(bugün var)*. "Kurgu hattı" soruları (hattın sorusu, şu anki durum, olası karşılık) *(öneri, P2)*.
 
 **Takılırsanız:** Bir hat uzun süredir ilerlemiyorsa iki seçenek var: bir sahnede ona dokunun ya da hattı bilinçli olarak askıya alın. İkisi de geçerli.
 
@@ -580,7 +598,7 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 
 **Yanıltıcı örnek:** Bakış açısı aynı sahnede habersizce kişiden kişiye atlıyor; okur kimin ne bildiğini kaybediyor.
 
-**Dünya Atlası'nda:** Sahnede bakış açısı, anlatıcı ve odak karakter ayrı alanlardır *(bugün var)*. Bilgi katmanları: evrenin gerçeği, bir grubun inancı, karakterin bilgisi, okura açıklanan *(bugün var)*. Bağlam panelinde bakış açısı karakterinin o anda bildikleri *(bugün var)*. Bölüm × kayıt matrisi: "bakış açısı" ve "okura açıklanma" katmanları *(bugün var)*.
+**Uygulamada deneyin:** Sahnede bakış açısı, anlatıcı ve odak karakter ayrı alanlardır *(bugün var)*. Bilgi katmanları: evrenin gerçeği, bir grubun inancı, karakterin bilgisi, okura açıklanan *(bugün var)*. Bağlam panelinde bakış açısı karakterinin o anda bildikleri *(bugün var)*. Bölüm × kayıt matrisi: "bakış açısı" ve "okura açıklanma" katmanları *(bugün var)*.
 
 **Takılırsanız:** Önemli bir sırrı seçin ve üç sütun yazın: Lale biliyor mu? Orhun biliyor mu? Okur biliyor mu? Her bölüm için.
 
@@ -604,7 +622,7 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 
 **Yanıltıcı örnek:** Doruk noktasında Lale'nin daha önce hiç bahsedilmeyen bir yeteneği ortaya çıkıyor ve sorunu çözüyor. Hazırlık yok; okur hile yapıldığını hisseder.
 
-**Dünya Atlası'nda:** Kurgu hattına bağlı ipucu durumları: *planlandı · metne yerleştirildi · karşılığı verildi · vazgeçildi* *(bugün var)*. Program serbest metinde ipucu aramaz; yalnızca sizin işaretlediğiniz ipuçlarını izler. Kurgu montajı: okurun neyi hangi sırayla öğrendiği, sahne taşınınca neyin değiştiği *(bugün var)*. Metin işaretleri: bir cümleyi bir iddiaya bağlamak *(bugün var)*.
+**Uygulamada deneyin:** Kurgu montajı: sırrı bir **okur sorusu** olarak yazın ("Silinmiş isyanın nedeni ne?"), sahnelere *destekler · zayıflatır · açıklar* niyeti işaretleyin. Program okurun cevabı hangi sahnede öğrendiğini okuma sırasından hesaplar, sahne taşınınca kendiliğinden günceller; gerçeği destekleyen işareti *ipucu*, başkasını destekleyeni *yanıltmaca* sayar *(bugün var)*. Kurgu hattına bağlı ipucu rolleri (*planlandı · yerleştirildi · karşılığı verildi · vazgeçildi*) hattın genel takibi içindir; tek tek ipuçlarını ayırt etmez *(bugün var)*. Program serbest metinde ipucu aramaz. Metin işaretleri: bir cümleyi bir iddiaya bağlamak *(bugün var)*.
 
 **Takılırsanız:** Karşılıktan geriye gidin: doruk noktasında ne ortaya çıkıyorsa onun bir iz bıraktığı üç yer bulun.
 
@@ -628,7 +646,7 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 
 **Yanıltıcı örnek:** "Okur 1. kitapta bunu öğrendi, demek ki herkes biliyor." Öncülü önce okuyan okur için durum farklıdır.
 
-**Dünya Atlası'nda:** Sahne evren tarihi ile bölüm sırası ayrıdır *(bugün var)*. Bağlam parçası: sahnenin içinde bir paragraf kendi tarihini alabilir (geçmişe dönüş, okunan mektup) *(bugün var)*. Okur modeli her eser için ayrıdır; "okur bunu biliyor mu?" eser ve okuma sırasıyla cevaplanır *(bugün var)*. Seriler için birden çok okuma yolu *(öneri, Ö8)*.
+**Uygulamada deneyin:** Sahne evren tarihi ile bölüm sırası ayrıdır *(bugün var)*. Bağlam parçası: sahnenin içinde bir paragraf kendi tarihini alabilir (geçmişe dönüş, okunan mektup) *(bugün var)*. Okur modeli her eser için ayrıdır; "okur bunu biliyor mu?" eser ve okuma sırasıyla cevaplanır *(bugün var)*. Seri içinde önerilen okuma sırası *(öneri, P4)*; birden çok okuma yolu *(öneri, sonraya)*.
 
 **Takılırsanız:** Zaman çizelgesi görünümünü açıp sahneleri evren tarihine göre görün; sonra eser ağacında okuma sırasına göre. İki listeyi yan yana koymak çoğu karışıklığı çözer.
 
@@ -663,7 +681,7 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 
 **Yanıltıcı örnek:** İlk sahneyi yazmadan önce on iki eyaletin hanedan ağacını, para sistemini ve dilini kurmak.
 
-**Dünya Atlası'nda:** Kayıtlar istenildiği an `[[` ile metnin içinden doğar ve *fikir* durumunda başlar *(bugün var)*. "Bahsedilen ama yazılmamış" listesi, metinde andığınız ama henüz kurmadığınız şeyleri hatırlatır; eksik listesi değildir *(bugün var, Masa)*. "Haritasız evren büyütme" soruları *(bugün var, Masa → Dünya Pusulası)*. "Şimdi / sonra / merak" önceliği için etiketler kullanılabilir *(bugün var: kayıt etiketleri)*.
+**Uygulamada deneyin:** Kayıtlar istenildiği an `[[` ile metnin içinden doğar ve *fikir* durumunda başlar *(bugün var)*. "Bahsedilen ama yazılmamış" listesi, metinde andığınız ama henüz kurmadığınız şeyleri hatırlatır; eksik listesi değildir *(bugün var, Masa)*. "Haritasız evren büyütme" soruları *(bugün var, Masa → Dünya Pusulası)*. "Şimdi / sonra / merak" önceliği için etiketler kullanılabilir *(bugün var: kayıt etiketleri)*.
 
 **Takılırsanız:** Bir sayfa dünya bilgisi yazdıktan sonra kendinize sorun: "Bunu hangi sahnede kullanacağım?" Cevap yoksa merak alanına koyup yazmaya dönün.
 
@@ -692,7 +710,7 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 
 **Yanıltıcı örnek:** Her yeni fikirde başa dönüp ilk bölümü yeniden yazmak. Taslak hiç bitmez.
 
-**Dünya Atlası'nda:** Yaz ekranı: eser ağacı ve sahne metni *(bugün var)*. Kaldığınız yer ve "buradan devam" notu, cihazlar arası eşitlenir *(bugün var)*. Metin işaretleri: serbest yazıyı sonradan yapılandırmak *(bugün var)*. Hızlı not *(bugün var)*. Sahne metni yazarken program soru penceresi açmaz *(bugün var, tasarım §6.1)*.
+**Uygulamada deneyin:** Yaz ekranı: eser ağacı ve sahne metni *(bugün var)*. Kaldığınız yer ve "buradan devam" notu, cihazlar arası eşitlenir *(bugün var)*. Metin işaretleri: serbest yazıyı sonradan yapılandırmak *(bugün var)*. Hızlı not *(bugün var)*. Sahne metni yazarken program soru penceresi açmaz *(bugün var, tasarım §6.1)*.
 
 **Takılırsanız:** Yazamıyorsanız sahneyi diyalog olarak yazın, sadece konuşmalar. Ya da sahnenin en kötü olası sürümünü bilerek yazın.
 
@@ -721,7 +739,7 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 
 **Yanıltıcı örnek:** Yapı sorunları çözülmeden ilk bölümün cümlelerini on kez cilalamak.
 
-**Dünya Atlası'nda:** İnceleme kuyruğu: tarih, mekân, bilgi tutarlılığı uyarıları *(bugün var)*. Sürümler: belli bir anın kaydı, sabit başvuru sürümü, iki sürümü karşılaştırma *(bugün var)*. Deneme kopyası: büyük bir değişikliği ana metni bozmadan denemek *(bugün var)*. Açık meseleler ve gerekçe defteri *(bugün var)*. "Revizyon turu" olarak bir açık meseleler grubu *(öneri, Ö10)*.
+**Uygulamada deneyin:** İnceleme kuyruğu: tarih, mekân, bilgi tutarlılığı uyarıları *(bugün var)*. Sürümler: belli bir anın kaydı, sabit başvuru sürümü, iki sürümü karşılaştırma *(bugün var)*. Deneme kopyası: büyük bir değişikliği ana metni bozmadan denemek *(bugün var)*. Açık meseleler ve gerekçe defteri *(bugün var)*. Her düzeltme turu için açık meselelere bir etiket ("düzeltme: yapı") ve turun başında bir sürüm *(bugün yapılabilir)*.
 
 **Takılırsanız:** Metni yazdırın ya da başka bir cihazda okuyun; yazdığınız yerden okumak hataları gizler.
 
@@ -753,7 +771,7 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 
 **Yanıltıcı örnek:** II. kitaba, I. kitabın olaylarını özetleyen otuz sayfalık bir girişle başlamak.
 
-**Dünya Atlası'nda:** Kurgu hatları görünümü ve ipucu durumları, bütün eserler boyunca *(bugün var)*. Durum geçmişi: karakterin unvanı, durumu zamanla *(bugün var)*. "Bu kitaptan seriye kalanlar" listesi; mevcut kayıtlardan türetilir, yeni veri istemez *(öneri, Ö9)*.
+**Uygulamada deneyin:** Kurgu hatları görünümü ve ipucu durumları, bütün eserler boyunca *(bugün var)*. Durum geçmişi: karakterin unvanı, durumu zamanla *(bugün var)*. "Kitap sonunda açık olanlar": okur sorularına işaretlediğiniz sahne niyetlerinden, o kitabın sonundaki duruma göre hesaplanır; sonraki kitaplar yazılınca değişmez *(öneri, P9)*.
 
 **Takılırsanız:** I. kitabın son sahnesini, II. kitabın ilk sahnesinin karakterinin gözünden yeniden yazın.
 
@@ -777,7 +795,7 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 
 **Yanıltıcı örnek:** Not bırakmadan çıkmak; döndüğünüzde bütün kitabı baştan okumak zorunda kalmak.
 
-**Dünya Atlası'nda:** Masa'da "Kaldığınız yer": son açık kayıt, cihaz, yan paneldekiler ve kendi notunuz *(bugün var)*. Önemli açık meseleler Masa'da öne çıkar *(bugün var)*. "Şimdi ne yapsam?" kartı: devam notu, etkin iş ve sıradaki rehber adımını tek yerde gösterir *(öneri, Ö6)*. Gezinti: uzun aradan sonra evrene dönmek için hazırladığınız kayıt dizisi *(bugün var)*.
+**Uygulamada deneyin:** Masa'da "Kaldığınız yer": son açık kayıt, cihaz, yan paneldekiler ve kendi notunuz *(bugün var)*. Önemli açık meseleler Masa'da öne çıkar *(bugün var)*. "Şimdi" kartı: devam notu, seçtiğiniz etkin çalışma ve sıradaki adım tek yerde *(öneri, P10)*. Gezinti: uzun aradan sonra evrene dönmek için hazırladığınız kayıt dizisi *(bugün var)*.
 
 **Takılırsanız:** Uzun bir aradan sonra yazmak yerine önce okuyun: yalnızca son iki sahneyi.
 
@@ -801,7 +819,7 @@ Bunlar üç perdeli yapının, dört bölümlü yapının ve benzer yöntemlerin
 
 **Yanıltıcı örnek:** İki finalden ikisine de hazırlık yapıp ikisini de metne yerleştirmek; okur hangisinin geçerli olduğunu anlamaz.
 
-**Dünya Atlası'nda:** Karar durumu: *fikir · kesinleşmiş · vazgeçilmiş*, alan düzeyinde de *(bugün var)*. Vazgeçilmiş değerler silinmez, denetlenmez *(bugün var)*. Gerekçe kaydı: soru, düşünülen seçenekler, seçilen çözüm, gerekçe *(bugün var)*. Deneme kopyası: bir alternatifi ayrı bir kopyada yazıp sonra birleştirmek ya da bırakmak *(bugün var)*.
+**Uygulamada deneyin:** Karar durumu: *fikir · kesinleşmiş · vazgeçilmiş*, alan düzeyinde de *(bugün var)*. Vazgeçilmiş değerler silinmez, denetlenmez *(bugün var)*. Gerekçe kaydı: soru, düşünülen seçenekler, seçilen çözüm, gerekçe *(bugün var)*. Deneme kopyası: bir alternatifi ayrı bir kopyada yazıp sonra birleştirmek ya da bırakmak *(bugün var)*.
 
 **Takılırsanız:** Hangi seçeneğin daha zor bir karar doğurduğuna bakın. Zor karar genellikle daha iyi sahnedir.
 
@@ -826,7 +844,7 @@ Bu bölüm, yukarıdaki konuların tek bir seride nasıl bir araya geldiğini g�
 
 | Karakter | İstek | İç gerilim | Sınır | Seriye katkı |
 |---|---|---|---|---|
-| **Lale**, arşiv memuru | Kardeşi Deniz'i bulmak | Kavga ettikleri gece için suçluluk; "devlet yalan söylemez" inancı | Başkasının anısını çalmamak (II. kitapta çiğner) | Ana bakış açısı |
+| **Lale**, arşiv memuru | Kardeşi Deniz'i bulmak | Kavga ettikleri gece için suçluluk; "devlet yalan söylemez" inancı | Başkasının anısını çalmamak (I. kitabın ortasında çiğner: mühürlü şişeyi kaçırır) | Ana bakış açısı |
 | **Deniz**, kardeşi | Silinmiş isyanın anılarını halka geri vermek | Lale'yi bu işe karıştırmamak | Şiddete başvurmamak (III. kitapta sınanır) | II. kitapta ikinci bakış açısı |
 | **Orhun**, Divan başkâtibi | Yeni bir savaşı önlemek | Ailesini savaşta kaybetti; gerçekten inanıyor | Çocukların anılarına dokunmamak | Karşıt güç; II. kitapta bir bakış açısı sahnesi |
 
