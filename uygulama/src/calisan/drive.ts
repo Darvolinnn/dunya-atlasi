@@ -6,28 +6,63 @@ const API = 'https://www.googleapis.com/drive/v3';
 const YUKLEME = 'https://www.googleapis.com/upload/drive/v3';
 /** Bu boyuttan büyük dosyalar sürdürülebilir yüklemeyle gönderilir (TK5). */
 const BUYUK = 5 * 1024 * 1024;
+/** Sürdürülebilir yüklemede bir parça; Drive 256 KB'ın katlarını ister. */
+const PARCA = 8 * 1024 * 1024;
+/** Tek bir parçanın gönderilmesi bundan uzun sürerse kesilir; yükleme kaldığı yerden sürer. */
+const PARCA_SURESI = 120_000;
+/** Kaydedilmiş yükleme adresi bundan eskiyse kullanılmaz (Drive bir hafta tutar). */
+const OTURUM_OMRU = 6 * 24 * 3600_000;
+
+/** Yarım kalan büyük yüklemelerin Drive adresleri; program kapanıp açılsa da kaldığı yerden sürsün diye bu cihazda tutulur. */
+export interface YuklemeOturumlari { oku(k: string): string | null; yaz(k: string, v: string): void; sil(k: string): void }
+export interface YuklemeIlerlemesi { ad: string; gonderilen: number; toplam: number }
+export interface DriveSecenekleri {
+  oturumlar?: YuklemeOturumlari;
+  ilerleme?: (i: YuklemeIlerlemesi | null) => void;
+  /** Sınama için. */
+  fetch?: typeof fetch; parca?: number; buyuk?: number; bekleme?: number;
+}
 
 const kacis = (s: string) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 const bekle = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** 308 yanıtındaki "Range: bytes=0-N" başlığından Drive'a ulaşan bayt sayısı (N+1); başlık yoksa undefined. */
+const alinan = (r: Response): number | undefined => {
+  const m = /bytes=0-(\d+)/.exec(r.headers.get('Range') ?? '');
+  return m ? Number(m[1]) + 1 : undefined;
+};
+const ozet = async (veri: Uint8Array) =>
+  [...new Uint8Array(await crypto.subtle.digest('SHA-256', veri as BufferSource))].slice(0, 16).map((b) => b.toString(16).padStart(2, '0')).join('');
 
 export class DriveTasiyici implements Tasiyici {
-  constructor(private readonly jeton: string, private readonly bitis: number, private readonly alan: 'appDataFolder' | 'drive' = 'appDataFolder') {}
+  private readonly iptalci = new AbortController();
+  private readonly getir: typeof fetch;
+
+  constructor(private readonly jeton: string, private readonly bitis: number, private readonly alan: 'appDataFolder' | 'drive' = 'appDataFolder',
+    private readonly secenek: DriveSecenekleri = {}) {
+    this.getir = secenek.fetch ?? ((u, a) => fetch(u, a));
+  }
+
+  /** Bağlantı kesilince sürmekte olan istekler durdurulur. */
+  iptal() { this.iptalci.abort(); }
+
+  private bekle(ms: number) { return bekle(this.secenek.bekleme ?? ms); }
 
   /** İstek gönderir; geçici hatalarda (çok istek, sunucu hatası, bağlantı kopması) birkaç kez yeniden dener. */
   private async istek(url: string, ayar: RequestInit = {}, deneme = 0): Promise<Response> {
     if (Date.now() > this.bitis - 30_000) throw new IzinHatasi('Google izninin süresi doldu.');
     let r: Response;
     try {
-      r = await fetch(url, { ...ayar, headers: { ...(ayar.headers as Record<string, string> | undefined), Authorization: `Bearer ${this.jeton}` } });
+      r = await this.getir(url, { ...ayar, signal: this.iptalci.signal, headers: { ...(ayar.headers as Record<string, string> | undefined), Authorization: `Bearer ${this.jeton}` } });
     } catch (e) {
-      if (deneme < 3) { await bekle(1000 * 2 ** deneme); return this.istek(url, ayar, deneme + 1); }
+      if (this.iptalci.signal.aborted) throw new Error('Drive bağlantısı kesildi.');
+      if (deneme < 3) { await this.bekle(1000 * 2 ** deneme); return this.istek(url, ayar, deneme + 1); }
       throw new Error('Drive\'a ulaşılamadı. İnternet bağlantısını kontrol edin.');
     }
     if (r.status === 401) throw new IzinHatasi('Google izni yenilenmeli.');
     const metin = r.status === 403 ? await r.clone().text() : '';
     if (r.status === 507 || /storageQuota/i.test(metin)) throw new Error('Drive\'da yer kalmadı.');
     if ((r.status === 429 || r.status >= 500 || /rateLimit|userRateLimit/i.test(metin)) && deneme < 4) {
-      await bekle(1000 * 2 ** deneme + Math.random() * 500);
+      await this.bekle(1000 * 2 ** deneme + Math.random() * 500);
       return this.istek(url, ayar, deneme + 1);
     }
     if (r.status === 403) {
@@ -66,14 +101,8 @@ export class DriveTasiyici implements Tasiyici {
     const yontem = id ? 'PATCH' : 'POST';
     const alanlar = 'fields=id,name,appProperties';
     let r: Response;
-    if (veri.length > BUYUK) {
-      // Sürdürülebilir yükleme: önce adres alınır, sonra içerik gönderilir.
-      const baslat = await this.istek(`${yol}?uploadType=resumable&${alanlar}`, {
-        method: yontem, headers: { 'Content-Type': 'application/json; charset=UTF-8', 'X-Upload-Content-Length': String(veri.length) }, body: JSON.stringify(ustBilgi),
-      });
-      const adres = baslat.headers.get('Location');
-      if (!adres) throw new Error('Drive yüklemeyi başlatamadı.');
-      r = await this.istek(adres, { method: 'PUT', body: veri as BodyInit });
+    if (veri.length > (this.secenek.buyuk ?? BUYUK)) {
+      r = await this.surdurulebilir(`${yol}?uploadType=resumable&${alanlar}`, yontem, ustBilgi, veri, `${ad}:${id ?? ''}`);
     } else {
       const sinir = 'dunya-atlasi-' + Math.random().toString(36).slice(2);
       const govde = new Blob([
@@ -84,6 +113,75 @@ export class DriveTasiyici implements Tasiyici {
     }
     const f = await r.json() as { id: string; name: string; appProperties?: Record<string, string> };
     return { id: f.id, ad: f.name, ozellikler: f.appProperties ?? {} };
+  }
+
+  /**
+   * Sürdürülebilir yükleme (TK5): içerik parça parça gönderilir. Bağlantı koparsa Drive'a ne kadarının ulaştığı sorulur
+   * ve oradan sürer; adres bu cihazda saklandığı için program yeniden açılınca da öyle. Aynı adla farklı içerik yarım
+   * yüklemeyi sürdürmesin diye adres içeriğin özetiyle eşlenir.
+   */
+  private async surdurulebilir(baslatma: string, yontem: string, ustBilgi: unknown, veri: Uint8Array, ad: string): Promise<Response> {
+    const toplam = veri.length;
+    const parca = this.secenek.parca ?? PARCA;
+    const depo = this.secenek.oturumlar;
+    const anahtar = `yukleme:${await ozet(veri)}:${ad}`;
+    const bildir = (gonderilen: number) => this.secenek.ilerleme?.({ ad, gonderilen, toplam });
+    let adres: string | null = null;
+    let gonderilen = 0;
+    try {
+      const k = JSON.parse(depo?.oku(anahtar) ?? 'null') as { adres: string; zaman: number } | null;
+      if (k && Date.now() - k.zaman < OTURUM_OMRU) adres = k.adres;
+    } catch { /* bozuk kayıt yok sayılır */ }
+    if (adres) {
+      const d = await this.yuklemeDurumu(adres, toplam);
+      if (d instanceof Response) { depo?.sil(anahtar); return d; }
+      if (d === null) { depo?.sil(anahtar); adres = null; } else gonderilen = d;
+    }
+    if (!adres) {
+      const baslat = await this.istek(baslatma, {
+        method: yontem, headers: { 'Content-Type': 'application/json; charset=UTF-8', 'X-Upload-Content-Length': String(toplam) }, body: JSON.stringify(ustBilgi),
+      });
+      adres = baslat.headers.get('Location');
+      if (!adres) throw new Error('Drive yüklemeyi başlatamadı.');
+      depo?.yaz(anahtar, JSON.stringify({ adres, zaman: Date.now() }));
+    }
+    let hata = 0;
+    try {
+      for (;;) {
+        bildir(gonderilen);
+        const son = Math.min(gonderilen + parca, toplam);
+        let r: Response | null = null;
+        try {
+          r = await this.getir(adres, {
+            method: 'PUT', body: veri.subarray(gonderilen, son) as BodyInit,
+            headers: { 'Content-Range': `bytes ${gonderilen}-${son - 1}/${toplam}` },
+            signal: AbortSignal.any([this.iptalci.signal, AbortSignal.timeout(PARCA_SURESI)]),
+          });
+        } catch { if (this.iptalci.signal.aborted) throw new Error('Drive bağlantısı kesildi.'); }
+        if (r?.ok) { depo?.sil(anahtar); return r; }
+        if (r?.status === 308) { gonderilen = alinan(r) ?? son; hata = 0; continue; }
+        if (r?.status === 401) throw new IzinHatasi('Google izni yenilenmeli.');
+        if (r && (r.status === 404 || r.status === 410)) { depo?.sil(anahtar); throw new Error('Drive yüklemeyi yarıda bıraktı; sonraki eşitlemede yeniden başlar.'); }
+        if (r && r.status < 500 && r.status !== 429) throw new Error(`Drive işlemi tamamlanamadı (hata ${r.status}).`);
+        // Bağlantı koptu, süre doldu ya da Drive geçici hata verdi: ne kadarının ulaştığını sor, oradan sür.
+        if (++hata > 5) throw new Error('Drive\'a ulaşılamadı. Yükleme kaldığı yerden sonraki eşitlemede sürecek.');
+        await this.bekle(1000 * 2 ** (hata - 1));
+        const d = await this.yuklemeDurumu(adres, toplam).catch(() => gonderilen);
+        if (d instanceof Response) { depo?.sil(anahtar); return d; }
+        if (d === null) { depo?.sil(anahtar); throw new Error('Drive yüklemeyi yarıda bıraktı; sonraki eşitlemede yeniden başlar.'); }
+        gonderilen = d;
+      }
+    } finally { this.secenek.ilerleme?.(null); }
+  }
+
+  /** Yarım yüklemenin durumu: Drive'a ulaşan bayt sayısı, tamamlandıysa yanıt, adres geçersizse null. */
+  private async yuklemeDurumu(adres: string, toplam: number): Promise<number | Response | null> {
+    const r = await this.getir(adres, { method: 'PUT', headers: { 'Content-Range': `bytes */${toplam}` }, signal: AbortSignal.any([this.iptalci.signal, AbortSignal.timeout(PARCA_SURESI)]) });
+    if (r.ok) return r;
+    if (r.status === 308) return alinan(r) ?? 0;
+    if (r.status === 404 || r.status === 410) return null;
+    if (r.status === 401) throw new IzinHatasi('Google izni yenilenmeli.');
+    throw new Error(`Drive işlemi tamamlanamadı (hata ${r.status}).`);
   }
 
   async sil(id: string): Promise<void> {

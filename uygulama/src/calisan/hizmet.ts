@@ -18,6 +18,7 @@ import { kararGecerli, turBul, turGecerli } from '../alan/turler';
 import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
+import type { DriveSecenekleri, YuklemeIlerlemesi } from './drive';
 import { KurulumVt } from './kurulum-vt';
 import { DonemselYedek, donemselDurum, type YedekTasiyici } from './donemsel-yedek';
 import { metinBelgesi, takvimOku, yonlendir, zamanSetiOku } from './izdusum';
@@ -277,6 +278,16 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     };
   }
 
+  private yukleme: YuklemeIlerlemesi | null = null;
+
+  /** Drive taşıyıcısının büyük dosya yüklemesi için: yarım yükleme adresleri bu kurulumda, ilerleme eşitleme durumunda. */
+  yuklemeSecenekleri(): DriveSecenekleri {
+    return {
+      oturumlar: { oku: (k) => this.kurulum.ayar(k) ?? null, yaz: (k, v) => this.kurulum.ayarYaz(k, v), sil: (k) => this.kurulum.ayarSil(k) },
+      ilerleme: (i) => { this.yukleme = i; },
+    };
+  }
+
   /** Uzak depoyu bağlar (Google izni gelince) ya da kaldırır. */
   tasiyiciAyarla(t: Tasiyici | null, yedek: YedekTasiyici | null = null) {
     this.esitleme = t ? new Esitleme(this.esitlemeErisimi(), t) : null;
@@ -361,6 +372,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const es = this.esitleme ?? new Esitleme(this.esitlemeErisimi(), null);
     return {
       bagli: !!this.esitleme, calisiyor: !!this.esitlemeSuruyor, hata: this.esitlemeHatasi,
+      yukleme: this.yukleme && { gonderilen: this.yukleme.gonderilen, toplam: this.yukleme.toplam },
       kurulum: { kod: this.kurulum.kod, ad: this.kurulum.ad },
       evrenler: this.kurulum.evrenler().map((e) => es.durum(e.kod, e.ad)),
     };

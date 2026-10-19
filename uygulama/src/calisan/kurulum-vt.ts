@@ -45,6 +45,7 @@ export class KurulumVt {
   ayarYaz(k: string, v: string) {
     this.db.exec({ sql: 'INSERT INTO ayar VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v', bind: [k, v] });
   }
+  ayarSil(k: string) { this.db.exec({ sql: 'DELETE FROM ayar WHERE k=?', bind: [k] }); }
 
   /** Metin kurtarma taslakları (§10.7): yalnızca bu cihazda, evren verisi değildir. */
   taslak(k: string): string | null { return (this.db.selectValue('SELECT v FROM taslaklar WHERE k=?', [k]) as string | undefined) ?? null; }

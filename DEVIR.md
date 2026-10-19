@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 78 dosya, 446 sınama, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 79 dosya, 450 sınama, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -132,15 +132,25 @@ Arayüzü değiştirenler önce seçenekli taslakla kullanıcıya gösterilir (�
 5. **Bağlam panelinde boş durum:** tarih ve karakter yokken uzun açıklamalar yerine tek kısa cümle ve ilgili eylem; ayrıntı rehbere, okur bilgisi içerik oluşana kadar katlı. *Yapılacak; taslak gerekir.*
 6. **Kayıt / eşitleme / yedek özeti:** "Bu cihazda kaydedildi · Drive'a gönderilecek N değişiklik · Son doğrulanan yedek …" tek bakışta; eşitlendi ile yedek var ayrı söylenir; uzun süre yedek yoksa yazıyı kesmeyen hatırlatma. *Yapılacak; taslak gerekir.*
 7. **Windows uygulamasına geçiş:** PR #1 güncel `main`'i (rehber, Türkçe, bu düzeltmeler) içermiyor; birleştirmeden önce `main` dala alınır. Kabul akışı: tam yedek → uygulamaya ayrı evren olarak yükle → metin/görsel denetimi; eski kopya korunur. Ayarlarda görünen sürüm ve derleme tarihi. Gerçek kurulumda: açılış, yeniden açılış, ikinci başlatma, yedek, geri yükleme, EPUB/PDF, Google izin yenilemesi. *Yapılacak (§3.2'deki PR'a bağlı).*
-8. **Büyük görselde kaldığı yerden yükleme:** `drive.ts` sürdürülebilir oturum açıp tek parça gönderiyor (§3.3-3'te zaten var). İlerleme, iptal, süre sınırı ve kesintiden sonra devam sınaması. *Yapılacak; ilk üç maddeden sonra.*
+8. **Büyük görselde kaldığı yerden yükleme:** `drive.ts` sürdürülebilir oturum açıp tek parça gönderiyor (§3.3-3'te zaten var). İlerleme, iptal, süre sınırı ve kesintiden sonra devam sınaması. *Yapıldı, bkz. §3.2f.*
 9. **Kullanıcı akışı ve hata anı sınamaları:** küçük bir tarayıcı sınaması grubu (yeni evren/sahne, yaz-yeniden aç, `[[` bağlantısı, rehber paneli, yedek ve ayrı evren olarak geri yükleme); kayıt sürerken sahne değiştirme, taslak yazılamazken kapatma, süreç öldürme, yedekten dönüşte karşılaştırma, iki kopyada çatışma. Kapanışta taslak yazımı çalışana asenkron gider; yazıldığı ayrıca kanıtlanmalı. *Yapılacak.*
 10. **Performans ve bakım:** temsili büyük evrende (ör. 50.000 işlem) açılış, arama, sahne değiştirme, kaydetme, yeniden kurma, yedekten dönüş süreleri ölçülür (§3.3-3'teki ölçümle aynı iş). `hizmet.ts`, `izdusum.ts`, `api.ts` baştan yazılmaz; bir hata düzeltilirken ilgili kısım küçük modüle taşınır. Seyrek açılan ekranların ihtiyaç anında yüklenmesi değerlendirilir. *Öneri.*
+
+### 3.2f Sürmekte olan iş: raporun 5, 6, 8, 9. maddeleri (19 Ekim 2026)
+
+Kullanıcı "şu 4'ü de yap" dedi (5, 6, 8, 9). 5 ve 6 ekranı değiştirir: önce taslak; kullanıcı aynı anda "rehberli arayüz" yaklaşımı gönderdi (ayrı konu, uyarlama önerisi hazırlanıyor), 5 ve 6'nın taslakları o yaklaşımla uyumlu olacak ve ekran kodu o öneri netleşince yazılacak.
+
+- [x] **8. Büyük dosyada kaldığı yerden yükleme (TK5):** `drive.ts` artık 5 MB üstünü 8 MB'lık parçalarla gönderiyor; bağlantı koparsa, parça 2 dakikada bitmezse ya da Drive geçici hata verirse ulaşan bayt sorulup oradan sürüyor (en çok 5 deneme). Yükleme adresi kurulum veritabanında (`ayar`, `yukleme:<içerik özeti>:<ad>:<id>`) saklanıyor; program kapanıp açılınca da sürer, aynı adla farklı içerik sürdürmez, Drive adresi unuttuysa yeniden başlar. Bağlantı kesilince (`baglantiyiKes`) sürmekte olan istekler durur. İlerleme eşitleme durumunda (`yukleme`) ve alttaki eşitleme özetinde "Büyük dosya gönderiliyor · %40". Sınama `test/drive-yukleme.test.ts` (sahte Drive). Gerçek Drive'da denenmedi: 308 yanıtındaki `Range` başlığı tarayıcıdan okunamazsa ulaşan kısım 0 sayılır (doğru ama baştan gönderir)
+- [ ] **9. Kullanıcı akışı ve hata anı sınamaları:** tarayıcı sınaması grubu (Playwright) ve kayıt güvenilirliği sınırları
+- [ ] **5. Bağlam panelinde boş durum:** taslak, rehberli arayüz önerisiyle uyumlu
+- [ ] **6. Kayıt / eşitleme / yedek özeti:** taslak, rehberli arayüz önerisiyle uyumlu
+- [ ] Kullanıcı seçince 5 ve 6'yı kodla; DEVIR, zip, bilgisayardaki klasör
 
 ### 3.3 Kalan işler (önerilen sıra)
 
 1. **Tablet ve iPhone** (§14.3): kullanıcı 19 Ekim 2026'da süresiz erteledi; şimdilik yalnız Windows tarafına odaklanılıyor.
 2. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
-3. **Dış güvenilirlik eleştirisinin kalanları** (analiz: proje klasöründe `analiz/guvenilirlik-plani-analizi.md`): yapılanlar yukarıda. Tablet / iPhone ertelendiği için bekleyenler: ana ekran uygulaması (uygulama tanımı, çevrimdışı katman, Cloudflare Pages yayını, "güncelleme hazır" davranışı) ve büyük dosyada gerçekten kaldığı yerden yükleme (`drive.ts` tek parça gönderiyor, TK5 tersini söylüyor). Komut paleti §5.8'deki "iki mekân arası yolculuk süresi" ve "takvim günü hesabı" komutlarını henüz açmıyor (sayfalar ve görünümler artık bulunuyor). İsteğe bağlı: yeniden kurma süresini 50.000 işlemle ölçmek (`evren-vt.ts` geçmişe düşen işlem gelince bütün günlüğü baştan uygular)
+3. **Dış güvenilirlik eleştirisinin kalanları** (analiz: proje klasöründe `analiz/guvenilirlik-plani-analizi.md`): yapılanlar yukarıda. Tablet / iPhone ertelendiği için bekleyenler: ana ekran uygulaması (uygulama tanımı, çevrimdışı katman, Cloudflare Pages yayını, "güncelleme hazır" davranışı) Komut paleti §5.8'deki "iki mekân arası yolculuk süresi" ve "takvim günü hesabı" komutlarını henüz açmıyor (sayfalar ve görünümler artık bulunuyor). İsteğe bağlı: yeniden kurma süresini 50.000 işlemle ölçmek (`evren-vt.ts` geçmişe düşen işlem gelince bütün günlüğü baştan uygular)
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
 

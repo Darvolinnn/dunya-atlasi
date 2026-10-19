@@ -39,11 +39,14 @@ export function EsitlemeSaglayici({ istemci, children }: { istemci: Istemci; chi
   const esitle = async () => {
     if (!bagliRef.current) { yenile(); return; }
     setDurum((d) => d && { ...d, calisiyor: true });
+    // Büyük görsel gönderilirken ilerleme görünsün.
+    const izle = setInterval(yenile, 2000);
     try {
       const d = await istemci.iste('esitle');
       bagliRef.current = d.bagli;
       setDurum(d);
     } catch (e) { setHata((e as Error).message); yenile(); }
+    finally { clearInterval(izle); }
   };
 
   const baglan = async () => {
@@ -115,7 +118,7 @@ export function EsitlemeOzeti() {
   let metin: string;
   if (!d.bagli && !e.eposta) metin = 'Drive\'a bağlı değil';
   else if (!d.bagli) metin = yalniz ? `${yalniz} değişiklik yalnızca bu cihazda` : 'Drive izni yenilenmeli';
-  else if (d.calisiyor) metin = 'Eşitleniyor…';
+  else if (d.calisiyor) metin = d.yukleme ? `Büyük dosya gönderiliyor · %${Math.floor((100 * d.yukleme.gonderilen) / d.yukleme.toplam)}` : 'Eşitleniyor…';
   else if (d.hata) metin = `Eşitlenemedi: ${d.hata.mesaj}`;
   else if (yalniz) metin = `${yalniz} değişiklik yalnızca bu cihazda`;
   else metin = son ? `Drive'a gönderildi · ${saatYaz(son)}` : 'Drive\'a bağlı';

@@ -779,6 +779,8 @@ export type Catisma =
       a: { basliklar: Basliklar; kurulum: string; zaman: number }; b: { basliklar: Basliklar; kurulum: string; zaman: number } };
 export interface EsitlemeDurumu {
   bagli: boolean; calisiyor: boolean; hata: { mesaj: string; izin: boolean; zaman: number } | null;
+  /** Sürmekte olan büyük dosya yüklemesi (TK5). */
+  yukleme?: { gonderilen: number; toplam: number } | null;
   kurulum: { kod: string; ad: string };
   evrenler: EvrenEsitlemeDurumu[];
 }
