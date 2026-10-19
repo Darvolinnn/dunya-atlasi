@@ -18,6 +18,8 @@ import { Gorsel } from './gorsel';
 import { MetinGorunumu } from './MetinEditoru';
 import { git } from './Uygulama';
 import { ANA_SAYFALAR, DIGER_SAYFALAR, GORUNUMLER } from './Kabuk';
+import { yazarlikRehberiAc } from './YazarlikRehberi';
+import { YAZARLIK_KONULARI } from './yazarlik-rehberi';
 import { HesapPenceresi, type HesapTuru } from './Hesaplar';
 import type { YasananSure } from '../veri/api';
 
@@ -439,13 +441,15 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
         if (!sorgu.trim() && !['yaz', 'masa', 'kayitlar'].includes(k)) continue;
         komutlar.push({ anahtar: 's-' + k, baslik: ad, aciklama: k === 'masa' ? 'Kaldığınız yer, son düzenlenenler' : k === 'yaz' ? 'Eserler, bölümler ve sahneler' : 'Sayfa', yap: () => git(`/e/${evren}/${k}`) });
       }
-      if (sorgu.trim()) for (const [k, ad] of GORUNUMLER) komutlar.push({ anahtar: 'g-' + k, baslik: ad, aciklama: 'Görünüm', yap: () => git(`/e/${evren}/${k}`) });
+      if (sorgu.trim()) for (const [k, ad] of GORUNUMLER) komutlar.push({ anahtar: 'g-' + k, baslik: ad, aciklama: 'Grafik', yap: () => git(`/e/${evren}/${k}`) });
       if (baglam.hesap) {
         komutlar.push({ anahtar: 'h-yolculuk', baslik: 'Yolculuk süresi', aciklama: 'İki yer arası, kayıtlı rotalarla', yap: () => baglam.hesap!('yolculuk') });
         komutlar.push({ anahtar: 'h-takvim', baslik: 'Takvim günü hesabı', aciklama: 'Tarihe gün ya da yıl ekleme, iki tarih arası gün sayısı', yap: () => baglam.hesap!('takvim') });
       }
       if (d.yanPanel.length) komutlar.push({ anahtar: 'panel-kapat', baslik: 'Yan paneli kapat', yap: () => d.yanPanelKapat() });
     }
+    komutlar.push({ anahtar: 'yazarlik', baslik: 'Yazarlık rehberi', aciklama: 'Roman ve seri yazmak için araçlar', yap: () => yazarlikRehberiAc() });
+    if (sorgu.trim()) for (const k of YAZARLIK_KONULARI) komutlar.push({ anahtar: 'y-' + k.no, baslik: k.baslik, aciklama: 'Yazarlık rehberi', yap: () => yazarlikRehberiAc(k.no) });
     komutlar.push({ anahtar: 'evrenler', baslik: 'Evrenler', yap: () => git('/') });
     komutlar.push({ anahtar: 'esitleme', baslik: 'Eşitleme ve cihazlar', yap: () => git('/esitleme') });
     const kayitlar: Oge[] = (sorgu.trim() ? bulunan : son).map((k) => ({

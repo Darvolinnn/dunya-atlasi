@@ -223,3 +223,22 @@ test('yeni evrende "İlk adımlar" yapıldıkça ilerler; gizlenince gizli kalı
   await expect(p.getByRole('heading', { name: 'Yaz' })).toBeVisible();
   await expect(liste).toBeHidden();
 });
+
+test('yazarlık rehberi sayfa rehberinden ve komut paletinden açılır, Esc ile kapanır', async ({ page: p }) => {
+  await p.addInitScript(() => { window.requestAnimationFrame = () => 0; });
+  await sahneAc(p);
+  await p.getByRole('button', { name: 'Bu sayfa ne işe yarar?' }).click();
+  await p.getByRole('link', { name: 'Yazarlık rehberinin bütün konuları' }).click();
+  const rehber = p.getByRole('complementary', { name: 'Yazarlık rehberi' });
+  await expect(rehber).toBeVisible();
+  await rehber.getByRole('link', { name: 'Sahnede amaç, engel, sonuç' }).click();
+  await expect(rehber.getByRole('heading', { name: 'Sahnede amaç, engel, sonuç' })).toBeVisible();
+  await rehber.getByText('Ayrıntı ve örnekler').click();
+  await expect(rehber.getByRole('heading', { name: 'Yanıltıcı örnek' })).toBeVisible();
+  await p.keyboard.press('Escape');
+  await expect(rehber).toBeHidden();
+  await p.keyboard.press('Control+k');
+  await p.getByLabel('Kayıt ya da komut ara').fill('hikâyenin çekirdeği');
+  await p.keyboard.press('Enter');
+  await expect(rehber.getByRole('heading', { name: 'Hikâyenin çekirdeği (tek cümlelik özet)' })).toBeVisible();
+});

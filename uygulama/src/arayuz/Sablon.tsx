@@ -4,6 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AlanVarsayilani, BoslukTuru, Kayit, KayitSablonu, MeseleListesi, SablonBilgisi, SoruSatiri } from '../veri/api';
 import { EN_COK_HASSASIYET, NICELIK_TURLERI, sayiDegeriMi, sayiMetni } from '../alan/nicelik';
+import { SET_KONULARI, yazarlikRehberiAc } from './YazarlikRehberi';
 import { ALAN_TURLERI, VARSAYILAN_EKSENLERI, EVREN_SETLERI, MESELE_DURUMLARI, SORU_SETLERI, soruSetiBul, yeniAlanKodu, type Sablon, type SablonAlani, type Secenek } from '../alan/sablon';
 import { tarihAciklamasi, tarihCoz, type EvrenTarihi, type TakvimYa } from '../alan/tarih';
 import { TURLER, turBul } from '../alan/turler';
@@ -212,7 +213,13 @@ export function SoruBolumu({ istemci, evren, kayit, ks }: { istemci: Istemci; ev
   if (!ks) return null;
   const sablondakiler = new Set(ks.sablon.sorular.map((q) => q.kod));
   const eklenebilir = SORU_SETLERI.filter((s) => !EVREN_SETLERI.includes(s.kod) && !ks.setler.includes(s.kod) && !s.sorular.every((q) => sablondakiler.has(q.kod)));
-  const gruplar: [string, string | null, SoruSatiri[]][] = [['', null, ks.sorular.filter((q) => !q.set && !q.eski)],
+  // Şablondaki sorular birden çok programla gelen setten geliyorsa (eserde "Hikâye çekirdeği" ve "Bu kitabın görevi") ayrı başlıklarla durur.
+  const sablonSorulari = ks.sorular.filter((q) => !q.set && !q.eski);
+  const onek = (q: SoruSatiri) => soruSetiBul(q.kod.split('.')[0]) ? q.kod.split('.')[0] : '';
+  const parcalar: [string, SoruSatiri[]][] = [];
+  for (const q of sablonSorulari) { const o = onek(q); if (parcalar.length && parcalar[parcalar.length - 1][0] === o) parcalar[parcalar.length - 1][1].push(q); else parcalar.push([o, [q]]); }
+  const cokParca = parcalar.length > 1;
+  const gruplar: [string, string | null, SoruSatiri[]][] = [...(cokParca ? parcalar.map(([o, l]) => [o ? soruSetiBul(o)!.ad : '', null, l] as [string, string | null, SoruSatiri[]]) : [['', null, sablonSorulari] as [string, string | null, SoruSatiri[]]]),
     ...ks.setler.map((s) => [soruSetiBul(s)!.ad, s, ks.sorular.filter((q) => q.set === s)] as [string, string, SoruSatiri[]]),
     ['Şablondan çıkarılmış sorular', null, ks.sorular.filter((q) => q.eski)]];
   return (
@@ -222,9 +229,14 @@ export function SoruBolumu({ istemci, evren, kayit, ks }: { istemci: Istemci; ev
         <p class="soluk kucuk">Hepsi isteğe bağlı. Cevaplayabilir, sonraya bırakabilir, bu kayıtla ilgisiz sayabilir ya da yeni bir kayıt oluşturarak cevaplayabilirsiniz.
           {' '}<a href={`#/e/${evren}/sablonlar/${kayit.tur}`}>{turBul(kayit.tur).ad} şablonunu düzenle</a></p>
         {gruplar.filter(([, , l]) => l.length).map(([ad, set, liste]) => (
-          <div key={ad || 'sablon'} class="soru-grubu">
-            {ad && <div class="satir"><strong class="kucuk">{ad}</strong><span class="bosluk" />
-              {set && <button class="dugme sade kucuk" onClick={() => istemci.iste('kayitSoruSeti', { evren, kod: kayit.kod, set, ekle: false })}>Bu soru setini çıkar</button>}</div>}
+          <div key={(ad || 'sablon') + liste[0].kod} class="soru-grubu">
+            {(() => {
+              // Programla gelen setin rehber konusu; şablondaki sorular için soru kodunun önekinden bulunur.
+              const konu = SET_KONULARI[set ?? liste[0].kod.split('.')[0]];
+              const neden = konu ? <button class="dugme sade kucuk" onClick={() => yazarlikRehberiAc(konu)}>Bu sorular neden?</button> : null;
+              return (ad || neden) && <div class="satir">{ad && <strong class="kucuk">{ad}</strong>}<span class="bosluk" />{neden}
+                {set && <button class="dugme sade kucuk" onClick={() => istemci.iste('kayitSoruSeti', { evren, kod: kayit.kod, set, ekle: false })}>Bu soru setini çıkar</button>}</div>;
+            })()}
             <ul class="soru-listesi">{liste.map((q) => <SoruSatir key={q.kod} istemci={istemci} evren={evren} kod={kayit.kod} q={q} hata={setHata} />)}</ul>
           </div>
         ))}

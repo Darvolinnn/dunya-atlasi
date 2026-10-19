@@ -872,3 +872,10 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .ilk-adimlar ol { margin: 10px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
 .ilk-adimlar li.tamam { color: var(--metin-2); text-decoration: line-through; }
 .ilk-adimlar li.sirada { font-weight: 600; }
+
+/* Yazarlık rehberi (K27): sayfa rehberiyle aynı yan panel. */
+.yazarlik-rehberi { z-index: 36; }
+.yazarlik-listesi { padding-left: 22px; }
+.yazarlik-ayrinti { margin-top: 12px; border-top: 1px solid var(--cizgi); padding-top: 8px; }
+.yazarlik-ayrinti > summary { cursor: pointer; color: var(--metin-2); font-size: 0.92rem; }
+.yazarlik-ayrinti[open] > summary { margin-bottom: 4px; }

@@ -162,7 +162,7 @@ Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda
 - [x] K27 tasarıma girdi (§1.1); kavram modeli paket paket işlenecek.
 - [x] P2 (ilk kısım): eser (`cekirdek`, `eser`), sahne (`sahne_plani`) ve kurgu hattı (`hat`) soru setleri varsayılan; Ek A, §4.6; `test/anlati-sorulari.test.ts`. Şablonu değiştirilmiş evrende kendiliğinden eklenmez.
 - [ ] P2 (kalan): Yaz ekranında bağlam panelinin üstünde katlı "Sahne planı" (önce ekran görüntüsü). `seri` seti P4 ile.
-- [ ] P1: yazarlık rehberi programın içinde (yan panel, "Neden?/Örnek"); önce ekran görüntüsü.
+- [x] P1: yazarlık rehberi programın içinde (§12.4): `arayuz/YazarlikRehberi.tsx`, metinler `arayuz/yazarlik-rehberi.ts` (analiz belgesinden üretildi; belge değişirse yeniden üretilmeli: başlıklar `### Konu N — …`, alanlar `**Ne:**` biçiminde). Soru başına "Örnek" henüz yok. Ekran görüntüleri kullanıcı onayı bekliyor (PR #6).
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
 
 ## 4. Kod yapısı ve yeni bir özellik ekleme tarifi
