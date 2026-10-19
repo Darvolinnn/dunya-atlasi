@@ -120,6 +120,17 @@ export interface UygulananKurallar {
   kisi: KisaKayit; yer: KisaKayit; tarih: EvrenTarihi | null; kurallar: UygulananKural[];
   catismalar: { konu: string; kurallar: string[] }[]; yerler: KisaKayit[]; yonetimler: KisaKayit[];
 }
+/** Kesintiye dayanıklılık (F10): bağın ne kadar dayanabileceği (aralık) ve ikamesi. */
+export interface Dayaniklilik { enAz: number | null; enCok: number | null; birim: 'gun' | 'hafta' | 'ay' | 'yil'; ikame: string | null; not: string }
+export interface KesintiAdimi {
+  kayit: KisaKayit; derinlik: number; neden: string; yol: KisaKayit[]; iliski: string | null;
+  dayaniklilik: (Dayaniklilik & { ikameKayit: KisaKayit | null }) | null; digerKaynaklar: KisaKayit[];
+}
+export interface KesintiZinciri { kaynak: KisaKayit; adimlar: KesintiAdimi[]; not: string }
+export interface UretimOzeti {
+  urun: KisaKayit; ureten: KisaKayit[]; girdiler: KisaKayit[]; kullananUrunler: KisaKayit[];
+  fazlasiOlan: KisaKayit[]; acigiOlan: KisaKayit[]; tasiyanYollar: KisaKayit[]; bagimlilar: KisaKayit[];
+}
 export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
 export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
 export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
@@ -650,6 +661,9 @@ export interface Istekler {
   hukukKuraliYaz(a: { evren: string; kod: string; tanim: Omit<HukukTanimi, 'baslangic' | 'bitis'> & { baslangic: string; bitis: string } }): void;
   hukukKuraliSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   uygulananKurallar(a: { evren: string; kisi: string; yer: string; tarih?: string | null }): UygulananKurallar;
+  kesintiZinciri(a: { evren: string; kaynak: string }): KesintiZinciri;
+  uretimOzeti(a: { evren: string; urun: string }): UretimOzeti;
+  dayaniklilikYaz(a: { evren: string; iliski: string; deger: Dayaniklilik | null }): void;
   geciselKayitlar(a: { evren: string; kok: string; eksen: GeciselEksen }): GeciselSonuc[];
   altBirimlerdenToplananlar(a: { evren: string; kod: string }): ToplananKayit[];
   fetihCevabi(a: { evren: string; kod: string; gecis: string; alan: string; cevap: { durum: FetihCevabi['durum']; tarih?: string } | null }): void;

@@ -13,6 +13,7 @@ import { KayitIzleri } from './Sureklilik';
 import { KayitMasalari } from './Masalar';
 import { AltBirimlerdenToplananlar } from './Kapsama';
 import { HUKUK_SAHIPLERI, HukukKurallariBolumu, UygulananKurallarAraci } from './Hukuk';
+import { KESINTI_TURLERI, KesintiBolumu, UretimOzetiBolumu } from './Uretim';
 import { MakamYurutenleri, OlaySurecBolumu, SUREC_SAHIPLERI, SurecKurallariBolumu } from './Surec';
 import { git } from './Uygulama';
 import { CatismaListesi } from './Catismalar';
@@ -149,6 +150,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
         <KayitMeseleleri istemci={istemci} evren={evren} kayit={kayit} />
         <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />
+        {kayit.tur === 'urun' && <UretimOzetiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+        {KESINTI_TURLERI.includes(kayit.tur) && <KesintiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         <AltBirimlerdenToplananlar istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} surum={surum} />
         <KayitDegisimleri istemci={istemci} evren={evren} kod={kod} surum={surum} />
         <KayitMasalari istemci={istemci} evren={evren} kod={kod} surum={surum} />

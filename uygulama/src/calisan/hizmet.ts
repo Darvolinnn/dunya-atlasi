@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { Dayaniklilik, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -36,6 +36,7 @@ import * as varsayilanMod from './varsayilan';
 import * as kapsama from './kapsama';
 import * as surec from './surec';
 import * as hukuk from './hukuk';
+import * as uretim from './uretim';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -343,7 +344,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const gruplar = e.db.selectObjects(
       `SELECT nesne, alan FROM alan_yazanlari ${kod ? `WHERE nesne=?1 OR nesne IN (SELECT kod FROM iliskiler WHERE a=?1 OR b=?1) OR nesne IN (SELECT kod FROM durumlar WHERE konu=?1)
          OR nesne IN (SELECT kod FROM isaretler WHERE kayit=?1) OR nesne IN (SELECT kod FROM cizimler WHERE kayit=?1) OR nesne IN (SELECT kod FROM haritalar WHERE yer=?1)
-         OR nesne IN (SELECT kod FROM iddialar WHERE konu=?1) OR nesne IN (SELECT kod FROM bilgiler WHERE bilen=?1) OR nesne IN (SELECT kod FROM izler WHERE konu=?1)` : ''}
+         OR nesne IN (SELECT kod FROM iddialar WHERE konu=?1) OR nesne IN (SELECT kod FROM bilgiler WHERE bilen=?1) OR nesne IN (SELECT kod FROM izler WHERE konu=?1)
+         OR nesne IN (SELECT kod FROM surec_kurallari WHERE sahip=?1) OR nesne IN (SELECT kod FROM hukuk_kurallari WHERE sahip=?1)` : ''}
        GROUP BY nesne, alan HAVING count(DISTINCT deger) > 1`, kod ? [kod] : []);
     for (const g of gruplar) {
       const nesne = g.nesne as string;
@@ -369,6 +371,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (bir) {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: bir.bilen as string, baslik: `${kayitAdi(bir.bilen as string)} · “${bir.soru}” bilgisi`,
           alanEtiketi: BILGI_ALAN_ADLARI[alan] ?? alan, degerler });
+        continue;
+      }
+      if (iliski && alan === 'dayaniklilik') {
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'iliski', kayit: iliski.a as string, baslik: `${kayitAdi(iliski.a as string)} – ${kayitAdi(iliski.b as string)} ilişkisi`,
+          alanEtiketi: 'Dayanma süresi ve ikame', degerler: degerler.map((d) => ({ ...d, yazi: d.deger ? (uretim.dayanmaYazisi(d.deger as Dayaniklilik) ?? 'Süre yok') + ((d.deger as Dayaniklilik).ikame ? `, ikamesi: ${kayitAdi((d.deger as Dayaniklilik).ikame!)}` : '') : '(boş)' })) });
         continue;
       }
       const hr = iliski || dr ? undefined : e.db.selectObject('SELECT ad, yer FROM haritalar WHERE kod=?', [nesne]);
@@ -691,6 +698,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       this.yaz(evren, [{ tur: 'anlati_yerlestir', veri: { kod: nesne, ust: v?.ust ?? null, konum: v?.konum ?? null, cozum: true } }], [nesne, ...(v ? [v.ust] : [])]);
       return;
     }
+    if (iliski && alan === 'dayaniklilik') { this.yaz(evren, [{ tur: 'dayaniklilik_yaz', veri: { iliski: nesne, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
     if (iliski) { this.yaz(evren, [{ tur: 'iliski_degistir', veri: { kod: nesne, alan, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
     this.kayitVarMi(e, nesne);
     if (alan === 'tarih') this.yaz(evren, [{ tur: 'kayit_tarih', veri: { kod: nesne, tarih: deger, cozum: true } }], [nesne]);
@@ -1867,6 +1875,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   hukukKuraliYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: Omit<HukukTanimi, 'baslangic' | 'bitis'> & { baslangic: string; bitis: string } }) { hukuk.hukukKuraliYaz(this.hukukBaglami(evren), kod, tanim); }
   hukukKuraliSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { hukuk.hukukKuraliSil(this.hukukBaglami(evren), kod, !!geriYukle); }
   uygulananKurallar({ evren, kisi, yer, tarih = null }: { evren: string; kisi: string; yer: string; tarih?: string | null }) { return hukuk.uygulananKurallar(this.evren(evren), kisi, yer, tarih); }
+  // ---------- Üretim, kesinti, besin ağı (§15-5, F10) ----------
+  kesintiZinciri({ evren, kaynak }: { evren: string; kaynak: string }) { return uretim.kesintiZinciri(this.evren(evren), kaynak); }
+  uretimOzeti({ evren, urun }: { evren: string; urun: string }) { return uretim.uretimOzeti(this.evren(evren), urun); }
+  dayaniklilikYaz({ evren, iliski, deger }: { evren: string; iliski: string; deger: Dayaniklilik | null }) {
+    uretim.dayaniklilikYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, iliski, deger);
+  }
   geciselKayitlar({ evren, kok, eksen }: { evren: string; kok: string; eksen: 'kapsama' | 'bagli' | 'kultur' }) {
     if (!['kapsama', 'bagli', 'kultur'].includes(eksen)) throw new Error('Geçersiz seçim.');
     const e = this.evren(evren); this.kayitVarMi(e, kok);

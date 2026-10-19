@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 23;
+export const IZDUSUM_SURUMU = 24;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -235,6 +235,10 @@ CREATE TABLE IF NOT EXISTS hukuk_kurallari(
   silindi INTEGER
 );
 CREATE INDEX IF NOT EXISTS hukuk_kurallari_sahip ON hukuk_kurallari(sahip);
+CREATE TABLE IF NOT EXISTS dayaniklilik(
+  iliski TEXT PRIMARY KEY,
+  deger TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS masalar(
   kod TEXT PRIMARY KEY,
   ad TEXT NOT NULL,
@@ -498,7 +502,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -962,6 +966,14 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   hukuk_kurali_geri_yukle(db, i) {
     db.exec({ sql: 'UPDATE hukuk_kurallari SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+  /** Kesintiye dayanıklılık (F10): bir bağın dayanma süresi ve ikamesi. */
+  dayaniklilik_yaz(db, i) {
+    const { iliski, deger } = i.veri as { iliski: string; deger: unknown };
+    if (typeof iliski !== 'string') return;
+    if (!deger || typeof deger !== 'object') db.exec({ sql: 'DELETE FROM dayaniklilik WHERE iliski=?', bind: [iliski] });
+    else db.exec({ sql: 'INSERT OR REPLACE INTO dayaniklilik(iliski, deger) VALUES(?,?)', bind: [iliski, JSON.stringify(deger)] });
+    alanYaz(db, i, iliski, 'dayaniklilik', deger ?? null);
   },
   /** Çalışma masası (§5.9): kayıtlar kopyalanmaz, masa onlara bağlanır. */
   masa_olustur(db, i) {
