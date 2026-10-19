@@ -342,8 +342,9 @@ export interface SonrakiSoru {
   girdiler: SonrakiSoruGirdisi[]; hazir: boolean; siradaki: SonrakiSoruGirdisi | null; not: string;
 }
 /** F31 keşif sorusu: tanımlı ilişkilerden çıkan aday; "mümkün" der, "oldu" demez. */
-export interface KesifAdayi { kisiler: KisaKayit[]; yer: KisaKayit; aralik: string; yazi: string; dayanaklar: string[] }
-export interface KesifSonucu { sablon: 'farkli_inananlar'; soru: string; adaylar: KesifAdayi[]; dahaFazla: boolean; kapsam: string; not: string }
+export interface KesifAdayi { kisiler: KisaKayit[]; yer: KisaKayit | null; konu?: KisaKayit | null; aralik: string; yazi: string; dayanaklar: string[] }
+export type KesifSablonu = 'farkli_inananlar' | 'celisen_haklar';
+export interface KesifSonucu { sablon: KesifSablonu; soru: string; adaylar: KesifAdayi[]; dahaFazla: boolean; kapsam: string; not: string }
 /** F12 "neden her yerde kullanılmıyor" masası: bağlı alanlar ve her biri için yazarın dört kısa metni. */
 export interface KullanimAlani { kod: string; ad: string; kayit: string | null; maliyet: string; erisim: string; karsiOnlem: string; yasak: string }
 export interface KullanimMasasiTanimi { alanlar: KullanimAlani[] }
@@ -800,8 +801,8 @@ export interface Istekler {
   sorulabilirHesaplar(a: { evren: string; kod: string }): { hesap: SonrakiSoru['hesap']; ad: string }[];
   kullanimMasasi(a: { evren: string; kod: string }): KullanimMasasi;
   kullanimMasasiYaz(a: { evren: string; kod: string; tanim: KullanimMasasiTanimi }): void;
-  kesifSorusu(a: { evren: string; sablon: KesifSonucu['sablon']; iddia: string }): KesifSonucu;
-  kesifAdayiKaydet(a: { evren: string; bicim: 'sahne' | 'mesele'; ad: string; aciklama: string; kisiler: string[]; yer: string | null }): { kod: string };
+  kesifSorusu(a: { evren: string; sablon: KesifSablonu; iddia?: string | null }): KesifSonucu;
+  kesifAdayiKaydet(a: { evren: string; bicim: 'sahne' | 'mesele'; ad: string; aciklama: string; kisiler: string[]; yer: string | null; konu?: string | null }): { kod: string };
   sonrakiSoru(a: { evren: string; kod: string; hesap: SonrakiSoru['hesap']; nereden?: string | null; tarih?: string | null }): SonrakiSoru;
   baslat(): KurulumBilgisi;
   evrenler(): EvrenOzeti[];

@@ -2,7 +2,7 @@
 // "Mümkün" der, "oldu" demez. Aday yalnızca yazar isterse sahne fikrine ya da açık meseleye dönüşür.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { IddiaOzeti, KesifAdayi, KesifSonucu, KisaKayit } from '../veri/api';
+import type { IddiaOzeti, KesifAdayi, KesifSablonu, KesifSonucu, KisaKayit } from '../veri/api';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -16,12 +16,17 @@ export function KesifSekmesi({ istemci, evren }: { istemci: Istemci; evren: stri
   const sor = (e: Event) => {
     e.preventDefault();
     if (!iddia) return;
-    istemci.iste('kesifSorusu', { evren, sablon: 'farkli_inananlar', iddia }).then((x) => { setR(x); setHata(null); setKayitlilar({}); }, (x) => { setR(null); setHata(hataYaz(x)); });
+    getir('farkli_inananlar');
   };
+  const getir = (sablon: KesifSablonu) => istemci.iste('kesifSorusu', { evren, sablon, iddia: sablon === 'farkli_inananlar' ? iddia : null })
+    .then((x) => { setR(x); setHata(null); setKayitlilar({}); }, (x) => { setR(null); setHata(hataYaz(x)); });
   const bag = (k: KisaKayit) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
   const kaydet = (i: number, a: KesifAdayi, bicim: 'sahne' | 'mesele') => {
-    const ad = bicim === 'sahne' ? `${a.kisiler.map((k) => k.ad).join(' ile ')}, ${a.yer.ad}` : `${a.kisiler.map((k) => k.ad).join(' ile ')} ${a.yer.ad} içinde karşılaştı mı?`;
-    istemci.iste('kesifAdayiKaydet', { evren, bicim, ad, aciklama: `${a.yazi} (${a.aralik})`, kisiler: a.kisiler.map((k) => k.kod), yer: a.yer.kod })
+    const kimler = a.kisiler.map((k) => k.ad).join(' ile ');
+    const ad = a.yer
+      ? bicim === 'sahne' ? `${kimler}, ${a.yer.ad}` : `${kimler} ${a.yer.ad} içinde karşılaştı mı?`
+      : bicim === 'sahne' ? `${kimler}: ${a.konu?.ad ?? ''}` : `${a.konu?.ad ?? ''} üzerinde kimin hakkı geçerli?`;
+    istemci.iste('kesifAdayiKaydet', { evren, bicim, ad, aciklama: `${a.yazi} (${a.aralik})`, kisiler: a.kisiler.map((k) => k.kod), yer: a.yer?.kod ?? null, konu: a.konu?.kod ?? null })
       .then((x) => { setKayitlilar({ ...kayitlilar, [i]: { kod: x.kod, bicim } }); setHata(null); }, (x) => setHata(hataYaz(x)));
   };
   return (
@@ -41,6 +46,10 @@ export function KesifSekmesi({ istemci, evren }: { istemci: Istemci; evren: stri
           </div>
         ) : <p class="soluk kucuk">Henüz soru yok. Bir kaydın sayfasında “Soru ekle” ile soru ve kimin neye inandığını yazın.</p>}
       </form>
+      <div class="kart">
+        <p><strong>Aynı şey üzerinde çelişen hak iddiası olanlar kim?</strong></p>
+        <button class="dugme ana kucuk" type="button" onClick={() => getir('celisen_haklar')}>Çelişen hakları göster</button>
+      </div>
       {hata && <p class="hata kucuk">{hata}</p>}
       {r && (
         <div class="kesif-sonucu">
@@ -48,7 +57,7 @@ export function KesifSekmesi({ istemci, evren }: { istemci: Istemci; evren: stri
           {!r.adaylar.length && <p class="kucuk">Kayıtlı yer ve tarihlerde örtüşen bir aday bulunmadı.</p>}
           <ul class="kesif-adaylari">{r.adaylar.map((a, i) => (
             <li key={i} class="kart">
-              <div><strong>{a.aralik}</strong> · {bag(a.yer)} · {a.kisiler.map((k, j) => <>{j ? ' ile ' : ''}{bag(k)}</>)}</div>
+              <div><strong>{a.aralik}</strong> · {a.yer ? bag(a.yer) : a.konu ? bag(a.konu) : null} · {a.kisiler.map((k, j) => <>{j ? ' ile ' : ''}{bag(k)}</>)}</div>
               <div class="kucuk">{a.yazi}</div>
               <div class="soluk kucuk">Dayanak: {a.dayanaklar.join('; ')}</div>
               {kayitlilar[i] ? <p class="kucuk">Kaydedildi: <a href={`#/e/${evren}/k/${kayitlilar[i].kod}`}>{kayitlilar[i].bicim === 'sahne' ? 'sahne fikri' : 'açık mesele'}</a></p> : (

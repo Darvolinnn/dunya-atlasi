@@ -44,7 +44,7 @@ import * as soyMod from './soy';
 import * as montaj from './montaj';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
-import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu } from '../veri/api';
+import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu } from '../veri/api';
 import * as haklar from './haklar';
 import * as sozluk from './sozluk';
 import * as anlatim from './anlatim';
@@ -2303,17 +2303,19 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   kullanimMasasiYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: KullanimMasasiTanimi }) {
     kullanim.kullanimMasasiYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod, tanim);
   }
-  kesifSorusu({ evren, sablon, iddia }: { evren: string; sablon: 'farkli_inananlar'; iddia: string }) {
+  kesifSorusu({ evren, sablon, iddia }: { evren: string; sablon: KesifSablonu; iddia?: string | null }) {
+    if (sablon === 'celisen_haklar') return kesif.celisenHaklar(this.durumBaglami(evren));
     if (sablon !== 'farkli_inananlar') throw new Error('Bilinmeyen soru şablonu.');
+    if (typeof iddia !== 'string' || !iddia) throw new Error('Bir soru seçin.');
     return kesif.farkliInananlar(this.evren(evren), iddia);
   }
   /** Keşif adayını yazarın isteğiyle bir sahne fikrine ya da açık meseleye dönüştürür (tek işlem grubu). */
-  kesifAdayiKaydet({ evren, bicim, ad, aciklama, kisiler, yer }: { evren: string; bicim: 'sahne' | 'mesele'; ad: string; aciklama: string; kisiler: string[]; yer: string | null }) {
+  kesifAdayiKaydet({ evren, bicim, ad, aciklama, kisiler, yer, konu = null }: { evren: string; bicim: 'sahne' | 'mesele'; ad: string; aciklama: string; kisiler: string[]; yer: string | null; konu?: string | null }) {
     const e = this.evren(evren);
     if (bicim !== 'sahne' && bicim !== 'mesele') throw new Error('Geçersiz biçim.');
     const temizAd = temizle(ad);
     if (!Array.isArray(kisiler) || !kisiler.length || kisiler.length > 10) throw new Error('Adaydaki kişiler okunamadı.');
-    for (const k of [...kisiler, ...(yer ? [yer] : [])]) this.kayitVarMi(e, k);
+    for (const k of [...kisiler, ...(yer ? [yer] : []), ...(konu ? [konu] : [])]) this.kayitVarMi(e, k);
     const kod = yeniKod();
     const girdiler: IslemGirdisi[] = [...this.kayitGirdileri(kod, { ad: temizAd, tur: bicim === 'sahne' ? 'sahne' : 'acik_mesele', karar: bicim === 'sahne' ? 'fikir' : 'kesin', ozet: temizle(aciklama, { bos: true, uzunluk: 500 }) })];
     const kisiKodlari = [...new Set(kisiler.map((k) => yonlendir(e.db, k)))];
@@ -2322,9 +2324,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (yer) girdiler.push({ tur: 'iliski_ekle', veri: { kod: yeniKod(), tur: 'sahne_yeri', a: kod, b: yonlendir(e.db, yer), karar: 'fikir' } });
     } else {
       girdiler.push({ tur: 'kayit_alan', veri: { kod, alan: 'durum', ad: 'Durum', deger: 'dusunulecek', onceki: null } });
-      for (const k of [...kisiKodlari, ...(yer ? [yonlendir(e.db, yer)] : [])]) girdiler.push({ tur: 'iliski_ekle', veri: { kod: yeniKod(), tur: 'mesele_konusu', a: kod, b: k, karar: 'kesin' } });
+      const konular = [...new Set([...kisiKodlari, ...(yer ? [yonlendir(e.db, yer)] : []), ...(konu ? [yonlendir(e.db, konu)] : [])])];
+      for (const k of konular) girdiler.push({ tur: 'iliski_ekle', veri: { kod: yeniKod(), tur: 'mesele_konusu', a: kod, b: k, karar: 'kesin' } });
     }
-    this.yaz(evren, girdiler, [kod, ...kisiKodlari, ...(yer ? [yer] : [])]);
+    this.yaz(evren, girdiler, [kod, ...kisiKodlari, ...(yer ? [yer] : []), ...(konu ? [konu] : [])]);
     return { kod };
   }
   sorulabilirHesaplar({ evren, kod }: { evren: string; kod: string }) {

@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. `main` son kayıt: bu dosyayı ekleyen kayıt. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **42**. Sınama: 52 dosya, 249 sınama, hepsi geçiyor.*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **44**. Sınama: 55 dosya, 293 sınama, hepsi geçiyor.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -41,7 +41,11 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | F08 | Delil geçmişi ve soruşturma masası | `ea19c5b` |
 | F33 | Bir sonraki yararlı soru | `238fac0` |
 | F31 | Açık verilere dayanan keşif soruları (ilk şablon) | `5111598` |
-| F12 | Neden her yerde kullanılmıyor masası | bu dosyayı güncelleyen kayıt |
+| F12 | Neden her yerde kullanılmıyor masası | `1076426` |
+| F22 | Yoğunluk ve boşluk (GPT paketi, birleştirildi) | `9165e25` |
+| F15 | Anlatı ve evren sözleşmesi (GPT paketi, birleştirildi; açık bırakılan kayıtlar "bahsedilenler" ve F33'te eksik sayılmıyor) | `dfa30d3`, `890822f` |
+| F26 | Haklar, yetkiler, yükümlülükler (GPT paketi, birleştirildi) | `6f1851c` |
+| F31 | Keşif sorularına ikinci şablon: aynı şey üzerinde çelişen hak iddiaları | bu dosyayı güncelleyen kayıt |
 
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
@@ -49,16 +53,13 @@ Bu dallar uzak depoda belirince birleştir (§6). Hiçbiri `IZDUSUM_SURUMU`'nu a
 
 | Dal | Madde | İşlem adı öneki | Tablolar | Not |
 |---|---|---|---|---|
-| `paket/haklar` | F26 haklar, yetkiler, yükümlülükler | `hak_` | `haklar`, `hak_tanimalari` | Birleşince F31'e "aynı konuda çelişen hak iddiası olanlar" şablonunu ekle. |
-| `paket/anlati-sozlesmesi` | F15 anlatı ve evren sözleşmesi | `sozlesme_` | `sozlesme_maddeleri`, `sozlesme_disarida` | Paket "açık bırakılan" kayıtları veren bir işlev dışa aktaracak (ör. `acikBirakilanKayitlar`). Birleşince bu kümeyi eksik sayan yerlere bağla: F33 (`calisan/sonraki-soru.ts`), açık meseleler ve soru setleri (`calisan/sablon.ts`). |
-| `paket/yogunluk` | F22 yoğunluk ve boşluk | (yok) | (yok) | Salt okunur. Sürüm artırmaya gerek yok. |
-| `paket/bakim` | F32 bakım ve tekrarlar | `bakim_` | `bakim_tanimlari`, `bakim_kayitlari` | Argon ajanında. |
+| `paket/bakim` | F32 bakım ve tekrarlar | `bakim_` | `bakim_tanimlari`, `bakim_kayitlari` | Argon ajanında. Birleşince `IZDUSUM_SURUMU`'nu 45 yap. |
 
 Bu paketlerin tam promptları kullanıcının proje klasöründedir; depoda değildir. Prompt yazarken kalıp olarak bu tablodaki bilgiler ve §6 yeterlidir.
 
 ### 3.3 Kalan işler (önerilen sıra)
 
-1. **Hazır olan paketleri birleştir** (§3.2), her birinden sonra sınama ve tarayıcıda deneme.
+1. **`paket/bakim` uzak depoda belirince birleştir** (§3.2), sonra sınama ve tarayıcıda deneme. Haklar, anlatı sözleşmesi ve yoğunluk paketleri birleştirildi.
 2. **F35 baskı ve uyarlama karşılaştırma**: yazar iki eser (ya da eser ile deneme kopyası) arasında eşlemeler tanımlar (iki karakter → tek karakter, olay sırası değişimi); sonraki değişiklikte etkilenebilecek eşlemeler listelenir. Hiçbir dal ötekini kendiliğinden güncellemez. Dallar için `calisan/dal.ts`, eser yapısı için `calisan/anlati.ts`.
 3. **F16 kural atölyesi**: önce **TK8** kararı gerekir. Bu karar kullanıcınındır; kodlamadan önce sor.
 4. **Bilinen boşluklar:**

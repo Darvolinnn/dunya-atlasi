@@ -7,6 +7,8 @@ import type { KesifAdayi, KesifSonucu, KisaKayit } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
 import { yonlendir, zamanSetiOku } from './izdusum';
 import { fizikselBulunmalar } from './denetim';
+import { haklar as hakListesi } from './haklar';
+import type { DurumBaglami } from './durum';
 
 const SINIR = 50;
 type Aralik = { enErken: number | null; enGec: number | null };
@@ -99,5 +101,44 @@ export function farkliInananlar(e: EvrenVt, iddiaKod: string): KesifSonucu {
     adaylar, dahaFazla,
     kapsam: `${kisiler.length} inanan, ${ciftler} farklı inanan çift incelendi.${yersiz.size ? ` ${yersiz.size} kişinin kayıtlı yeri ya da tarihli bulunması yok; onlar için aday çıkmaz.` : ''}`,
     not: 'Bu yalnızca bir olasılıktır: kayıtlı yer ve tarihler örtüşüyor. Görüştükleri, birbirlerini tanıdıkları ya da konuştukları söylenmez. İnançların hangi tarihte başladığı hesaba katılmadı.',
+  };
+}
+
+/** Şablon 2: aynı şey üzerinde çelişen hak iddiası olanlar kim? Aynı konu ve aynı kapsamda, dönemleri örtüşen ve
+ *  sahipleri farklı iki mülkiyet kaydı. Hangisinin haklı olduğuna program karar vermez. */
+export function celisenHaklar(b: DurumBaglami): KesifSonucu {
+  const e = b.e;
+  const konular = new Set<string>();
+  for (const r of e.db.selectObjects('SELECT tanim FROM haklar WHERE silindi IS NULL')) {
+    const t = JSON.parse(r.tanim as string) as { tur: string; konu: string };
+    if (t.tur === 'mulkiyet') konular.add(yonlendir(e.db, t.konu));
+  }
+  const adaylar: KesifAdayi[] = [];
+  let dahaFazla = false, ciftler = 0;
+  for (const konu of konular) {
+    if (e.db.selectValue("SELECT 1 FROM kayitlar WHERE kod=? AND silindi IS NULL AND karar<>'vazgecildi'", [konu]) === undefined) continue;
+    const l = hakListesi(b, konu);
+    for (const bilgi of l.bilgiler) {
+      const [a, c] = bilgi.haklar.map((k) => l.konu.find((s) => s.kod === k)!);
+      if (!a || !c) continue;
+      const sa = new Set(a.sahipler.map((k) => k.kod)), sc = new Set(c.sahipler.map((k) => k.kod));
+      if (sa.size === sc.size && [...sa].every((k) => sc.has(k))) continue;
+      ciftler++;
+      if (adaylar.length >= SINIR) { dahaFazla = true; continue; }
+      const kisiler = [...new Map([...a.sahipler, ...c.sahipler].map((k) => [k.kod, k] as const)).values()];
+      const kimler = (s: typeof a) => s.sahipler.map((k) => k.ad).join(', ');
+      const tanima = (s: typeof a) => s.tanimalar.length ? s.tanimalar.map((t) => `${t.otorite.ad} ${t.durum === 'taniyor' ? 'tanıyor' : t.durum === 'tanimiyor' ? 'tanımıyor' : 'bilinmiyor'}`).join(', ') : 'tanıyan otorite yazılmamış';
+      const belirsiz = bilgi.ileti.includes('belirsiz');
+      adaylar.push({
+        kisiler, yer: null, konu: a.konu, aralik: belirsiz ? 'dönemleri örtüşebilir; zamanı belirsiz' : 'aynı dönemde geçerli',
+        yazi: `${a.konu.ad} üzerinde ${kimler(a)} ile ${kimler(c)} için ayrı mülkiyet kayıtları var${a.tanim.kapsam ? ` (kapsam: “${a.tanim.kapsam}”)` : ''}.`,
+        dayanaklar: [a, c].map((s) => `${kimler(s)}: mülkiyet, ${s.zaman.toLocaleLowerCase('tr')}; ${tanima(s)}`),
+      });
+    }
+  }
+  return {
+    sablon: 'celisen_haklar', soru: 'Aynı şey üzerinde çelişen hak iddiası olanlar kim?', adaylar, dahaFazla,
+    kapsam: `${konular.size} konudaki mülkiyet kayıtları incelendi; ${ciftler} çelişen çift bulundu.`,
+    not: 'Yalnızca aynı konu ve aynı kapsamda, sahipleri farklı ve dönemleri örtüşen mülkiyet kayıtları sayıldı. Kullanım hakkı, yetki ve izin birden çok kişide olabildiği için karşılaştırılmadı. Program hangi kaydın haklı olduğuna karar vermez.',
   };
 }
