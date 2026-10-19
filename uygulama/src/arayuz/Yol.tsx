@@ -3,7 +3,7 @@
 // gerçekleşen ayrıdır. Yolcular ilişkilerden gelir.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { Kayit, KisaKayit, RotaGirdisi, RotaVerisi, Yolculuk, YolculukAsamaGirdisi } from '../veri/api';
+import type { GecisSarti, GecisSartiGirdisi, Kayit, KisaKayit, RotaGirdisi, RotaVerisi, Yolculuk, YolculukAsamaGirdisi } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
 
 const hataYaz = (e: unknown) => (e as Error).message;
@@ -65,9 +65,44 @@ export function RotaBolumu({ istemci, evren, kayit }: { istemci: Istemci; evren:
         </ol>
         <KayitSec istemci={istemci} evren={evren} secili={null} etiket="Durak ekle" sec={(s) => { if (s) sessiz(yaz({ duraklar: [...girdi().duraklar, s.kod] })); }} />
       </div>
+      <GecisSartlari istemci={istemci} evren={evren} rota={kayit.kod} />
       {r.kullananlar.length > 0 && <p class="kucuk">Bu rotayı kullanan yolculuklar: {r.kullananlar.map((k, i) => <span key={k.kod}>{i > 0 && ', '}{bag(evren, k)}</span>)}</p>}
       {hata && <p class="hata kucuk">{hata}</p>}
     </section>
+  );
+}
+
+/** Geçiş şartları (F09): gereken izin ya da ücret. Kişinin izni "taşıdığı izin" ilişkisiyle, tarihli olarak girilir. */
+function GecisSartlari({ istemci, evren, rota }: { istemci: Istemci; evren: string; rota: string }) {
+  const l = useVeri<GecisSarti[]>(istemci, evren, () => istemci.iste('rotaSartlari', { evren, rota }), [rota]);
+  const [tur, setTur] = useState<'izin' | 'ucret'>('izin');
+  const [aciklama, setAciklama] = useState('');
+  const [hata, setHata] = useState<string | null>(null);
+  if (!l) return null;
+  const girdi = (): GecisSartiGirdisi[] => l.map((s) => ({ kod: s.kod, tur: s.tur, kayit: s.kayit?.kod ?? null, aciklama: s.aciklama }));
+  const yaz = (sartlar: GecisSartiGirdisi[]) => istemci.iste('rotaSartlariYaz', { evren, rota, sartlar }).then(() => { setHata(null); setAciklama(''); }, (e) => setHata(hataYaz(e)));
+  return (
+    <div class="alan genis"><span class="alan-adi">Geçiş şartları</span>
+      <p class="soluk kucuk">Gereken izin (mühür, belge, makam) ya da ücret. Kişinin izni, kişiden o kayda “taşıdığı izin” ilişkisiyle ve tarihleriyle girilir; rotanın başına varış anında değerlendirilir. Program geçişi engellemez.</p>
+      {l.length > 0 && (
+        <ul class="yol-listesi">
+          {l.map((s, i) => (
+            <li key={s.kod} class="satir"><span>{s.tur === 'izin' ? <>İzin: {bag(evren, s.kayit)}</> : 'Ücret'}{s.aciklama && ` · ${s.aciklama}`}</span>
+              <button class="dugme sade kucuk" onClick={() => yaz(girdi().filter((_, j) => j !== i))}>Kaldır</button></li>
+          ))}
+        </ul>
+      )}
+      <div class="satir">
+        <select class="girdi kucuk-secim" aria-label="Şartın türü" value={tur} onChange={(e) => setTur((e.target as HTMLSelectElement).value as 'izin' | 'ucret')}>
+          <option value="izin">İzin</option><option value="ucret">Ücret</option>
+        </select>
+        <input class="girdi" lang="tr" aria-label="Şartın açıklaması" placeholder={tur === 'ucret' ? 'Ücret (ör. 3 gümüş)' : 'Not (isteğe bağlı)'} value={aciklama} onInput={(e) => setAciklama((e.target as HTMLInputElement).value)} />
+        {tur === 'izin'
+          ? <KayitSec istemci={istemci} evren={evren} secili={null} etiket="Gereken izni seç" sec={(s) => { if (s) yaz([...girdi(), { tur: 'izin', kayit: s.kod, aciklama }]); }} />
+          : <button class="dugme kucuk" disabled={!aciklama.trim()} onClick={() => yaz([...girdi(), { tur: 'ucret', kayit: null, aciklama }])}>Ücret ekle</button>}
+      </div>
+      {hata && <p class="hata kucuk">{hata}</p>}
+    </div>
   );
 }
 

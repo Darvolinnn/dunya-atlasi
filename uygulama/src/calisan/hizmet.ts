@@ -85,7 +85,8 @@ import { SANILAN_DURUMLAR } from '../alan/bilgi';
 import * as kimlik from './kimlik';
 import * as parca from './baglam-parcasi';
 import * as metinKul from './metin-kullanim';
-import type { BaglamParcasiTanimi, KullanimBicimi } from '../veri/api';
+import * as gecis from './gecis';
+import type { BaglamParcasiTanimi, GecisSartiGirdisi, KullanimBicimi } from '../veri/api';
 import type { DairInancTanimi } from '../veri/api';
 import * as donusum from './donusum';
 import type { DonusumGirdisi, DonusumYeniKaydi, DonusumDegeri } from '../veri/api';
@@ -766,6 +767,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   /** Şablon alanı ya da soru çatışmasında alanın adı. */
   private alanEtiketi(e: EvrenVt, nesne: string, alan: string): string | null {
     if (alan === 'rota') return 'Rotanın uçları, mesafesi ve süreleri';
+    if (alan === 'rota_sartlari') return 'Rotanın geçiş şartları';
     if (alan === 'asamalar') return 'Yolculuğun aşamaları';
     if (nesne === 'evren' && alan.startsWith('takvim:')) return 'Paralel takvim';
     if (nesne === 'evren' && alan.startsWith('akis:')) return 'Zaman akışı';
@@ -825,6 +827,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (alan === 'rota') {
       const r = deger as { a: string | null; b: string | null; sureler: { kosul: string; gun: number }[] } | null;
       return r ? `${r.a ? ad(r.a) : '?'} – ${r.b ? ad(r.b) : '?'}; ${r.sureler.map((x) => `${x.kosul ? x.kosul + ': ' : ''}${x.gun} gün`).join(', ') || 'süre yok'}` : '(boş)';
+    }
+    if (alan === 'rota_sartlari') {
+      const l = (deger as { tur: string; kayit: string | null; aciklama: string }[] | null) ?? [];
+      return l.length ? l.map((s) => s.tur === 'izin' ? `izin: ${s.kayit ? ad(s.kayit) : '?'}` : `ücret: ${s.aciklama}`).join('; ') : 'Şart yok';
     }
     if (alan === 'asamalar') {
       const l = (deger as { nereden: string | null; nereye: string | null }[] | null) ?? [];
@@ -948,6 +954,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (alan.startsWith('hak_tanima:')) { this.yaz(evren, [{ tur: 'hak_tanima_yaz', veri: { kod: alan.slice(11), hak: nesne, ...deger, cozum: true } }], [...haklar.ilgiliKayitlar(e, nesne), deger.otorite]); return; }
     if (alan === 'sozluk_silindi') { this.yaz(evren, [{ tur: deger ? 'sozluk_sil' : 'sozluk_geri_yukle', veri: { kod: nesne, cozum: true } }]); return; }
     if (alan.startsWith('sozluk_isareti:')) { this.yaz(evren, [{ tur: 'sozluk_isareti', veri: { kod: nesne, anahtar: alan.slice(15), bilerek: !!deger, cozum: true } }]); return; }
+    if (alan === 'rota_sartlari') { this.yaz(evren, [{ tur: 'rota_sart_yaz', veri: { rota: nesne, sartlar: deger ?? [], cozum: true } }], [nesne]); return; }
     if (alan === 'rota') { this.yaz(evren, [{ tur: 'rota_yaz', veri: { kod: nesne, rota: deger, cozum: true } }], [nesne]); return; }
     if (alan === 'asamalar') { this.yaz(evren, [{ tur: 'yolculuk_yaz', veri: { kod: nesne, asamalar: deger, cozum: true } }], [nesne]); return; }
     const yyr = alan.startsWith('karar:') ? e.db.selectObject('SELECT eser FROM yayimlar WHERE kod=?', [nesne]) : undefined;
@@ -2361,9 +2368,16 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const e = this.evren(evren);
     return kosulMod.kosulMasasi(e, g, masaMod.paketEtkisi(e, paket));
   }
-  enKisaRota({ evren, nereden, nereye, kosul, kisi, paket }: { evren: string; nereden: string; nereye: string; kosul?: string | null; kisi?: string | null; paket?: string | null }) {
+  enKisaRota({ evren, nereden, nereye, kosul, kisi, paket, cikis }: { evren: string; nereden: string; nereye: string; kosul?: string | null; kisi?: string | null; paket?: string | null; cikis?: string | null }) {
     const e = this.evren(evren);
-    return haber.enKisaRota(e, nereden, nereye, kosul || null, kisi || null, masaMod.paketEtkisi(e, paket));
+    const ifade = String(cikis ?? '').trim();
+    const t = ifade ? tarihCoz(ifade, zamanSetiOku(e.db)) : null;
+    if (ifade && !t?.eksen) throw new Error('Çıkış tarihi okunamadı.');
+    return haber.enKisaRota(e, nereden, nereye, kosul || null, kisi || null, masaMod.paketEtkisi(e, paket), t);
+  }
+  rotaSartlari({ evren, rota }: { evren: string; rota: string }) { return gecis.sartlar(this.evren(evren), rota); }
+  rotaSartlariYaz({ evren, rota, sartlar }: { evren: string; rota: string; sartlar: GecisSartiGirdisi[] }) {
+    gecis.sartlarYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, rota, sartlar);
   }
   kanal({ evren, kod }: { evren: string; kod: string }) { return haber.kanalOku(this.evren(evren), kod); }
   kanalYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: KanalTanimi }) { haber.kanalYaz(this.haberBaglami(evren), kod, tanim); }

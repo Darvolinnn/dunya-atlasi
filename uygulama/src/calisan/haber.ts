@@ -11,6 +11,7 @@ import type { EvrenVt } from './evren-vt';
 import { yonlendir, zamanSetiOku } from './izdusum';
 import type { PaketEtkisi } from './masa';
 import { enKisaSure, rotalar } from './yol';
+import { adimlaraSartEkle } from './gecis';
 
 export interface HaberBaglami {
   e: EvrenVt;
@@ -82,7 +83,7 @@ function yolKur(e: EvrenVt, once: Map<string, { kenar: Kenar; nereden: string }>
 }
 
 /** İki yer arasında kayıtlı ağın en kısa yolu; karakter verilirse bildiği yollarla ayrıca (F09). */
-export function enKisaRota(e: EvrenVt, nereden: string, nereye: string, kosul: string | null, kisi: string | null, p: PaketEtkisi | null): RotaSonucu {
+export function enKisaRota(e: EvrenVt, nereden: string, nereye: string, kosul: string | null, kisi: string | null, p: PaketEtkisi | null, cikis: EvrenTarihi | null = null): RotaSonucu {
   kayitTuru(e, nereden); kayitTuru(e, nereye);
   if (nereden === nereye) throw new Error('Başlangıç ile varış aynı.');
   const coz = (izinli?: Set<string>) => {
@@ -97,18 +98,19 @@ export function enKisaRota(e: EvrenVt, nereden: string, nereye: string, kosul: s
     }
     return { hukum: 'bulunamadi' as const, kip: null, toplam: null, adimlar: [] as RotaAdimi[], eksik: [] as KisaKayit[] };
   };
-  const genel = coz();
+  const sartli = <T extends { adimlar: RotaAdimi[] }>(c: T): T => ({ ...c, adimlar: adimlaraSartEkle(e, c.adimlar, kisi, cikis) });
+  const genel = sartli(coz());
   let bilinen: RotaSonucu['bilinen'] = null;
   if (kisi) {
     kayitTuru(e, kisi);
     const izinli = new Set(e.db.selectObjects(`SELECT i.b FROM iliskiler i WHERE i.a=? AND i.tur='yolu_bilir' AND i.silindi IS NULL AND i.karar<>'vazgecildi'`, [kisi]).map((r) => yonlendir(e.db, r.b as string) as string));
-    bilinen = { kisi: kisa(e, kisi), bildigiRota: izinli.size, ...coz(izinli) };
+    bilinen = { kisi: kisa(e, kisi), bildigiRota: izinli.size, ...sartli(coz(izinli)) };
   }
   const kapali = p ? [...p.rota.values()].filter((v) => v === false).length : 0;
   return {
     nereden: kisa(e, nereden), nereye: kisa(e, nereye), kosul, ...genel, bilinen,
     paket: p ? { kod: p.kod, ad: p.ad } : null,
-    kapsam: `Kayıtlı rotalar ve elle girilmiş süreler${kosul ? ` (“${kosul}” koşulunda)` : ' (her rotanın en kısa tanımlı süresi)'}. Molalar sürelerin içinde sayılır, ayrıca eklenmez.${kapali ? ` Pakete göre ${kapali} rota kapalı.` : ''}`,
+    kapsam: `Kayıtlı rotalar ve elle girilmiş süreler${kosul ? ` (“${kosul}” koşulunda)` : ' (her rotanın en kısa tanımlı süresi)'}. Molalar sürelerin içinde sayılır, ayrıca eklenmez.${cikis ? ` İzinler her rotanın başına varış anında değerlendirildi (çıkış: ${cikis.ifade}).` : ''}${kapali ? ` Pakete göre ${kapali} rota kapalı.` : ''}`,
   };
 }
 

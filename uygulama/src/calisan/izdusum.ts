@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 55;
+export const IZDUSUM_SURUMU = 56;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -271,6 +271,10 @@ CREATE TABLE IF NOT EXISTS metin_kullanimlari(
 );
 CREATE INDEX IF NOT EXISTS metin_kullanimlari_hedef ON metin_kullanimlari(hedef);
 CREATE INDEX IF NOT EXISTS metin_kullanimlari_kaynak ON metin_kullanimlari(kaynak);
+CREATE TABLE IF NOT EXISTS rota_gecis_sartlari(
+  rota TEXT PRIMARY KEY,
+  sartlar TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS dayaniklilik(
   iliski TEXT PRIMARY KEY,
   deger TEXT NOT NULL
@@ -791,7 +795,7 @@ IZDUSUM_TABLOLARI.push('bakim_tanimlari', 'bakim_kayitlari');
 IZDUSUM_TABLOLARI.push('kural_ornekleri');
 IZDUSUM_TABLOLARI.push('uyarlama_eslemeleri');
 IZDUSUM_TABLOLARI.push('dair_inanclar');
-IZDUSUM_TABLOLARI.push('baglam_parcalari', 'metin_kullanimlari');
+IZDUSUM_TABLOLARI.push('baglam_parcalari', 'metin_kullanimlari', 'rota_gecis_sartlari');
 IZDUSUM_TABLOLARI.push('donusum_kayitlari');
 IZDUSUM_TABLOLARI.push('kalabalik_gozlemleri', 'kalabalik_olaylari');
 IZDUSUM_TABLOLARI.push('harita_kunyeleri');
@@ -1279,6 +1283,14 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   baglam_parcasi_sil(db, i) {
     db.exec({ sql: 'UPDATE baglam_parcalari SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  /** Rotanın geçiş şartları (F09). */
+  rota_sart_yaz(db, i) {
+    const { rota, sartlar } = i.veri as { rota: string; sartlar: unknown };
+    if (typeof rota !== 'string' || !Array.isArray(sartlar)) return;
+    if (sartlar.length) db.exec({ sql: 'INSERT INTO rota_gecis_sartlari(rota, sartlar) VALUES(?,?) ON CONFLICT(rota) DO UPDATE SET sartlar=excluded.sartlar', bind: [rota, JSON.stringify(sartlar)] });
+    else db.exec({ sql: 'DELETE FROM rota_gecis_sartlari WHERE rota=?', bind: [rota] });
+    alanYaz(db, i, rota, 'rota_sartlari', sartlar);
   },
   /** Metin ile kullanım yeri (F30). */
   metin_kullanim_yaz(db, i) {

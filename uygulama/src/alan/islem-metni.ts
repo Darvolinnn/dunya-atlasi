@@ -153,6 +153,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   cizim_degistir: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki ${v.bicim === 'yol' ? 'yolun' : 'bölgenin'} ${({ noktalar: 'sınırı', kayit: 'bağlı olduğu kayıt', kip: 'türü', baslangic: 'başlangıcı', bitis: 'bitişi' } as Record<string, string>)[v.alan as string] ?? 'bilgisi'} değişti`,
   cizim_sil: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki ${v.bicim === 'yol' ? 'yol' : 'bölge'} kaldırıldı`,
   cizim_geri_yukle: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki ${v.bicim === 'yol' ? 'yol' : 'bölge'} geri getirildi`,
+  rota_sart_yaz: (v, ad) => `${ad(v.rota)}: geçiş şartları değişti${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
   rota_yaz: (v, ad) => `${ad(v.kod)}: rotanın uçları, mesafesi ya da süreleri değişti`,
   yolculuk_yaz: (v, ad) => `${ad(v.kod)}: yolculuğun aşamaları değişti`,
   harita_sil: (v) => `“${v.haritaAd}” haritası kaldırıldı`,

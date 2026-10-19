@@ -7,6 +7,7 @@ import { GUN_PARCA, tarihCoz, type EvrenTarihi } from '../alan/tarih';
 import type { KisaKayit, RotaGirdisi, RotaVerisi, Yolculuk, YolculukAsamaGirdisi, YolculukAsamasi } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
 import { yonlendir, zamanSetiOku } from './izdusum';
+import { asamaIzinUyarisi } from './gecis';
 
 export interface YolBaglami {
   e: EvrenVt;
@@ -99,6 +100,9 @@ const gunYaz = (n: number) => `${n.toLocaleString('tr-TR', { maximumFractionDigi
 export function yolculuk(e: EvrenVt, kod: string): Yolculuk {
   turDenetle(e, kod, 'yolculuk');
   const rs = new Map(rotalar(e).map((r) => [r.kod, r]));
+  const yolcular = e.db.selectObjects(`SELECT k.kod, k.ad, k.tur, i.rol FROM iliskiler i JOIN kayitlar k ON k.kod=i.a
+      WHERE i.tur='yolculukta' AND i.b=? AND i.silindi IS NULL AND k.silindi IS NULL ORDER BY k.ad`, [kod])
+    .map((r) => ({ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string, rol: (r.rol as string) ?? null }));
   const asamalar: YolculukAsamasi[] = asamalarOku(e, kod).map((a) => {
     let uyari: string | null = null;
     const sure = asamaSuresi(a);
@@ -109,12 +113,10 @@ export function yolculuk(e: EvrenVt, kod: string): Yolculuk {
       if (ek && sure && sure.enCok < ek.gun) uyari = `Bu aşama en çok ${gunYaz(sure.enCok)} sürüyor; “${r.ad}” için tanımlı en kısa süre ${gunYaz(ek.gun)}${ek.kosul ? ` (${ek.kosul})` : ''}.`;
       const uclar = [r.a, r.b];
       if (!uyari && a.nereden && a.nereye && r.a && r.b && !(uclar.includes(a.nereden) && uclar.includes(a.nereye))) uyari = `Seçilen rotanın uçları bu aşamanın yerleriyle aynı değil.`;
+      if (!uyari) uyari = asamaIzinUyarisi(e, r.kod, yolcular, a.cikis);
     }
     return { nereden: kisa(e, a.nereden), nereye: kisa(e, a.nereye), rota: kisa(e, a.rota), cikis: a.cikis, varis: a.varis, durum: a.durum, uyari, sure };
   });
-  const yolcular = e.db.selectObjects(`SELECT k.kod, k.ad, k.tur, i.rol FROM iliskiler i JOIN kayitlar k ON k.kod=i.a
-      WHERE i.tur='yolculukta' AND i.b=? AND i.silindi IS NULL AND k.silindi IS NULL ORDER BY k.ad`, [kod])
-    .map((r) => ({ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string, rol: (r.rol as string) ?? null }));
   return { asamalar, yolcular };
 }
 

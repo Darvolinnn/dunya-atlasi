@@ -139,7 +139,15 @@ export interface UretimOzeti {
 /** Haberleşme yöntemi (§15-3): kayıtlı rotaları kullanabilir (hız katsayısıyla) ve kendi bağlantıları olabilir. */
 export interface KanalTanimi { rotalar: boolean; kosul: string | null; carpan: number; baglantilar: { a: string; b: string; gun: number }[] }
 export interface HaberCikisi { yer: KisaKayit | null; tarih: EvrenTarihi | null; kanallar: KisaKayit[] }
-export interface RotaAdimi { rota: KisaKayit; nereden: KisaKayit; nereye: KisaKayit; gun: number | null; kosul: string | null }
+export interface RotaAdimi { rota: KisaKayit; nereden: KisaKayit; nereye: KisaKayit; gun: number | null; kosul: string | null; sartlar?: SartDurumu[] }
+/** Rotaya bağlı geçiş şartı (F09): gereken izin (mühür, belge, makam) ya da ücret. */
+export interface GecisSarti { kod: string; tur: 'izin' | 'ucret'; kayit: KisaKayit | null; aciklama: string }
+export interface GecisSartiGirdisi { kod?: string; tur: 'izin' | 'ucret'; kayit: string | null; aciklama: string }
+/** Yoldaki bir şartın kişi için durumu; izin rotanın başına varış anında değerlendirilir. */
+export interface SartDurumu {
+  tur: 'izin' | 'ucret'; kayit: KisaKayit | null; aciklama: string;
+  durum: 'gecerli' | 'yok' | 'bitmis' | 'baslamamis' | 'belirsiz' | 'tarih_yok' | 'kisi_yok' | 'ucret';
+}
 interface RotaCozumu { hukum: 'bulundu' | 'bulunamadi'; kip: 'sure' | 'kroki' | null; toplam: number | null; adimlar: RotaAdimi[]; eksik: KisaKayit[] }
 export interface RotaSonucu extends RotaCozumu {
   nereden: KisaKayit; nereye: KisaKayit; kosul: string | null;
@@ -1285,7 +1293,9 @@ export interface Istekler {
   adBicimiYaz(a: { evren: string; kod: string; dil: string; bicim: string | null; kaynakDil?: string | null; kaynakBicim?: string | null }): void;
   kisiDilleri(a: { evren: string; kod: string }): KisiDili[];
   dilYeterliligiYaz(a: { evren: string; iliski: string; deger: DilYeterliligi | null }): void;
-  enKisaRota(a: { evren: string; nereden: string; nereye: string; kosul?: string | null; kisi?: string | null; paket?: string | null }): RotaSonucu;
+  enKisaRota(a: { evren: string; nereden: string; nereye: string; kosul?: string | null; kisi?: string | null; paket?: string | null; cikis?: string | null }): RotaSonucu;
+  rotaSartlari(a: { evren: string; rota: string }): GecisSarti[];
+  rotaSartlariYaz(a: { evren: string; rota: string; sartlar: GecisSartiGirdisi[] }): void;
   kosulMasasi(a: { evren: string; nereden: string; nereye: string; enCokGun: number; cikis?: string | null; kosul?: string | null; kisi?: string | null; yasakRotalar?: string[]; yasakYerler?: string[]; paket?: string | null }): KosulMasasi;
   kanal(a: { evren: string; kod: string }): KanalTanimi;
   kanalYaz(a: { evren: string; kod: string; tanim: KanalTanimi }): void;

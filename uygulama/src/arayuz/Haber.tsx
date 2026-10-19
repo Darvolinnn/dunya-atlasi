@@ -2,7 +2,7 @@
 // içinde hesaplar; "bulunamadı" evrende imkânsız demek değildir, "ulaşabilir" biri onu biliyor demek değildir.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { HaberYayilimi, KanalTanimi, KisaKayit, PaketOzeti, RotaAdimi, RotaSonucu } from '../veri/api';
+import type { HaberYayilimi, KanalTanimi, KisaKayit, PaketOzeti, RotaAdimi, RotaSonucu, SartDurumu } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
 
 const hataYaz = (e: unknown) => (e as Error).message;
@@ -26,11 +26,28 @@ export function PaketSecimi({ istemci, evren, paket, sec, id }: { istemci: Istem
   );
 }
 
+const SART_DURUMLARI: Record<SartDurumu['durum'], string> = {
+  gecerli: 'izni var, varışta geçerli', yok: 'izni kayıtlı değil', bitmis: 'izni varışta bitmiş', baslamamis: 'izni varışta henüz başlamamış',
+  belirsiz: 'iznin varışta geçerli olup olmadığı belirsiz', tarih_yok: 'izni var; geçerliliği için çıkış tarihi gerekir', kisi_yok: 'kimin geçeceği seçilmedi', ucret: 'ödenip ödenemeyeceği yazara kalır',
+};
+function Sartlar({ evren, l }: { evren: string; l: SartDurumu[] }) {
+  return (
+    <ul class="kucuk soluk">
+      {l.map((s, i) => (
+        <li key={i} class={s.durum === 'yok' || s.durum === 'bitmis' || s.durum === 'baslamamis' ? 'hata' : ''}>
+          {s.tur === 'izin' ? <>İzin: {s.kayit ? bag(evren, s.kayit) : 'silinmiş kayıt'}</> : <>Ücret: {s.aciklama}</>}{s.tur === 'izin' && s.aciklama ? ` (${s.aciklama})` : ''} · {SART_DURUMLARI[s.durum]}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function Adimlar({ evren, adimlar }: { evren: string; adimlar: RotaAdimi[] }) {
   return (
     <ol class="toplanan-listesi">
       {adimlar.map((a) => (
-        <li key={a.rota.kod + a.nereden.kod}>{bag(evren, a.nereden)} → {bag(evren, a.nereye)} <span class="soluk kucuk">· {bag(evren, a.rota)} · {a.gun === null ? 'süresi kayıtlı değil' : `${gun(a.gun)}${a.kosul ? ` (${a.kosul})` : ''}`}</span></li>
+        <li key={a.rota.kod + a.nereden.kod}>{bag(evren, a.nereden)} → {bag(evren, a.nereye)} <span class="soluk kucuk">· {bag(evren, a.rota)} · {a.gun === null ? 'süresi kayıtlı değil' : `${gun(a.gun)}${a.kosul ? ` (${a.kosul})` : ''}`}</span>
+          {a.sartlar && <Sartlar evren={evren} l={a.sartlar} />}</li>
       ))}
     </ol>
   );
@@ -52,11 +69,12 @@ export function RotaAraci({ istemci, evren, kod, ad }: { istemci: Istemci; evren
   const [kisi, setKisi] = useState<Secim | null>(null);
   const [kosul, setKosul] = useState('');
   const [paket, setPaket] = useState<string | null>(null);
+  const [cikis, setCikis] = useState('');
   const [r, setR] = useState<RotaSonucu | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const hesapla = () => {
     if (!nereye) return;
-    istemci.iste('enKisaRota', { evren, nereden: kod, nereye: nereye.kod, kosul: kosul.trim() || null, kisi: kisi?.kod ?? null, paket })
+    istemci.iste('enKisaRota', { evren, nereden: kod, nereye: nereye.kod, kosul: kosul.trim() || null, kisi: kisi?.kod ?? null, paket, cikis: cikis.trim() || null })
       .then((x) => { setR(x); setHata(null); }, (x) => { setR(null); setHata(hataYaz(x)); });
   };
   return (
@@ -69,6 +87,7 @@ export function RotaAraci({ istemci, evren, kod, ad }: { istemci: Istemci; evren
           <input class="girdi" style="width:120px" lang="tr" aria-label="Koşul" placeholder="koşul (kış…)" value={kosul} onInput={(e) => setKosul((e.target as HTMLInputElement).value)} />
           <KayitSec istemci={istemci} evren={evren} secili={kisi} etiket="Kimin bildiği yollarla?" sec={setKisi} />
           {kisi && <button type="button" class="dugme sade kucuk" onClick={() => setKisi(null)}>Kişiyi kaldır</button>}
+          <input class="girdi" style="width:130px" lang="tr" aria-label="Çıkış tarihi" placeholder="çıkış tarihi (izin için)" value={cikis} onInput={(e) => setCikis((e.target as HTMLInputElement).value)} />
           <PaketSecimi istemci={istemci} evren={evren} paket={paket} sec={setPaket} id={`rota-paketi-${kod}`} />
           <button class="dugme ana kucuk" type="submit" disabled={!nereye}>Hesapla</button>
         </form>
