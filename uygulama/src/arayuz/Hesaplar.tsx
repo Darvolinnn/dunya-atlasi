@@ -65,7 +65,7 @@ const gunYazisi = (n: number) => `${Math.abs(n).toLocaleString('tr-TR')} gün`;
 const aralikGun = (f: { enAz: number; enCok: number }) => {
   const once = f.enCok < 0;
   const [a, b] = once ? [-f.enCok, -f.enAz] : [f.enAz, f.enCok];
-  if (f.enAz < 0 && f.enCok > 0) return `Sıra belli değil: ikinci tarih ${gunYazisi(-f.enAz)} önce ile ${gunYazisi(f.enCok)} sonra arasında olabilir.`;
+  if (f.enAz < 0 && f.enCok > 0) return `Hangisinin önce geldiği belli değil: ikinci tarih ilkinden ${gunYazisi(-f.enAz)} önce ile ${gunYazisi(f.enCok)} sonra arasında olabilir.`;
   const sayi = a === b ? gunYazisi(a) : `${a.toLocaleString('tr-TR')}–${gunYazisi(b)}`;
   return `${sayi} ${once ? 'önce' : 'sonra'}`;
 };
@@ -84,9 +84,9 @@ function TakvimHesabi({ istemci, evren }: { istemci: Istemci; evren: string }) {
 
   let sonuc: string | null = null, uyari: string | null = null;
   if (ilk.trim() && !a) uyari = 'İlk tarih okunamadı.';
-  else if (a && !a.eksen) uyari = 'Bu tarih takvimde bir yere oturmuyor; hesap yapılamaz.';
+  else if (a && !a.eksen) uyari = 'Bu tarih takvime çevrilemiyor; hesap yapılamaz.';
   else if (kip === 'ekle' && ikinci.trim() && (!fark || fark.en === null)) uyari = 'Farkı “40 gün sonra” ya da “3 yıl önce” gibi yazın.';
-  else if (kip === 'fark' && ikinci.trim() && !b?.eksen) uyari = 'İkinci tarih okunamadı ya da takvimde bir yere oturmuyor.';
+  else if (kip === 'fark' && ikinci.trim() && !b?.eksen) uyari = 'İkinci tarih okunamadı ya da takvime çevrilemiyor.';
   else if (a?.eksen && fark) {
     const e = kaydir(a.eksen, fark, t);
     if (e && e.enErken !== null && e.enGec !== null) {
@@ -96,7 +96,7 @@ function TakvimHesabi({ istemci, evren }: { istemci: Istemci; evren: string }) {
   } else if (a && b) {
     const f = gunFarki(a, b);
     sonuc = f ? aralikGun(f) : null;
-    if (!f) uyari = 'Tarihlerden birinin ucu açık; gün sayısı hesaplanamaz.';
+    if (!f) uyari = 'Tarihlerden biri açık uçlu (ör. “412 ve sonrası”); gün sayısı hesaplanamaz.';
   }
 
   return (

@@ -2051,7 +2051,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (bas !== null && !okunur(bas)) throw new Error(`${i + 1}. dönemin başladığı tarih ana takvimde okunamadı.`);
       const akis = Number(o?.akis);
       const ana = o?.ana ? [Number(o.ana[0]), Number(o.ana[1] ?? o.ana[0])] as [number, number] : null;
-      if (!(akis > 0) || (ana && !(ana[0] >= 0 && ana[1] >= ana[0]))) throw new Error('Oranda akışta geçen gün sıfırdan büyük, ana akıştaki gün ise sıfır ya da daha büyük olmalı (aralık yazdıysanız küçükten büyüğe).');
+      if (!(akis > 0) || (ana && !(ana[0] >= 0 && ana[1] >= ana[0]))) throw new Error('Oranda bu akışta geçen gün sayısı sıfırdan büyük, ana akışta geçen gün sayısı ise sıfır ya da daha büyük olmalı. Aralık yazdıysanız küçük sayıyı önce yazın.');
       return { bas, akis, ana };
     });
     if (!oranlar.length) throw new Error('En az bir oran dönemi girin.');

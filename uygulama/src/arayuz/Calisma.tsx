@@ -442,7 +442,7 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
       if (sorgu.trim()) for (const [k, ad] of GORUNUMLER) komutlar.push({ anahtar: 'g-' + k, baslik: ad, aciklama: 'Görünüm', yap: () => git(`/e/${evren}/${k}`) });
       if (baglam.hesap) {
         komutlar.push({ anahtar: 'h-yolculuk', baslik: 'Yolculuk süresi', aciklama: 'İki yer arası, kayıtlı rotalarla', yap: () => baglam.hesap!('yolculuk') });
-        komutlar.push({ anahtar: 'h-takvim', baslik: 'Takvim günü hesabı', aciklama: 'Tarihe gün ekle ya da iki tarih arası', yap: () => baglam.hesap!('takvim') });
+        komutlar.push({ anahtar: 'h-takvim', baslik: 'Takvim günü hesabı', aciklama: 'Tarihe gün ya da yıl ekleme, iki tarih arası gün sayısı', yap: () => baglam.hesap!('takvim') });
       }
       if (d.yanPanel.length) komutlar.push({ anahtar: 'panel-kapat', baslik: 'Yan paneli kapat', yap: () => d.yanPanelKapat() });
     }

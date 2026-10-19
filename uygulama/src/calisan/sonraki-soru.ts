@@ -74,7 +74,7 @@ function yolGirdileri(e: EvrenVt, nereden: string | null, nereye: string | null,
       for (const r of ucsuz.slice(0, 5)) g.push(kismen('Rota uçları', `“${r.ad}” rotasının uçları yazılmamış, bu yüzden hesaba katılamıyor.`, kisa(e, r.kod), rotaKullanimi(e, r.kod)));
     }
   }
-  g.push(tarih?.eksen ? var_('Başlangıç ya da varış tarihi', tarih.ifade, tarihKaydi) : eksik('Başlangıç ya da varış tarihi', 'Tarih olmadan süre yalnızca gün sayısı olarak verilir, takvimde bir yere oturmaz.', tarihKaydi, TARIH_KULLANIMI));
+  g.push(tarih?.eksen ? var_('Başlangıç ya da varış tarihi', tarih.ifade, tarihKaydi) : eksik('Başlangıç ya da varış tarihi', 'Tarih olmadan süre yalnızca gün sayısı olarak verilir, takvime yerleşmez.', tarihKaydi, TARIH_KULLANIMI));
   return g;
 }
 
@@ -112,7 +112,7 @@ export function sonrakiSoru(e: EvrenVt, b: SoruBaglami, hesap: Hesap, kodGirdi: 
   } else if (hesap === 'haber') {
     const c = haberCikisiOku(e, kod);
     girdiler.push(c.yer ? var_('Çıkış yeri', '', c.yer) : eksik('Çıkış yeri', 'Haberin nereden çıktığı yazılmamış.', kayit, ['haber yayılımı']));
-    girdiler.push(c.tarih?.eksen ? var_('Çıkış tarihi', c.tarih.ifade) : eksik('Çıkış tarihi', 'Tarih olmadan yalnızca gün sayısı verilir, takvimde bir yere oturmaz.', kayit, ['haber yayılımı']));
+    girdiler.push(c.tarih?.eksen ? var_('Çıkış tarihi', c.tarih.ifade) : eksik('Çıkış tarihi', 'Tarih olmadan yalnızca gün sayısı verilir, takvime yerleşmez.', kayit, ['haber yayılımı']));
     const kanallar = c.kanallar.length ? c.kanallar.map((k) => k.kod) : e.db.selectObjects("SELECT kod FROM kayitlar WHERE tur='haberlesme' AND silindi IS NULL AND karar<>'vazgecildi'").map((r) => r.kod as string);
     if (!kanallar.length) girdiler.push(eksik('Haberleşme yöntemi', 'Evrende haberleşme yöntemi kaydı yok (ulak, güvercin…).', null, ['haber yayılımı']));
     for (const k of kanallar) {
