@@ -75,6 +75,7 @@ import { gorunurlukGecerli, gorunurlukOku, sadeGercekMi, type Gorunurluk } from 
 import { yasHesapla } from '../alan/yas';
 import { MESELE_DURUMLARI, type Sablon, type SoruDurumu } from '../alan/sablon';
 import { gecerlilik, DURUM_KIPLERI } from '../alan/durum';
+import { sahneOkurBilgileri } from './sahne-okur';
 
 export type DosyaAcici = (ad: string) => Database;
 export type Bildirici = (evren: string, turler: string[], kayitlar: string[], uzaktan?: boolean) => void;
@@ -1748,6 +1749,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       yer: yer ? { ...yer, durumlar: durum.durumlar(db, yer.kod, an).filter(gorunur) } : null,
       bakis, anlatici, odak, katilimcilar,
       bakisBilgileri: bakis ? bilgi.anBilgisi(db, bakis.kod, an) : [],
+      okurBilgileri: sahneOkurBilgileri(db, sahne),
     };
   }
 

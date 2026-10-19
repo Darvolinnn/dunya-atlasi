@@ -289,3 +289,8 @@ export function bilgiSil(b: DurumBaglami, kod: string, geriYukle = false) {
   b.yaz([{ tur: geriYukle ? 'bilgi_geri_yukle' : 'bilgi_sil', veri: { kod, bilen: r.bilen, soru } }], [r.bilen as string]);
 }
 
+/** Sahne paneli için mevcut okuma sıraları; yeni sıra veya okur oluşturmaz. */
+export function okurOkumaSiralari(e: EvrenVt) {
+  return okumaSiralari(e);
+}
+

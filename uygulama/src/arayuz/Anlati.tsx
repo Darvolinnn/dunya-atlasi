@@ -12,6 +12,7 @@ import type { Secim } from './BaglantiSecici';
 import { BakisBilgileri } from './Bilgiler';
 import { useTakvim } from './Takvim';
 import { git } from './Uygulama';
+import type { AnBilgisi, SahneOkurSirasi } from '../veri/api';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: { kod: string; ad: string }) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
@@ -258,6 +259,7 @@ export function SahneBaglamPaneli({ evren, baglam }: { evren: string; baglam: Sa
       )}
       {katilimcilar.length === 0 && !yer && <p class="soluk kucuk">Mekân, bakış açısı ya da sahnedekiler girilince burada o anki hâlleri toplanır.</p>}
       {baglam.bakis && <BakisBilgileri evren={evren} bakis={baglam.bakis} liste={baglam.bakisBilgileri} tarihVar={!!tarih} />}
+      <SahneOkurPaneli evren={evren} baglam={baglam} />
       {katilimcilar.map((k) => (
         <div class="baglam-kaydi" key={k.kod}>
           <div class="satir">{bag(evren, k)} <span class="soluk kucuk">{k.roller.join(', ')}</span>{k.yas && <span class="kucuk">· {k.yas}</span>}</div>
@@ -515,4 +517,48 @@ export function SinirGirdi({ istemci, evren, etiket, ifade, setIfade, olay, setO
           <KayitSec istemci={istemci} evren={evren} secili={null} sec={setOlay} etiket="olaya bağla" /></>}
     </span>
   );
+}
+
+function OkurBilgiHucre({ bilgi, evren }: { bilgi: AnBilgisi | undefined; evren: string }) {
+  if (!bilgi) return <span class="soluk kucuk">Kayıtlı bilgi yok.</span>;
+  return <>
+    {bilgi.durum === 'belirsiz' && <p class="soluk kucuk">Birden çok olası kayıt; birlikte gösteriliyor.</p>}
+    <ul class="baglam-listesi">{bilgi.satirlar.map((s) => <li key={s.kod}>
+      <strong>{s.uyari ? 'Durum belirlenemiyor' : s.etiket.ad}</strong>{s.secenek && <> · {s.secenek.metin}</>}
+      {s.gecerli === 'belirsiz' && <span> · bu tarihte geçerli olduğu belirsiz</span>} <KararRozeti karar={s.karar} />
+      <details><summary>Dayanak</summary>
+        {s.sahne && <p>Kaynak sahne: {bag(evren, s.sahne)}{s.okumaSirasi !== null && ` · ${s.okumaSirasi}. sırada`}</p>}
+        {s.kaynakKayit && <p>Kaynak kayıt: {bag(evren, s.kaynakKayit)}</p>}
+        {s.aciklama && <p>{s.aciklama}</p>}{s.uyari && <p>{s.uyari}</p>}
+      </details>
+    </li>)}</ul>
+  </>;
+}
+
+function OkurSirasiTablosu({ sira, baglam, evren }: { sira: SahneOkurSirasi; baglam: SahneBaglami; evren: string }) {
+  const sorular = new Map([...sira.once, ...sira.buSahnede, ...(baglam.bakis ? baglam.bakisBilgileri : [])].map((b) => [b.iddia.kod, b.iddia]));
+  return <div class="baglam-kaydi">
+    <h4>{bag(evren, sira.eser)} · {sira.ad} · {sira.sira}. sahne</h4>
+    {sira.notlar.map((n) => <p class="soluk kucuk" key={n}>{n}</p>)}
+    {!sira.once.length && !sira.buSahnede.length && <p class="soluk kucuk">Bu sahneye kadar okur için kayıtlı bilgi yok. Bu, okurun hiçbir şey bilmediği anlamına gelmez.</p>}
+    {sorular.size > 0 && <div style="overflow-x:auto"><table aria-label={`${sira.eser.ad} · ${sira.ad}: okur ve karakter bilgisi`}>
+      <thead><tr><th>Soru</th><th>Okur sahneye girerken</th><th>Bu sahnede öğreniyor</th>{baglam.bakis && <th>{baglam.bakis.ad} · sahnenin evren tarihinde</th>}</tr></thead>
+      <tbody>{[...sorular.values()].map((i) => <tr key={i.kod}>
+        <th>{bag(evren, i.konu)} · {i.soru}</th>
+        <td><OkurBilgiHucre bilgi={sira.once.find((b) => b.iddia.kod === i.kod)} evren={evren} /></td>
+        <td>{sira.buSahnede.some((b) => b.iddia.kod === i.kod) ? <OkurBilgiHucre bilgi={sira.buSahnede.find((b) => b.iddia.kod === i.kod)} evren={evren} /> : <span class="soluk kucuk">Bu sahnede yeni bilgi kaydı yok.</span>}</td>
+        {baglam.bakis && <td><OkurBilgiHucre bilgi={baglam.bakisBilgileri.find((b) => b.iddia.kod === i.kod)} evren={evren} /></td>}
+      </tr>)}</tbody>
+    </table></div>}
+  </div>;
+}
+
+function SahneOkurPaneli({ evren, baglam }: { evren: string; baglam: SahneBaglami }) {
+  return <section aria-label="Okurun bilgisi">
+    <h3>Okurun bilgisi</h3>
+    <p class="soluk kucuk">Okurun zamanı evren tarihi değil, okuma sırasıdır. Sahneye girişteki bilgi ile bu sahnede öğrenilenler ayrıdır. Yalnızca yazarın kaydettiği bilgi durumları gösterilir; ipucu veya metinden bilgi çıkarılmaz.</p>
+    {baglam.okurBilgileri.uyari && <p class="uyari kucuk">{baglam.okurBilgileri.uyari}</p>}
+    {baglam.okurBilgileri.siralar.map((s) => <OkurSirasiTablosu key={s.kod} sira={s} baglam={baglam} evren={evren} />)}
+    {baglam.bakis && <p class="soluk kucuk">Yan yana gösterim iki kayıtlı listenin karşılaştırılmasıdır. “Kayıtlı bilgi yok”, “bilmiyor” demek değildir.</p>}
+  </section>;
 }

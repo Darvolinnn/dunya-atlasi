@@ -482,6 +482,14 @@ export interface BakimUzmanligiSonucu {
   uzmanOldugu: { tanimKod: string; ad: string; siklik: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null; kesinti: string; yer: KisaKayit }[];
   malzemeOldugu: { tanimKod: string; ad: string; siklik: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null; metin: string; yer: KisaKayit }[];
 }
+/** Salt okunur okuma bağlamı; sıra evren tarihinden bağımsızdır. */
+export interface OkurOkumaSirasi { kod: string; ad: string; eser: KisaKayit; sahneler: string[] }
+export interface SahneOkurSirasi {
+  kod: string; ad: string; eser: KisaKayit; sira: number;
+  once: AnBilgisi[]; buSahnede: AnBilgisi[]; notlar: string[];
+}
+export interface SahneOkurSonucu { siralar: SahneOkurSirasi[]; uyari: string | null }
+
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -631,6 +639,7 @@ export interface SahneBaglami {
   katilimcilar: SahneKatilimcisi[];
   /** Bakış açısı karakterinin sahnenin tarihinde bildikleri (§5.5). */
   bakisBilgileri: AnBilgisi[];
+  okurBilgileri: SahneOkurSonucu;
 }
 
 /** İddia ve bilgi durumu (§3.6). */
