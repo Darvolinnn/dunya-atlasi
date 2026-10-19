@@ -412,6 +412,18 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     };
   }
 
+  // ---------- Metin kurtarma taslağı (§10.7) ----------
+  private taslakAnahtari(anahtar: unknown): string {
+    if (typeof anahtar !== 'string' || !anahtar || anahtar.length > 200) throw new Error('Geçersiz taslak.');
+    return anahtar;
+  }
+  taslakOku({ anahtar }: { anahtar: string }) { return this.kurulum.taslak(this.taslakAnahtari(anahtar)); }
+  taslakYaz({ anahtar, deger }: { anahtar: string; deger: string }) {
+    if (typeof deger !== 'string' || deger.length > 20_000_000) throw new Error('Taslak çok büyük.');
+    this.kurulum.taslakYaz(this.taslakAnahtari(anahtar), deger);
+  }
+  taslakSil({ anahtar }: { anahtar: string }) { this.kurulum.taslakSil(this.taslakAnahtari(anahtar)); }
+
   kaldigiYerYaz({ evren, yer }: { evren: string; yer: Omit<KaldigiYer, 'zaman'> }) {
     this.evren(evren);
     const kayit = yer?.kayit && kodGecerliMi(yer.kayit) ? yer.kayit : null;

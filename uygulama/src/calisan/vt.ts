@@ -33,7 +33,7 @@ const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', '
   'iceAktarIncele', 'iceAktar', 'yedekAl', 'yedekIncele', 'yedektenYukle', 'evrenYerineKoy', 'sonYedek',
   'catismalar', 'catismaSayisi', 'alanCatismasiCoz', 'silmeCatismasiCoz', 'metinCatismasiCoz',
   'esitle', 'esitlemeDurumu', 'uzakEvrenler', 'evreniIndir', 'evrenEsitlemeAyari', 'kurulumAdiDegistir', 'kurulumKullanimDisi',
-  'kaldigiYer', 'kaldigiYerYaz', 'donemselYedekDurumu', 'driveYedekleri', 'drivedaYedekAl', 'drivedanGeriYukle', 'yedekAyarlari',
+  'kaldigiYer', 'kaldigiYerYaz', 'taslakOku', 'taslakYaz', 'taslakSil', 'donemselYedekDurumu', 'driveYedekleri', 'drivedaYedekAl', 'drivedanGeriYukle', 'yedekAyarlari',
   'eserYapisi', 'anlatiYeri', 'yerlesmemisler', 'eserler', 'anlatiYerlestir', 'anlatiOlustur',
   'durumlar', 'durumEkle', 'durumDegistir', 'durumSil', 'ozellikAdlari', 'sahneAlaniAyarla', 'sahneBaglami',
   'sablon', 'sablonYaz', 'kayitSablonu', 'kayitAlanYaz', 'soruCevapla', 'soruKayitla', 'kayitSoruSeti', 'evrenSorulari', 'meseleler', 'yazarKaydiEkle',

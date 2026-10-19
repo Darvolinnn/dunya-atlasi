@@ -8,6 +8,7 @@ const SEMA = `
 CREATE TABLE IF NOT EXISTS ayar(k TEXT PRIMARY KEY, v TEXT);
 CREATE TABLE IF NOT EXISTS evrenler(kod TEXT PRIMARY KEY, ad TEXT NOT NULL, olusturma INTEGER NOT NULL, son_acilis INTEGER);
 CREATE TABLE IF NOT EXISTS kurulumlar(kod TEXT PRIMARY KEY, ad TEXT NOT NULL, son_gorulme INTEGER, kullanim_disi INTEGER);
+CREATE TABLE IF NOT EXISTS taslaklar(k TEXT PRIMARY KEY, v TEXT NOT NULL);
 `;
 
 export class KurulumVt {
@@ -44,6 +45,11 @@ export class KurulumVt {
   ayarYaz(k: string, v: string) {
     this.db.exec({ sql: 'INSERT INTO ayar VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v', bind: [k, v] });
   }
+
+  /** Metin kurtarma taslakları (§10.7): yalnızca bu cihazda, evren verisi değildir. */
+  taslak(k: string): string | null { return (this.db.selectValue('SELECT v FROM taslaklar WHERE k=?', [k]) as string | undefined) ?? null; }
+  taslakYaz(k: string, v: string) { this.db.exec({ sql: 'INSERT INTO taslaklar VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v', bind: [k, v] }); }
+  taslakSil(k: string) { this.db.exec({ sql: 'DELETE FROM taslaklar WHERE k=?', bind: [k] }); }
 
   /** Bu kurulumun adını değiştirir ("Ofis bilgisayarı, Edge"). */
   adDegistir(ad: string) {

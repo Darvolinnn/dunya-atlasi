@@ -1198,6 +1198,9 @@ export interface Istekler {
 
   kaldigiYer(a: { evren: string }): KaldigiYerBilgisi | null;
   kaldigiYerYaz(a: { evren: string; yer: Omit<KaldigiYer, 'zaman'> }): void;
+  taslakOku(a: { anahtar: string }): string | null;
+  taslakYaz(a: { anahtar: string; deger: string }): void;
+  taslakSil(a: { anahtar: string }): void;
   eserYapisi(a: { evren: string; eser: string }): EserYapisi;
   anlatiYeri(a: { evren: string; kod: string }): AnlatiYeri;
   yerlesmemisler(a: { evren: string }): YapiSahnesi[];
