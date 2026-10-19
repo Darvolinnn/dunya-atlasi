@@ -241,6 +241,8 @@ K24 "az kullanılan araçlar katlanır" der. Masa bir **görünüm**dür (Görü
 
 ## 7. Paketler
 
+> **Durum (19 Ekim gece):** kullanıcı D1–D13'ü önerildiği gibi onayladı. P1, P2, P3, P4 (ilk kısım), P5, P7, P8, P9, P10 kodlandı ve tasarıma işlendi (K27); birleştirme isteği #6'da ekran görüntüsü onayı bekliyor. P6 için iki resimli taslak hazır. Bu belgedeki "[öneri]" etiketleri yazıldığı anki durumu gösterir; güncel davranış tasarım belgesindedir.
+
 | # | Paket | İçerik | Yeni veri | Bağımlılık | Sınamalar |
 |---|---|---|---|---|---|
 | P1 | **Rehber** | Rehber metinleri, yan panel, "Neden?/Örnek", "Uygulamada deneyin" (açıklama ve ilgili kaydı aç türleri) | Yok | — | Her konu açılır; programlama terimi yok; Esc/odak (Akış 17) |
