@@ -51,6 +51,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   yayim_sil: (v, ad) => `${ad(v.eser)}: “${v.baski}” yayımı kaldırıldı`,
   yayim_karari: (v, ad) => `${ad(v.eser)}: yayımlanan eserle çelişen bir değişiklik için karar verildi`,
   belge_sunumu_yaz: (v, ad) => `${ad(v.kod)}: belgenin sunumu değişti`,
+  gokyuzu_yaz: () => 'Gökyüzü tanımı değişti',
   derleme_yaz: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'}: ${v.alan === 'ad' ? (v.derlemeAd === v.deger ? 'oluşturuldu' : `adı “${v.deger}” oldu`) : v.derlemeTuru === 'pano' ? 'görseller değişti' : 'adımlar değişti'}`,
   derleme_sil: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'} kaldırıldı`,
   derleme_geri_yukle: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'} geri getirildi`,

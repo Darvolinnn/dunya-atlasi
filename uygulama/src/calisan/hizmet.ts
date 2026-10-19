@@ -1,3 +1,4 @@
+import * as gokyuzu from './gokyuzu';
 // İsteklerin karşılandığı yer. Dosya açma dışarıdan verilir: tarayıcıda SAH havuzu, sınamada bellek.
 // Automerge WASM'ı bu sınıf kurulmadan önce hazırlanmış olmalıdır.
 import type { Database } from '@sqlite.org/sqlite-wasm';
@@ -507,6 +508,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           degerler: degerler.map((d) => ({ ...d, yazi: bic(d.deger) })) });
         continue;
       }
+      if (!iliski && alan === 'gokyuzu') {
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: 'Gökyüzü', alanEtiketi: 'Gökyüzü tanımı',
+          degerler: degerler.map((d) => ({ ...d, yazi: gokyuzu.tanimYazisi(d.deger) })) });
+        continue;
+      }
       if (!iliski && alan === 'gundelik') {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: 'Gündelik hayat kartları',
           degerler: degerler.map((d) => ({ ...d, yazi: `${(d.deger as unknown[] | null)?.length ?? 0} kart` })) });
@@ -835,6 +841,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (!iliski && alan === 'dil') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'dil_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
     if (!iliski && alan.startsWith('ad_bicimi:')) { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'ad_bicimi_yaz', veri: { kayit: nesne, dil: alan.slice(10), deger, cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'belge_sunumu') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'belge_sunumu_yaz', veri: { kod: nesne, sunum: deger ?? belgeMod.BOS_SUNUM, cozum: true } }], [nesne]); return; }
+    if (!iliski && nesne === 'evren' && alan === 'gokyuzu') { this.yaz(evren, [{ tur: 'gokyuzu_yaz', veri: { tanim: deger, cozum: true } }], gokyuzu.ilgiliKayitlar(deger)); return; }
     if (!iliski && alan === 'gundelik') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'gundelik_yaz', veri: { yer: nesne, kartlar: deger ?? [], cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'niyetler') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'sahne_niyeti_yaz', veri: { sahne: nesne, niyetler: deger ?? [], cozum: true } }], [nesne]); return; }
     if (!iliski && alan.startsWith('hedef:')) { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'montaj_hedefi_yaz', veri: { eser: nesne, iddia: alan.slice(6), hedef: deger, cozum: true } }], [nesne]); return; }
@@ -2082,6 +2089,25 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   siradanGun({ evren, yer, donem, statu }: { evren: string; yer: string; donem?: string | null; statu?: string | null }) { return gundelik.siradanGun(this.evren(evren), yer, donem ?? null, statu ?? null); }
   karsilastirmaliOkuma({ evren, sutunlar }: { evren: string; sutunlar: { kayit: string; tarih: string | null }[] }) {
     return gundelik.karsilastirmaliOkuma(this.evren(evren), sutunlar, (kod, an) => durum.durumlar(this.durumBaglami(evren), kod, an ?? undefined));
+  }
+  gokyuzuTanimi({ evren }: { evren: string }) { return gokyuzu.tanimOku(this.evren(evren)); }
+  gokyuzuYaz({ evren, tanim }: { evren: string; tanim: import('../veri/api').GokyuzuTanimi }) {
+    const e = this.evren(evren);
+    const deger = gokyuzu.tanimDogrula(tanim, zamanSetiOku(e.db));
+    for (const k of gokyuzu.ilgiliKayitlar(deger)) {
+      this.kayitVarMi(e, k);
+      const tur = e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=? AND silindi IS NULL', [k]);
+      if (!['mekan', 'sehir'].includes(String(tur))) throw new Error('Gelgit için bir kıyı yeri seçin.');
+    }
+    this.yaz(evren, [{ tur: 'gokyuzu_yaz', veri: { tanim: deger } }], gokyuzu.ilgiliKayitlar(deger));
+  }
+  gokyuzuHesapla({ evren, tarih }: { evren: string; tarih: string }) {
+    const e = this.evren(evren);
+    return gokyuzu.hesapla(gokyuzu.hesapTanimi(e), zamanSetiOku(e.db), tarih);
+  }
+  gokyuzuCakismaAra({ evren, baslangic, bitis, kosullar, mevsim }: { evren: string; baslangic: string; bitis: string; kosullar: import('../veri/api').GokyuzuKosulu[]; mevsim?: string | null }) {
+    const e = this.evren(evren);
+    return gokyuzu.cakismaAra(gokyuzu.hesapTanimi(e), zamanSetiOku(e.db), baslangic, bitis, kosullar, mevsim);
   }
   // ---------- Adlandırılmış evren sürümleri (§9.7) ----------
   private anaEvren(evren: string) {

@@ -223,6 +223,26 @@ export interface EvrenFarki { kayitlar: KayitFarki[]; iliskiler: IliskiFarki[] }
 export interface Yayim { kod: string; eser: KisaKayit; surum: { kod: string; ad: string }; baski: string; olusturma: number; acik: number }
 export interface YayimCelismesi { anahtar: string; kayit: KisaKayit; baslik: string; once: string | null; sonra: string | null; karar: string | null }
 export interface BelgeSunumu { bicim: 'mektup' | 'gazete' | 'ilan' | 'izin' | 'gunluk' | 'antlasma' | 'mezar'; yazan: string | null; alici: string | null; yer: string | null; muhur: string | null; muhurYazisi: string; imzalayanlar: string[] }
+export type AyEvresi = 'yeni' | 'buyuyen_hilal' | 'ilk_dordun' | 'buyuyen_siskin' | 'dolunay' | 'kuculen_siskin' | 'son_dordun' | 'kuculen_hilal';
+export interface GokyuzuTanimi {
+  aylar: { kod: string; ad: string; donem: number; baslangic: string; evre: AyEvresi }[];
+  mevsimler: { ad: string; baslangicGunu: number }[];
+  gelgitler: { kiyi: string; not: string; saat: number }[];
+}
+export interface GokyuzuKosulu { ay: string; evre: AyEvresi }
+export interface GokyuzuZarfi {
+  tur: 'bu kurallara göre zorunlu sonuç';
+  hukum: 'çözüm bulundu' | 'kayıtlı seçeneklerde bulunamadı' | 'denetlenemiyor';
+  guncellik: 'güncel'; kapsam: string; dayanak: string[]; varsayimlar: string[];
+}
+export interface GokyuzuSonucu {
+  tarih: EvrenTarihi; aralik: boolean;
+  aylar: { kod: string; ad: string; evreler: AyEvresi[] }[];
+  mevsimler: string[]; zarf: GokyuzuZarfi;
+}
+export interface GokyuzuCakismalari {
+  gunler: EvrenTarihi[]; dahaFazla: boolean; zarf: GokyuzuZarfi;
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -596,6 +616,10 @@ export interface CizelgeOgesi { kod: string; ad: string; tur: string; karar: str
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
 
 export interface Istekler {
+  gokyuzuTanimi(a: { evren: string }): GokyuzuTanimi | null;
+  gokyuzuYaz(a: { evren: string; tanim: GokyuzuTanimi }): void;
+  gokyuzuHesapla(a: { evren: string; tarih: string }): GokyuzuSonucu;
+  gokyuzuCakismaAra(a: { evren: string; baslangic: string; bitis: string; kosullar: GokyuzuKosulu[]; mevsim?: string | null }): GokyuzuCakismalari;
   baslat(): KurulumBilgisi;
   evrenler(): EvrenOzeti[];
   evrenOlustur(a: { ad: string }): { kod: string };
