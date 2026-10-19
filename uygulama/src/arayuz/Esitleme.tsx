@@ -96,7 +96,7 @@ export function EsitlemeSeridi() {
   if (e.eposta && !e.durum.bagli) {
     return (
       <div class="esitleme-seridi" role="status">
-        <span>Değişiklikler bu cihaza kaydediliyor. Drive ile eşitlemek için dokunun.</span>
+        <span>Değişiklikler bu cihaza kaydediliyor. Drive ile eşitlemek için tıklayın.</span>
         <button class="dugme ana" onClick={() => void e.baglan()} disabled={e.baglaniyor}>{e.baglaniyor ? 'Bekleniyor…' : 'Eşitle'}</button>
         {e.hata && <span class="hata">{e.hata}</span>}
       </div>
@@ -209,7 +209,7 @@ export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
           {!e.eposta && !d.bagli && (
             <>
               <p>Evrenler Drive'ınızda programa ayrılmış bir klasöre eşitlenir. Bu klasörü Drive'da göremezsiniz; program da Drive'daki öbür dosyalarınızı göremez. Yedekler ise görebildiğiniz ayrı bir klasöre alınır.</p>
-              <p class="soluk kucuk">Google'ın açtığı pencerede hesabınızı seçip izin verin. İzin yaklaşık bir saat geçerlidir. Süresi dolunca üstte “eşitlemek için dokunun” uyarısı çıkar ve izin tek dokunuşla yenilenir. Bu arada yazmaya devam edebilirsiniz.</p>
+              <p class="soluk kucuk">Google'ın açtığı pencerede hesabınızı seçip izin verin. İzin yaklaşık bir saat geçerlidir. Süresi dolunca üstte “eşitlemek için tıklayın” uyarısı çıkar ve izin tek tıklamayla yenilenir. Bu arada yazmaya devam edebilirsiniz.</p>
               <button class="dugme ana" onClick={() => void e.baglan()} disabled={e.baglaniyor}>{e.baglaniyor ? 'Google penceresi bekleniyor…' : 'Google Drive\'a bağlan'}</button>
             </>
           )}

@@ -349,7 +349,7 @@ export function OlcekliHaritaBolumu({
         </svg>
         {hedef !== 'yok' && (
           <p class="soluk kucuk">
-            Noktayı seçmek için yukarıdaki haritaya dokunun ({HEDEF_YAZISI[hedef]}).{' '}
+            Noktayı seçmek için yukarıdaki haritaya tıklayın ({HEDEF_YAZISI[hedef]}).{' '}
             <button type="button" class="dugme sade kucuk" onClick={() => setHedef('yok')}>
               Vazgeç
             </button>

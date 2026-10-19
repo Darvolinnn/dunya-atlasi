@@ -134,6 +134,8 @@ Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok.
 - **Tarayıcı sınamaları:** `uygulama/e2e/akislar.spec.ts`, `npm run sina:tarayici`; bulutta `PW_CHROMIUM=/opt/pw-browsers/chromium`. "Rehberli arayüz" kodlanırsa ilk açılışta başlangıç sorusu gelir; `e2e/yardimci.ts` `sahneAc` ona göre güncellenmeli.
 - **Kurtarma taslağı:** `metinKaydet` taslağı aynı istekte siler (kayıt isteğinden önce yazılmışsa); kurtarma alanına yazılamazsa asıl taslak silinmez.
 - **İstemci:** çalışan yüklenemez ya da çökerse bekleyen istekler hatayla biter; açılış hata ekranında "Yeniden dene".
+- **Masaüstü dili:** fareyle kullanılan ekranlarda "dokunun" değil "tıklayın" (`dddfbda`, başka oturum); "Vazgeçilmişler" → "Vazgeçilen kayıtlar", başlangıç sorusunda "merkez çatışması" → "ana çatışması".
+- `test/kural-atolyesi.test.ts` "tarih ve geçerlilik aralığı" sınaması bütün sınamalar birlikte çalışınca ara sıra kırılıyormuş, tek başına hep geçiyor (başka oturumun notu; nedeni bulunmadı).
 - Windows'ta bir kez görülen `esitleme.test.ts` "kullanım dışı cihaz temizliği bekletmez" kırılması (yük altında süre); GitHub'daki Windows işinde yinelenirse kök nedeni aranır.
 
 ### 3.5 Rehberli arayüz (kullanıcı isteği, 19 Ekim 2026; karar bekliyor, kodlanmadı)
