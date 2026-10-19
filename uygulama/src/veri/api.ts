@@ -352,6 +352,24 @@ export interface KullanimMasasi {
   alanlar: (KullanimAlani & { kayitKaydi: KisaKayit | null; yazilmamis: ('maliyet' | 'erisim' | 'karsiOnlem' | 'yasak')[] })[];
   adaylar: KisaKayit[]; not: string;
 }
+export type YogunlukOlcutu = 'olay' | 'sahne' | 'kelime' | 'kayit';
+export interface YogunlukSayilari { olay: number; sahne: number; kelime: number; kayit: number }
+export interface YogunlukIstegi { baslangic: string; bitis: string; adim: 1 | 10 | 100; eser?: string | null; tur?: string | null; harita?: string | null }
+export interface YogunlukSatiri { kod: string; ad: string; enAz: YogunlukSayilari; enCok: YogunlukSayilari; aciklama: string }
+export interface YogunlukKaydi extends KisaKayit {
+  tarih: EvrenTarihi | null; kelime: number;
+  dilimler: { ilk: number; son: number; kesin: boolean } | null;
+  zamanDurumu: 'dilimde' | 'tarihsiz' | 'disarida';
+  bolgeler: { kod: string; kesin: boolean }[];
+  konumDurumu: 'konumlu' | 'konumsuz' | 'disarida';
+}
+export interface YogunlukSonucu {
+  dilimler: YogunlukSatiri[]; bolgeler: YogunlukSatiri[]; kayitlar: YogunlukKaydi[];
+  tarihsiz: YogunlukSayilari; zamanDisinda: YogunlukSayilari; konumsuz: YogunlukSayilari; bolgeDisinda: YogunlukSayilari;
+  eserler: KisaKayit[]; haritalar: { kod: string; ad: string }[]; turler: string[];
+  harita: { kod: string; ad: string } | null;
+  zarf: { tur: 'bu kurallara göre zorunlu sonuç'; hukum: 'çözüm bulundu'; guncellik: 'güncel'; kapsam: string; dayanak: string[]; varsayimlar: string[] };
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -725,6 +743,7 @@ export interface CizelgeOgesi { kod: string; ad: string; tur: string; karar: str
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
 
 export interface Istekler {
+  yogunluk(a: { evren: string } & YogunlukIstegi): YogunlukSonucu;
   gokyuzuTanimi(a: { evren: string }): GokyuzuTanimi | null;
   gokyuzuYaz(a: { evren: string; tanim: GokyuzuTanimi }): void;
   gokyuzuHesapla(a: { evren: string; tarih: string }): GokyuzuSonucu;
