@@ -81,6 +81,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | §5.8 | Komut paletinde "Yolculuk süresi" (kayıtlı rotalarla en kısa yol) ve "Takvim günü hesabı" (tarihe gün/yıl ekleme, iki tarih arası; `alan/tarih.ts` `gunFarki`), `arayuz/Hesaplar.tsx` | `b7601cd` |
 | Hız | `disaridanAl` adayları her turda baştan tarıyordu (kareli). 52.500 işlemde evreni başka cihazda kurma 101 sn → 22 sn; yerelde baştan kurma 25 sn, arama 63 ms, tek değişiklik 1 ms | `7a876b0` |
 | §10.1 | Metnin toplu uygulanması ve bellekte en çok 32 metin belgesi; 21.800 gerçekçi işlemde yeni cihazda kurma 154 sn → 9,3 sn (ayrıntı §3.3-2) | `99ba813` |
+| Bellek | Automerge geçici kopyaları bırakılmıyordu (uzun yazma oturumunda bellek sınırsız büyüyor, 4 GB'da çöküyordu); kapatıldı | `2253aa4` |
 | F19 | İnceleme: ayırt etme satırı var, sahne hatırlatıcısını sahne paneli karşılıyor; okur tanıtımı ve "sır yayına girmez" yayına (§11) bağlı, K20 gereği kapsam dışı | — |
 ### 3.2 Açık PR'lar ve dallar
 
@@ -102,9 +103,11 @@ Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok.
      |---|---|---|---|---|
      | 21.800 | 154 sn | 9,3 sn | 10,2 sn | 253 MB → 192 MB |
      | 40.800 | 319 sn | — | — | — |
-     | 60.000 ve 150.000 | — | ölçülüyor (19 Ekim akşam) | | |
+     | 63.400 | — | 25 sn | 21 sn | +247 MB |
+     | 150.000 | — | ölçülüyor (19 Ekim akşam) | | |
 
      Neden yavaştı: her metin kaydı uygulanırken belge baştan okunuyor (`A.spans`) ve baştan paketleniyordu (`A.save`); Automerge'ün değişikliği işlemesi (`A.loadIncremental`) de değişiklik başına pahalıydı. Toplu yolun kuralları `izdusum.ts` "Toplu uygulama" yorumunda; eşdeğerlik sınaması `test/toplu-metin.test.ts`.
+   - [x] **Automerge bellek sızıntısı kapatıldı** (`2253aa4`): her metin kaydı belgenin tam kopyasını (`A.clone`) alıp bırakıyordu; Automerge belleği çöp toplayıcıya görünmediği için birikiyordu (3.000 kayıtta +1,2 GB; 70.000 kayıtta modül 4 GB sınırında çöktü). Geçici kopyalar `try/finally` ile `A.free`; 32'yi aşıp bellekten çıkan belge de bırakılır. Şimdi 3.000 kayıtta +26 MB. **Yeni bir `A.clone`/`A.from`/`A.load` yazarken sonucu iş bitince `A.free` ile bırak** (`A.view`, `A.change`, `A.loadIncremental`, `A.merge` yeni bellek açmaz).
    - [ ] **Tablette gerçek bellek ölçümü:** yukarıdaki bellek sayıları Node sınama sürecinin (iki cihaz birden). Tarayıcıda büyük bir evrenle (açılış, yazma, baştan kurma) ölçülmeli; tablet 4 GB'ın altında kalmalı. Wasm belleği büyüyünce küçülmez; tepe değer önemli.
    - [ ] **Adım 2 (öneri, kullanıcıya sunulacak): anlık görüntüden kurma.** Evren belli aralıklarla tabloların anlık görüntüsünü saklar; geçmişe düşen işlem ve yedekten dönüş baştan değil görüntüden işler. **Program güncellemesi** ayrıca düşünülmeli: (a) tabloları silmeden yerinde dönüştürme ya da (b) yeni tabloları arka planda kurarken eskileriyle yazmaya devam. Kullanıcıya iki seçenek somut örneklerle anlatılmalı (kullanıcı yazılımcı değil; günlük hayat ya da bilgisayar örnekleri tercih ediyor, laboratuvar benzetmesi istemiyor).
    - [ ] **Adım 3 (öneri): yeni cihaza günlük yerine anlık görüntü gönderme.** Eşitleme biçimi değişir; yalnız Adım 1–2'den sonra yeni cihaza indirme hâlâ yavaşsa.
