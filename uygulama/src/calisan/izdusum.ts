@@ -902,22 +902,100 @@ function listeDegistir(db: Database, kod: string, sutun: 'lakaplar' | 'etiketler
 }
 
 // ---- Uzun metin (Automerge) ----
-// Açık belgeler bellekte tutulur; her işlem bellekteki belgeye eklenir ve kaydedilir.
+// Son kullanılan belgeler bellekte tutulur, gerisi diskte (metinler.belge) durur ve gerektiğinde okunur (§10.1).
+// Her işlem belgeye eklenir ve belge diske yazılır; bellekten çıkan belge diskteki hâliyle aynıdır.
+const BELLEKTEKI_METIN = 32;
 const belgeler = new WeakMap<Database, Map<string, A.Doc<{ t: string }>>>();
-export function metinBelgesi(db: Database, kayit: string, alan: string): A.Doc<{ t: string }> | null {
+function bellek(db: Database) {
   let m = belgeler.get(db);
   if (!m) { m = new Map(); belgeler.set(db, m); }
+  return m;
+}
+function bellegeKoy(db: Database, anahtar: string, d: A.Doc<{ t: string }>) {
+  const m = bellek(db);
+  m.delete(anahtar);
+  m.set(anahtar, d);
+  // Map ekleme sırasını korur: en eski kullanılan baştadır.
+  while (m.size > BELLEKTEKI_METIN) m.delete(m.keys().next().value!);
+}
+export function metinBelgesi(db: Database, kayit: string, alan: string): A.Doc<{ t: string }> | null {
   const anahtar = kayit + '\u0000' + alan;
-  let d = m.get(anahtar);
+  let d = bellek(db).get(anahtar);
   if (!d) {
     const b = db.selectValue('SELECT belge FROM metinler WHERE kayit=? AND alan=?', [kayit, alan]) as Uint8Array | undefined;
     if (!b) return null;
     d = A.load<{ t: string }>(b);
-    m.set(anahtar, d);
   }
+  bellegeKoy(db, anahtar, d);
   return d;
 }
-export function metinBelleginiTemizle(db: Database) { belgeler.delete(db); }
+/** Bir işaretin bağlı olduğu metinde biriken iş, işaret değişmeden önce uygulanır. */
+function isaretinMetniniUygula(db: Database, kod: string) {
+  if (!toplu.get(db)?.bekleyen.size) return;
+  const r = db.selectObject('SELECT kayit, alan FROM metin_isaretleri WHERE kod=?', [kod]);
+  if (r) bekleyeniUygula(db, `${r.kayit}\u0000${r.alan}`);
+}
+export function metinBelleginiTemizle(db: Database) { belgeler.delete(db); toplu.delete(db); }
+
+// Toplu uygulama (§10.1): baştan kurmada ve dışarıdan gelen işlemlerde bir metin alanının değişiklikleri biriktirilir
+// ve alan başına bir kez uygulanır; okunuş, bağlantılar, işaret yerleri ve çatışma kayıtları bir kez üretilir.
+// Kaydın düzenleme zamanı her işlemde hemen yazılır (öbür işlemlerle sırası korunsun). Tamamlanmamış işaretli
+// cümlesi olan alan (ilk görülen hâli bekleniyor) ve metin çatışması çözümü öncesi biriken iş hemen uygulanır.
+const TOPLU_BAYT = 32 * 1024 * 1024;
+const toplu = new WeakMap<Database, { bekleyen: Map<string, Islem[]>; bayt: number }>();
+export function topluBaslat(db: Database) { toplu.set(db, { bekleyen: new Map(), bayt: 0 }); }
+/** Biriken metinleri uygular ve toplu kipten çıkar. */
+export function topluBitir(db: Database) {
+  const t = toplu.get(db);
+  if (!t) return;
+  for (const anahtar of [...t.bekleyen.keys()]) bekleyeniUygula(db, anahtar);
+  toplu.delete(db);
+}
+/** Biriken metinleri uygulamadan toplu kipten çıkar (tablolar zaten baştan kurulacak). */
+export function topluBirak(db: Database) { toplu.delete(db); }
+function bekleyeniUygula(db: Database, anahtar: string) {
+  const t = toplu.get(db);
+  const l = t?.bekleyen.get(anahtar);
+  if (!t || !l) return;
+  t.bekleyen.delete(anahtar);
+  for (const i of l) t.bayt -= i.ikili!.length;
+  const [kayit, alan] = anahtar.split('\u0000');
+  metniUygula(db, kayit, alan, l, false);
+}
+function ikiliBirlestir(l: Islem[]): Uint8Array {
+  if (l.length === 1) return l[0].ikili!;
+  const v = new Uint8Array(l.reduce((n, i) => n + i.ikili!.length, 0));
+  let o = 0;
+  for (const i of l) { v.set(i.ikili!, o); o += i.ikili!.length; }
+  return v;
+}
+/** Bir metin alanına bir ya da birden çok işlemin değişikliklerini uygular ve türetilenleri yazar. */
+function metniUygula(db: Database, kayit: string, alan: string, l: Islem[], duzenlemeYaz: boolean) {
+  const son = l[l.length - 1];
+  const onceki = metinBelgesi(db, kayit, alan) ?? A.init<{ t: string }>();
+  const yeni = A.loadIncremental(onceki, ikiliBirlestir(l));
+  bellegeKoy(db, kayit + '\u0000' + alan, yeni);
+  const spans = A.spans(yeni, ['t']) as never;
+  const duz = duzMetin(spans);
+  db.exec({
+    sql: `INSERT INTO metinler(kayit, alan, belge, duz, katli, duzenleme) VALUES(?,?,?,?,?,?)
+          ON CONFLICT(kayit, alan) DO UPDATE SET belge=excluded.belge, duz=excluded.duz, katli=excluded.katli, duzenleme=excluded.duzenleme`,
+    bind: [kayit, alan, A.save(yeni), duz, katla(duz), son.zaman],
+  });
+  db.exec({ sql: 'DELETE FROM baglantilar WHERE kaynak=? AND alan=?', bind: [kayit, alan] });
+  baglantilar(spans).forEach((b, sira) => db.exec({
+    sql: 'INSERT INTO baglantilar(kaynak, alan, sira, hedef, metin) VALUES(?,?,?,?,?)', bind: [kayit, alan, sira, b.hedef, b.metin],
+  }));
+  db.exec({ sql: 'DELETE FROM metin_isaret_yerleri WHERE kayit=? AND alan=?', bind: [kayit, alan] });
+  isaretYerleri(spans).forEach((y, sira) => {
+    db.exec({ sql: 'INSERT INTO metin_isaret_yerleri(kayit, alan, sira, isaret, metin) VALUES(?,?,?,?,?)', bind: [kayit, alan, sira, y.isaret, y.metin.slice(0, 500)] });
+    // İşaretli cümlenin ilk görülen hâli; kritik cümle bundan sonra değişirse yazara sorulur (F24).
+    db.exec({ sql: 'UPDATE metin_isaretleri SET metin=? WHERE kod=? AND metin IS NULL AND kayit=? AND alan=?', bind: [y.metin.slice(0, 500), y.isaret, kayit, alan] });
+  });
+  if (duzenlemeYaz) db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [son.zaman, kayit] });
+  // Çatışma kayıtları sürümlere geçmişten bakar; son belge her işlemin gördüğü sürümü içerir.
+  for (const i of l) if (!i.veri.ilk) metinYazanlari(db, i, yeni);
+}
 
 // ---- Çatışmalar (§10.3, §10.6) ----
 // Bir alanın "yazanları": o alana yazmış ve sonradan görülüp üzerine yazılmamış işlemler. Biri öbürünü
@@ -1090,6 +1168,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (tur === 'silme') silmeCatismalariniKapat(db, i, kayit);
     if (tur === 'ters_birlesme') db.exec({ sql: 'DELETE FROM ters_birlesmeler WHERE islem=?', bind: [String(i.veri.islem)] });
     if (tur === 'metin') {
+      bekleyeniUygula(db, kayit + '\u0000' + (alan ?? 'govde'));
       for (const r of db.selectObjects('SELECT a, b, a_kurulum, a_sira, b_kurulum, b_sira FROM metin_catismalari WHERE kayit=? AND alan=?', [kayit, alan ?? 'govde'])) {
         if (gorduMu(i, r.a_kurulum as string, Number(r.a_sira)) && gorduMu(i, r.b_kurulum as string, Number(r.b_sira))) {
           db.exec({ sql: 'DELETE FROM metin_catismalari WHERE kayit=? AND alan=? AND a=? AND b=?', bind: [kayit, alan ?? 'govde', r.a as string, r.b as string] });
@@ -1503,6 +1582,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   metin_isareti_olustur(db, i) {
     const v = i.veri as { kod?: unknown; kayit?: unknown; alan?: unknown; hedef?: unknown; hedefAlan?: unknown; iddia?: unknown; kritik?: unknown; imza?: unknown };
     if (typeof v.kod !== 'string' || typeof v.kayit !== 'string' || typeof v.alan !== 'string') return;
+    bekleyeniUygula(db, v.kayit + '\u0000' + v.alan); // ilk görülen hâl bu işaretten önceki metinden alınmasın
     db.exec({ sql: `INSERT OR IGNORE INTO metin_isaretleri(kod, kayit, alan, hedef, hedef_alan, iddia, kritik, imza, olusturma, duzenleme) VALUES(?,?,?,?,?,?,?,?,?,?)`,
       bind: [v.kod, v.kayit, v.alan, typeof v.hedef === 'string' ? v.hedef : null, typeof v.hedefAlan === 'string' ? v.hedefAlan : null, String(v.iddia ?? ''), v.kritik ? 1 : 0,
         typeof v.imza === 'string' ? v.imza : null, i.zaman, i.zaman] });
@@ -1511,14 +1591,17 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const { kod, alan, deger } = i.veri as { kod?: unknown; alan?: unknown; deger?: unknown };
     const sutun: Record<string, string> = { hedef: 'hedef', hedefAlan: 'hedef_alan', iddia: 'iddia', kritik: 'kritik', imza: 'imza', metin: 'metin' };
     if (typeof kod !== 'string' || typeof alan !== 'string' || !sutun[alan]) return;
+    isaretinMetniniUygula(db, kod);
     const d = alan === 'kritik' ? (deger ? 1 : 0) : alan === 'iddia' ? String(deger ?? '') : typeof deger === 'string' ? deger : null;
     db.exec({ sql: `UPDATE metin_isaretleri SET ${sutun[alan]}=?, duzenleme=? WHERE kod=?`, bind: [d, i.zaman, kod] });
     alanYaz(db, i, kod, alan, deger ?? null);
   },
   metin_isareti_sil(db, i) {
+    isaretinMetniniUygula(db, i.veri.kod as string);
     db.exec({ sql: 'UPDATE metin_isaretleri SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
   },
   metin_isareti_geri_yukle(db, i) {
+    isaretinMetniniUygula(db, i.veri.kod as string);
     db.exec({ sql: 'UPDATE metin_isaretleri SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
   },
   /** Evren içi belgenin sunumu (§11.5): biçim, mühür, bağlı kişiler. */
@@ -2139,28 +2222,19 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   metin(db, i) {
     const { kayit, alan } = i.veri as { kayit: string; alan: string };
     if (!i.ikili) return;
-    const onceki = metinBelgesi(db, kayit, alan) ?? A.init<{ t: string }>();
-    const yeni = A.loadIncremental(onceki, i.ikili);
-    belgeler.get(db)!.set(kayit + '\u0000' + alan, yeni);
-    const spans = A.spans(yeni, ['t']) as never;
-    const duz = duzMetin(spans);
-    db.exec({
-      sql: `INSERT INTO metinler(kayit, alan, belge, duz, katli, duzenleme) VALUES(?,?,?,?,?,?)
-            ON CONFLICT(kayit, alan) DO UPDATE SET belge=excluded.belge, duz=excluded.duz, katli=excluded.katli, duzenleme=excluded.duzenleme`,
-      bind: [kayit, alan, A.save(yeni), duz, katla(duz), i.zaman],
-    });
-    db.exec({ sql: 'DELETE FROM baglantilar WHERE kaynak=? AND alan=?', bind: [kayit, alan] });
-    baglantilar(spans).forEach((b, sira) => db.exec({
-      sql: 'INSERT INTO baglantilar(kaynak, alan, sira, hedef, metin) VALUES(?,?,?,?,?)', bind: [kayit, alan, sira, b.hedef, b.metin],
-    }));
-    db.exec({ sql: 'DELETE FROM metin_isaret_yerleri WHERE kayit=? AND alan=?', bind: [kayit, alan] });
-    isaretYerleri(spans).forEach((y, sira) => {
-      db.exec({ sql: 'INSERT INTO metin_isaret_yerleri(kayit, alan, sira, isaret, metin) VALUES(?,?,?,?,?)', bind: [kayit, alan, sira, y.isaret, y.metin.slice(0, 500)] });
-      // İşaretli cümlenin ilk görülen hâli; kritik cümle bundan sonra değişirse yazara sorulur (F24).
-      db.exec({ sql: 'UPDATE metin_isaretleri SET metin=? WHERE kod=? AND metin IS NULL AND kayit=? AND alan=?', bind: [y.metin.slice(0, 500), y.isaret, kayit, alan] });
-    });
-    db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, kayit] });
-    if (!i.veri.ilk) metinYazanlari(db, i, yeni);
+    const anahtar = kayit + '\u0000' + alan;
+    const t = toplu.get(db);
+    if (t && db.selectValue('SELECT 1 FROM metin_isaretleri WHERE kayit=? AND alan=? AND metin IS NULL LIMIT 1', [kayit, alan]) === undefined) {
+      const l = t.bekleyen.get(anahtar);
+      if (l) l.push(i); else t.bekleyen.set(anahtar, [i]);
+      t.bayt += i.ikili.length;
+      db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, kayit] });
+      if (t.bayt > TOPLU_BAYT) for (const k of [...t.bekleyen.keys()]) bekleyeniUygula(db, k);
+      return;
+    }
+    // İlk görülen hâli beklenen işaretli cümle var: bu işlem tek başına, sırasında uygulanır.
+    bekleyeniUygula(db, anahtar);
+    metniUygula(db, kayit, alan, [i], true);
   },
   uyarlama_yaz(db, i) {
     const { kod, deger } = i.veri as { kod: string; deger: unknown };
