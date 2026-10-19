@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 32;
+export const IZDUSUM_SURUMU = 33;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -300,6 +300,14 @@ CREATE TABLE IF NOT EXISTS evren_surumleri(
   aciklama TEXT NOT NULL DEFAULT '',
   gordu TEXT NOT NULL,
   islem_sayisi INTEGER NOT NULL,
+  olusturma INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE TABLE IF NOT EXISTS dallar(
+  kod TEXT PRIMARY KEY,
+  ad TEXT NOT NULL,
+  aciklama TEXT NOT NULL DEFAULT '',
+  gordu TEXT NOT NULL,
   olusturma INTEGER NOT NULL,
   silindi INTEGER
 );
@@ -575,7 +583,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'derlemeler', 'evren_surumleri', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'derlemeler', 'evren_surumleri', 'dallar', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -1173,6 +1181,25 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   surum_geri_yukle(db, i) {
     db.exec({ sql: 'UPDATE evren_surumleri SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+  /** Deneme kopyası (§9.7): ana evrenin bu işlemin gördüğü hâlinden açılan dal. Dalın kendi değişiklikleri ayrı dosyadadır. */
+  dal_olustur(db, i) {
+    const v = i.veri as { kod?: unknown; ad?: unknown; aciklama?: unknown };
+    if (typeof v.kod !== 'string') return;
+    db.exec({ sql: 'INSERT OR IGNORE INTO dallar(kod, ad, aciklama, gordu, olusturma) VALUES(?,?,?,?,?)',
+      bind: [v.kod, String(v.ad ?? '').slice(0, 120), String(v.aciklama ?? '').slice(0, 1000), JSON.stringify(i.gordu), i.zaman] });
+  },
+  dal_yaz(db, i) {
+    const { kod, alan, deger } = i.veri as { kod: string; alan: string; deger: unknown };
+    if (alan !== 'ad' && alan !== 'aciklama') return;
+    db.exec({ sql: `UPDATE dallar SET ${alan}=? WHERE kod=?`, bind: [String(deger ?? '').slice(0, alan === 'ad' ? 120 : 1000), kod] });
+    alanYaz(db, i, kod, alan, deger ?? null);
+  },
+  dal_sil(db, i) {
+    db.exec({ sql: 'UPDATE dallar SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  dal_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE dallar SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
   },
   /** Gezinti ve görsel pano (§7): yazarın derlediği listeler. İlk yazım derlemeyi kurar. */
   derleme_yaz(db, i) {

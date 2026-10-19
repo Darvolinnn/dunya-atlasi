@@ -45,6 +45,7 @@ import * as montaj from './montaj';
 import * as gundelik from './gundelik';
 import * as derlemeMod from './derleme';
 import * as fark from './fark';
+import * as dalMod from './dal';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -100,17 +101,21 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return e;
   }
 
-  /** Kod bir evrenin adlandırılmış sürümüyse o sürümü salt okunur olarak kurar (bellekte, günlükten). */
+  /**
+   * Kod bir evrenin adlandırılmış sürümüyse o sürümü salt okunur olarak kurar (bellekte, günlükten). Deneme kopyasıysa
+   * dalın kendi dosyasını açar; dosya bu cihazda yoksa dalın açıldığı andaki hâlden kurulur.
+   */
   private bagliAc(kod: string): EvrenVt {
     for (const x of this.kurulum.evrenler()) {
       const ana = this.evren(x.kod);
-      const r = ana.db.selectObject('SELECT gordu FROM evren_surumleri WHERE kod=?', [kod]);
-      if (!r) continue;
-      const gordu = JSON.parse(r.gordu as string) as Record<string, number>;
-      const e = new EvrenVt(this.gecici(), this.kurulum.kod);
-      e.disaridanAl(ana.islemler().filter((i) => i.sira <= (gordu[i.kurulum] ?? 0)));
+      const s = ana.db.selectObject('SELECT gordu FROM evren_surumleri WHERE kod=?', [kod]);
+      const d = s ? undefined : ana.db.selectObject('SELECT gordu FROM dallar WHERE kod=?', [kod]);
+      if (!s && !d) continue;
+      const gordu = JSON.parse((s ?? d)!.gordu as string) as Record<string, number>;
+      const e = s ? new EvrenVt(this.gecici(), this.kurulum.kod) : new EvrenVt(this.ac(`/evren-${kod}.db`), kod);
+      if (e.islemSayisi() === 0) e.disaridanAl(ana.islemler().filter((i) => i.sira <= (gordu[i.kurulum] ?? 0)));
       this.acik.set(kod, e);
-      this.bagli.set(kod, { tur: 'surum', evren: x.kod });
+      this.bagli.set(kod, { tur: s ? 'surum' : 'dal', evren: x.kod });
       return e;
     }
     throw new Error('Bu evren bu cihazda yok.');
@@ -154,7 +159,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const b = this.bagli.get(evren);
     const anaOz = this.kurulum.evrenler().find((x) => x.kod === (b ? b.evren : evren))!;
     const anaAd = (b ? this.evren(b.evren) : e).db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined ?? anaOz.ad;
-    const bag = b ? { tur: b.tur, evren: b.evren, evrenAdi: anaAd, ad: this.evren(b.evren).db.selectValue('SELECT ad FROM evren_surumleri WHERE kod=?', [evren]) as string } : null;
+    const bag = b ? { tur: b.tur, evren: b.evren, evrenAdi: anaAd, ad: this.evren(b.evren).db.selectValue(`SELECT ad FROM ${b.tur === 'surum' ? 'evren_surumleri' : 'dallar'} WHERE kod=?`, [evren]) as string } : null;
     const oz = b ? { ...anaOz, kod: evren } : anaOz;
     if (!b) this.kurulum.acildi(evren);
     const ad = bag ? `${anaAd} · ${bag.ad}` : anaAd;
@@ -431,9 +436,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           alanEtiketi: `“${cz.ad}” haritasındaki ${ne} ${({ noktalar: 'sınırı', kayit: 'bağlı olduğu kayıt', kip: 'türü', baslangic: 'başlangıcı', bitis: 'bitişi' } as Record<string, string>)[alan] ?? alan}`, degerler });
         continue;
       }
-      const svr = iliski || dr ? undefined : e.db.selectObject('SELECT ad FROM evren_surumleri WHERE kod=?', [nesne]);
+      const svr = iliski || dr ? undefined : e.db.selectObject("SELECT ad, 'surum' t FROM evren_surumleri WHERE kod=? UNION ALL SELECT ad, 'dal' t FROM dallar WHERE kod=?", [nesne, nesne]);
       if (svr) {
-        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: `“${svr.ad}” sürümü`, alanEtiketi: alan === 'ad' ? 'Adı' : 'Açıklaması',
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: svr.t === 'dal' ? `“${svr.ad}” deneme kopyası` : `“${svr.ad}” sürümü`, alanEtiketi: alan === 'ad' ? 'Adı' : 'Açıklaması',
           degerler: degerler.map((d) => ({ ...d, yazi: d.deger === null ? '(boş)' : String(d.deger) })) });
         continue;
       }
@@ -723,6 +728,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (alan === 'asamalar') { this.yaz(evren, [{ tur: 'yolculuk_yaz', veri: { kod: nesne, asamalar: deger, cozum: true } }], [nesne]); return; }
     const svr = e.db.selectObject('SELECT ad FROM evren_surumleri WHERE kod=?', [nesne]);
     if (svr) { this.yaz(evren, [{ tur: 'surum_yaz', veri: { kod: nesne, alan, deger, surumAd: svr.ad, cozum: true } }]); return; }
+    const dlr0 = e.db.selectObject('SELECT ad FROM dallar WHERE kod=?', [nesne]);
+    if (dlr0) { this.yaz(evren, [{ tur: 'dal_yaz', veri: { kod: nesne, alan, deger, dalAd: dlr0.ad, cozum: true } }]); return; }
     const dlr = e.db.selectObject('SELECT ad, tur FROM derlemeler WHERE kod=?', [nesne]);
     if (dlr) { this.yaz(evren, [{ tur: 'derleme_yaz', veri: { kod: nesne, derlemeTuru: dlr.tur, alan, deger, derlemeAd: dlr.ad, cozum: true } }]); return; }
     const msr = e.db.selectObject('SELECT ad FROM masalar WHERE kod=?', [nesne]);
@@ -2091,6 +2098,61 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const e = this.anaEvren(evren);
     this.surumBul(e, surum);
     return fark.evrenFarki(this.evren(surum), e);
+  }
+
+  // ---------- Deneme kopyaları (§9.7) ----------
+  private readonly tabanlar = new Map<string, EvrenVt>();
+  private dalBul(e: EvrenVt, kod: string) {
+    const r = kodGecerliMi(kod) ? e.db.selectObject('SELECT * FROM dallar WHERE kod=?', [kod]) : undefined;
+    if (!r) throw new Error('Deneme kopyası bulunamadı.');
+    return r;
+  }
+  dallar({ evren }: { evren: string }) {
+    return this.anaEvren(evren).db.selectObjects('SELECT * FROM dallar WHERE silindi IS NULL ORDER BY olusturma DESC')
+      .map((r) => ({ kod: r.kod as string, ad: r.ad as string, aciklama: r.aciklama as string, olusturma: Number(r.olusturma) }));
+  }
+  dalOlustur({ evren, ad, aciklama = '' }: { evren: string; ad: string; aciklama?: string }) {
+    this.anaEvren(evren);
+    const kod = yeniKod();
+    this.yaz(evren, [{ tur: 'dal_olustur', veri: { kod, ad: temizle(ad, { uzunluk: 120 }), aciklama: temizle(aciklama, { bos: true, uzunluk: 1000 }) } }]);
+    this.evren(kod);
+    return { kod };
+  }
+  dalYaz({ evren, kod, alan, deger }: { evren: string; kod: string; alan: 'ad' | 'aciklama'; deger: string }) {
+    const r = this.dalBul(this.anaEvren(evren), kod);
+    if (alan !== 'ad' && alan !== 'aciklama') throw new Error('Geçersiz alan.');
+    const d = temizle(deger, { bos: alan === 'aciklama', uzunluk: alan === 'ad' ? 120 : 1000 });
+    if (d === r[alan]) return;
+    this.yaz(evren, [{ tur: 'dal_yaz', veri: { kod, alan, deger: d, dalAd: r.ad } }]);
+  }
+  dalSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) {
+    const r = this.dalBul(this.anaEvren(evren), kod);
+    if (!!r.silindi !== !!geriYukle) return;
+    this.yaz(evren, [{ tur: geriYukle ? 'dal_geri_yukle' : 'dal_sil', veri: { kod, dalAd: r.ad } }]);
+  }
+  private dalUclari(evren: string, dal: string): dalMod.DalUclari {
+    const ana = this.anaEvren(evren);
+    const r = this.dalBul(ana, dal);
+    let taban = this.tabanlar.get(dal);
+    if (!taban) {
+      const gordu = JSON.parse(r.gordu as string) as Record<string, number>;
+      taban = new EvrenVt(this.gecici(), this.kurulum.kod);
+      taban.disaridanAl(ana.islemler().filter((i) => i.sira <= (gordu[i.kurulum] ?? 0)));
+      this.tabanlar.set(dal, taban);
+    }
+    return { taban, dal: this.evren(dal), ana, dalKodu: dal };
+  }
+  /** Dalda ne değişti, ana evrende ne değişti (ikisi de ortak başlangıca göre) ve hangi birimler taşınabilir. */
+  dalFarki({ evren, dal }: { evren: string; dal: string }) { return dalMod.dalFarki(this.dalUclari(evren, dal)); }
+  /** Seçilen birimleri ana evrene yeni değişiklikler olarak yazar; hepsi tek işlem grubudur. */
+  dalAktar({ evren, dal, birimler, eslemeler }: { evren: string; dal: string; birimler: string[]; eslemeler: Record<string, string> }) {
+    if (!Array.isArray(birimler) || !birimler.length) throw new Error('Taşınacak bir şey seçin.');
+    const { girdiler, birakilan } = dalMod.aktarimGirdileri(this.dalUclari(evren, dal), birimler, eslemeler ?? {}, this.aktor);
+    if (girdiler.length) {
+      const kayitlar = [...new Set(girdiler.flatMap((g) => [g.veri.kod, g.veri.kayit, g.veri.a, g.veri.b, g.veri.konu].filter((x): x is string => typeof x === 'string')))];
+      this.yaz(evren, girdiler, kayitlar);
+    }
+    return { aktarilan: girdiler.length, birakilan };
   }
 
   // ---------- Gezinti ve görsel pano (§7) ----------

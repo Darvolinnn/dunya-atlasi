@@ -220,6 +220,18 @@ export interface FarkAlani { alan: string; etiket: string; once: string | null; 
 export interface KayitFarki { kod: string; ad: string; tur: string; durum: 'yeni' | 'silindi' | 'degisti'; alanlar: FarkAlani[] }
 export interface IliskiFarki { kod: string; tur: string; a: KisaKayit; b: KisaKayit; durum: 'yeni' | 'silindi' | 'degisti'; ayrinti: string[] }
 export interface EvrenFarki { kayitlar: KayitFarki[]; iliskiler: IliskiFarki[] }
+export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
+export interface AktarimBirimi {
+  anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
+  islemSayisi: number;
+  /** Ana evren bu birimde dalla zaten aynı (aktarılmış ya da aynı değişiklik yapılmış). */
+  ayni: boolean;
+  /** Dal açıldıktan sonra ana evrende de değişmiş alanlar. */
+  celisen: string[];
+  gerekenler: { kod: string; ad: string; neden: 'dalda_yeni' | 'anada_silinmis' }[];
+  ozet: string[];
+}
+export interface DalFarki { dalda: EvrenFarki; anada: EvrenFarki; birimler: AktarimBirimi[] }
 export interface DerlemeOzeti { kod: string; tur: 'gezinti' | 'pano'; ad: string; ogeSayisi: number; duzenleme: number }
 export interface GezintiAdimi { kayit: string; not: string }
 export interface PanoNotu { x: number; y: number; metin: string }
@@ -769,6 +781,12 @@ export interface Istekler {
   surumYaz(a: { evren: string; kod: string; alan: 'ad' | 'aciklama'; deger: string }): void;
   surumSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   surumFarki(a: { evren: string; surum: string }): EvrenFarki;
+  dallar(a: { evren: string }): EvrenDali[];
+  dalOlustur(a: { evren: string; ad: string; aciklama?: string }): { kod: string };
+  dalYaz(a: { evren: string; kod: string; alan: 'ad' | 'aciklama'; deger: string }): void;
+  dalSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  dalFarki(a: { evren: string; dal: string }): DalFarki;
+  dalAktar(a: { evren: string; dal: string; birimler: string[]; eslemeler: Record<string, string> }): { aktarilan: number; birakilan: string[] };
   derleme(a: { evren: string; kod: string }): Derleme;
   derlemeOlustur(a: { evren: string; tur: 'gezinti' | 'pano'; ad: string }): { kod: string };
   derlemeAdYaz(a: { evren: string; kod: string; ad: string }): void;

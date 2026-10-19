@@ -629,3 +629,6 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .fark-listesi > li.fark-degisti { border-left-color: var(--vurgu); }
 .fark del { color: var(--tehlike); }
 .fark ins { color: var(--basari); text-decoration: none; }
+.fark-listesi > li.aktarildi { opacity: 0.55; }
+.aktarim { border: 1px solid var(--cizgi); border-radius: var(--yaricap); padding: 8px 12px; margin: 8px 0; }
+.aktarim-gerekenler { margin: 8px 0; }

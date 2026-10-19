@@ -2,6 +2,8 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { Hizmet } from '../src/calisan/hizmet';
+import { pmNodeToSpans } from '@automerge/prosemirror';
+import { metinSemasi } from '../src/alan/metin-sema';
 
 let sqlite3: Awaited<ReturnType<typeof sqlite3InitModule>>;
 beforeAll(async () => { sqlite3 = await sqlite3InitModule(); });
@@ -36,5 +38,59 @@ describe('adlandırılmış evren sürümleri (§9.7)', () => {
     h.surumYaz({ evren, kod: surum, alan: 'aciklama', deger: 'Matbaaya giden' });
     h.surumSil({ evren, kod: surum });
     expect(h.surumler({ evren })).toEqual([]);
+  });
+});
+
+describe('deneme kopyası (§9.7)', () => {
+  it('dal ana evreni etkilemez; fark ortak başlangıca göre; seçerek aktarılır', () => {
+    const h = cihaz('Deneme');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Kuzey' });
+    const kral = h.kayitOlustur({ evren, ad: 'Kral Aldren', tur: 'karakter' }).kod;
+    const kale = h.kayitOlustur({ evren, ad: 'Kuzey Kalesi', tur: 'mekan', ozet: 'Eski kale' }).kod;
+    const { kod: dal } = h.dalOlustur({ evren, ad: 'Kral yaşasaydı' });
+    expect(h.evrenBilgisi({ evren: dal }).bag).toMatchObject({ tur: 'dal', evren });
+    // Dalda: kralın özeti değişir, yeni bir varis ve ona bir ilişki.
+    h.kayitDegistir({ evren: dal, kod: kral, alan: 'ozet', deger: 'Yaşlı ama hayatta' });
+    const varis = h.kayitOlustur({ evren: dal, ad: 'Varis Elin', tur: 'karakter' }).kod;
+    h.iliskiEkle({ evren: dal, tur: 'ebeveyn', a: kral, b: varis });
+    // Ana evrende dal açıldıktan sonra kalenin özeti düzeltilir; dal bunu geri getirmemeli.
+    h.kayitDegistir({ evren, kod: kale, alan: 'ozet', deger: 'Yeniden yapılmış kale' });
+    expect(h.kayit({ evren, kod: kral }).ozet).toBe('');
+    const f = h.dalFarki({ evren, dal });
+    expect(f.dalda.kayitlar.map((k) => k.ad).sort()).toEqual(['Kral Aldren', 'Varis Elin']);
+    expect(f.anada.kayitlar.map((k) => k.ad)).toEqual(['Kuzey Kalesi']);
+    const iliskiBirimi = f.birimler.find((b) => b.tur === 'iliski')!;
+    expect(iliskiBirimi.gerekenler).toMatchObject([{ ad: 'Varis Elin', neden: 'dalda_yeni' }]);
+    // Yalnızca ilişki seçilir ve varis açık bırakılırsa ilişki taşınmaz, söylenir.
+    const r1 = h.dalAktar({ evren, dal, birimler: [iliskiBirimi.anahtar], eslemeler: { [varis]: 'acik' } });
+    expect(r1.aktarilan).toBe(0);
+    expect(r1.birakilan[0]).toMatch(/Varis Elin/);
+    // Bağımlılıkla birlikte alınır.
+    const r2 = h.dalAktar({ evren, dal, birimler: [iliskiBirimi.anahtar, `kayit:${varis}`, `kayit:${kral}`], eslemeler: {} });
+    expect(r2.birakilan).toEqual([]);
+    expect(h.kayit({ evren, kod: varis }).ad).toBe('Varis Elin');
+    expect(h.kayit({ evren, kod: kral }).ozet).toBe('Yaşlı ama hayatta');
+    expect(h.iliskiler({ evren, kod: kral }).length).toBe(1);
+    expect(h.kayit({ evren, kod: kale }).ozet).toBe('Yeniden yapılmış kale');
+    const f2 = h.dalFarki({ evren, dal });
+    expect(f2.birimler.filter((b) => b.tur !== 'diger').every((b) => b.ayni)).toBe(true);
+  });
+
+  it('ortak başlangıçta var olan metin, iki taraftaki yazımlar korunarak birleşir', () => {
+    const h = cihaz('Deneme');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Kuzey' });
+    const k = h.kayitOlustur({ evren, ad: 'Kale', tur: 'mekan' }).kod;
+    const sm = metinSemasi.schema;
+    const yaz = (ev: string, ...paragraflar: string[]) => {
+      const temel = h.metinAc({ evren: ev, kayit: k, alan: 'govde' }).basliklar;
+      h.metinKaydet({ evren: ev, kayit: k, alan: 'govde', spans: pmNodeToSpans(metinSemasi, sm.node('doc', null, paragraflar.map((x) => sm.node('paragraph', null, [sm.text(x)])))) as never, temel });
+    };
+    const duz = (ev: string) => h.metinAc({ evren: ev, kayit: k, alan: 'govde' }).spans.filter((x) => (x as { type: string }).type === 'text').map((x) => (x as { value: string }).value).join('|');
+    yaz(evren, 'Kale tepede.', 'Surlar yüksek.');
+    const { kod: dal } = h.dalOlustur({ evren, ad: 'Deneme' });
+    yaz(dal, 'Kale tepede.', 'Surlar yüksek.', 'Dalda eklenen paragraf.');
+    yaz(evren, 'Kale tepede, nehre bakar.', 'Surlar yüksek.');
+    h.dalAktar({ evren, dal, birimler: [`kayit:${k}`], eslemeler: {} });
+    expect(duz(evren)).toBe('Kale tepede, nehre bakar.|Surlar yüksek.|Dalda eklenen paragraf.');
   });
 });

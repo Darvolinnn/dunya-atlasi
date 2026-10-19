@@ -1,9 +1,12 @@
 // Adlandırılmış evren sürümleri ve iki hâl arasındaki fark (§9.7).
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { EvrenBilgisi, EvrenFarki, EvrenSurumu } from '../veri/api';
+import type { AktarimBirimi, DalFarki, EvrenBilgisi, EvrenDali, EvrenFarki, EvrenSurumu } from '../veri/api';
 import { zamanYaz } from '../alan/islem-metni';
 import { turBul } from '../alan/turler';
+import { git } from './Uygulama';
+import { KayitSec } from './KayitBolumleri';
+import type { Secim } from './BaglantiSecici';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -20,7 +23,7 @@ export function BagSeridi({ bag }: { bag: EvrenBilgisi['bag'] }) {
   );
 }
 
-export function SurumlerSekmesi({ istemci, evren, surum, ekler }: { istemci: Istemci; evren: string; surum: number; ekler?: preact.ComponentChildren }) {
+export function SurumlerSekmesi({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
   const [liste, setListe] = useState<EvrenSurumu[] | null>(null);
   const [ad, setAd] = useState('');
   const [aciklama, setAciklama] = useState('');
@@ -60,7 +63,7 @@ export function SurumlerSekmesi({ istemci, evren, surum, ekler }: { istemci: Ist
           ))}
         </ul>
       )}
-      {ekler}
+      <DallarBolumu istemci={istemci} evren={evren} surum={surum} />
     </section>
   );
 }
@@ -100,6 +103,140 @@ export function FarkGorunumu({ evren, f, once, sonra }: { evren: string; f: Evre
           </ul>
         </>
       )}
+    </div>
+  );
+}
+
+// ---------- Deneme kopyaları ----------
+function DallarBolumu({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
+  const [liste, setListe] = useState<EvrenDali[] | null>(null);
+  const [ad, setAd] = useState('');
+  const [acik, setAcik] = useState<string | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  useEffect(() => { istemci.iste('dallar', { evren }).then(setListe, (e) => setHata(hataYaz(e))); }, [evren, surum]);
+  return (
+    <>
+      <h2>Deneme kopyaları</h2>
+      <p class="soluk kucuk">Radikal bir değişikliği denemek için evrenin bir dalı açılır (“kral yaşasaydı”). Dalda ne yaparsanız ana evren değişmez; beğendiğiniz değişiklikleri kayıt kayıt seçip ana evrene taşırsınız. Küçük düşünce deneyleri için çalışma masalarındaki varsayım paketleri yeterlidir. Deneme kopyasındaki değişiklikler yalnızca bu cihazda tutulur; Drive ile eşitlenmez.</p>
+      <form class="satir" onSubmit={(e) => {
+        e.preventDefault();
+        istemci.iste('dalOlustur', { evren, ad }).then((x) => { setAd(''); setHata(null); git(`/e/${x.kod}/masa`); }, (x) => setHata(hataYaz(x)));
+      }}>
+        <input class="girdi" lang="tr" aria-label="Deneme kopyasının adı" placeholder="Kral yaşasaydı" value={ad} onInput={(e) => setAd((e.target as HTMLInputElement).value)} />
+        <button class="dugme kucuk" type="submit" disabled={!ad.trim()}>Deneme kopyası aç</button>
+      </form>
+      {hata && <p class="hata kucuk">{hata}</p>}
+      {liste && !liste.length && <p class="soluk kucuk">Henüz deneme kopyası yok.</p>}
+      {liste && liste.length > 0 && (
+        <ul class="surum-listesi">
+          {liste.map((d) => (
+            <li key={d.kod}>
+              <div class="satir">
+                <strong>{d.ad}</strong>
+                <span class="soluk kucuk">{zamanYaz(d.olusturma)} tarihinde açıldı</span>
+                <span class="bosluk" />
+                <a class="dugme kucuk" href={`#/e/${d.kod}/masa`}>Aç</a>
+                <button class="dugme kucuk" onClick={() => setAcik(acik === d.kod ? null : d.kod)}>{acik === d.kod ? 'Kapat' : 'Karşılaştır ve taşı'}</button>
+                <button class="dugme sade kucuk" onClick={() => { if (confirm(`“${d.ad}” deneme kopyası listeden kaldırılsın mı? Ana evrene dokunulmaz.`)) istemci.iste('dalSil', { evren, kod: d.kod }).catch((e) => setHata(hataYaz(e))); }}>Kaldır</button>
+              </div>
+              {acik === d.kod && <AktarimEkrani istemci={istemci} evren={evren} dal={d} surum={surum} />}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+type Karar = { tur: 'al' } | { tur: 'esle'; hedef: Secim | null } | { tur: 'acik' };
+
+function AktarimEkrani({ istemci, evren, dal, surum }: { istemci: Istemci; evren: string; dal: EvrenDali; surum: number }) {
+  const [f, setF] = useState<DalFarki | null>(null);
+  const [secili, setSecili] = useState<Set<string>>(new Set());
+  const [kararlar, setKararlar] = useState<Record<string, Karar>>({});
+  const [sonuc, setSonuc] = useState<{ aktarilan: number; birakilan: string[] } | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  useEffect(() => { istemci.iste('dalFarki', { evren, dal: dal.kod }).then(setF, (e) => setHata(hataYaz(e))); }, [dal.kod, surum]);
+  if (!f) return hata ? <p class="hata kucuk">{hata}</p> : <p class="soluk kucuk">Karşılaştırılıyor…</p>;
+  const birimVar = (kod: string) => f.birimler.some((b) => b.anahtar === `kayit:${kod}` && !b.ayni);
+  const karar = (kod: string): Karar => kararlar[kod] ?? (birimVar(kod) ? { tur: 'al' } : { tur: 'acik' });
+  const secilenler = f.birimler.filter((b) => secili.has(b.anahtar));
+  const gereken = new Map(secilenler.flatMap((b) => b.gerekenler).map((g) => [g.kod, g]));
+  const tasi = () => {
+    const birimler = new Set(secili);
+    const eslemeler: Record<string, string> = {};
+    for (const [kod] of gereken) {
+      const k = karar(kod);
+      if (k.tur === 'al' && birimVar(kod)) birimler.add(`kayit:${kod}`);
+      else if (k.tur === 'esle' && k.hedef) eslemeler[kod] = k.hedef.kod;
+      else eslemeler[kod] = 'acik';
+    }
+    if (!confirm(`${birimler.size} birim ana evrene taşınsın mı? Ana evrende yeni değişiklikler olarak yazılır; geçmişten geri alınabilir.`)) return;
+    istemci.iste('dalAktar', { evren, dal: dal.kod, birimler: [...birimler], eslemeler })
+      .then((r) => { setSonuc(r); setSecili(new Set()); setHata(null); istemci.iste('dalFarki', { evren, dal: dal.kod }).then(setF); }, (e) => setHata(hataYaz(e)));
+  };
+  const birim = (b: AktarimBirimi) => (
+    <li key={b.anahtar} class={`fark-${b.durum}${b.ayni ? ' aktarildi' : ''}`}>
+      <label class="satir">
+        <input type="checkbox" disabled={b.ayni} checked={secili.has(b.anahtar)} onChange={(e) => {
+          const s = new Set(secili); if ((e.target as HTMLInputElement).checked) s.add(b.anahtar); else s.delete(b.anahtar); setSecili(s);
+        }} />
+        <span class="rozet">{DURUM[b.durum]}</span>
+        {b.tur === 'kayit' ? <a href={`#/e/${dal.kod}/k/${b.anahtar.slice(6)}`}>{b.baslik}</a> : <span>{b.baslik}</span>}
+        {b.kayitTuru && <span class="soluk kucuk">{turBul(b.kayitTuru).ad}</span>}
+        {b.ayni && <span class="soluk kucuk">· ana evrende aynı</span>}
+      </label>
+      {b.ozet.length > 0 && <ul class="kucuk">{b.ozet.map((x) => <li>{x}</li>)}</ul>}
+      {b.celisen.length > 0 && !b.ayni && <p class="kucuk uyari-yazisi">Dal açıldıktan sonra ana evrende de değişti: {b.celisen.join(', ')}. Taşırsanız dalın değeri yazılır.</p>}
+    </li>
+  );
+  return (
+    <div class="aktarim">
+      {sonuc && (
+        <div class="kucuk">
+          <p>{sonuc.aktarilan ? `${sonuc.aktarilan} değişiklik ana evrene yazıldı.` : 'Ana evrene bir şey yazılmadı.'}</p>
+          {sonuc.birakilan.length > 0 && <ul class="uyari-yazisi">{sonuc.birakilan.map((x) => <li>{x}</li>)}</ul>}
+        </div>
+      )}
+      {!f.birimler.length ? <p class="soluk kucuk">Dalda henüz bir değişiklik yapılmamış.</p> : (
+        <>
+          <h3>Dalda değişenler</h3>
+          <ul class="fark-listesi">{f.birimler.map(birim)}</ul>
+          {gereken.size > 0 && (
+            <div class="aktarim-gerekenler">
+              <h3>Seçilenlerin gerektirdiği kayıtlar</h3>
+              <ul class="kucuk">
+                {[...gereken.values()].map((g) => {
+                  const k = karar(g.kod);
+                  return (
+                    <li key={g.kod} class="satir">
+                      <span>{g.ad} <span class="soluk">({g.neden === 'dalda_yeni' ? 'yalnızca dalda var' : 'ana evrende silinmiş'})</span></span>
+                      <select class="girdi kucuk-secim" aria-label={`${g.ad} için ne yapılsın`} value={k.tur} onChange={(e) => {
+                        const v = (e.target as HTMLSelectElement).value as Karar['tur'];
+                        setKararlar({ ...kararlar, [g.kod]: v === 'esle' ? { tur: 'esle', hedef: null } : { tur: v } as Karar });
+                      }}>
+                        {birimVar(g.kod) && <option value="al">Birlikte taşı</option>}
+                        <option value="esle">Ana evrendeki bir kayda eşle</option>
+                        <option value="acik">Açık bırak (bağlı değişiklik taşınmaz)</option>
+                      </select>
+                      {k.tur === 'esle' && <KayitSec istemci={istemci} evren={evren} secili={k.hedef} sec={(s) => setKararlar({ ...kararlar, [g.kod]: { tur: 'esle', hedef: s } })} etiket="Ana evrende seç" />}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+          <div class="satir">
+            <button class="dugme ana kucuk" disabled={!secili.size} onClick={tasi}>Seçilenleri ana evrene taşı ({secili.size})</button>
+            <button class="dugme sade kucuk" onClick={() => setSecili(new Set(f.birimler.filter((b) => !b.ayni).map((b) => b.anahtar)))}>Hepsini seç</button>
+          </div>
+        </>
+      )}
+      <details>
+        <summary class="kucuk">Dal açıldıktan sonra ana evrende değişenler ({f.anada.kayitlar.length + f.anada.iliskiler.length})</summary>
+        <FarkGorunumu evren={evren} f={f.anada} once="dalın açıldığı an" sonra="ana evren bugün" />
+      </details>
+      {hata && <p class="hata kucuk">{hata}</p>}
     </div>
   );
 }
