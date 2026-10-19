@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 42;
+export const IZDUSUM_SURUMU = 43;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -381,6 +381,17 @@ CREATE TABLE IF NOT EXISTS sahne_yerlesimleri(
   plan TEXT NOT NULL,
   ogeler TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS sozlesme_maddeleri(
+  kod TEXT PRIMARY KEY,
+  tanim TEXT NOT NULL,
+  silindi INTEGER
+);
+CREATE TABLE IF NOT EXISTS sozlesme_disarida(
+  madde TEXT NOT NULL,
+  eser TEXT NOT NULL,
+  disarida INTEGER NOT NULL,
+  PRIMARY KEY(madde,eser)
+);
 CREATE TABLE IF NOT EXISTS derlemeler(
   kod TEXT PRIMARY KEY,
   tur TEXT NOT NULL,
@@ -656,6 +667,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'gokyuzu_tanimi',
   'sozlukler', 'sozluk_isaretleri',
+  'sozlesme_maddeleri', 'sozlesme_disarida',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi', 'kullanim_masalari');
@@ -1387,6 +1399,35 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const deger = { plan, ogeler };
     db.exec({ sql: 'INSERT OR REPLACE INTO sahne_yerlesimleri(kod, plan, ogeler) VALUES(?,?,?)', bind: [sahne, JSON.stringify(plan), JSON.stringify(ogeler)] });
     alanYaz(db, i, sahne, 'yerlesim', deger);
+  },
+  sozlesme_madde_yaz(db, i) {
+    const { kod, tanim } = i.veri as { kod?: unknown; tanim?: import('../veri/api').SozlesmeTanimi };
+    if (typeof kod !== 'string' || !tanim || !Array.isArray(tanim.bagliKayitlar) || !tanim.kapsam) return;
+    const deger: import('../veri/api').SozlesmeTanimi = { ...tanim,
+      bagliKayitlar: [...new Set(tanim.bagliKayitlar.map((k) => yonlendir(db, k)))],
+      kapsam: tanim.kapsam.tur === 'evren' ? { tur: 'evren' } : { tur: 'eserler', eserler: [...new Set(tanim.kapsam.eserler.map((k) => yonlendir(db, k)))] } };
+    db.exec({ sql: 'INSERT INTO sozlesme_maddeleri(kod,tanim) VALUES(?,?) ON CONFLICT(kod) DO UPDATE SET tanim=excluded.tanim', bind: [kod, JSON.stringify(deger)] });
+    alanYaz(db, i, kod, 'sozlesme_tanim', deger);
+  },
+  sozlesme_madde_sil(db, i) {
+    const kod = i.veri.kod as string;
+    db.exec({ sql: 'UPDATE sozlesme_maddeleri SET silindi=? WHERE kod=?', bind: [i.zaman, kod] });
+    alanYaz(db, i, kod, 'sozlesme_silindi', true);
+  },
+  sozlesme_madde_geri_yukle(db, i) {
+    const kod = i.veri.kod as string;
+    db.exec({ sql: 'UPDATE sozlesme_maddeleri SET silindi=NULL WHERE kod=?', bind: [kod] });
+    alanYaz(db, i, kod, 'sozlesme_silindi', false);
+  },
+  sozlesme_disarida_yaz(db, i) {
+    const { madde, eser, disarida } = i.veri;
+    if (typeof madde !== 'string' || typeof eser !== 'string' || typeof disarida !== 'boolean') return;
+    const hedef = yonlendir(db, eser);
+    for (const r of db.selectObjects('SELECT eser FROM sozlesme_disarida WHERE madde=?', [madde])) {
+      if (r.eser !== hedef && yonlendir(db, String(r.eser)) === hedef) db.exec({ sql: 'DELETE FROM sozlesme_disarida WHERE madde=? AND eser=?', bind: [madde, r.eser] });
+    }
+    db.exec({ sql: 'INSERT OR REPLACE INTO sozlesme_disarida(madde,eser,disarida) VALUES(?,?,?)', bind: [madde, hedef, disarida ? 1 : 0] });
+    alanYaz(db, i, madde, `sozlesme_disarida:${hedef}`, disarida);
   },
   /** Gezinti ve görsel pano (§7): yazarın derlediği listeler. İlk yazım derlemeyi kurar. */
   derleme_yaz(db, i) {

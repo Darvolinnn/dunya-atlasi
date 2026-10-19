@@ -43,6 +43,8 @@ import * as tekMod from './teknoloji';
 import * as soyMod from './soy';
 import * as montaj from './montaj';
 import * as gundelik from './gundelik';
+import * as sozlesme from './anlati-sozlesmesi';
+import type { SozlesmeTanimi } from '../veri/api';
 import * as sozluk from './sozluk';
 import * as anlatim from './anlatim';
 import * as delil from './delil';
@@ -539,6 +541,17 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           degerler: degerler.map((d) => ({ ...d, yazi: `${(d.deger as unknown[] | null)?.length ?? 0} kart` })) });
         continue;
       }
+      if (!iliski && (alan === 'sozlesme_tanim' || alan === 'sozlesme_silindi' || alan.startsWith('sozlesme_disarida:'))) {
+        const t = e.db.selectValue('SELECT tanim FROM sozlesme_maddeleri WHERE kod=?', [nesne]) as string | undefined;
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: t ? (JSON.parse(t) as SozlesmeTanimi).metin : 'Anlatı sözleşmesi', alanEtiketi: 'Sözleşme maddesi',
+          degerler: degerler.map((d) => {
+            const v = d.deger as SozlesmeTanimi | null;
+            const yazi = alan === 'sozlesme_tanim' ? v ? `${v.metin} · ${sozlesme.SOZLESME_TURLERI[v.tur]} · ${v.karar === 'kesin' ? 'Kesinleşmiş' : v.karar === 'fikir' ? 'Fikir' : 'Vazgeçilmiş'} · ${v.kapsam.tur === 'evren' ? 'Bütün evren' : v.kapsam.eserler.map(kayitAdi).join(', ')} · ${v.bagliKayitlar.map(kayitAdi).join(', ')}` : '(boş)'
+              : alan === 'sozlesme_silindi' ? d.deger ? 'Kaldırıldı' : 'Geri getirildi' : `${kayitAdi(alan.slice('sozlesme_disarida:'.length))}: ${d.deger ? 'Bu eserde geçerli değil' : 'Bu eserde geçerli'}`;
+            return { ...d, yazi };
+          }) });
+        continue;
+      }
       if (!iliski && (alan === 'sozluk_tanim' || alan === 'sozluk_silindi' || alan.startsWith('sozluk_isareti:'))) {
         const s = e.db.selectValue('SELECT tanim FROM sozlukler WHERE kod=?', [nesne]) as string | undefined;
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: s ? JSON.parse(s).ad : 'Sözlük',
@@ -813,6 +826,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const deger = JSON.parse(r.deger as string);
     if (alan === 'kullanim_masasi') { this.yaz(evren, [{ tur: 'kullanim_masasi_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
     if (alan === 'delil') { this.yaz(evren, [{ tur: 'delil_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
+    if (alan === 'sozlesme_tanim') { this.yaz(evren, [{ tur: 'sozlesme_madde_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }]); return; }
+    if (alan === 'sozlesme_silindi') { this.yaz(evren, [{ tur: deger ? 'sozlesme_madde_sil' : 'sozlesme_madde_geri_yukle', veri: { kod: nesne, cozum: true } }]); return; }
+    if (alan.startsWith('sozlesme_disarida:')) { this.yaz(evren, [{ tur: 'sozlesme_disarida_yaz', veri: { madde: nesne, eser: alan.slice('sozlesme_disarida:'.length), disarida: !!deger, cozum: true } }]); return; }
     if (alan === 'anlatim') { this.yaz(evren, [{ tur: 'anlatim_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }]); return; }
     if (alan === 'anlatim_silindi') { this.yaz(evren, [{ tur: deger ? 'anlatim_sil' : 'anlatim_geri_yukle', veri: { kod: nesne, cozum: true } }]); return; }
     if (alan === 'sozluk_tanim') { this.yaz(evren, [{ tur: 'sozluk_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }]); return; }
@@ -2325,6 +2341,14 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   yogunluk({ evren, ...s }: { evren: string } & YogunlukIstegi) {
     return yogunluk.oku(this.evren(evren), s, () => this.zamanCizelgesi({ evren }), (kod) => this.harita({ evren, kod }));
   }
+  private sozlesmeBaglami(evren: string) { return { e: this.evren(evren), yaz: (g: IslemGirdisi[], k: string[]) => { this.yaz(evren, g, k); } }; }
+  sozlesmeMaddeleri({ evren, cop }: { evren: string; cop?: boolean }) { return sozlesme.sozlesmeMaddeleri(this.evren(evren), cop); }
+  sozlesmeMaddeYaz({ evren, kod, tanim }: { evren: string; kod?: string | null; tanim: SozlesmeTanimi }) { return sozlesme.sozlesmeMaddeYaz(this.sozlesmeBaglami(evren), kod ?? null, tanim); }
+  sozlesmeMaddeSil({ evren, kod }: { evren: string; kod: string }) { sozlesme.sozlesmeMaddeKaldir(this.sozlesmeBaglami(evren), kod, false); }
+  sozlesmeMaddeGeriYukle({ evren, kod }: { evren: string; kod: string }) { sozlesme.sozlesmeMaddeKaldir(this.sozlesmeBaglami(evren), kod, true); }
+  sozlesmeDisaridaYaz({ evren, madde, eser, disarida }: { evren: string; madde: string; eser: string; disarida: boolean }) { sozlesme.sozlesmeDisaridaYaz(this.sozlesmeBaglami(evren), madde, eser, disarida); }
+  eserSozlesmesi({ evren, eser }: { evren: string; eser: string }) { return sozlesme.eserSozlesmesi(this.evren(evren), eser); }
+  sozlesmeHatirlatmalari({ evren, kayit }: { evren: string; kayit: string }) { return sozlesme.sozlesmeHatirlatmalari(this.evren(evren), kayit); }
   // ---------- Adlandırılmış evren sürümleri (§9.7) ----------
   private anaEvren(evren: string) {
     const e = this.evren(evren);

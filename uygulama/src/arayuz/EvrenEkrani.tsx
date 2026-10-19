@@ -16,6 +16,7 @@ import { GokyuzuSekmesi } from './Gokyuzu';
 import { YogunlukSekmesi } from './Yogunluk';
 import { DerlemeSekmesi } from './Derleme';
 import { SozlukSekmesi } from './Sozluk';
+import { AnlatiSozlesmesiSekmesi } from './AnlatiSozlesmesi';
 import { KosulMasasiSekmesi } from './KosulMasasi';
 import { KesifSekmesi } from './Kesif';
 import { BagSeridi, SurumlerSekmesi } from './Surumler';
@@ -27,6 +28,7 @@ const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy', 'Soy
   ['yogunluk', 'Yoğunluk ve boşluk'],
   ['gokyuzu', 'Gökyüzü'],
   ['sozluk', 'Sözlük denetimi'],
+  ['sozlesme', 'Anlatı sözleşmesi'],
   ['kosullar', 'Sonuçtan koşullara'],
   ['kesif', 'Keşif soruları'],
   ['hatlar', 'Kurgu hatları'], ['matris', 'Bölüm × kayıt'], ['gun', 'Sıradan bir gün'], ['karsilastir', 'Karşılaştırmalı okuma'], ['gezinti', 'Gezintiler'], ['pano', 'Görsel panolar']] as const;
@@ -89,6 +91,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           : sekme === 'yogunluk' ? <YogunlukSekmesi key={kod} istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'karsilastir' ? <KarsilastirmaSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'sozluk' ? <SozlukSekmesi istemci={istemci} evren={kod} surum={surum} />
+          : sekme === 'sozlesme' ? <AnlatiSozlesmesiSekmesi key={kod} istemci={istemci} evren={kod} surum={surum} saltOkunur={!!bilgi.bag} />
           : sekme === 'kosullar' ? <KosulMasasiSekmesi istemci={istemci} evren={kod} />
           : sekme === 'kesif' ? <KesifSekmesi istemci={istemci} evren={kod} />
           : sekme === 'gezinti' || sekme === 'pano' ? <DerlemeSekmesi istemci={istemci} evren={kod} tur={sekme} secili={alt} surum={surum} />
