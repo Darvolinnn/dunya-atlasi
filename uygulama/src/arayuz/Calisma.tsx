@@ -17,6 +17,7 @@ import { KararRozeti } from './ortak';
 import { Gorsel } from './gorsel';
 import { MetinGorunumu } from './MetinEditoru';
 import { git } from './Uygulama';
+import type { YasananSure } from '../veri/api';
 
 export interface PaletBaglami { bagla?: () => void }
 
@@ -325,6 +326,13 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
   }, [kod, ana]);
   const ks = useKayitSablonu(istemci, evren, kod);
   const takvim = useTakvim(istemci, evren);
+  const [yasanan, setYasanan] = useState<YasananSure | null>(null);
+  useEffect(() => {
+    let etkin = true;
+    setYasanan(null);
+    if (ana) istemci.iste('yasananSure', { evren, kisi: kod, olay: ana }).then((s) => { if (etkin) setYasanan(s); }, () => {});
+    return () => { etkin = false; };
+  }, [evren, kod, ana]);
   if (hata) return <p class="hata kucuk" style="padding:12px">{hata}</p>;
   if (!k) return <p class="soluk kucuk" style="padding:12px">Açılıyor…</p>;
   const tarih = k.tarih ?? k.sahneTarihi;
@@ -345,7 +353,8 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
           {ks.sablon.alanlar.filter((a) => ks.degerler[a.kod] != null).map((a) => <li key={a.kod}><span class="soluk">{a.ad}:</span> {degerMetni(a, ks.degerler[a.kod])}</li>)}
         </ul>
       )}
-      {yas && <p class="kucuk">{yas} <span class="soluk">({an!.tarih!.ifade} itibarıyla)</span></p>}
+      {yas && !yasanan?.takvimBelirsiz && <p class="kucuk">{yas} <span class="soluk">({an!.tarih!.ifade} itibarıyla)</span></p>}
+      {yasanan?.goster && <p class="kucuk">{yasanan.metin} <span class="soluk">({yasanan.tarih ?? 'tarih yazılmamış'} itibarıyla)</span></p>}
       {an && <p class="kucuk yan-an">{an.tarih ? <>“{an.ad}” tarihinde (<strong>{an.tarih.ifade}</strong>) gösteriliyor.</> : <>“{an.ad}” için evren tarihi girilmemiş; o anki hâl bilinemiyor, bütün değerler gösteriliyor.</>}</p>}
       {durumlar.length > 0 && (
         <ul class="yan-iliskiler">

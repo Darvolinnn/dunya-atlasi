@@ -260,7 +260,8 @@ export function SahneBaglamPaneli({ evren, baglam }: { evren: string; baglam: Sa
       {baglam.bakis && <BakisBilgileri evren={evren} bakis={baglam.bakis} liste={baglam.bakisBilgileri} tarihVar={!!tarih} />}
       {katilimcilar.map((k) => (
         <div class="baglam-kaydi" key={k.kod}>
-          <div class="satir">{bag(evren, k)} <span class="soluk kucuk">{k.roller.join(', ')}</span>{k.yas && <span class="kucuk">· {k.yas}</span>}</div>
+          <div class="satir">{bag(evren, k)} <span class="soluk kucuk">{k.roller.join(', ')}</span>{k.yas && !k.yasananSure?.takvimBelirsiz && <span class="kucuk">· {k.yas}</span>}</div>
+          {k.yasananSure?.goster && <p class="kucuk">{k.yasananSure.metin} <span class="soluk">({k.yasananSure.tarih ?? 'tarih yazılmamış'} itibarıyla)</span></p>}
           <DurumOzeti durumlar={k.durumlar} evren={evren} />
           {k.iliskiler.length > 0 && (
             <ul class="baglam-listesi">
