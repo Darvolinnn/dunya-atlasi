@@ -6,6 +6,7 @@ import type { EserYapisi, EvrenBilgisi, Kayit, KaldigiYerBilgisi, KisaKayit } fr
 import { zamanYaz } from '../alan/islem-metni';
 import { EvrenKabugu } from './Kabuk';
 import { MetinEditoru, type EditorDenetimi } from './MetinEditoru';
+import { SahnePlani } from './Sablon';
 import { AnlatiYolu, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, sahneBaglamiBos, useSahneBaglami } from './Anlati';
 import { TarihAlani } from './KayitBolumleri';
 import { AlanGirdisi } from './KayitEkrani';
@@ -92,6 +93,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
             <span class="bosluk" />
             <button class="dugme sade kucuk" aria-label="Bağlam panelini kapat" onClick={() => baglamAc(false)}>×</button>
           </div>
+          <SahnePlani istemci={istemci} evren={evren} kod={kod} />
           <TarihAlani istemci={istemci} evren={evren} kayit={kayit} />
           <SahneAlanlari istemci={istemci} evren={evren} kayit={kayit} baglam={sahneBaglami} />
           <SahneBaglamPaneli evren={evren} baglam={imlecParcasi && parcaBaglami ? parcaBaglami : sahneBaglami} parca={!!(imlecParcasi && parcaBaglami)} bos={bos && !(imlecParcasi && parcaBaglami)} />

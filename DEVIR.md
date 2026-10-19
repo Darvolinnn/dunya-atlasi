@@ -161,7 +161,8 @@ Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda
 - [x] Kullanıcı kararları (19 Ekim, gece): D1–D13'ün hepsi önerildiği gibi; sıra önce rehber ve sorular (P1, P2). Menü adları önerilen tablo (Masa → Genel bakış, İnceleme → Uyarılar, Görünümler → Grafikler, Çalışma masaları → Konu dosyaları, Açık meseleler → Karar bekleyenler, Bahsedilen ama yazılmamış → Eksik kayıtlar, Geçmiş → Değişiklik geçmişi, Sürümler → Kayıtlı anlar). #5'in üç görünüşü onaylandı; şerit sarısı deve tüyü oldu.
 - [x] K27 tasarıma girdi (§1.1); kavram modeli paket paket işlenecek.
 - [x] P2 (ilk kısım): eser (`cekirdek`, `eser`), sahne (`sahne_plani`) ve kurgu hattı (`hat`) soru setleri varsayılan; Ek A, §4.6; `test/anlati-sorulari.test.ts`. Şablonu değiştirilmiş evrende kendiliğinden eklenmez.
-- [ ] P2 (kalan): Yaz ekranında bağlam panelinin üstünde katlı "Sahne planı" (önce ekran görüntüsü). `seri` seti P4 ile.
+- [x] P2 (kalan): Yaz ekranında bağlam panelinin üstünde katlı "Sahne planı" (`Sablon.tsx` `SahnePlani`, §5.10). `seri` seti P4 ile. Ekran görüntüsü onayı bekliyor (PR #6).
+- [ ] Sıradaki: P3 İlk adımlarda başlangıç yolları (Model §2), sonra P4 seri.
 - [x] P1: yazarlık rehberi programın içinde (§12.4): `arayuz/YazarlikRehberi.tsx`, metinler `arayuz/yazarlik-rehberi.ts` (analiz belgesinden üretildi; belge değişirse yeniden üretilmeli: başlıklar `### Konu N — …`, alanlar `**Ne:**` biçiminde). Soru başına "Örnek" henüz yok. Ekran görüntüleri kullanıcı onayı bekliyor (PR #6).
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
 

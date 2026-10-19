@@ -594,3 +594,22 @@ export function MasaPusulasi({ istemci, evren, kayitSayisi }: { istemci: Istemci
     </>
   );
 }
+
+/** Yaz ekranında bağlam panelinin üstünde katlı "Sahne planı" (K27): sahnenin `sahne_plani` soruları yerinde
+ *  cevaplanır. Sahnenin tarihi, mekânı ve katılımcıları burada sorulmaz; onlar sahne alanlarıdır. Şablonunda bu
+ *  sorular olmayan sahnede görünmez. */
+export function SahnePlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
+  const ks = useKayitSablonu(istemci, evren, kod);
+  const [hata, setHata] = useState<string | null>(null);
+  const sorular = ks?.sorular.filter((q) => q.kod.startsWith('sahne_plani.') && !q.eski) ?? [];
+  if (!sorular.length) return null;
+  const ilk = sorular.find((q) => q.cevap?.durum === 'cevaplandi' && q.cevap.cevap);
+  return (
+    <details class="sahne-plani">
+      <summary><strong>Sahne planı</strong>{ilk && <span class="soluk kucuk"> · {ilk.cevap!.cevap.slice(0, 60)}</span>}</summary>
+      <ul class="soru-listesi">{sorular.map((q) => <SoruSatir key={q.kod} istemci={istemci} evren={evren} kod={kod} q={q} hata={setHata} />)}</ul>
+      <button class="dugme sade kucuk" onClick={() => yazarlikRehberiAc(SET_KONULARI.sahne_plani)}>Bu sorular neden?</button>
+      {hata && <p class="hata kucuk">{hata}</p>}
+    </details>
+  );
+}

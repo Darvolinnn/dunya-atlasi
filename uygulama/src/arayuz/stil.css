@@ -879,3 +879,6 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .yazarlik-ayrinti { margin-top: 12px; border-top: 1px solid var(--cizgi); padding-top: 8px; }
 .yazarlik-ayrinti > summary { cursor: pointer; color: var(--metin-2); font-size: 0.92rem; }
 .yazarlik-ayrinti[open] > summary { margin-bottom: 4px; }
+.sahne-plani { border-bottom: 1px solid var(--cizgi); padding-bottom: 8px; margin-bottom: 8px; }
+.sahne-plani > summary { cursor: pointer; }
+.sahne-plani .soru-listesi { margin-top: 6px; }

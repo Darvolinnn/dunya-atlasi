@@ -242,3 +242,19 @@ test('yazarlık rehberi sayfa rehberinden ve komut paletinden açılır, Esc ile
   await p.keyboard.press('Enter');
   await expect(rehber.getByRole('heading', { name: 'Hikâyenin çekirdeği (tek cümlelik özet)' })).toBeVisible();
 });
+
+test('sahne planı bağlam panelinde katlı; cevap kaydedilir ve yeniden açınca yerinde', async ({ page: p }) => {
+  const adres = await sahneAc(p);
+  await p.getByRole('button', { name: 'Bağlam ekle' }).click();
+  const plan = p.locator('.sahne-plani');
+  await expect(plan.getByLabel('Kim ne istiyor?')).toBeHidden();
+  await plan.locator('summary').click();
+  const alan = plan.locator('textarea').first();
+  await alan.fill('Lale dosyayı arıyor.');
+  await alan.blur();
+  await expect(plan.locator('summary')).toContainText('Lale dosyayı arıyor.');
+  await p.goto('/');
+  await p.goto(adres);
+  await p.locator('.sahne-plani summary').click();
+  await expect(p.locator('.sahne-plani textarea').first()).toHaveValue('Lale dosyayı arıyor.');
+});
