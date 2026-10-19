@@ -129,6 +129,7 @@ Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok.
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
 
+| İnceleme (#5) | Codex'in iki bulgusu: baştan kurma hatayla yarıda kalınca hazırlanma şeridi ekranda asılı kalıyordu (`EvrenVt.ilerlemeyiKapat`); evren kaldırılıp yeniden indirilince deneme kopyasında bu cihazın yalnız parça olarak gönderdikleri geri gelmiyor, sıra numaraları yeniden kullanılabiliyordu (kendi parçaları yerelde yoksa alınır; kopyaların ayarları da silinir) | bu PR |
 ### 3.4 Biten işlerden kalan dersler
 
 - **Sayfa rehberi (K25, §12.4):** yeni sayfa eklerken `rehber-metinleri.ts`'e rehberini ekle, başlığa `<SayfaYardimi sayfa="…" />` koy. Metinler "siz" hitabıyla; düğmeler kısa. Kaydedilen değerler (seçenek adları, şablon alan adları, gerekçe ve sonuç sabitleri) Türkçe düzeltmelerinde bilerek değiştirilmez.

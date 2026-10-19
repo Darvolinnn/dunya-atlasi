@@ -253,7 +253,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     e.db.close();
     this.acik.delete(evren);
-    this.kurulum.evrenSil(evren);
+    // Deneme kopyalarının ayarları da (ör. gönderilenlerin sırası) gider; yeniden indirilince Drive'dan kurulur.
+    for (const kod of [evren, ...dallar]) this.kurulum.evrenSil(kod);
     for (const kod of [evren, ...dallar]) for (const ek of ['', '-journal']) this.dosyaSil(`/evren-${kod}.db${ek}`);
   }
 

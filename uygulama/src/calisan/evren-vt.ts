@@ -56,7 +56,10 @@ export class EvrenVt {
   /** Son baştan kurmanın nasıl yapıldığı (sınama ve ölçüm için). */
   sonKurma: { goruntudenMi: boolean; uygulanan: number } | null = null;
 
-  constructor(readonly db: Database, readonly kurulum: string, private readonly ilerleme: Ilerleme = () => {}) {
+  /** Bitmemiş bildirilmiş kurma; kurma hatayla yarıda kalırsa şerit bununla kapatılır. */
+  private acikIlerleme: { neden: 'guncelleme' | 'kurulum'; toplam: number } | null = null;
+
+  constructor(readonly db: Database, readonly kurulum: string, private readonly bildirim: Ilerleme = () => {}) {
     db.exec('PRAGMA foreign_keys=ON;');
     db.exec(GUNLUK_SEMA);
     const bicim = db.selectValue("SELECT v FROM meta WHERE k='veri_bicimi'") as string | undefined;
@@ -82,6 +85,17 @@ export class EvrenVt {
     }
     const s = db.selectObject('SELECT saat, kurulum, sira FROM islemler ORDER BY saat DESC, kurulum DESC, sira DESC LIMIT 1');
     if (s) this.son = [Number(s.saat), s.kurulum as string, Number(s.sira)];
+  }
+
+  private ilerleme(d: Parameters<Ilerleme>[0]) {
+    this.acikIlerleme = d.yapilan >= d.toplam ? null : { neden: d.neden, toplam: d.toplam };
+    this.bildirim(d);
+  }
+
+  /** Kurma hatayla yarıda kaldıysa şeridin ekranda asılı kalmaması için bitişi bildirir. */
+  private ilerlemeyiKapat() {
+    const a = this.acikIlerleme;
+    if (a) this.ilerleme({ neden: a.neden, yapilan: a.toplam, toplam: a.toplam });
   }
 
   /** Saat sütunu eklenmeden önce yazılmış işlemlere saat verir (eski veritabanları). */
@@ -249,6 +263,7 @@ export class EvrenVt {
       this.gorulen = onceki;
       this.son = oncekiSon;
       metinBelleginiTemizle(this.db);
+      this.ilerlemeyiKapat();
       throw e;
     }
   }
@@ -308,7 +323,7 @@ export class EvrenVt {
   yenidenKur(neden: 'guncelleme' | 'kurulum' = 'kurulum') {
     this.db.exec('BEGIN IMMEDIATE');
     try { this.bastanUygula(neden); this.db.exec('COMMIT'); }
-    catch (e) { this.db.exec('ROLLBACK'); metinBelleginiTemizle(this.db); throw e; }
+    catch (e) { this.db.exec('ROLLBACK'); metinBelleginiTemizle(this.db); this.ilerlemeyiKapat(); throw e; }
   }
 
   /** İşlemler uygulama sırasıyla (ya da sondan). */
