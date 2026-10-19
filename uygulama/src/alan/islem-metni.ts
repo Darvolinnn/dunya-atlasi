@@ -53,6 +53,13 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   iz_geri_yukle: (v, ad) => `${ad(v.konu)}: izlenen ayrıntı geri getirildi “${v.ad}”`,
   alan_boslugu: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” ${({ acik: 'bilerek açık bırakıldı', bilinmiyor: 'evrende bilinmiyor olarak işaretlendi', gecersiz: 'bu kayıt için geçersiz sayıldı' } as Record<string, string>)[String(v.tur)] ?? 'yeniden düşünülecekler arasına alındı'}`,
   varsayilan_karari: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” için kaynaklar ${({ birlikte: 'birlikte geçerli sayıldı', kapsam: 'kapsamları farklı sayıldı', oncelik: 'arasında öncelik seçildi' } as Record<string, string>)[String((v.karar as { durum?: string } | null)?.durum)] ?? 'yeniden çözülmemiş sayıldı'}`,
+  surec_kurali_olustur: (v, ad) => `${ad(v.sahip)}: süreç kuralı eklendi “${v.ad}”`,
+  surec_kurali_yaz: (v, ad) => `${v.sahip ? `${ad(v.sahip)}: ` : ''}“${(v.tanim as { ad?: string } | null)?.ad ?? 'süreç'}” kuralının tanımı değişti`,
+  surec_kurali_sil: (v, ad) => `${ad(v.sahip)}: süreç kuralı kaldırıldı “${v.ad}”`,
+  surec_kurali_geri_yukle: (v, ad) => `${ad(v.sahip)}: süreç kuralı geri getirildi “${v.ad}”`,
+  surec_bagla: (v, ad) => `${ad(v.olay)}: “${v.ad ?? 'süreç'}” kuralı ${v.bagli ? 'bağlandı' : 'çıkarıldı'}`,
+  surec_adimi: (v, ad) => `${ad(v.olay)}: “${v.kuralAd ?? 'süreç'}” kuralında “${v.adimAd ?? 'adım'}” ${({ planlandi: 'planlandı', basladi: 'başladı', tamam: 'tamamlandı', yarida: 'yarıda kaldı', yapilmadi: 'yapılmadı' } as Record<string, string>)[String(v.durum)] ?? 'kaydı kaldırıldı'}`,
+  surec_fiili: (v, ad) => `${ad(v.olay)}: ${v.ad ? `fiilen uygulanan kural “${v.ad}”` : 'fiilen uygulanan kural seçimi kaldırıldı'}`,
   fetih_cevabi: (v, ad) => {
     const c = v.cevap as { durum?: string; tarih?: { ifade?: string } | null } | null;
     const ne = !c ? 'henüz karar verilmedi' : c.durum === 'suruyor' ? 'eski uygulama sürüyor' : c.durum === 'birlikte' ? 'eski ve yeni uygulama birlikte geçerli' : `yeni uygulama ${c.tarih?.ifade ? `${c.tarih.ifade} tarihinde ` : ''}başladı`;

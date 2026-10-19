@@ -81,6 +81,7 @@ export const ILISKI_TURLERI: IliskiTuru[] = [
   { kod: 'turu', aIcin: 'Türü', bIcin: 'Bu türden', karsilikli: false, grup: 'Kapsama ve bağlılık' },
   { kod: 'kontrol', aIcin: 'Kontrol ettiği arazi', bIcin: 'Kontrol eden', karsilikli: false, grup: 'Kapsama ve bağlılık' },
   { kod: 'hak_iddiasi', aIcin: 'Hak iddia ettiği arazi', bIcin: 'Üzerinde hak iddia eden', karsilikli: false, grup: 'Kapsama ve bağlılık' },
+  { kod: 'yurutur', aIcin: 'Yürüttüğü makam', bIcin: 'Yürüten', karsilikli: false, grup: 'Gruplar ve yerler' },
   { kod: 'merkez', aIcin: 'Yönetim merkezi', bIcin: 'Yönetim merkezi olduğu', karsilikli: false, grup: 'Kapsama ve bağlılık' },
   { kod: 'anlatir', aIcin: 'Anlattığı olay', bIcin: 'Anlatıldığı sahne', karsilikli: false, grup: 'Sahne ve olay' },
   { kod: 'sahnede', aIcin: 'Yer aldığı sahne', bIcin: 'Sahnedekiler', karsilikli: false, grup: 'Sahne ve olay', roller: SAHNE_ROLLERI },

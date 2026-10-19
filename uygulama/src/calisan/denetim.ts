@@ -10,6 +10,7 @@ import { turkceKarsilastir } from '../alan/turkce';
 import type { DenetimBulgusu, DenetimKurali, DenetimOzeti, Denetimler, IncelemeKarari, KisaKayit } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
 import type { PaketEtkisi } from './masa';
+import { surecDenetimi } from './surec';
 
 export interface DenetimBaglami {
   e: EvrenVt;
@@ -324,6 +325,8 @@ function hesapla(e: EvrenVt, p: PaketEtkisi | null = null): { bulgular: Ham[]; k
       yer: yer ? { kod: yer.kod as string, ad: yer.ad as string, tur: yer.tur as string } : { kod: x.yer, ad: 'Silinmiş kayıt', tur: 'diger' } };
   })], p);
   const y = yasam(e, b), d = dongu(e), k = konum(e, b, p), s = esya(e);
+  const sr = surecDenetimi(e);
+  const srH: Ham[] = sr.bulgular.map((x) => ({ ...x, kural: 'surec' as const }));
   k.bulgular.push(...asamaDenetimi(e, p));
   const ozet = (kural: DenetimKurali, ad: string, tanim: string, x: { bulgular: Ham[]; denetlenen: number }, bos: string, not: string): DenetimOzeti => ({
     kural, ad, tanim, denetlenen: x.denetlenen, not: x.denetlenen ? not : bos,
@@ -342,10 +345,10 @@ function hesapla(e: EvrenVt, p: PaketEtkisi | null = null): { bulgular: Ham[]; k
       'İki ya da daha çok sahibi kayıtlı eşya yok.', `${s.denetlenen} eşya denetlendi. Başlangıcı yazılmamış sahiplikler denetlenmez; yok edilme henüz denetlenmiyor.`),
     { kural: 'bilgi', ad: 'Bilgi', tanim: 'Karakterin bir bilgiyi öğrenmeden önce ona göre davranması.', sonuc: 'denetlenemiyor', denetlenen: 0,
       not: 'Bir karakterin bir bilgiye göre davrandığını gösteren kayıt henüz yok; program bunu metinden çıkarmaz.' },
-    { kural: 'surec', ad: 'Süreç', tanim: 'Bir olayın, bağlı süreç kuralının önkoşuluyla çelişmesi.', sonuc: 'denetlenemiyor', denetlenen: 0,
-      not: 'Süreç kuralları henüz kurulamıyor.' },
+    ozet('surec', 'Süreç', 'Bir olayda bir adımın, bağlı süreç kuralındaki önkoşul adımı yapılmadan gerçekleşmesi.', { bulgular: srH, denetlenen: sr.denetlenen },
+      'Önkoşullu adımı olan bir süreç kuralına bağlı olay yok.', `${sr.denetlenen} olay–kural bağı denetlendi. Kaydedilmemiş adım “olmadı” sayılmaz; yalnızca “yapılmadı” ya da “yarıda kaldı” diye işaretlenen önkoşullar denetlenir.`),
   ];
-  return { bulgular: [...y.bulgular, ...d.bulgular, ...k.bulgular, ...s.bulgular], kurallar };
+  return { bulgular: [...y.bulgular, ...d.bulgular, ...k.bulgular, ...s.bulgular, ...srH], kurallar };
 }
 
 const sirala = (l: DenetimBulgusu[]) => l.sort((a, b) => (a.hukum === b.hukum ? 0 : a.hukum === 'celiski' ? -1 : 1)

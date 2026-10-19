@@ -99,6 +99,13 @@ export type GeciselEksen = 'kapsama' | 'bagli' | 'kultur';
 /** Geçişli sorgu sonucu: alt birim (birim null) ya da bir birime bağlı kayıt (birim, bağlandığı yer). */
 export interface GeciselSonuc { kod: string; birim: KisaKayit | null; etiket: string }
 export interface ToplananKayit { kayit: KisaKayit; birimler: KisaKayit[] }
+export interface SurecAdimi { kod: string; ad: string; onkosul: string[]; esik: boolean; sonuc: boolean; etki: string }
+export interface SurecKurali { kod: string; sahip: KisaKayit; ad: string; kosullar: string; adimlar: SurecAdimi[] }
+export type AdimDurumu = 'planlandi' | 'basladi' | 'tamam' | 'yarida' | 'yapilmadi';
+export interface SurecSonucu { durum: 'dogdu' | 'dogmadi' | 'bilinmiyor' | 'tanimsiz' | 'plan'; yazi: string; esik: string | null }
+export interface OlaySureci { kural: SurecKurali; silinmis: boolean; durumlar: Record<string, AdimDurumu>; sonuc: SurecSonucu; fiili: boolean; celismeler: string[] }
+export interface OlaySurecleri { surecler: OlaySureci[]; catisma: boolean }
+export interface MakamYurutucusu { iliski: string; kisi: KisaKayit; baslangic: EvrenTarihi | null; bitis: EvrenTarihi | null; fikir: boolean; not: string | null }
 export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
 export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
 export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
@@ -615,6 +622,15 @@ export interface Istekler {
   kayitVarsayilanlari(a: { evren: string; kod: string }): Record<string, AlanVarsayilani>;
   alanBoslugu(a: { evren: string; kod: string; alan: string; tur: BoslukTuru | null }): void;
   varsayilanKarari(a: { evren: string; kod: string; alan: string; karar: VarsayilanKarari | null }): void;
+  surecKurallari(a: { evren: string; sahip?: string }): SurecKurali[];
+  surecKuraliOlustur(a: { evren: string; sahip: string; ad: string }): { kod: string };
+  surecKuraliYaz(a: { evren: string; kod: string; tanim: { ad: string; kosullar: string; adimlar: SurecAdimi[] } }): void;
+  surecKuraliSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  olaySurecleri(a: { evren: string; olay: string }): OlaySurecleri;
+  surecBagla(a: { evren: string; olay: string; kural: string; bagli: boolean }): void;
+  surecAdimi(a: { evren: string; olay: string; kural: string; adim: string; durum: AdimDurumu | null }): void;
+  surecFiili(a: { evren: string; olay: string; kural: string | null }): void;
+  makamYurutenleri(a: { evren: string; makam: string }): MakamYurutucusu[];
   geciselKayitlar(a: { evren: string; kok: string; eksen: GeciselEksen }): GeciselSonuc[];
   altBirimlerdenToplananlar(a: { evren: string; kod: string }): ToplananKayit[];
   fetihCevabi(a: { evren: string; kod: string; gecis: string; alan: string; cevap: { durum: FetihCevabi['durum']; tarih?: string } | null }): void;

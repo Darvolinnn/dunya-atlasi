@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 21;
+export const IZDUSUM_SURUMU = 22;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -200,6 +200,33 @@ CREATE TABLE IF NOT EXISTS fetih_cevaplari(
   tarih TEXT,
   PRIMARY KEY(kayit, gecis, alan)
 );
+CREATE TABLE IF NOT EXISTS surec_kurallari(
+  kod TEXT PRIMARY KEY,
+  sahip TEXT NOT NULL,
+  ad TEXT NOT NULL,
+  kosullar TEXT NOT NULL DEFAULT '',
+  adimlar TEXT NOT NULL DEFAULT '[]',
+  olusturma INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS surec_kurallari_sahip ON surec_kurallari(sahip);
+CREATE TABLE IF NOT EXISTS surec_baglari(
+  kod TEXT PRIMARY KEY,
+  olay TEXT NOT NULL,
+  kural TEXT NOT NULL,
+  fiili INTEGER NOT NULL DEFAULT 0,
+  olusturma INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS surec_baglari_olay ON surec_baglari(olay);
+CREATE TABLE IF NOT EXISTS surec_adimlari(
+  kod TEXT PRIMARY KEY,
+  olay TEXT NOT NULL,
+  kural TEXT NOT NULL,
+  adim TEXT NOT NULL,
+  durum TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS surec_adimlari_olay ON surec_adimlari(olay, kural);
 CREATE TABLE IF NOT EXISTS masalar(
   kod TEXT PRIMARY KEY,
   ad TEXT NOT NULL,
@@ -463,7 +490,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -511,7 +538,7 @@ function yonlendirNotla(db: Database, kod: string | null | undefined, tablo: str
 /** Birleştirmede kaynak kayda bağlı satırlar hedefe taşınır; geri almak için hangi satırın taşındığı tutulur. */
 const BIRLESME_SUTUNLARI: [string, string][] = [['iliskiler', 'a'], ['iliskiler', 'b'], ['durumlar', 'konu'], ['durumlar', 'hedef'], ['isaretler', 'kayit'], ['cizimler', 'kayit'], ['rotalar', 'a'], ['rotalar', 'b'],
   ['haritalar', 'yer'], ['degisimler', 'konu'], ['degisimler', 'olay'], ['izler', 'konu'], ['kayitlar', 'sahne_olayi'], ['anlati', 'ust'], ['yonlendirmeler', 'hedef'],
-  ['iddialar', 'konu'], ['bilgiler', 'bilen'], ['bilgiler', 'kaynak_kayit'], ['bilgiler', 'sahne']];
+  ['iddialar', 'konu'], ['surec_kurallari', 'sahip'], ['surec_baglari', 'olay'], ['surec_adimlari', 'olay'], ['bilgiler', 'bilen'], ['bilgiler', 'kaynak_kayit'], ['bilgiler', 'sahne']];
 
 export type Kesinlik = 'kesin' | 'yaklasik' | 'bilinmiyor';
 export interface IsaretKonumu { kesinlik: Kesinlik; x: number | null; y: number | null; yaricap: number | null }
@@ -861,6 +888,53 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     else db.exec({ sql: 'INSERT OR REPLACE INTO fetih_cevaplari(kayit, gecis, alan, durum, tarih) VALUES(?,?,?,?,?)',
       bind: [kod, gecis, alan, cevap.durum as string, cevap.durum === 'yeni' && cevap.tarih ? JSON.stringify(cevap.tarih) : null] });
     alanYaz(db, i, kod, `fetih:${gecis}:${alan}`, cevap ?? null);
+  },
+  /** Süreç kuralı (§3.10): bir kayda ait adımlar, önkoşullar, eşikler; olayda adım durumları. */
+  surec_kurali_olustur(db, i) {
+    const v = i.veri as Record<string, unknown>;
+    if (typeof v.kod !== 'string' || typeof v.sahip !== 'string') return;
+    db.exec({ sql: 'INSERT OR IGNORE INTO surec_kurallari(kod, sahip, ad, olusturma) VALUES(?,?,?,?)',
+      bind: [v.kod, yonlendirNotla(db, v.sahip, 'surec_kurallari', 'sahip', v.kod) as string, String(v.ad ?? '').slice(0, 120), i.zaman] });
+  },
+  surec_kurali_yaz(db, i) {
+    const { kod, tanim } = i.veri as { kod: string; tanim: { ad?: unknown; kosullar?: unknown; adimlar?: unknown } | null };
+    if (typeof kod !== 'string' || !tanim) return;
+    db.exec({ sql: 'UPDATE surec_kurallari SET ad=?, kosullar=?, adimlar=? WHERE kod=?',
+      bind: [String(tanim.ad ?? '').slice(0, 120), String(tanim.kosullar ?? '').slice(0, 1000), JSON.stringify(Array.isArray(tanim.adimlar) ? tanim.adimlar.slice(0, 40) : []), kod] });
+    alanYaz(db, i, kod, 'kural', tanim);
+  },
+  surec_kurali_sil(db, i) {
+    db.exec({ sql: 'UPDATE surec_kurallari SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  surec_kurali_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE surec_kurallari SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+  surec_bagla(db, i) {
+    const { olay, kural, bagli } = i.veri as { olay: string; kural: string; bagli: boolean };
+    if (typeof olay !== 'string' || typeof kural !== 'string') return;
+    const o = yonlendir(db, olay) as string;
+    const var_ = db.selectValue('SELECT kod FROM surec_baglari WHERE olay=? AND kural=?', [o, kural]) as string | undefined;
+    if (bagli && var_) db.exec({ sql: 'UPDATE surec_baglari SET silindi=NULL WHERE kod=?', bind: [var_] });
+    else if (bagli) db.exec({ sql: 'INSERT INTO surec_baglari(kod, olay, kural, olusturma) VALUES(?,?,?,?)', bind: [i.kod, yonlendirNotla(db, olay, 'surec_baglari', 'olay', i.kod) as string, kural, i.zaman] });
+    else if (var_) db.exec({ sql: 'UPDATE surec_baglari SET silindi=?, fiili=0 WHERE kod=?', bind: [i.zaman, var_] });
+  },
+  surec_adimi(db, i) {
+    const { olay, kural, adim, durum } = i.veri as { olay: string; kural: string; adim: string; durum: string | null };
+    if (typeof olay !== 'string' || typeof kural !== 'string' || typeof adim !== 'string') return;
+    const o = yonlendir(db, olay) as string;
+    const var_ = db.selectValue('SELECT kod FROM surec_adimlari WHERE olay=? AND kural=? AND adim=?', [o, kural, adim]) as string | undefined;
+    if (!durum || !['planlandi', 'basladi', 'tamam', 'yarida', 'yapilmadi'].includes(durum)) { if (var_) db.exec({ sql: 'DELETE FROM surec_adimlari WHERE kod=?', bind: [var_] }); }
+    else if (var_) db.exec({ sql: 'UPDATE surec_adimlari SET durum=? WHERE kod=?', bind: [durum, var_] });
+    else db.exec({ sql: 'INSERT INTO surec_adimlari(kod, olay, kural, adim, durum) VALUES(?,?,?,?,?)', bind: [i.kod, yonlendirNotla(db, olay, 'surec_adimlari', 'olay', i.kod) as string, kural, adim, durum] });
+    alanYaz(db, i, o, `surec:${kural}:${adim}`, durum && ['planlandi', 'basladi', 'tamam', 'yarida', 'yapilmadi'].includes(durum) ? durum : null);
+  },
+  /** Çatışan otoriteler: hangi kuralın hükmünün fiilen uygulandığı ayrıca kaydedilir. */
+  surec_fiili(db, i) {
+    const { olay, kural } = i.veri as { olay: string; kural: string | null };
+    if (typeof olay !== 'string') return;
+    const o = yonlendir(db, olay) as string;
+    db.exec({ sql: 'UPDATE surec_baglari SET fiili=(kural IS ?) WHERE olay=?', bind: [typeof kural === 'string' ? kural : null, o] });
+    alanYaz(db, i, o, 'surec_fiili', typeof kural === 'string' ? kural : null);
   },
   /** Çalışma masası (§5.9): kayıtlar kopyalanmaz, masa onlara bağlanır. */
   masa_olustur(db, i) {
