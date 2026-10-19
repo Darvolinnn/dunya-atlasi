@@ -223,6 +223,18 @@ export interface EvrenFarki { kayitlar: KayitFarki[]; iliskiler: IliskiFarki[] }
 export interface Yayim { kod: string; eser: KisaKayit; surum: { kod: string; ad: string }; baski: string; olusturma: number; acik: number }
 export interface YayimCelismesi { anahtar: string; kayit: KisaKayit; baslik: string; once: string | null; sonra: string | null; karar: string | null }
 export interface BelgeSunumu { bicim: 'mektup' | 'gazete' | 'ilan' | 'izin' | 'gunluk' | 'antlasma' | 'mezar'; yazan: string | null; alici: string | null; yer: string | null; muhur: string | null; muhurYazisi: string; imzalayanlar: string[] }
+export type SozlukKapsami = { tur: 'evren' } | { tur: 'eser' | 'donem'; kayit: string } | { tur: 'turler'; turler: string[] };
+export interface SozlukGirdisi { ifade: string; aciklama: string; teknoloji: string | null }
+export interface SozlukTanimi { ad: string; tur: 'yasak' | 'hitap' | 'teknoloji'; girdiler: SozlukGirdisi[]; kapsam: SozlukKapsami }
+export interface Sozluk extends SozlukTanimi { kod: string; silindi: boolean; catismali: boolean }
+export interface SozlukEslesmesi {
+  anahtar: string; sozluk: string; sozlukAdi: string; ifade: string; aciklama: string; kayit: KisaKayit;
+  alan: string; paragraf: number; alinti: string; ileti: string; dayanak: string; fikir: boolean;
+}
+export interface SozlukDenetimi {
+  sonuclar: SozlukEslesmesi[]; dahaFazlasi: boolean; denetlenen: number; eksikler: string[];
+  guncellik: 'guncel'; kapsam: string; not: string;
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -596,6 +608,12 @@ export interface CizelgeOgesi { kod: string; ad: string; tur: string; karar: str
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
 
 export interface Istekler {
+  sozlukler(a: { evren: string; cop?: boolean }): Sozluk[];
+  sozlukYaz(a: { evren: string; kod?: string | null; tanim: SozlukTanimi }): { kod: string };
+  sozlukSil(a: { evren: string; kod: string }): void;
+  sozlukGeriYukle(a: { evren: string; kod: string }): void;
+  sozlukDenetle(a: { evren: string }): SozlukDenetimi;
+  sozlukIsareti(a: { evren: string; sozluk: string; anahtar: string; bilerek: boolean }): void;
   baslat(): KurulumBilgisi;
   evrenler(): EvrenOzeti[];
   evrenOlustur(a: { ad: string }): { kod: string };

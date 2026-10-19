@@ -330,6 +330,13 @@ CREATE TABLE IF NOT EXISTS belge_sunumlari(
   kod TEXT PRIMARY KEY,
   sunum TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS sozlukler(
+  kod TEXT PRIMARY KEY, tanim TEXT NOT NULL, silindi INTEGER
+);
+CREATE TABLE IF NOT EXISTS sozluk_isaretleri(
+  sozluk TEXT NOT NULL, anahtar TEXT NOT NULL, bilerek INTEGER NOT NULL,
+  PRIMARY KEY(sozluk, anahtar)
+);
 CREATE TABLE IF NOT EXISTS derlemeler(
   kod TEXT PRIMARY KEY,
   tur TEXT NOT NULL,
@@ -603,6 +610,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
 );
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
+  'sozlukler', 'sozluk_isaretleri',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -1242,6 +1250,28 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (typeof kod !== 'string' || !sunum || typeof sunum !== 'object') return;
     db.exec({ sql: 'INSERT OR REPLACE INTO belge_sunumlari(kod, sunum) VALUES(?,?)', bind: [kod, JSON.stringify(sunum)] });
     alanYaz(db, i, kod, 'belge_sunumu', sunum);
+  },
+  sozluk_yaz(db, i) {
+    const { kod, tanim } = i.veri;
+    if (typeof kod !== 'string' || !tanim || typeof tanim !== 'object') return;
+    db.exec({ sql: 'INSERT INTO sozlukler(kod,tanim) VALUES(?,?) ON CONFLICT(kod) DO UPDATE SET tanim=excluded.tanim', bind: [kod, JSON.stringify(tanim)] });
+    alanYaz(db, i, kod, 'sozluk_tanim', tanim);
+  },
+  sozluk_sil(db, i) {
+    const kod = i.veri.kod as string;
+    db.exec({ sql: 'UPDATE sozlukler SET silindi=? WHERE kod=?', bind: [i.zaman, kod] });
+    alanYaz(db, i, kod, 'sozluk_silindi', true);
+  },
+  sozluk_geri_yukle(db, i) {
+    const kod = i.veri.kod as string;
+    db.exec({ sql: 'UPDATE sozlukler SET silindi=NULL WHERE kod=?', bind: [kod] });
+    alanYaz(db, i, kod, 'sozluk_silindi', false);
+  },
+  sozluk_isareti(db, i) {
+    const { kod, anahtar, bilerek } = i.veri;
+    if (typeof kod !== 'string' || typeof anahtar !== 'string' || typeof bilerek !== 'boolean') return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO sozluk_isaretleri(sozluk,anahtar,bilerek) VALUES(?,?,?)', bind: [kod, anahtar, bilerek ? 1 : 0] });
+    alanYaz(db, i, kod, `sozluk_isareti:${anahtar}`, bilerek);
   },
   /** Gezinti ve görsel pano (§7): yazarın derlediği listeler. İlk yazım derlemeyi kurar. */
   derleme_yaz(db, i) {
