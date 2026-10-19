@@ -518,6 +518,13 @@ export interface UyarlamaEslemesi {
   degisiklikler: { taraf: 'a' | 'b'; islem: string; aciklama: string }[]; uyarilar: string[];
 }
 export interface UyarlamaAdaylari { eserler: KisaKayit[]; kayitlar: KisaKayit[]; sorun: string | null }
+export type KaliciIzTuru = 'kisa_vadeli' | 'kalici';
+export interface IzKaydi {
+  kod: string; olay: KisaKayit; olayTarihi: EvrenTarihi | null; tur: KaliciIzTuru; ad: string;
+  yer: KisaKayit | null; bitis: EvrenTarihi | null; gercekKoken: string; anlatilanHikaye: string; silindi: boolean;
+}
+export interface OlayIzleri { kisaVadeli: IzKaydi[]; kalici: IzKaydi[]; silinenler: IzKaydi[]; yerAdaylari: KisaKayit[] }
+export interface MekanIzKatmani { anahtar: string; baslik: string; tarihsiz: boolean; siraAnahtari: number | null; izler: IzKaydi[] }
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1239,6 +1246,11 @@ export interface Istekler {
   uyarlamaYaz(a: { evren: string; kod?: string | null; tanim: UyarlamaTanimi }): { kod: string };
   uyarlamaSil(a: { evren: string; kod: string }): void;
   uyarlamaGozdenGecir(a: { evren: string; kod: string }): void;
+  olayIzleri(a: { evren: string; olay: string }): OlayIzleri;
+  mekanIzKatmanlari(a: { evren: string; yer: string }): MekanIzKatmani[];
+  izKaydiYaz(a: { evren: string; kod?: string | null; olay: string; tur: KaliciIzTuru; ad: string; yer?: string | null; bitis?: string | EvrenTarihi | null; gercekKoken?: string; anlatilanHikaye?: string }): { kod: string };
+  izKaydiSil(a: { evren: string; kod: string }): void;
+  izKaydiGeriYukle(a: { evren: string; kod: string }): void;
 }
 
 export type IstekAdi = keyof Istekler;

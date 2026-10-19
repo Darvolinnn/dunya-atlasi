@@ -190,6 +190,9 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   uyarlama_yaz: () => 'Uyarlama eşlemesi kaydedildi',
   uyarlama_gozden_gecir: () => 'Uyarlama eşlemesi gözden geçirildi',
   uyarlama_sil: (v) => v.silindi === false ? 'Uyarlama eşlemesi geri getirildi' : 'Uyarlama eşlemesi kaldırıldı',
+  iz_kaydi_yaz: (v, ad) => `${ad(v.olay)}: “${v.ad}” ${v.tur === 'kisa_vadeli' ? 'kısa vadeli sonucu' : 'kalıcı izi'} kaydedildi`,
+  iz_kaydi_sil: (v, ad) => `${ad(v.olay)}: “${v.ad ?? 'iz kaydı'}” kaldırıldı`,
+  iz_kaydi_geri_yukle: (v, ad) => `${ad(v.olay)}: “${v.ad ?? 'iz kaydı'}” geri getirildi`,
 };
 
 /** Kullanıcının yaptığı bir değişiklik sayılmayan, başka bir işlemin parçası olan adımlar (listelerde gösterilmez). */

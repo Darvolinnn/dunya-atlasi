@@ -80,6 +80,8 @@ import { kisiYasananSure } from './yasanan-sure';
 import { sahneOkurBilgileri } from './sahne-okur';
 import * as uyarlama from './uyarlama';
 import type { UyarlamaTanimi } from '../veri/api';
+import * as kaliciIz from './kalici-iz';
+import type { KaliciIzTuru } from '../veri/api';
 
 export type DosyaAcici = (ad: string) => Database;
 export type Bildirici = (evren: string, turler: string[], kayitlar: string[], uzaktan?: boolean) => void;
@@ -604,6 +606,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         sonuc.push(uyarlama.catismaSatiri(nesne, alan, degerler));
         continue;
       }
+      if (!iliski && (alan === 'iz_kaydi' || alan === 'iz_kaydi_silindi')) {
+        sonuc.push(kaliciIz.catismaSatiri(e, nesne, alan, degerler, kayitAdi));
+        continue;
+      }
       if (!iliski && alan === 'delil') {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: 'Delil geçmişi',
           degerler: degerler.map((d) => {
@@ -863,6 +869,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     if (alan === 'uyarlama_esleme' || alan === 'uyarlama_silindi') {
       this.yaz(evren, [uyarlama.cozumGirdisi(nesne, alan, deger)]);
+      return;
+    }
+    if (alan === 'iz_kaydi' || alan === 'iz_kaydi_silindi') {
+      this.yaz(evren, [kaliciIz.catismaCozumGirdisi(nesne, alan, deger)]);
       return;
     }
     if (alan === 'delil') { this.yaz(evren, [{ tur: 'delil_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
@@ -2913,4 +2923,15 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   uyarlamaYaz({ evren, kod, tanim }: { evren: string; kod?: string | null; tanim: UyarlamaTanimi }) { return uyarlama.yaz(this.uyarlamaBaglami(evren), kod ?? null, tanim); }
   uyarlamaSil({ evren, kod }: { evren: string; kod: string }) { uyarlama.sil(this.uyarlamaBaglami(evren), kod); }
   uyarlamaGozdenGecir({ evren, kod }: { evren: string; kod: string }) { uyarlama.gozdenGecir(this.uyarlamaBaglami(evren), kod); }
+  private kaliciIzBaglami(evren: string): kaliciIz.KaliciIzBaglami {
+    const e = this.evren(evren);
+    return { e, yaz: (g, k) => { this.yaz(evren, g, k); }, olayTarihi: (kod) => this.olayTarihi(e, kod) };
+  }
+  olayIzleri({ evren, olay }: { evren: string; olay: string }) { return kaliciIz.olayIzleri(this.kaliciIzBaglami(evren), olay); }
+  mekanIzKatmanlari({ evren, yer }: { evren: string; yer: string }) { return kaliciIz.mekanIzKatmanlari(this.kaliciIzBaglami(evren), yer); }
+  izKaydiYaz({ evren, ...girdi }: { evren: string; kod?: string | null; olay: string; tur: KaliciIzTuru; ad: string; yer?: string | null; bitis?: string | EvrenTarihi | null; gercekKoken?: string; anlatilanHikaye?: string }) {
+    return kaliciIz.izKaydiYaz(this.kaliciIzBaglami(evren), girdi);
+  }
+  izKaydiSil({ evren, kod }: { evren: string; kod: string }) { kaliciIz.izKaydiSil(this.kaliciIzBaglami(evren), kod); }
+  izKaydiGeriYukle({ evren, kod }: { evren: string; kod: string }) { kaliciIz.izKaydiGeriYukle(this.kaliciIzBaglami(evren), kod); }
 }
