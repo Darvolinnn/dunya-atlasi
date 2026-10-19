@@ -1,5 +1,5 @@
 // Arayüz tarafındaki veritabanı istemcisi: çalışana istek gönderir, değişiklik bildirimlerini dağıtır.
-import type { IstekAdi, IstekArg, IstekSonuc, DegisiklikBildirimi } from './api';
+import type { IstekAdi, IstekArg, IstekSonuc, DegisiklikBildirimi, IlerlemeBildirimi } from './api';
 
 type Bekleyen = { ok: (v: unknown) => void; no: (e: Error) => void };
 
@@ -20,6 +20,7 @@ export class Istemci {
   private no = 0;
   private readonly bekleyen = new Map<number, Bekleyen>();
   private readonly dinleyiciler = new Set<(b: DegisiklikBildirimi['degisti']) => void>();
+  private readonly ilerlemeDinleyicileri = new Set<(b: IlerlemeBildirimi) => void>();
   private durdu: string | null = null;
 
   constructor(calisan?: CalisanBenzeri) {
@@ -27,6 +28,7 @@ export class Istemci {
     this.calisan.onmessage = (e: MessageEvent) => {
       const m = e.data;
       if (m.degisti) { for (const d of this.dinleyiciler) d(m.degisti); return; }
+      if (m.ilerleme) { for (const d of this.ilerlemeDinleyicileri) d(m.ilerleme); return; }
       const b = this.bekleyen.get(m.no);
       if (!b) return;
       this.bekleyen.delete(m.no);
@@ -56,6 +58,12 @@ export class Istemci {
   dinle(fn: (b: DegisiklikBildirimi['degisti']) => void): () => void {
     this.dinleyiciler.add(fn);
     return () => this.dinleyiciler.delete(fn);
+  }
+
+  /** Uzun süren baştan kurmanın ilerlemesi (§10.7). */
+  ilerlemeDinle(fn: (b: IlerlemeBildirimi) => void): () => void {
+    this.ilerlemeDinleyicileri.add(fn);
+    return () => this.ilerlemeDinleyicileri.delete(fn);
   }
 }
 

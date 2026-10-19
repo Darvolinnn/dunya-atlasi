@@ -102,6 +102,39 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   );
 }
 
+/** "İlk adımlar" (K26): yeni bir evrende yazmaya başlamanın dört adımı. Yapılanlar evrenden anlaşılır; hepsi bitince
+ *  ya da "Gizle"ye basılınca görünmez (seçim bu cihazda evren başına hatırlanır). */
+function IlkAdimlar({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
+  const anahtar = `dunya-atlasi:ilk-adimlar-gizli:${evren}`;
+  const [gizli, setGizli] = useState(() => okuYerel(anahtar) === '1');
+  const [d, setD] = useState<{ eser: boolean; sahne: boolean; baglanti: boolean; baglam: boolean } | null>(null);
+  useEffect(() => { if (!gizli) istemci.iste('ilkAdimlar', { evren }).then(setD, () => {}); }, [evren, surum, gizli]);
+  if (gizli || !d) return null;
+  const adimlar: [boolean, preact.ComponentChildren][] = [
+    [d.eser, <>Bir eser oluşturun: aşağıya romanınızın ya da öykünüzün adını yazın.</>],
+    [d.sahne, <>İlk sahnenizi ekleyin: soldaki listede eserin altındaki “+ Sahne”ye basın ve yazmaya başlayın.</>],
+    [d.baglanti, <>Metinde bir karakterin ya da yerin adını <strong>[[</strong> ile başlayarak yazın; kaydı yoksa oluşturulur ve metne bağlanır.</>],
+    [d.baglam, <>Sahneye bir tarih ya da mekân verin: başlıktaki “Bağlam ekle”ye basın. Bağlam paneli o andaki durumu göstermeye başlar.</>],
+  ];
+  const yapilan = adimlar.filter(([t]) => t).length;
+  if (yapilan === adimlar.length) return null;
+  const sira = adimlar.findIndex(([t]) => !t);
+  return (
+    <section class="kart ilk-adimlar" aria-label="İlk adımlar">
+      <div class="satir">
+        <strong>İlk adımlar</strong><span class="bosluk" />
+        <span class="soluk kucuk">{yapilan} / {adimlar.length} tamam</span>
+        <button class="dugme sade kucuk" onClick={() => { setGizli(true); yazYerel(anahtar, '1'); }}>Gizle</button>
+      </div>
+      <ol>
+        {adimlar.map(([tamam, metin], i) => (
+          <li key={i} class={tamam ? 'tamam' : i === sira ? 'sirada' : 'soluk'}>{metin}{tamam && <span aria-label="tamam"> ✓</span>}</li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 /** Yaz seçilip henüz bir parça açılmamışken: kaldığın yer ve eserler. */
 function YaziMasasi({ istemci, evren }: { istemci: Istemci; evren: string }) {
   const calisma = useCalisma();
@@ -127,6 +160,7 @@ function YaziMasasi({ istemci, evren }: { istemci: Istemci; evren: string }) {
   return (
     <main class="sayfa yazi-masasi">
       <div class="baslik-satiri sayfa-basligi"><h1>Yaz</h1><SayfaYardimi sayfa="yaz" /></div>
+      <IlkAdimlar istemci={istemci} evren={evren} surum={surum} />
       {kaldigi?.kayit && kaldigi.kayitAdi && (
         <section class="kart kaldigin-yer">
           <div class="soluk kucuk">Kaldığınız yer · {zamanYaz(kaldigi.zaman)}{kaldigi.cihaz ? ` · ${kaldigi.cihaz} cihazında` : ''}</div>

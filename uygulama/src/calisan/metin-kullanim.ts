@@ -102,7 +102,7 @@ function okuma(b: KullanimBaglami, r: Record<string, unknown>, hedefSpans: Spans
 
 /** Bir metnin içindeki kullanımlar. */
 export function kullanimlar(b: KullanimBaglami, hedef: string): MetinKullanimi[] {
-  const satirlar = b.e.db.selectObjects('SELECT * FROM metin_kullanimlari WHERE hedef=? AND silindi IS NULL ORDER BY olusturma, kod', [hedef]);
+  const satirlar = b.e.db.selectObjects('SELECT * FROM metin_kullanimlari WHERE hedef=? AND silindi IS NULL ORDER BY olusturma, rowid', [hedef]);
   if (!satirlar.length) return [];
   const spans = b.spans(hedef, satirlar[0].alan as string);
   return satirlar.map((r) => okuma(b, r, spans));

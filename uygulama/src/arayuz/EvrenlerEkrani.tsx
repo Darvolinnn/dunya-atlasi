@@ -5,6 +5,7 @@ import { zamanYaz } from '../alan/islem-metni';
 import { git } from './Uygulama';
 import { SayfaYardimi } from './SayfaYardimi';
 import { IceAktar, YedektenGeriYukle } from './Tasima';
+import { onayla } from './onay';
 
 export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
   const [evrenler, setEvrenler] = useState<EvrenOzeti[] | null>(null);
@@ -15,6 +16,31 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
 
   const yukle = () => istemci.iste('evrenler').then(setEvrenler, (e) => setHata(e.message));
   useEffect(() => { yukle(); return istemci.dinle((d) => { if (d.uzaktan) yukle(); }); }, []);
+
+  /** Evreni yalnızca bu cihazdan kaldırır (§10.1). Onay, kaybolacak olanı açıkça söyler. */
+  const kaldir = async (e: EvrenOzeti) => {
+    setHata(null);
+    try {
+      const [d, dosyaYedegi, donemsel] = await Promise.all([istemci.iste('esitlemeDurumu'), istemci.iste('sonYedek', { evren: e.kod }),
+        istemci.iste('donemselYedekDurumu', { evren: e.kod }).catch(() => null)]);
+      const v = d.evrenler.find((x) => x.kod === e.kod);
+      const driveda = !!(v?.esitlenir && v.sonEsitleme);
+      const yalniz = v ? v.yalnizBuCihazda + v.denemeler.reduce((n, y) => n + y.yalnizBuCihazda, 0) : 0;
+      const yedek = Math.max(dosyaYedegi ?? 0, donemsel?.son?.dogrulandi ? donemsel.son.zaman : 0);
+      const yedekCumlesi = yedek
+        ? `Son yedek: ${zamanYaz(yedek)}. O tarihten sonraki değişiklikler yedekte yok.`
+        : 'Bu evrenin hiç yedeği yok. Önce evrenin Yedek sayfasından yedek almanızı öneririz.';
+      const soru = driveda && !yalniz
+        ? `“${e.ad}” bu cihazdan kaldırılsın mı?\n\nDrive'daki kopyası ve öbür cihazlarınız etkilenmez. İsterseniz “Eşitleme ve cihazlar” sayfasından yeniden indirebilirsiniz.`
+        : driveda
+          ? `“${e.ad}” bu cihazdan kaldırılsın mı?\n\n${yalniz} değişiklik henüz Drive'a gönderilmedi; kaldırırsanız bu değişiklikler kaybolur.\n\n${yedekCumlesi}`
+          : `“${e.ad}” yalnızca bu cihazda. Kaldırırsanız geri getirilemez.\n\n${yedekCumlesi}\n\nKaldırılsın mı?`;
+      if (!onayla(soru)) return;
+      if ((!driveda || yalniz) && !yedek && !onayla(`Son kez soruyoruz: “${e.ad}” ve içindeki her şey kalıcı olarak silinecek. Devam edilsin mi?`)) return;
+      await istemci.iste('evrenKaldir', { evren: e.kod });
+      yukle();
+    } catch (x) { setHata((x as Error).message); }
+  };
 
   const olustur = async (e: Event) => {
     e.preventDefault();
@@ -62,10 +88,13 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
         {evrenler && evrenler.length > 0 && (
           <div class="kartlar">
             {evrenler.map((e) => (
-              <button class="kart" key={e.kod} onClick={() => git(`/e/${e.kod}`)}>
-                <h3>{e.ad}</h3>
-                <div class="soluk kucuk">{e.sonAcilis ? `Son açılış: ${zamanYaz(e.sonAcilis)}` : `Oluşturulma: ${zamanYaz(e.olusturma)}`}</div>
-              </button>
+              <div class="evren-karti" key={e.kod}>
+                <button class="kart" onClick={() => git(`/e/${e.kod}`)}>
+                  <h3>{e.ad}</h3>
+                  <div class="soluk kucuk">{e.sonAcilis ? `Son açılış: ${zamanYaz(e.sonAcilis)}` : `Oluşturulma: ${zamanYaz(e.olusturma)}`}</div>
+                </button>
+                <button class="dugme sade kucuk tehlikeli evren-kaldir" aria-label={`“${e.ad}” evrenini bu cihazdan kaldır`} title="Bu cihazdan kaldır" onClick={() => void kaldir(e)}>Kaldır</button>
+              </div>
             ))}
           </div>
         )}

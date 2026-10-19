@@ -89,7 +89,7 @@ function karsilastir(b: DurumBaglami, iddia: string, t: DairInancTanimi, hakkind
 
 export function dairInanclar(b: DurumBaglami, iddia: string): DairInanc[] {
   iddiaVar(b, iddia);
-  return b.e.db.selectObjects('SELECT kod, tanim FROM dair_inanclar WHERE iddia=? AND silindi IS NULL ORDER BY olusturma, kod', [iddia]).map((r) => {
+  return b.e.db.selectObjects('SELECT kod, tanim FROM dair_inanclar WHERE iddia=? AND silindi IS NULL ORDER BY olusturma, rowid', [iddia]).map((r) => {
     const tanim = JSON.parse(r.tanim as string) as DairInancTanimi;
     const sanan = kisa(b, tanim.sanan), hakkinda = kisa(b, tanim.hakkinda);
     const temel = { kod: r.kod as string, tanim, sanan, hakkinda };
