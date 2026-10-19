@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 73 dosya, 427 sınama, hepsi geçiyor.*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 75 dosya, 435 sınama, hepsi geçiyor.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -68,14 +68,15 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | İnceleme | GPT paketi: kimlikte yönlendirme ve taşınan ilişkinin görünürlüğü, birleşen kaynakla metin güncelleme, silinmiş süreç kuralı, harita künyesi çatışma gösterimi, boş uyarlama bölümü, bağlam notu sınırı (9 sınama). GPT hakkı bittiği için listedeki öteki özellikler (F05, F25, F40, F11) incelenmemiş olabilir | `f00cb2f` |
 | §15-2 | Argon paketi: ölçekli geometri ve erişim konturları (izdüşüm 57, tablolar `olcekli_olcekler`, `olcekli_araziler`). Sınır: çizim kendi kutusunda yapılır, haritanın görseli altına konmaz | `b3db094` |
 | İnceleme 2 | Yardımcı ajan F05, F25, F40, F11'i inceledi: inanç ve dönüşüm kayıtlarında birleşmiş kayda yönlendirme düzeltildi. Düzeltilmeyen küçük şüpheler: inanç silme `alanYaz` ile yazılmıyor; F11'de silinmiş mekânla düzenlemede bağ sessizce düşüyor; F40 "Boş olamaz" iletisi belirsiz; F25'te kayıt kendi ardılına birleştirilebiliyor | `1af1e74` |
+| F16 | Formül dili (TK8): şablonda birimli sayı alanı (`alan/nicelik.ts`); formül okuyucu ve üç değerli değerlendirme (`alan/formul.ts`); hukuk kuralının "kimlere" kısmı koşul listesi ya da formülle (`calisan/formul-ortami.ts`, `tanim.formul`); yazarken denetim ve hata yeri (`formulDenetle`); kural atölyesi formülü de değerlendirir. Tablo değişmedi, izdüşüm sürümü artmadı. Sınır: kayıt silme ve birleştirme uyarıları formüldeki kayıtları saymıyor (formül "hesaplanamadı" der; birleşmede kod yönlendirilir); süreç kurallarında formül yok | `da885c9`, `645367a`, `201f6d7`, `5986447` |
 | F19 | İnceleme: ayırt etme satırı var, sahne hatırlatıcısını sahne paneli karşılıyor; okur tanıtımı ve "sır yayına girmez" yayına (§11) bağlı, K20 gereği kapsam dışı | — |
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
 19 Ekim 2026'daki ilk dört paket birleştirildi. Aynı gün ikinci tur beş paket verildi; beşi de birleştirildi. Üçüncü turdaki Argon paketi (§15-2) birleştirildi; GPT inceleme paketi hak bittiği için yarım kaldı, yerine yardımcı ajan inceledi. Bekleyen paket yok. Dalı uzak depoda belirince birleştir (§6). Paketler `IZDUSUM_SURUMU`'nu artırmaz; artırmayı birleştiren yapar. Promptlar kullanıcının proje klasöründe `paket-promptlari/tur2/` altındadır; depoda değildir.
 
-Bütün "Tasarım" maddeleri kodlandı (F16 formülü hariç; TK8 onaylandı, sırada). Promptlar `paket-promptlari/tur3/`.
+Bütün "Tasarım" maddeleri kodlandı (F16 formülü de, 19 Ekim 2026). Promptlar `paket-promptlari/tur3/`.
 
-### 3.2a Süren iş: F16 formül dili (adım adım)
+### 3.2a Biten iş: F16 formül dili (adım adım)
 
 Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yapılan ve yapılacak adımlar burada görünür.
 
@@ -83,15 +84,14 @@ Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yap
 - [x] Sözleşmeyi tasarım belgesine yaz (§18.1 "Kural ve formül dili", §1.3 TK8 satırı, geçmiş dosyasına bir satır)
 - [x] Şablonlara birimli sayı alanı ekle (nicelik türü, birim, hassasiyet): `alan/nicelik.ts`, değer alanın birimine çevrilip `{ enAz, enCok, birim }` olarak saklanır; boşken varsayılan ayarı şablon kaydında artık korunuyor
 - [x] Formül çözümleyici ve üç değerli değerlendirme (`alan/formul.ts`: `formulOku` adları çözer ve türleri denetler, `formulDegerlendir` bir `FormulOrtami` ile çalışır, `formulYazisi` güncel adlarla yazar; sınama `test/formul.test.ts`)
-- [ ] Hukuk kuralının "kimlere" kısmına formül alanı; kural atölyesi örnekleriyle sınama
-- [ ] Arayüz: formül yazma, hatanın yerini gösterme
-- [ ] Sınamalar, izdüşüm sürümü, DEVIR güncellemesi, gönderme
+- [x] Hukuk kuralının "kimlere" kısmına formül alanı; kural atölyesi örnekleriyle sınama (`test/kural-atolyesi.test.ts`)
+- [x] Arayüz: formül yazma, hatanın yerini gösterme, yazım kılavuzu; uygulanan kurallarda formülün belirsiz nedenleri ve "hesaplanamadı" (`arayuz/Hukuk.tsx`)
+- [x] Sınamalar (435), izdüşüm sürümü (gerekmedi: tanım JSON olarak saklanıyor), DEVIR güncellemesi, gönderme
 
 ### 3.3 Kalan işler (önerilen sıra)
 
-1. **F16 formül yazımı (TK8)**: kullanıcı 19 Ekim 2026'da taslağı onayladı ve **sayılarla birlikte** yapılmasını seçti. Kapsam: formül, hukuk kuralının "kimlere" kısmını yazar; ilişkiler, şablon seçim/onay alanları, tarih karşılaştırması, **birimli sayı alanları** (şablona yeni alan türü; nicelik türü ve birim tanımlı, birimler uyuşmazsa hesap durur, §18.1), "ve / veya / değil" ve parantez kullanılabilir. Sonuç üç değerli (evet · hayır · belirsiz; kayıtsız bilgi "hayır" sayılmaz). Hatalı formül kaydedilmez, hatanın yeri gösterilir; sonradan bozulan formül "hesaplanamadı" der, kendiliğinden düzeltilmez. Her formül dil sürümüyle saklanır. Sözleşme tasarım belgesine §18'e yazılır, sonra kodlanır. Süreç kuralları için örnek durumlar henüz yok.
-2. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
-3. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
+1. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
+2. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
 
