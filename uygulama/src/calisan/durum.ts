@@ -3,7 +3,7 @@
 import type { IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
 import { farkCoz, farkGecerli, farkYazisi, kaydir, tarihCoz, siraAnahtari, karsilastir, type EvrenTarihi, type Fark } from '../alan/tarih';
-import { ekKalibi, ekYaz, sesBilgisi } from '../alan/turkce-ek';
+import { ayrilmaYazisi } from '../alan/turkce-ek';
 import { durumKipiGecerli, gecerlilik, type DurumKipi, type Sinir } from '../alan/durum';
 import type { DurumGirdisi, DurumSatiri, SinirBilgisi } from '../veri/api';
 import { kararGecerli } from '../alan/turler';
@@ -43,13 +43,14 @@ export function sinirCoz(b: DurumBaglami, girdi: { ifade?: string; olay?: string
 export function sinirBilgisi(b: DurumBaglami, v: SinirVerisi | null): SinirBilgisi | null {
   if (!v) return null;
   if (v.olay) {
-    const ad = (b.e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [v.olay]) as string | undefined) ?? 'Silinmiş kayıt';
+    const r = b.e.db.selectObject('SELECT ad, tur, okunus FROM kayitlar WHERE kod=?', [v.olay]);
+    const ad = (r?.ad as string | undefined) ?? 'Silinmiş kayıt';
     const t = b.olayTarihi(v.olay);
     if (!v.fark || !farkGecerli(v.fark)) return { tarih: t, olay: { kod: v.olay, ad } };
     // Olay + fark: olayın tarihi değişince sınır da kayar (çapalı sınır, §3.5).
-    const ses = sesBilgisi(ad);
     const ana = takvimOku(b.e.db);
-    const tarih: EvrenTarihi | null = t ? { ifade: `${ad}'${ekYaz(ses, ekKalibi(ses, 'dan'))} ${farkYazisi(v.fark)}`, bicim: 'goreli', hassasiyet: v.fark.birim === 'yil' ? 'yil' : t.hassasiyet,
+    const ayrilma = r ? ayrilmaYazisi(ad, r.tur as string, (r.okunus as string) ?? '') : ayrilmaYazisi(ad);
+    const tarih: EvrenTarihi | null = t ? { ifade: `${ayrilma} ${farkYazisi(v.fark)}`, bicim: 'goreli', hassasiyet: v.fark.birim === 'yil' ? 'yil' : t.hassasiyet,
       takvim: ana.kod, takvimSurumu: ana.surum, kisitlar: [{ olay: v.olay, ...v.fark }], eksen: kaydir(t.eksen, v.fark, ana) } : null;
     return { tarih, olay: { kod: v.olay, ad }, fark: v.fark };
   }

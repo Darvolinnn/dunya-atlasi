@@ -56,3 +56,25 @@ describe('kök bulma', () => {
     expect(kokAdaylari('Velkar')[0]).toBe('velkar');
   });
 });
+
+import { ayrilmaYazisi } from '../src/alan/turkce-ek';
+
+describe('göreli tarih ayrılma yazımı', () => {
+  it('tek sözcüklü özel adlarda kesmeli ayrılma eki ve uyum korunur', () => {
+    expect(ayrilmaYazisi('Tufan')).toBe("Tufan'dan");
+    expect(ayrilmaYazisi('Kaelet')).toBe("Kaelet'ten");
+    expect(ayrilmaYazisi('Ela')).toBe("Ela'dan");
+  });
+  it('iyelik belirsizliği olan veya özel ad olmayan adlarda yanlış ek üretilmez, tür adıyla nötr yazılır', () => {
+    expect(ayrilmaYazisi('Kralın ölümü', 'olay')).toBe('“Kralın ölümü” olayından');
+    expect(ayrilmaYazisi('Kralın Ölümü', 'olay')).toBe('“Kralın Ölümü” olayından');
+    expect(ayrilmaYazisi('Tufan Gecesi', 'olay')).toBe('“Tufan Gecesi” olayından');
+    expect(ayrilmaYazisi('Kalenin düşüşü', 'olay')).toBe('“Kalenin düşüşü” olayından');
+    expect(ayrilmaYazisi('Büyük Kapı', 'olay')).toBe('“Büyük Kapı” olayından');
+    expect(ayrilmaYazisi('Kuzey Kapısı', 'olay')).toBe('“Kuzey Kapısı” olayından');
+    expect(ayrilmaYazisi('Büyük Kapı', 'mekan')).toBe('“Büyük Kapı” mekânından');
+    expect(ayrilmaYazisi('Kuzey Kapısı', 'sehir')).toBe('“Kuzey Kapısı” şehrinden');
+    expect(ayrilmaYazisi('Kralın ölümü', 'olay')).not.toContain("ölümü'den");
+  });
+});
+

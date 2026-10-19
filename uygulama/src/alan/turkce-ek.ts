@@ -155,3 +155,38 @@ export function kokAdaylari(ifade: string, derinlik = 3): string[] {
   }
   return sonuc;
 }
+
+import { turBul } from './turler';
+
+function turAyrilma(tur: string): string {
+  const gorunen = turBul(tur).ad;
+  const parca = gorunen === 'Diğer' ? 'kayıt' : gorunen.split(/\s+(?:\/|ve)\s+/)[0].trim().toLocaleLowerCase('tr-TR');
+  const ilkSes = sesBilgisi(parca);
+  let iyelikli: string;
+  if (/\s/.test(parca) && /[ıiuü]$/.test(parca)) iyelikli = parca;
+  else if (parca === 'şehir') iyelikli = 'şehri';
+  else if (parca === 'kayıt') iyelikli = 'kaydı';
+  else if (parca.endsWith('k')) iyelikli = parca.slice(0, -1) + 'ğ' + ekYaz(ilkSes, ekKalibi(ilkSes, 'i'));
+  else if (parca.endsWith('ç')) iyelikli = parca.slice(0, -1) + 'c' + ekYaz(ilkSes, ekKalibi(ilkSes, 'i'));
+  else iyelikli = parca + ekYaz(ilkSes, ekKalibi(ilkSes, ilkSes.unluyleBiter ? 'si' : 'i'));
+  const sonSes = sesBilgisi(iyelikli);
+  return `${iyelikli}n${ekYaz(sonSes, ekKalibi(sonSes, 'dan'))}`;
+}
+
+/**
+ * Göreli tarih ifadesinde dayanak adının ayrılma durumu ("Tufan'dan", "“Kuzey Kapısı” olayından").
+ * İyelik belirsizliği varsa ("Büyük Kapı" / "Kuzey Kapısı", "Kralın ölümü") tahmin etmez; tür adıyla nötr yazar (§5.1).
+ */
+export function ayrilmaYazisi(ad: string, tur = 'olay', okunus = ''): string {
+  const temiz = ad.trim().replace(/\s+/g, ' ');
+  const parcalar = temiz.split(' ');
+  const ses = sesBilgisi(okunus || temiz);
+  const ozelAd = parcalar.length > 0 && parcalar.every((p) => /^\p{Lu}/u.test(p));
+  const sonHarf = temiz.toLocaleLowerCase('tr-TR').slice(-1);
+  const iyelikBelirsiz = parcalar.length > 1 && ['ı', 'i', 'u', 'ü'].includes(sonHarf);
+  if (ozelAd && ses.kesin && !iyelikBelirsiz) {
+    return `${temiz}'${ekYaz(ses, ekKalibi(ses, 'dan'))}`;
+  }
+  return `“${temiz}” ${turAyrilma(tur)}`;
+}
+

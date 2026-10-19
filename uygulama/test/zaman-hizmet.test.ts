@@ -70,7 +70,7 @@ describe('zaman tanımları hizmette', () => {
     h.kayitTarih({ evren, kod: x, kisitlar: [{ olay: tufan, fark: '80–120 yıl sonra' }, { olay: olum, fark: 'önce' }] });
     let t = h.kayit({ evren, kod: x }).tarih!;
     expect(t.bicim).toBe('goreli');
-    expect(t.ifade).toBe("Tufan'dan 80–120 yıl sonra; Kralın Ölümü'den önce");
+    expect(t.ifade).toBe("Tufan'dan 80–120 yıl sonra; “Kralın Ölümü” olayından önce");
     expect(eksenYili(t.eksen!.enErken!, ANA)).toBe(180);
     expect(eksenYili(t.eksen!.enGec!, ANA)).toBe(210);
     expect(h.etkiRaporu({ evren, kod: tufan }).hesap.map((r) => r.kod)).toContain(x);
@@ -123,4 +123,22 @@ describe('zaman tanımları hizmette', () => {
     m.alanCatismasiCoz({ evren, nesne: 'evren', alan: `akis:${kod}`, islem: c.degerler[0].islem });
     expect(m.catismalar({ evren }).some((x) => x.tur === 'alan' && x.alan === `akis:${kod}`)).toBe(false);
   });
+
+  it('göreli tarih ve durum sınırında iyelik belirsizliğinde nötr yazım kullanılır', () => {
+    const { h, evren } = kur();
+    const tufan = h.kayitOlustur({ evren, ad: 'Tufan', tur: 'olay' }).kod;
+    const kapi = h.kayitOlustur({ evren, ad: 'Kuzey Kapısı', tur: 'olay' }).kod;
+    const buyukKapi = h.kayitOlustur({ evren, ad: 'Büyük Kapı', tur: 'olay' }).kod;
+    const x = h.kayitOlustur({ evren, ad: 'Antlaşma', tur: 'olay' }).kod;
+    h.kayitTarih({ evren, kod: tufan, ifade: '100' });
+    h.kayitTarih({ evren, kod: kapi, ifade: '150' });
+    h.kayitTarih({ evren, kod: buyukKapi, ifade: '160' });
+    h.kayitTarih({ evren, kod: x, kisitlar: [{ olay: tufan, fark: '80 yıl sonra' }] });
+    expect(h.kayit({ evren, kod: x }).tarih!.ifade).toBe("Tufan'dan 80 yıl sonra");
+    h.kayitTarih({ evren, kod: x, kisitlar: [{ olay: kapi, fark: '80 yıl sonra' }] });
+    expect(h.kayit({ evren, kod: x }).tarih!.ifade).toBe('“Kuzey Kapısı” olayından 80 yıl sonra');
+    h.durumEkle({ evren, kod: x, durum: { ozellik: 'Durum', deger: 'Açık', kip: 'sonraki', baslangic: { olay: buyukKapi, fark: '5 yıl sonra' } } });
+    expect(h.durumlar({ evren, kod: x }).durumlar[0].baslangic!.tarih!.ifade).toBe('“Büyük Kapı” olayından 5 yıl sonra');
+  });
 });
+

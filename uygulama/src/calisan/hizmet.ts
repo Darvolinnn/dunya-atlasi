@@ -13,7 +13,7 @@ import { zipOku, zipYaz, type ZipDosyasi } from '../alan/zip';
 import { VERI_BICIMI, type Islem } from '../alan/islem';
 import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
-import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
+import { adDegistir, ayrilmaYazisi, kokAdaylari } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
 import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
@@ -1074,9 +1074,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   /** Göreli tarihin okunuşu dayanakların bugünkü adlarıyla yazılır ("Tufan'dan 80–120 yıl sonra"). */
   private goreliIfade(e: EvrenVt, kisitlar: Kisit[]): string {
     return kisitlar.map((k) => {
-      const ad = (e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [yonlendir(e.db, k.olay)]) as string | undefined) ?? 'silinmiş bir kayıt';
-      const ses = sesBilgisi(ad);
-      return `${ad}'${ekYaz(ses, ekKalibi(ses, 'dan'))} ${farkYazisi(k)}`;
+      const r = e.db.selectObject('SELECT ad, tur, okunus FROM kayitlar WHERE kod=?', [yonlendir(e.db, k.olay)]);
+      const ayrilma = r ? ayrilmaYazisi(r.ad as string, r.tur as string, (r.okunus as string) ?? '') : ayrilmaYazisi('silinmiş bir kayıt');
+      return `${ayrilma} ${farkYazisi(k)}`;
     }).join('; ');
   }
   private tarihGoster(e: EvrenVt, ham: unknown): EvrenTarihi | null {
