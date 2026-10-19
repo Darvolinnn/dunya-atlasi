@@ -50,11 +50,16 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
-Şu an bekleyen paket yok. Yeni paket açılırsa dalı uzak depoda belirince birleştir (§6). Hiçbiri `IZDUSUM_SURUMU`'nu artırmamalı; artırmayı birleştiren yapar.
+19 Ekim 2026'da dört paket verildi. Dalı uzak depoda belirince birleştir (§6). Hiçbiri `IZDUSUM_SURUMU`'nu artırmamalı; artırmayı birleştiren yapar.
 
 | Dal | Madde | İşlem adı öneki | Tablolar | Not |
 |---|---|---|---|---|
-| (yok) | | | | |
+| `paket/uyarlama` (GPT) | F35 baskı ve uyarlama karşılaştırma | `uyarlama_` | `uyarlama_eslemeleri` | `dal.ts`, `anlati.ts`, `esitleme.ts`'e dokunmaz |
+| `paket/akis-suresi` (GPT) | Zaman akışlarında yaşanan süre (§3.4 Yaş) | yok | yok | `sahneBaglami`'nda `yas:` satırının ardına ekler |
+| `paket/sahne-okur` (GPT) | Sahne panelinde okur bilgisi (§5.5, §3.6) | yok | yok | `sahneBaglami`'nda `bakisBilgileri:` satırının ardına ekler |
+| `paket/kucuk-duzeltmeler` (Argon) | Göreli tarih iyelik eki, gökyüzü tarih hatasının yeri | yok | yok | `turkce-ek.ts`'e yeni işlev |
+
+Ana ajan aynı anda deneme kopyalarının eşitlenmesini (§3.3 boşluk 1) yapıyor. Promptlar proje klasöründe `paket-promptlari/` altındadır.
 
 Bu paketlerin tam promptları kullanıcının proje klasöründedir; depoda değildir. Prompt yazarken kalıp olarak bu tablodaki bilgiler ve §6 yeterlidir.
 
