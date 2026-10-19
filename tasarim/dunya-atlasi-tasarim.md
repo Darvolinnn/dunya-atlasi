@@ -842,6 +842,7 @@ Dört sürüm ayrıdır: **uygulama sürümü**, **veri biçimi sürümü**, **k
 
 - **Anlaşılmayan veri korunur.** Eski uygulama yeni bir alan türünü ya da ilişki biçimini okuduğunda onu atmaz ve üzerine yanlış yazmaz. Güvenle düzenleyemediği kaydı salt okunur açar ve "bu kayıt için güncelleme gerekli" der. Yazmaya devam etmek isteyen kullanıcı, evren verisini bozmayan ayrı bir not alanına yazabilir.
 - **Güncelleme yazıyı kesmez.** Kaydedilmemiş metin varken uygulama zorla yeniden yüklenmez. "Güncelleme hazır, yazın kaydedilince uygulanacak" denir.
+- **Kaydedilmemiş yazı kaybolmaz (yerel taslak).** Editördeki yazı asıl kayda geçene kadar bu cihazda ayrıca bir kurtarma taslağında durur: yazarken kısa aralıklarla, sayfa gizlenirken ve kapanırken hemen. Taslak evren verisi değildir, eşitlenmez ve kendiliğinden uygulanmaz; asıl kayıt başarılı olunca silinir. Program aniden kapandıysa metin açılınca "kaydedilmemiş yazı bulundu" denir ve kaydedilmemiş hâli gösterilir. Yazar kurtarır (taslak, yazıldığı sürümün üzerine yapılmış değişiklik olarak birleşir; sonradan kaydedilen silinmez) ya da vazgeçer. Karar verilene kadar taslak saklanır; yeni yazı onu ezmez. Kayıt başarısızsa bu söylenir ve taslağın korunduğu belirtilir.
 - **Veri biçimi dönüşümü** öncesinde yerel taslaklar ve gönderilmemiş işlemler güvenli bir kopyaya alınır; günlük sıkıştırması bekleyen işi kaybetmez.
 - Kurtarma paketi ve yedek, hangi veri biçimi sürümüyle açılabildiğini taşır.
 - Kullanıcıya programlama dili kullanılmaz: "veriler korundu, güncelleme bekliyor" ya da "bu kayıt için güncelleme gerekli" yeterlidir.
@@ -861,7 +862,7 @@ Tarayıcı depolaması tek başına güvence değildir: iPhone'daki Safari bazı
 
 ### 10.10 Dönemsel yedek
 
-Drive'da eşitlemeden ayrı, kullanıcının görebildiği bir klasöre alınır (TK4). Varsayılan: günlük yedek 30 gün, her ayın ilk yedeği bir yıl saklanır (K21); ayardan değiştirilebilir. Her evren ayrı yedeklenir. Her medya dosyası yedeklerde bir kez saklanır; aynı görsel her günlük yedekte yeniden kopyalanmaz (§10.12). Son başarılı yedek tarihi gösterilir; uygulama kapalıyken kaçan yedek bir sonraki açılışta alınır. Takvimde bir tarihin görünmesi yedeğin alındığını göstermez. Kullanıcı istediğinde elle de yedek alır.
+Drive'da eşitlemeden ayrı, kullanıcının görebildiği bir klasöre alınır (TK4). Varsayılan: günlük yedek 30 gün, her ayın ilk yedeği bir yıl saklanır (K21); ayardan değiştirilebilir. Her evren ayrı yedeklenir. Her medya dosyası yedeklerde bir kez saklanır; aynı görsel her günlük yedekte yeniden kopyalanmaz (§10.12). Son başarılı yedek tarihi gösterilir; uygulama kapalıyken kaçan yedek bir sonraki açılışta alınır. Takvimde bir tarihin görünmesi yedeğin alındığını göstermez. Kullanıcı istediğinde elle de yedek alır. Yedek ancak geri indirilip açıldıktan, her değişiklik satırı okunup sayısı tuttuktan sonra **doğrulandı** sayılır. Doğrulanamayan yedek başarılı sayılmaz: hiçbir eski yedek silinmez, aynı günün önceki yedeği de yerinde kalır ve hata gösterilir. Bu cihazda olmadığı için yedeğe giremeyen görsellerin sayısı yazılır. Drive yedeğinden geri yüklemede bulunamayan ya da bozuk görseller sessizce atlanmaz; listesi verilir.
 
 ### 10.11 Dışa aktarma ve taşınabilir paket
 
