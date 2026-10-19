@@ -61,9 +61,11 @@ describe('haklar ve yükümlülükler (F26)', () => {
     h.hakTanimaYaz({ evren, hak, otorite: muhafiz, durum: 'tanimiyor' });
     const { kod } = h.hakTanimaYaz({ evren, hak, otorite: tapinak, durum: 'taniyor' });
     expect(liste().konu[0].otorite?.kod).toBe(otorite);
-    expect(liste().konu[0].tanimalar.map((t) => [t.otorite.kod, t.durum])).toEqual([[muhafiz, 'tanimiyor'], [tapinak, 'taniyor']]);
+    // Aynı anda oluşturulan kodların sırası belirsizdir; otoriteye göre karşılaştırılır.
+    const tanimalar = () => Object.fromEntries(liste().konu[0].tanimalar.map((t) => [t.otorite.kod, t.durum]));
+    expect(tanimalar()).toEqual({ [muhafiz]: 'tanimiyor', [tapinak]: 'taniyor' });
     h.hakTanimaYaz({ evren, hak, kod, otorite: tapinak, durum: 'bilinmiyor' });
-    expect(liste().konu[0].tanimalar[1].durum).toBe('bilinmiyor');
+    expect(tanimalar()[tapinak]).toBe('bilinmiyor');
   });
 
   it('aynı kapsamda örtüşen iki mülkiyeti yalnızca bilgi olarak gösterir; koşulu yorumlamaz', () => {
