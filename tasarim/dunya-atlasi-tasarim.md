@@ -78,6 +78,7 @@ Belgedeki adlar (Velkar, Kaelen, Elin, Kuzey Kalesi…) yalnızca davranışı a
 | Geliştirme ve cihaz sırası, aşama çıkışı | §14 |
 | Hesap araçları | §15 |
 | Fikirler F01–F47 ve durumları | §16 |
+| Sayı alanı (nicelik türü, birim, aralık); formül dili | §18.3 |
 | Platform, depo ve barındırma | §17 |
 | Veri sözleşmeleri, arama ve sıralama, özellik kullanım sözleşmesi | §18 |
 
@@ -165,7 +166,7 @@ Kodlamadan önce kapanması gereken teknik kararlardır. Numaraları §13'teki T
 | TK5 | Medya saklama | **Karar verildi (18 Ekim, Windows deneyi):** içerikle adlandırılmış değişmez dosyalar; parça parça ve kaldığı yerden sürdürülebilen yükleme; cihaz başına indirme politikası, telefon için küçük önizleme. Yedekte her görsel bir kez saklanır. Konum bilgisi silinir. Büyük görsellerin gidip gelmesi arka planda yürür ve "indirilmemiş" durumu ekranda görünür (§10.8) | Karar verildi. 26 MB harita: yükleme 26 sn, yarıda kopunca 16 MB'tan sürdü; indirme 20 sn; önizleme 0,5 MB; günlük yedek başına 195 KB. Ayrıntı: `deneyler/tk3-tk4-google/SONUC.md` | §10.12 |
 | TK6 | Uygulama kabuğu (mağaza uygulaması) | Şimdilik yok; PWA yeter | Tablet ve iPhone deneylerinden sonra | §17.1 |
 | TK7 | Yayın mekanizması | Wiki yapılırsa uygulama paketi zip olarak üretir; yükleme ayrı ve bilinçli bir adımdır | K20 değişirse | §11 |
-| TK8 | Kural ve formül dili (F16) | Kodlamadan önce ayrı bir sözleşme: izin verilen işlemler, hata davranışı, sürüm | Sözleşme yazılınca | §18 |
+| TK8 | Kural ve formül dili (F16) | **Karar verildi (19 Ekim, kullanıcı onayı):** formül, hukuk kuralının "kimlere" kısmını yazar; ilişkiler, şablon alanları ve birimli sayılar kullanılır; sonuç üç değerlidir; hatalı formül kaydedilmez; her formül dil sürümüyle saklanır | Karar verildi | §18.3 |
 
 ---
 
@@ -1151,7 +1152,7 @@ Bu tablo her fikrin **tek durum kaynağıdır**. "Tasarım" durumundaki bir fikr
 | F13 | **Okura sunulan açıklamalar.** Bir cinayet için üç açıklama açık tutulur; her sahne hangisini desteklemek ya da zayıflatmak için yazıldığıyla işaretlenir (yazarın niyeti). "Sürpriz" ve "gerilim" hedefleri ayrıdır. | Tasarım | Bu satır |
 | F14 | Serbest yazıyı sonradan yapılandırmak | Tasarım | §5.7 |
 | F15 | **Anlatı ve evren sözleşmesi.** "Büyünün kökeni açıklanmayacak", "rüyalardaki zaman kronolojiye eklenmez". Program bu kararları hatırlatır; bilinçli açık bırakılanı eksik saymaz. Her eser farklı sözleşme seçebilir. | Tasarım | Bu satır |
-| F16 | **Kural atölyesi.** Koşul, kapsam, sonuç ve istisna seçilerek kural kurulur; ileri kullanıcı formül yazabilir (alan anlamı: §18). Her kural için örnek durumlar saklanır (geçmeli, uyarmalı, sınır durumu); kural değişince sonuçlar karşılaştırılır. Hazır paketler kopyalanıp değiştirilebilir. Formül dili kodlanmadan önce ayrı bir sözleşme ister (TK8). Formülsüz kısmın kullanım sözleşmesi: §16.1 sonundaki tablo. | Tasarım | Bu satır |
+| F16 | **Kural atölyesi.** Koşul, kapsam, sonuç ve istisna seçilerek kural kurulur; ileri kullanıcı formül yazabilir (alan anlamı: §18). Her kural için örnek durumlar saklanır (geçmeli, uyarmalı, sınır durumu); kural değişince sonuçlar karşılaştırılır. Hazır paketler kopyalanıp değiştirilebilir. Formül dili: §18.3 (TK8). Formülsüz kısmın kullanım sözleşmesi: §16.1 sonundaki tablo. | Tasarım | Bu satır |
 | F17 | Haritalar da iddia taşır | Tasarım | §8.3 |
 | F18 | **Yayımlanmış eser kilidi.** Yayımlanan eserde okura sunulan iddialar (eser, baskı, anlatı yeri, evren zamanıyla) korunur. Çelişen değişiklikte program engellemez, sorar: *geçmişi düzelt · yeni olay · alternatif devamlılık · baskı düzeltmesi*. Güvenilmez anlatıcının sözü ile yazarın sabitlediği gerçek aynı kilidi taşımaz. | Tasarım | Bu satır |
 | F19 | **Üç özet.** Ayırt etme satırı (seçicide aynı adlı iki kaydı ayırır), sahne hatırlatıcısı (o zamanki yara, amaç, eşya), okur tanıtımı (baskı ve okuma sınırına göre). Uzunluk sınırı dayatılmaz. Ayırt etme satırındaki sır yayına girmez. | Tasarım | Bu satır |
@@ -1278,7 +1279,7 @@ Tarayıcı, yerel veriyi (yerel veritabanı, tarayıcı depolaması) adres klas�
 | **Şema sürümü** | Şablon, alan türü, kural ve takvim değişikliklerinin sürümü; her değerin girildiği şema sürümü (§9.5, §10.3) | Dönüşemeyen değer silinmez |
 | **Medya** | İçerik adı, boyut, cihaz politikası, yayın izni (§10.12) | İndirilmemiş ile silinmiş ayrı |
 | **Arama ve sıralama** | Türkçe harf kuralları, toleranslı arama, eski adlar | Aşağıda |
-| **Kural ve formül dili** | F16'nın formül yazımı: izin verilen işlemler, alan anlamına bağlılık, hata davranışı, sürüm (TK8) | Kodlanmadan önce yazılır |
+| **Kural ve formül dili** | F16'nın formül yazımı: izin verilen işlemler, alan anlamına bağlılık, hata davranışı, sürüm (TK8) | §18.3 |
 
 **Nicelik ve alan anlamı:**
 - Mesafe, süre, miktar, oran, hız ve kapasite ayrı nicelik türleridir. "10" tek başına anlamsızdır: 10 gün, 10 saatlik emek, 10 kişi, 10 kullanım hakkı ve 10 para birimi farklı işlemlere izin verir.
@@ -1327,6 +1328,52 @@ Her önemli özellik kodlanmadan önce şu yedi soruyu cevaplayan kısa bir söz
 | Kabul örneği | D15, D16, D17 (§13.3) |
 
 Bu sözleşmeler, ilgili özellik tasarıma alınırken ya da kodlamadan önce yazılır ve özelliğin tanımının bulunduğu bölüme eklenir.
+
+### 18.3 Kural ve formül dili (TK8)
+
+**Sayı alanı.** Şablonlara "Sayı" alan türü eklenir. Alan tanımı, ada ek olarak bir **nicelik türü** (sayım, mesafe, süre, miktar, oran, hız, kapasite, para) ve kısa bir **birim** taşır ("kişi", "gün", "fersah", "gümüş"). Değer tek sayı ("12", "12,5") ya da aralık ("10–12") olarak girilir. Değer yazıldığı hassasiyetle saklanır; aralık tek sayıya indirilmez (§2.2 kural 16). Her değer girildiği birimle birlikte saklanır. Alanın birimi sonradan değişirse eski değerler dönüştürülmez ve silinmez; değer kendi birimiyle görünür ve "alanın birimi değişti" uyarısı taşır (§10.3 şema sürümü). Birimler arasında dönüşüm yapılmaz (gün ile hafta da dönüştürülmez; para dönüşümü fiziksel dönüşüm değildir, §18.1).
+
+**Formülün yeri.** İleri kullanıcı bir hukuk kuralının (§15-11) "kimlere" kısmını formülle yazabilir. Formül, seçmeli koşulların yanında bir koşul daha sayılır: kuralın uygulanması için seçmeli koşulların hepsi ve formül birlikte tutmalıdır. Formül kuralın konusunu, sonucunu ya da yaptırımını yazmaz. Formül, değerlendirilen kişinin kayıtlarını okur; o kişi "kişi" diye ayrıca yazılmaz.
+
+**Kullanılabilecekler (dil sürümü 1).** Bunların dışında hiçbir şey yazılamaz; hesap işlemi (toplama, çarpma), metin karşılaştırması ve serbest metinden anlam çıkarma yoktur (K1).
+
+| Öğe | Yazılışı | Örnek |
+|---|---|---|
+| İlişki | Hukuk koşulundaki ilişki adı ve parantez içinde kaydın adı | `üyesi(Kuzey Loncası)`, `makamını yürüten(Liman Beyliği)` |
+| Evet / hayır alanı | Köşeli parantez içinde alanın adı | `[Soylu]` |
+| Seçim alanı | Alan, `=` ya da `≠`, seçeneğin adı | `[Rütbe] = Kaptan` |
+| Sayı alanı | Alan, `<` `≤` `>` `≥` `=` `≠`, sayı ve isteğe bağlı birim | `[Yaş] ≥ 18 yıl` |
+| Tarih alanı | Alan, `<` (önce) ya da `>` (sonra), tırnak içinde evren tarihi | `[Doğum tarihi] < "430"` |
+| Bağlaçlar | `ve`, `veya`, `değil`, parantez | `üyesi(Lonca) ve değil ([Soylu] veya düşmanı…)` |
+
+`<=`, `>=` ve `!=` da `≤`, `≥`, `≠` diye okunur. Aynı adlı alan birden çok türün şablonunda farklı anlamla bulunuyorsa tür adı önüne yazılır: `[Karakter: Yaş]`. Adlar Türkçe harf kurallarıyla eşleşir (§18.1 arama).
+
+**Ada değil koda bağlılık.** Formül kaydedilirken her ad koda çevrilir: kayıt, alan, seçenek ve ilişki. Saklanan biçim kodlardır; ekranda her zaman güncel adlarla gösterilir. Bir kaydın ya da alanın adı değişince formül bozulmaz. Bir alanın anlamı adına değil koduna, türüne ve birimine bağlıdır (§18.1). Birleştirilmiş kayıt yönlendirmeyle izlenir.
+
+**Değerlendirme: üç değer.** Her öğe *evet · hayır · belirsiz* verir.
+- İlişki kayıtlıysa evet; kayıtlı değilse belirsiz. Kayıtsız bilgi "hayır" sayılmaz (§2.2 kural 4). "Değil üyesi(X)", üyelik kayıtlıysa hayır, değilse belirsizdir.
+- Alan boşsa belirsiz. Evet/hayır alanı işaretliyse evet, işaretsizse belirsizdir. Formül kaydın kendi değerini okur; varsayılan değerleri (§3.7) okumaz.
+- Sayı karşılaştırması aralıkla yapılır: "15–20" değeri için `≥ 18` belirsiz, `≥ 10` evet, `≥ 25` hayır. Tarih karşılaştırması tarih sözleşmesindeki üç değerli karşılaştırmadır (§18.1 tarihli durum).
+- `ve`: biri hayırsa hayır, hepsi evetse evet, öbür durumlarda belirsiz. `veya`: biri evetse evet, hepsi hayırsa hayır, öbür durumlarda belirsiz. `değil`: evet ile hayırı yer değiştirir, belirsiz belirsiz kalır.
+- Kural için evet "koşul tutuyor", hayır "koşul tutmuyor", belirsiz "koşul kayıtlı değil" demektir (§16.1 F16 kullanım sözleşmesi). Kişinin türünde formüldeki alan yoksa öğe "bu kayıt için geçerli değil" gerekçesiyle belirsizdir (§18.1 sorgu ve olumsuzluk).
+
+**Hata davranışı.**
+- Yazarken: formül çözülemezse kaydedilmez. Hatanın yeri işaretlenir ve neden günlük dille söylenir: "burada kapanış parantezi bekleniyordu", "“Kuzey Locası” adlı kayıt yok", "bu adla iki kayıt var", "[Yaş] bir sayı alanı; birimi yıl, yazılan gün", "seçim alanı yalnızca = ve ≠ ile karşılaştırılır". En çok 500 harf ve 20 iç içe parantez yazılır.
+- Kaydedilmiş formül sonradan bozulabilir: kayıt silinir, alan şablondan çıkar, alanın türü ya da birimi değişir, kişinin değeri başka birimle girilmiştir. Bu durumda formül o kişi için "hesaplanamadı" der ve nedenini söyler; kural "uygulanır" ya da "uygulanmaz" sayılmaz. Program formülü kendiliğinden düzeltmez, silmez ya da yeniden yazmaz.
+
+**Sürüm.** Her formül, yazıldığı dil sürümüyle ve yazıldığı metinle birlikte saklanır. Dilin sonraki bir sürümü eski formülleri eskisi gibi okur. Daha yeni bir sürümle yazılmış formülü eski program değerlendirmez; "bu formül programın daha yeni bir sürümüyle yazılmış" der ve üzerine yazmaz (§10.7). Formül değişikliği kuralın bir önceki tanımı olarak işlem günlüğünde kalır; kural atölyesi örnekleri iki tanımla karşılaştırır (§16.1).
+
+**Kullanım sözleşmesi (§18.2).**
+
+| Soru | Cevap |
+|---|---|
+| Kullanıcı sorusu | "Bu kural, seçmeli koşulların söyleyemediği bir durumda kime uygulanıyor?" |
+| En az veri | Bir hukuk kuralı ve bir formül; sayı ya da alan kullanılıyorsa o alan şablonda tanımlı. |
+| Veri eksikse | Alan boş ya da ilişki kayıtsızsa belirsiz; ad, alan ya da birim bozulmuşsa "hesaplanamadı" ve nedeni. |
+| Okuduğu | Kişinin ilişkileri, şablon alanlarının değerleri ve tanımları, kayıt adları ve yönlendirmeler. |
+| Değiştirdiği | Yalnızca kuralın tanımını (formül ile sürümü). |
+| Yapmayacağı yorum | Birim dönüştürmez; aralığın ortasını değer saymaz; kayıtsızı hayır saymaz; serbest metinden anlam çıkarmaz. |
+| Kabul örneği | "Silah yasağı: değil üyesi(Kuzey Loncası) ve [Yaş] ≥ 16 yıl". Yaşı "15–17 yıl" olan üye olmayan kişi için kural "koşul kayıtlı değil"; yaşı 20 olan lonca üyesi için "koşul tutmuyor". "Yaş" alanının birimi "yıl"dan "ay"a çevrilince eski formül "hesaplanamadı: birim değişti" der. |
 
 ---
 
