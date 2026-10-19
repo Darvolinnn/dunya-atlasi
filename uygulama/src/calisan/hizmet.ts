@@ -43,6 +43,7 @@ import * as tekMod from './teknoloji';
 import * as soyMod from './soy';
 import * as montaj from './montaj';
 import * as gundelik from './gundelik';
+import * as yerlesim from './yerlesim';
 import * as derlemeMod from './derleme';
 import * as fark from './fark';
 import * as dalMod from './dal';
@@ -512,6 +513,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           degerler: degerler.map((d) => ({ ...d, yazi: `${(d.deger as unknown[] | null)?.length ?? 0} kart` })) });
         continue;
       }
+      if (!iliski && alan === 'yerlesim') {
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: 'Sahne yerleşimi',
+          degerler: degerler.map((d) => ({ ...d, yazi: `${(d.deger as import('../veri/api').SahneYerlesimi | null)?.ogeler.length ?? 0} öğe` })) });
+        continue;
+      }
       if (!iliski && (alan === 'niyetler' || alan.startsWith('hedef:'))) {
         const yazi = (d: unknown) => alan === 'niyetler' ? `${(d as unknown[] | null)?.length ?? 0} niyet işareti` : d === 'surpriz' ? 'Sürpriz' : d === 'gerilim' ? 'Gerilim' : '(boş)';
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: alan === 'niyetler' ? 'Sahnenin niyet işaretleri' : 'Sorunun hedefi',
@@ -836,6 +842,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (!iliski && alan.startsWith('ad_bicimi:')) { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'ad_bicimi_yaz', veri: { kayit: nesne, dil: alan.slice(10), deger, cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'belge_sunumu') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'belge_sunumu_yaz', veri: { kod: nesne, sunum: deger ?? belgeMod.BOS_SUNUM, cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'gundelik') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'gundelik_yaz', veri: { yer: nesne, kartlar: deger ?? [], cozum: true } }], [nesne]); return; }
+    if (!iliski && alan === 'yerlesim') {
+      this.kayitVarMi(e, nesne);
+      const v = deger as import('../veri/api').SahneYerlesimi;
+      this.yaz(evren, [{ tur: 'yerlesim_yaz', veri: { sahne: nesne, plan: v.plan, ogeler: v.ogeler, cozum: true } }], [nesne]); return;
+    }
     if (!iliski && alan === 'niyetler') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'sahne_niyeti_yaz', veri: { sahne: nesne, niyetler: deger ?? [], cozum: true } }], [nesne]); return; }
     if (!iliski && alan.startsWith('hedef:')) { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'montaj_hedefi_yaz', veri: { eser: nesne, iddia: alan.slice(6), hedef: deger, cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'kalitim_ozelligi') { this.yaz(evren, [{ tur: 'kalitim_ozelligi_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], []); return; }
@@ -2082,6 +2093,17 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   siradanGun({ evren, yer, donem, statu }: { evren: string; yer: string; donem?: string | null; statu?: string | null }) { return gundelik.siradanGun(this.evren(evren), yer, donem ?? null, statu ?? null); }
   karsilastirmaliOkuma({ evren, sutunlar }: { evren: string; sutunlar: { kayit: string; tarih: string | null }[] }) {
     return gundelik.karsilastirmaliOkuma(this.evren(evren), sutunlar, (kod, an) => durum.durumlar(this.durumBaglami(evren), kod, an ?? undefined));
+  }
+  yerlesim({ evren, sahne }: { evren: string; sahne: string }): import('../veri/api').YerlesimOkumasi {
+    const e = this.evren(evren), s = yonlendir(e.db, sahne);
+    return { yerlesim: yerlesim.oku(e, s), katilimcilar: this.sahneBaglami({ evren, sahne: s }).katilimcilar.filter((k) => k.tur === 'karakter'),
+      catismali: this.catismalar({ evren, kod: s }).some((c) => c.tur === 'alan' && c.alan === 'yerlesim') };
+  }
+  yerlesimPlanlari({ evren }: { evren: string }) { return yerlesim.planlar(this.evren(evren)); }
+  yerlesimYaz({ evren, sahne, plan, ogeler }: { evren: string; sahne: string; plan: import('../veri/api').YerlesimPlani; ogeler: import('../veri/api').YerlesimOgesi[] }) {
+    const e = this.evren(evren), s = yonlendir(e.db, sahne);
+    const v = yerlesim.dogrula(e, s, plan, ogeler, this.sahneBaglami({ evren, sahne: s }).katilimcilar.map((k) => k.kod));
+    this.yaz(evren, [{ tur: 'yerlesim_yaz', veri: { sahne: s, plan: v.plan, ogeler: v.ogeler } }], [s]);
   }
   // ---------- Adlandırılmış evren sürümleri (§9.7) ----------
   private anaEvren(evren: string) {

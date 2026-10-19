@@ -223,6 +223,18 @@ export interface EvrenFarki { kayitlar: KayitFarki[]; iliskiler: IliskiFarki[] }
 export interface Yayim { kod: string; eser: KisaKayit; surum: { kod: string; ad: string }; baski: string; olusturma: number; acik: number }
 export interface YayimCelismesi { anahtar: string; kayit: KisaKayit; baslik: string; once: string | null; sonra: string | null; karar: string | null }
 export interface BelgeSunumu { bicim: 'mektup' | 'gazete' | 'ilan' | 'izin' | 'gunluk' | 'antlasma' | 'mezar'; yazan: string | null; alici: string | null; yer: string | null; muhur: string | null; muhurYazisi: string; imzalayanlar: string[] }
+export interface YerlesimNoktasi { x: number; y: number }
+export interface YerlesimPlani { mekan: string; gorsel: string; en: number; boy: number }
+export type YerlesimOgesi = { kod: string; ad: string } & (
+  | { tur: 'duvar' | 'kapi' | 'pencere' | 'siper'; a: YerlesimNoktasi; b: YerlesimNoktasi; acik: boolean }
+  | { tur: 'karakter'; kisi: string; konum: YerlesimNoktasi; yon: number; aci: number; uzaklik: number; adimlar: YerlesimNoktasi[] }
+  | { tur: 'isik'; konum: YerlesimNoktasi; yaricap: number }
+  | { tur: 'ses'; konum: YerlesimNoktasi; duzey: string; uzaklik: number | null; azaltma: number; gurultu: string }
+);
+export interface SahneYerlesimi { plan: YerlesimPlani; ogeler: YerlesimOgesi[] }
+export interface YerlesimOkumasi { yerlesim: SahneYerlesimi | null; katilimcilar: KisaKayit[]; catismali: boolean }
+export interface YerlesimPlanSecimi extends YerlesimPlani { ad: string }
+
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -775,6 +787,9 @@ export interface Istekler {
   dayaniklilikYaz(a: { evren: string; iliski: string; deger: Dayaniklilik | null }): void;
   geciselKayitlar(a: { evren: string; kok: string; eksen: GeciselEksen }): GeciselSonuc[];
   gundelikKartlari(a: { evren: string; yer: string }): GundelikKart[];
+  yerlesim(a: { evren: string; sahne: string }): YerlesimOkumasi;
+  yerlesimPlanlari(a: { evren: string }): YerlesimPlanSecimi[];
+  yerlesimYaz(a: { evren: string; sahne: string; plan: YerlesimPlani; ogeler: YerlesimOgesi[] }): void;
   gundelikYaz(a: { evren: string; yer: string; kartlar: { kod?: string | null; konu: string; donem: string | null; statu: string | null; metin: string }[] }): void;
   siradanGun(a: { evren: string; yer: string; donem?: string | null; statu?: string | null }): SiradanGun;
   karsilastirmaliOkuma(a: { evren: string; sutunlar: { kayit: string; tarih: string | null }[] }): KarsilastirmaliOkuma;

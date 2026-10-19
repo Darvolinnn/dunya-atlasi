@@ -330,6 +330,11 @@ CREATE TABLE IF NOT EXISTS belge_sunumlari(
   kod TEXT PRIMARY KEY,
   sunum TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS sahne_yerlesimleri(
+  kod TEXT PRIMARY KEY,
+  plan TEXT NOT NULL,
+  ogeler TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS derlemeler(
   kod TEXT PRIMARY KEY,
   tur TEXT NOT NULL,
@@ -604,6 +609,8 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
+
+IZDUSUM_TABLOLARI.push('sahne_yerlesimleri');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -1242,6 +1249,16 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (typeof kod !== 'string' || !sunum || typeof sunum !== 'object') return;
     db.exec({ sql: 'INSERT OR REPLACE INTO belge_sunumlari(kod, sunum) VALUES(?,?)', bind: [kod, JSON.stringify(sunum)] });
     alanYaz(db, i, kod, 'belge_sunumu', sunum);
+  },
+  yerlesim_yaz(db, i) {
+    const v = i.veri as unknown as { sahne: string; plan: import('../veri/api').YerlesimPlani; ogeler: import('../veri/api').YerlesimOgesi[] };
+    if (typeof v.sahne !== 'string' || !v.plan || !Array.isArray(v.ogeler)) return;
+    const sahne = yonlendir(db, v.sahne);
+    const plan = { ...v.plan, mekan: yonlendir(db, v.plan.mekan) };
+    const ogeler = v.ogeler.map((o) => o.tur === 'karakter' ? { ...o, kisi: yonlendir(db, o.kisi) } : o);
+    const deger = { plan, ogeler };
+    db.exec({ sql: 'INSERT OR REPLACE INTO sahne_yerlesimleri(kod, plan, ogeler) VALUES(?,?,?)', bind: [sahne, JSON.stringify(plan), JSON.stringify(ogeler)] });
+    alanYaz(db, i, sahne, 'yerlesim', deger);
   },
   /** Gezinti ve görsel pano (§7): yazarın derlediği listeler. İlk yazım derlemeyi kurar. */
   derleme_yaz(db, i) {
