@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 48;
+export const IZDUSUM_SURUMU = 49;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -721,6 +721,10 @@ CREATE TABLE IF NOT EXISTS uyarlama_eslemeleri(
   deger TEXT NOT NULL,
   silindi INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS donusum_kayitlari(
+  kod TEXT PRIMARY KEY,
+  deger TEXT NOT NULL
+);
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'gokyuzu_tanimi',
@@ -734,6 +738,7 @@ IZDUSUM_TABLOLARI.push('bakim_tanimlari', 'bakim_kayitlari');
 IZDUSUM_TABLOLARI.push('kural_ornekleri');
 IZDUSUM_TABLOLARI.push('uyarlama_eslemeleri');
 IZDUSUM_TABLOLARI.push('dair_inanclar');
+IZDUSUM_TABLOLARI.push('donusum_kayitlari');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -2066,4 +2071,10 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     db.exec({ sql: 'UPDATE uyarlama_eslemeleri SET silindi=? WHERE kod=?', bind: [silindi ? 1 : 0, kod] });
     alanYaz(db, i, kod, 'uyarlama_silindi', silindi);
   },
+  donusum_yaz(db, i) {
+    const { kod, deger } = i.veri as { kod: string; deger: unknown };
+    db.exec({ sql: 'INSERT INTO donusum_kayitlari(kod,deger) VALUES(?,?) ON CONFLICT(kod) DO UPDATE SET deger=excluded.deger', bind: [kod, JSON.stringify(deger)] });
+    alanYaz(db, i, kod, 'donusum_degeri', deger);
+  },
+  donusum_geri_al(db, i) { UYGULAYICILAR.donusum_yaz(db, i); },
 };

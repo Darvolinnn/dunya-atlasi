@@ -531,6 +531,15 @@ export interface DairInanc {
 export interface KimlikKullanimi { iliski: string; kisi: KisaKayit; kimlik: KisaKayit; baslangic: string; bitis: string; olaylar: KisaKayit[]; sahneler: KisaKayit[] }
 export interface KimlikBilgisi { kayit: KisaKayit; kimlikler: KimlikKullanimi[]; kullananlar: KimlikKullanimi[] }
 export interface KimlikAyirmaAdayi { iliski: string; baslik: string }
+export type DonusumBicimi = 'birlesme' | 'bolunme' | 'donusum';
+export type DonusumDevirTuru = 'uyeler' | 'esya' | 'haklar' | 'ad' | 'adlandirilan' | 'iliski';
+export interface DonusumDevri { kaynak: string; hedef: string; tur: DonusumDevirTuru; aciklama: string; iliski: string | null }
+export interface DonusumTanimi { bicim: DonusumBicimi; kaynaklar: string[]; hedefler: string[]; tarih: EvrenTarihi; olay: string | null; devirler: DonusumDevri[]; not: string }
+export interface DonusumGirdisi extends Omit<DonusumTanimi, 'tarih'> { tarih: string }
+export interface DonusumYeniKaydi { kod: string; ad: string; tur: string }
+export interface DonusumDegeri { tanim: DonusumTanimi; geriAlindi: boolean }
+export interface DonusumOkumasi extends DonusumDegeri { kod: string; kaynaklar: KisaKayit[]; hedefler: KisaKayit[]; olay: KisaKayit | null; catismali: boolean }
+export interface DonusumSecenekleri { kayitlar: KisaKayit[]; iliskiler: { kod: string; a: string; b: string; ad: string }[] }
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1260,6 +1269,10 @@ export interface Istekler {
   kimlikAyir(a: { evren: string; kisi: string; ad: string; iliskiler: string[]; baslangic?: string; bitis?: string }): { kod: string };
   kimlikBirlestirOnizle(a: { evren: string; kisi: string; diger: string }): string[];
   kimlikBirlestir(a: { evren: string; kisi: string; diger: string; baslangic?: string; bitis?: string }): void;
+  donusumListesi(a: { evren: string; kayit: string }): DonusumOkumasi[];
+  donusumSecenekleri(a: { evren: string }): DonusumSecenekleri;
+  donusumYaz(a: { evren: string; kod?: string | null; tanim: DonusumGirdisi; yeniKayitlar?: DonusumYeniKaydi[] }): { kod: string };
+  donusumGeriAl(a: { evren: string; kod: string }): void;
 }
 
 export type IstekAdi = keyof Istekler;

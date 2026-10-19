@@ -84,6 +84,8 @@ import * as dairInanc from './dair-inanc';
 import { SANILAN_DURUMLAR } from '../alan/bilgi';
 import * as kimlik from './kimlik';
 import type { DairInancTanimi } from '../veri/api';
+import * as donusum from './donusum';
+import type { DonusumGirdisi, DonusumYeniKaydi, DonusumDegeri } from '../veri/api';
 
 export type DosyaAcici = (ad: string) => Database;
 export type Bildirici = (evren: string, turler: string[], kayitlar: string[], uzaktan?: boolean) => void;
@@ -681,6 +683,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           degerler: degerler.map((d) => ({ ...d, yazi: d.deger ? `${(d.deger as Sablon).alanlar.length} alan, ${(d.deger as Sablon).sorular.length} soru` : 'Varsayılan şablon' })) });
         continue;
       }
+      if (alan === 'donusum_degeri') {
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: 'Evren içi dönüşüm', alanEtiketi: 'Dönüşüm ve devirler',
+          degerler: degerler.map((d) => ({ ...d, yazi: donusum.catismaYazisi(d.deger as DonusumDegeri, kayitAdi) })) });
+        continue;
+      }
       const etiket = this.alanEtiketi(e, nesne, alan);
       if (etiket) {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: nesne === 'evren' ? 'evren' : 'kayit', kayit: nesne === 'evren' ? null : nesne,
@@ -1006,6 +1013,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (!iliski && alan === 'kanal') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'kanal_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'haber_cikis') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'haber_cikis_yaz', veri: { kod: nesne, cikis: deger, cozum: true } }], [nesne]); return; }
     if (iliski && alan === 'dayaniklilik') { this.yaz(evren, [{ tur: 'dayaniklilik_yaz', veri: { iliski: nesne, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
+    if (alan === 'donusum_degeri') {
+      const d = deger as DonusumDegeri;
+      this.yaz(evren, [{ tur: 'donusum_yaz', veri: { kod: nesne, deger: d, cozum: true } }], donusum.ilgili(d));
+      return;
+    }
     if (iliski) { this.yaz(evren, [{ tur: 'iliski_degistir', veri: { kod: nesne, alan, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
     this.kayitVarMi(e, nesne);
     if (alan === 'tarih') this.yaz(evren, [{ tur: 'kayit_tarih', veri: { kod: nesne, tarih: deger, cozum: true } }], [nesne]);
@@ -2948,4 +2960,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   uyarlamaYaz({ evren, kod, tanim }: { evren: string; kod?: string | null; tanim: UyarlamaTanimi }) { return uyarlama.yaz(this.uyarlamaBaglami(evren), kod ?? null, tanim); }
   uyarlamaSil({ evren, kod }: { evren: string; kod: string }) { uyarlama.sil(this.uyarlamaBaglami(evren), kod); }
   uyarlamaGozdenGecir({ evren, kod }: { evren: string; kod: string }) { uyarlama.gozdenGecir(this.uyarlamaBaglami(evren), kod); }
+  private donusumBaglami(evren: string): donusum.DonusumBaglami {
+    return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); }, kayitGirdileri: (k, v) => this.kayitGirdileri(k, v) };
+  }
+  donusumListesi({ evren, kayit }: { evren: string; kayit: string }) { return donusum.liste(this.evren(evren), kayit); }
+  donusumSecenekleri({ evren }: { evren: string }) { return donusum.secenekler(this.evren(evren)); }
+  donusumYaz({ evren, kod, tanim, yeniKayitlar }: { evren: string; kod?: string | null; tanim: DonusumGirdisi; yeniKayitlar?: DonusumYeniKaydi[] }) { return donusum.yaz(this.donusumBaglami(evren), kod ?? null, tanim, yeniKayitlar); }
+  donusumGeriAl({ evren, kod }: { evren: string; kod: string }) { donusum.geriAl(this.donusumBaglami(evren), kod); }
 }
