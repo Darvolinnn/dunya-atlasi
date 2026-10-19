@@ -20,6 +20,7 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
   const [kirli, setKirli] = useState(false);
   const kirliRef = useRef(false), sira = useRef(0);
   const [hata, setHata] = useState<string | null>(null);
+  const [tarihHatasi, setTarihHatasi] = useState<string | null>(null);
   const [durum, setDurum] = useState('Henüz çalıştırılmadı.');
   const [bekliyor, setBekliyor] = useState(false);
   const [tarih, setTarih] = useState('');
@@ -30,7 +31,7 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
   const [c, setC] = useState<GokyuzuCakismalari | null>(null);
   const [kiyi, setKiyi] = useState<Secim | null>(null), [not, setNot] = useState(''), [saat, setSaat] = useState('12');
   const [kiyilar, setKiyilar] = useState<Record<string, string>>({});
-  const temizle = () => { sira.current++; setO(null); setC(null); setBekliyor(false); setDurum('Henüz çalıştırılmadı.'); setHata(null); };
+  const temizle = () => { sira.current++; setO(null); setC(null); setBekliyor(false); setDurum('Henüz çalıştırılmadı.'); setHata(null); setTarihHatasi(null); };
   useEffect(() => {
     let etkin = true;
     temizle();
@@ -55,7 +56,14 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
         const x = await istemci.iste('gokyuzuHesapla', { evren, tarih });
         if (n === sira.current) { setO(x); setDurum('Güncel · çözüm bulundu'); }
       }
-    } catch (e) { if (n === sira.current) { setHata((e as Error).message); setDurum('Denetlenemiyor.'); } }
+    } catch (e) {
+      if (n === sira.current) {
+        const ileti = (e as Error).message;
+        if (arama) setHata(ileti);
+        else setTarihHatasi(ileti);
+        setDurum('Denetlenemiyor.');
+      }
+    }
     finally { if (n === sira.current) setBekliyor(false); }
   };
   const kaydet = async () => {
@@ -98,7 +106,11 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
       </fieldset>
       {kirli && <p>Kaydedilmemiş değişiklikler var. Hesaplamadan önce tanımı kaydedin.</p>}
       <fieldset disabled={kirli || bekliyor}><legend>Tarihteki gökyüzü</legend>
-        <form class="satir" onSubmit={(e) => { e.preventDefault(); void calistir(false); }}><label>Evren tarihi <input class="girdi" value={tarih} onInput={(e) => { temizle(); setTarih(e.currentTarget.value); }} /></label><button class="dugme" type="submit">Gökyüzünü göster</button></form>
+        <form class="satir" onSubmit={(e) => { e.preventDefault(); void calistir(false); }}>
+          <label>Evren tarihi <input class="girdi" value={tarih} aria-invalid={tarihHatasi ? 'true' : undefined} aria-describedby={tarihHatasi ? 'gokyuzu-tarih-hatasi' : undefined} onInput={(e) => { temizle(); setTarih(e.currentTarget.value); }} /></label>
+          <button class="dugme" type="submit">Gökyüzünü göster</button>
+        </form>
+        {tarihHatasi && <p id="gokyuzu-tarih-hatasi" class="hata" role="alert">{tarihHatasi}</p>}
       </fieldset>
       <fieldset disabled={kirli || bekliyor}><legend>Çakışma ara</legend>
         <p>Seçilen koşulların tamamı aynı gün sağlanmalıdır. Aralıkta başlangıcın en erken, bitişin en geç günü kullanılır.</p>
