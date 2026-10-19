@@ -13,6 +13,7 @@ import { AgGorunumu, BolumMatrisiGorunumu, DurumGecmisiSekmesi, KurguHatlariGoru
 import { IncelemeKuyrugu } from './Inceleme';
 import { KarsilastirmaSekmesi, SiradanGunSekmesi } from './Gundelik';
 import { GokyuzuSekmesi } from './Gokyuzu';
+import { YogunlukSekmesi } from './Yogunluk';
 import { DerlemeSekmesi } from './Derleme';
 import { SozlukSekmesi } from './Sozluk';
 import { KosulMasasiSekmesi } from './KosulMasasi';
@@ -22,6 +23,7 @@ import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
 
 /** İnceleme görünümleri (§7) tek sekme altında; aynı verinin farklı çizimleri. */
 const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy', 'Soy ağacı'], ['neden', 'Neden–sonuç'], ['durumlar', 'Durum geçmişi'],
+  ['yogunluk', 'Yoğunluk ve boşluk'],
   ['gokyuzu', 'Gökyüzü'],
   ['sozluk', 'Sözlük denetimi'],
   ['kosullar', 'Sonuçtan koşullara'],
@@ -82,6 +84,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           : sekme === 'matris' ? <BolumMatrisiGorunumu istemci={istemci} evren={kod} eser={alt} />
           : sekme === 'gun' ? <SiradanGunSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'gokyuzu' ? <GokyuzuSekmesi key={kod} istemci={istemci} evren={kod} surum={surum} />
+          : sekme === 'yogunluk' ? <YogunlukSekmesi key={kod} istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'karsilastir' ? <KarsilastirmaSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'sozluk' ? <SozlukSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'kosullar' ? <KosulMasasiSekmesi istemci={istemci} evren={kod} />

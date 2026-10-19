@@ -57,6 +57,7 @@ import * as yayimMod from './yayim';
 import * as cikti from './cikti';
 import * as belgeMod from './belge';
 import * as isaretMod from './metin-isaret';
+import * as yogunluk from './yogunluk';
 import * as gokyuzu from './gokyuzu';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
@@ -2253,6 +2254,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const e = this.evren(evren), s = yonlendir(e.db, sahne);
     const v = yerlesim.dogrula(e, s, plan, ogeler, this.sahneBaglami({ evren, sahne: s }).katilimcilar.map((k) => k.kod));
     this.yaz(evren, [{ tur: 'yerlesim_yaz', veri: { sahne: s, plan: v.plan, ogeler: v.ogeler } }], [s]);
+  }
+  yogunluk({ evren, ...s }: { evren: string } & import('../veri/api').YogunlukIstegi) {
+    return yogunluk.oku(this.evren(evren), s, () => this.zamanCizelgesi({ evren }), (kod) => this.harita({ evren, kod }));
   }
   // ---------- Adlandırılmış evren sürümleri (§9.7) ----------
   private anaEvren(evren: string) {
