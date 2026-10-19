@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -47,6 +47,7 @@ import * as sozluk from './sozluk';
 import * as niyetMod from './degisiklik-niyeti';
 import * as degMasa from './degisiklik-masasi';
 import * as kosulMod from './kosul-masasi';
+import * as baglamMod from './baglam';
 import * as yerlesim from './yerlesim';
 import * as derlemeMod from './derleme';
 import * as fark from './fark';
@@ -2159,6 +2160,37 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     gundelik.gundelikYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, yer, kartlar);
   }
   siradanGun({ evren, yer, donem, statu }: { evren: string; yer: string; donem?: string | null; statu?: string | null }) { return gundelik.siradanGun(this.evren(evren), yer, donem ?? null, statu ?? null); }
+  /** F23: aynı kayıt farklı kaynak, evren tarihi ve bilen bağlamlarında yan yana. Kaynak: null (güncel), "surum:<kod>" ya da "dal:<kod>". */
+  baglamKarsilastir({ evren, kayit, baglamlar }: { evren: string; kayit: string; baglamlar: BaglamSecimi[] }) {
+    const ana = this.anaEvren(evren);
+    const k = kodGecerliMi(kayit) ? yonlendir(ana.db, kayit) : '';
+    this.kayitVarMi(ana, k);
+    if (!Array.isArray(baglamlar)) throw new Error('Bağlamlar okunamadı.');
+    const sutunlar = baglamlar.map((g) => {
+      let kod = evren, kaynakAdi = 'Güncel', kaynakAnahtari = '';
+      const kaynak = g?.kaynak ?? null;
+      if (kaynak) {
+        const [tur, x] = String(kaynak).split(':');
+        if (tur === 'surum') { const r = this.surumBul(ana, x); if (r.silindi) throw new Error('Sürüm bulunamadı.'); kod = x; kaynakAdi = `Sürüm: ${r.ad}`; }
+        else if (tur === 'dal') { const r = this.dalBul(ana, x); if (r.silindi) throw new Error('Deneme kopyası bulunamadı.'); kod = x; kaynakAdi = `Deneme: ${r.ad}`; }
+        else throw new Error('Kaynak okunamadı.');
+        kaynakAnahtari = kaynak;
+      }
+      const e = this.evren(kod);
+      const tarih = String(g?.tarih ?? '').trim().slice(0, 120) || null;
+      if (tarih && !tarihCoz(tarih, zamanSetiOku(e.db))?.eksen) throw new Error(`Tarih okunamadı: “${tarih}”.`);
+      let bilen: KisaKayit | null = null;
+      if (g?.bilen) {
+        const bk = kodGecerliMi(g.bilen) ? yonlendir(ana.db, g.bilen) : '';
+        const r = bk ? ana.db.selectObject('SELECT kod, ad, tur FROM kayitlar WHERE kod=? AND silindi IS NULL', [bk]) : undefined;
+        if (!r) throw new Error('Bilen kayıt bulunamadı.');
+        bilen = { kod: r.kod as string, ad: r.ad as string, tur: r.tur as string };
+      }
+      const b = this.durumBaglami(kod);
+      return { kaynakAnahtari, kaynakAdi, tarih, bilen, e, b, durumOku: (x: string, an: EvrenTarihi | null) => durum.durumlar(b, x, an ?? undefined) };
+    });
+    return baglamMod.karsilastir(k, sutunlar);
+  }
   karsilastirmaliOkuma({ evren, sutunlar }: { evren: string; sutunlar: { kayit: string; tarih: string | null }[] }) {
     return gundelik.karsilastirmaliOkuma(this.evren(evren), sutunlar, (kod, an) => durum.durumlar(this.durumBaglami(evren), kod, an ?? undefined));
   }

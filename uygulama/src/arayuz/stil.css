@@ -643,3 +643,8 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 /* Değişiklik masası (F04) */
 .degisiklik-masasi { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .masa-listesi li { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+
+/* Bağlam karşılaştırma (F23) */
+.baglam-secimleri { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.baglam-secimi { flex: 1 1 220px; display: flex; flex-direction: column; gap: 4px; }
+.karsilastirma-tablosu tr.farkli th, .karsilastirma-tablosu tr.farkli td { background: var(--vurgu-zemin); }

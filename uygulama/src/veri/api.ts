@@ -298,6 +298,13 @@ export interface KosulMasasi {
   tur: 'kayıtlı ağa göre zorunlu sonuç'; hukum: 'çözüm bulundu' | 'kayıtlı seçeneklerde bulunamadı'; guncellik: 'güncel';
   planlar: KosulPlani[]; dahaFazla: boolean; nedenler: string[]; suresizler: KisaKayit[]; kapsam: string; varsayimlar: string[];
 }
+/** F23 bağlam karşılaştırma. */
+export interface BaglamSatiri { baslik: string; grup: 'alan' | 'soru' | 'durum' | 'gercek' | 'bilgi'; degerler: (string | null)[]; farkli: boolean; neden: string[] }
+export interface BaglamKarsilastirmasi {
+  sutunlar: { kaynak: string; tarih: EvrenTarihi | null; bilen: KisaKayit | null; ad: string | null; yok: boolean }[];
+  satirlar: BaglamSatiri[]; notlar: string[];
+}
+export interface BaglamSecimi { kaynak: string | null; tarih: string | null; bilen: string | null }
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -869,6 +876,7 @@ export interface Istekler {
   gundelikYaz(a: { evren: string; yer: string; kartlar: { kod?: string | null; konu: string; donem: string | null; statu: string | null; metin: string }[] }): void;
   siradanGun(a: { evren: string; yer: string; donem?: string | null; statu?: string | null }): SiradanGun;
   karsilastirmaliOkuma(a: { evren: string; sutunlar: { kayit: string; tarih: string | null }[] }): KarsilastirmaliOkuma;
+  baglamKarsilastir(a: { evren: string; kayit: string; baglamlar: BaglamSecimi[] }): BaglamKarsilastirmasi;
   derlemeler(a: { evren: string; tur: 'gezinti' | 'pano' }): DerlemeOzeti[];
   surumler(a: { evren: string }): EvrenSurumu[];
   surumOlustur(a: { evren: string; ad: string; aciklama?: string }): { kod: string };

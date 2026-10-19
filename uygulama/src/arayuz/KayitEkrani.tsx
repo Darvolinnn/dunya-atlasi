@@ -21,6 +21,7 @@ import { BagSeridi, YayimBolumu } from './Surumler';
 import { EserCiktisi } from './Cikti';
 import { BelgeSunumBolumu } from './Belge';
 import { IsaretlerBolumu } from './Isaretler';
+import { BaglamKarsilastirmaBolumu } from './Baglam';
 import { SahneYerlesimi } from './SahneYerlesimi';
 import { KurguMontajiBolumu, SahneNiyetleriBolumu } from './Montaj';
 import { HaberYayilimiBolumu, KanalBolumu, ROTA_ARACI_TURLERI, RotaAraci } from './Haber';
@@ -180,6 +181,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {kayit.tur !== 'not' && <BilinenlerBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
         <KayitMeseleleri istemci={istemci} evren={evren} kayit={kayit} />
+        {!bag && <BaglamKarsilastirmaBolumu istemci={istemci} evren={evren} kod={kod} />}
         <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />
         {kayit.tur === 'urun' && <UretimOzetiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {KESINTI_TURLERI.includes(kayit.tur) && <KesintiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
