@@ -2,8 +2,8 @@
 // Dünya Pusulası. Doluluk göstergesi yoktur: cevapsız soru eksik sayılmaz.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { Kayit, KayitSablonu, MeseleListesi, SablonBilgisi, SoruSatiri } from '../veri/api';
-import { ALAN_TURLERI, EVREN_SETLERI, MESELE_DURUMLARI, SORU_SETLERI, soruSetiBul, yeniAlanKodu, type Sablon, type SablonAlani, type Secenek } from '../alan/sablon';
+import type { AlanVarsayilani, BoslukTuru, Kayit, KayitSablonu, MeseleListesi, SablonBilgisi, SoruSatiri } from '../veri/api';
+import { ALAN_TURLERI, VARSAYILAN_EKSENLERI, EVREN_SETLERI, MESELE_DURUMLARI, SORU_SETLERI, soruSetiBul, yeniAlanKodu, type Sablon, type SablonAlani, type Secenek } from '../alan/sablon';
 import { tarihAciklamasi, tarihCoz, type EvrenTarihi, type TakvimYa } from '../alan/tarih';
 import { TURLER, turBul } from '../alan/turler';
 import { KararRozeti, KararSecici, TurSecici } from './ortak';
@@ -37,16 +37,18 @@ export function degerMetni(a: SablonAlani | undefined, d: unknown): string {
 export function SablonAlanlari({ istemci, evren, kayit, ks }: { istemci: Istemci; evren: string; kayit: Kayit; ks: KayitSablonu | null }) {
   const [hata, setHata] = useState<string | null>(null);
   const takvim = useTakvim(istemci, evren);
+  const vs = useOku<Record<string, AlanVarsayilani>>(istemci, evren, () => istemci.iste('kayitVarsayilanlari', { evren, kod: kayit.kod }), [kayit.kod]);
   if (!ks) return null;
   const yaz = (alan: string, deger: unknown) => istemci.iste('kayitAlanYaz', { evren, kod: kayit.kod, alan, deger }).then(() => setHata(null), (e) => setHata(hataYaz(e)));
   return (
     <>
       {ks.sablon.alanlar.map((a) => (
-        <div class={a.tur === 'uzun' ? 'alan genis' : 'alan'} key={a.kod}>
+        <div class={a.tur === 'uzun' || (vs?.[a.kod]?.kaynaklar.length ?? 0) > 1 ? 'alan genis' : 'alan'} key={a.kod}>
           <span class="alan-adi satir">{a.ad}
             <KararSecici etiket={a.ad} karar={kayit.alanKararlari[`f:${a.kod}`] ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod: kayit.kod, alan: `f:${a.kod}`, karar: k })} />
           </span>
           <AlanGirdisi a={a} takvim={takvim} deger={ks.degerler[a.kod]} yaz={(v) => yaz(a.kod, v)} />
+          {vs?.[a.kod] && <VarsayilanGosterimi istemci={istemci} evren={evren} kod={kayit.kod} a={a} v={vs[a.kod]} kabul={(d) => yaz(a.kod, d)} hata={setHata} />}
         </div>
       ))}
       {ks.eskiler.length > 0 && (
@@ -63,6 +65,73 @@ export function SablonAlanlari({ istemci, evren, kayit, ks }: { istemci: Istemci
       )}
       {hata && <p class="hata kucuk genis">{hata}</p>}
     </>
+  );
+}
+
+const BOSLUKLAR: { kod: BoslukTuru | ''; ad: string }[] = [
+  { kod: '', ad: 'Henüz düşünülmedi' }, { kod: 'acik', ad: 'Bilerek açık bırakıyorum' },
+  { kod: 'bilinmiyor', ad: 'Evrende bilinmiyor' }, { kod: 'gecersiz', ad: 'Bu kayıt için geçersiz' },
+];
+
+/**
+ * Boş alanın varsayılanı (§3.7): kaynağı ve yolu gösterilir; değer olarak kabul etmek ayrı bir dokunuştur. Birden çok
+ * kaynak farklı değer veriyorsa ikisi de gösterilir ve yazar durumu seçer. Yalnızca "henüz düşünülmedi" varsayılan gösterir.
+ */
+function VarsayilanGosterimi({ istemci, evren, kod, a, v, kabul, hata }: {
+  istemci: Istemci; evren: string; kod: string; a: SablonAlani; v: AlanVarsayilani; kabul: (d: unknown) => void; hata: (h: string | null) => void;
+}) {
+  const [kapsam, setKapsam] = useState(false);
+  const [aciklama, setAciklama] = useState(v.karar?.aciklama ?? '');
+  const isle = (p: Promise<unknown>) => p.then(() => hata(null), (e) => hata(hataYaz(e)));
+  const karar = (k: { durum: 'birlikte' | 'kapsam' | 'oncelik'; oncelikli?: string | null; aciklama?: string } | null) =>
+    isle(istemci.iste('varsayilanKarari', { evren, kod, alan: a.kod, karar: k && { durum: k.durum, oncelikli: k.oncelikli ?? null, aciklama: k.aciklama ?? '' } }));
+  const bosluk = (t: string) => isle(istemci.iste('alanBoslugu', { evren, kod, alan: a.kod, tur: (t || null) as BoslukTuru | null }));
+  const yol = (x: AlanVarsayilani['kaynaklar'][0]) => x.yol.length > 1 ? ` (${x.yol.map((y) => y.ad).join(' → ')} üzerinden)` : '';
+  const coklu = v.kaynaklar.length > 1 && v.durum !== 'tek';
+  return (
+    <div class="varsayilan kucuk">
+      {v.durum === 'yok' && <span class="soluk">{v.eksenAdi[0].toLocaleUpperCase('tr-TR') + v.eksenAdi.slice(1)} yoluyla varsayılan veren kayıt yok.</span>}
+      {v.durum === 'tek' && (
+        <span class="satir"><span>Varsayılan: <strong>{degerMetni(a, v.kaynaklar[0].deger)}</strong>
+          <span class="soluk"> · {v.eksenAdi}, <a href={`#/e/${evren}/k/${v.kaynaklar[0].kaynak.kod}`}>{v.kaynaklar[0].kaynak.ad}</a>{yol(v.kaynaklar[0])}{v.kaynaklar.length > 1 ? `; ${v.kaynaklar.length} kaynak aynı değeri veriyor` : ''}</span></span>
+          <button class="dugme sade kucuk" onClick={() => kabul(v.kaynaklar[0].deger)}>Değer olarak kabul et</button></span>
+      )}
+      {coklu && (
+        <>
+          <span>{v.durum === 'cozulmemis' ? 'Kaynaklar farklı değer veriyor; çatışma çözülmemiş:' : v.durum === 'birlikte' ? 'Birlikte geçerli:'
+            : v.durum === 'kapsam' ? `Kapsamları farklı (${v.karar?.aciklama}):` : 'Öncelikli kaynak seçildi:'}</span>
+          <ul class="varsayilan-kaynaklari">
+            {v.kaynaklar.map((x) => (
+              <li key={x.kaynak.kod} class="satir">
+                <span><strong>{degerMetni(a, x.deger)}</strong><span class="soluk"> · <a href={`#/e/${evren}/k/${x.kaynak.kod}`}>{x.kaynak.ad}</a>{yol(x)}</span>
+                  {v.durum === 'oncelik' && v.karar?.oncelikli === x.kaynak.kod && <span class="rozet">öncelikli</span>}</span>
+                <span class="bosluk" />
+                {v.durum !== 'oncelik' && <button class="dugme sade kucuk" onClick={() => karar({ durum: 'oncelik', oncelikli: x.kaynak.kod })}>Öncelikli say</button>}
+                <button class="dugme sade kucuk" onClick={() => kabul(x.deger)}>Değer olarak kabul et</button>
+              </li>
+            ))}
+          </ul>
+          <span class="satir">
+            {v.durum !== 'birlikte' && <button class="dugme sade kucuk" onClick={() => karar({ durum: 'birlikte' })}>Birlikte geçerli</button>}
+            {v.durum !== 'kapsam' && !kapsam && <button class="dugme sade kucuk" onClick={() => setKapsam(true)}>Kapsamları farklı</button>}
+            {v.durum !== 'cozulmemis' && <button class="dugme sade kucuk" onClick={() => karar(null)}>Kararı geri al</button>}
+          </span>
+          {kapsam && (
+            <form class="satir" onSubmit={(e) => { e.preventDefault(); karar({ durum: 'kapsam', aciklama }).then(() => setKapsam(false)); }}>
+              <input class="girdi" style="flex:1;min-width:160px" lang="tr" aria-label="Kapsamlar nasıl ayrılıyor" placeholder="ör. biri sarayda, biri pazarda" value={aciklama} onInput={(e) => setAciklama((e.target as HTMLInputElement).value)} />
+              <button class="dugme ana kucuk" type="submit" disabled={!aciklama.trim()}>Kaydet</button>
+              <button class="dugme sade kucuk" type="button" onClick={() => setKapsam(false)}>Vazgeç</button>
+            </form>
+          )}
+        </>
+      )}
+      <label class="satir soluk"><span>Boş bırakma nedeni</span>
+        <select class="girdi kucuk-secim" aria-label={`${a.ad}: boş bırakma nedeni`} value={v.bosluk ?? ''} onChange={(e) => bosluk((e.target as HTMLSelectElement).value)}>
+          {BOSLUKLAR.map((b) => <option value={b.kod}>{b.ad}</option>)}
+        </select>
+        {v.bosluk && <span>Bu durumda varsayılan gösterilmez.</span>}
+      </label>
+    </div>
   );
 }
 
@@ -224,6 +293,12 @@ function SablonEditoru({ istemci, evren, tur }: { istemci: Istemci; evren: strin
               {!a.sabit && <button class="dugme sade kucuk" aria-label={`${a.ad}: kaldır`} onClick={() => guncelle((s) => { s.alanlar.splice(i, 1); })}>×</button>}
             </div>
             <input class="girdi" aria-label="İpucu" placeholder="İpucu (isteğe bağlı)" lang="tr" value={a.ipucu ?? ''} onInput={(e) => guncelle((s) => { s.alanlar[i].ipucu = (e.target as HTMLInputElement).value; })} />
+            <label class="satir kucuk"><span class="soluk">Boşken varsayılan</span>
+              <select class="girdi kucuk-secim" aria-label={`${a.ad}: boşken varsayılan`} value={a.varsayilan ?? ''}
+                onChange={(e) => guncelle((s) => { const v = (e.target as HTMLSelectElement).value; if (v) s.alanlar[i].varsayilan = v as SablonAlani['varsayilan']; else delete s.alanlar[i].varsayilan; })}>
+                <option value="">Almaz</option>
+                {VARSAYILAN_EKSENLERI.map((x) => <option value={x.kod}>{x.ad} ({x.ornek})</option>)}
+              </select></label>
             {a.tur === 'secim' && <SecenekDuzenleyici secenekler={a.secenekler ?? []} degis={(l) => guncelle((s) => { s.alanlar[i].secenekler = l; })} sabit={a.sabit} />}
             <span class="soluk kucuk">
               {a.sabit ? 'Program bu alanı kullanıyor; adı değişebilir, kaldırılamaz. ' : ''}

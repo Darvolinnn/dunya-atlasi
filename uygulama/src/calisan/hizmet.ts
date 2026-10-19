@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -32,6 +32,7 @@ import * as denetim from './denetim';
 import * as yol from './yol';
 import * as sureklilik from './sureklilik';
 import * as masaMod from './masa';
+import * as varsayilanMod from './varsayilan';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -454,6 +455,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       const m = e.db.selectValue('SELECT metin FROM soru_cevaplari WHERE kayit=? AND soru=?', [nesne, alan.slice(2)]) as string | undefined;
       return m ? `Soru: ${m}` : 'Soru';
     }
+    if (alan.startsWith('bosluk:') || alan.startsWith('varsayilan:')) {
+      const kod = alan.slice(alan.indexOf(':') + 1);
+      const tur = e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [nesne]) as string | undefined;
+      const ad = (tur ? sablonlar.sablonOku(e, tur).alanlar.find((a) => a.kod === kod)?.ad : undefined) ?? 'Alan';
+      return alan.startsWith('bosluk:') ? `${ad} (neden boş olduğu)` : `${ad} (varsayılan kaynakları)`;
+    }
     if (alan.startsWith('f:') || alan.startsWith('karar:f:')) {
       const kod = alan.startsWith('f:') ? alan.slice(2) : alan.slice(8);
       const tur = e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [nesne]) as string | undefined;
@@ -466,6 +473,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   /** Çatışan değerin okunur hâli; düz değerlerde boş kalır, arayüz değeri olduğu gibi gösterir. */
   private degerYazisi(e: EvrenVt, alan: string, deger: unknown, durumAlani: boolean, nesne = ''): string | undefined {
     const ad = (k: unknown) => (typeof k === 'string' ? (e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [k]) as string | undefined) : undefined) ?? 'silinmiş kayıt';
+    if (alan.startsWith('bosluk:')) return ({ acik: 'Bilerek açık', bilinmiyor: 'Evrende bilinmiyor', gecersiz: 'Bu kayıt için geçersiz' } as Record<string, string>)[String(deger)] ?? 'Henüz düşünülmedi';
+    if (alan.startsWith('varsayilan:')) {
+      const v = deger as { durum?: string; oncelikli?: string | null; aciklama?: string } | null;
+      if (!v) return 'Çözülmemiş';
+      return v.durum === 'birlikte' ? 'Birlikte geçerli' : v.durum === 'kapsam' ? `Kapsamları farklı: ${v.aciklama ?? ''}` : `Öncelikli kaynak: ${ad(v.oncelikli)}`;
+    }
     if (alan.startsWith('s:')) {
       if (!deger) return 'Cevapsız';
       const v = deger as { durum: string; cevap: string; kayitla: string | null };
@@ -577,6 +590,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       this.yaz(evren, [{ tur: 'iz_gozlem', veri: { iz: nesne, sahne, an, deger: deger ?? '', cozum: true } }], [izr.konu as string, sahne]);
       return;
     }
+    if (alan.startsWith('bosluk:')) { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'alan_boslugu', veri: { kod: nesne, alan: alan.slice(7), tur: deger, ad: this.alanEtiketi(e, nesne, 'f:' + alan.slice(7)), cozum: true } }], [nesne]); return; }
+    if (alan.startsWith('varsayilan:')) { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'varsayilan_karari', veri: { kod: nesne, alan: alan.slice(11), karar: deger, ad: this.alanEtiketi(e, nesne, 'f:' + alan.slice(11)), cozum: true } }], [nesne]); return; }
     if (nesne.startsWith('sablon:')) { this.yaz(evren, [{ tur: 'sablon_yaz', veri: { tur: nesne.slice(7), sablon: deger, cozum: true } }]); return; }
     if (alan.startsWith('s:')) {
       const v = deger as { durum: string; cevap: string; kayitla: string | null } | null;
@@ -1775,6 +1790,14 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (x) this.kayitDegistir({ evren, kod: x.olay, alan: 'karar', deger: x.karar });
   }
   paketSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { masaMod.paketSil(this.masaBaglami(evren), kod, !!geriYukle); }
+
+  // ---------- Varsayılan değerler (§3.7) ----------
+  private varsayilanBaglami(evren: string): varsayilanMod.VarsayilanBaglami {
+    return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } };
+  }
+  kayitVarsayilanlari({ evren, kod }: { evren: string; kod: string }) { return varsayilanMod.kayitVarsayilanlari(this.evren(evren), kod); }
+  alanBoslugu({ evren, kod, alan, tur }: { evren: string; kod: string; alan: string; tur: BoslukTuru | null }) { varsayilanMod.alanBoslugu(this.varsayilanBaglami(evren), kod, alan, tur); }
+  varsayilanKarari({ evren, kod, alan, karar }: { evren: string; kod: string; alan: string; karar: VarsayilanKarari | null }) { varsayilanMod.varsayilanKarari(this.varsayilanBaglami(evren), kod, alan, karar); }
 
   // ---------- Görseller (§10.12) ----------
   /** Görseli içerik adıyla saklar; medya tablosunda yoksa eklenecek işlemi verir (TK5). */

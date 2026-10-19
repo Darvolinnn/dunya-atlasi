@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 19;
+export const IZDUSUM_SURUMU = 20;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -178,6 +178,20 @@ CREATE TABLE IF NOT EXISTS iz_gozlemleri(
   PRIMARY KEY(iz, sahne, an)
 );
 CREATE INDEX IF NOT EXISTS iz_gozlemleri_sahne ON iz_gozlemleri(sahne);
+CREATE TABLE IF NOT EXISTS alan_bosluklari(
+  kayit TEXT NOT NULL,
+  alan TEXT NOT NULL,
+  tur TEXT NOT NULL,
+  PRIMARY KEY(kayit, alan)
+);
+CREATE TABLE IF NOT EXISTS varsayilan_kararlari(
+  kayit TEXT NOT NULL,
+  alan TEXT NOT NULL,
+  durum TEXT NOT NULL,
+  oncelikli TEXT,
+  aciklama TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY(kayit, alan)
+);
 CREATE TABLE IF NOT EXISTS masalar(
   kod TEXT PRIMARY KEY,
   ad TEXT NOT NULL,
@@ -441,7 +455,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -813,6 +827,23 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   iz_geri_yukle(db, i) {
     db.exec({ sql: 'UPDATE izler SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+  /** Boş alanın türü (§3.6): henüz düşünülmedi (kayıt yok), bilerek açık, evrende bilinmiyor, bu kayıt için geçersiz. */
+  alan_boslugu(db, i) {
+    const { kod, alan, tur } = i.veri as { kod: string; alan: string; tur: string | null };
+    if (typeof kod !== 'string' || typeof alan !== 'string') return;
+    if (!tur || !['acik', 'bilinmiyor', 'gecersiz'].includes(tur)) db.exec({ sql: 'DELETE FROM alan_bosluklari WHERE kayit=? AND alan=?', bind: [kod, alan] });
+    else db.exec({ sql: 'INSERT OR REPLACE INTO alan_bosluklari(kayit, alan, tur) VALUES(?,?,?)', bind: [kod, alan, tur] });
+    alanYaz(db, i, kod, 'bosluk:' + alan, tur ?? null);
+  },
+  /** Birden çok kaynaktan gelen varsayılanın durumu (§3.7): birlikte geçerli, kapsamları farklı ya da öncelikli kaynak. */
+  varsayilan_karari(db, i) {
+    const { kod, alan, karar } = i.veri as { kod: string; alan: string; karar: { durum?: unknown; oncelikli?: unknown; aciklama?: unknown } | null };
+    if (typeof kod !== 'string' || typeof alan !== 'string') return;
+    if (!karar || !['birlikte', 'kapsam', 'oncelik'].includes(karar.durum as string)) db.exec({ sql: 'DELETE FROM varsayilan_kararlari WHERE kayit=? AND alan=?', bind: [kod, alan] });
+    else db.exec({ sql: 'INSERT OR REPLACE INTO varsayilan_kararlari(kayit, alan, durum, oncelikli, aciklama) VALUES(?,?,?,?,?)',
+      bind: [kod, alan, karar.durum as string, typeof karar.oncelikli === 'string' ? yonlendir(db, karar.oncelikli) : null, String(karar.aciklama ?? '').slice(0, 300)] });
+    alanYaz(db, i, kod, 'varsayilan:' + alan, karar ?? null);
   },
   /** Çalışma masası (§5.9): kayıtlar kopyalanmaz, masa onlara bağlanır. */
   masa_olustur(db, i) {

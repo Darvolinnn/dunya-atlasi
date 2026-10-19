@@ -51,6 +51,8 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   iz_degistir: (v, ad) => `${v.konu ? `${ad(v.konu)}: ` : ''}izlenen ayrıntının tanımı değişti “${(v.tanim as { ad?: string } | null)?.ad ?? ''}”`,
   iz_sil: (v, ad) => `${ad(v.konu)}: izlenen ayrıntı kaldırıldı “${v.ad}”`,
   iz_geri_yukle: (v, ad) => `${ad(v.konu)}: izlenen ayrıntı geri getirildi “${v.ad}”`,
+  alan_boslugu: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” ${({ acik: 'bilerek açık bırakıldı', bilinmiyor: 'evrende bilinmiyor olarak işaretlendi', gecersiz: 'bu kayıt için geçersiz sayıldı' } as Record<string, string>)[String(v.tur)] ?? 'yeniden düşünülecekler arasına alındı'}`,
+  varsayilan_karari: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” için kaynaklar ${({ birlikte: 'birlikte geçerli sayıldı', kapsam: 'kapsamları farklı sayıldı', oncelik: 'arasında öncelik seçildi' } as Record<string, string>)[String((v.karar as { durum?: string } | null)?.durum)] ?? 'yeniden çözülmemiş sayıldı'}`,
   iz_gozlem: (v, ad) => `${ad(v.sahne)}: “${v.izAd ?? 'ayrıntı'}” ${v.an === 'bas' ? 'başta' : 'sonda'} ${v.deger ? `“${v.deger}” olarak gözlendi` : 'gözlemi kaldırıldı'}`,
   anlati_yerlestir: (v, ad) => v.ust ? `${ad(v.kod)}: ${ad(v.ust)} içinde yeri değişti` : `${ad(v.kod)}: eser yapısından çıkarıldı`,
   durum_ekle: (v, ad) => `${ad(v.konu)}: durum eklendi “${v.ozellik}: ${v.hedef ? ad(v.hedef) : v.deger}”`,

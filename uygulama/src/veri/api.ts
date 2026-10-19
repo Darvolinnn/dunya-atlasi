@@ -80,6 +80,15 @@ export type VarsayimGirdisi =
   | { tur: 'metin'; metin: string } | { tur: 'olay'; olay: string; deger: boolean }
   | { tur: 'rota'; rota: string; deger: boolean } | { tur: 'bilgi'; bilen: string; iddia: string; deger: boolean };
 export interface VarsayimSatiri { v: Varsayim; yazi: string; kayitlar: KisaKayit[]; evrendeki: string | null; kullanan: string; evreneYazilabilir: boolean }
+export type BoslukTuru = 'acik' | 'bilinmiyor' | 'gecersiz';
+export type VarsayilanEkseniAdi = 'kapsama' | 'bagli' | 'kultur' | 'tur';
+export interface VarsayilanKaynagi { kaynak: KisaKayit; deger: unknown; eksen: VarsayilanEkseniAdi; yol: KisaKayit[] }
+export interface VarsayilanKarari { durum: 'birlikte' | 'kapsam' | 'oncelik'; oncelikli: string | null; aciklama: string }
+export interface AlanVarsayilani {
+  eksen: VarsayilanEkseniAdi; eksenAdi: string; kaynaklar: VarsayilanKaynagi[];
+  durum: 'yok' | 'tek' | 'cozulmemis' | 'birlikte' | 'kapsam' | 'oncelik' | 'gizli';
+  bosluk: BoslukTuru | null; karar: VarsayilanKarari | null;
+}
 export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
 export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
 export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
@@ -593,6 +602,9 @@ export interface Istekler {
   varsayimiEvreneYaz(a: { evren: string; paket: string; kod: string }): void;
   paketSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   kayitIzleri(a: { evren: string; kod: string }): IzGecmisi[];
+  kayitVarsayilanlari(a: { evren: string; kod: string }): Record<string, AlanVarsayilani>;
+  alanBoslugu(a: { evren: string; kod: string; alan: string; tur: BoslukTuru | null }): void;
+  varsayilanKarari(a: { evren: string; kod: string; alan: string; karar: VarsayilanKarari | null }): void;
   haritaYukle(a: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ kod: string }>;
   gorseldenHarita(a: { evren: string; kayit: string; gorsel: string }): { kod: string };
   haritaDegistir(a: { evren: string; kod: string; alan: 'ad' | 'yer'; deger: unknown }): void;

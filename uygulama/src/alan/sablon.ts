@@ -17,7 +17,16 @@ export interface SablonAlani {
   kod: string; ad: string; tur: AlanTuru; ipucu?: string; secenekler?: Secenek[];
   /** Programın anlamını bildiği alan (doğum tarihi, açık meselenin durumu); adı değişebilir, kaldırılamaz. */
   sabit?: boolean;
+  /** Boşken hangi eksenden varsayılan alır (§3.7); yoksa varsayılan almaz. */
+  varsayilan?: VarsayilanEkseni;
 }
+export type VarsayilanEkseni = 'kapsama' | 'bagli' | 'kultur' | 'tur';
+export const VARSAYILAN_EKSENLERI: { kod: VarsayilanEkseni; ad: string; ornek: string }[] = [
+  { kod: 'kapsama', ad: 'Fiziksel kapsamadan', ornek: 'iklim, doğa' },
+  { kod: 'bagli', ad: 'Siyasi bağlılıktan', ornek: 'resmî para, vergi, hukuk, resmî takvim' },
+  { kod: 'kultur', ad: 'Kültürel aidiyetten', ornek: 'dil, hitap, gelenek, mimari' },
+  { kod: 'tur', ad: 'Tür tanımından', ornek: 'yaşam süresi, beden, doğal yetenekler' },
+];
 export interface Soru { kod: string; metin: string; ipucu?: string }
 export interface Sablon { alanlar: SablonAlani[]; sorular: Soru[] }
 export interface SoruSeti { kod: string; ad: string; sorular: Soru[] }
@@ -123,6 +132,20 @@ const VARSAYILANLAR: Record<string, Sablon> = {
   },
 };
 const BOS: Sablon = { alanlar: [], sorular: [] };
+
+// Ortak alanlar: aynı kodla birden çok türde bulunur; varsayılan, kaynağın aynı koddaki ya da aynı adlı alanından gelir.
+const IKLIM: SablonAlani = { kod: 'iklim', ad: 'İklim', tur: 'metin', varsayilan: 'kapsama' };
+const PARA: SablonAlani = { kod: 'resmi_para', ad: 'Resmî para', tur: 'metin', varsayilan: 'bagli' };
+const HUKUK: SablonAlani = { kod: 'hukuk', ad: 'Hukuk', tur: 'metin', varsayilan: 'bagli' };
+const DIL: SablonAlani = { kod: 'dil', ad: 'Dil', tur: 'metin', varsayilan: 'kultur' };
+const MIMARI: SablonAlani = { kod: 'mimari', ad: 'Mimari', tur: 'metin', varsayilan: 'kultur' };
+const YASAM: SablonAlani = { kod: 'yasam_suresi', ad: 'Yaşam süresi', tur: 'metin', varsayilan: 'tur' };
+VARSAYILANLAR.karakter.alanlar.push(DIL, YASAM);
+VARSAYILANLAR.mekan.alanlar.push(IKLIM, PARA, HUKUK, DIL, MIMARI);
+VARSAYILANLAR.sehir.alanlar.push(IKLIM, PARA, HUKUK, DIL, MIMARI);
+VARSAYILANLAR.siyasi.alanlar.push(PARA, HUKUK);
+VARSAYILANLAR.kultur.alanlar.push({ ...DIL, varsayilan: undefined }, { ...MIMARI, varsayilan: undefined });
+VARSAYILANLAR.canli = { alanlar: [{ ...YASAM, varsayilan: undefined }], sorular: [] };
 export const varsayilanSablon = (tur: string): Sablon => structuredClone(VARSAYILANLAR[tur] ?? BOS);
 
 const KOD = /^[a-z0-9_.-]{1,40}$/;
@@ -137,6 +160,7 @@ export function sablonGecerli(s: unknown, tur?: string): s is Sablon {
   for (const a of alanlar) {
     if (!a || !KOD.test(a.kod) || kodlar.has(a.kod) || !metinMi(a.ad, 80) || !ALAN_TURLERI.some((t) => t.kod === a.tur)) return false;
     if (a.ipucu !== undefined && (typeof a.ipucu !== 'string' || a.ipucu.length > 200)) return false;
+    if (a.varsayilan !== undefined && !VARSAYILAN_EKSENLERI.some((x) => x.kod === a.varsayilan)) return false;
     if (a.tur === 'secim' && (!Array.isArray(a.secenekler) || !a.secenekler.length || a.secenekler.length > 30
       || a.secenekler.some((x) => !KOD.test(x?.kod) || !metinMi(x.ad, 80)) || new Set(a.secenekler.map((x) => x.kod)).size !== a.secenekler.length)) return false;
     kodlar.add(a.kod);
