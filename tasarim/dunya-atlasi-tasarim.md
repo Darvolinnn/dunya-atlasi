@@ -327,6 +327,8 @@ Sahibi (Kuzey Kalesi): [ Aldren Krallığı (… – 430), Varos (430 – …) ]
 
 **Yazarın karar durumu:** *fikir · kesinleşmiş · vazgeçilmiş*. Vazgeçilen fikirler silinmez; normal aramada istenirse gizlenir. Durum alan düzeyinde de tutulur: karakterin adı kesinleşmiş, doğum yılı hâlâ fikir olabilir. Kayıt düzeyindeki etiket yalnızca genel iş düzeni içindir. "Yazar karar verdi", "evrende doğru sanılıyor", "okura açıklandı" ve "hesaptan çıktı" aynı onay değildir.
 
+**Alternatifler (K27):** Aynı soruya iki olası cevap (iki final, iki sahne sırası) aynı türden iki kayıt olarak yazılır ve **alternatif** ilişkisiyle bağlanır. Olası bir olay *fikir* durumundadır; olayın olacağı kesin ama ayrıntısı belli değilse kayıt kesinleşmiş, ilgili alan *fikir* olur. Biri kesinleştirilince program öbürünü kendiliğinden değiştirmez; kesinleştiren yazara öbürlerini de vazgeçilmiş yapmak isteyip istemediğini sorar. Vazgeçilen alternatif ve ona bağlı ipuçları silinmez. İki alternatifin ikisi de kesinse Uyarılar'da olası uyuşmazlık olarak görünür (§9.1).
+
 **Varsayılan yorum (K13):** Bir alana düz girilen değer *kesinleşmiş* karar durumunda ve *evrenin gerçeği* katmanında doğar; yazar tek dokunuşla onu fikre, bir grubun inancına ya da bir karakterin bilgisine çevirebilir. `[[` ile doğan yeni kayıt *fikir* durumundadır (§5.1). Tutarlılık denetimleri (§9.1) fikir durumundaki değerleri de denetler, ama bu uyarılar ayrı ve sessiz bir grupta durur ve inceleme kuyruğunu doldurmaz; vazgeçilmiş değerler denetlenmez.
 
 **Bilgi katmanları** tek bir "taslak / kanon" alanında birleştirilmez:
@@ -723,6 +725,7 @@ Her denetim sonucu sonuç zarfıyla anlatılır (§2.3): hüküm (*açık çeli�
 | Eşya | Tek sahipli ya da tekil bir eşyanın aynı anda iki kişide bulunması, yok edildikten sonra kullanılması |
 | Bilgi | Karakterin bir bilgiyi öğrenmeden önce ona göre davranması (yalnızca kullanıcının kurduğu bilgi kayıtları üzerinden) |
 | Süreç | Bir olayın, bağlı süreç kuralının önkoşuluyla çelişmesi (§3.10) |
+| Alternatifler | Birbirinin alternatifi diye bağlanmış iki kaydın ikisinin de kesinleşmiş olması (olası uyuşmazlık; K27, §3.6) |
 
 - **Gerekçeli istisna:** İstisna bütün kaydı susturmaz; belirli kurala, tarih aralığına, olaya ya da varoluş biçimine (hayalet, ceset) bağlanır ve gerekçesi yazılır. "Bu çelişkiyi bilerek kabul ediyorum" (yazar tercihi) ile "bu kural burada uygulanamaz" (kapsam düzeltmesi) ayrıdır.
 - **Kapsamlı kurallar:** Bir kural bir bölgeye, boyuta, türe, kültüre ya da kuruma bağlanır ve o kapsamdaki kayıtlara tek tek istisna girmeden uygulanır. Örnek: bir kültürde evliliğin çokluğu (§3.2). Zamanın farklı aktığı kapsamlar kural değil, zaman akışıdır (§3.4).

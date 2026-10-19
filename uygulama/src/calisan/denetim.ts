@@ -162,6 +162,21 @@ function dongu(e: EvrenVt): { bulgular: Ham[]; denetlenen: number } {
   return { bulgular, denetlenen: goreli.length };
 }
 
+/** Alternatif (K27): birbirinin alternatifi diye bağlanmış iki kaydın ikisi de kesinleşmiş. Program hangisinin
+ *  geçerli olduğunu bilmez; yalnızca yazarın kurduğu bağı ve karar durumlarını gösterir. */
+function alternatif(e: EvrenVt): { bulgular: Ham[]; denetlenen: number } {
+  const l = e.db.selectObjects(`SELECT i.kod, a.kod a_kod, a.ad a_ad, a.tur a_tur, a.karar a_karar, b.kod b_kod, b.ad b_ad, b.tur b_tur, b.karar b_karar
+    FROM iliskiler i JOIN kayitlar a ON a.kod=i.a JOIN kayitlar b ON b.kod=i.b
+    WHERE i.tur='alternatif' AND i.silindi IS NULL AND a.silindi IS NULL AND b.silindi IS NULL`);
+  const bulgular: Ham[] = l.filter((r) => r.a_karar === 'kesin' && r.b_karar === 'kesin').map((r) => ({
+    anahtar: `denetim:alternatif:${r.kod}`, kural: 'alternatif', hukum: 'olasi',
+    baslik: `“${r.a_ad}” ile “${r.b_ad}” birbirinin alternatifi, ama ikisi de kesinleşmiş`,
+    dayanak: 'İkisini birbirinin alternatifi olarak bağlamıştınız. Biri seçildiyse öbürünü “vazgeçilmiş” yapabilir ya da aralarındaki bağı kaldırabilirsiniz.',
+    kayitlar: [kisa(r, 'a_'), kisa(r, 'b_')], fikir: false, imza: `${r.a_karar}:${r.b_karar}`,
+  }));
+  return { bulgular, denetlenen: l.length };
+}
+
 /** Konum: aynı zamanda, parçası olma ilişkisiyle birbirini kapsamayan iki yerde fiziksel olarak bulunma. */
 function konum(e: EvrenVt, b: Bulunma[], p: PaketEtkisi | null): { bulgular: Ham[]; denetlenen: number; yersiz: number; rotaDenetlenen: number } {
   const yerler = new Map<string, { yer: KisaKayit; fikir: boolean }[]>();
@@ -350,6 +365,7 @@ function hesapla(e: EvrenVt, p: PaketEtkisi | null = null): { bulgular: Ham[]; k
   })], p);
   const y = yasam(e, b), d = dongu(e), k = konum(e, b, p), s = esya(e);
   const sr = surecDenetimi(e);
+  const al = alternatif(e);
   const srH: Ham[] = sr.bulgular.map((x) => ({ ...x, kural: 'surec' as const }));
   k.bulgular.push(...asamaDenetimi(e, p));
   const ozet = (kural: DenetimKurali, ad: string, tanim: string, x: { bulgular: Ham[]; denetlenen: number }, bos: string, not: string): DenetimOzeti => ({
@@ -371,8 +387,10 @@ function hesapla(e: EvrenVt, p: PaketEtkisi | null = null): { bulgular: Ham[]; k
       not: 'Bir karakterin bir bilgiye göre davrandığını gösteren bir kayıt henüz yok. Program bunu metinden çıkarmaz.' },
     ozet('surec', 'Süreç', 'Bir olayda bir adımın, bağlı süreç kuralındaki önkoşul adımı yapılmadan gerçekleşmesi.', { bulgular: srH, denetlenen: sr.denetlenen },
       'Önkoşullu adımı olan bir süreç kuralına bağlı olay yok.', `${sr.denetlenen} olay–kural bağı denetlendi. Kaydedilmemiş adım “olmadı” sayılmaz; yalnızca “yapılmadı” ya da “yarıda kaldı” diye işaretlenen önkoşullar denetlenir.`),
+    ozet('alternatif', 'Alternatifler', 'Birbirinin alternatifi diye bağlanmış iki kaydın ikisinin de kesinleşmiş olması.', al,
+      'Birbirinin alternatifi diye bağlanmış kayıt yok.', `${al.denetlenen} alternatif bağı denetlendi.`),
   ];
-  return { bulgular: [...y.bulgular, ...d.bulgular, ...k.bulgular, ...s.bulgular, ...srH], kurallar };
+  return { bulgular: [...y.bulgular, ...d.bulgular, ...k.bulgular, ...s.bulgular, ...srH, ...al.bulgular], kurallar };
 }
 
 const sirala = (l: DenetimBulgusu[]) => l.sort((a, b) => (a.hukum === b.hukum ? 0 : a.hukum === 'celiski' ? -1 : 1)

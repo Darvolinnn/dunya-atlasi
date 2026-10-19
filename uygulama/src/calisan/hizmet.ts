@@ -1728,6 +1728,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (!iliskiTuruGecerli(tur)) throw new Error('Bilinmeyen ilişki türü.');
     if (!kararGecerli(karar)) throw new Error('Geçersiz karar durumu.');
     const t = iliskiTuruBul(tur);
+    if (tur === 'alternatif' && e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [a]) !== e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [b]))
+      throw new Error('Alternatifler aynı türden olmalı: iki olay, iki sahne ya da iki kurgu hattı gibi.');
     if (!rol && t.rolIstegeBagli) rol = null;
     if (rol !== null && !t.roller?.some((r) => r.kod === rol)) throw new Error('Bu ilişki için geçersiz rol.');
     const kod = yeniKod();
@@ -1871,6 +1873,13 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   }
   yerlesmemisler({ evren }: { evren: string }) { return anlati.yerlesmemisler(this.evren(evren)); }
   seriler({ evren }: { evren: string }) { return anlati.seriler(this.evren(evren)); }
+  /** Bir kaydın alternatifleri (K27), karar durumlarıyla. */
+  alternatifler({ evren, kod }: { evren: string; kod: string }): (KisaKayit & { karar: string })[] {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kod);
+    return e.db.selectObjects(`SELECT k.kod, k.ad, k.tur, k.karar FROM iliskiler i JOIN kayitlar k ON k.kod = CASE WHEN i.a=? THEN i.b ELSE i.a END
+      WHERE i.tur='alternatif' AND i.silindi IS NULL AND (i.a=? OR i.b=?) AND k.silindi IS NULL ORDER BY k.ad`, [kod, kod, kod]) as unknown as (KisaKayit & { karar: string })[];
+  }
   eserler({ evren }: { evren: string }): KisaKayit[] {
     return this.evren(evren).db.selectObjects("SELECT kod, ad, tur FROM kayitlar WHERE tur='eser' AND silindi IS NULL ORDER BY olusturma") as unknown as KisaKayit[];
   }

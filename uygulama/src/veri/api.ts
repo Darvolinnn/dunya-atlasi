@@ -996,7 +996,7 @@ export interface IncelemeKarari {
   istisna?: 'tercih' | 'kapsam' | null;
 }
 /** Kural tabanlı denetimler (§9.1). Hüküm ve kapsam ayrı gösterilir; "sorun yok" yalnızca sayılan kurallar için geçerlidir. */
-export type DenetimKurali = 'yasam' | 'dongu' | 'konum' | 'esya' | 'bilgi' | 'surec';
+export type DenetimKurali = 'yasam' | 'dongu' | 'konum' | 'esya' | 'bilgi' | 'surec' | 'alternatif';
 export interface DenetimBulgusu {
   anahtar: string; kural: DenetimKurali; hukum: 'celiski' | 'olasi'; baslik: string;
   /** Uyarının dayanağı: hangi değerlerden çıktığı, okunur cümleyle. */
@@ -1139,6 +1139,7 @@ export interface Istekler {
   evrenKaldir(a: { evren: string }): void;
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
   ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
+  alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
   seriler(a: { evren: string }): { seriler: { kod: string; ad: string; eserler: { kod: string; ad: string }[] }[]; serisiz: { kod: string; ad: string }[] };
   evrenAdlandir(a: { evren: string; ad: string }): void;
   evrenBilgisi(a: { evren: string }): EvrenBilgisi;
