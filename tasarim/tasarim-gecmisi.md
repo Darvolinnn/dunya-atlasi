@@ -142,6 +142,7 @@ Bölüm numaraları Sürüm 6'ya aittir. Bölüm numaralarında değişiklik yok
 | Kullanıcı kararı (19 Ekim) | Program güncellemesinde baştan kurma beklensin mi, arka planda mı yapılsın, tablolar yerinde mi dönüştürülsün? | Beklenir, ilerleme şeridi gösterilir (§10.7); yerinde dönüştürme ileriye bırakıldı. Anlık görüntü için tablette fazladan disk alanı kabul edildi (DEVIR §3.3-2). |
 | Kullanıcı isteği (19 Ekim) | Evrenler sayfasında evren silinebilsin, onay sorulsun | §10.1: evren yalnızca bu cihazdan kaldırılır (Drive ve öbür cihazlar etkilenmez); onay kaybolacak olanı söyler, yedeksiz yalnız-bu-cihaz evreninde iki kez sorulur. Her yerden silme güvenlik için tanımlanmadı. |
 | Kullanıcı kararı (19 Ekim) | İki cihaz ayrı yazıp eşitlenince bütün evren baştan kuruluyordu (63.400 işlemde 21 sn) | §10.1 anlık görüntü: her 5.000 işlemde iki yuvalı görüntü; geç gelen işlemde görüntüden kurma (aynı ölçümde 0,05 sn, görüntü başına ~9 MB). |
+| Kullanıcı kararı (19 Ekim) | Rehberli arayüz (dış öneri): başlangıç akışı | İki taslaktan B seçildi: Yaz sayfasında "İlk adımlar" listesi (K26, §5.10). Sol menü yapısı K24'teki gibi kalır. A ("Nereden başlamak istersiniz?" kartları) alınmadı. |
 | Alınmayanlar | — | B10 6.2'deki eser için `.docx` dışa aktarımı yeni bir fikir sayıldı (K11). F26'nın ayrıntısı ve 2.2'nin tam birleştirmesi bekliyor. B10 6.2 lisans önerisi yerine K19 |
 
 ---

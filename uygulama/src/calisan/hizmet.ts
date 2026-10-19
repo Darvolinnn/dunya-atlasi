@@ -199,6 +199,22 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   baslat() { return { kod: this.kurulum.kod, ad: this.kurulum.ad, sqlite: this.sqliteSurumu }; }
   evrenler() { return this.kurulum.evrenler(); }
 
+  /** "İlk adımlar" (K26): yapılıp yapılmadığı evrene bakılarak anlaşılır; ayrıca bir şey kaydedilmez. */
+  ilkAdimlar({ evren }: { evren: string }) {
+    const db = this.evren(evren).db;
+    const var_ = (sql: string) => db.selectValue(sql) !== undefined;
+    const sahneler = "SELECT kod, tarih, sahne_olayi FROM kayitlar WHERE tur='sahne' AND silindi IS NULL";
+    return {
+      eser: var_("SELECT 1 FROM kayitlar WHERE tur='eser' AND silindi IS NULL LIMIT 1"),
+      sahne: var_(`${sahneler} LIMIT 1`),
+      baglanti: var_(`SELECT 1 FROM baglantilar b JOIN kayitlar k ON k.kod=b.kaynak WHERE k.tur='sahne' AND k.silindi IS NULL LIMIT 1`),
+      // Sahnenin kendi tarihi, sahne olayının tarihi ya da bir mekânı.
+      baglam: var_(`SELECT 1 FROM (${sahneler}) s LEFT JOIN kayitlar o ON o.kod=s.sahne_olayi
+        WHERE s.tarih IS NOT NULL OR o.tarih IS NOT NULL
+          OR EXISTS (SELECT 1 FROM iliskiler i WHERE i.tur='sahne_yeri' AND i.silindi IS NULL AND (i.a=s.kod OR i.b=s.kod OR i.a=s.sahne_olayi OR i.b=s.sahne_olayi)) LIMIT 1`),
+    };
+  }
+
   /**
    * Evreni yalnızca bu cihazdan kaldırır (§10.1): veritabanı dosyası, deneme kopyaları ve bu evrene ait ayarlar silinir.
    * Drive'daki kopyaya ve öbür cihazlara dokunulmaz; eşitlenmişse Eşitleme sayfasından yeniden indirilebilir.

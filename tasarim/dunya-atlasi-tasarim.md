@@ -136,6 +136,7 @@ Aşağıdaki sözcükler belgede yalnızca bu anlamlarda kullanılır. Kodu yaza
 | K23 | **F37 (varsayım paketleri) ve F40 (kalabalıklar) tasarıma alındı** (eski A13'ün bir kısmı). Tanımları §3.11 ve §3.8. | 18 Ekim |
 | K24 | **Arayüzde yazı merkezdedir.** Evren açılınca yazma düzeni gelir; ekran sadeleşir, az kullanılan araçlar katlanır ve görünüş yenilenir. Ayrıntı §5.10, §12.1. | 19 Ekim |
 | K25 | **Her sayfanın rehberi ve tek hitap.** Her sayfanın başlığında bir "?" düğmesi vardır; sayfanın ne işe yaradığını ve nasıl kullanıldığını anlatan rehberi sağdan açılan yan panelde gösterir. Program kullanıcıya "siz" diye hitap eder. Ayrıntı §12.4. | 19 Ekim |
+| K26 | **Yeni evrende ilk adımlar.** Yaz sayfasının üstünde dört adımlık bir liste durur: eser oluşturmak, ilk sahneyi eklemek, metinde bir kayda bağlanmak, sahneye tarih ya da mekân vermek. Yapılanlar evrenden anlaşılır ve işaretlenir; hepsi bitince ya da gizlenince görünmez. Zorunlu sihirbaz yoktur. Ayrıntı §5.10. | 19 Ekim |
 
 ### 1.2 Açık kararlar
 
@@ -603,6 +604,7 @@ Aynı verinin farklı görünümleridir; veri kopyalanmaz.
 Yazı merkezdedir (K24):
 - **Evren açılınca yazma düzeni gelir.** Solda sabit bir gezinti çubuğu bulunur: Yaz, Masa, Kayıtlar, Haritalar, Takvim, Görünümler ve İnceleme; az kullanılan sayfalar (çalışma masaları, açık meseleler, şablonlar, bahsedilenler, çöp kutusu, geçmiş, sürümler, yedek) "Diğer" altında katlanır.
 - **Yaz** seçiliyken gezinti çubuğunda eserlerin ağacı (eser › bölüm › sahne) görünür; yeni eser, bölüm ve sahne buradan eklenir. Seçili sahnenin metni ortada geniş ve okunaklı durur; sağda dar ve kapatılabilir bir bağlam paneli sahnenin tarihini, mekânını, bakış açısını, sahnedekileri ve o anki bağlamı (§5.5) gösterir. Gezinti çubuğunun altında kayıt, eşitleme ve yedek özeti durur (§10.8). Sahnenin bütün alanları kayıt sayfasındadır; yazma ekranından bir bağlantıyla açılır.
+- **İlk adımlar (K26):** yeni bir evrende Yaz sayfasının üstünde dört adım sırayla gösterilir; sıradaki adım vurgulanır, yapılanlar üstü çizili işaretlenir. Program adımın yapıldığını kaydedilmiş veriden anlar (eser, sahne, sahne metninde bağlantı, sahnenin tarihi ya da mekânı); ayrıca bir şey saklanmaz. "Gizle" seçimi o cihazda evren başına hatırlanır.
 - **Kayıt sayfasında** ad, tür, karar durumu, tarih, şablon alanları, kısa özet, metin ve ilişkiler açık durur; öbür bölümler türüne göre "Diğer bölümler" altında katlanır ve bir dokunuşla açılır.
 
 Yazma ekranında bütün evrenin panelleri ve uyarıları bulunmaz.

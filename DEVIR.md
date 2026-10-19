@@ -115,7 +115,7 @@ Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok.
    - [ ] **Yedekten geri yükleme ve yeni cihaz** hâlâ bütün günlüğü uygular (63.400 işlemde ~25 sn). Hızlanması için görüntünün yedekle / Drive'la taşınması gerekir (Adım 3). Evren belli aralıklarla tabloların anlık görüntüsünü saklar; geçmişe düşen işlem ve yedekten dönüş baştan değil görüntüden işler. **Program güncellemesi** ayrıca düşünülmeli: (a) tabloları silmeden yerinde dönüştürme ya da (b) yeni tabloları arka planda kurarken eskileriyle yazmaya devam. Kullanıcı A'yı seçti (beklenir, şerit gösterilir); yerinde dönüştürme ileriye. Kullanıcı yazılımcı değil; günlük hayat ya da bilgisayar örnekleri tercih ediyor, laboratuvar benzetmesi istemiyor.
    - [ ] **Adım 3 (öneri): yeni cihaza günlük yerine anlık görüntü gönderme.** Eşitleme biçimi değişir; yalnız Adım 1–2'den sonra yeni cihaza indirme hâlâ yavaşsa.
    Ölçüm kalıbı: geçici vitest dosyası (`test/_*.test.ts`, depoya girmez); `Hizmet` bellekte; `metinKaydet` dönüşündeki `basliklar` sonraki kaydın `temel`'i; işlemler JSON'a (ikili base64) yazılıp ayrı süreçte `evreniDisaridanKur` ve `evren(...).yenidenKur()` ölçülür.
-3. **Rehberli arayüz (§3.5):** dört kararı bekliyor. Kademeli açılış (dış rapor madde 4) bunun içinde.
+3. **Rehberli arayüz (§3.5):** kullanıcı başlangıç akışında taslak B'yi seçti; "İlk adımlar" listesi kodlandı (K26, `YazEkrani.tsx` `IlkAdimlar`, istek `ilkAdimlar`). Sol menü K24'teki gibi kalır (kullanıcı kararı). Bekleyen: menü adlarının yenilenmesi (kullanıcı "Masa" gibi adları anlamsız buldu; öneri tablosu sunuldu, seçim bekleniyor) ve Aşama C (kayıt sayfasında boş bölümlerin gizlenmesi; önce taslak).
 4. **Windows uygulaması (PR #1):** kurup denemek; Google izinli adreslerine `http://localhost:41730` eklemek. Kabul akışı: tam yedek → uygulamaya ayrı evren olarak yükle → metin ve görsel denetimi; eski kopya korunur. Gerçek kurulumda denenecekler: açılış, yeniden açılış, ikinci başlatma, yedek, geri yükleme, EPUB/PDF, Google izin yenilemesi. Ayarlarda görünen sürüm ve derleme tarihi.
 5. **K16:** iki haftalık gerçek kullanım (kod işi değil).
 
@@ -145,8 +145,9 @@ Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok.
 
 Kullanıcı etkileşimli bir taslak ve gerekçe belgesi gönderdi (ekler depoda değil): program kullanıcıyı küçük, atlanabilir adımlarla yönlendirsin, yalnız o anda gereken alanları göstersin, sonraki adımı anlaşılır kılsın. Öneri proje klasöründe `analiz/rehberli-arayuz-uyarlama.md`. Özeti: boş evrende "Nereden başlamak istersiniz?" ve üç kısa akış (sahne, kayıt, not) + sonuç kartında tek sonraki adım (Aşama A); gezinti Yaz / Evren / İncele / Masa / Yönetim, seyrek işler "⋯" menüsünde (Aşama B, önce resimli taslak); kayıt sayfasında boş bölümlerin gizlenmesi (Aşama C). Yeni veri yok; onaylanırsa tasarıma K26 olarak girer. Boş bağlam panelinin kapalı olması ve durum özeti artık kodda (PR #2), öneri bunlarla uyumlu.
 
-- [ ] Kullanıcı kararları: Aşama A'ya başlansın mı; gezinti gruplaması; Masa ayrı mı kalsın
-- [ ] Onaylanırsa: tasarım belgesi (K26, §5.10, §12.4, §13), sonra Aşama A kodu
+- [x] Kullanıcı kararları (19 Ekim): başlangıç akışı taslak B ("İlk adımlar"), menü yapısı K24 gibi kalır
+- [ ] Menü adları (Masa → Özet? İnceleme → Uyarılar? …): kullanıcının seçimi bekleniyor
+- [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
 
 ## 4. Kod yapısı ve yeni bir özellik ekleme tarifi
 

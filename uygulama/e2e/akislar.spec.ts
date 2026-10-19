@@ -197,3 +197,29 @@ test('evren bu cihazdan kaldırılır; onaydan vazgeçilirse yerinde kalır', as
   await p.reload();
   await expect(kartlar).toHaveText('Kalacak Evren');
 });
+
+test('yeni evrende "İlk adımlar" yapıldıkça ilerler; gizlenince gizli kalır', async ({ page: p }) => {
+  await p.goto('/');
+  await p.getByRole('button', { name: 'Yeni evren' }).click();
+  await p.locator('#yeni-evren-adi').fill('Adım Evreni');
+  await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
+  const liste = p.getByRole('region', { name: 'İlk adımlar' });
+  await expect(liste).toContainText('0 / 4 tamam');
+  await p.getByPlaceholder('Yeni eserin adı').fill('Kuzey Yolu');
+  await p.getByRole('button', { name: 'Eser oluştur' }).click();
+  await expect(p).toHaveURL(/\/yaz\/./);
+  await p.getByRole('link', { name: 'Yaz', exact: true }).click();
+  await expect(liste).toContainText('1 / 4 tamam');
+  await p.getByRole('button', { name: '+ Sahne' }).click();
+  await p.getByPlaceholder('Sahnenin adı', { exact: true }).fill('Kuşatma');
+  const eserAdresi = p.url();
+  await p.getByPlaceholder('Sahnenin adı', { exact: true }).press('Enter');
+  await expect(p).not.toHaveURL(eserAdresi);
+  await p.getByRole('link', { name: 'Yaz', exact: true }).click();
+  await expect(liste).toContainText('2 / 4 tamam');
+  await liste.getByRole('button', { name: 'Gizle' }).click();
+  await expect(liste).toBeHidden();
+  await p.reload();
+  await expect(p.getByRole('heading', { name: 'Yaz' })).toBeVisible();
+  await expect(liste).toBeHidden();
+});

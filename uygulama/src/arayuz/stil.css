@@ -859,3 +859,9 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .evren-karti { position: relative; }
 .evren-karti .kart { padding-right: 76px; height: 100%; }
 .evren-kaldir { position: absolute; top: 8px; right: 8px; }
+
+/* "İlk adımlar" listesi (K26). */
+.ilk-adimlar { margin-bottom: 20px; }
+.ilk-adimlar ol { margin: 10px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
+.ilk-adimlar li.tamam { color: var(--metin-2); text-decoration: line-through; }
+.ilk-adimlar li.sirada { font-weight: 600; }

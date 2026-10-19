@@ -13,7 +13,7 @@ let havuz: { getFileCount(): number; getCapacity(): number; addCapacity(n: numbe
 let hazirlik: Promise<Hizmet> | null = null;
 
 // Arayüzün çağırabildiği istekler; başka hiçbir yöntem dışarıdan çağrılamaz.
-const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', 'evrenOlustur', 'evrenKaldir', 'evrenAdlandir', 'evrenBilgisi', 'islemGunlugu',
+const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', 'evrenOlustur', 'evrenKaldir', 'ilkAdimlar', 'evrenAdlandir', 'evrenBilgisi', 'islemGunlugu',
   'yogunluk',
   'sozlesmeMaddeleri', 'sozlesmeMaddeYaz', 'sozlesmeMaddeSil', 'sozlesmeMaddeGeriYukle', 'sozlesmeDisaridaYaz', 'eserSozlesmesi', 'sozlesmeHatirlatmalari',
   'haklar', 'hakEkle', 'hakDegistir', 'hakSil', 'hakGeriYukle', 'hakTanimaYaz',
