@@ -145,11 +145,14 @@ export function aktarimGirdileri(u: DalUclari, secilen: string[], eslemeler: Rec
     if (dalKaydi === kayit && A.hasHeads(md, temel)) {
       const ek = [...crypto.getRandomValues(new Uint8Array(4))].map((b) => b.toString(16).padStart(2, '0')).join('');
       const kol = A.change(A.clone(A.view(md, temel), { actor: aktor + ek }), (x) => A.updateSpans(x, ['t'], spans, spanAyari()));
-      yeni = A.merge(A.clone(md, { actor: aktor }), kol);
+      try { yeni = A.merge(A.clone(md, { actor: aktor }), kol); } finally { A.free(kol); }
     } else yeni = A.change(A.clone(md, { actor: aktor }), (x) => A.updateSpans(x, ['t'], spans, spanAyari()));
-    const basliklar = A.getHeads(yeni);
-    if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) continue;
-    girdiler.push({ tur: 'metin', veri: { kayit, alan, basliklar, temel: simdiki, daldan: true }, ikili: A.saveSince(yeni, simdiki) });
+    // Geçici kopya bırakılır (Automerge belleği kendiliğinden boşalmaz).
+    try {
+      const basliklar = A.getHeads(yeni);
+      if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) continue;
+      girdiler.push({ tur: 'metin', veri: { kayit, alan, basliklar, temel: simdiki, daldan: true }, ikili: A.saveSince(yeni, simdiki) });
+    } finally { A.free(yeni); }
   }
   return { girdiler, birakilan: [...new Set(birakilan)] };
 }

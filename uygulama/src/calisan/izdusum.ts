@@ -915,8 +915,13 @@ function bellegeKoy(db: Database, anahtar: string, d: A.Doc<{ t: string }>) {
   const m = bellek(db);
   m.delete(anahtar);
   m.set(anahtar, d);
-  // Map ekleme sırasını korur: en eski kullanılan baştadır.
-  while (m.size > BELLEKTEKI_METIN) m.delete(m.keys().next().value!);
+  // Map ekleme sırasını korur: en eski kullanılan baştadır. Çıkan belge bırakılır (Automerge belleği çöp toplayıcıya
+  // görünmez); belgeyi okuyanlar onu hemen kullanır, sonradan başka belgeler okuyup ona dönmez.
+  while (m.size > BELLEKTEKI_METIN) {
+    const [k, eski] = m.entries().next().value!;
+    m.delete(k);
+    if (eski !== d) A.free(eski);
+  }
 }
 export function metinBelgesi(db: Database, kayit: string, alan: string): A.Doc<{ t: string }> | null {
   const anahtar = kayit + '\u0000' + alan;

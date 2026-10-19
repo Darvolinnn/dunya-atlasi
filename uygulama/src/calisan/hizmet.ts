@@ -1261,16 +1261,20 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
 
   /** Yeni kaydın işlemleri. Kaydın gövde metni ilk değişiklikle birlikte doğar; bütün cihazlar aynı kökten başlar. */
   private kayitGirdileri(kod: string, v: { ad: string; tur: string; karar: string; ozet: string; spans?: Spans; sahneOlayi?: string }): IslemGirdisi[] {
+    // Geçici belgeler iş bitince bırakılır: Automerge belleği çöp toplayıcıya görünmez, kendiliğinden boşalmaz.
     const kok = A.from({ t: '' }, { actor: this.aktor });
-    const girdiler: IslemGirdisi[] = [
-      { tur: 'kayit_olustur', veri: { kod, tur: turGecerli(v.tur) ? v.tur : 'diger', ad: v.ad, karar: v.karar, ozet: v.ozet, ...(v.sahneOlayi ? { sahneOlayi: v.sahneOlayi } : {}) } },
-      { tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(kok), ilk: true }, ikili: A.save(kok) },
-    ];
-    if (v.spans && v.spans.length) {
-      const dolu = A.change(A.clone(kok, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], v.spans as never, spanAyari()));
-      girdiler.push({ tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(dolu) }, ikili: A.saveSince(dolu, A.getHeads(kok)) });
-    }
-    return girdiler;
+    try {
+      const girdiler: IslemGirdisi[] = [
+        { tur: 'kayit_olustur', veri: { kod, tur: turGecerli(v.tur) ? v.tur : 'diger', ad: v.ad, karar: v.karar, ozet: v.ozet, ...(v.sahneOlayi ? { sahneOlayi: v.sahneOlayi } : {}) } },
+        { tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(kok), ilk: true }, ikili: A.save(kok) },
+      ];
+      if (v.spans && v.spans.length) {
+        const dolu = A.change(A.clone(kok, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], v.spans as never, spanAyari()));
+        try { girdiler.push({ tur: 'metin', veri: { kayit: kod, alan: 'govde', basliklar: A.getHeads(dolu) }, ikili: A.saveSince(dolu, A.getHeads(kok)) }); }
+        finally { A.free(dolu); }
+      }
+      return girdiler;
+    } finally { A.free(kok); }
   }
 
   kayitOlustur({ evren, ad, tur, karar = 'kesin', ozet = '' }: { evren: string; ad: string; tur: string; karar?: string; ozet?: string }) {
@@ -1441,6 +1445,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const simdiki = A.getHeads(d);
     const ayni = JSON.stringify([...simdiki].sort()) === JSON.stringify([...temel].sort());
     if (!Array.isArray(temel) || !temel.every((h) => typeof h === 'string' && A.hasHeads(d, [h]))) throw new Error('Metnin sürümü bulunamadı; sayfayı yenileyin.');
+    // Değişiklik geçici bir kopyada hesaplanır; kopya iş bitince bırakılır (Automerge belleği kendiliğinden boşalmaz,
+    // bırakılmazsa her kayıtta belge kadar bellek birikir).
     let yeni: A.Doc<{ t: string }>;
     if (ayni) yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], spans as never, spanAyari()));
     else {
@@ -1449,12 +1455,16 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       // Dal ayrı bir yazar koduyla açılır: aynı yazarın sonraki değişiklikleriyle sıra numarası çakışmasın.
       const ek = [...crypto.getRandomValues(new Uint8Array(4))].map((b) => b.toString(16).padStart(2, '0')).join('');
       const dal = A.change(A.clone(A.view(d, temel), { actor: this.aktor + ek }), (x) => A.updateSpans(x, ['t'], spans as never, spanAyari()));
-      yeni = A.merge(A.clone(d, { actor: this.aktor }), dal);
+      try { yeni = A.merge(A.clone(d, { actor: this.aktor }), dal); } finally { A.free(dal); }
     }
-    const basliklar = A.getHeads(yeni);
-    if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) return { basliklar: simdiki, degisti: false, birlesti: false };
-    this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar, temel }, ikili: A.saveSince(yeni, simdiki) }], [kayit]);
-    return { basliklar, degisti: true, birlesti: !ayni, ...(!ayni ? { spans: A.spans(yeni, ['t']) as Spans } : {}) };
+    try {
+      const basliklar = A.getHeads(yeni);
+      if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) return { basliklar: simdiki, degisti: false, birlesti: false };
+      const ikili = A.saveSince(yeni, simdiki);
+      const birlesik = !ayni ? { spans: A.spans(yeni, ['t']) as Spans } : {};
+      this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar, temel }, ikili }], [kayit]);
+      return { basliklar, degisti: true, birlesti: !ayni, ...birlesik };
+    } finally { A.free(yeni); }
   }
 
   /** Metnin geçmişteki bir hâli (sürüm geçmişinde göstermek için). */
@@ -1468,12 +1478,14 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const d = this.belge(this.evren(evren), kayit, alan);
     const simdiki = A.getHeads(d);
     const eski = A.spans(A.view(d, basliklar), ['t']);
-    const calisma = A.clone(d, { actor: this.aktor });
-    const yeni = A.change(calisma, (x) => A.updateSpans(x, ['t'], eski as never, spanAyari()));
-    const sonra = A.getHeads(yeni);
-    if (JSON.stringify(sonra) === JSON.stringify(A.getHeads(calisma))) return { basliklar: simdiki, degisti: false };
-    this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar: sonra, geriYukleme: true }, ikili: A.saveSince(yeni, simdiki) }], [kayit]);
-    return { basliklar: sonra, degisti: true };
+    const yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], eski as never, spanAyari()));
+    try {
+      const sonra = A.getHeads(yeni);
+      if (JSON.stringify(sonra) === JSON.stringify(simdiki)) return { basliklar: simdiki, degisti: false };
+      const ikili = A.saveSince(yeni, simdiki);
+      this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar: sonra, geriYukleme: true }, ikili }], [kayit]);
+      return { basliklar: sonra, degisti: true };
+    } finally { A.free(yeni); }
   }
 
   // ---------- Arama (§18 arama ve sıralama) ----------
@@ -1606,7 +1618,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       const yeniSpans = spans.filter((_, i) => !sil.has(i));
       const onceki = A.getHeads(d);
       const yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], yeniSpans as never, spanAyari()));
-      girdiler.push({ tur: 'metin', veri: { kayit: kaynak, alan: 'govde', basliklar: A.getHeads(yeni), adDuzeltme: kod }, ikili: A.saveSince(yeni, onceki) });
+      try { girdiler.push({ tur: 'metin', veri: { kayit: kaynak, alan: 'govde', basliklar: A.getHeads(yeni), adDuzeltme: kod }, ikili: A.saveSince(yeni, onceki) }); }
+      finally { A.free(yeni); }
     }
     if (girdiler.length) this.yaz(evren, girdiler, [kod, ...kaynaga.keys()]);
     return { degisen: [...kaynaga.values()].reduce((n, l) => n + l.length, 0) };
@@ -2385,9 +2398,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       metinGirdisi: (kayit, alan, spans) => {
         const d = this.belge(e, kayit, alan), simdiki = A.getHeads(d);
         const yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], spans as never, spanAyari()));
-        const basliklar = A.getHeads(yeni);
-        if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) return null;
-        return { tur: 'metin', veri: { kayit, alan, basliklar, temel: simdiki }, ikili: A.saveSince(yeni, simdiki) };
+        try {
+          const basliklar = A.getHeads(yeni);
+          if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) return null;
+          return { tur: 'metin', veri: { kayit, alan, basliklar, temel: simdiki }, ikili: A.saveSince(yeni, simdiki) };
+        } finally { A.free(yeni); }
       },
     };
   }
