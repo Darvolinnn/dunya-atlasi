@@ -48,7 +48,7 @@ export interface BakimBaglami {
   yaz(girdiler: IslemGirdisi[], kayitlar?: string[]): void;
 }
 
-export const UZMAN_DISI_NOTU = 'Bakımı yapan, tanımdaki uzmanlar arasında değil.';
+export const UZMAN_DISI_NOTU = 'Bakımı yapan, tanımdaki uzmanlardan biri değil.';
 
 function kisaKayit(e: EvrenVt, kod: string | null): KisaKayit | null {
   if (!kod) return null;
@@ -111,7 +111,7 @@ function tanimDogrula(e: EvrenVt, g: BakimTanimi) {
     throw new Error('En çok 20 malzeme eklenebilir.');
   }
   const malzemeler: BakimMalzemesi[] = hamMalzemeler.map((m) => {
-    if (!m || typeof m !== 'object') throw new Error('Malzeme bilgisi geçersiz.');
+    if (!m || typeof m !== 'object') throw new Error('Malzeme bilgisi okunamadı.');
     const metin = String(m.metin ?? '').replace(/\s+/g, ' ').trim();
     if (metin.length > 80) throw new Error('Malzeme açıklaması en çok 80 harf olabilir.');
     const kayit = m.kayit ? aktifKayitKontrol(e, m.kayit, 'Malzeme kaydı bulunamadı.').kod : null;
@@ -182,7 +182,7 @@ export function bakimKaydiYaz(
   if (!tr) throw new Error('Bakım tanımı bulunamadı.');
 
   const ifade = String(g.tarih ?? '').replace(/\s+/g, ' ').trim();
-  if (!ifade) throw new Error('Tarih boş olamaz.');
+  if (!ifade) throw new Error('Bir tarih yazın.');
   const tarih = tarihCoz(ifade, zamanSetiOku(b.e.db));
   if (!tarih?.eksen || (tarih.eksen.enErken === null && tarih.eksen.enGec === null)) {
     throw new Error(`Tarih okunamadı: “${ifade}”.`);
@@ -504,7 +504,7 @@ export function bakimTanimiDurumuHesapla(
       durumEtiketi: BAKIM_HESAP_DURUM_ADLARI[durum],
       kesinti: null,
       ozet: 'Seçilen tarih takvime çevrilemediği için bakım durumu hesaplanamıyor.',
-      dayanak: `Seçilen tarih ifadesi (“${secilenTarih?.ifade ?? ''}”) takvim eksenine yerleştirilemedi.`,
+      dayanak: `Seçilen tarihin (“${secilenTarih?.ifade ?? ''}”) takvimde karşılığı bulunamadı.`,
       not: BAKIM_SONUC_NOTU,
       uzmanNotlari,
     };
@@ -583,9 +583,9 @@ export function bakimTanimiDurumuHesapla(
   if (sonYapildi) {
     const parcalar: string[] = [`Son bakım ${sonYapildi.tarih.ifade} tarihinde.`];
     if (sonrakiAralik) {
-      parcalar.push(`Bir sonraki bakım şu tarihte gerekir: ${sonrakiAralik.yazi}.`);
+      parcalar.push(`Sonraki bakım zamanı: ${sonrakiAralik.yazi}.`);
     } else if (tanim.siklik) {
-      parcalar.push('Takvimde karşılığı bulunamadığından sonraki bakım aralığı hesaplanamıyor.');
+      parcalar.push('Takvimde karşılığı bulunamadığı için sonraki bakımın zamanı hesaplanamıyor.');
     } else {
       parcalar.push('Bakım sıklığı belirtilmemiş.');
     }

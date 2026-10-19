@@ -16,7 +16,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 
 ## 2. Kullanıcı ve çalışma tercihi
 
-- Kullanıcı Türkçe yazar; ona Türkçe, kısa ve sade cevap ver. Arayüzdeki ve hata iletilerindeki her metin Türkçedir; kullanıcıya görünen metinde programlama terimi olmaz.
+- Kullanıcı Türkçe yazar; ona Türkçe, kısa ve sade cevap ver. Programdaki metinlerde hitap "siz"dir (kullanıcı kararı, 19 Ekim 2026; §12.4). Arayüzdeki ve hata iletilerindeki her metin Türkçedir; kullanıcıya görünen metinde programlama terimi olmaz.
 - Her adım bitince DEVIR.md'de yapılan ve yapılacak adımlar güncellenir ve gönderilir (kullanıcı isteği, 19 Ekim 2026).
 - Kullanıcının açık tercihi: **bir aşama ya da madde bitince onay beklemeden sıradakine geç.** Yalnızca geri alınamaz işlerde (zorla gönderme, toplu silme, dışarıya mesaj) ya da kullanıcının vermesi gereken bir kararda dur ve sor.
 - **Arayüz değişikliklerinde önce taslak:** görünüşü ya da düzeni değiştiren bir işe kodlayarak başlama; önce seçenekli bir taslak göster, kullanıcı seçince kodla (kullanıcı isteği, 19 Ekim 2026).
@@ -97,6 +97,21 @@ Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yap
 - [x] Hukuk kuralının "kimlere" kısmına formül alanı; kural atölyesi örnekleriyle sınama (`test/kural-atolyesi.test.ts`)
 - [x] Arayüz: formül yazma, hatanın yerini gösterme, yazım kılavuzu; uygulanan kurallarda formülün belirsiz nedenleri ve "hesaplanamadı" (`arayuz/Hukuk.tsx`)
 - [x] Sınamalar (435), izdüşüm sürümü (gerekmedi: tanım JSON olarak saklanıyor), DEVIR güncellemesi, gönderme
+
+### 3.2c Biten iş: sayfa rehberi ve Türkçe gözden geçirme (19 Ekim 2026)
+
+Kullanıcı isteği: her sekmeye "?" ile açılan ayrıntılı rehber; programın Türkçesi garip, gözden geçirilsin; kaynak kodlar zip olarak masaüstüne.
+
+- [x] Taslak (üç seçenek: sayfa içi kart, yan panel, ortada pencere) resimleriyle gösterildi; **kullanıcı B'yi seçti: sağdan açılan yan panel**
+- [x] **Kullanıcı kararı: hitap "siz"** (açıklama, uyarı, hata metinleri "seçin, yazın"; düğmeler kısa kalır)
+- [x] Tasarım: K25 satırı, §12.4 "Sayfa rehberi ve dil", konu dizini, geçmiş dosyasına bir satır
+- [x] Rehber metinleri `arayuz/rehber.ts` (33 sayfa: evrenler, eşitleme, yaz, masa, kayıtlar, kayıt sayfası, haritalar, takvim, inceleme, "Diğer" altındakiler, 17 görünüm); panel `arayuz/Rehber.tsx` (`SayfaYardimi`), stiller `stil.css` sonunda
+- [x] "?" düğmesi her sayfanın başlığında: `EvrenEkrani.tsx` (bütün sekmeler ve Masa), `YazEkrani.tsx`, `KayitEkrani.tsx`, `EvrenlerEkrani.tsx`, `Esitleme.tsx`
+- [x] Bütün kullanıcıya görünen metinler (arayüz, `alan/`, `calisan/` hata ve uyarı iletileri, işlem günlüğü) "siz" hitabına ve doğal Türkçeye çevrildi; terimler birleştirildi (ör. "oturtma" → "hizalama", "dal/taslak" → "deneme kopyası"); metni bekleyen sınamalar güncellendi. Kaydedilen değerler (seçenek adları, şablon alan adları, gerekçe ve sonuç sabitleri) bilerek değiştirilmedi
+- [x] Sınamalar (441) ve tür denetimi yeşil; tarayıcıda denendi (panel açılıyor, Esc ile kapanıyor, konsolda hata yok)
+- [ ] Kaynak kodlar zip'lendi (`main` ve Windows dalı), proje klasörüne ve kullanıcının masaüstüne kondu
+
+**Yeni sayfa eklerken:** `rehber.ts`'e o sayfanın rehberini ekle; başlığa `<SayfaYardimi sayfa="…" />` koy. Yeni metinler "siz" hitabıyla yazılır (§12.4).
 
 ### 3.3 Kalan işler (önerilen sıra)
 

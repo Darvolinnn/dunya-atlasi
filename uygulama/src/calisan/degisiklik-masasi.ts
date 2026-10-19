@@ -52,10 +52,10 @@ export function hesapla(e: EvrenVt, kodHam: string, ifade: string, koruHam: stri
   const yazi = (x: Eksen | null | undefined) => eksenAraligi(x, anaT);
   const ham = db.selectValue('SELECT tarih FROM kayitlar WHERE kod=?', [kod]) as string | null;
   const eskiT = ham ? JSON.parse(ham) as EvrenTarihi : null;
-  if (!eskiT?.eksen) throw new Error('Bu kaydın eksene yerleşen bir tarihi yok; önce tarihini yazın.');
+  if (!eskiT?.eksen) throw new Error('Bu kaydın zaman akışına yerleşen bir tarihi yok. Önce tarihini yazın.');
   if (!String(ifade ?? '').trim()) throw new Error('Yeni tarihi yazın.');
   const yeniT = tarihCoz(String(ifade), z);
-  if (!yeniT?.eksen || yeniT.bicim === 'sembolik') throw new Error('Yeni tarih eksene yerleşmiyor; bir yıl ya da takvim tarihi yazın.');
+  if (!yeniT?.eksen || yeniT.bicim === 'sembolik') throw new Error('Yeni tarih zaman akışına yerleşmiyor. Bir yıl ya da takvim tarihi yazın.');
   const koru = new Set(Array.isArray(koruHam) ? koruHam.filter((x) => typeof x === 'string') : []);
 
   // Göreli tarihler ve dayanakları (izdüşümdeki çözümle aynı küme).
@@ -111,17 +111,17 @@ export function hesapla(e: EvrenVt, kodHam: string, ifade: string, koruHam: stri
     if (!x) continue;
     const yazili = yaziyla(eski.get(k)?.eksen, z);
     const kor = korunan.has(k);
-    hesap.push({ ...x, anahtar: `tarih:${k}`, aciklama: kor ? 'Tarihi bir olaya göre verilmiş; korunursa bugünkü yerinde yazılı tarih olur ve bağı kalkar.' : 'Tarihi bir olaya göre verilmiş; kendiliğinden kayar.',
+    hesap.push({ ...x, anahtar: `tarih:${k}`, aciklama: kor ? 'Tarihi bir olaya göre verilmiş. Korunursa bugünkü yerinde sabit bir tarihe dönüşür ve olayla bağı kalkar.' : 'Tarihi bir olaya göre verilmiş, bu yüzden kendiliğinden kayar.',
       once: yazi(eski.get(k)?.eksen), sonra: kor ? `${yazi(eski.get(k)?.eksen)} (korunuyor)` : yazi(sonuc.get(k)?.eksen),
-      korunabilir: !!yazili, korunuyor: kor, korunamaz: yazili ? null : 'Bugünkü yeri yazılı bir tarihle aynen ifade edilemiyor.' });
+      korunabilir: !!yazili, korunuyor: kor, korunamaz: yazili ? null : 'Bugünkü yeri sabit bir tarihle tam olarak yazılamıyor.' });
     if (kor) {
       const kural = kuralli.get(k)?.eksen;
       const kept = korunan.get(k)!.eksen;
-      if (kural && kept && karsilastir(t(kept), t(kural)) !== 'belirsiz') celisen.push({ ...x, aciklama: `Korunursa “${olay.ad}” kaydına göre verilmiş kuralı artık tutmaz (kurala göre ${yazi(kural)}).` });
+      if (kural && kept && karsilastir(t(kept), t(kural)) !== 'belirsiz') celisen.push({ ...x, aciklama: `Korunursa “${olay.ad}” kaydına göre verilen kurala artık uymaz (kurala göre ${yazi(kural)}).` });
     }
   }
   for (const [k, s] of sonuc) {
-    if (s.celiski && !eski.get(k)?.celiski) { const x = kisa(e, k); if (x) celisen.push({ ...x, aciklama: 'Tarih kısıtları birbiriyle çelişiyor; olası tarih kalmıyor.' }); }
+    if (s.celiski && !eski.get(k)?.celiski) { const x = kisa(e, k); if (x) celisen.push({ ...x, aciklama: 'Tarih kısıtları birbiriyle çelişiyor, olası bir tarih kalmıyor.' }); }
   }
 
   // Olaya bağlı durum sınırları.
@@ -142,8 +142,8 @@ export function hesapla(e: EvrenVt, kodHam: string, ifade: string, koruHam: stri
       const anahtar = `durum:${r.kod}:${taraf}`;
       const yazili = yaziyla(once, z);
       const kor = koru.has(anahtar) && !!yazili;
-      hesap.push({ ...x, anahtar, aciklama: `“${r.ozellik}” durumunun ${taraf === 'baslangic' ? 'başlangıcı' : 'bitişi'} bir olaya bağlı; ${kor ? 'korunursa bugünkü yerinde yazılı tarih olur.' : 'kendiliğinden kayar.'}`,
-        once: yazi(once), sonra: kor ? `${yazi(once)} (korunuyor)` : yazi(sonra), korunabilir: !!yazili, korunuyor: kor, korunamaz: yazili ? null : 'Bugünkü yeri yazılı bir tarihle aynen ifade edilemiyor.' });
+      hesap.push({ ...x, anahtar, aciklama: `“${r.ozellik}” durumunun ${taraf === 'baslangic' ? 'başlangıcı' : 'bitişi'} bir olaya bağlı${kor ? '. Korunursa bugünkü yerinde sabit bir tarihe dönüşür.' : ', bu yüzden kendiliğinden kayar.'}`,
+        once: yazi(once), sonra: kor ? `${yazi(once)} (korunuyor)` : yazi(sonra), korunabilir: !!yazili, korunuyor: kor, korunamaz: yazili ? null : 'Bugünkü yeri sabit bir tarihle tam olarak yazılamıyor.' });
       if (kor) girdiler.push({ tur: 'durum_degistir', veri: { kod: r.kod, alan: taraf, deger: { tarih: tarihCoz(yazili!, z) }, onceki: v, konu: r.konu, ozellik: r.ozellik, niyet: 'koru' } });
     }
   }

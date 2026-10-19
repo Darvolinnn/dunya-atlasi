@@ -3,6 +3,7 @@ import type { Istemci } from '../veri/istemci';
 import type { EvrenOzeti } from '../veri/api';
 import { zamanYaz } from '../alan/islem-metni';
 import { git } from './Uygulama';
+import { SayfaYardimi } from './Rehber';
 import { IceAktar, YedektenGeriYukle } from './Tasima';
 
 export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
@@ -30,7 +31,7 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
       <header class="ust"><span class="ad">Dünya Atlası</span><span class="bosluk" /><a class="dugme sade" href="#/esitleme">Eşitleme ve cihazlar</a></header>
       <main class="sayfa">
         <div class="satir" style="justify-content:space-between">
-          <h1>Evrenler</h1>
+          <div class="baslik-satiri"><h1>Evrenler</h1><SayfaYardimi sayfa="evrenler" /></div>
           <div class="satir">
             <button class="dugme" onClick={() => setPanel(panel === 'yedek' ? 'yok' : 'yedek')} aria-expanded={panel === 'yedek'}>Yedekten geri yükle</button>
             <button class="dugme" onClick={() => setPanel(panel === 'ice' ? 'yok' : 'ice')} aria-expanded={panel === 'ice'}>İçe aktar</button>
@@ -42,7 +43,7 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
         {aciliyor && (
           <form class="kart" style="margin-top:16px" onSubmit={olustur}>
             <label for="yeni-evren-adi"><h3>Yeni evrenin adı</h3></label>
-            <p class="soluk kucuk">Adı sonradan değiştirebilirsin.</p>
+            <p class="soluk kucuk">Adı sonradan değiştirebilirsiniz.</p>
             <div class="satir">
               <input id="yeni-evren-adi" class="girdi" style="flex:1;min-width:200px" value={yeniAd} autoFocus
                 onInput={(e) => setYeniAd((e.target as HTMLInputElement).value)} />
@@ -63,7 +64,7 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
             {evrenler.map((e) => (
               <button class="kart" key={e.kod} onClick={() => git(`/e/${e.kod}`)}>
                 <h3>{e.ad}</h3>
-                <div class="soluk kucuk">{e.sonAcilis ? `Son açılış ${zamanYaz(e.sonAcilis)}` : `Oluşturuldu ${zamanYaz(e.olusturma)}`}</div>
+                <div class="soluk kucuk">{e.sonAcilis ? `Son açılış: ${zamanYaz(e.sonAcilis)}` : `Oluşturulma: ${zamanYaz(e.olusturma)}`}</div>
               </button>
             ))}
           </div>

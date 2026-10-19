@@ -56,7 +56,7 @@ export async function izinAl(): Promise<{ jeton: string; bitis: number }> {
       callback: (y) => {
         if (y.error || !y.access_token) { no(new Error(y.error === 'access_denied' ? 'Google izni verilmedi.' : 'Google izni alınamadı.')); return; }
         if (!window.google!.accounts.oauth2.hasGrantedAllScopes(y, 'https://www.googleapis.com/auth/drive.appdata')) {
-          no(new Error('Drive izni verilmedi. Bağlanırken programın kendi Drive klasörüne izin kutusunu işaretleyin.')); return;
+          no(new Error('Drive izni verilmedi. Bağlanırken programın kendi Drive klasörüne erişim izni veren kutuyu işaretleyin.')); return;
         }
         ok({ jeton: y.access_token, bitis: Date.now() + Number(y.expires_in ?? 3600) * 1000 });
       },

@@ -39,7 +39,7 @@ export function secenekler(e: EvrenVt): DonusumSecenekleri {
   };
 }
 export function yaz(b: DonusumBaglami, kod: string | null, t: DonusumGirdisi, yeniler: DonusumYeniKaydi[] = []) {
-  if (!t || !BICIMLER.includes(t.bicim) || !Array.isArray(t.kaynaklar) || !Array.isArray(t.hedefler) || !Array.isArray(t.devirler) || !Array.isArray(yeniler)) throw new Error('Dönüşüm seçimi geçersiz.');
+  if (!t || !BICIMLER.includes(t.bicim) || !Array.isArray(t.kaynaklar) || !Array.isArray(t.hedefler) || !Array.isArray(t.devirler) || !Array.isArray(yeniler)) throw new Error('Dönüşüm seçimi okunamadı.');
   if (t.kaynaklar.length > 50 || t.hedefler.length > 50 || t.devirler.length > 200 || yeniler.length > 50) throw new Error('Çok fazla seçim var.');
   // Birleştirilmiş kayıtların eski kodları birleştikleri kayda çevrilir.
   const y = (k: unknown) => typeof k === 'string' ? yonlendir(b.e.db, k) : k as string;
@@ -49,7 +49,7 @@ export function yaz(b: DonusumBaglami, kod: string | null, t: DonusumGirdisi, ye
   if (kaynaklar.length !== t.kaynaklar.length || hedefler.length !== t.hedefler.length) throw new Error('Aynı kayıt iki kez seçilemez.');
   const uygun = t.bicim === 'birlesme' ? kaynaklar.length >= 2 && hedefler.length === 1
     : t.bicim === 'bolunme' ? kaynaklar.length === 1 && hedefler.length >= 2 : kaynaklar.length === 1 && hedefler.length === 1;
-  if (!uygun) throw new Error('Birleşmede en az iki önceki ve bir devam; bölünmede bir önceki ve en az iki devam; dönüşümde birer kayıt seçin.');
+  if (!uygun) throw new Error('Birleşme için en az iki önceki kayıt ve bir devam kaydı, bölünme için bir önceki kayıt ve en az iki devam kaydı, dönüşüm için de birer kayıt seçin.');
   if (kaynaklar.some((k) => hedefler.includes(k))) throw new Error('Bir kayıt kendisinin devamı olamaz.');
   kaynaklar.forEach((k) => aktif(b.e, k));
   if (kod) { if (!kodGecerliMi(kod)) throw new Error('Dönüşüm bulunamadı.'); oku(b.e, kod); }

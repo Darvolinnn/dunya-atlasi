@@ -256,7 +256,7 @@ function OlayIzleriBolumu({
               rows={2}
               lang="tr"
               aria-label="Anlatılan hikâyesi"
-              placeholder="Bugün halk arasında veya kayıtlarda nasıl anlatılıyor?"
+              placeholder="Bugün halk arasında ya da yazılı kaynaklarda nasıl anlatılıyor?"
               value={anlatilanHikaye}
               onInput={(e) => setAnlatilanHikaye((e.target as HTMLTextAreaElement).value)}
             />

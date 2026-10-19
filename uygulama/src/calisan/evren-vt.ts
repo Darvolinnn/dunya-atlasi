@@ -49,7 +49,7 @@ export class EvrenVt {
     db.exec(GUNLUK_SEMA);
     const bicim = db.selectValue("SELECT v FROM meta WHERE k='veri_bicimi'") as string | undefined;
     if (bicim === undefined) db.exec({ sql: "INSERT INTO meta VALUES('veri_bicimi', ?)", bind: [String(VERI_BICIMI)] });
-    else if (Number(bicim) > VERI_BICIMI) throw new VeriBicimiHatasi(`Bu evren daha yeni bir sürümle kaydedilmiş (biçim ${bicim}). Güncelleme gerekli.`);
+    else if (Number(bicim) > VERI_BICIMI) throw new VeriBicimiHatasi(`Bu evren programın daha yeni bir sürümüyle kaydedilmiş (biçim ${bicim}). Açmak için programı güncelleyin.`);
     else if (Number(bicim) < VERI_BICIMI) db.exec({ sql: "UPDATE meta SET v=? WHERE k='veri_bicimi'", bind: [String(VERI_BICIMI)] });
     this.saatleriTamamla();
     db.exec('CREATE INDEX IF NOT EXISTS islemler_sira ON islemler(saat, kurulum, sira)');

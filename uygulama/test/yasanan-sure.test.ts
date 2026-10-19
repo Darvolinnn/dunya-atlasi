@@ -121,6 +121,6 @@ describe('yaşanan sürenin kayıtlı verilerden toplanması', () => {
     b.akisYaz({ evren, kod: akisKodu, akis: { ...a, oranlar: [{ bas: null, akis: 3, ana: [1, 1] }] } });
     h.kayitTarih({ evren, kod: sahne, ifade: '1041' }); b.kayitTarih({ evren, kod: sahne, ifade: '1042' });
     h.islemleriAl({ evren, islemler: b.islemleriVer({ evren, gorulen: h.gorulenler({ evren }) }) });
-    expect(oku()).toMatchObject({ takvimBelirsiz: true, enAz: null }); expect(oku().nedenler.join(' ')).toMatch(/akışın iki/);
+    expect(oku()).toMatchObject({ takvimBelirsiz: true, enAz: null }); expect(oku().nedenler.join(' ')).toMatch(/akışının iki/);
   });
 });

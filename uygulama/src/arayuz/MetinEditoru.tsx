@@ -361,7 +361,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     e.preventDefault();
     const v = gorunum.current;
     if (!v || !ayirma || !ayirma.ad.trim()) return;
-    if (v.state.doc !== ayirma.belge) { setAyirma({ ...ayirma, hata: 'Metin bu arada değişti; parçayı yeniden seç.' }); return; }
+    if (v.state.doc !== ayirma.belge) { setAyirma({ ...ayirma, hata: 'Metin bu arada değişti; parçayı yeniden seçin.' }); return; }
     const dilim = v.state.doc.slice(ayirma.from, ayirma.to);
     const ilk = dilim.content.firstChild;
     const belge = ilk && ilk.isBlock ? sema.node('doc', null, dilim.content) : sema.node('doc', null, [sema.node('paragraph', null, dilim.content)]);
@@ -520,10 +520,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           {calisma && <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => calisma.yanPanelAc(bag.hedef)}>Yan panelde aç</button>}
           <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => uygula((s, d) => { d?.(s.tr.removeMark(bag.from, bag.to, bagTuru)); return true; })}>Bağlantıyı kaldır</button>
         </>}
-        {v && !v.state.selection.empty && alan === 'govde' && <button type="button" class="arac" title="Seçili parçayı yeni bir kayda dönüştür; yerinde ona bağlantı kalır" onMouseDown={(e) => e.preventDefault()} onClick={ayirmaAc}>Yeni kayda ayır</button>}
-        {v && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili cümleyi bir kayda, bir değere ya da bir soruya bağla" onMouseDown={(e) => e.preventDefault()} onClick={isaretFormuAc}>İşaretle</button>}
-        {v && baglamParcalari && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili parçaya kendi tarihini, yerini ve bakış açısını ver" onMouseDown={(e) => e.preventDefault()} onClick={() => parcaFormuAc(null)}>Bağlam ver</button>}
-        {v && alan === 'govde' && !saltOkunur && <button type="button" class="arac" title="Başka bir kaydın metnini (efsane, mektup, şarkı) buraya al" onMouseDown={(e) => e.preventDefault()} onClick={alFormuAc}>Metin al</button>}
+        {v && !v.state.selection.empty && alan === 'govde' && <button type="button" class="arac" title="Seçili parça yeni bir kayda dönüşür; yerinde o kayda bağlantı kalır" onMouseDown={(e) => e.preventDefault()} onClick={ayirmaAc}>Yeni kayda ayır</button>}
+        {v && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili cümle bir kayda, bir değere ya da bir soruya bağlanır" onMouseDown={(e) => e.preventDefault()} onClick={isaretFormuAc}>İşaretle</button>}
+        {v && baglamParcalari && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili parçaya ayrı bir tarih, yer ve bakış açısı verilir" onMouseDown={(e) => e.preventDefault()} onClick={() => parcaFormuAc(null)}>Bağlam ver</button>}
+        {v && alan === 'govde' && !saltOkunur && <button type="button" class="arac" title="Başka bir kaydın metni (efsane, mektup, şarkı) buraya alınır" onMouseDown={(e) => e.preventDefault()} onClick={alFormuAc}>Metin al</button>}
         <span class="bosluk" />
         <span class="kayit-durumu soluk kucuk" aria-live="polite">{durumYazisi(durum)}</span>
       </div>
@@ -531,7 +531,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         <div class="isaret-seridi kucuk" aria-label="İşaretli cümle">
           {gorunenIsaretler.map((x) => (
             <span key={x.kod} class="satir">
-              <span>{x.kritik && <strong>Kritik · </strong>}İşaretli: {x.hedef ? <a href={`#/e/${evren}/k/${x.hedef.kod}`}>{x.hedef.ad}</a> : 'bağsız'}{x.hedefAlanAdi && ` · ${x.hedefAlanAdi}`}{x.iddia && ` · “${x.iddia}”`}</span>
+              <span>{x.kritik && <strong>Kritik · </strong>}İşaretli: {x.hedef ? <a href={`#/e/${evren}/k/${x.hedef.kod}`}>{x.hedef.ad}</a> : 'bağlantısız'}{x.hedefAlanAdi && ` · ${x.hedefAlanAdi}`}{x.iddia && ` · “${x.iddia}”`}</span>
               {!saltOkunur && <button type="button" class="dugme sade kucuk" onMouseDown={(e) => e.preventDefault()} onClick={() => isaretKaldir(x.kod)}>İşareti kaldır</button>}
             </span>
           ))}
@@ -555,14 +555,14 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       )}
       {isaretFormu && (
         <form class="kart ayirma" onSubmit={isaretle} aria-label="Cümleyi işaretle">
-          <p class="kucuk" style="margin:0 0 6px">“{isaretFormu.belge.textBetween(isaretFormu.from, isaretFormu.to, ' ').slice(0, 120)}” işaretlenecek. Metin değişmez; yalnızca bağ kurulur.</p>
+          <p class="kucuk" style="margin:0 0 6px">“{isaretFormu.belge.textBetween(isaretFormu.from, isaretFormu.to, ' ').slice(0, 120)}” işaretlenecek. Metin değişmez, yalnızca bağlantı kurulur.</p>
           <div class="satir">
             <span class="kucuk">Bağlı olduğu kayıt:</span>
             <button type="button" class="dugme kucuk" onClick={(e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setHedefSecici({ left: r.left, top: r.bottom + 4 }); }}>{isaretFormu.hedef?.ad ?? 'Kayıt seç'}</button>
             {isaretFormu.hedef && (
-              <label class="kucuk">Hangi bilgisi{' '}
+              <label class="kucuk">Hangi bilgisine{' '}
                 <select class="girdi kucuk-secim" value={isaretFormu.hedefAlan} onChange={(e) => setIsaretFormu({ ...isaretFormu, hedefAlan: (e.target as HTMLSelectElement).value })}>
-                  <option value="">Belirtmeden (kaydın kendisi)</option>
+                  <option value="">Belirtilmedi (kaydın tamamı)</option>
                   {[...new Set(isaretFormu.alanlar.map((a) => a.grup))].map((g) => (
                     <optgroup key={g} label={g}>{isaretFormu.alanlar.filter((a) => a.grup === g).map((a) => <option key={a.kod} value={a.kod}>{a.ad}</option>)}</optgroup>
                   ))}
@@ -571,9 +571,9 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
             )}
           </div>
           <div class="satir">
-            <input class="girdi" style="flex:1;min-width:200px" lang="tr" maxLength={300} aria-label="İddia" placeholder="Cümlenin söylediği, kısaca (isteğe bağlı)" value={isaretFormu.iddia}
+            <input class="girdi" style="flex:1;min-width:200px" lang="tr" maxLength={300} aria-label="İddia" placeholder="Cümle kısaca ne söylüyor? (isteğe bağlı)" value={isaretFormu.iddia}
               onInput={(e) => setIsaretFormu({ ...isaretFormu, iddia: (e.target as HTMLInputElement).value })} />
-            <label class="kucuk" title="Kritik işaretli cümle değişince program kısaca sorar"><input type="checkbox" checked={isaretFormu.kritik} onChange={(e) => setIsaretFormu({ ...isaretFormu, kritik: (e.target as HTMLInputElement).checked })} /> Kritik</label>
+            <label class="kucuk" title="Kritik olarak işaretlenen cümle değişince program ne yapılacağını sorar"><input type="checkbox" checked={isaretFormu.kritik} onChange={(e) => setIsaretFormu({ ...isaretFormu, kritik: (e.target as HTMLInputElement).checked })} /> Kritik</label>
             <button class="dugme ana kucuk">İşaretle</button>
             <button type="button" class="dugme sade kucuk" onClick={() => setIsaretFormu(null)}>Vazgeç</button>
           </div>
@@ -583,7 +583,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       {hedefSecici && <BaglantiSecici istemci={istemci} evren={evren} sorgu="" konum={hedefSecici} sec={(s) => hedefSec({ kod: s.kod, ad: s.ad })} kapat={() => setHedefSecici(null)} />}
       {ayirma && (
         <form class="kart ayirma satir" onSubmit={ayir} aria-label="Yeni kayda ayır">
-          <span class="kucuk">Seçili parça yeni kayda taşınacak; burada yerine ona bağlantı kalacak.</span>
+          <span class="kucuk">Seçili parça yeni bir kayda taşınacak; burada onun yerine o kayda bağlantı kalacak.</span>
           <input class="girdi" style="flex:1;min-width:180px" lang="tr" aria-label="Yeni kaydın adı" value={ayirma.ad} autoFocus
             onInput={(e) => setAyirma({ ...ayirma, ad: (e.target as HTMLInputElement).value })} />
           <span style="min-width:180px"><TurSecici deger={ayirma.tur} etiket="Yeni kaydın türü" onDegis={(t) => setAyirma({ ...ayirma, tur: t })} /></span>
@@ -594,7 +594,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       )}
       {bulunanTaslak && (
         <div class="uyari" role="alert" style="margin:8px 0">
-          <p class="kucuk"><strong>Bu metinde kaydedilmemiş yazı bulundu</strong> ({new Date(bulunanTaslak.zaman).toLocaleString('tr-TR')}). Program o sırada kaydedemeden kapanmış olabilir.</p>
+          <p class="kucuk"><strong>Bu metinde kaydedilmemiş yazı bulundu</strong> ({new Date(bulunanTaslak.zaman).toLocaleString('tr-TR')}). Program kaydetmeye fırsat bulamadan kapanmış olabilir.</p>
           <details class="kucuk"><summary>Kaydedilmemiş hâlini göster</summary>
             <p style="white-space:pre-wrap">{belgeYap(bulunanTaslak.spans).textBetween(0, belgeYap(bulunanTaslak.spans).content.size, '\n')}</p>
           </details>
@@ -602,7 +602,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
             <button type="button" class="dugme ana kucuk" onClick={async () => { const t = bulunanTaslak; setBulunanTaslak(null); await metinIslemi.current?.kurtar(t); }}>Kurtar</button>
             <button type="button" class="dugme sade kucuk" onClick={() => { void taslakSil(taslakDeposu(istemci), kurtarmaAnahtari(taslakAnahtari(evren, kayit, alan))); setBulunanTaslak(null); }}>Vazgeç, kayıtlı metin kalsın</button>
           </div>
-          <p class="soluk kucuk">Kurtar, o yazıyı şimdiki metinle birleştirir; sonradan kaydedilmiş yazı silinmez.</p>
+          <p class="soluk kucuk">“Kurtar”a basarsanız o yazı şimdiki metinle birleştirilir; sonradan kaydedilmiş yazı silinmez.</p>
         </div>
       )}
       <p class="soluk" style={{ padding: '0 20px', display: hazir || durum.tur === 'hata' ? 'none' : '' }}>Metin açılıyor…</p>
@@ -619,7 +619,7 @@ function durumYazisi(d: Durum): string {
     case 'kayitli': return d.zaman ? `Kaydedildi · ${saatYaz(d.zaman)}` : 'Kaydedildi';
     case 'bekliyor': return 'Yazıyorsunuz…';
     case 'kaydediliyor': return 'Kaydediliyor…';
-    case 'hata': return `Kaydedilemedi: ${d.mesaj}${d.taslak ? ' Yazdıkların bu cihazda taslak olarak korunuyor.' : ''}`;
+    case 'hata': return `Kaydedilemedi: ${d.mesaj}${d.taslak ? ' Yazdıklarınız bu cihazda taslak olarak korunuyor.' : ''}`;
   }
 }
 

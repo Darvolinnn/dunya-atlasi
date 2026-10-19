@@ -44,7 +44,7 @@ export function DelilBolumu({ istemci, evren, kod, saltOkunur }: { istemci: Iste
         </div>
       )}
       {d.okuyanlar.length > 0 && <p class="kucuk">Okuyanlar: {d.okuyanlar.map((o, i) => <>{i ? ', ' : ''}{bag(o.kisi)}{o.belge.kod !== d.belge.kod ? ` (${o.belge.ad})` : ''}</>)}</p>}
-      {!d.deliller.length && <p class="soluk kucuk">Bu belge henüz bir sorunun dosyasında anlatım olarak geçmiyor. Bir sorunun “İddia dosyası”nda kaynağı bu belge olan bir anlatım ekleyin.</p>}
+      {!d.deliller.length && <p class="soluk kucuk">Bu belge henüz hiçbir sorunun dosyasında anlatım olarak geçmiyor. Delil olarak kullanmak için bir sorunun “İddia dosyası” bölümünde kaynağı bu belge olan bir anlatım ekleyin.</p>}
       {d.notlar.map((n) => <p class="soluk kucuk">{n}</p>)}
       {duzenle && <DelilFormu istemci={istemci} evren={evren} d={d} kapat={() => setDuzenle(false)} />}
     </section>

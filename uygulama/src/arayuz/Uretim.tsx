@@ -25,7 +25,7 @@ export function UretimOzetiBolumu({ istemci, evren, kod, surum }: { istemci: Ist
   return (
     <section class="surecler" aria-label="Üretim">
       <h2>Üretim</h2>
-      {satirlar.every(([, l]) => !l.length) ? <p class="soluk kucuk">Üretim bağı kayıtlı değil. İlişkiler bölümünden “Üreten”, “Girdisi”, “Açığı olan yer”, “Taşıyan yol” gibi bağları ekleyebilirsin.</p> : (
+      {satirlar.every(([, l]) => !l.length) ? <p class="soluk kucuk">Üretim bağı kayıtlı değil. İlişkiler bölümünden “Üreten”, “Girdisi”, “Açığı olan yer”, “Taşıyan yol” gibi bağları ekleyebilirsiniz.</p> : (
         <ul class="toplanan-listesi">{satirlar.filter(([, l]) => l.length).map(([ad, l]) => <li key={ad}><span class="soluk">{ad}:</span> {liste(evren, l)}</li>)}</ul>
       )}
     </section>
@@ -64,7 +64,7 @@ function KesintiSatiri({ istemci, evren, a, zincir }: { istemci: Istemci; evren:
       {a.digerKaynaklar.length > 0 && <div class="kucuk soluk">Başka kaynakları da var: {liste(evren, a.digerKaynaklar)}. Etkilenmeyebilir.</div>}
       {a.iliski && (
         <div class="kucuk">
-          {sure ? `Dayanma: ${sure}. Bu süre içinde etkilenmeyebilir.` : <span class="soluk">Ne zaman etkileneceği bulunamıyor: dayanma süresi kayıtlı değil.</span>}
+          {sure ? `Dayanma süresi: ${sure}. Bu süre içinde etkilenmeyebilir.` : <span class="soluk">Dayanma süresi kayıtlı olmadığı için ne zaman etkileneceği bilinmiyor.</span>}
           {d?.ikameKayit && <> İkamesi: <a href={`#/e/${evren}/k/${d.ikameKayit.kod}`}>{d.ikameKayit.ad}</a>{ikameEtkilenir ? ' (o da bu kesintiden etkilenebilir)' : ''}.</>}
           {d?.not && <span class="soluk"> {d.not}</span>}
           {' '}<button class="dugme sade kucuk" onClick={() => setDuzenle(!duzenle)}>{d ? 'Dayanıklılığı düzenle' : 'Dayanma süresi yaz'}</button>

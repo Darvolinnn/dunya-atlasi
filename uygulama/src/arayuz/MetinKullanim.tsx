@@ -10,7 +10,7 @@ import type { Secim } from './BaglantiSecici';
 export const BICIMLER: { kod: KullanimBicimi; ad: string; aciklama: string }[] = [
   { kod: 'bagli', ad: 'Ortak kaynağa bağla', aciklama: 'Kaynak değişince burada haber verilir; isterseniz kaynaktan güncellersiniz.' },
   { kod: 'kopya', ad: 'Kopyala', aciklama: 'Kaynağın bugünkü hâli alınır; sonraki değişiklikler izlenmez.' },
-  { kod: 'turev', ad: 'Bağımsız türev', aciklama: 'Kaynaktan doğar, kendi yoluna gider; nereden geldiği bilinir.' },
+  { kod: 'turev', ad: 'Bağımsız türev', aciklama: 'Kaynaktan doğar ama kendi yoluna gider; nereden geldiği kayıtlı kalır.' },
 ];
 export const bicimAdi = (b: KullanimBicimi) => ({ bagli: 'ortak kaynağa bağlı', kopya: 'kopya', turev: 'bağımsız türev' })[b];
 
@@ -61,12 +61,12 @@ export function KullanimSeridi({ istemci, evren, k, saltOkunur, islem, kaldir }:
         <span>
           {k.kaynak ? <><a href={`#/e/${evren}/k/${k.kaynak.kod}`}>{k.kaynak.ad}</a> metninden alındı</> : 'Kaynak metin silinmiş'} · {bicimAdi(k.bicim)}
           {k.kaynakDegisti && <strong> · Kaynak metin değişti.</strong>}
-          {k.ayrildi && ' · Buradaki metin alınan hâlden farklı.'}
+          {k.ayrildi && ' · Buradaki metin, alındığı hâlden farklı.'}
         </span>
         {!saltOkunur && k.bicim === 'bagli' && k.kaynak && (k.kaynakDegisti || k.ayrildi) && dugme('Kaynaktan güncelle', () => yap(() => istemci.iste('metinKullanimGuncelle', { evren, kod: k.kod })))}
         {!saltOkunur && k.bicim !== 'turev' && dugme('Bağımsız türeve çevir', () => yap(() => istemci.iste('metinKullanimTurev', { evren, kod: k.kod })))}
         {!saltOkunur && dugme('Başka metne taşı', () => setTasi(!tasi))}
-        {!saltOkunur && dugme('Bağı kaldır', kaldir)}
+        {!saltOkunur && dugme('Bağlantıyı kaldır', kaldir)}
       </span>
       {tasi && <span class="satir">Taşınacağı metin: <KayitSec istemci={istemci} evren={evren} secili={null} etiket="Kaydı seç"
         sec={(s) => { if (s) { setTasi(false); yap(() => istemci.iste('metinKullanimTasi', { evren, kod: k.kod, hedef: s.kod })); } }} /></span>}
@@ -92,7 +92,7 @@ export function KullanildigiYerler({ istemci, evren, kod }: { istemci: Istemci; 
           </li>
         ))}
       </ul>
-      <p class="soluk kucuk">Yayımlanmış bir eserdeki hâli, yayım sürümünde sabit kalır; buradaki değişiklik onu değiştirmez.</p>
+      <p class="soluk kucuk">Yayımlanmış bir eserdeki hâli o yayım sürümünde sabit kalır; burada yapılan değişiklikler onu etkilemez.</p>
     </section>
   );
 }

@@ -63,7 +63,7 @@ describe('zaman akışları', () => {
     expect(t.akis).toBe('fey00001');
     const bas = tarihCoz('1 Kar 400', ana)!.eksen!.enErken!;
     expect(t.eksen!.enErken).toBe(bas + Math.floor((29 * GUN_PARCA) / 10));
-    expect(tarihAciklamasi(t, z)).toContain('Fey akışının 30. günü; ana akışta');
+    expect(tarihAciklamasi(t, z)).toContain('Fey akışının 30. günü. Ana akışta');
   });
   it('oran aralıksa sonuç da aralıktır; bilinmeyen dönemde yalnızca sonrası bilinir', () => {
     const a: Akis = { ...fey, oranlar: [{ bas: null, akis: 1, ana: [1, 2] }, { bas: '1 Kar 401', akis: 1, ana: null }] };

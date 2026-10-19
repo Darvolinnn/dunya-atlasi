@@ -25,16 +25,16 @@ export function bagimlilar(db: Database, kod: string): Bagimlilar {
     const k = ad(db, r.konu as string);
     if (!k) continue;
     const bas = String(r.baslangic ?? '').includes(kod), bit = String(r.bitis ?? '').includes(kod);
-    hesap.push({ ...k, aciklama: `“${r.ozellik}” durumunun ${bas && bit ? 'başlangıcı ve bitişi' : bas ? 'başlangıcı' : 'bitişi'} bu olaya bağlı; kendiliğinden kayar.` });
+    hesap.push({ ...k, aciklama: `“${r.ozellik}” durumunun ${bas && bit ? 'başlangıcı ve bitişi' : bas ? 'başlangıcı' : 'bitişi'} bu olaya bağlı, bu yüzden kendiliğinden kayar.` });
   }
   for (const r of db.selectObjects(`SELECT i.a FROM iliskiler i JOIN alan_degerleri v ON v.kayit=i.a AND v.alan='dogum'
       WHERE i.tur IN ('olayda','sahnede') AND i.b=? AND i.silindi IS NULL`, [kod])) {
     const k = ad(db, r.a as string);
-    if (k) hesap.push({ ...k, aciklama: 'Doğum tarihi biliniyor; buradaki yaşı yeniden hesaplanır.' });
+    if (k) hesap.push({ ...k, aciklama: 'Doğum tarihi bilindiği için buradaki yaşı yeniden hesaplanır.' });
   }
   for (const r of db.selectObjects(`SELECT kod FROM kayitlar WHERE silindi IS NULL AND kod!=? AND json_extract(tarih,'$.bicim')='goreli' AND tarih LIKE ?`, [kod, `%"olay":"${kod}"%`])) {
     const k = ad(db, r.kod as string);
-    if (k) hesap.push({ ...k, aciklama: 'Tarihi bu kayda göre verilmiş; olası yeri kendiliğinden yeniden hesaplanır.' });
+    if (k) hesap.push({ ...k, aciklama: 'Tarihi bu kayda göre verilmiş, bu yüzden olası yeri kendiliğinden yeniden hesaplanır.' });
   }
   const so = db.selectValue('SELECT sahne_olayi FROM kayitlar WHERE kod=?', [kod]) as string | null | undefined;
   if (so) { const k = ad(db, so); if (k) hesap.push({ ...k, aciklama: 'Sahne olayının tarihi sahneden gelir.' }); }
@@ -53,7 +53,7 @@ export function bagimlilar(db: Database, kod: string): Bagimlilar {
     const oteki = r.a === kod ? (r.b as string) : (r.a as string);
     const k = ad(db, oteki);
     if (!k) continue;
-    bagimli.push({ ...k, aciklama: r.a === kod ? 'Bu sahnenin anlattığı olay.' : 'Bu olayı anlatan sahne; tarihleri birbirini tutmalı.' });
+    bagimli.push({ ...k, aciklama: r.a === kod ? 'Bu sahnenin anlattığı olay.' : 'Bu olayı anlatan sahne. Tarihleri birbirini tutmalı.' });
   }
   const tekil = (l: EtkiSatiri[]) => l.filter((x, i) => l.findIndex((y) => y.kod === x.kod && y.aciklama === x.aciklama) === i);
 

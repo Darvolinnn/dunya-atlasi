@@ -16,11 +16,21 @@ const hataYaz = (e: unknown) => (e as Error).message;
 
 const HUKUM_YAZISI: Record<OlcekliSonucZarfi['hukum'], string> = {
   cozum_bulundu: 'Tanımlı model içinde çözüm bulundu',
-  kayitli_seceneklerde_bulunamadi: 'Kayıtlı seçeneklerde çözüm bulunamadı (evrende imkânsız demek değildir)',
-  denetlenemiyor: 'Veri eksikliği nedeniyle hesaplanamıyor',
+  kayitli_seceneklerde_bulunamadi: 'Kayıtlı seçeneklerle çözüm bulunamadı (bu, evrende imkânsız olduğunu göstermez)',
+  denetlenemiyor: 'Bilgi eksik olduğu için hesaplanamıyor',
 };
 
 type TiklamaHedefi = 'yok' | 'olcek1' | 'olcek2' | 'olcumBas' | 'olcumBit' | 'konturBas' | 'araziNokta';
+
+const HEDEF_YAZISI: Record<TiklamaHedefi, string> = {
+  yok: '',
+  olcek1: 'ölçeğin 1. noktası',
+  olcek2: 'ölçeğin 2. noktası',
+  olcumBas: 'ölçümün başlangıcı',
+  olcumBit: 'ölçümün bitişi',
+  konturBas: 'erişim konturlarının başlangıcı',
+  araziNokta: 'arazinin yeni köşesi',
+};
 
 export function OlcekliHaritaBolumu({
   istemci,
@@ -278,7 +288,7 @@ export function OlcekliHaritaBolumu({
 
       {!durum?.olcek ? (
         <p class="uyari kucuk">
-          Harita ölçeksiz; görselden mesafe ya da süre uydurulmaz. Ölçekli hesaplar için iki nokta ve mesafe girin.
+          Bu haritanın ölçeği yok, bu yüzden görselden mesafe ya da süre hesaplanmaz. Ölçekli hesap için iki nokta seçip aralarındaki mesafeyi girin.
         </p>
       ) : (
         <p class="kucuk">
@@ -339,7 +349,7 @@ export function OlcekliHaritaBolumu({
         </svg>
         {hedef !== 'yok' && (
           <p class="soluk kucuk">
-            Yukarıdaki harita uzayına dokunarak noktayı seçin ({hedef}).{' '}
+            Noktayı seçmek için yukarıdaki haritaya dokunun ({HEDEF_YAZISI[hedef]}).{' '}
             <button type="button" class="dugme sade kucuk" onClick={() => setHedef('yok')}>
               Vazgeç
             </button>
@@ -364,7 +374,7 @@ export function OlcekliHaritaBolumu({
       {olcekAcik && !h.silindi && (
         <form class="kart" onSubmit={olcekKaydet}>
           <div class="alan">
-            <span class="alan-adi">1. ve 2. nokta (harita uzayında)</span>
+            <span class="alan-adi">Haritada 1. ve 2. nokta</span>
             <div class="satir">
               <input
                 class="girdi"
@@ -458,7 +468,7 @@ export function OlcekliHaritaBolumu({
       {varsayilanAcik && !h.silindi && (
         <form class="kart" onSubmit={varsayilanKaydet}>
           <p class="soluk kucuk">
-            Arazisi çizilmemiş yerler için ulaşım biçimine ve isteğe bağlı mevsime göre hız girin. Girilmezse orası hesapta “bilinmiyor” sayılır.
+            Arazisi çizilmemiş yerler için ulaşım biçimine (isterseniz mevsime de) göre hız girin. Hız girilmeyen yerler hesapta “bilinmiyor” sayılır.
           </p>
           <HizKurallariDuzenleyici kurallar={varsayilanKural} setKurallar={setVarsayilanKural} />
           <div class="satir">
@@ -489,7 +499,7 @@ export function OlcekliHaritaBolumu({
                 value={araziCizim}
                 onChange={(e) => setAraziCizim((e.target as HTMLSelectElement).value)}
               >
-                <option value="">Yeni çokgen noktaları gir</option>
+                <option value="">Haritada yeni köşeler belirle</option>
                 {bolgeCizimleri.map((c) => (
                   <option key={c.kod} value={c.kod}>
                     {c.kayit.ad} ({c.noktalar.length} köşe)
@@ -609,7 +619,7 @@ export function OlcekliHaritaBolumu({
         {olcumSonuc && (
           <div class="olcekli-sonuc">
             {olcumDurum === 'onceki_sonuc' && (
-              <p class="uyari kucuk">Önceki sonuç (dayandığı harita verisi değişti; yenilemek için tekrar ölçün).</p>
+              <p class="uyari kucuk">Bu önceki sonuçtur. Harita o zamandan beri değişti, güncel sonuç için yeniden ölçün.</p>
             )}
             {olcumSonuc.uyari && <p class="uyari kucuk">{olcumSonuc.uyari}</p>}
             {olcumSonuc.duzMesafe !== null && (
@@ -642,7 +652,7 @@ export function OlcekliHaritaBolumu({
         {konturSonuc && (
           <div class="olcekli-sonuc">
             {konturDurum === 'onceki_sonuc' && (
-              <p class="uyari kucuk">Önceki sonuç (dayandığı harita verisi değişti; yenilemek için tekrar hesaplayın).</p>
+              <p class="uyari kucuk">Bu önceki sonuçtur. Harita o zamandan beri değişti, güncel sonuç için yeniden hesaplayın.</p>
             )}
             {konturSonuc.uyari && <p class="uyari kucuk">{konturSonuc.uyari}</p>}
             {konturSonuc.konturlar.length > 0 && (
@@ -681,7 +691,7 @@ function HizKurallariDuzenleyici({
 
   return (
     <div class="alan">
-      <span class="alan-adi">Ulaşım ve mevsime göre ilerleme hızları</span>
+      <span class="alan-adi">Ulaşım biçimine ve mevsime göre günlük hız</span>
       {kurallar.map((k, i) => (
         <div class="satir" key={i}>
           <input
@@ -768,7 +778,7 @@ function SonucZarfiGorunumu({
       <summary>Sonuç dayanağı ve varsayımlar</summary>
       <ul class="isaret-listesi">
         <li><strong>Çalışma kipi:</strong> Ölçekli geometri</li>
-        <li><strong>Sonucun türü:</strong> Bu varsayımlarla tahmin</li>
+        <li><strong>Sonucun türü:</strong> Bu varsayımlara dayanan tahmin</li>
         <li><strong>Hüküm:</strong> {HUKUM_YAZISI[zarf.hukum]}</li>
         <li><strong>Güncellik:</strong> {guncellik === 'guncel' ? 'Güncel' : 'Önceki sonuç'}</li>
         {zarf.olcekOzeti && <li><strong>Ölçek:</strong> {zarf.olcekOzeti}</li>}
@@ -777,7 +787,7 @@ function SonucZarfiGorunumu({
         <li><strong>Mola varsayımı:</strong> {zarf.molaVarsayimi}</li>
         {zarf.izgaraAraligiBirim !== null && (
           <li>
-            <strong>Izgara aralığı:</strong> {zarf.izgaraAraligiBirim} {zarf.birim} ({zarf.izgaraAraligiUzay} uzay birimi)
+            <strong>Izgara aralığı:</strong> {zarf.izgaraAraligiBirim} {zarf.birim} ({zarf.izgaraAraligiUzay} harita birimi)
           </li>
         )}
         <li><strong>Kapsam:</strong> {zarf.kapsamNotu}</li>

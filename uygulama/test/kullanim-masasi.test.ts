@@ -26,7 +26,7 @@ describe('neden her yerde kullanılmıyor masası (F12)', () => {
     expect(m.alanlar.map((a) => [a.ad || a.kayitKaydi?.ad, a.maliyet, a.yazilmamis])).toEqual([
       ['Uydurma mahkeme', 'bir gün oruç', ['erisim', 'karsiOnlem']], ['Diplomasi', '', ['maliyet', 'karsiOnlem', 'yasak']]]);
     expect(m.adaylar.map((a) => a.ad)).toEqual(['Uydurma lonca']);
-    expect(m.not).toContain('hüküm vermez');
+    expect(m.not).toContain('karar vermez');
     const son = h.islemGunlugu({ evren, sinir: 1 })[0];
     expect(islemAciklamasi(son.tur, son.veri, () => 'Uydurma doğruluk büyüsü')).toBe('Uydurma doğruluk büyüsü: kullanım masası değişti');
     // Aynı tanım yeniden yazılınca yeni işlem olmaz.

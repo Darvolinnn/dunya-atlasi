@@ -281,10 +281,10 @@ export function katmanHizala(b: HaritaBaglami, harita: string, katman: string, n
     const temiz = noktalar.slice(0, 50).map((n) => ({ gorsel: [Number(n.gorsel[0]), Number(n.gorsel[1])] as [number, number], uzay: [Number(n.uzay[0]), Number(n.uzay[1])] as [number, number] }));
     if (temiz.some((n) => ![...n.gorsel, ...n.uzay].every(Number.isFinite))) throw new Error('Noktalardan biri geçersiz.');
     const x = hizala(temiz);
-    if (!x) throw new Error('Bu noktalarla oturtma yapılamıyor. En az iki ayrı nokta çifti gerekir; üç çiftte noktalar aynı doğru üzerinde olmamalı.');
+    if (!x) throw new Error('Bu noktalarla hizalama yapılamıyor. En az iki ayrı nokta çifti gerekir; üç çiftte noktalar aynı doğru üzerinde olmamalı.');
     deger = { donusum: x.donusum, noktalar: temiz };
   } else {
-    if (!donusumGecerli(donusum)) throw new Error('Geçersiz oturtma.');
+    if (!donusumGecerli(donusum)) throw new Error('Bu hizalama kullanılamıyor.');
     deger = { donusum };
   }
   b.yaz([{ tur: 'harita_katman', veri: { harita, haritaAd: h.ad, katman, katmanAd: k.ad, alan: 'donusum', deger } }], h.yer ? [h.yer] : []);

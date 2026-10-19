@@ -51,7 +51,7 @@ export function sozlesmeMaddeYaz(b: Baglam, kod: string | null, t: SozlesmeTanim
   if (!t.kapsam || !['evren', 'eserler'].includes(t.kapsam.tur)) throw new Error('Maddenin kapsamını seçin.');
   let kapsam: SozlesmeTanimi['kapsam'] = { tur: 'evren' };
   if (t.kapsam.tur === 'eserler') {
-    if (!Array.isArray(t.kapsam.eserler) || !t.kapsam.eserler.length || t.kapsam.eserler.length > 500) throw new Error('En az bir eser seçin; en çok 500 eser seçilebilir.');
+    if (!Array.isArray(t.kapsam.eserler) || !t.kapsam.eserler.length || t.kapsam.eserler.length > 500) throw new Error('En az bir, en çok 500 eser seçin.');
     kapsam = { tur: 'eserler', eserler: [...new Set(t.kapsam.eserler.map((k) => kayit(b.e, k, 'eser').kod))] };
   }
   if (!Array.isArray(t.bagliKayitlar) || t.bagliKayitlar.length > 500) throw new Error('En çok 500 bağlı kayıt seçilebilir.');
@@ -76,8 +76,8 @@ export function sozlesmeDisaridaYaz(b: Baglam, madde: string, eser: string, disa
   maddeVar(b.e, madde);
   const k = kayit(b.e, eser, 'eser').kod;
   const m = sozlesmeMaddeleri(b.e).find((m) => m.kod === madde);
-  if (!m || m.kapsam.tur !== 'evren') throw new Error('Yalnız evrenin etkin bir maddesi bu eserden dışarıda bırakılabilir.');
-  if (typeof disarida !== 'boolean') throw new Error('Eserde geçerli olup olmadığını seçin.');
+  if (!m || m.kapsam.tur !== 'evren') throw new Error('Bir eserin dışında yalnızca bütün evrende geçerli olan etkin bir madde bırakılabilir.');
+  if (typeof disarida !== 'boolean') throw new Error('Maddenin bu eserde geçerli olup olmadığını seçin.');
   b.yaz([{ tur: 'sozlesme_disarida_yaz', veri: { madde, eser: k, disarida } }], [k, ...m.bagliKayitlar]);
 }
 export function eserSozlesmesi(e: EvrenVt, eser: string): EserSozlesmesi {

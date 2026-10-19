@@ -35,15 +35,15 @@ export function KuralOrnekleriBolumu({ istemci, evren, kural, surum }: { istemci
   return (
     <div class="kural-ornekleri" aria-label="Örnek durumlar">
       <h3 class="kucuk">Örnek durumlar</h3>
-      <p class="soluk kucuk">Bir kişi, bir yer ve isteğe bağlı tarih için kuralın ne yapması gerektiğini yazın. Kural değişince sonuçlar yeniden hesaplanır; örnekler kendiliğinden değişmez.</p>
-      {!!l.ornekler.length && <p class="kucuk">{farkli ? `${farkli} örnek beklenenden farklı.` : 'Hiçbir örnek beklenenden farklı değil.'}{l.oncekiTanimVar ? ` Son değişiklikle sonucu değişen: ${degisen}.` : ''}</p>}
+      <p class="soluk kucuk">Bir kişi, bir yer ve isterseniz bir tarih seçin; kuralın bu durumda uygulanması gerekip gerekmediğini belirtin. Kural değişince sonuçlar yeniden hesaplanır, örneklerin kendisi değişmez.</p>
+      {!!l.ornekler.length && <p class="kucuk">{farkli ? `${farkli} örnek beklenenden farklı.` : 'Hiçbir örnek beklenenden farklı değil.'}{l.oncekiTanimVar ? ` Son değişiklikle sonucu değişen örnek sayısı: ${degisen}.` : ''}</p>}
       <ul class="toplanan-listesi">
         {l.ornekler.map((o) => (
           <li key={o.kod} class={o.hukum === 'uyariyor' ? 'ornek-farkli' : ''}>
             <strong>{o.kisi.ad}</strong> · {o.yer.ad}{o.tanim.tarih ? ` · ${o.tanim.tarih}` : ''}
             <span class="soluk kucuk"> · beklenen: {BEKLENTILER.find((b) => b.kod === o.tanim.beklenen)!.ad.toLocaleLowerCase('tr-TR')}</span>
             <div class="kucuk"><strong>{HUKUM[o.hukum]}</strong>: kural şu an {SONUC[o.sonuc]}. {o.neden}</div>
-            {o.onceki !== null && o.onceki !== o.sonuc && <div class="kucuk uyari">Son değişiklikten önce {SONUC[o.onceki]}.</div>}
+            {o.onceki !== null && o.onceki !== o.sonuc && <div class="kucuk uyari">Son değişiklikten önceki sonuç: {SONUC[o.onceki]}.</div>}
             {o.tanim.not && <div class="kucuk soluk">{o.tanim.not}</div>}
             <button class="dugme sade kucuk" onClick={() => onayla('Bu örnek kaldırılsın mı?') && istemci.iste('kuralOrnegiSil', { evren, kod: o.kod }).then(yukle, (x) => setHata(hataYaz(x)))}>Örneği kaldır</button>
           </li>

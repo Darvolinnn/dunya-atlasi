@@ -80,7 +80,7 @@ describe('keşif soruları (F31)', () => {
     const a = r.adaylar[0];
     expect([a.konu?.kod, a.yer, a.aralik, a.kisiler.map((k) => k.ad).sort()]).toEqual([kilic, null, 'aynı dönemde geçerli', ['Bora', 'Ela']]);
     expect(r.adaylar.flatMap((x) => x.dayanaklar).join(' ')).toContain('Uydurma lonca tanıyor');
-    expect(r.not).toContain('karar vermez');
+    expect(r.not).toContain('siz karar verirsiniz');
     const { kod } = h.kesifAdayiKaydet({ evren, bicim: 'mesele', ad: 'Kılıç kimin?', aciklama: a.yazi, kisiler: a.kisiler.map((k) => k.kod), yer: null, konu: kilic });
     expect(h.kayit({ evren, kod }).tur).toBe('acik_mesele');
     expect(() => h.kesifSorusu({ evren, sablon: 'farkli_inananlar' })).toThrow('soru');

@@ -24,7 +24,7 @@ export function KimlikBolumu({ istemci, evren, kod, tur }: { istemci: Istemci; e
   return (
     <section class="kimlik-bolumu" aria-label="Kimlikler">
       <h2>{kisi ? 'Kullandığı kimlikler' : 'Bu kimliği kullananlar'}</h2>
-      {kisi && !b.kimlikler.length && <p class="soluk kucuk">Bir kişi birden çok kimlik kullanabilir (“Kara Tilki”). Kimlikler ayrı kayıttır; olay ve sahneleri burada da görünür.</p>}
+      {kisi && !b.kimlikler.length && <p class="soluk kucuk">Bir kişi birden çok kimlik kullanabilir (ör. “Kara Tilki”). Her kimlik ayrı bir kayıttır; kimliğin olayları ve sahneleri burada da görünür.</p>}
       <ul class="toplanan-listesi">
         {(kisi ? b.kimlikler : b.kullananlar).map((k) => (
           <li key={k.iliski}>
@@ -70,7 +70,7 @@ function KimligeAyir({ istemci, evren, kisi, kapat }: { istemci: Istemci; evren:
   const ayir = () => istemci.iste('kimlikAyir', { evren, kisi, ad, iliskiler: [...secili], baslangic: bas, bitis: bit }).then(kapat, (x) => setHata(hataYaz(x)));
   return (
     <div class="kart">
-      <p class="kucuk">Yeni bir kimlik kaydı açılır ve bu kişiyle “kullandığı kimlik” bağıyla bağlanır. Aşağıda işaretlediğiniz bağlar kimliğe taşınır; ötekiler kişide kalır. Eski metinlerdeki adlar değişmez.</p>
+      <p class="kucuk">Yeni bir kimlik kaydı açılır ve bu kişiye “kullandığı kimlik” ilişkisiyle bağlanır. Aşağıda işaretlediğiniz ilişkiler kimliğe taşınır, ötekiler kişide kalır. Eski metinlerdeki adlar değişmez.</p>
       <div class="satir">
         <input class="girdi" style="flex:1;min-width:160px" lang="tr" aria-label="Kimliğin adı" placeholder="Kimliğin adı (ör. Kara Tilki)" value={ad} onInput={(e) => setAd((e.target as HTMLInputElement).value)} />
         <Tarihler bas={bas} bit={bit} setBas={setBas} setBit={setBit} />
@@ -79,9 +79,9 @@ function KimligeAyir({ istemci, evren, kisi, kapat }: { istemci: Istemci; evren:
         <ul class="secim-listesi kucuk">
           {adaylar.map((a) => <li key={a.iliski}><label><input type="checkbox" checked={secili.has(a.iliski)} onChange={() => degis(a.iliski)} /> {a.baslik}</label></li>)}
         </ul>
-      ) : <p class="soluk kucuk">Bu kişinin taşınabilecek bir bağı yok.</p>}
+      ) : <p class="soluk kucuk">Bu kişinin taşınabilecek bir ilişkisi yok.</p>}
       <div class="satir">
-        <button class="dugme kucuk" disabled={!ad.trim()} onClick={ayir}>{secili.size ? `Ayır ve ${secili.size} bağı taşı` : 'Ayır'}</button>
+        <button class="dugme kucuk" disabled={!ad.trim()} onClick={ayir}>{secili.size ? `Ayır ve ${secili.size} ilişkiyi taşı` : 'Ayır'}</button>
         <button class="dugme sade kucuk" onClick={kapat}>Vazgeç</button>
       </div>
       {hata && <p class="hata kucuk">{hata}</p>}

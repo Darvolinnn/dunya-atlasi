@@ -48,7 +48,7 @@ function HaritaListesi({ istemci, evren }: { istemci: Istemci; evren: string }) 
   if (!liste) return <p class="soluk">Açılıyor…</p>;
   return (
     <div class="haritalar">
-      <p class="soluk kucuk">Harita görselini yükle, üstüne işaret koy ve her işareti bir kayda bağla. Bir yerin yeri bilinmiyorsa bunu da söyleyebilirsin; efsanevi bir şehir için nokta gerekmez.</p>
+      <p class="soluk kucuk">Bir harita görseli yükleyin, üstüne işaretler koyun ve her işareti bir kayda bağlayın. Bir yerin haritadaki yeri bilinmiyorsa bunu da belirtebilirsiniz; efsanevi bir şehir için nokta koymanız gerekmez.</p>
       <HaritaYukle istemci={istemci} evren={evren} />
       {liste.length === 0 && <p class="soluk">Henüz harita yok.</p>}
       <ul class="harita-izgara">
@@ -84,7 +84,7 @@ function HaritaYukle({ istemci, evren, yer = null }: { istemci: Istemci; evren: 
   if (!acik) return <button class="dugme" onClick={() => setAcik(true)}>Harita yükle</button>;
   const yukle = async (e: Event) => {
     e.preventDefault();
-    if (!dosya) { setHata('Bir görsel seç.'); return; }
+    if (!dosya) { setHata('Bir görsel seçin.'); return; }
     setYukleniyor(true);
     try {
       const { kod } = await istemci.iste('haritaYukle', { evren, ad: ad.trim() || dosya.name.replace(/\.[^.]+$/, ''), yer: secYer?.kod ?? null,
@@ -216,11 +216,11 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
         <button class="dugme kucuk" aria-label="Yakınlaştır" disabled={yakinlik >= 12} onClick={() => setYakinlik((z) => Math.min(12, z * 1.5))}>+</button>
       </div>
       <p class="soluk kucuk" role="status">
-        {kip.tur === 'ciz' ? `Haritada ${kip.bicim === 'bolge' ? 'bölgenin sınırı' : 'yol'} boyunca sırayla dokun; bitince yandaki “Bitir”e bas. Vazgeçmek için Esc.`
-          : kip.tur === 'hizala' ? (kip.bekleyen ? 'Şimdi bu noktanın haritada olması gereken yere dokun.' : 'Hizalanan görselde tanıdık bir noktaya dokun (bir kıyı köşesi, bir kale).')
-          : kip.tur === 'koy' ? `Haritada bir yere dokun, sonra bağlanacak kaydı seç. Bitirmek için “Gez ve seç”e bas ya da Esc.`
-          : kip.tur === 'tasi' ? `“${h.isaretler.find((x) => x.kod === kip.isaret)?.kayit.ad}” için yeni yere dokun. Vazgeçmek için Esc.`
-            : 'Bir işarete dokunarak seç. İşaret koymak için yukarıdan bir kip seç.'}
+        {kip.tur === 'ciz' ? `${kip.bicim === 'bolge' ? 'Bölgenin sınırı' : 'Yol'} boyunca haritaya sırayla dokunun. Bitince yandaki düğmeye basın. Vazgeçmek için Esc tuşuna basın.`
+          : kip.tur === 'hizala' ? (kip.bekleyen ? 'Şimdi bu noktanın haritada olması gereken yere dokunun.' : 'Hizalanan görselde tanıdık bir noktaya dokunun (bir kıyı köşesi, bir kale gibi).')
+          : kip.tur === 'koy' ? `Haritada bir yere dokunun, sonra bağlanacak kaydı seçin. Bitirmek için “Gez ve seç” düğmesine ya da Esc tuşuna basın.`
+          : kip.tur === 'tasi' ? `“${h.isaretler.find((x) => x.kod === kip.isaret)?.kayit.ad}” için yeni yere dokunun. Vazgeçmek için Esc tuşuna basın.`
+            : 'Seçmek için bir işarete dokunun. İşaret koymak için yukarıdaki araçlardan birini seçin.'}
       </p>
       {hata && <p class="hata kucuk">{hata}</p>}
       <BakisAciklamasi bakis={h.bakis} />
@@ -307,8 +307,8 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
                 {h.an && (
                   <section aria-label="Bu tarihte">
                     <h2>{h.an.ifade} itibarıyla</h2>
-                    {!h.an.gecerli && <p class="hata kucuk">Bu tarih takvimde bir yere oturmuyor.</p>}
-                    {h.an.gecerli && !h.buTarihte.length && <p class="soluk kucuk">Yeri bu haritada işaretli olup bu tarihe denk gelen olay ya da sahne yok.</p>}
+                    {!h.an.gecerli && <p class="hata kucuk">Bu tarih takvime uymuyor.</p>}
+                    {h.an.gecerli && !h.buTarihte.length && <p class="soluk kucuk">Bu tarihe denk gelen ve yeri bu haritada işaretli bir olay ya da sahne yok.</p>}
                     <ul class="isaret-listesi">{h.buTarihte.map((o) => <li key={o.kod}><a href={`#/e/${evren}/k/${o.kod}`}>{o.ad}</a> <span class="soluk kucuk">{o.yer} · {o.tarih}</span></li>)}</ul>
                   </section>
                 )}
@@ -395,7 +395,7 @@ function KatmanPaneli({ istemci, evren, h, gizli, setGizli, saydamlik, setSaydam
               </div>
             )}
             {k.gozdenGecir.length > 0 && (
-              <p class="uyari kucuk">Hizalamada bazı noktaların hatası büyük; orası yeniden çizilmiş olabilir. Gözden geçir: {k.gozdenGecir.map((i) => i.ad).join(', ')}.</p>
+              <p class="uyari kucuk">Hizalamada bazı noktaların hatası büyük; o kısımlar yeniden çizilmiş olabilir. Gözden geçirin: {k.gozdenGecir.map((i) => i.ad).join(', ')}.</p>
             )}
           </li>
         ))}
@@ -405,7 +405,7 @@ function KatmanPaneli({ istemci, evren, h, gizli, setGizli, saydamlik, setSaydam
           <input type="file" class="gizli-dosya" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" aria-label="Katman görseli"
             onChange={(e) => void ekle((e.target as HTMLInputElement).files?.[0])} /></label>
       )}
-      <p class="soluk kucuk">Eski bir harita, bir eskiz ya da yeniden çizilmiş hâli aynı haritanın üstüne bindirilir. İşaretler görsele değil haritaya bağlıdır; görsel değişince yerinden oynamaz.</p>
+      <p class="soluk kucuk">Eski bir haritayı, bir eskizi ya da haritanın yeniden çizilmiş hâlini katman olarak üste bindirebilirsiniz. İşaretler görsele değil haritaya bağlıdır; görsel değişse de yerinden oynamaz.</p>
       {kaldirilan.length > 0 && (
         <details><summary class="soluk kucuk">Kaldırılan katmanlar ({kaldirilan.length})</summary>
           <ul>{kaldirilan.map((k) => <li key={k.kod}>{k.ad} <button class="dugme sade kucuk" onClick={() => iste(istemci.iste('katmanDegistir', { evren, harita: h.kod, katman: k.kod, alan: 'silindi', deger: false }))}>Geri getir</button></li>)}</ul>
@@ -436,7 +436,7 @@ function HizalamaPaneli({ istemci, evren, h, kip, sonuc, setKip, hata }: {
   return (
     <div class="hizalama-paneli" aria-label="Hizalama">
       <h2>“{k.ad}” hizalanıyor</h2>
-      <p class="soluk kucuk">Her çift için önce bu görselde bir noktaya, sonra o noktanın haritada olması gereken yere dokun. İki çift taşır, döndürür ve büyütür; üç çift eğik ya da farklı oranlı esnemeyi de düzeltir; daha fazlası her noktanın hatasını gösterir.</p>
+      <p class="soluk kucuk">Her çift için önce bu görselde bir noktaya, sonra o noktanın haritada olması gereken yere dokunun. İki çift, görseli taşımaya, döndürmeye ve büyütmeye yeter. Üç çift, eğikliği ve farklı oranlı esnemeyi de düzeltir. Daha fazla çift eklerseniz her noktanın hatası ayrıca gösterilir.</p>
       {kip.ciftler.length === 0 && !kip.bekleyen && <p class="kucuk">Henüz nokta yok.</p>}
       <ol class="hizalama-ciftleri">
         {kip.ciftler.map((_, i) => (
@@ -445,13 +445,13 @@ function HizalamaPaneli({ istemci, evren, h, kip, sonuc, setKip, hata }: {
         ))}
         {kip.bekleyen && <li class="soluk">{kip.ciftler.length + 1}. çift: haritadaki yeri bekleniyor</li>}
       </ol>
-      {sonuc && <p class="kucuk">{sonuc.yontem === 'afin' ? 'Genel oturtma (eğme ve esnemeyle)' : 'Taşıma, döndürme ve ölçek'}. Ortalama hata {(sonuc.ortalama / birim).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} birim (haritanın uzun kenarı 100 birim).</p>}
-      {kip.ciftler.length >= 2 && !sonuc && <p class="hata kucuk">Bu noktalarla oturtma yapılamıyor; noktalar birbirinden ayrı olmalı.</p>}
+      {sonuc && <p class="kucuk">{sonuc.yontem === 'afin' ? 'Genel hizalama (eğme ve esnemeyle)' : 'Taşıma, döndürme ve ölçek'}. Ortalama hata {(sonuc.ortalama / birim).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} birim (haritanın uzun kenarı 100 birim).</p>}
+      {kip.ciftler.length >= 2 && !sonuc && <p class="hata kucuk">Bu noktalarla hizalama yapılamıyor; noktalar birbirinden ayrı olmalı.</p>}
       <div class="satir">
         <button class="dugme ana kucuk" disabled={!sonuc} onClick={() => yaz(istemci.iste('katmanHizala', { evren, harita: h.kod, katman: k.kod, noktalar: kip.ciftler }))}>Uygula</button>
         <button class="dugme sade kucuk" onClick={bitir}>Vazgeç</button>
       </div>
-      {k.onceki && <button class="dugme sade kucuk" onClick={() => yaz(istemci.iste('katmanHizala', { evren, harita: h.kod, katman: k.kod, noktalar: null, donusum: k.onceki }))}>Önceki oturtmaya dön</button>}
+      {k.onceki && <button class="dugme sade kucuk" onClick={() => yaz(istemci.iste('katmanHizala', { evren, harita: h.kod, katman: k.kod, noktalar: null, donusum: k.onceki }))}>Önceki hizalamaya dön</button>}
     </div>
   );
 }
@@ -473,7 +473,7 @@ function ZamanKaydirici({ h, an, setAn, yilYaz }: { h: HaritaAyrintisi; an: stri
           onInput={(e) => setYil(Number((e.target as HTMLInputElement).value))} onChange={(e) => setAn(yilYaz(Number((e.target as HTMLInputElement).value)))} />
       )}
       {an && <button class="dugme sade kucuk" onClick={() => { setAn(''); setYil(null); }}>Bütün zamanlar</button>}
-      {an && <span class="soluk kucuk">{h.cizimler.filter((c) => c.gecerli === 'hayir').length} çizim bu tarihte yok; tarihi kesin olmayanlar soluk.</span>}
+      {an && <span class="soluk kucuk">Bu tarihte olmayan {h.cizimler.filter((c) => c.gecerli === 'hayir').length} çizim gizlendi; tarihi kesin olmayanlar soluk gösteriliyor.</span>}
     </div>
   );
 }
@@ -492,7 +492,7 @@ function CizimTaslagi({ kip, bolgeKipi, setBolgeKipi, setKip, bitir }: {
           <label class="kucuk"><input type="radio" name="bolge-kipi" checked={bolgeKipi === 'iddia'} onChange={() => setBolgeKipi('iddia')} /> İddia edilen</label>
         </fieldset>
       )}
-      <p class="soluk kucuk">Bölgeler örtüşebilir. Tartışmalı toprakta her tarafın iddiasını ayrı bölge olarak çiz.</p>
+      <p class="soluk kucuk">Bölgeler örtüşebilir. Tartışmalı toprakta her tarafın iddiasını ayrı bir bölge olarak çizin.</p>
       <div class="satir">
         <button class="dugme ana kucuk" disabled={!yeter} onClick={bitir}>{kip.cizim ? 'Kaydet' : 'Bitir ve kayda bağla'}</button>
         <button class="dugme sade kucuk" disabled={!kip.noktalar.length} onClick={() => setKip({ ...kip, noktalar: kip.noktalar.slice(0, -1) })}>Son noktayı sil</button>
@@ -520,7 +520,7 @@ function CizimPaneli({ istemci, evren, c, kapat, hata, yenidenCiz }: {
       )}
       <SinirAlani istemci={istemci} evren={evren} etiket="Başlangıç" deger={c.baslangic} kaydet={(v) => degistir('baslangic', v)} />
       <SinirAlani istemci={istemci} evren={evren} etiket="Bitiş" deger={c.bitis} kaydet={(v) => degistir('bitis', v)} />
-      <p class="soluk kucuk">Boş başlangıç ya da bitiş sınırsız sayılır. Bir olaya bağlanan sınır, olayın tarihi değişince kendiliğinden kayar.</p>
+      <p class="soluk kucuk">Başlangıç ya da bitiş boş bırakılırsa sınırsız sayılır. Bir olaya bağlanan sınır, olayın tarihi değişince kendiliğinden güncellenir.</p>
       <div class="satir">
         <button class="dugme kucuk" onClick={() => yenidenCiz(c)}>Sınırı yeniden çiz</button>
         <KayitSec istemci={istemci} evren={evren} secili={null} etiket="Başka kayda bağla" sec={(s) => { if (s) void degistir('kayit', s.kod).catch(() => {}); }} />
@@ -544,7 +544,7 @@ function HaritaBasligi({ istemci, evren, h }: { istemci: Istemci; evren: string;
       {h.yer && <a href={`#/e/${evren}/k/${h.yer.kod}`}>{h.yer.ad}</a>}
       <KayitSec istemci={istemci} evren={evren} secili={null} sec={(s) => { if (s) void yaz('yer', s.kod); }} etiket={h.yer ? 'Değiştir' : 'Yer seç'} />
       {h.yer && <button class="dugme sade kucuk" onClick={() => void yaz('yer', null)}>Bağı kaldır</button>}
-      {!h.silindi && <button class="dugme sade kucuk tehlikeli" onClick={() => onayla(`“${h.ad}” haritası kaldırılsın mı? Kaldırılan haritalardan geri getirebilirsin.`) && istemci.iste('haritaSil', { evren, kod: h.kod })}>Haritayı kaldır</button>}
+      {!h.silindi && <button class="dugme sade kucuk tehlikeli" onClick={() => onayla(`“${h.ad}” haritası kaldırılsın mı? “Kaldırılan haritalar” listesinden geri getirebilirsiniz.`) && istemci.iste('haritaSil', { evren, kod: h.kod })}>Haritayı kaldır</button>}
       {hata && <span class="hata kucuk">{hata}</span>}
     </div>
   );

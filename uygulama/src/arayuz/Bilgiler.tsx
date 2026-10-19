@@ -35,7 +35,7 @@ export function BilinenlerBolumu({ istemci, evren, kayit }: { istemci: Istemci; 
           <span class="bosluk" />
           {!soruEkle && <button class="dugme kucuk" onClick={() => setSoruEkle(true)}>Soru ekle</button>}
         </div>
-        {!iddialar.length && !soruEkle && <p class="soluk kucuk">Bu kayıt hakkında kimin neyi bildiğini izlemek için bir soru yazın (“Kralı kim öldürdü?”), olası cevaplarını ekleyin. Gerçeği belirlemek zorunda değilsiniz.</p>}
+        {!iddialar.length && !soruEkle && <p class="soluk kucuk">Bu kayıtla ilgili kimin neyi bildiğini izlemek için bir soru yazın (“Kralı kim öldürdü?”) ve olası cevaplarını ekleyin. Hangisinin gerçek olduğunu belirlemek zorunda değilsiniz.</p>}
         {soruEkle && <IddiaFormu istemci={istemci} evren={evren} konu={kayit.kod} kapat={() => setSoruEkle(false)} />}
         {iddialar.map((i) => <IddiaKarti key={i.kod} istemci={istemci} evren={evren} iddia={i} />)}
       </section>
@@ -47,8 +47,8 @@ export function BilinenlerBolumu({ istemci, evren, kayit }: { istemci: Istemci; 
             {!bilgiEkle && <button class="dugme kucuk" onClick={() => setBilgiEkle(true)}>{okur ? 'Okura açıklanan ekle' : 'Bilgi ekle'}</button>}
           </div>
           {!bildikleri.length && !bilgiEkle && <p class="soluk kucuk">{okur
-            ? 'Okurun hangi sırrı hangi sahnede öğrendiğini buraya yazın; okurun zamanı okuma sırasıdır.'
-            : 'Bu kaydın hangi soruya nasıl inandığını, ne zaman ve nereden öğrendiğini yazın. Sorular, konusu olan kaydın sayfasında açılır.'}</p>}
+            ? 'Okurun hangi sırrı hangi sahnede öğrendiğini buraya yazın. Okur için zaman, okuma sırasına göre ilerler.'
+            : 'Bu kaydın hangi soru hakkında neye inandığını, bunu ne zaman ve nereden öğrendiğini yazın. Sorular, konu oldukları kaydın sayfasında açılır.'}</p>}
           {bilgiEkle && <BilgiFormu istemci={istemci} evren={evren} bilen={{ kod: kayit.kod, ad: kayit.ad, tur: kayit.tur }} kapat={() => setBilgiEkle(false)} />}
           {bildikleri.length > 0 && (
             <ul class="bilgi-listesi">
@@ -78,7 +78,7 @@ function IddiaFormu({ istemci, evren, konu, kapat }: { istemci: Istemci; evren: 
   return (
     <form class="kart iliski-formu" onSubmit={kaydet}>
       <input class="girdi" aria-label="Soru" placeholder="Soru (ör. Kralı kim öldürdü?)" lang="tr" value={soru} onInput={(e) => setSoru((e.target as HTMLInputElement).value)} />
-      <p class="soluk kucuk">“Ölüm nedeni”, “fail” ve “kasıt” ayrı sorulardır. Olası cevaplar (en az bir); gerçek olanı işaretleyebilir ya da açık bırakabilirsiniz.</p>
+      <p class="soluk kucuk">“Ölüm nedeni”, “fail” ve “kasıt” ayrı sorulardır. En az bir olası cevap yazın. Gerçek olanı işaretleyebilir ya da açık bırakabilirsiniz.</p>
       {cevaplar.map((c, i) => (
         <div class="satir" key={i}>
           <input class="girdi" style="flex:1;min-width:160px" aria-label={`Cevap ${i + 1}`} placeholder={`Cevap ${i + 1}`} lang="tr" value={c}
@@ -118,7 +118,7 @@ function IddiaKarti({ istemci, evren, iddia }: { istemci: Istemci; evren: string
       <div class="satir kucuk">
         <span class="soluk">Cevaplar:</span>
         {iddia.secenekler.map((s) => <span key={s.kod} class={`rozet ${s.kod === iddia.gercek ? 'gercek' : ''}`}>{s.metin}{s.kod === iddia.gercek ? ' · gerçek' : ''}</span>)}
-        {!iddia.gercek && <span class="soluk">Gerçek belirlenmedi; kimse “yanlış biliyor” sayılmaz.</span>}
+        {!iddia.gercek && <span class="soluk">Gerçek belirlenmediği için kimse “yanlış biliyor” sayılmaz.</span>}
       </div>
       {duzenle && (
         <div class="iliski-duzenle">
@@ -139,7 +139,7 @@ function IddiaKarti({ istemci, evren, iddia }: { istemci: Istemci; evren: string
       {kisiler.length > 0 && <ul class="bilgi-listesi">{kisiler.map((b) => <BilgiOgesi key={b.kod} istemci={istemci} evren={evren} b={b} />)}</ul>}
       {okurlar.length > 0 && (
         <>
-          <span class="soluk kucuk">Okura açıklanma</span>
+          <span class="soluk kucuk">Okura ne zaman açıklandığı</span>
           <ul class="bilgi-listesi">{okurlar.map((b) => <BilgiOgesi key={b.kod} istemci={istemci} evren={evren} b={b} />)}</ul>
         </>
       )}
@@ -147,8 +147,8 @@ function IddiaKarti({ istemci, evren, iddia }: { istemci: Istemci; evren: string
       {ekle && <BilgiFormu istemci={istemci} evren={evren} iddia={iddia} okur={ekle === 'okur'} kapat={() => setEkle(null)} />}
       {!ekle && (
         <div class="satir">
-          <button class="dugme sade kucuk" onClick={() => setEkle('kisi')}>Kim ne biliyor? Ekle</button>
-          <button class="dugme sade kucuk" onClick={() => setEkle('okur')}>Okura açıklanmasını ekle</button>
+          <button class="dugme sade kucuk" onClick={() => setEkle('kisi')}>Kimin ne bildiğini ekle</button>
+          <button class="dugme sade kucuk" onClick={() => setEkle('okur')}>Okura açıklandığı sahneyi ekle</button>
         </div>
       )}
     </div>
@@ -179,7 +179,7 @@ function DairInanclar({ istemci, evren, iddia }: { istemci: Istemci; evren: stri
         <ul class="bilgi-listesi">
           {l.map((d) => (
             <li key={d.kod} class={d.uyum === 'yanlis' ? 'dair-yanilgi' : ''}>
-              <strong>{d.sanan.ad}</strong>, {d.hakkinda.ad} için “{ad(d.tanim.sanilan)}” sanıyor{d.tanim.tarih ? ` (${d.tanim.tarih})` : ''}.
+              <strong>{d.sanan.ad}</strong>, {d.hakkinda.ad} hakkında “{ad(d.tanim.sanilan)}” sanıyor{d.tanim.tarih ? ` (${d.tanim.tarih})` : ''}.
               <div class="kucuk">{d.uyum === 'dogru' ? `Doğru sanıyor: ${d.gercekDurum?.toLocaleLowerCase('tr-TR')}.` : d.uyum === 'yanlis' ? `Yanılıyor: kayıtlara göre ${d.gercekDurum?.toLocaleLowerCase('tr-TR')}.` : d.neden}</div>
               {d.tanim.aciklama && <div class="kucuk soluk">{d.tanim.aciklama}</div>}
               <button class="dugme sade kucuk" onClick={() => onayla('Bu inanç kaldırılsın mı?') && istemci.iste('dairInancSil', { evren, kod: d.kod }).catch((x) => setHata(hataYaz(x)))}>Kaldır</button>
@@ -203,7 +203,7 @@ function DairInanclar({ istemci, evren, iddia }: { istemci: Istemci; evren: stri
             <button class="dugme sade kucuk" onClick={() => { setAcik(false); setHata(null); }}>Vazgeç</button>
           </div>
         </div>
-      ) : <button class="dugme sade kucuk" onClick={() => setAcik(true)}>Birinin, başkasının bunu bildiğine dair inancını ekle</button>}
+      ) : <button class="dugme sade kucuk" onClick={() => setAcik(true)}>Birinin başkası hakkındaki inancını ekle</button>}
       {hata && <p class="hata kucuk">{hata}</p>}
     </div>
   );
@@ -332,7 +332,7 @@ function OkurSahnesi({ istemci, evren, eser, sahne, sec }: { istemci: Istemci; e
   return (
     <label class="alan"><span class="alan-adi">Okurun öğrendiği sahne</span>
       <select class="girdi" aria-label="Okurun öğrendiği sahne" value={sahne ?? ''} disabled={!eser} onChange={(e) => sec((e.target as HTMLSelectElement).value || null)}>
-        <option value="">{eser ? (y && !sahneler.length ? 'Bu eserde sahne yok' : 'Sahne seç…') : 'Önce eseri seç'}</option>
+        <option value="">{eser ? (y && !sahneler.length ? 'Bu eserde sahne yok' : 'Sahne seç…') : 'Önce eseri seçin'}</option>
         {sahneler.map((s) => <option value={s.kod}>{s.sira}. {s.ad}{s.bolum ? ` (${s.bolum})` : ''}</option>)}
       </select></label>
   );
@@ -423,7 +423,7 @@ function BilgiFormu({ istemci, evren, iddia, bilen, okur: okurGirdi, kapat }: {
           <SaklamaSecici istemci={istemci} evren={evren} deger={saklama} degis={setSaklama} />
         </>}
       <input class="girdi" aria-label="Açıklama" placeholder="Açıklama (isteğe bağlı)" lang="tr" value={aciklama} onInput={(e) => setAciklama((e.target as HTMLInputElement).value)} />
-      <p class="soluk kucuk">{okur ? 'Okurun bilgisi okuma sırasına göre ilerler: sonraki bir sahnedeki kayıt öncekinin yerine geçer.'
+      <p class="soluk kucuk">{okur ? 'Okurun bilgisi okuma sırasına göre ilerler. Sonraki bir sahnedeki kayıt, öncekinin yerine geçer.'
         : 'Bitiş yazılmazsa bilgi, aynı soru için bir sonraki kayda kadar sürer. Başlangıç yazılmazsa öğrendiği sahnenin tarihi kullanılır.'}</p>
       {hata && <p class="hata kucuk">{hata}</p>}
       <div class="satir">
@@ -439,7 +439,7 @@ export function BakisBilgileri({ evren, bakis, liste, tarihVar }: { evren: strin
   return (
     <div class="baglam-kaydi">
       <div class="satir"><span class="soluk">{bakis.ad} bu anda ne biliyor?</span></div>
-      {!liste.length && <p class="soluk kucuk">Bu an için kayıtlı bilgisi yok. (Bu, bilmediği anlamına gelmez; yalnızca kaydedilmemiştir.)</p>}
+      {!liste.length && <p class="soluk kucuk">Bu an için kayıtlı bilgisi yok. Bilmiyor olabilir ya da bildiği henüz kaydedilmemiş olabilir.</p>}
       <ul class="baglam-listesi">
         {liste.map((x) => (
           <li key={x.iddia.kod}>
@@ -450,7 +450,7 @@ export function BakisBilgileri({ evren, bakis, liste, tarihVar }: { evren: strin
                 {s.gecerli === 'belirsiz' && <span class="rozet">belki</span>}
               </span>
             ))}
-            {x.durum === 'belirsiz' && x.satirlar.length > 1 && <span class="uyari kucuk"> Birden çok kayıt bu ana denk geliyor; biri seçilmedi.</span>}
+            {x.durum === 'belirsiz' && x.satirlar.length > 1 && <span class="uyari kucuk"> Bu ana birden çok kayıt denk geliyor ve henüz biri seçilmedi.</span>}
             {' '}<a class="kucuk" href={`#/e/${evren}/k/${x.iddia.konu.kod}`}>aç</a>
           </li>
         ))}
@@ -504,15 +504,15 @@ export function GorunurlukAlani({ istemci, evren, kod, nesne, deger }: {
       )}
       {ac && (
         <div class="kart gorunurluk-formu">
-          <label class="satir"><input type="radio" name={`g-${kod}`} checked={kip === 'gercek'} onChange={() => setKip('gercek')} /> Evrenin gerçeği; herkes bilebilir</label>
-          <label class="satir"><input type="radio" name={`g-${kod}`} checked={kip === 'gizli'} onChange={() => setKip('gizli')} /> Evrenin gerçeği ama gizli; yalnızca şunlar biliyor:</label>
+          <label class="satir"><input type="radio" name={`g-${kod}`} checked={kip === 'gercek'} onChange={() => setKip('gercek')} /> Evrenin gerçeği, herkes bilebilir</label>
+          <label class="satir"><input type="radio" name={`g-${kod}`} checked={kip === 'gizli'} onChange={() => setKip('gizli')} /> Evrenin gerçeği ama gizli. Yalnızca şunlar biliyor:</label>
           {kip === 'gizli' && (
             <span class="satir girinti">
               {bilenler.map((x) => <span key={x.kod} class="rozet">{x.ad} <button type="button" class="dugme sade kucuk" aria-label={`${x.ad}: çıkar`} onClick={() => setBilenler(bilenler.filter((y) => y.kod !== x.kod))}>×</button></span>)}
               <KayitSec istemci={istemci} evren={evren} secili={null} sec={(s) => { if (s && !bilenler.some((x) => x.kod === s.kod)) setBilenler([...bilenler, s]); }} etiket="Bilen ekle" />
             </span>
           )}
-          <label class="satir"><input type="radio" name={`g-${kod}`} checked={kip === 'inanc'} onChange={() => setKip('inanc')} /> Gerçek değil; yalnızca birinin inancı:</label>
+          <label class="satir"><input type="radio" name={`g-${kod}`} checked={kip === 'inanc'} onChange={() => setKip('inanc')} /> Gerçek değil, yalnızca birinin inancı:</label>
           {kip === 'inanc' && (
             <span class="satir girinti"><KayitSec istemci={istemci} evren={evren} secili={katman} sec={setKatman} etiket="Kim böyle sanıyor?" /></span>
           )}
@@ -541,5 +541,5 @@ export function BakisSecici({ istemci, evren, bakis, sec }: { istemci: Istemci; 
 
 export function BakisAciklamasi({ bakis }: { bakis: { ad: string } | null }) {
   if (!bakis) return null;
-  return <p class="bilgi-notu kucuk">{bakis.ad} bakış açısı: onun bilmediği gizli gerçekler gizlendi; yalnızca onun inancında olanlar ayrıca işaretlendi (kesik çizgi).</p>;
+  return <p class="bilgi-notu kucuk">{bakis.ad} bakış açısından gösteriliyor. Onun bilmediği gizli gerçekler gizlendi. Yalnızca onun inancında var olanlar kesik çizgiyle ayrıca işaretlendi.</p>;
 }

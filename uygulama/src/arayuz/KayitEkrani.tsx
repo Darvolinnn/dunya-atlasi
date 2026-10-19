@@ -18,6 +18,7 @@ import { MotifBolumu, TEKNOLOJI_YERLERI, TeknolojiBolumu, TeknolojiDurumuAraci }
 import { KalitimBolumu, VerasetBolumu } from './Soy';
 import { GUNDELIK_YERLERI, GundelikBolumu } from './Gundelik';
 import { BagSeridi, YayimBolumu } from './Surumler';
+import { SayfaYardimi } from './Rehber';
 import { EserCiktisi } from './Cikti';
 import { BelgeSunumBolumu } from './Belge';
 import { EserSozlesmesiBolumu, SozlesmeHatirlatmasiSatiri } from './AnlatiSozlesmesi';
@@ -97,6 +98,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           <span class="bosluk" />
           {YAZMA_TURLERI.includes(kayit.tur) && <a class="dugme ana kucuk" href={`#/e/${evren}/yaz/${kod}`}>Yazma ekranında aç</a>}
           <button class="dugme sade kucuk" aria-expanded={gecmisAcik} onClick={() => setGecmisAcik(!gecmisAcik)}>Sürüm geçmişi</button>
+          <SayfaYardimi sayfa="kayit" />
         </div>
         <BagSeridi bag={bag} />
         <BirlesmeBilgisi istemci={istemci} evren={evren} kayit={kayit} />
@@ -144,7 +146,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           <SablonAlanlari istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
           <div class="alan genis">
             <span class="alan-adi satir">Kısa özet <KararSecici etiket="Kısa özet" karar={kayit.alanKararlari.ozet ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod, alan: 'ozet', karar: k })} /></span>
-            <AlanGirdisi etiket="Kısa özet" deger={kayit.ozet} kaydet={(v) => degistir('ozet', v)} ipucu="Bir satırda kim ya da ne olduğu" />
+            <AlanGirdisi etiket="Kısa özet" deger={kayit.ozet} kaydet={(v) => degistir('ozet', v)} ipucu="Kim ya da ne olduğu, tek satırda" />
           </div>
         </div>
         <details class="katlanir">
@@ -166,7 +168,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           </div>
           <GorunurlukAlani istemci={istemci} evren={evren} kod={kod} nesne="kayit" deger={kayit.gorunurluk} />
           {kayit.oncekiAdlar.length > 0 && (
-            <p class="soluk kucuk genis">Önceki adları (aramada bulunur): {kayit.oncekiAdlar.join(', ')}</p>
+            <p class="soluk kucuk genis">Önceki adları (aramada bunlarla da bulunur): {kayit.oncekiAdlar.join(', ')}</p>
           )}
           </div>
         </details>
@@ -249,14 +251,14 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         )}
 
         <div class="kayit-alti">
-          <span class="soluk kucuk">Oluşturuldu {zamanYaz(kayit.olusturma)} · Son değişiklik {zamanYaz(kayit.duzenleme)}</span>
+          <span class="soluk kucuk">Oluşturulma: {zamanYaz(kayit.olusturma)} · Son değişiklik: {zamanYaz(kayit.duzenleme)}</span>
           <span class="bosluk" />
           {!kayit.silindi && <a class="dugme sade" href={`#/e/${evren}/ag/${kod}`}>Ağda göster</a>}
           {!kayit.silindi && kayit.tur === 'karakter' && <a class="dugme sade" href={`#/e/${evren}/soy/${kod}`}>Soy ağacı</a>}
           {kayit.tur === 'not' && !kayit.silindi && <NotDonustur istemci={istemci} evren={evren} kayit={kayit} />}
           {!kayit.silindi && <BirlestirDugmesi istemci={istemci} evren={evren} kayit={kayit} onceKaydet={async () => { await denetim.current?.kaydet(); }} />}
           {!kayit.silindi && (
-            <button class="dugme tehlikeli" onClick={async () => { if (!(onayla(`“${kayit.ad}” çöp kutusuna taşınsın mı? Çöp kutusundan geri getirebilirsin.`))) return;
+            <button class="dugme tehlikeli" onClick={async () => { if (!(onayla(`“${kayit.ad}” çöp kutusuna taşınsın mı? Çöp kutusundan geri getirebilirsiniz.`))) return;
               await denetim.current?.kaydet();
               await istemci.iste('kayitSil', { evren, kod });
               git(`/e/${evren}`);
@@ -326,7 +328,7 @@ function SurumGecmisi({ istemci, evren, kayit, surum, geriGetir }: {
   return (
     <section class="kart surum-gecmisi" aria-label="Sürüm geçmişi">
       <h2>Sürüm geçmişi</h2>
-      <p class="soluk kucuk">Bu kayıtta yapılan her değişiklik. Metnin eski bir hâline bakabilir ve onu geri getirebilirsiniz; geri getirmek de yeni bir sürüm olarak eklenir, hiçbir sürüm silinmez.</p>
+      <p class="soluk kucuk">Bu kayıtta yapılan bütün değişiklikler. Metnin eski bir hâline bakıp onu geri getirebilirsiniz. Geri getirme de yeni bir sürüm olarak eklenir; hiçbir sürüm silinmez.</p>
       {secili && (
         <div class="onizleme">
           <div class="satir">
@@ -369,7 +371,7 @@ function AdDuzeltmePaneli({ duzeltme, okunusVar, uygula, kapat }: {
       <h2>“{duzeltme.eskiAd}” başka metinlerde {duzeltme.liste.length} yerde geçiyor</h2>
       <p class="soluk kucuk">Bağlantılar zaten yeni ada gidiyor. İsterseniz metinlerde görünen ad da değişsin; ekler yeni ada uydurulur.
         Değiştirmek istemediklerinizin işaretini kaldırın.</p>
-      {belirsiz && !okunusVar && <p class="uyari kucuk">“{duzeltme.yeniAd}” adının nasıl okunduğundan emin değilim. Ekleri kontrol edin; gerekirse aşağıdan okunuşunu girip adı yeniden kaydedin.</p>}
+      {belirsiz && !okunusVar && <p class="uyari kucuk">“{duzeltme.yeniAd}” adının nasıl okunduğu kesin değil. Ekleri kontrol edin; gerekirse aşağıdaki “Okunuş” alanına okunuşunu yazıp adı yeniden kaydedin.</p>}
       <ul class="duzeltme-listesi">
         {duzeltme.liste.map((x) => (
           <li key={anahtar(x)}>

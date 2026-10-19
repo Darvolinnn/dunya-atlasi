@@ -29,11 +29,11 @@ const degerYazisi = (b: DurumBaglami, deger: unknown, hedef: unknown) => hedef ?
 /** Eski değer başlangıcına kadar kalır; yeni değer verilen tarihten başlar. */
 export function buTarihten(b: DurumBaglami, kod: string, alan: DegerAlani, girdi: unknown, tarih: SinirGirdisi | null) {
   const r = durumOku(b, kod);
-  if (r.kip === 'anlik') throw new Error('Tek bir anın gözlemi bir tarihten itibaren değiştirilemez; eski kaydı düzeltin.');
+  if (r.kip === 'anlik') throw new Error('Tek bir ana ait gözlem bir tarihten itibaren değiştirilemez. Eski kaydı düzeltin.');
   const v = yeniDeger(b, alan, girdi);
   const deger = alan === 'deger' ? v ?? '' : r.deger as string;
   const hedef = alan === 'hedef' ? v : (r.hedef as string | null) ?? null;
-  if (!deger && !hedef) throw new Error('Değer boş olamaz.');
+  if (!deger && !hedef) throw new Error('Bir değer yazın.');
   if (deger === r.deger && hedef === (r.hedef ?? null)) throw new Error('Yeni değer eskisiyle aynı.');
   const t = sinirCoz(b, tarih);
   if (!t) throw new Error('Yeni değerin hangi tarihten itibaren geçerli olduğunu yazın.');
@@ -41,7 +41,7 @@ export function buTarihten(b: DurumBaglami, kod: string, alan: DegerAlani, girdi
   const eskiBas = sinirBilgisi(b, r.baslangic ? JSON.parse(r.baslangic as string) : null)?.tarih ?? null;
   const eskiBitisHam = r.bitis ? JSON.parse(r.bitis as string) : null;
   const eskiBit = r.kip === 'aralik' ? sinirBilgisi(b, eskiBitisHam)?.tarih ?? null : null;
-  if (!yeniBas) throw new Error('Bağlanan olayın tarihi yok; bir tarih yazın.');
+  if (!yeniBas) throw new Error('Bağlanan olayın tarihi yok. Bir tarih yazın.');
   if (eskiBas && karsilastir(eskiBas, yeniBas) !== 'once') throw new Error('Yeni tarih, eski değerin başlangıcından kesin olarak sonra olmalı.');
   if (eskiBit && karsilastir(yeniBas, eskiBit) !== 'once') throw new Error('Yeni tarih, eski değerin bitişinden önce olmalı.');
   const konu = r.konu as string;
@@ -68,7 +68,7 @@ export function inanc(b: DurumBaglami, kod: string, alan: DegerAlani, girdi: unk
   if (bilen === konu) throw new Error('Kaydın kendisi dışında birini seçin.');
   const eski = degerYazisi(b, r.deger, r.hedef);
   const yeniYazi = alan === 'deger' ? degerYazisi(b, v, r.hedef) : degerYazisi(b, r.deger, v);
-  if (!yeniYazi.trim()) throw new Error('Değer boş olamaz.');
+  if (!yeniYazi.trim()) throw new Error('Bir değer yazın.');
   if (eski.toLocaleLowerCase('tr-TR') === yeniYazi.toLocaleLowerCase('tr-TR')) throw new Error('Yeni değer eskisiyle aynı.');
   const bas = sinirBilgisi(b, r.baslangic ? JSON.parse(r.baslangic as string) : null)?.tarih;
   const soru = temiz(`${r.ozellik}${bas ? ` · ${bas.ifade} tarihinden itibaren` : ''}`, 300, false);

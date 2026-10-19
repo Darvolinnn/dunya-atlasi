@@ -56,7 +56,7 @@ export function SablonAlanlari({ istemci, evren, kayit, ks }: { istemci: Istemci
       {ks.eskiler.length > 0 && (
         <div class="alan genis eski-alanlar">
           <span class="alan-adi">Şablonda olmayan alanlar</span>
-          <span class="soluk kucuk">Tür ya da şablon değişince bu değerler silinmedi. Gerekmiyorsa boşaltabilirsin.</span>
+          <span class="soluk kucuk">Tür ya da şablon değiştiğinde bu değerler silinmez. Gerekmiyorsa boşaltabilirsiniz.</span>
           <ul>
             {ks.eskiler.map((x) => (
               <li key={x.kod} class="satir"><span>{degerMetni(undefined, x.deger)}</span><span class="bosluk" />
@@ -96,12 +96,12 @@ function VarsayilanGosterimi({ istemci, evren, kod, a, v, kabul, hata }: {
       {v.durum === 'yok' && <span class="soluk">{v.eksenAdi[0].toLocaleUpperCase('tr-TR') + v.eksenAdi.slice(1)} yoluyla varsayılan veren kayıt yok.</span>}
       {v.durum === 'tek' && (
         <span class="satir"><span>Varsayılan: <strong>{degerMetni(a, v.kaynaklar[0].deger)}</strong>
-          <span class="soluk"> · {v.eksenAdi}, <a href={`#/e/${evren}/k/${v.kaynaklar[0].kaynak.kod}`}>{v.kaynaklar[0].kaynak.ad}</a>{yol(v.kaynaklar[0])}{v.kaynaklar.length > 1 ? `; ${v.kaynaklar.length} kaynak aynı değeri veriyor` : ''}</span></span>
+          <span class="soluk"> · {v.eksenAdi}, <a href={`#/e/${evren}/k/${v.kaynaklar[0].kaynak.kod}`}>{v.kaynaklar[0].kaynak.ad}</a>{yol(v.kaynaklar[0])}{v.kaynaklar.length > 1 ? ` · ${v.kaynaklar.length} kaynak aynı değeri veriyor` : ''}</span></span>
           <button class="dugme sade kucuk" onClick={() => kabul(v.kaynaklar[0].deger)}>Değer olarak kabul et</button></span>
       )}
       {coklu && (
         <>
-          <span>{v.durum === 'cozulmemis' ? 'Kaynaklar farklı değer veriyor; çatışma çözülmemiş:' : v.durum === 'birlikte' ? 'Birlikte geçerli:'
+          <span>{v.durum === 'cozulmemis' ? 'Kaynaklar farklı değerler veriyor, çatışma henüz çözülmedi:' : v.durum === 'birlikte' ? 'Birlikte geçerli:'
             : v.durum === 'kapsam' ? `Kapsamları farklı (${v.karar?.aciklama}):` : 'Öncelikli kaynak seçildi:'}</span>
           <ul class="varsayilan-kaynaklari">
             {v.kaynaklar.map((x) => (
@@ -150,18 +150,18 @@ function FetihSorusuGosterimi({ istemci, evren, kod, a, f, hata }: {
   const c = f.cevap;
   return (
     <div class="fetih-sorusu">
-      <span><strong>Bağlılık değişti:</strong> “{f.eski.ad}” yönetimi{f.bitis ? ` ${f.bitis} tarihinde` : ''} sona erdi. Eski yönetimden: {degerler(f.eskiKaynaklar)}. Yeni yönetimden: {degerler(f.yeniKaynaklar)}.</span>
+      <span><strong>Bağlılık değişti:</strong> “{f.eski.ad}” yönetimi{f.bitis ? ` ${f.bitis} tarihinde` : ''} sona erdi. Eski yönetimden gelen: {degerler(f.eskiKaynaklar)}. Yeni yönetimden gelen: {degerler(f.yeniKaynaklar)}.</span>
       {c ? (
         <span class="satir"><span class="rozet">{c.durum === 'suruyor' ? 'Eski uygulama sürüyor' : c.durum === 'birlikte' ? 'İkisi birlikte geçerli' : `Yeni uygulama başladı${c.tarih ? `: ${c.tarih.ifade}` : ''}`}</span>
           <button class="dugme sade kucuk" onClick={() => cevapla(null)}>Henüz karar vermedim</button></span>
       ) : (
         <>
-          <span>Bu alan için sonra ne oldu? Değer o gün kendiliğinden değişmez.</span>
+          <span>Bu alanda sonra ne oldu? Değer o tarihte kendiliğinden değişmez.</span>
           <span class="satir">
             <button class="dugme sade kucuk" onClick={() => cevapla({ durum: 'suruyor' })}>Eski uygulama sürüyor</button>
             <button class="dugme sade kucuk" onClick={() => setTarihli(true)}>Yeni uygulama şu tarihte başladı</button>
             <button class="dugme sade kucuk" onClick={() => cevapla({ durum: 'birlikte' })}>İkisi birlikte geçerli</button>
-            <span class="soluk">Henüz karar vermedin.</span>
+            <span class="soluk">Henüz karar vermediniz.</span>
           </span>
           {tarihli && (
             <form class="satir" onSubmit={(e) => { e.preventDefault(); cevapla({ durum: 'yeni', tarih }); }}>
@@ -219,12 +219,12 @@ export function SoruBolumu({ istemci, evren, kayit, ks }: { istemci: Istemci; ev
     <section class="sorular" aria-label="Sorular">
       <details open={ks.sorular.some((q) => q.cevap)}>
         <summary><h2 style="display:inline">Sorular</h2></summary>
-        <p class="soluk kucuk">Hepsi isteğe bağlı. Cevaplayabilir, sonraya bırakabilir, bu kayıtla ilgisiz sayabilir ya da yeni bir kayıtla cevaplayabilirsin.
+        <p class="soluk kucuk">Hepsi isteğe bağlı. Cevaplayabilir, sonraya bırakabilir, bu kayıtla ilgisiz sayabilir ya da yeni bir kayıt oluşturarak cevaplayabilirsiniz.
           {' '}<a href={`#/e/${evren}/sablonlar/${kayit.tur}`}>{turBul(kayit.tur).ad} şablonunu düzenle</a></p>
         {gruplar.filter(([, , l]) => l.length).map(([ad, set, liste]) => (
           <div key={ad || 'sablon'} class="soru-grubu">
             {ad && <div class="satir"><strong class="kucuk">{ad}</strong><span class="bosluk" />
-              {set && <button class="dugme sade kucuk" onClick={() => istemci.iste('kayitSoruSeti', { evren, kod: kayit.kod, set, ekle: false })}>Bu seti çıkar</button>}</div>}
+              {set && <button class="dugme sade kucuk" onClick={() => istemci.iste('kayitSoruSeti', { evren, kod: kayit.kod, set, ekle: false })}>Bu soru setini çıkar</button>}</div>}
             <ul class="soru-listesi">{liste.map((q) => <SoruSatir key={q.kod} istemci={istemci} evren={evren} kod={kayit.kod} q={q} hata={setHata} />)}</ul>
           </div>
         ))}
@@ -294,7 +294,7 @@ export function SablonlarSekmesi({ istemci, evren, tur }: { istemci: Istemci; ev
   const secili = tur && TURLER.some((t) => t.kod === tur) ? tur : 'karakter';
   return (
     <div class="sablonlar">
-      <p class="soluk kucuk">Her türün alanları ve soruları burada. Bir alanı kaldırmak kayıtlardaki değerleri silmez; o kayıtlarda “şablonda olmayan alanlar” altında kalır.</p>
+      <p class="soluk kucuk">Her türün alanları ve soruları burada. Bir alanı kaldırsanız da kayıtlardaki değerleri silinmez, “Şablonda olmayan alanlar” başlığı altında kalır.</p>
       <label class="alan" style="max-width:320px"><span class="alan-adi">Tür</span>
         <TurSecici deger={secili} onDegis={(v) => git(`/e/${evren}/sablonlar/${v}`)} /></label>
       <SablonEditoru key={secili} istemci={istemci} evren={evren} tur={secili} />
@@ -341,14 +341,14 @@ function SablonEditoru({ istemci, evren, tur }: { istemci: Istemci; evren: strin
             <label class="satir kucuk"><span class="soluk">Boşken varsayılan</span>
               <select class="girdi kucuk-secim" aria-label={`${a.ad}: boşken varsayılan`} value={a.varsayilan ?? ''}
                 onChange={(e) => guncelle((s) => { const v = (e.target as HTMLSelectElement).value; if (v) s.alanlar[i].varsayilan = v as SablonAlani['varsayilan']; else delete s.alanlar[i].varsayilan; })}>
-                <option value="">Almaz</option>
+                <option value="">Yok</option>
                 {VARSAYILAN_EKSENLERI.map((x) => <option value={x.kod}>{x.ad} ({x.ornek})</option>)}
               </select></label>
             {a.tur === 'sayi' && <NicelikDuzenleyici a={a} kilitli={kullanilan(a) > 0} degis={(f) => guncelle((s) => f(s.alanlar[i]))} />}
             {a.tur === 'secim' && <SecenekDuzenleyici secenekler={a.secenekler ?? []} degis={(l) => guncelle((s) => { s.alanlar[i].secenekler = l; })} sabit={a.sabit} />}
             <span class="soluk kucuk">
-              {a.sabit ? 'Program bu alanı kullanıyor; adı değişebilir, kaldırılamaz. ' : ''}
-              {kullanilan(a) > 0 ? `${kullanilan(a)} kayıtta değeri var${a.sabit ? '' : '; kaldırırsan değerler silinmez'}. Değeri olan alanın türü değişmez.` : ''}
+              {a.sabit ? 'Program bu alanı kullanıyor. Adını değiştirebilirsiniz ama alanı kaldıramazsınız. ' : ''}
+              {kullanilan(a) > 0 ? `${kullanilan(a)} kayıtta değeri var.${a.sabit ? '' : ' Alanı kaldırsanız da bu değerler silinmez.'} Değeri olan bir alanın türü değiştirilemez.` : ''}
             </span>
           </li>
         ))}
@@ -375,12 +375,12 @@ function SablonEditoru({ istemci, evren, tur }: { istemci: Istemci; evren: strin
             const set = soruSetiBul((e.target as HTMLSelectElement).value);
             if (set) guncelle((s) => { for (const q of set.sorular) if (!s.sorular.some((x) => x.kod === q.kod)) s.sorular.push({ ...q }); });
           }}>
-            <option value="">Kütüphaneden set ekle…</option>
+            <option value="">Kütüphaneden soru seti ekle…</option>
             {eklenebilir.map((s) => <option value={s.kod}>{s.ad}</option>)}
           </select>
         )}
       </div>
-      <p class="soluk kucuk">Kaldırılan bir soru, cevaplandığı kayıtlarda “şablondan çıkarılmış sorular” altında kalır.</p>
+      <p class="soluk kucuk">Kaldırılan bir soru, cevaplandığı kayıtlarda “Şablondan çıkarılmış sorular” başlığı altında kalır.</p>
 
       {hata && <p class="hata">{hata}</p>}
       <div class="satir" style="margin-top:12px">
@@ -445,7 +445,7 @@ export function MeseleSekmesi({ istemci, evren }: { istemci: Istemci; evren: str
     <div class="meseleler">
       <section aria-label="Açık meseleler">
         <h2>Açık meseleler</h2>
-        <p class="soluk kucuk">Henüz kararlaştırmadığın sorular. Boş alanlar burada sayılmaz; yalnızca senin yazdıkların durur.</p>
+        <p class="soluk kucuk">Henüz karara bağlamadığınız sorular. Boş alanlar burada listelenmez, yalnızca sizin yazdıklarınız yer alır.</p>
         <YazarKaydiFormu istemci={istemci} evren={evren} tur="acik_mesele" />
         {MESELE_DURUMLARI.map((d) => {
           const liste = l.meseleler.filter((m) => m.durum === d.kod);
@@ -460,7 +460,7 @@ export function MeseleSekmesi({ istemci, evren }: { istemci: Istemci; evren: str
       </section>
       <section aria-label="Gerekçe defteri" style="margin-top:24px">
         <h2>Gerekçe defteri</h2>
-        <p class="soluk kucuk">Verdiğin kararlar ve nedenleri: “Büyü iyileştiremez, çünkü yaralar hikâyede ağırlığını korumalı.”</p>
+        <p class="soluk kucuk">Verdiğiniz kararlar ve nedenleri. Örneğin: “Büyü iyileştiremez, çünkü yaralar hikâyede ağırlığını korumalı.”</p>
         <YazarKaydiFormu istemci={istemci} evren={evren} tur="gerekce" />
         <GerekceListe evren={evren} liste={l.gerekceler} />
       </section>
@@ -507,7 +507,7 @@ function YazarKaydiFormu({ istemci, evren, tur, bagla = null }: { istemci: Istem
   const [ad, setAd] = useState('');
   const [onemli, setOnemli] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
-  const ipucu = tur === 'acik_mesele' ? 'Yeni açık mesele (soru olarak)' : 'Hangi soruya karar verdin?';
+  const ipucu = tur === 'acik_mesele' ? 'Yeni açık mesele (soru olarak)' : 'Hangi soruya karar verdiniz?';
   return (
     <form class="satir" onSubmit={(e) => {
       e.preventDefault();
@@ -559,7 +559,7 @@ export function MasaPusulasi({ istemci, evren, kayitSayisi }: { istemci: Istemci
         <section class="kart masa-bolum" aria-label="Başlangıç">
           <div class="satir"><h2>Başlamak için</h2><span class="bosluk" />
             <button class="dugme sade kucuk" onClick={() => Promise.all(baslangic.sorular.filter((q) => !q.cevap).map((q) => istemci.iste('soruCevapla', { evren, kod: 'evren', soru: q.kod, durum: 'sonra' })))}>Atla</button></div>
-          <p class="soluk kucuk">İstersen bu üç soruyla başla; istersen bir dinle, bir haritayla ya da bir tarihle. Atlamak hiçbir şeyi bozmaz.</p>
+          <p class="soluk kucuk">İsterseniz bu üç soruyla başlayın, isterseniz bir dinle, bir haritayla ya da bir tarihle. Bu adımı atlamak hiçbir şeyi bozmaz.</p>
           {liste('baslangic')}
         </section>
       )}
@@ -572,7 +572,7 @@ export function MasaPusulasi({ istemci, evren, kayitSayisi }: { istemci: Istemci
       <section class="masa-bolum pusula" aria-label="Dünya Pusulası">
         <details open={set('pusula').sorular.some((q) => q.cevap?.durum === 'cevaplandi')}>
           <summary><h2 style="display:inline">Dünya Pusulası</h2></summary>
-          <p class="soluk kucuk">Evrenin beş temel sorusu. Cevaplarını istediğin zaman yazıp değiştirebilirsin.</p>
+          <p class="soluk kucuk">Evrenin beş temel sorusu. Cevapları istediğiniz zaman yazıp değiştirebilirsiniz.</p>
           {liste('pusula')}
           <details class="alt-set"><summary class="kucuk">Evren kurma rehberi</summary>{liste('rehber')}</details>
           <details class="alt-set"><summary class="kucuk">Haritasız evren büyütme</summary>{liste('haritasiz')}</details>

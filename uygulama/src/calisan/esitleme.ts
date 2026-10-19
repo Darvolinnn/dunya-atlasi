@@ -81,7 +81,7 @@ export class Esitleme {
   constructor(private readonly x: EsitlemeErisimi, private readonly tasiyici: Tasiyici | null) {}
 
   private get t(): Tasiyici {
-    if (!this.tasiyici) throw new IzinHatasi('Google Drive\'a bağlı değil.');
+    if (!this.tasiyici) throw new IzinHatasi('Google Drive bağlantısı yok.');
     return this.tasiyici;
   }
 
@@ -107,7 +107,7 @@ export class Esitleme {
 
   /** Drive'daki bir evreni bu cihaza indirir. */
   async evreniIndir(evren: string) {
-    if (!kodGecerliMi(evren)) throw new Error('Geçersiz evren kodu.');
+    if (!kodGecerliMi(evren)) throw new Error('Evren bulunamadı.');
     const dosyalar = await this.t.listele({ uygulama: UYGULAMA, evren });
     const islemler = await this.uzakIslemler(dosyalar, {});
     if (!islemler.length) throw new Error('Bu evrenin Drive\'da okunabilir değişikliği yok.');
@@ -372,5 +372,5 @@ export class Esitleme {
 }
 
 export class GuncellemeGerekli extends Error {
-  constructor() { super('Bu evrenin bazı değişiklikleri programın daha yeni bir sürümüyle yazılmış. Veriler korundu, güncelleme bekliyor.'); }
+  constructor() { super('Bu evrenin bazı değişiklikleri programın daha yeni bir sürümüyle yazılmış. Verileriniz korundu; program güncellenince okunacak.'); }
 }

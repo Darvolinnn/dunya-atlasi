@@ -80,10 +80,10 @@ export function sozlukEslesir(metin: string, ifade: string): boolean {
 export function sozlukDenetle(e: EvrenVt): SozlukDenetimi {
   const eksikler = new Set<string>();
   const sonuc: SozlukDenetimi = { sonuclar: [], dahaFazlasi: false, denetlenen: 0, eksikler: [], guncellik: 'guncel',
-    kapsam: 'Etkin sözlüklerin seçili kapsamlarındaki metinler; vazgeçilmiş ve silinmiş kayıtlar hariç.',
-    not: 'Yalnızca yazarın girdiği sözcükler eşleştirilir. İzinli hitaplarda da yalnızca yazılan hitapların geçtiği yerler gösterilir. Kişinin tanıması ve sözcüğün dilde olması hakkında yorum yapılmaz.' };
-  const sozluk = sozlukler(e).filter((s) => { if (s.catismali) { eksikler.add(`“${s.ad}”: sözlüğün iki cihazdaki değerleri seçilmeyi bekliyor.`); return false; } return true; });
-  for (const s of sozlukler(e, true)) if (s.catismali) eksikler.add(`“${s.ad}”: sözlüğün kaldırılması veya tanımı iki cihazda farklı; önce birini seçin.`);
+    kapsam: 'Etkin sözlüklerin seçili kapsamlarındaki metinler. Vazgeçilmiş ve silinmiş kayıtlar taranmaz.',
+    not: 'Yalnızca sizin yazdığınız sözcükler eşleştirilir. İzin verilen hitaplarda da yalnızca yazdığınız hitapların geçtiği yerler gösterilir. Kişinin sözcüğü tanıyıp tanımadığı ya da sözcüğün o dilde bulunup bulunmadığı yorumlanmaz.' };
+  const sozluk = sozlukler(e).filter((s) => { if (s.catismali) { eksikler.add(`“${s.ad}” sözlüğünün iki cihazda farklı değerleri var. Önce birini seçin.`); return false; } return true; });
+  for (const s of sozlukler(e, true)) if (s.catismali) eksikler.add(`“${s.ad}” sözlüğünün kaldırılması ya da tanımı iki cihazda farklı. Önce birini seçin.`);
   const isaretler = new Set(e.db.selectObjects('SELECT sozluk,anahtar FROM sozluk_isaretleri WHERE bilerek=1').filter((r) => !catismali(e, r.sozluk as string, `sozluk_isareti:${r.anahtar}`)).map((r) => JSON.stringify([r.sozluk, r.anahtar])));
   const tarihler = new Map<string, EvrenTarihi | null>();
   const tarih = (kod: string) => {
@@ -104,15 +104,15 @@ export function sozlukDenetle(e: EvrenVt): SozlukDenetimi {
     if (c.tur === 'evren') return true;
     if (c.tur === 'turler') return c.turler.includes(k.tur);
     const hedef = e.db.selectObject('SELECT kod,tarih FROM kayitlar WHERE kod=? AND silindi IS NULL AND karar<>?', [c.kayit, 'vazgecildi']);
-    if (!hedef || catismali(e, c.kayit)) { eksikler.add(`“${s.ad}”: kapsam kaydı bulunamadı ya da seçilmeyi bekleyen değerleri var.`); return false; }
+    if (!hedef || catismali(e, c.kayit)) { eksikler.add(`“${s.ad}” sözlüğünün kapsadığı kayıt bulunamadı ya da bu kayıtta seçilmeyi bekleyen değerler var.`); return false; }
     if (c.tur === 'eser') {
       const ustler = atalar(k.kod);
-      if (ustler.some((u) => catismali(e, u, 'anlati'))) { eksikler.add(`“${k.ad}”: eserdeki yeri iki cihazda farklı.`); return false; }
+      if (ustler.some((u) => catismali(e, u, 'anlati'))) { eksikler.add(`“${k.ad}” kaydının eserdeki yeri iki cihazda farklı.`); return false; }
       return ustler.includes(c.kayit);
     }
     const d = okuTarih(hedef.tarih), t = tarih(k.kod);
     if (!d?.eksen || !t?.eksen || d.eksen.enErken === null || d.eksen.enGec === null || t.eksen.enErken === null || t.eksen.enGec === null) {
-      eksikler.add(`“${s.ad}”: dönemi veya tarihi yazılmamış kayıtlar taranmadı.`); return false;
+      eksikler.add(`“${s.ad}” sözlüğü için dönemi ya da tarihi yazılmamış kayıtlar taranmadı.`); return false;
     }
     return t.eksen.enErken >= d.eksen.enErken && t.eksen.enGec <= d.eksen.enGec;
   };
@@ -123,7 +123,7 @@ export function sozlukDenetle(e: EvrenVt): SozlukDenetimi {
     const bitir = (tara: boolean, dayanak: string) => { const d = { tara, dayanak }; tech.set(anahtar, d); return d; };
     const t = tarih(k.kod);
     const yerler = e.db.selectObjects(`SELECT i.b FROM iliskiler i JOIN kayitlar y ON y.kod=i.b WHERE i.a=? AND i.tur='sahne_yeri' AND i.silindi IS NULL AND i.bitis IS NULL AND i.karar<>'vazgecildi' AND y.silindi IS NULL`, [k.kod]);
-    const kayip = () => { eksikler.add(`“${k.ad}”: teknoloji için sahne tarihi, tek bir yer ve o bölgeye yayılma tarihi gerekli; seçilmeyi bekleyen değerler de denetlenmez.`); return bitir(false, ''); };
+    const kayip = () => { eksikler.add(`“${k.ad}” denetlenemedi. Teknoloji denetimi için sahnenin tarihi, tek bir yeri ve teknolojinin o bölgeye yayılma tarihi gerekli. Seçilmeyi bekleyen değerler de denetlenmez.`); return bitir(false, ''); };
     if (k.tur !== 'sahne' || !t?.eksen || yerler.length !== 1 || catismali(e, kod) || !e.db.selectValue("SELECT kod FROM kayitlar WHERE kod=? AND tur='teknoloji' AND silindi IS NULL AND karar<>'vazgecildi'", [kod])) return kayip();
     const yer = yonlendir(e.db, yerler[0].b as string) as string;
     const durum = teknolojiDurumu(e, yer, t.ifade);
@@ -131,7 +131,7 @@ export function sozlukDenetle(e: EvrenVt): SozlukDenetimi {
     const ulasma = teknolojiOku(e, kod).asamalar.filter((a) => a.asama === 'yayilma' && a.yer && durum.yerler.some((y) => y.kod === a.yer!.kod));
     if (!ulasma.length || ulasma.some((a) => !a.tarih?.eksen)) return kayip();
     const tara = ulasma.every((a) => karsilastir(t, a.tarih!) === 'once');
-    if (!tara && ulasma.every((a) => karsilastir(t, a.tarih!) !== 'sonra' && JSON.stringify(t.eksen) !== JSON.stringify(a.tarih!.eksen))) eksikler.add(`“${k.ad}”: sahne tarihi ile bölgeye yayılma tarihi kesin olarak ayrılamıyor.`);
+    if (!tara && ulasma.every((a) => karsilastir(t, a.tarih!) !== 'sonra' && JSON.stringify(t.eksen) !== JSON.stringify(a.tarih!.eksen))) eksikler.add(`“${k.ad}” için sahnenin tarihinin, bölgeye yayılma tarihinden önce mi sonra mı olduğu kesin değil.`);
     return bitir(tara, `Sahne: ${t.ifade}. Bölgeye yayılma: ${ulasma.map((a) => `${a.yer!.ad}, ${a.tarih!.ifade}`).join('; ')}.`);
   };
   // Metinler çalışan içinde, küçük sayfalarla okunur. 501. görünür eşleşmede durulur.
@@ -140,7 +140,7 @@ export function sozlukDenetle(e: EvrenVt): SozlukDenetimi {
     if (!kayitlar.length) break;
     for (const r of kayitlar) {
       const k = r as unknown as KisaKayit;
-      if (catismali(e, k.kod) || (r.sahne_olayi && catismali(e, r.sahne_olayi as string))) { eksikler.add(`“${k.ad}”: iki cihazdaki değerler seçilmeyi bekliyor.`); continue; }
+      if (catismali(e, k.kod) || (r.sahne_olayi && catismali(e, r.sahne_olayi as string))) { eksikler.add(`“${k.ad}” kaydının iki cihazda farklı değerleri var. Önce birini seçin.`); continue; }
       const secili = sozluk.filter((s) => uygun(s, k));
       if (!secili.length) continue;
       sonuc.denetlenen++;
@@ -152,7 +152,7 @@ export function sozlukDenetle(e: EvrenVt): SozlukDenetimi {
           const metin = paragraflar[p];
           for (const s of secili) for (const g of s.girdiler) {
             if (!sozlukEslesir(metin, g.ifade)) continue;
-            const t = g.teknoloji ? teknoloji(k, g.teknoloji) : { tara: true, dayanak: 'Yazarın girdiği sözcük veya sözcük öbeği.' };
+            const t = g.teknoloji ? teknoloji(k, g.teknoloji) : { tara: true, dayanak: 'Sizin yazdığınız sözcük ya da sözcük öbeği.' };
             if (!t.tara) continue;
             const anahtar = JSON.stringify([k.kod, alan, p, metin, s.ad, s.tur, s.kapsam, g, t.dayanak]);
             if (isaretler.has(JSON.stringify([s.kod, anahtar]))) continue;

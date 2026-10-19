@@ -29,7 +29,7 @@ export function SurecKurallariBolumu({ istemci, evren, kod, surum }: { istemci: 
   return (
     <section class="surecler" aria-label="Süreç kuralları">
       <h2>Süreç kuralları</h2>
-      <p class="soluk kucuk">Bir şeyin nasıl yapıldığı ya da kazanıldığı: adımlar, önkoşullar, geri dönülmez eşikler ve sonucun hangi adımlarla doğduğu. Program evrensel bir kural koymaz; yalnızca senin yazdığını uygular.</p>
+      <p class="soluk kucuk">Bir şeyin nasıl yapıldığını ya da kazanıldığını yazın: adımlar, önkoşullar, geri dönülmez eşikler ve sonuç için hangi adımların gerektiği. Program kendiliğinden kural koymaz, yalnızca sizin yazdığınızı uygular.</p>
       {l.map((k) => <KuralDuzenleyici key={k.kod} istemci={istemci} evren={evren} k={k} />)}
       <form class="satir" onSubmit={(e) => { e.preventDefault(); istemci.iste('surecKuraliOlustur', { evren, sahip: kod, ad }).then(() => { setAd(''); setHata(null); }, (x) => setHata(hataYaz(x))); }}>
         <input class="girdi" style="flex:1;min-width:180px" lang="tr" aria-label="Yeni süreç kuralının adı" placeholder="Yeni kural (ör. Kuzey geleneğine göre taç)" value={ad} onInput={(e) => setAd((e.target as HTMLInputElement).value)} />
@@ -54,7 +54,7 @@ function KuralDuzenleyici({ istemci, evren, k }: { istemci: Istemci; evren: stri
       <label class="alan"><span class="alan-adi">Kuralın adı</span>
         <input class="girdi" lang="tr" value={t.ad} onInput={(e) => setT({ ...t, ad: (e.target as HTMLInputElement).value })} /></label>
       <label class="alan"><span class="alan-adi">Başlangıç koşulları</span>
-        <textarea class="girdi" rows={2} lang="tr" placeholder="Program bu metinden anlam çıkarmaz; yalnızca gösterir." value={t.kosullar} onInput={(e) => setT({ ...t, kosullar: (e.target as HTMLTextAreaElement).value })} /></label>
+        <textarea class="girdi" rows={2} lang="tr" placeholder="Bu metin yalnızca gösterilir, program ondan sonuç çıkarmaz." value={t.kosullar} onInput={(e) => setT({ ...t, kosullar: (e.target as HTMLTextAreaElement).value })} /></label>
       <ol class="adim-listesi">
         {t.adimlar.map((a, i) => (
           <li key={a.kod}>
@@ -64,7 +64,7 @@ function KuralDuzenleyici({ istemci, evren, k }: { istemci: Istemci; evren: stri
               <label class="satir kucuk"><input type="checkbox" checked={a.esik} onChange={() => adim(i, (x) => { x.esik = !x.esik; })} /> Geri dönülmez eşik</label>
               <button class="dugme sade kucuk" aria-label={`${a.ad || 'Adım'}: kaldır`} onClick={() => kaldir(i)}>×</button>
             </div>
-            <input class="girdi kucuk" lang="tr" aria-label={`${i + 1}. adımın etkisi`} placeholder="Etkisi (ör. bedel burada ödenir; isteğe bağlı)" value={a.etki} onInput={(e) => adim(i, (x) => { x.etki = (e.target as HTMLInputElement).value; })} />
+            <input class="girdi kucuk" lang="tr" aria-label={`${i + 1}. adımın etkisi`} placeholder="Etkisi (isteğe bağlı, ör. bedel burada ödenir)" value={a.etki} onInput={(e) => adim(i, (x) => { x.etki = (e.target as HTMLInputElement).value; })} />
             {i > 0 && (
               <span class="satir kucuk soluk">Önce gerekenler:
                 {t.adimlar.slice(0, i).map((o) => (
@@ -83,7 +83,7 @@ function KuralDuzenleyici({ istemci, evren, k }: { istemci: Istemci; evren: stri
         <button class="dugme kucuk" disabled={!degisti} onClick={() => setT({ ad: k.ad, kosullar: k.kosullar, adimlar: structuredClone(k.adimlar) })}>Vazgeç</button>
         <button class="dugme sade kucuk" onClick={() => onayla('Bu kural kaldırılsın mı?') && istemci.iste('surecKuraliSil', { evren, kod: k.kod })}>Kuralı kaldır</button>
       </div>
-      {!t.adimlar.some((a) => a.sonuc) && t.adimlar.length > 0 && <p class="soluk kucuk">Hiçbir adım “sonuç için gerekli” değil; program sonucun doğup doğmadığını söylemez.</p>}
+      {!t.adimlar.some((a) => a.sonuc) && t.adimlar.length > 0 && <p class="soluk kucuk">Hiçbir adım “sonuç için gerekli” olarak işaretlenmedi. Bu yüzden program sonucun gerçekleşip gerçekleşmediğini söyleyemez.</p>}
       {hata && <p class="hata kucuk">{hata}</p>}
     </details>
   );
@@ -102,7 +102,7 @@ export function OlaySurecBolumu({ istemci, evren, kod, surum }: { istemci: Istem
   return (
     <section class="surecler" aria-label="Süreç">
       <h2>Süreç</h2>
-      {!s.surecler.length && <p class="soluk kucuk">Bu olay bir süreç kuralına bağlı değil. Bağlarsan her adımın ne olduğunu ayrı ayrı işaretleyebilirsin; işaretlenmeyen adım “olmadı” sayılmaz.</p>}
+      {!s.surecler.length && <p class="soluk kucuk">Bu olay bir süreç kuralına bağlı değil. Bağlarsanız her adımda ne olduğunu ayrı ayrı işaretleyebilirsiniz. İşaretlenmeyen bir adım “olmadı” sayılmaz.</p>}
       {s.surecler.map((x) => (
         <div key={x.kural.kod} class="kart surec-olayi">
           <div class="satir"><strong>{x.kural.ad}</strong><span class="soluk kucuk">· <a href={`#/e/${evren}/k/${x.kural.sahip.kod}`}>{x.kural.sahip.ad}</a></span>
@@ -116,7 +116,7 @@ export function OlaySurecBolumu({ istemci, evren, kod, surum }: { istemci: Istem
                   {a.etki && <span class="soluk kucuk"> · {a.etki}</span>}</span>
                 <select class="girdi kucuk-secim" aria-label={`${x.kural.ad}: ${a.ad}`} value={x.durumlar[a.kod] ?? ''}
                   onChange={(e) => isle(istemci.iste('surecAdimi', { evren, olay: kod, kural: x.kural.kod, adim: a.kod, durum: ((e.target as HTMLSelectElement).value || null) as AdimDurumu | null }))}>
-                  <option value="">Kaydedilmedi</option>
+                  <option value="">İşaretlenmedi</option>
                   {DURUMLAR.map((d) => <option value={d.kod}>{d.ad}</option>)}
                 </select>
               </li>
@@ -124,12 +124,12 @@ export function OlaySurecBolumu({ istemci, evren, kod, surum }: { istemci: Istem
           </ol>
           <p class={`kucuk sonuc-${x.sonuc.durum}`}>{x.sonuc.yazi}</p>
           {x.sonuc.esik && <p class="kucuk">Geri dönülmez eşik geçildi: “{x.sonuc.esik}”. Süreç sonradan yarıda kalsa da bu adım geri alınmış sayılmaz.</p>}
-          {x.celismeler.map((c) => <p class="uyari kucuk" key={c}>{c} Olay kaydı değişmez; bir açıklama gerekebilir.</p>)}
+          {x.celismeler.map((c) => <p class="uyari kucuk" key={c}>{c} Olay kaydı değiştirilmez, ama bir açıklama gerekebilir.</p>)}
           {s.catisma && !x.fiili && <button class="dugme sade kucuk" onClick={() => isle(istemci.iste('surecFiili', { evren, olay: kod, kural: x.kural.kod }))}>Fiilen bu uygulandı</button>}
         </div>
       ))}
       {s.catisma && (
-        <p class="kucuk">Kurallar farklı sonuç veriyor. Bu evren içindeki bir anlaşmazlıktır; program birini doğru saymaz.
+        <p class="kucuk">Kurallar farklı sonuçlar veriyor. Bu, evrenin içindeki bir anlaşmazlıktır ve program hiçbirini doğru saymaz.
           {s.surecler.some((x) => x.fiili) && <> <button class="dugme sade kucuk" onClick={() => isle(istemci.iste('surecFiili', { evren, olay: kod, kural: null }))}>Fiilî seçimi kaldır</button></>}</p>
       )}
       {eklenebilir.length > 0 && (
@@ -138,7 +138,7 @@ export function OlaySurecBolumu({ istemci, evren, kod, surum }: { istemci: Istem
           {eklenebilir.map((k) => <option value={k.kod}>{k.sahip.ad}: {k.ad}</option>)}
         </select>
       )}
-      {!tum.length && <p class="soluk kucuk">Henüz süreç kuralı yok. Bir makam, kurum, kültür ya da ritüel sayfasından ekleyebilirsin.</p>}
+      {!tum.length && <p class="soluk kucuk">Henüz süreç kuralı yok. Bir makam, kurum, kültür ya da ritüel sayfasından ekleyebilirsiniz.</p>}
       <SurecSorumluBolumu istemci={istemci} evren={evren} olay={kod} surum={surum} />
       {hata && <p class="hata kucuk">{hata}</p>}
     </section>
@@ -152,7 +152,7 @@ export function MakamYurutenleri({ istemci, evren, kod, surum }: { istemci: Iste
   return (
     <section class="yurutenler" aria-label="Yürütenler">
       <h2>Yürütenler</h2>
-      {!l.length ? <p class="soluk kucuk">Bu makamı yürüten kayıtlı değil. Bir kişinin sayfasından “Yürüttüğü makam” ilişkisini tarihleriyle ekleyebilirsin.</p> : (
+      {!l.length ? <p class="soluk kucuk">Bu makamı yürüten kayıtlı değil. Bir kişinin sayfasından “Yürüttüğü makam” ilişkisini tarihleriyle ekleyebilirsiniz.</p> : (
         <ul class="toplanan-listesi">
           {l.map((x) => (
             <li key={x.iliski}><a href={`#/e/${evren}/k/${x.kisi.kod}`}>{x.kisi.ad}</a>

@@ -50,7 +50,7 @@ export function anlatimYaz(b: AnlatimBaglami, kodGirdi: string | null, t: Anlati
   if (destek !== null && !secenekler.has(destek)) throw new Error('Desteklenen cevap soruda yok.');
   const itiraz = [...new Set(Array.isArray(t.itiraz) ? t.itiraz : [])];
   if (itiraz.some((x) => !secenekler.has(x))) throw new Error('İtiraz edilen cevap soruda yok.');
-  if (destek && itiraz.includes(destek)) throw new Error('Bir anlatım aynı cevabı hem destekleyip hem ona itiraz edemez.');
+  if (destek && itiraz.includes(destek)) throw new Error('Bir anlatım aynı cevabı hem destekleyemez hem de ona itiraz edemez.');
   if (destek === null && !itiraz.length) throw new Error('Anlatımın hangi cevabı desteklediğini ya da hangisine itiraz ettiğini seçin.');
   const kod = kodGirdi ?? yeniKod();
   let dayanak: string | null = null, dayanakTuru: AnlatimTanimi['dayanakTuru'] = null;
@@ -59,9 +59,9 @@ export function anlatimYaz(b: AnlatimBaglami, kodGirdi: string | null, t: Anlati
     if (!tum.has(t.dayanak) || t.dayanak === kod) throw new Error('Dayandığı anlatım aynı sorunun başka bir anlatımı olmalı.');
     // Döngü olmasın: dayanağın zinciri bu anlatıma geri dönmemeli.
     for (let x: string | null = t.dayanak, n = 0; x; x = tum.get(x)?.dayanak ?? null, n++) {
-      if (x === kod || n > 500) throw new Error('Anlatımlar birbirine dayanarak döngü kuramaz.');
+      if (x === kod || n > 500) throw new Error('Anlatımlar birbirine dayanarak bir döngü oluşturamaz.');
     }
-    if (!DAYANAK_TURLERI.some((x) => x.kod === t.dayanakTuru)) throw new Error('Kopya, tercüme ya da aktarma seçin.');
+    if (!DAYANAK_TURLERI.some((x) => x.kod === t.dayanakTuru)) throw new Error('Kopya, tercüme ya da aktarmadan birini seçin.');
     dayanak = t.dayanak; dayanakTuru = t.dayanakTuru;
   }
   const karar = t.karar ?? 'kesin';
@@ -76,7 +76,7 @@ export function anlatimKaldir(b: AnlatimBaglami, kod: string, geri: boolean) {
   if (!r) throw new Error('Anlatım bulunamadı.');
   if (geri === (r.silindi === null)) return;
   if (!geri && b.e.db.selectValue(`SELECT 1 FROM anlatimlar WHERE silindi IS NULL AND json_extract(tanim,'$.dayanak')=?`, [kod]) !== undefined) {
-    throw new Error('Bu anlatıma dayanan başka anlatımlar var; önce onların dayanağını değiştirin.');
+    throw new Error('Bu anlatıma dayanan başka anlatımlar var. Önce onların dayanağını değiştirin.');
   }
   const iddia = iddiaOku(b.e, r.iddia as string);
   b.yaz([{ tur: geri ? 'anlatim_geri_yukle' : 'anlatim_sil', veri: { kod, soru: iddia.soru } }], [iddia.konu]);
@@ -111,6 +111,6 @@ export function iddiaDosyasi(e: EvrenVt, iddiaKod: string): IddiaDosyasi {
   return {
     iddia: { kod: iddia.kod, soru: iddia.soru, konu: kisa(e, iddia.konu)!, gercek: iddia.gercek },
     anlatimlar, cevaplar, kaldirilan: satirlar(e, iddia.kod, true).map((x) => ({ kod: x.kod, ozet: x.tanim.ozet, kaynakKaydi: kisa(e, x.tanim.kaynak) })),
-    not: 'Anlatımlar gerçeği belirlemez; gerçek yazarın kararıdır. Kopya, tercüme ya da aktarma ile aynı kökten gelen anlatımlar ve aynı belge ailesinden gelenler tek bağımsız kaynak sayılır. Vazgeçilmiş anlatımlar sayılmaz.',
+    not: 'Gerçeği anlatımlar değil, yazar belirler. Kopya, tercüme ya da aktarma yoluyla aynı kökten gelen anlatımlar ve aynı belge ailesinden gelenler tek bağımsız kaynak sayılır. Vazgeçilmiş anlatımlar hesaba katılmaz.',
   };
 }

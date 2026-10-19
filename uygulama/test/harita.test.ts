@@ -109,7 +109,7 @@ describe('harita: yükle, işaretle, bağla', () => {
     a = h.harita({ evren, kod: harita });
     expect(a.katmanlar[1].donusum.map((x) => Math.round(x * 1000) / 1000)).toEqual([2, 0, 0, 2, 10, 20]);
     expect(a.isaretler[0].konum).toMatchObject({ x: 400, y: 250 });
-    { const i = h.islemGunlugu({ evren, sinir: 1 })[0]; expect(islemAciklamasi(i.tur, i.veri)).toContain('yeniden oturtuldu'); }
+    { const i = h.islemGunlugu({ evren, sinir: 1 })[0]; expect(islemAciklamasi(i.tur, i.veri)).toContain('yeniden hizalandı'); }
 
     await h.katmanGorseli({ evren, harita, katman: k, dosyaAdi: 'yeni.png', tur: 'image/png', veri: gorsel(4) });
     a = h.harita({ evren, kod: harita });

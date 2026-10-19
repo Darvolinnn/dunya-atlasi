@@ -22,7 +22,7 @@ export interface Sutun {
 }
 
 export function karsilastir(kayit: string, sutunlar: Sutun[]): BaglamKarsilastirmasi {
-  if (sutunlar.length < 2 || sutunlar.length > 4) throw new Error('İki ile dört arasında bağlam seçin.');
+  if (sutunlar.length < 2 || sutunlar.length > 4) throw new Error('İki ila dört bağlam seçin.');
   const satirlar = new Map<string, BaglamSatiri>();
   const koy = (anahtar: string, baslik: string, grup: BaglamSatiri['grup'], i: number, deger: string | null) => {
     if (!satirlar.has(anahtar)) satirlar.set(anahtar, { baslik, grup, degerler: sutunlar.map(() => null), farkli: false, neden: [] });
@@ -65,8 +65,8 @@ export function karsilastir(kayit: string, sutunlar: Sutun[]): BaglamKarsilastir
     const farkli = new Set(dolu.filter((d) => d !== undefined)).size > 1;
     return { ...s, farkli, neden: farkli ? ETKILEYEN[s.grup].filter((x) => degisen.has(x)).map((x) => EKSEN_ADI[x]) : [] };
   });
-  const notlar = ['Boş hücre “yok” değil, o bağlamda yazılmamış demektir. Aynı alan ve aynı soru eşleşir; anlamdan eşleştirme yapılmaz.'];
-  if (degisen.has('kaynak') && (degisen.has('tarih') || degisen.has('bilen'))) notlar.push('Bağlamlar farklı kaynaklardan seçildi; bu bir karşılaştırma görünümüdür, eski sürümün ya da denemenin kendisi değildir.');
-  if (!degisen.size) notlar.push('Seçilen bağlamlar aynı; fark beklenmez.');
+  const notlar = ['Boş hücre “yok” demek değildir; o bağlamda bir şey yazılmadığını gösterir. Yalnızca aynı alanlar ve aynı sorular yan yana konur, anlam benzerliğine bakılmaz.'];
+  if (degisen.has('kaynak') && (degisen.has('tarih') || degisen.has('bilen'))) notlar.push('Bağlamlar farklı kaynaklardan seçildi. Burada gördüğünüz bir karşılaştırmadır, eski sürümün ya da deneme kopyasının kendisi değildir.');
+  if (!degisen.size) notlar.push('Seçilen bağlamlar aynı, bu yüzden fark çıkmaz.');
   return { sutunlar: basliklar, satirlar: sonuc, notlar };
 }

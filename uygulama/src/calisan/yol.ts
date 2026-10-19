@@ -69,10 +69,10 @@ export function rotaYaz(b: YolBaglami, kod: string, g: RotaGirdisi) {
   }
   const sureler = (g.sureler ?? []).map((s) => {
     const gun = Number(s.gun);
-    if (!Number.isFinite(gun) || gun <= 0) throw new Error('Süre gün olarak sıfırdan büyük bir sayı olmalı.');
+    if (!Number.isFinite(gun) || gun <= 0) throw new Error('Süre, gün olarak sıfırdan büyük bir sayı olmalı.');
     return { kosul: String(s.kosul ?? '').replace(/\s+/g, ' ').trim().slice(0, 80), gun };
   });
-  if (sureler.length > 30) throw new Error('Çok fazla süre.');
+  if (sureler.length > 30) throw new Error('Bir rotaya en çok 30 süre yazılabilir.');
   const duraklar = (g.duraklar ?? []).map((d) => kayitVar(b.e, d));
   const rotaV = { a, b: bb, mesafe, sureler, duraklar };
   const r = b.e.db.selectObject('SELECT a, b, mesafe, sureler, duraklar FROM rotalar WHERE kod=?', [kod]);
@@ -122,7 +122,7 @@ export function yolculuk(e: EvrenVt, kod: string): Yolculuk {
 
 export function yolculukYaz(b: YolBaglami, kod: string, girdiler: YolculukAsamaGirdisi[]) {
   turDenetle(b.e, kod, 'yolculuk');
-  if (!Array.isArray(girdiler) || girdiler.length > 100) throw new Error('Geçersiz aşamalar.');
+  if (!Array.isArray(girdiler) || girdiler.length > 100) throw new Error('Aşama listesi geçersiz.');
   const z = zamanSetiOku(b.e.db);
   const tarih = (s: unknown) => { const x = String(s ?? '').trim(); if (!x) return null; if (x.length > 120) throw new Error('Tarih çok uzun.'); return tarihCoz(x, z); };
   const asamalar = girdiler.map((g) => {

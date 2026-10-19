@@ -27,7 +27,7 @@ export function BaglamKarsilastirmaBolumu({ istemci, evren, kod }: { istemci: Is
     <section class="baglam-karsilastirma" aria-label="Bağlam karşılaştırma">
       <details open={ac} onToggle={(e) => setAc((e.target as HTMLDetailsElement).open)}>
         <summary><h2 style="display:inline">Bağlamları karşılaştır</h2></summary>
-        <p class="soluk kucuk">Bu kaydı farklı evren tarihlerinde, bir kişinin bildiğine göre ya da bir sürümde yan yana gör. Fark olan satırda farkın hangi bağlamdan gelebileceği yazılır.</p>
+        <p class="soluk kucuk">Bu kaydı farklı evren tarihlerinde, bir kişinin bildiklerine göre ya da bir sürümde yan yana görün. Farklı olan satırlarda, farkın hangi bağlamdan gelebileceği yazılır.</p>
         <div class="baglam-secimleri">
           {sutunlar.map((s, i) => (
             <div class="kart baglam-secimi" key={i}>
@@ -35,10 +35,10 @@ export function BaglamKarsilastirmaBolumu({ istemci, evren, kod }: { istemci: Is
                 <select class="girdi" value={s.kaynak} onChange={(e) => degis(i, (x) => ({ ...x, kaynak: (e.target as HTMLSelectElement).value }))}>
                   <option value="">Güncel</option>
                   {kaynaklar.surumler.map((v) => <option value={`surum:${v.kod}`}>Sürüm: {v.ad}</option>)}
-                  {kaynaklar.dallar.map((v) => <option value={`dal:${v.kod}`}>Deneme: {v.ad}</option>)}
+                  {kaynaklar.dallar.map((v) => <option value={`dal:${v.kod}`}>Deneme kopyası: {v.ad}</option>)}
                 </select></label>
               <label class="alan"><span class="alan-adi">Evren tarihi</span>
-                <input class="girdi" lang="tr" value={s.tarih} placeholder="Boş: en son hâl" onInput={(e) => degis(i, (x) => ({ ...x, tarih: (e.target as HTMLInputElement).value }))} /></label>
+                <input class="girdi" lang="tr" value={s.tarih} placeholder="Boşsa en son durum" onInput={(e) => degis(i, (x) => ({ ...x, tarih: (e.target as HTMLInputElement).value }))} /></label>
               <div class="alan"><span class="alan-adi">Kimin bilgisi</span>
                 <span class="satir"><KayitSec istemci={istemci} evren={evren} secili={s.bilen} etiket="Bilen seç (isteğe bağlı)" sec={(b) => degis(i, (x) => ({ ...x, bilen: b }))} />
                   {s.bilen && <button class="dugme sade kucuk" aria-label="Bileni kaldır" onClick={() => degis(i, (x) => ({ ...x, bilen: null }))}>×</button>}</span></div>

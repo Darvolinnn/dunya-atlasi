@@ -32,7 +32,7 @@ export function KesifSekmesi({ istemci, evren }: { istemci: Istemci; evren: stri
   return (
     <section class="kesif" aria-label="Keşif soruları">
       <h2>Keşif soruları</h2>
-      <p class="soluk kucuk">Bir soru şablonu seçin; program yalnızca yazdığınız ilişkilerden olası adaylar çıkarır. Sonuç bir olasılıktır, olmuş bir şey değildir.</p>
+      <p class="soluk kucuk">Bir soru seçin. Program yalnızca sizin yazdığınız ilişkilere bakarak olası adayları bulur. Sonuçlar olabilecek şeylerdir, olmuş şeyler değil.</p>
       <form class="kart" onSubmit={sor}>
         <p><strong>Aynı sorunun farklı cevaplarına inanan iki kişi hangi tarihlerde aynı yerde olabilir?</strong></p>
         {iddialar.length ? (
@@ -47,7 +47,7 @@ export function KesifSekmesi({ istemci, evren }: { istemci: Istemci; evren: stri
         ) : <p class="soluk kucuk">Henüz soru yok. Bir kaydın sayfasında “Soru ekle” ile soru ve kimin neye inandığını yazın.</p>}
       </form>
       <div class="kart">
-        <p><strong>Aynı şey üzerinde çelişen hak iddiası olanlar kim?</strong></p>
+        <p><strong>Aynı şey üzerinde birbiriyle çelişen hak iddiaları olanlar kimler?</strong></p>
         <button class="dugme ana kucuk" type="button" onClick={() => getir('celisen_haklar')}>Çelişen hakları göster</button>
       </div>
       {hata && <p class="hata kucuk">{hata}</p>}

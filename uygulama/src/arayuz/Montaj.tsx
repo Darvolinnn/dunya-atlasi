@@ -30,7 +30,7 @@ export function KurguMontajiBolumu({ istemci, evren, kod, surum }: { istemci: Is
         {etki && <EtkiOzeti evren={evren} etki={etki} kapat={() => setEtki(null)} />}
         {m && (
           <>
-            {!m.sahneler.length ? <p class="soluk kucuk">Bu esere yerleşmiş sahne yok.</p> : (
+            {!m.sahneler.length ? <p class="soluk kucuk">Bu esere yerleştirilmiş sahne yok.</p> : (
               <>
                 <h3>Okuma sırası</h3>
                 <ol class="montaj-sahneleri">{m.sahneler.map((s, i) => (
@@ -41,7 +41,7 @@ export function KurguMontajiBolumu({ istemci, evren, kod, surum }: { istemci: Is
               </>
             )}
             <h3>Sırlar ve açıklamalar</h3>
-            {!m.sorular.length ? <p class="soluk kucuk">Bu eserde niyet işareti ya da okur bilgisi olan soru yok. Sahnelerin “Niyet işaretleri” bölümünden ekleyebilirsin.</p> : (
+            {!m.sorular.length ? <p class="soluk kucuk">Bu eserde niyet işareti ya da okur bilgisi olan soru yok. Sahnelerin “Niyet işaretleri” bölümünden ekleyebilirsiniz.</p> : (
               <ul class="toplanan-listesi">{m.sorular.map((q) => (
                 <li key={q.iddia.kod}><strong>{q.iddia.soru}</strong> <span class="soluk kucuk">· {q.iddia.konu.ad}{q.iddia.gercek ? ` · gerçek: ${q.iddia.gercek}` : ''}</span>{' '}
                   <select class="girdi kucuk-secim" aria-label={`${q.iddia.soru} hedefi`} value={q.hedef ?? ''} onChange={(e) => hedef(q.iddia.kod, ((e.target as HTMLSelectElement).value || null) as MontajHedefi | null)}>
@@ -74,14 +74,14 @@ function YoklukHaritasi({ evren, m }: { evren: string; m: KurguMontaji }) {
   return (
     <>
       <h3>Karakterlerin yokluğu</h3>
-      <p class="soluk kucuk">Dolu kare: sahnede bulunuyor. Renk koyulaştıkça son görüldüğü sahneden bu yana daha çok sahne geçmiş.</p>
+      <p class="soluk kucuk">Dolu kare: karakter o sahnede var. Renk ne kadar koyuysa karakterin son göründüğü sahneden bu yana o kadar çok sahne geçmiştir.</p>
       <div class="yokluk-haritasi" role="table" aria-label="Karakter yokluk haritası">
         {m.yokluk.map((y) => (
           <div class="yokluk-satiri" role="row" key={y.kisi.kod}>
             <a role="rowheader" href={`#/e/${evren}/k/${y.kisi.kod}`}>{y.kisi.ad}</a>
             {y.hucreler.map((h, i) => (
               <span role="cell" key={i} class={h === 0 ? 'yh var' : h < 0 ? 'yh once' : 'yh yok'} style={h > 0 ? `opacity:${(0.15 + 0.85 * h / enCok).toFixed(2)}` : undefined}
-                title={`${m.sahneler[i].sira}. ${m.sahneler[i].ad}: ${h === 0 ? 'bulunuyor' : h < 0 ? 'henüz görünmedi' : `${h} sahnedir yok`}`} />
+                title={`${m.sahneler[i].sira}. ${m.sahneler[i].ad}: ${h === 0 ? 'bulunuyor' : h < 0 ? 'henüz görünmedi' : `${h} sahnedir görünmüyor`}`} />
             ))}
           </div>
         ))}
@@ -106,7 +106,7 @@ export function SahneNiyetleriBolumu({ istemci, evren, kod, surum }: { istemci: 
   return (
     <section class="surecler" aria-label="Niyet işaretleri">
       <h2>Niyet işaretleri</h2>
-      <p class="soluk kucuk">Bu sahne okura sunulan hangi açıklamayı desteklemek, zayıflatmak ya da açıklamak için yazıldı? Yazarın niyetidir; okurun ne düşündüğü ölçülmez.</p>
+      <p class="soluk kucuk">Bu sahne, okura sunulan hangi açıklamayı desteklemek, zayıflatmak ya da doğrulamak için yazıldı? Bu sizin niyetinizdir; okurun ne düşündüğü ölçülmez.</p>
       {l.length > 0 && <ul class="toplanan-listesi">{l.map((n, i) => {
         const q = iddia(n.iddia);
         return <li key={i}>{q?.soru ?? 'Silinmiş soru'}: <strong>{NIYETLER.find((x) => x.kod === n.tur)!.ad.toLocaleLowerCase('tr-TR')}</strong>{n.secenek && ` “${q?.secenekler.find((s) => s.kod === n.secenek)?.metin ?? ''}”`}{' '}
@@ -122,7 +122,7 @@ export function SahneNiyetleriBolumu({ istemci, evren, kod, surum }: { istemci: 
         </select>
         {secili && (
           <select class="girdi kucuk-secim" aria-label="Açıklama" value={yeni.secenek} onChange={(e) => setYeni({ ...yeni, secenek: (e.target as HTMLSelectElement).value })}>
-            <option value="">{yeni.tur === 'aciklar' ? 'Hangi cevap (isteğe bağlı)' : 'Hangi açıklama?'}</option>
+            <option value="">{yeni.tur === 'aciklar' ? 'Hangi cevap? (isteğe bağlı)' : 'Hangi açıklama?'}</option>
             {secili.secenekler.map((s) => <option value={s.kod}>{s.metin}</option>)}
           </select>
         )}

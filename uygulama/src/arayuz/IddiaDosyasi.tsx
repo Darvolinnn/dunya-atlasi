@@ -49,7 +49,7 @@ export function IddiaDosyasiBolumu({ istemci, evren, iddia }: { istemci: Istemci
             {a.ozet && <div class="kucuk soluk">{a.ozet}</div>}
             <span class="satir">
               <button class="dugme sade kucuk" onClick={() => setForm(a)}>Düzenle</button>
-              <button class="dugme sade kucuk tehlikeli" onClick={() => onayla('Bu iddia kaldırılsın mı? Kaldırılanlardan geri getirebilirsin.') && kaldir(a.kod, false)}>Kaldır</button>
+              <button class="dugme sade kucuk tehlikeli" onClick={() => onayla('Bu anlatım kaldırılsın mı? Kaldırılan anlatımlardan geri getirebilirsiniz.') && kaldir(a.kod, false)}>Kaldır</button>
             </span>
           </li>
         ))}</ul>
@@ -102,7 +102,7 @@ function AnlatimFormu({ istemci, evren, d, eski, kapat }: { istemci: Istemci; ev
         <div class="satir">
           <label class="alan"><span class="alan-adi">Başka bir anlatıma mı dayanıyor?</span>
             <select class="girdi" value={t.dayanak ?? ''} onChange={(e) => { const v = (e.target as HTMLSelectElement).value || null; setT({ ...t, dayanak: v, dayanakTuru: v ? t.dayanakTuru ?? 'kopya' : null }); }}>
-              <option value="">Hayır, kendi kaynağı</option>
+              <option value="">Hayır, kendi kaynağı var</option>
               {digerleri.map((a) => <option value={a.kod}>{turAdi(a.tur)}{a.kaynakKaydi ? `: ${a.kaynakKaydi.ad}` : ''}{a.ozet ? ` · ${a.ozet.slice(0, 40)}` : ''}</option>)}
             </select></label>
           {t.dayanak && (

@@ -47,7 +47,7 @@ export function HaritaKunyeBolumu({
     <section class="harita-kunye" aria-label="Harita künyesi">
       <div class="satir">
         <h2>Harita künyesi</h2>
-        {kunye?.catismali && <span class="rozet uyari">İki cihazda farklı</span>}
+        {kunye?.catismali && <span class="rozet uyari">İki cihazda farklı yazılmış</span>}
         <span class="bosluk" />
         {!saltOkunur && (
           <button
@@ -70,7 +70,7 @@ export function HaritaKunyeBolumu({
           {kunye.tanim.yapan && (
             <p>
               <span class="soluk">Yapan:</span>{' '}
-              {kunye.yapanAd ? <a href={`#/e/${evren}/k/${kunye.tanim.yapan}`}>{kunye.yapanAd}</a> : <span>Silinmiş veya bulunamayan kayıt</span>}
+              {kunye.yapanAd ? <a href={`#/e/${evren}/k/${kunye.tanim.yapan}`}>{kunye.yapanAd}</a> : <span>Silinmiş ya da bulunamayan kayıt</span>}
             </p>
           )}
           {kunye.tanim.amac && (
@@ -154,7 +154,7 @@ function HaritaKunyeFormu({
           id={`harita-kunye-tarih-${harita}`}
           class="girdi"
           lang="tr"
-          placeholder="Ör. 312 veya ~300"
+          placeholder="Ör. 312 ya da ~300"
           value={tarih}
           onInput={(e) => setTarih((e.target as HTMLInputElement).value)}
         />

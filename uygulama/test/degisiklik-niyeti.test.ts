@@ -71,6 +71,6 @@ describe('değişiklik niyeti (F24)', () => {
     expect(h.durumlar({ evren, kod: kale }).durumlar.map((d) => d.deger)).toEqual(['Aren hanedanı']);
     expect(h.durumlar({ evren: dal, kod: kale }).durumlar.map((d) => d.deger)).toEqual(['Doran hanedanı']);
     expect(h.dallar({ evren }).map((d) => d.ad)).toEqual(['Deneme: Kara Kale · Sahibi']);
-    expect(() => h.durumNiyeti({ evren: dal, kod, alan: 'deger', deger: 'X', niyet: 'taslakta' })).toThrow('Zaten bir taslakta');
+    expect(() => h.durumNiyeti({ evren: dal, kod, alan: 'deger', deger: 'X', niyet: 'taslakta' })).toThrow('Zaten bir deneme kopyasında');
   });
 });

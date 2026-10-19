@@ -32,9 +32,9 @@ export class DriveTasiyici implements Tasiyici {
     }
     if (r.status === 403) {
       if (/insufficient|scope/i.test(metin)) throw new IzinHatasi('Programın Drive izni eksik. Bağlanırken izin kutularını işaretleyin.');
-      throw new Error('Drive isteği reddetti.');
+      throw new Error('Drive bu işleme izin vermedi.');
     }
-    if (!r.ok) throw new Error(`Drive isteği başarısız oldu (${r.status}).`);
+    if (!r.ok) throw new Error(`Drive işlemi tamamlanamadı (hata ${r.status}).`);
     return r;
   }
 
@@ -72,7 +72,7 @@ export class DriveTasiyici implements Tasiyici {
         method: yontem, headers: { 'Content-Type': 'application/json; charset=UTF-8', 'X-Upload-Content-Length': String(veri.length) }, body: JSON.stringify(ustBilgi),
       });
       const adres = baslat.headers.get('Location');
-      if (!adres) throw new Error('Drive yükleme adresi vermedi.');
+      if (!adres) throw new Error('Drive yüklemeyi başlatamadı.');
       r = await this.istek(adres, { method: 'PUT', body: veri as BodyInit });
     } else {
       const sinir = 'dunya-atlasi-' + Math.random().toString(36).slice(2);

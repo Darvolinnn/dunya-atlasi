@@ -79,6 +79,6 @@ export function kullanimMasasi(e: EvrenVt, kodGirdi: string): KullanimMasasi {
   }
   return {
     kayit: kisa(e, kod), alanlar, adaylar: [...adaylar.values()].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')),
-    not: 'Hücreler sizin yazdıklarınızdır; program onlardan sonuç çıkarmaz ve toplumun ne yapacağına hüküm vermez. Yazılmamış hücre eksik sayılmaz.',
+    not: 'Hücrelerde yalnızca sizin yazdıklarınız var. Program bunlardan sonuç çıkarmaz, toplumun ne yapacağına da karar vermez. Boş hücre eksik sayılmaz.',
   };
 }

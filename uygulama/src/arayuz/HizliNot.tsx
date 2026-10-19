@@ -46,7 +46,7 @@ export function HizliNot({ istemci, evren }: { istemci: Istemci; evren: string |
         <span class="bosluk" />
         <button class="dugme sade kucuk" onClick={() => { setAcik(false); setSon(null); }}>Kapat</button>
       </div>
-      <textarea ref={alan} class="girdi" rows={4} lang="tr" placeholder="Aklına geleni yaz. İlk satır notun adı olur." value={metin}
+      <textarea ref={alan} class="girdi" rows={4} lang="tr" placeholder="Aklınıza geleni yazın. İlk satır notun adı olur." value={metin}
         onInput={(e) => { setMetin((e.target as HTMLTextAreaElement).value); }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void kaydet(); }

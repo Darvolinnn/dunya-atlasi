@@ -100,7 +100,7 @@ export function farkliInananlar(e: EvrenVt, iddiaKod: string): KesifSonucu {
     sablon: 'farkli_inananlar', soru: `“${i.soru}” sorusunun farklı cevaplarına inanan iki kişi hangi tarihlerde aynı yerde olabilir?`,
     adaylar, dahaFazla,
     kapsam: `${kisiler.length} inanan, ${ciftler} farklı inanan çift incelendi.${yersiz.size ? ` ${yersiz.size} kişinin kayıtlı yeri ya da tarihli bulunması yok; onlar için aday çıkmaz.` : ''}`,
-    not: 'Bu yalnızca bir olasılıktır: kayıtlı yer ve tarihler örtüşüyor. Görüştükleri, birbirlerini tanıdıkları ya da konuştukları söylenmez. İnançların hangi tarihte başladığı hesaba katılmadı.',
+    not: 'Bu yalnızca bir olasılık: kayıtlı yerleri ve tarihleri örtüşüyor. Görüştükleri, tanıştıkları ya da konuştukları söylenemez. İnançların ne zaman başladığı hesaba katılmadı.',
   };
 }
 
@@ -139,6 +139,6 @@ export function celisenHaklar(b: DurumBaglami): KesifSonucu {
   return {
     sablon: 'celisen_haklar', soru: 'Aynı şey üzerinde çelişen hak iddiası olanlar kim?', adaylar, dahaFazla,
     kapsam: `${konular.size} konudaki mülkiyet kayıtları incelendi; ${ciftler} çelişen çift bulundu.`,
-    not: 'Yalnızca aynı konu ve aynı kapsamda, sahipleri farklı ve dönemleri örtüşen mülkiyet kayıtları sayıldı. Kullanım hakkı, yetki ve izin birden çok kişide olabildiği için karşılaştırılmadı. Program hangi kaydın haklı olduğuna karar vermez.',
+    not: 'Yalnızca aynı konu ve aynı kapsamda, sahipleri farklı ve dönemleri örtüşen mülkiyet kayıtları sayıldı. Kullanım hakkı, yetki ve izin birden çok kişide olabildiği için karşılaştırılmadı. Hangi kaydın haklı olduğuna siz karar verirsiniz.',
   };
 }

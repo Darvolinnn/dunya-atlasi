@@ -18,7 +18,7 @@ function MaddeMetni({ m, evren, acikRozeti = true }: { m: SozlesmeMaddesi; evren
     <p>{m.metin}</p>
     <p class="soluk kucuk">{TURLER[m.tur]} · {KARARLAR.find((k) => k.kod === m.karar)?.ad} · {m.kapsam.tur === 'evren' ? 'Bütün evren' : m.eserler.map((k) => k.ad).join(', ')}</p>
     {m.bagli.length > 0 && <p class="kucuk">Bağlı kayıtlar: {m.bagli.map((k, i) => <span key={k.kod}>{i > 0 && ', '}{bag(evren, k)}{acikRozeti && m.tur === 'acik_birakildi' && m.karar !== 'vazgecildi' && !m.silindi && !m.catismali && <span class="soluk"> · açık bırakıldı</span>}</span>)}</p>}
-    {m.catismali && <p>İki cihazdaki değerler seçilmeyi bekliyor. <a href={`#/e/${evren}/inceleme`}>İncelemeyi aç</a></p>}
+    {m.catismali && <p>İki cihazdan gelen değerlerden birini seçmeniz gerekiyor. <a href={`#/e/${evren}/inceleme`}>İncelemeyi aç</a></p>}
   </>;
 }
 function MaddeFormu({ istemci, evren, eser, madde, saltOkunur, bitir }: { istemci: Istemci; evren: string; eser?: string; madde?: SozlesmeMaddesi; saltOkunur: boolean; bitir: () => void }) {
@@ -49,7 +49,7 @@ function MaddeFormu({ istemci, evren, eser, madde, saltOkunur, bitir }: { istemc
         {secici('Kapsama eklenecek eser', secEser, setSecEser, kayitlar.filter((k) => k.tur === 'eser' && t.kapsam.tur === 'eserler' && !t.kapsam.eserler.includes(k.kod)))}{' '}
         <button type="button" class="dugme" disabled={!secEser} onClick={() => { if (t.kapsam.tur === 'eserler') setT({ ...t, kapsam: { tur: 'eserler', eserler: [...t.kapsam.eserler, secEser] } }); setSecEser(''); }}>Eseri kapsama ekle</button>
       </div>}
-      <p class="soluk kucuk">Bağlı kayıt seçmek isteğe bağlıdır. Madde metninden anlam çıkarılmaz; hatırlatma için aşağıdaki bağlantılar kullanılır.</p>
+      <p class="soluk kucuk">Kayıt bağlamak isteğe bağlıdır. Program madde metnini yorumlamaz; hatırlatma yalnızca aşağıda bağladığınız kayıtlarda çıkar.</p>
       <ul>{t.bagliKayitlar.map((k) => <li key={k}>{ad(k)} <button type="button" class="dugme" aria-label={`${ad(k)} kaydının bağını kaldır`} onClick={() => setT({ ...t, bagliKayitlar: t.bagliKayitlar.filter((s) => s !== k) })}>Bağı kaldır</button></li>)}</ul>
       {secici('Bağlanacak kayıt', secKayit, setSecKayit, kayitlar.filter((k) => !t.bagliKayitlar.includes(k.kod)))}{' '}
       <button type="button" class="dugme" disabled={!secKayit} onClick={() => { setT({ ...t, bagliKayitlar: [...t.bagliKayitlar, secKayit] }); setSecKayit(''); }}>Kaydı bağla</button>
@@ -71,12 +71,12 @@ export function AnlatiSozlesmesiSekmesi({ istemci, evren, surum, saltOkunur = fa
   }, [evren, surum, n]);
   const is = async (f: () => Promise<unknown>) => { if (mesgul || saltOkunur) return; setMesgul(true); try { await f(); setHata(''); } catch (e) { setHata((e as Error).message); } finally { setMesgul(false); } };
   return <section aria-label="Anlatı sözleşmesi">
-    <h2>Anlatı sözleşmesi</h2><p>Yazarın bilinçli kararları. Evren maddeleri her esere başlangıçta uygulanır; eser kendi sayfasında bir evren maddesini dışarıda bırakabilir. Hiçbir boş alan eksik sayılmaz.</p>
+    <h2>Anlatı sözleşmesi</h2><p>Anlatıyla ilgili bilinçli kararlarınız. Evren maddeleri her esere uygulanır, ama bir maddeyi eserin kendi sayfasından o eser için dışarıda bırakabilirsiniz. Boş bırakılan alanlar eksik sayılmaz.</p>
     {hata && <p class="hata" role="alert">{hata}</p>}
     {!liste.length && <p>Henüz sözleşme maddesi yok. Madde eklemek isteğe bağlıdır.</p>}
     <ul>{liste.map((m) => <li key={m.kod}><MaddeMetni m={m} evren={evren} />
       <button class="dugme" disabled={mesgul || saltOkunur || m.catismali} onClick={() => { setSecili(m); setForm((v) => v + 1); }}>Düzenle</button>{' '}
-      <button class="dugme" disabled={mesgul || saltOkunur} onClick={() => onayla('Bu madde kaldırılsın mı? Kaldırılan maddelerden geri getirebilirsin.') && is(async () => { await istemci.iste('sozlesmeMaddeSil', { evren, kod: m.kod }); if (secili?.kod === m.kod) { setSecili(undefined); setForm((v) => v + 1); } })}>Kaldır</button>
+      <button class="dugme" disabled={mesgul || saltOkunur} onClick={() => onayla('Bu madde kaldırılsın mı? Daha sonra “Kaldırılan maddeler” bölümünden geri getirebilirsiniz.') && is(async () => { await istemci.iste('sozlesmeMaddeSil', { evren, kod: m.kod }); if (secili?.kod === m.kod) { setSecili(undefined); setForm((v) => v + 1); } })}>Kaldır</button>
     </li>)}</ul>
     {cop.length > 0 && <details><summary>Kaldırılan maddeler</summary><ul>{cop.map((m) => <li key={m.kod}><MaddeMetni m={m} evren={evren} /><button class="dugme" disabled={mesgul || saltOkunur} onClick={() => is(() => istemci.iste('sozlesmeMaddeGeriYukle', { evren, kod: m.kod }))}>Geri getir</button></li>)}</ul></details>}
     {!saltOkunur && <MaddeFormu key={`${evren}:${form}`} istemci={istemci} evren={evren} madde={secili} saltOkunur={mesgul || !!liste.find((m) => m.kod === secili?.kod)?.catismali} bitir={() => { setSecili(undefined); setForm((v) => v + 1); }} />}
@@ -96,16 +96,16 @@ export function EserSozlesmesiBolumu({ istemci, evren, kod, surum, saltOkunur }:
     try { await istemci.iste('sozlesmeDisaridaYaz', { evren, madde, eser: kod, disarida }); setHata(''); } catch (e) { setHata((e as Error).message); } finally { setMesgul(false); }
   };
   const satir = (m: EserSozlesmesi['maddeler'][number]) => <li key={m.madde.kod}><MaddeMetni m={m.madde} evren={evren} acikRozeti={m.durum === 'gecerli'} />
-    {m.durum === 'belirsiz' ? <div><p>Bu eserde geçerli olup olmadığı seçilmeyi bekliyor. <a href={`#/e/${evren}/inceleme`}>İncelemeyi aç</a></p>
+    {m.durum === 'belirsiz' ? <div><p>Bu maddenin bu eserde geçerli olup olmadığını seçmeniz gerekiyor. <a href={`#/e/${evren}/inceleme`}>İncelemeyi aç</a></p>
       {!m.madde.catismali && m.madde.kapsam.tur === 'evren' && <><button class="dugme" disabled={mesgul || saltOkunur} onClick={() => void sec(m.madde.kod, false)}>Bu eserde geçerli</button>{' '}<button class="dugme" disabled={mesgul || saltOkunur} onClick={() => void sec(m.madde.kod, true)}>Bu eserde geçerli değil</button></>}
     </div> : m.madde.kapsam.tur === 'evren' && <button class="dugme" disabled={mesgul || saltOkunur} onClick={() => void sec(m.madde.kod, m.durum === 'gecerli')}>{m.durum === 'gecerli' ? 'Bu eserde geçerli değil' : 'Bu eserde yeniden geçerli'}</button>}
   </li>;
   return <section aria-label="Bu eserin sözleşmesi"><details open><summary><h2 style="display:inline">Bu eserin sözleşmesi</h2></summary>
-    <p class="soluk kucuk">Evren maddeleri ve bu esere özel maddeler. Fikirler karar durumuyla gösterilir; vazgeçilmiş ve kaldırılmış maddeler hatırlatılmaz.</p>
+    <p class="soluk kucuk">Evrenin maddeleri ve bu esere özel maddeler. Henüz fikir aşamasındaki maddeler karar durumlarıyla birlikte gösterilir. Vazgeçilen ve kaldırılan maddeler hatırlatılmaz.</p>
     {hata && <p class="hata" role="alert">{hata}</p>}
     {s && <><h3>Geçerli maddeler</h3>{!s.maddeler.some((m) => m.durum === 'gecerli') && <p>Bu eser için geçerli madde yok.</p>}<ul>{s.maddeler.filter((m) => m.durum === 'gecerli').map(satir)}</ul>
       {s.maddeler.some((m) => m.durum === 'disarida') && <details open><summary>Dışarıda bırakılanlar</summary><ul>{s.maddeler.filter((m) => m.durum === 'disarida').map(satir)}</ul></details>}
-      {s.maddeler.some((m) => m.durum === 'belirsiz') && <div><h3>Seçilmeyi bekleyenler</h3><ul>{s.maddeler.filter((m) => m.durum === 'belirsiz').map(satir)}</ul></div>}</>}
+      {s.maddeler.some((m) => m.durum === 'belirsiz') && <div><h3>Seçim bekleyenler</h3><ul>{s.maddeler.filter((m) => m.durum === 'belirsiz').map(satir)}</ul></div>}</>}
     <p><a href={`#/e/${evren}/sozlesme`}>Bütün sözleşme maddelerini düzenle</a></p>
     {!saltOkunur && <MaddeFormu key={`${evren}:${kod}:${form}`} istemci={istemci} evren={evren} eser={kod} saltOkunur={mesgul} bitir={() => setForm((v) => v + 1)} />}
   </details></section>;

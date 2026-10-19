@@ -287,7 +287,7 @@ export function olaySurecSorumlulari(e: EvrenVt, olayGirdi: string): OlaySurecSo
   return {
     olay: { kod: olay.kod, ad: olay.ad, tur: olay.tur },
     surecler,
-    not: 'Sorumlular, durdurabilecek olanlar ve fiilî veto sahipleri yalnızca bilgi olarak tutulur; adımların durumunu ve sürecin sonucunu değiştirmez.',
+    not: 'Sorumlular, durdurabilecek olanlar ve fiilî veto sahipleri yalnızca bilgi olarak tutulur. Adımların durumunu ya da sürecin sonucunu değiştirmezler.',
   };
 }
 

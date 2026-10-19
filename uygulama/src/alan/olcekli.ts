@@ -37,7 +37,7 @@ export type NoktaHizDurumu =
 
 const VARSAYILAN_MOLA = 'Günlük ilerleme hızları gece konaklamasını ve olağan molaları içerir.';
 const KAPSAM_NOTU =
-  'Sonuç yalnızca bu haritada kayıtlı ölçek, arazi ve hız kuralları içindir; çözüm bulunamaması evrende imkânsız olduğu anlamına gelmez.';
+  'Sonuç yalnızca bu haritaya kayıtlı ölçeğe, araziye ve hız kurallarına dayanır. Yol bulunamaması, bunun evrende imkânsız olduğunu göstermez.';
 
 function etiketNorm(deger: string | null | undefined): string {
   return (deger ?? '').trim().toLocaleLowerCase('tr-TR');
@@ -260,7 +260,7 @@ export function olcumHesapla(
   if (oran === null || !baglam.olcek) {
     return {
       durum: 'olceksiz',
-      uyari: 'Harita ölçeksiz; görselden mesafe ya da süre uydurulmaz.',
+      uyari: 'Harita ölçeksiz olduğu için mesafe ya da süre görselden tahmin edilmez.',
       duzMesafe: null,
       yolMesafesi: null,
       enKisaGun: null,
@@ -315,7 +315,7 @@ export function olcumHesapla(
   if (baslangicHiz.durum === 'bilinmiyor' || bitisHiz.durum === 'bilinmiyor') {
     return {
       durum: 'bilinmiyor',
-      uyari: 'Başlangıç veya varış noktasında arazi hızı bilinmiyor; hız uydurulmadı.',
+      uyari: 'Başlangıç ya da varış noktasındaki arazinin hızı bilinmiyor, bu yüzden hız tahmin edilmedi.',
       duzMesafe,
       yolMesafesi: null,
       enKisaGun: null,
@@ -335,7 +335,7 @@ export function olcumHesapla(
   if (baslangicHiz.durum === 'gecilmez' || bitisHiz.durum === 'gecilmez') {
     return {
       durum: 'bulunamadi',
-      uyari: 'Başlangıç veya varış noktası seçilen ulaşım ve mevsimde geçilmez alanda kalıyor.',
+      uyari: 'Başlangıç ya da varış noktası, seçilen ulaşım yolu ve mevsimde geçilemeyen bir alanda kalıyor.',
       duzMesafe,
       yolMesafesi: null,
       enKisaGun: null,
@@ -506,7 +506,7 @@ export function olcumHesapla(
     }
     return {
       durum: 'bulunamadi',
-      uyari: 'Kayıtlı arazi ve hız kuralları içinde geçilebilir yol bulunamadı (evrende imkânsız demek değildir).',
+      uyari: 'Kayıtlı arazi ve hız kurallarıyla geçilebilir bir yol bulunamadı. Bu, evrende imkânsız olduğu anlamına gelmez.',
       duzMesafe,
       yolMesafesi: null,
       enKisaGun: null,
@@ -538,7 +538,7 @@ export function olcumHesapla(
   return {
     durum: 'tamam',
     uyari: bilinmeyenAlanVar
-      ? 'Haritada hızı bilinmeyen alanlar var; süre yalnızca hızı tanımlı alanlar üzerinden hesaplandı.'
+      ? 'Haritada hızı bilinmeyen alanlar var. Süre yalnızca hızı tanımlı alanlar üzerinden hesaplandı.'
       : null,
     duzMesafe,
     yolMesafesi: yuvarla(mesafeler[bitDugum], 4),
@@ -612,7 +612,7 @@ export function konturHesapla(
   if (oran === null || !baglam.olcek) {
     return {
       durum: 'olceksiz',
-      uyari: 'Harita ölçeksiz; erişim konturları için önce harita ölçeği tanımlanmalı.',
+      uyari: 'Harita ölçeksiz. Erişim konturları için önce haritanın ölçeğini tanımlayın.',
       baslangic,
       izgaraEn: 0,
       izgaraBoy: 0,
@@ -643,7 +643,7 @@ export function konturHesapla(
   if (basHiz.durum === 'bilinmiyor') {
     return {
       durum: 'bilinmiyor',
-      uyari: 'Başlangıç noktasında arazi hızı bilinmiyor; varsayılan hız veya arazi kuralı girilmeden erişim alanı uydurulmaz.',
+      uyari: 'Başlangıç noktasındaki arazinin hızı bilinmiyor. Erişim alanı için önce varsayılan bir hız ya da arazi kuralı girin.',
       baslangic,
       izgaraEn,
       izgaraBoy,
@@ -774,9 +774,9 @@ export function konturHesapla(
   return {
     durum: 'tamam',
     uyari: bilinmeyenAlanVar
-      ? 'Hızı bilinmeyen alanlar kontur hesabına katılmadı; yalnızca hızı tanımlı araziler tarandı.'
+      ? 'Hızı bilinmeyen alanlar kontur hesabına katılmadı. Yalnızca hızı tanımlı araziler tarandı.'
       : !erisilenVar
-        ? 'Başlangıç noktası seçilen ulaşım ve mevsimde geçilmez alanda.'
+        ? 'Başlangıç noktası, seçilen ulaşım yolu ve mevsimde geçilemeyen bir alanda.'
         : null,
     baslangic,
     izgaraEn,

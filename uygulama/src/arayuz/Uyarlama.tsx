@@ -12,7 +12,7 @@ function SiraliSecim({ ad, adaylar, secili, degis }: { ad: string; adaylar: Kisa
     const s = [...e.currentTarget.selectedOptions].map((o) => o.value);
     degis([...secili.filter((k) => s.includes(k)), ...s.filter((k) => !secili.includes(k))]);
   }}>{adaylar.map((k) => <option key={k.kod} value={k.kod} selected={secili.includes(k.kod)}>{k.ad}</option>)}</select></label>
-    <ol>{secili.map((k, i) => <li key={k}>{adaylar.find((a) => a.kod === k)?.ad ?? 'Bulunamayan veya kaldırılmış kayıt'}{' '}
+    <ol>{secili.map((k, i) => <li key={k}>{adaylar.find((a) => a.kod === k)?.ad ?? 'Bulunamayan ya da kaldırılmış kayıt'}{' '}
       <button type="button" class="dugme sade kucuk" disabled={i === 0} onClick={() => kaydir(i, -1)}>Yukarı</button>{' '}
       <button type="button" class="dugme sade kucuk" disabled={i === secili.length - 1} onClick={() => kaydir(i, 1)}>Aşağı</button>{' '}
       <button type="button" class="dugme sade kucuk" onClick={() => degis(secili.filter((x) => x !== k))}>Seçimden çıkar</button>
@@ -59,7 +59,7 @@ export function UyarlamaBolumu({ istemci, evren, eser, surum = 0 }: { istemci: I
   </div>;
   return <section aria-label="Uyarlama eşlemeleri">
     <h2>Uyarlama eşlemeleri</h2>
-    <p>İki eserin ya da bir eser ile deneme kopyasının kayıtlarını kendiniz eşleyin. Program yalnızca değişiklikleri listeler; hiçbir taraf diğerini kendiliğinden güncellemez. Eşleme, yayın izni veya okurun bildiği bir bilgi değildir.</p>
+    <p>İki eserin ya da bir eser ile deneme kopyasının kayıtlarını kendiniz eşleyin. Program yalnızca değişiklikleri listeler; hiçbir taraf diğerini kendiliğinden güncellemez. Eşleme bir yayın izni değildir, okurun bildiği bir bilgi de sayılmaz.</p>
     {hata && <p class="hata" role="alert">{hata}</p>}
     <details open={kod !== null || acik}><summary>{kod ? 'Eşlemeyi düzenle' : 'Eşleme ekle'}</summary>
       <form onSubmit={(e) => { e.preventDefault(); void yap(() => istemci.iste('uyarlamaYaz', { evren, kod, tanim: t }), true); }}>
@@ -74,7 +74,7 @@ export function UyarlamaBolumu({ istemci, evren, eser, surum = 0 }: { istemci: I
             {b.sorun && <p>{b.sorun}</p>}
             {t.tur !== 'cikarildi' && <SiraliSecim ad="İkinci tarafın kayıtları" adaylar={b.kayitlar} secili={t.b.kayitlar} degis={(kayitlar) => setT({ ...t, b: { ...t.b, kayitlar } })} />}
           </div></div>
-          <p>Listelerdeki sırayı yukarı ve aşağı düğmeleriyle belirleyin. Kayıt seçmek onu eserin üyesi yapmaz.</p>
+          <p>Listelerdeki sırayı yukarı ve aşağı düğmeleriyle belirleyin. Bir kaydı burada seçmek onu esere eklemez.</p>
           <label>Eşleme notu <textarea class="girdi" maxLength={2000} value={t.not} onInput={(e) => setT({ ...t, not: e.currentTarget.value })} /></label>
           <button class="dugme ana" type="submit">Eşlemeyi kaydet</button>{' '}
           <button class="dugme" type="button" onClick={() => { setKod(null); setT(bos(eser)); }}>Yeni eşlemeye dön</button>
@@ -82,7 +82,7 @@ export function UyarlamaBolumu({ istemci, evren, eser, surum = 0 }: { istemci: I
       </form>
     </details>
     <h3>Etkilenmiş olabilir ({etkilenmis.length})</h3>
-    {etkilenmis.length ? <ul>{etkilenmis.map((r) => <li key={r.kod}>{r.a.eser.ad} → {r.b.eser.ad}{r.tanim.not ? ` · ${r.tanim.not}` : ''}<ul>{r.degisiklikler.map((d) => <li key={`${d.taraf}:${d.islem}`}>{d.taraf === 'a' ? 'İlk taraf' : 'İkinci taraf'}: {d.aciklama}</li>)}</ul></li>)}</ul> : <p>Son eşleme veya gözden geçirmeden sonra kayıtlı bir etki bulunmadı. Bu, henüz bu cihaza gelmemiş değişikliklerin olmadığı anlamına gelmez.</p>}
+    {etkilenmis.length ? <ul>{etkilenmis.map((r) => <li key={r.kod}>{r.a.eser.ad} → {r.b.eser.ad}{r.tanim.not ? ` · ${r.tanim.not}` : ''}<ul>{r.degisiklikler.map((d) => <li key={`${d.taraf}:${d.islem}`}>{d.taraf === 'a' ? 'İlk taraf' : 'İkinci taraf'}: {d.aciklama}</li>)}</ul></li>)}</ul> : <p>Son eşlemeden ya da gözden geçirmeden bu yana bir değişiklik bulunmadı. Başka cihazlarda yapılıp henüz buraya gelmemiş değişiklikler olabilir.</p>}
     <h3>Eşlemeler ({liste.length})</h3>
     {liste.map((r) => <article key={r.kod}>
       <h4>{UYARLAMA_TURLERI.find((x) => x.kod === r.tanim.tur)?.ad}</h4>

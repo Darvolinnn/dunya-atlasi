@@ -16,7 +16,7 @@ export function BagSeridi({ bag }: { bag: EvrenBilgisi['bag'] }) {
   return (
     <div class={`bag-seridi ${bag.tur}`} role="note">
       {bag.tur === 'surum'
-        ? <>“{bag.evrenAdi}” evreninin <strong>“{bag.ad}”</strong> sürümüne bakıyorsunuz. Bu sürüm sabittir; burada değişiklik yapılamaz.</>
+        ? <>“{bag.evrenAdi}” evreninin <strong>“{bag.ad}”</strong> sürümüne bakıyorsunuz. Bu sürüm sabittir, burada değişiklik yapılamaz.</>
         : <>“{bag.evrenAdi}” evreninin <strong>“{bag.ad}”</strong> deneme kopyasındasınız. Buradaki değişiklikler ana evreni etkilemez.</>}
       {' '}<a href={`#/e/${bag.evren}/surumler`}>Ana evrene dön</a>
     </div>
@@ -34,7 +34,7 @@ export function SurumlerSekmesi({ istemci, evren, surum }: { istemci: Istemci; e
   return (
     <section aria-label="Sürümler">
       <h2>Adlandırılmış sürümler</h2>
-      <p class="soluk kucuk">Evrenin bugünkü hâlini bir adla saklar (“Birinci kitabın yayımlanan hâli”). Yeni fikirler üzerinde çalışırken o eserin dayandığı bilgi bozulmaz; sürümü her zaman salt okunur açıp bugünle karşılaştırabilirsiniz.</p>
+      <p class="soluk kucuk">Evrenin bugünkü hâlini bir adla saklayın (“Birinci kitabın yayımlanan hâli”). Böylece yeni fikirler üzerinde çalışırken o eserin dayandığı bilgi bozulmaz. Sürümü istediğiniz zaman değiştirmeden açabilir, bugünkü hâliyle karşılaştırabilirsiniz.</p>
       <form class="satir" onSubmit={(e) => {
         e.preventDefault();
         istemci.iste('surumOlustur', { evren, ad, aciklama }).then(() => { setAd(''); setAciklama(''); setHata(null); }, (x) => setHata(hataYaz(x)));
@@ -55,7 +55,7 @@ export function SurumlerSekmesi({ istemci, evren, surum }: { istemci: Istemci; e
                 <span class="bosluk" />
                 <a class="dugme kucuk" href={`#/e/${s.kod}/masa`}>Aç</a>
                 <button class="dugme kucuk" onClick={() => (fark?.kod === s.kod ? setFark(null) : karsilastir(s.kod))}>{fark?.kod === s.kod ? 'Farkı kapat' : 'Bugünle karşılaştır'}</button>
-                <button class="dugme sade kucuk" onClick={() => { if (confirm(`“${s.ad}” sürümü listeden kaldırılsın mı? Evrene dokunulmaz.`)) istemci.iste('surumSil', { evren, kod: s.kod }).catch((e) => setHata(hataYaz(e))); }}>Kaldır</button>
+                <button class="dugme sade kucuk" onClick={() => { if (confirm(`“${s.ad}” sürümü listeden kaldırılsın mı? Evrenin kendisi değişmez.`)) istemci.iste('surumSil', { evren, kod: s.kod }).catch((e) => setHata(hataYaz(e))); }}>Kaldır</button>
               </div>
               {s.aciklama && <div class="soluk kucuk">{s.aciklama}</div>}
               {fark?.kod === s.kod && <FarkGorunumu evren={evren} f={fark.f} once={`“${s.ad}”`} sonra="bugün" />}
@@ -117,7 +117,7 @@ function DallarBolumu({ istemci, evren, surum }: { istemci: Istemci; evren: stri
   return (
     <>
       <h2>Deneme kopyaları</h2>
-      <p class="soluk kucuk">Radikal bir değişikliği denemek için evrenin bir dalı açılır (“kral yaşasaydı”). Dalda ne yaparsanız ana evren değişmez; beğendiğiniz değişiklikleri kayıt kayıt seçip ana evrene taşırsınız. Küçük düşünce deneyleri için çalışma masalarındaki varsayım paketleri yeterlidir. Deneme kopyasındaki değişiklikler yalnızca bu cihazda tutulur; Drive ile eşitlenmez.</p>
+      <p class="soluk kucuk">Köklü bir değişikliği denemek için evrenin bir deneme kopyasını açın (“Kral yaşasaydı”). Deneme kopyasında ne yaparsanız yapın ana evren değişmez. Beğendiğiniz değişiklikleri kayıt kayıt seçip ana evrene taşıyabilirsiniz. Küçük düşünce deneyleri için çalışma masalarındaki varsayım paketleri yeterlidir. Deneme kopyasındaki değişiklikler yalnızca bu cihazda tutulur, Drive ile eşitlenmez.</p>
       <form class="satir" onSubmit={(e) => {
         e.preventDefault();
         istemci.iste('dalOlustur', { evren, ad }).then((x) => { setAd(''); setHata(null); git(`/e/${x.kod}/masa`); }, (x) => setHata(hataYaz(x)));
@@ -137,7 +137,7 @@ function DallarBolumu({ istemci, evren, surum }: { istemci: Istemci; evren: stri
                 <span class="bosluk" />
                 <a class="dugme kucuk" href={`#/e/${d.kod}/masa`}>Aç</a>
                 <button class="dugme kucuk" onClick={() => setAcik(acik === d.kod ? null : d.kod)}>{acik === d.kod ? 'Kapat' : 'Karşılaştır ve taşı'}</button>
-                <button class="dugme sade kucuk" onClick={() => { if (confirm(`“${d.ad}” deneme kopyası listeden kaldırılsın mı? Ana evrene dokunulmaz.`)) istemci.iste('dalSil', { evren, kod: d.kod }).catch((e) => setHata(hataYaz(e))); }}>Kaldır</button>
+                <button class="dugme sade kucuk" onClick={() => { if (confirm(`“${d.ad}” deneme kopyası listeden kaldırılsın mı? Ana evren değişmez.`)) istemci.iste('dalSil', { evren, kod: d.kod }).catch((e) => setHata(hataYaz(e))); }}>Kaldır</button>
               </div>
               {acik === d.kod && <AktarimEkrani istemci={istemci} evren={evren} dal={d} surum={surum} />}
             </li>
@@ -171,7 +171,7 @@ function AktarimEkrani({ istemci, evren, dal, surum }: { istemci: Istemci; evren
       else if (k.tur === 'esle' && k.hedef) eslemeler[kod] = k.hedef.kod;
       else eslemeler[kod] = 'acik';
     }
-    if (!confirm(`${birimler.size} birim ana evrene taşınsın mı? Ana evrende yeni değişiklikler olarak yazılır; geçmişten geri alınabilir.`)) return;
+    if (!confirm(`Seçilen ${birimler.size} öğe ana evrene taşınsın mı? Bunlar ana evrende yeni değişiklikler olarak yazılır ve geçmişten geri alınabilir.`)) return;
     istemci.iste('dalAktar', { evren, dal: dal.kod, birimler: [...birimler], eslemeler })
       .then((r) => { setSonuc(r); setSecili(new Set()); setHata(null); istemci.iste('dalFarki', { evren, dal: dal.kod }).then(setF); }, (e) => setHata(hataYaz(e)));
   };
@@ -187,7 +187,7 @@ function AktarimEkrani({ istemci, evren, dal, surum }: { istemci: Istemci; evren
         {b.ayni && <span class="soluk kucuk">· ana evrende aynı</span>}
       </label>
       {b.ozet.length > 0 && <ul class="kucuk">{b.ozet.map((x) => <li>{x}</li>)}</ul>}
-      {b.celisen.length > 0 && !b.ayni && <p class="kucuk uyari-yazisi">Dal açıldıktan sonra ana evrende de değişti: {b.celisen.join(', ')}. Taşırsanız dalın değeri yazılır.</p>}
+      {b.celisen.length > 0 && !b.ayni && <p class="kucuk uyari-yazisi">Deneme kopyası açıldıktan sonra ana evrende de değişti: {b.celisen.join(', ')}. Taşırsanız deneme kopyasındaki değer yazılır.</p>}
     </li>
   );
   return (
@@ -198,9 +198,9 @@ function AktarimEkrani({ istemci, evren, dal, surum }: { istemci: Istemci; evren
           {sonuc.birakilan.length > 0 && <ul class="uyari-yazisi">{sonuc.birakilan.map((x) => <li>{x}</li>)}</ul>}
         </div>
       )}
-      {!f.birimler.length ? <p class="soluk kucuk">Dalda henüz bir değişiklik yapılmamış.</p> : (
+      {!f.birimler.length ? <p class="soluk kucuk">Deneme kopyasında henüz bir değişiklik yapılmamış.</p> : (
         <>
-          <h3>Dalda değişenler</h3>
+          <h3>Deneme kopyasında değişenler</h3>
           <ul class="fark-listesi">{f.birimler.map(birim)}</ul>
           {gereken.size > 0 && (
             <div class="aktarim-gerekenler">
@@ -210,7 +210,7 @@ function AktarimEkrani({ istemci, evren, dal, surum }: { istemci: Istemci; evren
                   const k = karar(g.kod);
                   return (
                     <li key={g.kod} class="satir">
-                      <span>{g.ad} <span class="soluk">({g.neden === 'dalda_yeni' ? 'yalnızca dalda var' : 'ana evrende silinmiş'})</span></span>
+                      <span>{g.ad} <span class="soluk">({g.neden === 'dalda_yeni' ? 'yalnızca deneme kopyasında var' : 'ana evrende silinmiş'})</span></span>
                       <select class="girdi kucuk-secim" aria-label={`${g.ad} için ne yapılsın`} value={k.tur} onChange={(e) => {
                         const v = (e.target as HTMLSelectElement).value as Karar['tur'];
                         setKararlar({ ...kararlar, [g.kod]: v === 'esle' ? { tur: 'esle', hedef: null } : { tur: v } as Karar });
@@ -233,8 +233,8 @@ function AktarimEkrani({ istemci, evren, dal, surum }: { istemci: Istemci; evren
         </>
       )}
       <details>
-        <summary class="kucuk">Dal açıldıktan sonra ana evrende değişenler ({f.anada.kayitlar.length + f.anada.iliskiler.length})</summary>
-        <FarkGorunumu evren={evren} f={f.anada} once="dalın açıldığı an" sonra="ana evren bugün" />
+        <summary class="kucuk">Deneme kopyası açıldıktan sonra ana evrende değişenler ({f.anada.kayitlar.length + f.anada.iliskiler.length})</summary>
+        <FarkGorunumu evren={evren} f={f.anada} once="deneme kopyasının açıldığı an" sonra="ana evren bugün" />
       </details>
       {hata && <p class="hata kucuk">{hata}</p>}
     </div>
@@ -243,9 +243,9 @@ function AktarimEkrani({ istemci, evren, dal, surum }: { istemci: Istemci; evren
 
 // ---------- Yayımlanmış eser kilidi (F18) ----------
 const YAYIM_KARARLARI = [
-  { kod: 'gecmisi_duzelt', ad: 'Geçmişi düzelt', aciklama: 'Evrende doğrusu bu; eser bu noktada eskide kaldı.' },
-  { kod: 'yeni_olay', ad: 'Yeni olay', aciklama: 'Eserden sonra olan bir şey; tarihini eserin sonrasına koyun.' },
-  { kod: 'alternatif', ad: 'Alternatif devamlılık', aciklama: 'Başka bir devamlılığa ait; ana çizgi eserdeki gibi kalır.' },
+  { kod: 'gecmisi_duzelt', ad: 'Geçmişi düzelt', aciklama: 'Evrende doğrusu bu, eser bu konuda eskide kaldı.' },
+  { kod: 'yeni_olay', ad: 'Yeni olay', aciklama: 'Eserden sonra olan bir şey. Tarihini eserin sonrasına koyun.' },
+  { kod: 'alternatif', ad: 'Alternatif devamlılık', aciklama: 'Başka bir devamlılığa ait. Ana çizgi eserdeki gibi kalır.' },
   { kod: 'baski', ad: 'Baskı düzeltmesi', aciklama: 'Eser sonraki baskıda düzeltilecek.' },
 ];
 
@@ -287,7 +287,7 @@ export function YayimBolumu({ istemci, evren, kod, surum, saltOkunur }: { istemc
   return (
     <section class="surecler" aria-label="Yayımlar">
       <h2>Yayımlar</h2>
-      <p class="soluk kucuk">Yayımlanan eserin dayandığı bilgi adlandırılmış bir sürüm olarak saklanır. Sonradan eserin okura sunduğu bir bilgi değişirse program engellemez, sorar. Eserin zamanından sonra başlayan değişiklikler ve kesinleşmemiş bilgi sorulmaz.</p>
+      <p class="soluk kucuk">Yayımlanan eserin dayandığı bilgi adlandırılmış bir sürüm olarak saklanır. Eserin okura sunduğu bir bilgi sonradan değişirse program bunu engellemez, size sorar. Eserin zamanından sonra başlayan değişiklikler ve kesinleşmemiş bilgiler için soru sorulmaz.</p>
       <form class="satir" onSubmit={(e) => { e.preventDefault(); istemci.iste('yayimla', { evren, eser: kod, baski }).then(() => { setBaski(''); setHata(null); }, (x) => setHata(hataYaz(x))); }}>
         <input class="girdi" lang="tr" aria-label="Baskının adı" placeholder="1. baskı" value={baski} onInput={(e) => setBaski((e.target as HTMLInputElement).value)} />
         <button class="dugme kucuk" type="submit" disabled={!baski.trim()}>Yayımlandı olarak işaretle</button>
@@ -299,7 +299,7 @@ export function YayimBolumu({ istemci, evren, kod, surum, saltOkunur }: { istemc
             <strong>{y.baski}</strong> <span class="soluk kucuk">{zamanYaz(y.olusturma)} · {y.acik ? `${y.acik} soru bekliyor` : 'soru yok'}</span>
             <span class="bosluk" />
             <a class="dugme kucuk" href={`#/e/${y.surum.kod}/k/${kod}`}>Yayımlanan hâli aç</a>
-            <button class="dugme sade kucuk" onClick={() => { if (confirm(`“${y.baski}” yayımı kaldırılsın mı? Saklanan sürüm kalır.`)) istemci.iste('yayimSil', { evren, kod: y.kod }).catch((e) => setHata(hataYaz(e))); }}>Kaldır</button>
+            <button class="dugme sade kucuk" onClick={() => { if (confirm(`“${y.baski}” yayımı kaldırılsın mı? Saklanan sürüm silinmez.`)) istemci.iste('yayimSil', { evren, kod: y.kod }).catch((e) => setHata(hataYaz(e))); }}>Kaldır</button>
           </div>
           <YayimCelismeleri istemci={istemci} evren={evren} yayim={y} surum={surum} />
         </div>

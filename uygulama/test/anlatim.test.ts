@@ -46,7 +46,7 @@ describe('iddia dosyası (F28)', () => {
 
   it('geçersiz anlatımları reddeder: aynı cevaba hem destek hem itiraz, boş tutum, döngü', () => {
     const { deprem, kusatma, yaz } = kur();
-    expect(() => yaz({ destek: deprem, itiraz: [deprem] })).toThrow('hem destekleyip');
+    expect(() => yaz({ destek: deprem, itiraz: [deprem] })).toThrow('hem destekleyemez');
     expect(() => yaz({})).toThrow('hangi cevabı');
     expect(() => yaz({ destek: 'yok' })).toThrow('soruda yok');
     const a = yaz({ destek: deprem });

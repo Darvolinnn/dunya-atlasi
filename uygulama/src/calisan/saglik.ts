@@ -31,10 +31,10 @@ function sorunlar(e: EvrenVt): Ham[] {
     const kaynak = kisa(r), hedef = r.h_kod ? kisa(r, 'h_') : null;
     if (!hedef) {
       liste.push({ anahtar: `kopuk:${kaynak.kod}:${r.hedef}`, tur: 'kopuk_baglanti', kayit: kaynak, hedef: null, dayanak: 'yok',
-        baslik: `“${r.metin}” bağlantısı hiçbir kayda varmıyor`, aciklama: 'Bağlandığı kayıt bu evrende yok. Metni düzelt ya da bağlantıyı başka bir kayda bağla.' });
+        baslik: `“${r.metin}” bağlantısı hiçbir kayda varmıyor`, aciklama: 'Bağlandığı kayıt bu evrende yok. Metni düzeltin ya da bağlantıyı başka bir kayda yönlendirin.' });
     } else if (r.h_silindi !== null) {
       liste.push({ anahtar: `silinmis:${kaynak.kod}:${hedef.kod}`, tur: 'silinmis_baglanti', kayit: kaynak, hedef, dayanak: 'silindi',
-        baslik: `“${r.metin}” bağlantısı çöp kutusundaki bir kayda gidiyor`, aciklama: `${hedef.ad} çöp kutusunda. Geri getirebilir ya da metindeki bağlantıyı kaldırabilirsin.` });
+        baslik: `“${r.metin}” bağlantısı çöp kutusundaki bir kayda gidiyor`, aciklama: `${hedef.ad} çöp kutusunda. Geri getirebilir ya da metindeki bağlantıyı kaldırabilirsiniz.` });
     } else if (r.h_karar === 'vazgecildi') {
       liste.push({ anahtar: `vazgecilmis:${kaynak.kod}:${hedef.kod}`, tur: 'vazgecilmis_baglanti', kayit: kaynak, hedef, dayanak: 'vazgecildi',
         baslik: `“${r.metin}” bağlantısı vazgeçilmiş bir kayda gidiyor`, aciklama: `${hedef.ad} vazgeçilmiş olarak işaretli. Metin hâlâ ona dayanıyor olabilir.` });
@@ -46,7 +46,7 @@ function sorunlar(e: EvrenVt): Ham[] {
   for (const r of db.selectObjects('SELECT kod, ad, tur, gorseller FROM kayitlar WHERE silindi IS NULL')) {
     for (const g of JSON.parse(r.gorseller as string) as string[]) {
       if (!medya.has(g)) liste.push({ anahtar: `gorsel:${r.kod}:${g}`, tur: 'eksik_gorsel', kayit: kisa(r), hedef: null, dayanak: 'yok',
-        baslik: 'Görsel dosyası eksik', aciklama: 'Kayıtta bir görsel var ama dosyası hiçbir cihazdan gelmemiş. Görseli yeniden ekleyebilir ya da kayıttan çıkarabilirsin.' });
+        baslik: 'Görsel dosyası eksik', aciklama: 'Kayıtta bir görsel var ama dosyası hiçbir cihazdan gelmemiş. Görseli yeniden ekleyebilir ya da kayıttan çıkarabilirsiniz.' });
     }
   }
   for (const r of db.selectObjects('SELECT h.kod, h.ad, h.katmanlar, k.kod y_kod, k.ad y_ad, k.tur y_tur FROM haritalar h LEFT JOIN kayitlar k ON k.kod=h.yer WHERE h.silindi IS NULL')) {
@@ -60,7 +60,7 @@ function sorunlar(e: EvrenVt): Ham[] {
   const yok = (sutun: string) => `${sutun} IS NOT NULL AND ${sutun} NOT IN (SELECT kod FROM kayitlar)`;
   const kodSorunu = (anahtar: string, baslik: string, kayit: Record<string, unknown> | null) =>
     liste.push({ anahtar, tur: 'kod_sorunu', kayit: kayit && kayit.kod ? kisa(kayit) : null, hedef: null, dayanak: 'yok', baslik,
-      aciklama: 'Bu satır var olmayan bir kayda bağlı. Genellikle yarım kalmış bir eşitlemeden ya da elle değiştirilmiş bir yedekten olur.' });
+      aciklama: 'Bu bilgi var olmayan bir kayda bağlı. Bu genellikle yarım kalmış bir eşitlemeden ya da elle değiştirilmiş bir yedekten kaynaklanır.' });
   for (const r of db.selectObjects(`SELECT i.kod i, k.kod, k.ad, k.tur FROM iliskiler i LEFT JOIN kayitlar k ON k.kod IN (i.a, i.b)
       WHERE i.silindi IS NULL AND (${yok('i.a')} OR ${yok('i.b')})`)) kodSorunu(`kod:iliski:${r.i}`, 'Bir ilişkinin ucu olan kayıt bulunamıyor', r);
   for (const r of db.selectObjects(`SELECT d.kod d, d.ozellik, k.kod, k.ad, k.tur FROM durumlar d LEFT JOIN kayitlar k ON k.kod=d.konu
@@ -88,14 +88,14 @@ function bilgiler(e: EvrenVt): Ham[] {
       AND NOT EXISTS (SELECT 1 FROM baglantilar WHERE hedef=k.kod OR kaynak=k.kod)
       AND NOT EXISTS (SELECT 1 FROM iliskiler WHERE silindi IS NULL AND (a=k.kod OR b=k.kod))`)) {
     liste.push({ anahtar: `fikir:${r.kod}`, tur: 'baglantisiz_fikir', kayit: { kod: r.kod as string, ad: r.ad as string, tur: r.tur as string }, hedef: null, dayanak: '',
-      baslik: 'Hiçbir şeye bağlı olmayan fikir', aciklama: 'Ne bir metinde anılıyor ne de bir ilişkisi var. Hata değildir.' });
+      baslik: 'Hiçbir şeye bağlı olmayan fikir', aciklama: 'Ne bir metinde anılıyor ne de bir ilişkisi var. Bu bir hata değil.' });
   }
   for (const r of e.db.selectObjects(`SELECT k.kod, k.ad, k.tur, coalesce(k.tarih, s.tarih) tarih FROM kayitlar k LEFT JOIN kayitlar s ON s.kod=k.sahne_olayi
       WHERE k.silindi IS NULL AND k.tur='olay' AND k.karar<>'vazgecildi'`)) {
     const t = r.tarih ? JSON.parse(r.tarih as string) as { eksen: unknown; bicim: string } : null;
     if (t?.eksen) continue;
     liste.push({ anahtar: `tarihsiz:${r.kod}`, tur: 'belirsiz_tarih', kayit: { kod: r.kod as string, ad: r.ad as string, tur: r.tur as string }, hedef: null, dayanak: '',
-      baslik: t ? 'Olayın tarihi sıralamaya yerleşmiyor' : 'Olayın tarihi yok', aciklama: t ? `“${(t as { ifade?: string }).ifade ?? ''}” takvime çevrilemedi.` : 'Zaman çizelgesinde görünmez. Hata değildir.' });
+      baslik: t ? 'Olayın tarihi sıralamaya yerleşmiyor' : 'Olayın tarihi yok', aciklama: t ? `“${(t as { ifade?: string }).ifade ?? ''}” takvime çevrilemedi.` : 'Zaman çizelgesinde görünmez. Bu bir hata değil.' });
   }
   return liste;
 }
@@ -121,7 +121,7 @@ export function kararVer(b: SaglikBaglami, anahtar: string, durum: 'kabul' | 'er
   const bulgu = sorunlar(b.e).find((x) => x.anahtar === anahtar);
   if (!bulgu && durum) throw new Error('Bu sorun artık yok.');
   const g = String(gerekce ?? '').replace(/\s+/g, ' ').trim();
-  if (durum === 'kabul' && !g) throw new Error('Kabul ederken kısa bir gerekçe yaz.');
+  if (durum === 'kabul' && !g) throw new Error('Kabul ederken kısa bir gerekçe yazın.');
   if (g.length > 500) throw new Error('Gerekçe çok uzun.');
   b.yaz([{ tur: 'inceleme_karari', veri: { anahtar, durum, gerekce: g, dayanak: bulgu?.dayanak ?? '', baslik: bulgu?.baslik ?? '' } }], bulgu?.kayit ? [bulgu.kayit.kod] : []);
 }

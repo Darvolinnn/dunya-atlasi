@@ -144,7 +144,7 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
       })}
       {disarida.length > 0 && (
         <details class="agac-disarida">
-          <summary>Esere yerleşmemiş ({disarida.length})</summary>
+          <summary>Esere yerleştirilmemiş ({disarida.length})</summary>
           <ul class="agac-liste">{sahneler(disarida)}</ul>
         </details>
       )}

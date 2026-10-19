@@ -146,7 +146,7 @@ export function birlestir(b: BirlesmeBaglami, kaynakKod: string, hedefKod: strin
 export function geriAl(b: BirlesmeBaglami, kaynakKod: string) {
   const e = b.e;
   const y = kodGecerliMi(kaynakKod) ? e.db.selectObject('SELECT hedef, islem FROM yonlendirmeler WHERE kod=?', [kaynakKod]) : undefined;
-  if (!y) throw new Error('Bu kayıt birleştirilmiş görünmüyor.');
+  if (!y) throw new Error('Bu kayıt başka bir kayıtla birleştirilmemiş.');
   const islem = y.islem as string;
   const ham = e.db.selectValue('SELECT veri FROM islemler WHERE kod=?', [islem]) as string | undefined;
   const veri = ham ? JSON.parse(ham) as { hedef: string; kaynakAd: string; hedefAd: string; geri?: IslemGirdisi[] } : null;

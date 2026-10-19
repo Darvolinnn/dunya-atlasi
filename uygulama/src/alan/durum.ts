@@ -7,7 +7,7 @@ export type DurumKipi = 'aralik' | 'sonraki' | 'anlik';
 export const DURUM_KIPLERI: { kod: DurumKipi; ad: string; aciklama: string }[] = [
   { kod: 'sonraki', ad: 'Sonraki değişikliğe kadar', aciklama: 'Aynı özellik yeniden değişene kadar sürer' },
   { kod: 'aralik', ad: 'Belirli aralık', aciklama: 'Başlangıç ve bitişi olan durum' },
-  { kod: 'anlik', ad: 'Tek anlık gözlem', aciklama: 'Yalnızca o an için; sonrasına taşınmaz' },
+  { kod: 'anlik', ad: 'Tek anlık gözlem', aciklama: 'Yalnızca o an için geçerlidir, sonrasına taşınmaz' },
 ];
 export const durumKipiGecerli = (k: unknown): k is DurumKipi => k === 'aralik' || k === 'sonraki' || k === 'anlik';
 

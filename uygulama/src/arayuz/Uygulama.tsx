@@ -57,7 +57,7 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
 
   const evren = yol.ekran === 'evren' ? yol.kod : yol.ekran === 'kayit' || yol.ekran === 'yaz' ? yol.evren : null;
   const acikKayit = yol.ekran === 'kayit' ? yol.kod : yol.ekran === 'yaz' ? yol.kod : null;
-  if (hata) return <main class="sayfa"><h1>Dünya Atlası</h1><p class="hata">Yerel veritabanı açılamadı: {hata}</p></main>;
+  if (hata) return <main class="sayfa"><h1>Dünya Atlası</h1><p class="hata">Bu cihazdaki veriler açılamadı: {hata}</p></main>;
   if (!kurulum) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
 
   return (
@@ -88,7 +88,7 @@ export function BaskaSekme() {
       <h1>Dünya Atlası</h1>
       <div class="uyari" style="margin-top:16px">
         <p><strong>Program başka bir sekmede açık.</strong></p>
-        <p>Aynı tarayıcıda veriler tek sekmeden yazılır. Öbür sekmeyi kapatıp bu sayfayı yenileyin.</p>
+        <p>Aynı tarayıcıda program yalnızca bir sekmede açık olabilir. Öbür sekmeyi kapatıp bu sayfayı yenileyin.</p>
         <button class="dugme" onClick={() => location.reload()}>Yenile</button>
       </div>
     </main>

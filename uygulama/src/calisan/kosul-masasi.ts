@@ -91,7 +91,7 @@ export function kosulMasasi(e: EvrenVt, g: KosulGirdisi, p: PaketEtkisi | null):
   const kosul = String(g.kosul ?? '').trim() || null;
   const z = zamanSetiOku(e.db);
   const cikis = g.cikis && String(g.cikis).trim() ? tarihCoz(String(g.cikis), z) : null;
-  if (g.cikis && String(g.cikis).trim() && !cikis?.eksen) throw new Error('Çıkış tarihi eksene yerleşmiyor; takvim tarihi yazın.');
+  if (g.cikis && String(g.cikis).trim() && !cikis?.eksen) throw new Error('Çıkış tarihi zaman sırasına yerleşmiyor; takvimden bir tarih yazın.');
 
   const tum = rotaKenarlari(e, kosul, p);
   const izinli = tum.filter((k) => !yasakRota.has(k.kod) && !yasakYer.has(k.a) && !yasakYer.has(k.b));
@@ -130,7 +130,7 @@ export function kosulMasasi(e: EvrenVt, g: KosulGirdisi, p: PaketEtkisi | null):
     varsayimlar: [
       ...(suresizler.length ? [`Süresi girilmemiş ${suresizler.length} rota hesaba girmedi.`] : []),
       ...(kesildi ? ['Olası yol sayısı çok fazla; liste eksik olabilir.'] : []),
-      ...(planlar.length ? [] : ['Bu sonuç için henüz tanımlanmamış bir olanak ya da koşul değişikliği gerekir; evrende imkânsız olduğu söylenmez.']),
+      ...(planlar.length ? [] : ['Bu sonuca ulaşmak için henüz kaydedilmemiş bir imkân ya da koşul değişikliği gerekiyor. Bu, evrende imkânsız olduğu demek değil.']),
     ],
   };
 }

@@ -10,7 +10,7 @@ type Secim = { tur: 'dilim' | 'bolge'; kod: string; ad: string } | { tur: 'tarih
 
 function SayimTablosu({ satirlar, olcu, sec, etiket }: { satirlar: YogunlukSatiri[]; olcu: YogunlukOlcutu; sec: (s: YogunlukSatiri) => void; etiket: string }) {
   const enCok = Math.max(1, ...satirlar.map((s) => s.enCok[olcu]));
-  return <div class="tablo-kap"><table class="karsilastirma"><caption>{etiket} · sayıya tıklayınca dayanak kayıtları açılır</caption>
+  return <div class="tablo-kap"><table class="karsilastirma"><caption>{etiket} · bir sayıya dokunursanız dayandığı kayıtlar açılır</caption>
     <thead><tr><th>{etiket}</th>{OLCULER.map((o) => <th key={o.kod} scope="col">{o.ad}</th>)}<th>Açıklama</th></tr></thead>
     <tbody>{satirlar.map((s) => <tr key={s.kod} style={`background-color:rgba(65,115,165,${0.04 + 0.3 * s.enCok[olcu] / enCok})`}>
       <th scope="row"><button class="dugme sade" onClick={() => sec(s)}>{s.ad}</button></th>
@@ -25,7 +25,7 @@ export function YogunlukSekmesi({ istemci, evren, surum }: { istemci: Istemci; e
   const [olcu, setOlcu] = useState<YogunlukOlcutu>('olay');
   const [o, setO] = useState<YogunlukSonucu | null>(null);
   const [secenekler, setSecenekler] = useState<Pick<YogunlukSonucu, 'eserler' | 'turler' | 'haritalar'>>({ eserler: [], turler: [], haritalar: [] });
-  const [hata, setHata] = useState<string | null>(null), [durum, setDurum] = useState('Henüz çalıştırılmadı.');
+  const [hata, setHata] = useState<string | null>(null), [durum, setDurum] = useState('Henüz hesaplanmadı.');
   const [secim, setSecim] = useState<Secim | null>(null), [sayfa, setSayfa] = useState(0);
   const sira = useRef(0);
   const hesapla = async () => {
@@ -34,11 +34,11 @@ export function YogunlukSekmesi({ istemci, evren, surum }: { istemci: Istemci; e
     try {
       const x = await istemci.iste('yogunluk', { evren, ...girdi });
       if (n !== sira.current) return;
-      setO(x); setSecenekler(x); setDurum('Güncel · bu kurallara göre zorunlu sonuç.');
+      setO(x); setSecenekler(x); setDurum('Güncel · bu kurallara göre kesin sonuç.');
     } catch (e) { if (n === sira.current) { setHata((e as Error).message); setDurum('Sayım yapılamadı.'); } }
   };
   useEffect(() => { void hesapla(); return () => { sira.current++; }; }, [evren, surum]);
-  const degis = (s: Partial<YogunlukIstegi>) => { sira.current++; setGirdi({ ...girdi, ...s }); setO(null); setSecim(null); setHata(null); setDurum('Seçimler değişti. Sayımı göster ile yenileyin.'); };
+  const degis = (s: Partial<YogunlukIstegi>) => { sira.current++; setGirdi({ ...girdi, ...s }); setO(null); setSecim(null); setHata(null); setDurum('Seçimler değişti. Yenilemek için “Sayımı göster” düğmesine basın.'); };
   const sec = (s: Secim) => { setSecim(s); setSayfa(0); };
   const uygun = (k: YogunlukKaydi) => {
     if (!o || !secim) return false;
@@ -49,13 +49,13 @@ export function YogunlukSekmesi({ istemci, evren, surum }: { istemci: Istemci; e
   const dayanaklar = o && secim ? o.kayitlar.filter(uygun) : [];
   const enYogun = o ? Math.max(1, ...o.dilimler.map((d) => d.enCok[olcu])) : 1;
   const aciklama = (k: YogunlukKaydi) => {
-    if (secim?.tur === 'dilim' && k.dilimler) return k.dilimler.kesin ? 'Bu dilimin içinde.' : `Bu dilimlere yayılan belirsiz: ${o!.dilimler[k.dilimler.ilk].ad} – ${o!.dilimler[k.dilimler.son].ad}. Tarihin görünüm dışındaki kısmı da korunur; kesin bir yer seçilmedi.`;
-    if (secim?.tur === 'bolge') return k.bolgeler.find((b) => b.kod === secim.kod)?.kesin ? 'Bu bölgede kayıtlı.' : 'Bu bölgede olması mümkün; konumu tek bölgeye indirgenmedi.';
-    return k.tarih?.ifade ?? 'Tarihi kaydedilmemiş veya takvime çevrilemiyor.';
+    if (secim?.tur === 'dilim' && k.dilimler) return k.dilimler.kesin ? 'Bu dilimin içinde.' : `Tarihi belirsiz, şu dilimlere yayılıyor: ${o!.dilimler[k.dilimler.ilk].ad} – ${o!.dilimler[k.dilimler.son].ad}. Tarihin görünümün dışında kalan kısmı da hesaba katılır, kesin bir yer seçilmedi.`;
+    if (secim?.tur === 'bolge') return k.bolgeler.find((b) => b.kod === secim.kod)?.kesin ? 'Bu bölgede kayıtlı.' : 'Bu bölgede olabilir, konumu tek bir bölgeye indirgenmedi.';
+    return k.tarih?.ifade ?? 'Tarihi yazılmamış ya da takvime çevrilemiyor.';
   };
   return <section aria-label="Yoğunluk ve boşluk">
     <h2>Yoğunluk ve boşluk</h2>
-    <p>Olay, sahne, kelime ve kayıt ayrı sayılır. Aynı olay altı sahnede anlatılsa da bir olaydır. Açıklık ve koyuluk yalnızca seçilen sayıyı gösterir; bir denge veya önem ölçüsü değildir.</p>
+    <p>Olay, sahne, kelime ve kayıt ayrı sayılır. Aynı olay altı sahnede anlatılsa da bir olaydır. Renklerin açıklığı ve koyuluğu yalnızca seçilen sayıyı gösterir, bir denge ya da önem ölçüsü değildir.</p>
     <label>Yoğunluk türü <select class="girdi" value={olcu} onChange={(e) => setOlcu(e.currentTarget.value as YogunlukOlcutu)}>{OLCULER.map((o) => <option key={o.kod} value={o.kod}>{o.ad}</option>)}</select></label>
     <form onSubmit={(e) => { e.preventDefault(); void hesapla(); }}>
       <div class="satir"><label>Başlangıç yılı <input class="girdi" value={girdi.baslangic} onInput={(e) => degis({ baslangic: e.currentTarget.value })} /></label>
@@ -67,17 +67,17 @@ export function YogunlukSekmesi({ istemci, evren, surum }: { istemci: Istemci; e
         <button class="dugme ana" type="submit">Sayımı göster</button>
       </div>
     </form>
-    <p class="soluk">Ana takvimin yıllarını kullanın; negatif yıl ve tanımlanmış çağ adları kullanılabilir. Dilimler başlangıç yılında başlar, en çok 1.000 dilim gösterilir. Sayı aralığı “en az–en çok” demektir; farklı dilimlerin üst sınırları toplanamaz.</p>
+    <p class="soluk">Ana takvimin yıllarını yazın. Eksi yıllar ve tanımladığınız çağ adları da kullanılabilir. Dilimler başlangıç yılından başlar, en çok 1.000 dilim gösterilir. Bir sayı aralığı “en az–en çok” anlamına gelir. Farklı dilimlerin üst sınırları toplanamaz.</p>
     <p role="status">{durum}</p>{hata && <p role="alert">{hata}</p>}
     {o && <>
       <h3>Zaman şeridi</h3>
       <div class="satir" style="flex-wrap:nowrap;overflow-x:auto;align-items:stretch" aria-label="Zaman yoğunluğu şeridi">{o.dilimler.map((d) => <button key={d.kod} class="dugme" style={`min-width:100px;background-color:rgba(65,115,165,${0.04 + 0.3 * d.enCok[olcu] / enYogun})`} onClick={() => sec({ tur: 'dilim', kod: d.kod, ad: d.ad })}><span>{d.ad}</span><br /><strong>{sayi(d.enAz[olcu], d.enCok[olcu])}</strong></button>)}</div>
       <SayimTablosu satirlar={o.dilimler} olcu={olcu} etiket="Zaman dilimi" sec={(d) => sec({ tur: 'dilim', kod: d.kod, ad: d.ad })} />
-      <p>Tarih aralığı birden çok dilime yayılan kayıtlar, kesin sayının yanında üst sınırda yer alır. Aralığın yalnızca bir kısmı görünümde olsa da kesinlik üretilmez.</p>
-      <p><button class="dugme sade" onClick={() => sec({ tur: 'tarihsiz', ad: 'Tarihsiz veya takvime çevrilemeyenler' })}>Tarihsiz veya takvime çevrilemeyenler: {ozet(o.tarihsiz)}</button></p>
+      <p>Tarih aralığı birden çok dilime yayılan kayıtlar kesin sayıya katılmaz, yalnızca üst sınıra eklenir. Aralığın yalnızca bir kısmı görünümde olsa da kesin bir yer varsayılmaz.</p>
+      <p><button class="dugme sade" onClick={() => sec({ tur: 'tarihsiz', ad: 'Tarihsiz ya da takvime çevrilemeyenler' })}>Tarihsiz ya da takvime çevrilemeyenler: {ozet(o.tarihsiz)}</button></p>
       <p><button class="dugme sade" onClick={() => sec({ tur: 'zamanDisinda', ad: 'Seçilen zaman aralığının dışındakiler' })}>Seçilen zaman aralığının dışında: {ozet(o.zamanDisinda)}</button></p>
       {o.harita && <><h3>{o.harita.ad} · bölge sayımları</h3>
-        <p>Harita dağılımı zaman şeridinden bağımsızdır; aynı eser ve tür kapsamının kayıtlı konumlarını gösterir. Tarihli çizimler ayrı gösterilir. Örtüşen bölgelerdeki sayılar toplanamaz.</p>
+        <p>Harita dağılımı zaman şeridinden bağımsızdır. Seçilen eser ve türdeki kayıtların konumlarını gösterir. Tarihli çizimler ayrı gösterilir. Örtüşen bölgelerdeki sayılar toplanamaz.</p>
         {o.bolgeler.length ? <SayimTablosu satirlar={o.bolgeler} olcu={olcu} etiket="Bölge" sec={(b) => sec({ tur: 'bolge', kod: b.kod, ad: b.ad })} /> : <p>Bu haritada kayıtlı bölge çizimi yok.</p>}
         <p><button class="dugme sade" onClick={() => sec({ tur: 'konumsuz', ad: 'Konumu bilinmeyenler' })}>Konumu bilinmediği için bölgelere sayılmayanlar: {ozet(o.konumsuz)}</button></p>
         <p><button class="dugme sade" onClick={() => sec({ tur: 'bolgeDisinda', ad: 'Konumu bilinen, çizilmiş bölgelerin dışındakiler' })}>Konumu bilinen, çizilmiş bölgelerin dışındakiler: {ozet(o.bolgeDisinda)}</button></p>

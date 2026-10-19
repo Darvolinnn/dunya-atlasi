@@ -110,7 +110,7 @@ describe('uyarlama eşlemeleri (F35)', () => {
     const diger = cihaz(); diger.evreniDisaridanKur({ kod: evren, islemler: h.islemleriVer({ evren, gorulen: {} }) });
     expect(diger.uyarlamaListesi({ evren })[0].uyarilar.join(' ')).toContain('henüz ulaşmamış');
     const kod = diger.uyarlamaListesi({ evren })[0].kod;
-    expect(() => diger.uyarlamaGozdenGecir({ evren, kod })).toThrow('ulaşmadan');
+    expect(() => diger.uyarlamaGozdenGecir({ evren, kod })).toThrow('Onlar gelmeden');
   });
   it('geç eşitlenen eski saatli değişikliği gözden geçirme gizlemez', () => {
     const { h, evren, a, yaz, liste } = kur(); const kod = yaz();
@@ -156,7 +156,7 @@ describe('uyarlama eşlemeleri (F35)', () => {
     const { h, evren, a, t, yaz, liste } = kur(); const once = h.islemGunlugu({ evren, sinir: 1000 });
     const t1 = t(); t1.a.kayitlar = [a, a]; expect(() => yaz(t1)).toThrow('birden çok');
     expect(() => yaz(t({ tur: 'indirgeme' }))).toThrow('en az iki');
-    const t2 = t({ tur: 'cikarildi' }); expect(() => yaz(t2)).toThrow('boş olmalı');
+    const t2 = t({ tur: 'cikarildi' }); expect(() => yaz(t2)).toThrow('kayıt seçilmemeli');
     liste(); h.uyarlamaAdaylari({ evren });
     expect(h.islemGunlugu({ evren, sinir: 1000 })).toEqual(once);
   });

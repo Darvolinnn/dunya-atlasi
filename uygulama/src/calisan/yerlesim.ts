@@ -56,7 +56,7 @@ export function dogrula(e: EvrenVt, sahne: string, plan: YerlesimPlani, ogeler: 
   if (!Array.isArray(ogeler) || ogeler.length > 500) throw new Error('Yerleşimde en çok 500 öğe olabilir.');
   const kodlar = new Set<string>(), kisiler = new Set<string>();
   const yeni = ogeler.map((o) => {
-    if (!o || !kodGecerliMi(o.kod) || kodlar.has(o.kod)) throw new Error('Öğe seçimi geçersiz veya tekrarlı.');
+    if (!o || !kodGecerliMi(o.kod) || kodlar.has(o.kod)) throw new Error('Öğelerden biri geçersiz ya da birden çok kez eklenmiş.');
     kodlar.add(o.kod);
     if (typeof o.ad !== 'string' || o.ad.length > 120) throw new Error('Öğe adı en çok 120 harf olabilir.');
     if ('a' in o) {
@@ -68,7 +68,7 @@ export function dogrula(e: EvrenVt, sahne: string, plan: YerlesimPlani, ogeler: 
       if (o.tur === 'karakter') {
         const k = kayit(e, o.kisi, 'karakter').kod;
         if (!katilimcilar.includes(k)) throw new Error('Karakteri önce sahnenin katılımcılarına ekleyin.');
-        if (kisiler.has(k)) throw new Error('Aynı karakter için hareket adımları ekleyin.');
+        if (kisiler.has(k)) throw new Error('Aynı karakteri ikinci kez yerleştirmek yerine ona hareket adımları ekleyin.');
         kisiler.add(k);
         if (!sayi(o.yon, 0, 360) || !sayi(o.aci, 0, 360) || !sayi(o.uzaklik, 0, 1000) || !Array.isArray(o.adimlar) || o.adimlar.length > 500) throw new Error('Bakış ve hareket değerlerini kontrol edin.');
         o.adimlar.forEach(nokta);
@@ -77,7 +77,7 @@ export function dogrula(e: EvrenVt, sahne: string, plan: YerlesimPlani, ogeler: 
         if (!sayi(o.yaricap, 0, 1000)) throw new Error('Işığın yarıçapını kontrol edin.');
       } else if (o.tur === 'ses') {
         if (!(o.uzaklik === null || sayi(o.uzaklik, 0, 1000)) || !sayi(o.azaltma, 0, 1000) || typeof o.duzey !== 'string' || typeof o.gurultu !== 'string' || o.duzey.length > 300 || o.gurultu.length > 300) throw new Error('Ses varsayımlarını kontrol edin.');
-        if (o.uzaklik === null && !o.duzey.trim()) throw new Error('Ses düzeyini veya duyulma uzaklığını yazın.');
+        if (o.uzaklik === null && !o.duzey.trim()) throw new Error('Ses düzeyini ya da duyulma uzaklığını yazın.');
       } else throw new Error('Öğe türünü seçin.');
     }
     return o;

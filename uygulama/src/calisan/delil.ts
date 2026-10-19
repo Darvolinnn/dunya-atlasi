@@ -56,10 +56,10 @@ export function delilYaz(b: DelilBaglami, kod: string, t: DelilTanimi) {
   if (t.aile) {
     const ana = yonlendir(e.db, String(t.aile.ana ?? ''));
     if (!belgeMi(e, ana) || ana === kod) throw new Error('Ana belge başka bir evren içi belge olmalı.');
-    if (!DELIL_AILE_TURLERI.some((x) => x.kod === t.aile!.tur)) throw new Error('Kopya, tercüme ya da sansürlü sürüm seçin.');
+    if (!DELIL_AILE_TURLERI.some((x) => x.kod === t.aile!.tur)) throw new Error('Kopya, tercüme ya da sansürlü sürümden birini seçin.');
     const tum = tumTanimlar(e);
     for (let x: string | null = ana, n = 0; x; x = tum.get(x)?.aile?.ana ?? null, n++) {
-      if (x === kod || n > 500) throw new Error('Belgeler birbirinin kopyası olarak döngü kuramaz.');
+      if (x === kod || n > 500) throw new Error('Belgeler birbirinin kopyası olarak bir döngü oluşturamaz.');
     }
     aile = { ana, tur: t.aile.tur };
   }
@@ -110,7 +110,7 @@ export function delilGecmisi(e: EvrenVt, kodGirdi: string): DelilGecmisi {
   const okuyanlar = e.db.selectObjects(`SELECT DISTINCT bilen, kaynak_kayit FROM bilgiler WHERE silindi IS NULL AND kaynak='belge' AND kaynak_kayit IS NOT NULL`)
     .filter((r) => uyeSet.has(yonlendir(e.db, r.kaynak_kayit as string)))
     .map((r) => ({ kisi: kisa(e, r.bilen as string)!, belge: kisa(e, r.kaynak_kayit as string)! }));
-  const notlar = ['Belgede yazan ile gerçekte olan ayrıdır; bu masa hüküm vermez, yalnızca yazdıklarınızı yan yana koyar.'];
+  const notlar = ['Belgede yazan ile gerçekte olan ayrı şeylerdir. Bu masa hüküm vermez, yalnızca yazdıklarınızı yan yana koyar.'];
   if (uyeler.length > 1) notlar.push(`Bu ailedeki ${uyeler.length} belge iddia dosyasında tek bağımsız kaynak sayılır.`);
   return { belge: kisa(e, kod)!, tanim, gorunenYazar: gorunen, gercekYazar: gercek, yazarDurumu, aile: { kok: kisa(e, kok)!, uyeler }, elde, deliller, okuyanlar, notlar };
 }

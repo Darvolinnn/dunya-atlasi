@@ -43,7 +43,7 @@ export function BaglamParcasiFormu({ istemci, evren, onceki, metin, kaydet, vazg
   };
   return (
     <form class="kart ayirma" onSubmit={gonder} aria-label="Parçanın bağlamı">
-      <p class="kucuk" style="margin:0 0 6px">{metin ? `“${metin.slice(0, 120)}” için ayrı bağlam (geçmişe dönüş, okunan mektup, öbür cephe). ` : ''}Sahneyi bölmeniz gerekmez.</p>
+      <p class="kucuk" style="margin:0 0 6px">{metin ? `“${metin.slice(0, 120)}” için ayrı bir bağlam girin (geçmişe dönüş, okunan mektup, öbür cephe gibi). ` : ''}Bunun için sahneyi bölmeniz gerekmez.</p>
       <div class="satir kucuk">
         <span>Tarih</span><KipSecici etiket="Tarih" kip={tarihKipi} degis={setTarihKipi} />
         {tarihKipi === 'deger' && <input class="girdi" style="max-width:160px" aria-label="Parçanın tarihi" placeholder="ör. 398" value={tarih} onInput={(e) => setTarih((e.target as HTMLInputElement).value)} />}

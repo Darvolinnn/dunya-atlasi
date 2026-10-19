@@ -57,7 +57,7 @@ describe('süreklilik defteri (§5.6)', () => {
     expect(x.son).toEqual({ gozlenen: '2', hesaplanan: '3 ok' });
     expect(x.netFark).toBe(-3);
     expect(x.notlar.join(' ')).toContain('İkisi de korunuyor');
-    expect(x.notlar.join(' ')).toContain('söylemez');
+    expect(x.notlar.join(' ')).toContain('göstermez');
 
     // Sonraki sahne: başta beklenen, son gözlemden hesaplanır (gözlem esas alınır, hesap üzerine yazmaz).
     s = h.sahneSurekliligi({ evren, sahne: s2 });
@@ -115,7 +115,7 @@ describe('süreklilik defteri (§5.6)', () => {
     expect(z.bas.beklenen).toBe('kilitli');
     expect(z.bas.dayanak).toContain('“Gece”');
     expect(z.son.hesaplanan).toBeNull();
-    expect(z.notlar.join(' ')).toContain('arada kayıtlı bir değişim yok');
+    expect(z.notlar.join(' ')).toContain('Arada kayıtlı bir değişim yok');
   });
 
   it('iyileşme süresi: başlangıçtan sonra geçen güne göre; kaba tarihte belli değil der', () => {

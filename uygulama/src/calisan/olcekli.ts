@@ -87,14 +87,14 @@ function hizKurallariniDogrula(girdi: unknown): OlcekliHizKurali[] {
     if (!ham || typeof ham !== 'object') throw new Error('Geçersiz hız kuralı.');
     const k = ham as Partial<OlcekliHizKurali>;
     const ulasim = typeof k.ulasim === 'string' ? k.ulasim.trim().slice(0, 80) : '';
-    if (!ulasim) throw new Error('Hız kuralında ulaşım biçimi belirtilmeli.');
+    if (!ulasim) throw new Error('Hız kuralında ulaşım biçimini belirtin.');
     const mevsim = typeof k.mevsim === 'string' && k.mevsim.trim() ? k.mevsim.trim().slice(0, 80) : null;
     const gecilmez = !!k.gecilmez;
     let gunlukHiz: number | null = null;
     if (!gecilmez) {
       const n = Number(k.gunlukHiz);
       if (!(Number.isFinite(n) && n > 0)) {
-        throw new Error(`“${ulasim}” için günlük ilerleme hızı pozitif bir sayı olmalı ya da “geçilmez” işaretlenmeli.`);
+        throw new Error(`“${ulasim}” için günlük ilerleme hızı sıfırdan büyük bir sayı olmalı ya da “geçilmez” işaretlenmeli.`);
       }
       gunlukHiz = n;
     }
@@ -241,16 +241,16 @@ export function olcekliOlcekYaz(
   if (olcekGirdi !== null) {
     const p1 = noktaTemizle(olcekGirdi?.p1);
     const p2 = noktaTemizle(olcekGirdi?.p2);
-    if (!p1 || !p2) throw new Error('Ölçek için haritada iki geçerli nokta seçilmeli.');
+    if (!p1 || !p2) throw new Error('Ölçek için haritada iki geçerli nokta seçin.');
     if (Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) <= 1e-9) {
       throw new Error('Ölçek noktaları birbirinden farklı olmalı.');
     }
     const mesafe = Number(olcekGirdi.mesafe);
     if (!(Number.isFinite(mesafe) && mesafe > 0)) {
-      throw new Error('Ölçek mesafesi pozitif bir sayı olmalı.');
+      throw new Error('Ölçek mesafesi sıfırdan büyük bir sayı olmalı.');
     }
     const birim = typeof olcekGirdi.birim === 'string' ? olcekGirdi.birim.trim().slice(0, 80) : '';
-    if (!birim) throw new Error('Ölçek birimi (ör. fersah, menzil) girilmeli.');
+    if (!birim) throw new Error('Ölçek birimini yazın (ör. fersah, menzil).');
     const molaVarsayimi =
       typeof olcekGirdi.molaVarsayimi === 'string' && olcekGirdi.molaVarsayimi.trim()
         ? olcekGirdi.molaVarsayimi.trim().slice(0, 300)
@@ -297,7 +297,7 @@ export function olcekliAraziYaz(
   const hr = haritaSatiriOku(b.e.db, harita);
   if (!tanim || typeof tanim !== 'object') throw new Error('Geçersiz arazi tanımı.');
   const ad = typeof tanim.ad === 'string' ? tanim.ad.trim().slice(0, 120) : '';
-  if (!ad) throw new Error('Arazi türü için bir ad girilmeli.');
+  if (!ad) throw new Error('Arazi türüne bir ad verin.');
 
   const cizim = typeof tanim.cizim === 'string' && tanim.cizim.trim() ? tanim.cizim.trim() : null;
   let noktalar = Array.isArray(tanim.noktalar)
@@ -319,7 +319,7 @@ export function olcekliAraziYaz(
     }
   }
   if (noktalar.length < 3) {
-    throw new Error('Arazi alanı en az 3 köşe noktasından oluşan bir çokgen olmalı.');
+    throw new Error('Arazi alanı en az üç köşeli bir çokgen olmalı.');
   }
 
   const kurallar = hizKurallariniDogrula(tanim.kurallar);
@@ -391,7 +391,7 @@ export function olcekliOlcum(
 ): OlcekliOlcumSonucu {
   const bas = noktaTemizle(a.baslangic);
   const bit = noktaTemizle(a.bitis);
-  if (!bas || !bit) throw new Error('Ölçüm için geçerli başlangıç ve bitiş noktaları gerekli.');
+  if (!bas || !bit) throw new Error('Ölçmek için geçerli bir başlangıç ve bitiş noktası seçin.');
   const { baglam, katmanlarJson } = geometriBaglamiHazirla(e, a.harita);
   const katmanDonusumu = katmanDonusumuOku(katmanlarJson, a.katman);
   return olcumHesapla(baglam, bas as Nokta, bit as Nokta, {
@@ -414,9 +414,9 @@ export function olcekliKonturlar(
   },
 ): OlcekliKonturSonucu {
   const bas = noktaTemizle(a.baslangic);
-  if (!bas) throw new Error('Erişim konturları için geçerli bir başlangıç noktası seçilmeli.');
+  if (!bas) throw new Error('Erişim konturları için geçerli bir başlangıç noktası seçin.');
   const ulasim = typeof a.ulasim === 'string' ? a.ulasim.trim() : '';
-  if (!ulasim) throw new Error('Erişim konturları için ulaşım biçimi belirtilmeli.');
+  if (!ulasim) throw new Error('Erişim konturları için ulaşım biçimini belirtin.');
   const { baglam, katmanlarJson } = geometriBaglamiHazirla(e, a.harita);
   const katmanDonusumu = katmanDonusumuOku(katmanlarJson, a.katman);
   return konturHesapla(baglam, bas as Nokta, ulasim, {

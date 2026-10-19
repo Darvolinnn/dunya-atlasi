@@ -74,6 +74,7 @@ Belgedeki adlar (Velkar, Kaelen, Elin, Kuzey Kalesi…) yalnızca davranışı a
 | Medya dosyaları | §10.12 |
 | Yayın paketi ve yayın güvenliği | §11 |
 | Görünüm, erişilebilirlik, giriş yöntemleri | §12 |
+| Sayfa rehberi ve hitap | §12.4 |
 | Kabul senaryoları | §13 |
 | Geliştirme ve cihaz sırası, aşama çıkışı | §14 |
 | Hesap araçları | §15 |
@@ -134,6 +135,7 @@ Aşağıdaki sözcükler belgede yalnızca bu anlamlarda kullanılır. Kodu yaza
 | K22 | **Evren ile dünya:** Programdaki tek sabit üst birim evrendir. Dünya, gezegen, boyut ya da alem kurguya göre kayıtlarla esnek biçimde kurulur; program bir seviye dayatmaz (§0.5, §3.7). | 18 Ekim |
 | K23 | **F37 (varsayım paketleri) ve F40 (kalabalıklar) tasarıma alındı** (eski A13'ün bir kısmı). Tanımları §3.11 ve §3.8. | 18 Ekim |
 | K24 | **Arayüzde yazı merkezdedir.** Evren açılınca yazma düzeni gelir; ekran sadeleşir, az kullanılan araçlar katlanır ve görünüş yenilenir. Ayrıntı §5.10, §12.1. | 19 Ekim |
+| K25 | **Her sayfanın rehberi ve tek hitap.** Her sayfanın başlığında bir "?" düğmesi vardır; sayfanın ne işe yaradığını ve nasıl kullanıldığını anlatan rehberi sağdan açılan yan panelde gösterir. Program kullanıcıya "siz" diye hitap eder. Ayrıntı §12.4. | 19 Ekim |
 
 ### 1.2 Açık kararlar
 
@@ -947,6 +949,12 @@ Ortak olan sahne, bağlam ve çalışma niyetidir; pencere genişliği, kaydırm
 | Galaxy Tab S11 Ultra | S Pen ile harita ve kroki, iki panel yan yana, okuma ve düzenleme; DeX'te bilgisayar düzeni |
 | iPhone | Hızlı not, arama, sahne okuma, kayıt düzeltme; yan panel yerine alttan açılan kart |
 
+
+### 12.4 Sayfa rehberi ve dil (K25)
+
+- Her sayfanın (evrenler, eşitleme, yazma, masa, kayıtlar, kayıt sayfası, haritalar, takvim, inceleme, "Diğer" altındakiler ve her görünüm) başlığının yanında küçük bir **"?" düğmesi** bulunur. Düğme, o sayfanın rehberini sağdan açılan bir yan panelde gösterir; sayfa panelin yanında görünür kalır. Panel Esc, "Kapat" ya da yeniden "?" ile kapanır.
+- Rehber dört kısımdır: sayfa ne işe yarar, ne zaman kullanılır, adım adım nasıl kullanılır, bilmeniz gerekenler. Rehberde programlama terimi geçmez; örnekler uydurmadır.
+- **Hitap "siz"dir.** Açıklama, uyarı, boş durum ve hata metinleri ikinci çoğul kişiyle yazılır ("seçin, yazın"); düğme ve menü etiketleri kısa emir ya da ad olarak kalır ("Kaydet", "Yeni takvim"). Metinler doğal, kısa cümlelerle yazılır; terimler §0.5'teki anlamlarıyla kullanılır.
 ---
 
 ## 13. Kullanım akışları ve kabul senaryoları

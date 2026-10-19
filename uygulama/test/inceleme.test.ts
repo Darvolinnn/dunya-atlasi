@@ -30,7 +30,7 @@ describe('incelemede bulunan küçük arayüz hataları', () => {
       tanim: { tarih: '', yapan: kod, amac: '', bilinenHatalar: [] } };
     const metin = gorunenMetin(HaritaKunyeBolumu({ istemci, evren: 'evren', harita: 'harita' }));
     expect(metin).not.toContain(kod);
-    expect(metin).toContain('Silinmiş veya bulunamayan kayıt');
+    expect(metin).toContain('Silinmiş ya da bulunamayan kayıt');
   });
 
   it('F35 boş uyarlama bölümü tek düğme gösterir', () => {

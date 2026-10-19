@@ -162,9 +162,9 @@ export function isaretOzetleri(e: EvrenVt, kodlar: string[]): { kod: string; hed
 // ---------- İnceleme (§9.3) ve değişiklik niyeti (F24) ----------
 /** Değişiklik niyeti (F24). Program yeni değeri metinden çıkarmaz; yazarın niyetini kaydeder ve yapılacak yeri gösterir. */
 export const NIYETLER = [
-  { kod: 'eski_duzelt', ad: 'Eski kaydı düzelt', aciklama: 'Evrende doğrusu bu; bağlı bilgi buna göre düzeltilecek.' },
-  { kod: 'bu_tarihten', ad: 'Bu tarihten itibaren değiştir', aciklama: 'Önceki hâl doğruydu; değişiklik bir tarihten sonra geçerli (zamanla değişen değer olarak yazılır).' },
-  { kod: 'taslakta', ad: 'Taslakta dene', aciklama: 'Ana çizgiye değil, bir deneme kopyasına aittir.' },
+  { kod: 'eski_duzelt', ad: 'Eski kaydı düzelt', aciklama: 'Evrende doğrusu bu. Bağlı bilgi buna göre düzeltilir.' },
+  { kod: 'bu_tarihten', ad: 'Bu tarihten itibaren değiştir', aciklama: 'Önceki hâli doğruydu. Değişiklik belli bir tarihten sonra geçerli olur ve zamanla değişen bir değer olarak kaydedilir.' },
+  { kod: 'taslakta', ad: 'Taslakta dene', aciklama: 'Ana evrene değil, bir deneme kopyasına ait.' },
   { kod: 'inanc', ad: 'Yalnızca bu kişinin inancını değiştir', aciklama: 'Gerçek değişmedi; bir karakterin bildiği ya da sandığı değişti.' },
 ] as const;
 export type Niyet = typeof NIYETLER[number]['kod'];
@@ -242,7 +242,7 @@ export function isaretIncelemeleri(e: EvrenVt, kayit: string | null = null): Isa
     if (r.kritik && r.metin !== null) {
       const yerler = e.db.selectObjects('SELECT metin FROM metin_isaret_yerleri WHERE isaret=? AND kayit=? AND alan=?', [kod, r.kayit as string, r.alan as string]);
       const simdi = yerler.length === 1 ? (yerler[0].metin as string) : null;
-      ekle(`isaret-metin:${kod}`, 'metin', simdi ?? '', r.metin as string, simdi, 'Kritik işaretli cümle değişti: düzeltme mi, yeni bir şey mi?', simdi !== null && simdi !== r.metin);
+      ekle(`isaret-metin:${kod}`, 'metin', simdi ?? '', r.metin as string, simdi, 'Kritik olarak işaretlenen cümle değişti. Bu bir düzeltme mi, yoksa yeni bir bilgi mi?', simdi !== null && simdi !== r.metin);
     }
   }
   return sonuc;

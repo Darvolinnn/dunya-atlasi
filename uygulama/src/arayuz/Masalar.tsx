@@ -40,7 +40,7 @@ function MasaListesi({ istemci, evren, surum }: { istemci: Istemci; evren: strin
     <div class="masalar">
       <section aria-label="Çalışma masaları">
         <h2>Çalışma masaları</h2>
-        <p class="soluk kucuk">Bir konu için kurulan çalışma alanı: şehir planı, karakterler, tarih aralığı, kaynaklar, açık sorular ve sahneler bir arada. Kayıtlar kopyalanmaz, masa onlara bağlanır.</p>
+        <p class="soluk kucuk">Bir konu üzerinde çalışmak için kurduğunuz alan: şehir planı, karakterler, tarih aralığı, kaynaklar, açık sorular ve sahneler bir arada durur. Kayıtlar kopyalanmaz; masa yalnızca onlara bağlanır.</p>
         <YeniForm etiket="Yeni masanın adı" yerTutucu="Yeni masa (ör. Velkar isyanı)" olustur={async (ad) => { const { kod } = await istemci.iste('masaOlustur', { evren, ad }); git(`/e/${evren}/masalar/${kod}`); }} />
         {masalar.length === 0 && <p class="soluk">Henüz masa yok.</p>}
         <ul class="masa-listesi">
@@ -55,7 +55,7 @@ function MasaListesi({ istemci, evren, surum }: { istemci: Istemci; evren: strin
       </section>
       <section aria-label="Varsayım paketleri">
         <h2>Varsayım paketleri</h2>
-        <p class="soluk kucuk">Birlikte geçerli sayılan varsayımlar (“köprü açık”, “haberci yola çıkmadı”). Evreni kopyalamadan küçük düşünce deneyleri içindir; varsayım siz istemedikçe evrene yazılmaz. İki seçenekten biri doğruysa onları iki ayrı pakette tutun.</p>
+        <p class="soluk kucuk">Birlikte geçerli sayılan varsayımlar (“köprü açık”, “haberci yola çıkmadı”). Evreni kopyalamadan küçük düşünce deneyleri yapmanızı sağlar; siz istemedikçe hiçbir varsayım evrene kaydedilmez. İki seçenekten yalnızca biri doğru olabiliyorsa onları ayrı paketlerde tutun.</p>
         <YeniForm etiket="Yeni paketin adı" yerTutucu="Yeni paket (ör. Köprü açık)" olustur={async (ad) => { const { kod } = await istemci.iste('paketOlustur', { evren, ad }); git(`/e/${evren}/masalar/p:${kod}`); }} />
         <ul class="masa-listesi">
           {paketler.map((p) => (
@@ -112,8 +112,8 @@ function MasaEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
       <p><a href={`#/e/${evren}/masalar`}>← Masalar</a></p>
       <h1 class="masa-adi"><KayanAlan deger={m.ad} kaydet={yaz('ad')} etiket="Masanın adı" /></h1>
       <label class="masa-amac">
-        <span class="soluk kucuk">Bugün burada neyi çözmeye çalışıyorum?</span>
-        <KayanAlan deger={m.amac} kaydet={yaz('amac')} etiket="Bugün burada neyi çözmeye çalışıyorum?" yerTutucu="Kuşatmanın hangi gün kırıldığını bulmak" />
+        <span class="soluk kucuk">Bu masada neyi çözmeye çalışıyorsunuz?</span>
+        <KayanAlan deger={m.amac} kaydet={yaz('amac')} etiket="Bu masada neyi çözmeye çalışıyorsunuz?" yerTutucu="Örn. Kuşatmanın hangi gün kırıldığını bulmak" />
       </label>
       <div class="masa-ust">
         <label><span class="soluk kucuk">Tarih aralığının başı</span><KayanAlan deger={m.bas?.ifade ?? ''} kaydet={yaz('bas')} etiket="Tarih aralığının başı" yerTutucu="412" /></label>
@@ -121,12 +121,12 @@ function MasaEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
         <label>
           <span class="soluk kucuk">Varsayım paketi</span>
           <select class="girdi" aria-label="Masanın varsayım paketi" value={m.paket?.kod ?? ''} onChange={(e) => yaz('paket')((e.target as HTMLSelectElement).value)}>
-            <option value="">Yok (yalnızca kaydedilmiş veri)</option>
+            <option value="">Yok (yalnızca evrende kayıtlı olanlar)</option>
             {paketler.map((p) => <option value={p.kod}>{p.ad}</option>)}
           </select>
         </label>
       </div>
-      {m.paketSilinmis && <p class="uyari kucuk">Bu masanın seçtiği varsayım paketi kaldırılmış; hesaplar şimdi varsayımsız yapılıyor.</p>}
+      {m.paketSilinmis && <p class="uyari kucuk">Bu masa için seçilen varsayım paketi kaldırılmış; hesaplar artık varsayım olmadan yapılıyor.</p>}
       {m.paket && <p class="soluk kucuk">Seçili paket: <a href={`#/e/${evren}/masalar/p:${m.paket.kod}`}>{m.paket.ad}</a> ({m.paket.varsayimSayisi} varsayım). Bu masadaki hesaplar bu paketle yapılır.</p>}
 
       <section aria-label="Masadaki kayıtlar">
@@ -207,7 +207,7 @@ function PaketEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: 
       <p><a href={`#/e/${evren}/masalar`}>← Masalar ve paketler</a></p>
       <h1 class="masa-adi"><KayanAlan deger={p.ad} kaydet={yaz('ad')} etiket="Paketin adı" /></h1>
       <label class="masa-amac"><span class="soluk kucuk">Açıklama</span><KayanAlan deger={p.aciklama} kaydet={yaz('aciklama')} etiket="Paketin açıklaması" yerTutucu="Bu paket hangi düşünce deneyi için?" /></label>
-      <p class="soluk kucuk">Varsayımlar evrene yazılmaz; yalnızca bu paket seçilen masada ve hesapta geçerlidir.{p.masalar.length > 0 && <> Bu paketi seçen masalar: {p.masalar.map((m, i) => <>{i > 0 && ', '}<a href={`#/e/${evren}/masalar/${m.kod}`}>{m.ad}</a></>)}.</>}</p>
+      <p class="soluk kucuk">Varsayımlar evrene kaydedilmez; yalnızca bu paketin seçildiği masalarda ve hesaplarda geçerlidir.{p.masalar.length > 0 && <> Bu paketi seçen masalar: {p.masalar.map((m, i) => <>{i > 0 && ', '}<a href={`#/e/${evren}/masalar/${m.kod}`}>{m.ad}</a></>)}.</>}</p>
       <section aria-label="Varsayımlar">
         <h2>Varsayımlar</h2>
         {p.varsayimlar.length === 0 && <p class="soluk">Henüz varsayım yok.</p>}
@@ -280,7 +280,7 @@ function VarsayimFormu({ istemci, evren, paket }: { istemci: Istemci; evren: str
         )}
         <button class="dugme ana" type="submit" disabled={tur === 'metin' ? !metin.trim() : !kayit || (tur === 'bilgi' && !iddia)}>Varsayım ekle</button>
       </div>
-      {tur === 'metin' && <p class="soluk kucuk">Serbest not hesaplara girmez; program metinden anlam çıkarmaz.</p>}
+      {tur === 'metin' && <p class="soluk kucuk">Serbest not hesaplarda kullanılmaz; program yazılan metinden anlam çıkarmaz.</p>}
       {hata && <p class="hata kucuk">{hata}</p>}
     </form>
   );
