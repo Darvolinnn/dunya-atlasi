@@ -84,7 +84,8 @@ import * as dairInanc from './dair-inanc';
 import { SANILAN_DURUMLAR } from '../alan/bilgi';
 import * as kimlik from './kimlik';
 import * as parca from './baglam-parcasi';
-import type { BaglamParcasiTanimi } from '../veri/api';
+import * as metinKul from './metin-kullanim';
+import type { BaglamParcasiTanimi, KullanimBicimi } from '../veri/api';
 import type { DairInancTanimi } from '../veri/api';
 import * as donusum from './donusum';
 import type { DonusumGirdisi, DonusumYeniKaydi, DonusumDegeri } from '../veri/api';
@@ -516,6 +517,13 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         const bek = (b: unknown) => atolye.BEKLENTILER.find((x) => x.kod === b)?.ad ?? '';
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: kor.sahip as string, baslik: `${kayitAdi(kor.sahip as string)} · ${(JSON.parse(kor.tanim as string) as { ad: string }).ad}`, alanEtiketi: 'Kuralın örnek durumu',
           degerler: degerler.map((d) => { const t = d.deger as { kisi?: string; yer?: string; tarih?: string; beklenen?: string } | null; return { ...d, yazi: t ? `${kayitAdi(t.kisi ?? '')} · ${kayitAdi(t.yer ?? '')}${t.tarih ? ` · ${t.tarih}` : ''}: ${bek(t.beklenen)}` : '(boş)' }; }) });
+        continue;
+      }
+      const mku = iliski || dr || alan !== 'metin_kullanim' ? undefined : e.db.selectObject('SELECT kaynak, hedef FROM metin_kullanimlari WHERE kod=?', [nesne]);
+      if (mku) {
+        const ad: Record<string, string> = { bagli: 'ortak kaynağa bağlı', kopya: 'kopya', turev: 'bağımsız türev' };
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: mku.hedef as string, baslik: `${kayitAdi(mku.hedef as string)} · “${kayitAdi(mku.kaynak as string)}” metninin kullanımı`, alanEtiketi: 'Kullanım',
+          degerler: degerler.map((d) => { const v = d.deger as { hedef?: string; tanim?: { bicim: string } } | null; return { ...d, yazi: v?.tanim ? `${kayitAdi(v.hedef ?? '')} · ${ad[v.tanim.bicim] ?? ''}` : '(boş)' }; }) });
         continue;
       }
       const bpr = iliski || dr || alan !== 'baglam_parcasi' ? undefined : e.db.selectObject('SELECT kayit FROM baglam_parcalari WHERE kod=?', [nesne]);
@@ -957,6 +965,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     const kor = alan === 'kural_ornegi' ? e.db.selectObject('SELECT o.kural, h.sahip, h.tanim FROM kural_ornekleri o JOIN hukuk_kurallari h ON h.kod=o.kural WHERE o.kod=?', [nesne]) : undefined;
     if (kor) { this.yaz(evren, [{ tur: 'kural_ornegi_yaz', veri: { kod: nesne, kural: kor.kural, tanim: deger, kuralAd: (JSON.parse(kor.tanim as string) as { ad: string }).ad, sahip: kor.sahip, cozum: true } }], [kor.sahip as string]); return; }
+    if (alan === 'metin_kullanim') {
+      const g = metinKul.cozumGirdisi(e, nesne, deger);
+      if (g) { this.yaz(evren, [g], [g.veri.hedef as string]); return; }
+    }
     const bpr = alan === 'baglam_parcasi' ? e.db.selectObject('SELECT kayit, alan FROM baglam_parcalari WHERE kod=?', [nesne]) : undefined;
     if (bpr) { this.yaz(evren, [{ tur: 'baglam_parcasi_yaz', veri: { kod: nesne, kayit: bpr.kayit, alan: bpr.alan, tanim: deger, cozum: true } }], [bpr.kayit as string]); return; }
     const dir = alan === 'dair_inanc' ? e.db.selectObject('SELECT d.iddia, i.konu FROM dair_inanclar d JOIN iddialar i ON i.kod=d.iddia WHERE d.kod=?', [nesne]) : undefined;
@@ -2291,6 +2303,31 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   baglamParcasiOlustur({ evren, kayit, alan, tanim }: { evren: string; kayit: string; alan: string; tanim: BaglamParcasiTanimi }) { return parca.parcaOlustur(this.parcaBaglami(evren), kayit, alan, tanim); }
   baglamParcasiYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: BaglamParcasiTanimi }) { parca.parcaYaz(this.parcaBaglami(evren), kod, tanim); }
   baglamParcasiSil({ evren, kod }: { evren: string; kod: string }) { parca.parcaSil(this.parcaBaglami(evren), kod); }
+
+  private kullanimBaglami(evren: string): metinKul.KullanimBaglami {
+    const e = this.evren(evren);
+    return {
+      e, yaz: (g, k) => { this.yaz(evren, g, k); },
+      spans: (kayit, alan) => A.spans(this.belge(e, kayit, alan), ['t']) as Spans,
+      metinGirdisi: (kayit, alan, spans) => {
+        const d = this.belge(e, kayit, alan), simdiki = A.getHeads(d);
+        const yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], spans as never, spanAyari()));
+        const basliklar = A.getHeads(yeni);
+        if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) return null;
+        return { tur: 'metin', veri: { kayit, alan, basliklar, temel: simdiki }, ikili: A.saveSince(yeni, simdiki) };
+      },
+    };
+  }
+  metinKullanimlari({ evren, hedef }: { evren: string; hedef: string }) { return metinKul.kullanimlar(this.kullanimBaglami(evren), hedef); }
+  metinKullanildigiYerler({ evren, kaynak }: { evren: string; kaynak: string }) { return metinKul.kullanildigiYerler(this.kullanimBaglami(evren), kaynak); }
+  metinKullanimOlustur({ evren, kaynak, hedef, alan, bicim }: { evren: string; kaynak: string; hedef: string; alan: string; bicim: KullanimBicimi }) {
+    if (!METIN_ALANLARI.has(alan)) throw new Error('Bilinmeyen metin alanı.');
+    return metinKul.olustur(this.kullanimBaglami(evren), kaynak, hedef, alan, bicim);
+  }
+  metinKullanimGuncelle({ evren, kod }: { evren: string; kod: string }) { metinKul.guncelle(this.kullanimBaglami(evren), kod); }
+  metinKullanimTurev({ evren, kod }: { evren: string; kod: string }) { metinKul.turevYap(this.kullanimBaglami(evren), kod); }
+  metinKullanimTasi({ evren, kod, hedef }: { evren: string; kod: string; hedef: string }) { metinKul.tasi(this.kullanimBaglami(evren), kod, hedef); }
+  metinKullanimSil({ evren, kod }: { evren: string; kod: string }) { metinKul.sil(this.kullanimBaglami(evren), kod); }
   // ---------- Kişi, kimlik ve beden (F06) ----------
   private kimlikBaglami(evren: string): kimlik.KimlikBaglami {
     const e = this.evren(evren);

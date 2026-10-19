@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 53;
+export const IZDUSUM_SURUMU = 54;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -260,6 +260,17 @@ CREATE TABLE IF NOT EXISTS baglam_parcalari(
   silindi INTEGER
 );
 CREATE INDEX IF NOT EXISTS baglam_parcalari_kayit ON baglam_parcalari(kayit);
+CREATE TABLE IF NOT EXISTS metin_kullanimlari(
+  kod TEXT PRIMARY KEY,
+  kaynak TEXT NOT NULL,
+  hedef TEXT NOT NULL,
+  alan TEXT NOT NULL,
+  tanim TEXT NOT NULL,
+  olusturma INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS metin_kullanimlari_hedef ON metin_kullanimlari(hedef);
+CREATE INDEX IF NOT EXISTS metin_kullanimlari_kaynak ON metin_kullanimlari(kaynak);
 CREATE TABLE IF NOT EXISTS dayaniklilik(
   iliski TEXT PRIMARY KEY,
   deger TEXT NOT NULL
@@ -765,7 +776,7 @@ IZDUSUM_TABLOLARI.push('bakim_tanimlari', 'bakim_kayitlari');
 IZDUSUM_TABLOLARI.push('kural_ornekleri');
 IZDUSUM_TABLOLARI.push('uyarlama_eslemeleri');
 IZDUSUM_TABLOLARI.push('dair_inanclar');
-IZDUSUM_TABLOLARI.push('baglam_parcalari');
+IZDUSUM_TABLOLARI.push('baglam_parcalari', 'metin_kullanimlari');
 IZDUSUM_TABLOLARI.push('donusum_kayitlari');
 IZDUSUM_TABLOLARI.push('kalabalik_gozlemleri', 'kalabalik_olaylari');
 IZDUSUM_TABLOLARI.push('harita_kunyeleri');
@@ -1252,6 +1263,17 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   baglam_parcasi_sil(db, i) {
     db.exec({ sql: 'UPDATE baglam_parcalari SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  /** Metin ile kullanım yeri (F30). */
+  metin_kullanim_yaz(db, i) {
+    const { kod, kaynak, hedef, alan, tanim } = i.veri as { kod: string; kaynak: string; hedef: string; alan: string; tanim: unknown };
+    if (typeof kod !== 'string' || typeof kaynak !== 'string' || typeof hedef !== 'string' || typeof alan !== 'string' || !tanim || typeof tanim !== 'object') return;
+    db.exec({ sql: `INSERT INTO metin_kullanimlari(kod, kaynak, hedef, alan, tanim, olusturma) VALUES(?,?,?,?,?,?)
+      ON CONFLICT(kod) DO UPDATE SET hedef=excluded.hedef, alan=excluded.alan, tanim=excluded.tanim`, bind: [kod, kaynak, hedef, alan, JSON.stringify(tanim), i.zaman] });
+    alanYaz(db, i, kod, 'metin_kullanim', { hedef, alan, tanim });
+  },
+  metin_kullanim_sil(db, i) {
+    db.exec({ sql: 'UPDATE metin_kullanimlari SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
   },
   /** Başkasının bilgisine dair inanç (F05). */
   dair_inanc_yaz(db, i) {

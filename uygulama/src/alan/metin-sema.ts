@@ -1,6 +1,7 @@
 // Serbest metnin yapısı: paragraf, başlık, alıntı; vurgu, kalın ve kayda bağlantı (§5.1). İşaret (§5.7)
 // sonraki aşamalarda buraya eklenir. Automerge'deki karşılıkları "automerge" anahtarlarıdır.
 import { SchemaAdapter, pmNodeToSpans } from '@automerge/prosemirror';
+import type { Transaction } from 'prosemirror-state';
 
 export const metinSemasi = new SchemaAdapter({
   nodes: {
@@ -136,4 +137,18 @@ export function duzMetindenSpans(metin: string): unknown[] {
   const satirlar = metin.replace(/\r\n?/g, '\n').split('\n');
   const doc = s.node('doc', null, satirlar.map((p) => s.node('paragraph', null, p ? [s.text(p)] : [])));
   return pmNodeToSpans(metinSemasi, doc);
+}
+
+/** Aralıktaki metne bir işaret kodu ekler ya da çıkarır; parçadaki öteki işaretler korunur (üst üste gelebilirler). */
+export function isaretKodu(tr: Transaction, from: number, to: number, kod: string, ekle: boolean): Transaction {
+  const tur = metinSemasi.schema.marks.isaret;
+  const parcalar: [number, number, string][] = [];
+  tr.doc.nodesBetween(from, to, (n, pos) => {
+    if (!n.isText) return;
+    const k = new Set(isaretKodlari(tur.isInSet(n.marks)?.attrs.kodlar));
+    if (ekle) k.add(kod); else if (!k.delete(kod)) return;
+    parcalar.push([Math.max(from, pos), Math.min(to, pos + n.nodeSize), [...k].sort().join(' ')]);
+  });
+  for (const [a, b, k] of parcalar) tr = k ? tr.addMark(a, b, tur.create({ kodlar: k })) : tr.removeMark(a, b, tur);
+  return tr;
 }

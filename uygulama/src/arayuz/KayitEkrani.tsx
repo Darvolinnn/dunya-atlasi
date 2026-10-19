@@ -45,6 +45,7 @@ import { BilinenlerBolumu, GorunurlukAlani, GorunurlukRozeti } from './Bilgiler'
 import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
 import { UyarlamaBolumu } from './Uyarlama';
 import { KimlikBolumu } from './Kimlik';
+import { KullanildigiYerler } from './MetinKullanim';
 import { DonusumBolumu } from './Donusum';
 import { KalabalikBolumu } from './Kalabalik';
 
@@ -199,6 +200,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {kayit.tur === 'motif' && <MotifBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {TEKNOLOJI_YERLERI.includes(kayit.tur) && <TeknolojiDurumuAraci istemci={istemci} evren={evren} kod={kod} />}
         {kayit.tur === 'karakter' && <KalitimBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+        <KullanildigiYerler key={`ky-${kod}`} istemci={istemci} evren={evren} kod={kod} />
         {(kayit.tur === 'karakter' || kayit.tur === 'kimlik') && <KimlikBolumu key={kod} istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} />}
         {(kayit.tur === 'makam' || kayit.tur === 'siyasi') && <VerasetBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {GUNDELIK_YERLERI.includes(kayit.tur) && <GundelikBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}

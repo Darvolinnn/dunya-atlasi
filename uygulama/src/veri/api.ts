@@ -587,6 +587,17 @@ export interface SurecSorumluSureci {
   catismali: boolean;
 }
 export interface OlaySurecSorumlulari { olay: KisaKayit; surecler: SurecSorumluSureci[]; not: string }
+/** Metin ile kullanım yeri (F30): bir kaydın metninin başka bir metne alındığı yer. */
+export type KullanimBicimi = 'bagli' | 'kopya' | 'turev';
+export interface MetinKullanimi {
+  kod: string; kaynak: KisaKayit | null; hedef: KisaKayit; bicim: KullanimBicimi;
+  /** Ortak kaynağa bağlıysa: kaynak, alındığından beri değişti. */
+  kaynakDegisti: boolean;
+  /** Ortak kaynağa bağlıysa: buradaki metin alınan hâlden farklı. */
+  ayrildi: boolean;
+  /** Parça hedef metinde duruyor. */
+  metinde: boolean;
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1320,6 +1331,13 @@ export interface Istekler {
   baglamParcasiOlustur(a: { evren: string; kayit: string; alan: string; tanim: BaglamParcasiTanimi }): { kod: string };
   baglamParcasiYaz(a: { evren: string; kod: string; tanim: BaglamParcasiTanimi }): void;
   baglamParcasiSil(a: { evren: string; kod: string }): void;
+  metinKullanimlari(a: { evren: string; hedef: string }): MetinKullanimi[];
+  metinKullanildigiYerler(a: { evren: string; kaynak: string }): MetinKullanimi[];
+  metinKullanimOlustur(a: { evren: string; kaynak: string; hedef: string; alan: string; bicim: KullanimBicimi }): { kod: string; spans: Spans };
+  metinKullanimGuncelle(a: { evren: string; kod: string }): void;
+  metinKullanimTurev(a: { evren: string; kod: string }): void;
+  metinKullanimTasi(a: { evren: string; kod: string; hedef: string }): void;
+  metinKullanimSil(a: { evren: string; kod: string }): void;
   donusumListesi(a: { evren: string; kayit: string }): DonusumOkumasi[];
   donusumSecenekleri(a: { evren: string }): DonusumSecenekleri;
   donusumYaz(a: { evren: string; kod?: string | null; tanim: DonusumGirdisi; yeniKayitlar?: DonusumYeniKaydi[] }): { kod: string };

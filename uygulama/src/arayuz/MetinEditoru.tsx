@@ -7,12 +7,12 @@ import { EditorView } from 'prosemirror-view';
 import { history, undo, redo } from 'prosemirror-history';
 import { keymap } from 'prosemirror-keymap';
 import { baseKeymap, toggleMark, setBlockType, wrapIn, lift } from 'prosemirror-commands';
-import type { Node as PmNode } from 'prosemirror-model';
+import { Slice, type Node as PmNode } from 'prosemirror-model';
 import { pmDocFromSpans, pmNodeToSpans } from '@automerge/prosemirror';
-import { metinSemasi, isaretKodlari } from '../alan/metin-sema';
+import { metinSemasi, isaretKodlari, isaretKodu } from '../alan/metin-sema';
 import { saatYaz } from '../alan/islem-metni';
 import type { Istemci } from '../veri/istemci';
-import type { BaglamParcasi, BaglamParcasiTanimi, IsaretAlani, KisaKayit, Spans } from '../veri/api';
+import type { BaglamParcasi, BaglamParcasiTanimi, IsaretAlani, KisaKayit, KullanimBicimi, MetinKullanimi, Spans } from '../veri/api';
 import { BaglantiSecici, type Secim, type SeciciTutamagi } from './BaglantiSecici';
 import { katla } from '../alan/turkce';
 import { bagAraligi, baglantiEklentisi, bagTuru, type SeciciIstegi } from './baglanti-eklentisi';
@@ -20,6 +20,7 @@ import { git } from './Uygulama';
 import { useCalisma } from './Calisma';
 import { TurSecici } from './ortak';
 import { BaglamParcasiFormu, parcaYazisi } from './BaglamParcasi';
+import { KullanimSeridi, MetinAlFormu } from './MetinKullanim';
 
 const sema = metinSemasi.schema;
 const ARA = 1200;        // yazmaya bu kadar ara verilince kaydedilir
@@ -28,18 +29,6 @@ const EN_GEC = 8000;     // sürekli yazarken bile en geç bu aralıkla kaydedil
 export const belgeYap = (spans: Spans): PmNode => pmDocFromSpans(metinSemasi, spans as never);
 const isaretTuru = sema.marks.isaret;
 
-/** Aralıktaki metne bir işaret kodu ekler ya da çıkarır; parçadaki öteki işaretler korunur (üst üste gelebilirler). */
-function isaretKodu(tr: Transaction, from: number, to: number, kod: string, ekle: boolean): Transaction {
-  const parcalar: [number, number, string][] = [];
-  tr.doc.nodesBetween(from, to, (n, pos) => {
-    if (!n.isText) return;
-    const k = new Set(isaretKodlari(isaretTuru.isInSet(n.marks)?.attrs.kodlar));
-    if (ekle) k.add(kod); else if (!k.delete(kod)) return;
-    parcalar.push([Math.max(from, pos), Math.min(to, pos + n.nodeSize), [...k].sort().join(' ')]);
-  });
-  for (const [a, b, k] of parcalar) tr = k ? tr.addMark(a, b, isaretTuru.create({ kodlar: k })) : tr.removeMark(a, b, isaretTuru);
-  return tr;
-}
 /** İmlecin bulunduğu yerdeki işaret kodları. */
 function imlectekiIsaretler(state: EditorState): string[] {
   const { $from, empty, from, to } = state.selection;
@@ -103,6 +92,18 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     const birak = istemci.dinle((d) => { if (d.evren === evren) oku(); });
     return () => { iptal = true; birak(); };
   }, [baglamParcalari, evren, kayit]);
+  /** Metin ile kullanım yeri (F30): bu metne alınmış başka metinler. */
+  const [kullanimlar, setKullanimlar] = useState<MetinKullanimi[]>([]);
+  const [alFormu, setAlFormu] = useState<{ from: number; to: number; belge: PmNode } | null>(null);
+  const metinIslemi = useRef<{ kaydet(): Promise<void>; yeniden(): Promise<void> } | null>(null);
+  useEffect(() => {
+    if (alan !== 'govde') return;
+    let iptal = false;
+    const oku = () => istemci.iste('metinKullanimlari', { evren, hedef: kayit }).then((l) => { if (!iptal) setKullanimlar(l); }, () => {});
+    oku();
+    const birak = istemci.dinle((d) => { if (d.evren === evren) oku(); });
+    return () => { iptal = true; birak(); };
+  }, [evren, kayit, alan]);
 
   const konumu = (pos: number) => {
     const k = gorunum.current!.coordsAtPos(pos);
@@ -193,6 +194,15 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     };
 
     if (denetim) denetim.current = { kaydet };
+    metinIslemi.current = {
+      kaydet,
+      yeniden: async () => {
+        const m = await istemci.iste('metinAc', { evren, kayit, alan });
+        if (iptal || kirli || suren) return;
+        temel = m.basliklar;
+        icerigiDegistir(m.spans);
+      },
+    };
 
     /** Editördeki belgeyi kaydedilmiş metinle değiştirir (yazılmamış bir şey yokken). İmleç yaklaşık yerinde kalır. */
     const icerigiDegistir = (spans: Spans) => {
@@ -283,6 +293,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       gorunum.current?.destroy();
       gorunum.current = null;
       if (denetim) denetim.current = null;
+      metinIslemi.current = null;
     };
   }, [evren, kayit, alan]);
 
@@ -370,6 +381,37 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     if (g) g.dispatch(isaretKodu(g.state.tr, 0, g.state.doc.content.size, kod, false));
     g?.focus();
   }
+  function alFormuAc() {
+    const v = gorunum.current;
+    if (!v) return;
+    const { from, to } = v.state.selection;
+    setAlFormu({ from, to, belge: v.state.doc });
+  }
+  /** Kaynak metni imlecin yerine koyar ve kullanımın koduyla işaretler. */
+  async function metniAl(kaynak: string, bicim: KullanimBicimi) {
+    const f = alFormu;
+    if (!f || gorunum.current?.state.doc !== f.belge) throw new Error('Metin bu arada değişti; imleci yeniden yerleştirin.');
+    const { kod, spans } = await istemci.iste('metinKullanimOlustur', { evren, kaynak, hedef: kayit, alan, bicim });
+    const g = gorunum.current;
+    if (!g) return;
+    let tr = g.state.tr.replace(f.from, f.to, new Slice(belgeYap(spans).content, 1, 1));
+    tr = isaretKodu(tr, tr.mapping.map(f.from, -1), tr.mapping.map(f.to, 1), kod, true);
+    g.dispatch(tr);
+    setAlFormu(null);
+    g.focus();
+  }
+  /** Çalışanın metni değiştirdiği işlemler: önce yazılan kaydedilir, sonra metin yeniden okunur. */
+  async function kullanimIslemi(f: () => Promise<unknown>) {
+    await metinIslemi.current?.kaydet();
+    await f();
+    await metinIslemi.current?.yeniden();
+  }
+  async function kullanimKaldir(kod: string) {
+    try { await istemci.iste('metinKullanimSil', { evren, kod }); } catch { /* yalnızca metinden kaldırılır */ }
+    const g = gorunum.current;
+    if (g) g.dispatch(isaretKodu(g.state.tr, 0, g.state.doc.content.size, kod, false));
+    g?.focus();
+  }
   /** İşareti metinden ve kaydıyla birlikte kaldırır. Bağlı evren bilgisi silinmez. */
   async function isaretKaldir(ik: string) {
     const v = gorunum.current;
@@ -412,6 +454,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   const imlecParcasi = [...parcalar].reverse().find((p) => imlecIsaretleri.includes(p.kod)) ?? null;
   const imlecParcaKodu = imlecParcasi?.kod ?? null;
   useEffect(() => { parcaDegisti?.(imlecParcaKodu); }, [imlecParcaKodu]);
+  const imlecKullanimi = [...kullanimlar].reverse().find((k) => imlecIsaretleri.includes(k.kod)) ?? null;
 
   return (
     <div class="editor-kabi">
@@ -436,6 +479,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         {v && !v.state.selection.empty && alan === 'govde' && <button type="button" class="arac" title="Seçili parçayı yeni bir kayda dönüştür; yerinde ona bağlantı kalır" onMouseDown={(e) => e.preventDefault()} onClick={ayirmaAc}>Yeni kayda ayır</button>}
         {v && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili cümleyi bir kayda, bir değere ya da bir soruya bağla" onMouseDown={(e) => e.preventDefault()} onClick={isaretFormuAc}>İşaretle</button>}
         {v && baglamParcalari && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili parçaya kendi tarihini, yerini ve bakış açısını ver" onMouseDown={(e) => e.preventDefault()} onClick={() => parcaFormuAc(null)}>Bağlam ver</button>}
+        {v && alan === 'govde' && !saltOkunur && <button type="button" class="arac" title="Başka bir kaydın metnini (efsane, mektup, şarkı) buraya al" onMouseDown={(e) => e.preventDefault()} onClick={alFormuAc}>Metin al</button>}
         <span class="bosluk" />
         <span class="kayit-durumu soluk kucuk" aria-live="polite">{durumYazisi(durum)}</span>
       </div>
@@ -458,6 +502,8 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           </span>
         </div>
       )}
+      {imlecKullanimi && <KullanimSeridi key={imlecKullanimi.kod} istemci={istemci} evren={evren} k={imlecKullanimi} saltOkunur={saltOkunur} islem={kullanimIslemi} kaldir={() => kullanimKaldir(imlecKullanimi.kod)} />}
+      {alFormu && <MetinAlFormu istemci={istemci} evren={evren} al={metniAl} vazgec={() => setAlFormu(null)} />}
       {parcaFormu && (
         <BaglamParcasiFormu istemci={istemci} evren={evren} onceki={parcaFormu.onceki}
           metin={parcaFormu.onceki ? parcaFormu.onceki.metin.join(' ') : parcaFormu.belge.textBetween(parcaFormu.from, parcaFormu.to, ' ')}
