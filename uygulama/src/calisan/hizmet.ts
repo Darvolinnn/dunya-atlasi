@@ -46,6 +46,7 @@ import * as gundelik from './gundelik';
 import * as sozluk from './sozluk';
 import * as anlatim from './anlatim';
 import * as delil from './delil';
+import * as sonraki from './sonraki-soru';
 import * as niyetMod from './degisiklik-niyeti';
 import * as degMasa from './degisiklik-masasi';
 import * as kosulMod from './kosul-masasi';
@@ -2256,6 +2257,19 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   delilGecmisi({ evren, kod }: { evren: string; kod: string }) { return delil.delilGecmisi(this.evren(evren), kod); }
   delilYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: DelilTanimi }) {
     delil.delilYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod, tanim);
+  }
+  sorulabilirHesaplar({ evren, kod }: { evren: string; kod: string }) {
+    const e = this.evren(evren); this.kayitVarMi(e, kod);
+    const tur = e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [yonlendir(e.db, kod)]) as string;
+    return sonraki.hesaplar(tur).map((hesap) => ({ hesap, ad: sonraki.HESAP_ADLARI[hesap] }));
+  }
+  sonrakiSoru({ evren, kod, hesap, nereden = null, tarih = null }: { evren: string; kod: string; hesap: sonraki.Hesap; nereden?: string | null; tarih?: string | null }) {
+    const e = this.evren(evren); this.kayitVarMi(e, kod);
+    return sonraki.sonrakiSoru(e, {
+      olayTarihi: (k) => this.olayTarihi(e, k),
+      sahneYeri: (k) => { const m = this.sahneIliskileri(e, k, 'sahne_yeri')[0]; return m ? { kod: m.kod, ad: m.ad, tur: m.tur } : null; },
+      katilimcilar: (k) => this.sahneBaglami({ evren, sahne: k }).katilimcilar,
+    }, hesap, kod, { nereden, tarih });
   }
   yerlesim({ evren, sahne }: { evren: string; sahne: string }): YerlesimOkumasi {
     const e = this.evren(evren), s = yonlendir(e.db, sahne);

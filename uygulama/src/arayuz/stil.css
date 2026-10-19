@@ -653,3 +653,6 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .anlatim-listesi { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .anlatim-listesi > li { padding: 6px 0; border-bottom: 1px solid var(--cizgi, #ddd); }
 .anlatim-formu { display: flex; flex-direction: column; gap: 6px; }
+/* F33 bir sonraki yararlı soru */
+.sonraki-soru-listesi { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.sonraki-soru-listesi .girdi-eksik > span:first-child { color: var(--uyari, #a0522d); }

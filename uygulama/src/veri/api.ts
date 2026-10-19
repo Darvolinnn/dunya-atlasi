@@ -335,6 +335,12 @@ export interface DelilGecmisi {
   okuyanlar: { kisi: KisaKayit; belge: KisaKayit }[];
   notlar: string[];
 }
+/** F33 bir sonraki yararlı soru: seçilen hesabın girdileri ve eksik bilginin kullanıldığı diğer hesaplar. */
+export interface SonrakiSoruGirdisi { ad: string; durum: 'var' | 'eksik' | 'kısmen'; aciklama: string; kayit: KisaKayit | null; kullanim: string[] }
+export interface SonrakiSoru {
+  hesap: 'yolculuk' | 'yol' | 'haber' | 'yas' | 'yaslar' | 'gokyuzu'; ad: string; kayit: KisaKayit;
+  girdiler: SonrakiSoruGirdisi[]; hazir: boolean; siradaki: SonrakiSoruGirdisi | null; not: string;
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -724,6 +730,8 @@ export interface Istekler {
   anlatimGeriYukle(a: { evren: string; kod: string }): void;
   delilGecmisi(a: { evren: string; kod: string }): DelilGecmisi;
   delilYaz(a: { evren: string; kod: string; tanim: DelilTanimi }): void;
+  sorulabilirHesaplar(a: { evren: string; kod: string }): { hesap: SonrakiSoru['hesap']; ad: string }[];
+  sonrakiSoru(a: { evren: string; kod: string; hesap: SonrakiSoru['hesap']; nereden?: string | null; tarih?: string | null }): SonrakiSoru;
   baslat(): KurulumBilgisi;
   evrenler(): EvrenOzeti[];
   evrenOlustur(a: { ad: string }): { kod: string };
