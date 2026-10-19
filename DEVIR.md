@@ -105,7 +105,9 @@ Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok.
      | 21.800 | 154 sn | 9,3 sn | 10,2 sn | 253 MB → 192 MB |
      | 40.800 | 319 sn | — | — | — |
      | 63.400 | — | 25 sn | 21 sn | +247 MB |
-     | 150.000 | — | ölçülüyor (19 Ekim akşam) | | |
+     | 153.400 | — | 60 sn | 49 sn | süreç toplamı ~0,8 GB (iki cihaz + 106 MB işlem dosyası aynı süreçte) |
+
+     153.400 işlemde (19 Ekim): veritabanı 146 MB, iki anlık görüntüyle 165 MB; geç gelen işlemle eşitleme 0,12 sn (görüntüden, 20 işlem uygulandı); arama 115 ms. Ölçüm Node'da; gerçek tarayıcı belleği (tablet sınırı 4 GB) ayrıca ölçülmeli.
 
      Neden yavaştı: her metin kaydı uygulanırken belge baştan okunuyor (`A.spans`) ve baştan paketleniyordu (`A.save`); Automerge'ün değişikliği işlemesi (`A.loadIncremental`) de değişiklik başına pahalıydı. Toplu yolun kuralları `izdusum.ts` "Toplu uygulama" yorumunda; eşdeğerlik sınaması `test/toplu-metin.test.ts`.
    - [x] **Automerge bellek sızıntısı kapatıldı** (`2253aa4`): her metin kaydı belgenin tam kopyasını (`A.clone`) alıp bırakıyordu; Automerge belleği çöp toplayıcıya görünmediği için birikiyordu (3.000 kayıtta +1,2 GB; 70.000 kayıtta modül 4 GB sınırında çöktü). Geçici kopyalar `try/finally` ile `A.free`; 32'yi aşıp bellekten çıkan belge de bırakılır. Şimdi 3.000 kayıtta +26 MB. **Yeni bir `A.clone`/`A.from`/`A.load` yazarken sonucu iş bitince `A.free` ile bırak** (`A.view`, `A.change`, `A.loadIncremental`, `A.merge` yeni bellek açmaz).
