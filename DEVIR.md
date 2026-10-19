@@ -19,6 +19,9 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 - Kullanıcı Türkçe yazar; ona Türkçe, kısa ve sade cevap ver. Arayüzdeki ve hata iletilerindeki her metin Türkçedir; kullanıcıya görünen metinde programlama terimi olmaz.
 - Her adım bitince DEVIR.md'de yapılan ve yapılacak adımlar güncellenir ve gönderilir (kullanıcı isteği, 19 Ekim 2026).
 - Kullanıcının açık tercihi: **bir aşama ya da madde bitince onay beklemeden sıradakine geç.** Yalnızca geri alınamaz işlerde (zorla gönderme, toplu silme, dışarıya mesaj) ya da kullanıcının vermesi gereken bir kararda dur ve sor.
+- **Arayüz değişikliklerinde önce taslak:** görünüşü ya da düzeni değiştiren bir işe kodlayarak başlama; önce seçenekli bir taslak göster, kullanıcı seçince kodla (kullanıcı isteği, 19 Ekim 2026).
+- **Her değişiklik kullanıcının bilgisayarına da yüklenir** (19 Ekim 2026): gönderdikten sonra bilgisayarındaki proje klasöründe (yolu proje belleğinde) `main` dalında `git fetch` ve `git merge --ff-only origin/main`; bağımlılıklar değiştiyse PowerShell'de `$env:NODE_ENV='development'; npm install --include=dev` (uygulama klasöründe; ortam üretim modunda olduğundan aksi hâlde geliştirme araçları silinir); `npm run dev` 5173'te çalışır kalsın.
+- Tablet ve iPhone denemeleri süresiz ertelendi; yalnız Windows (19 Ekim 2026).
 - Kullanıcı bazen başka ajanları (GPT/Codex, Argon) ayrı dallarda paralel çalıştırır. Onlara verilecek promptları sen yazarsın; dalları sen birleştirir, sürümü sen artırır, denetimi sen yaparsın (bkz. §6).
 
 ## 3. Durum
@@ -72,6 +75,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | Güvenilirlik | Dönemsel yedek: yeni yedek her zaman yeni dosya; geri okunup her değişiklik satırı denetlenmeden ve sayısı tutmadan ne aynı günün önceki yedeği ne saklama süresi dolanlar silinir; doğrulanamayan kopya kaldırılır. Drive yedeğinden geri yüklemede bulunamayan / bozuk görseller listelenir (`eksikGorseller`, `bozukGorseller`) | `ceca7fb` |
 | Güvenilirlik | Otomatik denetim: `.github/workflows/denetim.yml` (tür denetimi, sınamalar, derleme; `main` ve `paket/**`) | `60bdc1b` |
 | Güvenilirlik | Metin kurtarma taslağı (§10.7): `arayuz/taslak.ts`; taslaklar kurulum veritabanında `taslaklar` tablosunda (istekler `taslakOku/Yaz/Sil`); açılışta "kaydedilmemiş yazı bulundu" → Kurtar / Vazgeç. Tarayıcı süreci zorla öldürülerek denendi | `1bc1d87` |
+| K24 | Arayüz yenileme, kullanıcının seçtiği "A · Üç sütun" taslağı (§5.10): evren açılınca **Yaz** gelir (`#/e/<evren>` ve `#/e/<evren>/yaz/<kod>`, `arayuz/YazEkrani.tsx`); solda gezinti çubuğu ve Yaz seçiliyken eser ağacı, oradan eser / bölüm / sahne eklenir (`arayuz/Kabuk.tsx`, `EvrenKabugu`); ortada metin, sağda kapatılabilir bağlam paneli. Az kullanılan sayfalar "Diğer" altında, kayıt sayfasında okunuş / başka adlar / etiketler ve sahne dışı bölümler katlanır. Krem renkler, Literata (metin) ve Source Sans 3 (arayüz) yazı tipleri pakette (`@fontsource-variable/*`, çevrimdışı çalışır). Komut paleti aramada bütün sayfaları ve görünümleri bulur | bu kayıt |
 | F19 | İnceleme: ayırt etme satırı var, sahne hatırlatıcısını sahne paneli karşılıyor; okur tanıtımı ve "sır yayına girmez" yayına (§11) bağlı, K20 gereği kapsam dışı | — |
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
@@ -95,7 +99,7 @@ Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yap
 
 1. **Tablet ve iPhone** (§14.3): kullanıcı 19 Ekim 2026'da süresiz erteledi; şimdilik yalnız Windows tarafına odaklanılıyor.
 2. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
-3. **Dış güvenilirlik eleştirisinin kalanları** (analiz: proje klasöründe `analiz/guvenilirlik-plani-analizi.md`): yapılanlar yukarıda. Tablet / iPhone ertelendiği için bekleyenler: ana ekran uygulaması (uygulama tanımı, çevrimdışı katman, Cloudflare Pages yayını, "güncelleme hazır" davranışı) ve büyük dosyada gerçekten kaldığı yerden yükleme (`drive.ts` tek parça gönderiyor, TK5 tersini söylüyor). Arayüz yenilemesine bırakılan: komut paleti §5.8'deki "iki mekân arası yolculuk süresi" ve "takvim günü hesabı" komutlarını henüz açmıyor; görünümler ve masalar paletten bulunamıyor. İsteğe bağlı: yeniden kurma süresini 50.000 işlemle ölçmek (`evren-vt.ts` geçmişe düşen işlem gelince bütün günlüğü baştan uygular)
+3. **Dış güvenilirlik eleştirisinin kalanları** (analiz: proje klasöründe `analiz/guvenilirlik-plani-analizi.md`): yapılanlar yukarıda. Tablet / iPhone ertelendiği için bekleyenler: ana ekran uygulaması (uygulama tanımı, çevrimdışı katman, Cloudflare Pages yayını, "güncelleme hazır" davranışı) ve büyük dosyada gerçekten kaldığı yerden yükleme (`drive.ts` tek parça gönderiyor, TK5 tersini söylüyor). Komut paleti §5.8'deki "iki mekân arası yolculuk süresi" ve "takvim günü hesabı" komutlarını henüz açmıyor (sayfalar ve görünümler artık bulunuyor). İsteğe bağlı: yeniden kurma süresini 50.000 işlemle ölçmek (`evren-vt.ts` geçmişe düşen işlem gelince bütün günlüğü baştan uygular)
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
 
@@ -105,7 +109,7 @@ Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yap
 - `alan/`: tarayıcıdan bağımsız kurallar ve arayüzün de kullandığı sabitler (ör. `alan/anlatim.ts`, `alan/delil.ts`). Arayüz `calisan/` altından içe aktarma yapmaz.
 - `calisan/`: veritabanı çalışanı. `hizmet.ts` (bütün istekler), `izdusum.ts` (işlemlerin tablolara uygulanması), her özellik için ayrı modül.
 - `veri/api.ts`: istek ve veri tipleri; `Istekler` arayüzü.
-- `arayuz/`: ekranlar. Kayıt sayfası `KayitEkrani.tsx`, evren sekmeleri `EvrenEkrani.tsx` (`GORUNUMLER`).
+- `arayuz/`: ekranlar. Ortak çerçeve (gezinti çubuğu, eser ağacı, sayfa ve görünüm listeleri `ANA_SAYFALAR`, `DIGER_SAYFALAR`, `GORUNUMLER`) `Kabuk.tsx`; yazma ekranı `YazEkrani.tsx`; kayıt sayfası `KayitEkrani.tsx`; öteki sayfalar `EvrenEkrani.tsx`. Yeni bir sayfa ya da görünüm `Kabuk.tsx` listesine ve `EvrenEkrani.tsx`'e eklenir; komut paleti listeyi kendisi okur.
 
 Yeni bir yazma isteği eklemek (sırayla):
 1. `veri/api.ts`: tipler `export interface EvrenDali {` satırının önüne; istek satırı `Istekler` içine.

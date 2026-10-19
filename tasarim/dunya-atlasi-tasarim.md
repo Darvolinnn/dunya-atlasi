@@ -133,6 +133,7 @@ Aşağıdaki sözcükler belgede yalnızca bu anlamlarda kullanılır. Kodu yaza
 | K21 | **Dönemsel yedek (eski A2):** Günlük yedek alınır ve 30 gün saklanır; her ayın ilk yedeği bir yıl saklanır. Ayrıntı §10.10. | 18 Ekim |
 | K22 | **Evren ile dünya:** Programdaki tek sabit üst birim evrendir. Dünya, gezegen, boyut ya da alem kurguya göre kayıtlarla esnek biçimde kurulur; program bir seviye dayatmaz (§0.5, §3.7). | 18 Ekim |
 | K23 | **F37 (varsayım paketleri) ve F40 (kalabalıklar) tasarıma alındı** (eski A13'ün bir kısmı). Tanımları §3.11 ve §3.8. | 18 Ekim |
+| K24 | **Arayüzde yazı merkezdedir.** Evren açılınca yazma düzeni gelir; ekran sadeleşir, az kullanılan araçlar katlanır ve görünüş yenilenir. Ayrıntı §5.10, §12.1. | 19 Ekim |
 
 ### 1.2 Açık kararlar
 
@@ -591,9 +592,14 @@ Aynı verinin farklı görünümleridir; veri kopyalanmaz.
 
 | Düzen | Öne çıkanlar |
 |---|---|
-| Evren kayıtlarını düzenleme | Kayıt listesi, ilişkiler, harita |
 | Sahne yazma | Metin, dar bağlam paneli, hızlı not |
+| Evren kayıtlarını düzenleme | Kayıt listesi, ilişkiler, harita |
 | Tutarlılık inceleme | İnceleme kuyruğu, zaman çizelgesi, etkilenen kayıtlar |
+
+Yazı merkezdedir (K24):
+- **Evren açılınca yazma düzeni gelir.** Solda sabit bir gezinti çubuğu bulunur: Yaz, Masa, Kayıtlar, Haritalar, Takvim, Görünümler ve İnceleme; az kullanılan sayfalar (çalışma masaları, açık meseleler, şablonlar, bahsedilenler, çöp kutusu, geçmiş, sürümler, yedek) "Diğer" altında katlanır.
+- **Yaz** seçiliyken gezinti çubuğunda eserlerin ağacı (eser › bölüm › sahne) görünür; yeni eser, bölüm ve sahne buradan eklenir. Seçili sahnenin metni ortada geniş ve okunaklı durur; sağda dar ve kapatılabilir bir bağlam paneli sahnenin tarihini, mekânını, bakış açısını, sahnedekileri ve o anki bağlamı (§5.5) gösterir. Sahnenin bütün alanları kayıt sayfasındadır; yazma ekranından bir bağlantıyla açılır.
+- **Kayıt sayfasında** ad, tür, karar durumu, tarih, şablon alanları, kısa özet, metin ve ilişkiler açık durur; öbür bölümler türüne göre "Diğer bölümler" altında katlanır ve bir dokunuşla açılır.
 
 Yazma ekranında bütün evrenin panelleri ve uyarıları bulunmaz.
 

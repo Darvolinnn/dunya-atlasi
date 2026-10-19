@@ -17,6 +17,7 @@ import { KararRozeti } from './ortak';
 import { Gorsel } from './gorsel';
 import { MetinGorunumu } from './MetinEditoru';
 import { git } from './Uygulama';
+import { ANA_SAYFALAR, DIGER_SAYFALAR, GORUNUMLER } from './Kabuk';
 import type { YasananSure } from '../veri/api';
 
 export interface PaletBaglami { bagla?: () => void }
@@ -35,7 +36,8 @@ export interface CalismaDenetimi {
   /** Kayıt sayfası açıldı: kaldığın yere dönülüyorsa imlecin konumu bir kez verilir. */
   konumAl(kayit: string): number | null;
   /** Masa'daki "Devam et". */
-  devamEt(y: { kayit: string | null; konum: number | null; yanPanel: string[] }): void;
+  /** Anlatı parçaları (sahne, bölüm, eser) yazma ekranında açılır. */
+  devamEt(y: { kayit: string | null; konum: number | null; yanPanel: string[]; tur?: string | null }): void;
   notYaz(not: string): void;
 }
 
@@ -43,6 +45,8 @@ const Baglam = createContext<CalismaDenetimi | null>(null);
 export const useCalisma = () => useContext(Baglam);
 
 const YAZMA_ARALIGI = 2500;
+/** Yazma ekranında açılan türler (§5.10). */
+export const YAZMA_TURLERI = ['sahne', 'bolum', 'eser'];
 const panelAnahtari = 'dunya-atlasi:yan-panel-kucuk';
 
 export function CalismaSaglayici({ istemci, evren, kayit, children }: {
@@ -126,7 +130,7 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
       if (y.yanPanel.length) setAktif(y.yanPanel[y.yanPanel.length - 1]);
       if (y.kayit) {
         if (y.konum !== null) bekleyenKonum.current = { kayit: y.kayit, konum: y.konum };
-        git(`/e/${evren}/k/${y.kayit}`);
+        git(`/e/${evren}/${YAZMA_TURLERI.includes(y.tur ?? '') ? 'yaz' : 'k'}/${y.kayit}`);
       }
     },
     notYaz(not) {
@@ -426,8 +430,13 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
     komutlar.push({ anahtar: 'not', baslik: 'Hızlı not', aciklama: 'Aklına geleni yaz', yap: () => { document.dispatchEvent(new Event('hizli-not-ac')); } });
     if (evren) {
       if (sorgu.trim()) komutlar.push({ anahtar: 'yeni', baslik: `Yeni kayıt: “${sorgu.trim()}”`, aciklama: 'Türünü seçersin', yap: () => { setTurSec(sorgu.trim().replace(/\s+/g, ' ')); setSorgu(''); } });
-      komutlar.push({ anahtar: 'masa', baslik: 'Masa', aciklama: 'Kaldığın yer, son düzenlenenler', yap: () => git(`/e/${evren}/masa`) });
-      komutlar.push({ anahtar: 'kayitlar', baslik: 'Bütün kayıtlar', yap: () => git(`/e/${evren}/kayitlar`) });
+      // Gezinti çubuğundaki bütün sayfalar ve görünümler paletten de açılır.
+      // Arama boşken yalnızca en sık kullanılanlar listelenir.
+      for (const [k, ad] of [...ANA_SAYFALAR.filter(([x]) => x !== 'gorunumler'), ...DIGER_SAYFALAR]) {
+        if (!sorgu.trim() && !['yaz', 'masa', 'kayitlar'].includes(k)) continue;
+        komutlar.push({ anahtar: 's-' + k, baslik: ad, aciklama: k === 'masa' ? 'Kaldığın yer, son düzenlenenler' : k === 'yaz' ? 'Eserler, bölümler ve sahneler' : 'Sayfa', yap: () => git(`/e/${evren}/${k}`) });
+      }
+      if (sorgu.trim()) for (const [k, ad] of GORUNUMLER) komutlar.push({ anahtar: 'g-' + k, baslik: ad, aciklama: 'Görünüm', yap: () => git(`/e/${evren}/${k}`) });
       if (d.yanPanel.length) komutlar.push({ anahtar: 'panel-kapat', baslik: 'Yan paneli kapat', yap: () => d.yanPanelKapat() });
     }
     komutlar.push({ anahtar: 'evrenler', baslik: 'Evrenler', yap: () => git('/') });
@@ -435,7 +444,8 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
     const kayitlar: Oge[] = (sorgu.trim() ? bulunan : son).map((k) => ({
       anahtar: 'k-' + k.kod, baslik: k.ad, aciklama: ayirtEtme(k), kayit: true, yap: (yan) => kayitAc(k.kod, yan),
     }));
-    const uyan = komutlar.filter((k) => k.anahtar === 'yeni' || uyar(k.baslik));
+    // "Yeni kayıt" komutu sayfa ve görünüm eşleşmelerinin ardından gelir; "çöp" yazıp Enter'a basan çöp kutusunu açar.
+    const uyan = [...komutlar.filter((k) => k.anahtar !== 'yeni' && uyar(k.baslik)), ...komutlar.filter((k) => k.anahtar === 'yeni')];
     // Arama varken kayıtlar önce; yeni kayıt komutu kayıtlardan sonra.
     ogeler = sorgu.trim() ? [...kayitlar, ...uyan] : [...uyan.filter((k) => k.anahtar === 'bagla'), ...kayitlar, ...uyan.filter((k) => k.anahtar !== 'bagla')];
   }

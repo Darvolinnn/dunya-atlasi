@@ -32,7 +32,8 @@ import { KESINTI_TURLERI, KesintiBolumu, UretimOzetiBolumu } from './Uretim';
 import { MakamYurutenleri, OlaySurecBolumu, SUREC_SAHIPLERI, SurecKurallariBolumu } from './Surec';
 import { git } from './Uygulama';
 import { CatismaListesi } from './Catismalar';
-import { useCalisma } from './Calisma';
+import { YAZMA_TURLERI, useCalisma } from './Calisma';
+import { EvrenKabugu } from './Kabuk';
 import { KayitHaritaBolumu } from './Harita';
 import { RotaBolumu, YolculukBolumu } from './Yol';
 import { DelilBolumu } from './Delil';
@@ -52,6 +53,8 @@ import { KaliciIzBolumu } from './KaliciIz';
 
 /** Durum geçmişi tutulmayan türler (anlatı parçaları ve notlar). */
 const DURUMSUZ = new Set(['sahne', 'bolum', 'eser', 'not']);
+/** Kayıt sayfasında az kullanılan bölümler katlanır (§5.10); açık olup olmadığı bu cihaza özeldir. */
+const DIGER_ANAHTARI = 'dunya-atlasi:kayit-diger-bolumler';
 
 export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
   const [kayit, setKayit] = useState<Kayit | null>(null);
@@ -64,6 +67,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   const [duzeltme, setDuzeltme] = useState<{ eskiAd: string; yeniAd: string; eskiOkunus: string; liste: AdDuzeltmesi[] } | null>(null);
   const calisma = useCalisma();
   const [baslangic] = useState(() => calisma?.konumAl(kod) ?? null);
+  const [digerAcik, setDigerAcik] = useState(() => { try { return localStorage.getItem(DIGER_ANAHTARI) === '1'; } catch { return false; } });
+  const digerAc = (v: boolean) => { setDigerAcik(v); try { localStorage.setItem(DIGER_ANAHTARI, v ? '1' : '0'); } catch { /* yok */ } };
 
   useEffect(() => { istemci.iste('kayit', { evren, kod }).then((k) => { setKayit(k); setHata(null); }, (e) => setHata(e.message)); }, [evren, kod, surum]);
   const [bag, setBag] = useState<EvrenBilgisi['bag']>(null);
@@ -84,14 +89,14 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   const tur = turBul(kayit.tur);
 
   return (
-    <>
-      <header class="ust">
-        <a href={`#/e/${evren}`} class="dugme sade">← {evrenAdi || 'Kayıtlar'}</a>
-        <span class="ad">{kayit.ad}</span>
-        <span class="bosluk" />
-        <button class="dugme sade" aria-expanded={gecmisAcik} onClick={() => setGecmisAcik(!gecmisAcik)}>Sürüm geçmişi</button>
-      </header>
+    <EvrenKabugu istemci={istemci} evren={evren} etkin={YAZMA_TURLERI.includes(kayit.tur) ? 'yaz' : 'kayitlar'} acik={kod}>
       <main class="sayfa kayit-sayfasi">
+        <div class="satir kayit-ust">
+          <a class="dugme sade kucuk" href={`#/e/${evren}/kayitlar`}>← {evrenAdi ? `${evrenAdi} · Kayıtlar` : 'Kayıtlar'}</a>
+          <span class="bosluk" />
+          {YAZMA_TURLERI.includes(kayit.tur) && <a class="dugme ana kucuk" href={`#/e/${evren}/yaz/${kod}`}>Yazma ekranında aç</a>}
+          <button class="dugme sade kucuk" aria-expanded={gecmisAcik} onClick={() => setGecmisAcik(!gecmisAcik)}>Sürüm geçmişi</button>
+        </div>
         <BagSeridi bag={bag} />
         <BirlesmeBilgisi istemci={istemci} evren={evren} kayit={kayit} />
         {kayit.silindi && !kayit.birlesti && (
@@ -140,6 +145,10 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
             <span class="alan-adi satir">Kısa özet <KararSecici etiket="Kısa özet" karar={kayit.alanKararlari.ozet ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod, alan: 'ozet', karar: k })} /></span>
             <AlanGirdisi etiket="Kısa özet" deger={kayit.ozet} kaydet={(v) => degistir('ozet', v)} ipucu="Bir satırda kim ya da ne olduğu" />
           </div>
+        </div>
+        <details class="katlanir">
+          <summary>Okunuş, başka adlar ve etiketler{kayit.lakaplar.length + kayit.etiketler.length ? ` (${kayit.lakaplar.length + kayit.etiketler.length})` : ''}</summary>
+          <div class="alanlar">
           <div class="alan">
             <span class="alan-adi satir">Okunuş <KararSecici etiket="Okunuş" karar={kayit.alanKararlari.okunus ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod, alan: 'okunus', karar: k })} /></span>
             <AlanGirdisi etiket="Okunuş" deger={kayit.okunus} kaydet={(v) => degistir('okunus', v)} ipucu="Örn. Jean → Jan" />
@@ -158,7 +167,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           {kayit.oncekiAdlar.length > 0 && (
             <p class="soluk kucuk genis">Önceki adları (aramada bulunur): {kayit.oncekiAdlar.join(', ')}</p>
           )}
-        </div>
+          </div>
+        </details>
 
         <Gorseller istemci={istemci} evren={evren} kayit={kayit} />
         <KayitHaritaBolumu istemci={istemci} evren={evren} kayit={kayit} />
@@ -173,55 +183,60 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
 
         {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={imlecParcasi && parcaBaglami ? parcaBaglami : sahneBaglami} parca={!!(imlecParcasi && parcaBaglami)} />}
-        <IsaretlerBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />
-        {kayit.tur === 'sahne' && <SahneYerlesimi key={kod} istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
-        {kayit.tur === 'eser' && <EserSozlesmesiBolumu key={kod} istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
-        {kayit.tur !== 'eser' && <SozlesmeHatirlatmasiSatiri key={kod} istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        <HaklarBolumu key={kod} istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} surum={surum} saltOkunur={!!bag} />
-        <BakimBolumu istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} saltOkunur={!!bag} />
-        <KalabalikBolumu key={kod} istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} surum={surum} saltOkunur={!!bag} />
-        <BakimUzmanligiBolumu istemci={istemci} evren={evren} kod={kod} />
-        <DonusumBolumu key={kod} istemci={istemci} evren={evren} kod={kod} saltOkunur={!!bag} />
-        {kayit.tur === 'belge' && <BelgeSunumBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
-        {kayit.tur === 'belge' && <DelilBolumu istemci={istemci} evren={evren} kod={kod} saltOkunur={!!bag} />}
-        {KULLANIM_SAHIPLERI.includes(kayit.tur) && <KullanimMasasiBolumu istemci={istemci} evren={evren} kod={kod} saltOkunur={!!bag} />}
-        {kayit.tur === 'eser' && <EserCiktisi istemci={istemci} evren={evren} eser={kod} />}
-        {kayit.tur === 'eser' && <YayimBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
-        {kayit.tur === 'eser' && <KurguMontajiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {kayit.tur === 'eser' && <UyarlamaBolumu istemci={istemci} evren={evren} eser={kod} surum={surum} />}
-        {kayit.tur === 'sahne' && <SahneNiyetleriBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {kayit.tur === 'sahne' && <SahneBolumu istemci={istemci} evren={evren} kayit={kayit} surum={surum} />}
-        {kayit.tur === 'makam' && <MakamYurutenleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {SUREC_SAHIPLERI.includes(kayit.tur) && <SurecKurallariBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {HUKUK_SAHIPLERI.includes(kayit.tur) && <HukukKurallariBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {kayit.tur === 'karakter' && <UygulananKurallarAraci istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {kayit.tur === 'dil' && <DilBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {kayit.tur === 'karakter' && <KisiDilleriBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {kayit.tur === 'teknoloji' && <TeknolojiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {kayit.tur === 'motif' && <MotifBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {TEKNOLOJI_YERLERI.includes(kayit.tur) && <TeknolojiDurumuAraci istemci={istemci} evren={evren} kod={kod} />}
-        {kayit.tur === 'karakter' && <KalitimBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        <KullanildigiYerler key={`ky-${kod}`} istemci={istemci} evren={evren} kod={kod} />
-        {(kayit.tur === 'karakter' || kayit.tur === 'kimlik') && <KimlikBolumu key={kod} istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} />}
-        {(kayit.tur === 'makam' || kayit.tur === 'siyasi') && <VerasetBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {GUNDELIK_YERLERI.includes(kayit.tur) && <GundelikBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {kayit.tur === 'olay' && <OlaySurecBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        <KaliciIzBolumu istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} surum={surum} saltOkunur={bag?.tur === 'surum'} />
-        {!DURUMSUZ.has(kayit.tur) && <DurumGecmisi istemci={istemci} evren={evren} kayit={kayit} />}
-        {kayit.tur !== 'not' && <BilinenlerBolumu istemci={istemci} evren={evren} kayit={kayit} />}
-        <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
-        <KayitMeseleleri istemci={istemci} evren={evren} kayit={kayit} />
-        {!bag && <SonrakiSoruBolumu istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} />}
-        {!bag && <BaglamKarsilastirmaBolumu istemci={istemci} evren={evren} kod={kod} />}
         <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />
-        {kayit.tur === 'urun' && <UretimOzetiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {KESINTI_TURLERI.includes(kayit.tur) && <KesintiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        {!['dil', 'not', 'sahne', 'eser', 'bolum'].includes(kayit.tur) && <AdBicimleriBolumu istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} surum={surum} />}
-        <AltBirimlerdenToplananlar istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} surum={surum} />
-        <KayitDegisimleri istemci={istemci} evren={evren} kod={kod} surum={surum} />
-        <KayitMasalari istemci={istemci} evren={evren} kod={kod} surum={surum} />
-        {!['sahne', 'not', 'eser', 'bolum'].includes(kayit.tur) && <KayitIzleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-        <Baglananlar istemci={istemci} evren={evren} kod={kod} surum={surum} />
+
+        <details class="diger-bolumler" open={digerAcik} onToggle={(e) => digerAc((e.target as HTMLDetailsElement).open)}>
+          <summary>Diğer bölümler</summary>
+          <p class="soluk kucuk">İşaretler, haklar, bilinenler, sorular, değişimler ve türe özgü araçlar.</p>
+          <IsaretlerBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />
+          {kayit.tur === 'sahne' && <SahneYerlesimi key={kod} istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
+          {kayit.tur === 'eser' && <EserSozlesmesiBolumu key={kod} istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
+          {kayit.tur !== 'eser' && <SozlesmeHatirlatmasiSatiri key={kod} istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          <HaklarBolumu key={kod} istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} surum={surum} saltOkunur={!!bag} />
+          <BakimBolumu istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} saltOkunur={!!bag} />
+          <KalabalikBolumu key={kod} istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} surum={surum} saltOkunur={!!bag} />
+          <BakimUzmanligiBolumu istemci={istemci} evren={evren} kod={kod} />
+          <DonusumBolumu key={kod} istemci={istemci} evren={evren} kod={kod} saltOkunur={!!bag} />
+          {kayit.tur === 'belge' && <BelgeSunumBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
+          {kayit.tur === 'belge' && <DelilBolumu istemci={istemci} evren={evren} kod={kod} saltOkunur={!!bag} />}
+          {KULLANIM_SAHIPLERI.includes(kayit.tur) && <KullanimMasasiBolumu istemci={istemci} evren={evren} kod={kod} saltOkunur={!!bag} />}
+          {kayit.tur === 'eser' && <EserCiktisi istemci={istemci} evren={evren} eser={kod} />}
+          {kayit.tur === 'eser' && <YayimBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
+          {kayit.tur === 'eser' && <KurguMontajiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {kayit.tur === 'eser' && <UyarlamaBolumu istemci={istemci} evren={evren} eser={kod} surum={surum} />}
+          {kayit.tur === 'sahne' && <SahneNiyetleriBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {kayit.tur === 'makam' && <MakamYurutenleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {SUREC_SAHIPLERI.includes(kayit.tur) && <SurecKurallariBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {HUKUK_SAHIPLERI.includes(kayit.tur) && <HukukKurallariBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {kayit.tur === 'karakter' && <UygulananKurallarAraci istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {kayit.tur === 'dil' && <DilBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {kayit.tur === 'karakter' && <KisiDilleriBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {kayit.tur === 'teknoloji' && <TeknolojiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {kayit.tur === 'motif' && <MotifBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {TEKNOLOJI_YERLERI.includes(kayit.tur) && <TeknolojiDurumuAraci istemci={istemci} evren={evren} kod={kod} />}
+          {kayit.tur === 'karakter' && <KalitimBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          <KullanildigiYerler key={`ky-${kod}`} istemci={istemci} evren={evren} kod={kod} />
+          {(kayit.tur === 'karakter' || kayit.tur === 'kimlik') && <KimlikBolumu key={kod} istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} />}
+          {(kayit.tur === 'makam' || kayit.tur === 'siyasi') && <VerasetBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {GUNDELIK_YERLERI.includes(kayit.tur) && <GundelikBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {kayit.tur === 'olay' && <OlaySurecBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          <KaliciIzBolumu istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} surum={surum} saltOkunur={bag?.tur === 'surum'} />
+          {!DURUMSUZ.has(kayit.tur) && <DurumGecmisi istemci={istemci} evren={evren} kayit={kayit} />}
+          {kayit.tur !== 'not' && <BilinenlerBolumu istemci={istemci} evren={evren} kayit={kayit} />}
+          <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
+          <KayitMeseleleri istemci={istemci} evren={evren} kayit={kayit} />
+          {!bag && <SonrakiSoruBolumu istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} />}
+          {!bag && <BaglamKarsilastirmaBolumu istemci={istemci} evren={evren} kod={kod} />}
+          {kayit.tur === 'urun' && <UretimOzetiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {KESINTI_TURLERI.includes(kayit.tur) && <KesintiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {!['dil', 'not', 'sahne', 'eser', 'bolum'].includes(kayit.tur) && <AdBicimleriBolumu istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} surum={surum} />}
+          <AltBirimlerdenToplananlar istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} surum={surum} />
+          <KayitDegisimleri istemci={istemci} evren={evren} kod={kod} surum={surum} />
+          <KayitMasalari istemci={istemci} evren={evren} kod={kod} surum={surum} />
+          {!['sahne', 'not', 'eser', 'bolum'].includes(kayit.tur) && <KayitIzleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          <Baglananlar istemci={istemci} evren={evren} kod={kod} surum={surum} />
+        </details>
 
         {gecmisAcik && (
           <SurumGecmisi istemci={istemci} evren={evren} kayit={kayit} surum={surum}
@@ -248,12 +263,12 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           )}
         </div>
       </main>
-    </>
+    </EvrenKabugu>
   );
 }
 
 /** Tek satırlık alan: odaktan çıkınca ya da Enter'a basınca kaydeder, Esc ile vazgeçer. */
-function AlanGirdisi({ etiket, deger, kaydet, ipucu, buyuk, zorunlu }: {
+export function AlanGirdisi({ etiket, deger, kaydet, ipucu, buyuk, zorunlu }: {
   etiket: string; deger: string; kaydet: (v: string) => Promise<unknown>; ipucu?: string; buyuk?: boolean; zorunlu?: boolean;
 }) {
   const [yerel, setYerel] = useState(deger);

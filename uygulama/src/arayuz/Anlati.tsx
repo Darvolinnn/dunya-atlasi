@@ -27,7 +27,9 @@ export function useYukle<T>(istemci: Istemci, evren: string, oku: () => Promise<
 }
 
 // ---------- Eserdeki yer: sahne ve bölüm sayfasının üstü ----------
-export function AnlatiYolu({ istemci, evren, kayit }: { istemci: Istemci; evren: string; kayit: Kayit }) {
+/** yazma: bağlantılar yazma ekranında açılır (§5.10). */
+export function AnlatiYolu({ istemci, evren, kayit, yazma = false }: { istemci: Istemci; evren: string; kayit: Kayit; yazma?: boolean }) {
+  const yol = yazma ? 'yaz' : 'k';
   const [yer] = useYukle<AnlatiYeri>(istemci, evren, () => istemci.iste('anlatiYeri', { evren, kod: kayit.kod }), [kayit.kod]);
   const [yerlestir, setYerlestir] = useState(false);
   const [etki, setEtki] = useState<AnlatiEtkisi[] | null>(null);
@@ -45,12 +47,12 @@ export function AnlatiYolu({ istemci, evren, kayit }: { istemci: Istemci; evren:
   }
   return (
     <nav class="anlati-yolu" aria-label="Eserdeki yeri">
-      {bag(evren, yer.eser)}
-      {yer.bolum && <><span class="soluk">›</span>{kayit.tur === 'bolum' ? <span>{yer.bolum.sira}. bölüm</span> : <a href={`#/e/${evren}/k/${yer.bolum.kod}`}>{yer.bolum.sira}. bölüm: {yer.bolum.ad}</a>}</>}
+      {yazma ? <a href={`#/e/${evren}/yaz/${yer.eser.kod}`}>{yer.eser.ad}</a> : bag(evren, yer.eser)}
+      {yer.bolum && <><span class="soluk">›</span>{kayit.tur === 'bolum' ? <span>{yer.bolum.sira}. bölüm</span> : <a href={`#/e/${evren}/${yol}/${yer.bolum.kod}`}>{yer.bolum.sira}. bölüm: {yer.bolum.ad}</a>}</>}
       {yer.sira !== null && <><span class="soluk">›</span><span>{yer.sira}. sahne</span></>}
       <span class="bosluk" />
-      {yer.onceki && <a class="dugme sade kucuk" href={`#/e/${evren}/k/${yer.onceki.kod}`} title={yer.onceki.ad}>← Önceki sahne</a>}
-      {yer.sonraki && <a class="dugme sade kucuk" href={`#/e/${evren}/k/${yer.sonraki.kod}`} title={yer.sonraki.ad}>Sonraki sahne →</a>}
+      {yer.onceki && <a class="dugme sade kucuk" href={`#/e/${evren}/${yol}/${yer.onceki.kod}`} title={yer.onceki.ad}>← Önceki sahne</a>}
+      {yer.sonraki && <a class="dugme sade kucuk" href={`#/e/${evren}/${yol}/${yer.sonraki.kod}`} title={yer.sonraki.ad}>Sonraki sahne →</a>}
     </nav>
   );
 }
