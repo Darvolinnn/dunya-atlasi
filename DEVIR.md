@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **48**. Sınama: 63 dosya, 366 sınama, hepsi geçiyor.*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **49**. Sınama: 64 dosya, 378 sınama, hepsi geçiyor.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -56,6 +56,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | Boşluk | Eşitleme ekranında deneme kopyalarının yalnızca bu cihazda olan ve bekleyen değişiklikleri | `f5941dc` |
 | F05 | Başkasının bilgisine dair inanç: soru kartında "kim, kimin hakkında ne sanıyor", kayıtlı bilgiyle karşılaştırma (izdüşüm 48, tablo `dair_inanclar`) | `8d735e2` |
 | F06 | Kişi, kimlik, beden: "Kimlik" türü ve "kullandığı kimlik" ilişkisi, kimliğe ayırma / kimlik olarak bağlama (önizlemeli, tek işlem grubu), beden rolleri ve dirilmeyi tanıyan yaşam denetimi. Okur görünümünde ayrı kalma yayına (§11.2) bağlı, yapılmadı | `6627690` |
+| F25 | Evren içi birleşme, bölünme, dönüşüm (GPT paketi, izdüşüm 49, tablo `donusum_kayitlari`) | `6d31ea8` |
 | F19 | İnceleme: ayırt etme satırı var, sahne hatırlatıcısını sahne paneli karşılıyor; okur tanıtımı ve "sır yayına girmez" yayına (§11) bağlı, K20 gereği kapsam dışı | — |
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
@@ -64,7 +65,6 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | Dal | Madde | İşlem adı öneki | Tablolar | Not |
 |---|---|---|---|---|
 | `paket/kalabalik` (GPT) | F40 kalabalıklar (§3.8) | `kalabalik_` | `kalabalik_…` | Yeni kayıt türü eklemez |
-| `paket/evren-donusum` (GPT) | F25 evren içi birleşme, bölünme, dönüşüm (§9.5) | `donusum_` | `donusum_…` | `birlesme.ts`'e dokunmaz, yönlendirme yok |
 | `paket/harita-kunye` (Argon) | F17 harita künyesi (§8.3) | `harita_kunye_` | `harita_kunyeleri` | `Harita.tsx`'e tek satır |
 | `paket/surec-sorumlu` (Argon) | F07 adım sorumluları, durdurabilir/veto | `surec_sorumlu_` | `surec_sorumlu…` | `surec.ts`'i değiştirmez |
 | `paket/kalici-iz` (Argon) | F11 geçmişin bugünkü izleri | `iz_kaydi_` | `iz_kayitlari` | Var olan `izler` (süreklilik) ayrı |
