@@ -319,6 +319,19 @@ export interface IddiaDosyasi {
   kaldirilan: { kod: string; ozet: string; kaynakKaydi: KisaKayit | null }[];
   not: string;
 }
+export type SozlesmeTuru = 'aciklanmayacak' | 'acik_birakildi' | 'anlati_kurali';
+export interface SozlesmeTanimi {
+  metin: string; tur: SozlesmeTuru; karar: 'fikir' | 'kesin' | 'vazgecildi';
+  kapsam: { tur: 'evren' } | { tur: 'eserler'; eserler: string[] }; bagliKayitlar: string[];
+}
+export interface SozlesmeMaddesi extends SozlesmeTanimi {
+  kod: string; silindi: boolean; catismali: boolean; bagli: KisaKayit[]; eserler: KisaKayit[];
+}
+export interface EserSozlesmesi {
+  eser: KisaKayit; maddeler: { madde: SozlesmeMaddesi; durum: 'gecerli' | 'disarida' | 'belirsiz' }[];
+}
+export interface SozlesmeHatirlatmasi { madde: SozlesmeMaddesi; evren: boolean; eserler: KisaKayit[]; disaridaEserler: KisaKayit[] }
+
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -888,6 +901,13 @@ export interface Istekler {
   dayaniklilikYaz(a: { evren: string; iliski: string; deger: Dayaniklilik | null }): void;
   geciselKayitlar(a: { evren: string; kok: string; eksen: GeciselEksen }): GeciselSonuc[];
   gundelikKartlari(a: { evren: string; yer: string }): GundelikKart[];
+  sozlesmeMaddeleri(a: { evren: string; cop?: boolean }): SozlesmeMaddesi[];
+  sozlesmeMaddeYaz(a: { evren: string; kod?: string | null; tanim: SozlesmeTanimi }): { kod: string };
+  sozlesmeMaddeSil(a: { evren: string; kod: string }): void;
+  sozlesmeMaddeGeriYukle(a: { evren: string; kod: string }): void;
+  sozlesmeDisaridaYaz(a: { evren: string; madde: string; eser: string; disarida: boolean }): void;
+  eserSozlesmesi(a: { evren: string; eser: string }): EserSozlesmesi;
+  sozlesmeHatirlatmalari(a: { evren: string; kayit: string }): SozlesmeHatirlatmasi[];
   yerlesim(a: { evren: string; sahne: string }): YerlesimOkumasi;
   yerlesimPlanlari(a: { evren: string }): YerlesimPlanSecimi[];
   yerlesimYaz(a: { evren: string; sahne: string; plan: YerlesimPlani; ogeler: YerlesimOgesi[] }): void;
