@@ -12,6 +12,7 @@ import { AlanGirdisi } from './KayitEkrani';
 import { CatismaListesi } from './Catismalar';
 import { YAZMA_TURLERI, useCalisma } from './Calisma';
 import { git } from './Uygulama';
+import { onayla } from './onay';
 
 const baglamAnahtari = 'dunya-atlasi:yazma-baglami-kapali';
 const okuYerel = (a: string) => { try { return localStorage.getItem(a); } catch { return null; } };
@@ -59,7 +60,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
           {sahne && baglamKapali && <button class="dugme sade kucuk" onClick={() => baglamAc(true)}>Bağlamı göster</button>}
           <a class="dugme sade kucuk" href={`#/e/${evren}/k/${kod}`}>Bütün alanlar</a>
           {!kayit.silindi && !saltOkunur && (
-            <button class="dugme sade kucuk tehlikeli" title="Çöp kutusundan geri getirilebilir" onClick={async () => {
+            <button class="dugme sade kucuk tehlikeli" title="Çöp kutusundan geri getirilebilir" onClick={async () => { if (!(onayla(`“${kayit.ad}” çöp kutusuna taşınsın mı? Çöp kutusundan geri getirebilirsin.`))) return;
               await denetim.current?.kaydet();
               await istemci.iste('kayitSil', { evren, kod });
               git(`/e/${evren}/yaz`);

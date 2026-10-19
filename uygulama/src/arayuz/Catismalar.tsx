@@ -6,6 +6,7 @@ import type { Catisma, Spans } from '../veri/api';
 import { zamanYaz } from '../alan/islem-metni';
 import { KARARLAR, turBul } from '../alan/turler';
 import { MetinGorunumu } from './MetinEditoru';
+import { onayla } from './onay';
 
 const ALAN_ADLARI: Record<string, string> = {
   ad: 'Ad', ozet: 'Kısa özet', okunus: 'Okunuş', tur: 'Tür', karar: 'Karar durumu', tarih: 'Evren tarihi',
@@ -78,7 +79,7 @@ export function CatismaListesi({ istemci, evren, kod, surum, baslikGoster = true
               <p>Bu kayıt silinmişti, ama {c.kurulumlar.join(', ')} silindiğini bilmeden {c.duzenlemeSayisi} değişiklik yapmış. Değişiklikler kaybolmadı; kayıtta duruyor.</p>
               <div class="satir">
                 <button class="dugme ana" onClick={() => calistir(istemci.iste('silmeCatismasiCoz', { evren, kayit: c.kayit, geriYukle: true }))}>Kaydı geri getir</button>
-                <button class="dugme" onClick={() => calistir(istemci.iste('silmeCatismasiCoz', { evren, kayit: c.kayit, geriYukle: false }))}>Silinmiş kalsın</button>
+                <button class="dugme" onClick={() => onayla('Kayıt silinmiş kalsın mı? Çöp kutusundan sonra da geri getirebilirsin.') && calistir(istemci.iste('silmeCatismasiCoz', { evren, kayit: c.kayit, geriYukle: false }))}>Silinmiş kalsın</button>
               </div>
               <p class="soluk kucuk">Silinmiş kalırsa kayıt, yazılanlarla birlikte çöp kutusunda durur.</p>
             </>

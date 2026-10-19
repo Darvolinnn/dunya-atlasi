@@ -4,6 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { HaberYayilimi, KanalTanimi, KisaKayit, PaketOzeti, RotaAdimi, RotaSonucu, SartDurumu } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
+import { onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 export const ROTA_ARACI_TURLERI = ['mekan', 'sehir', 'siyasi'];
@@ -148,7 +149,7 @@ export function KanalBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; 
         <ul class="toplanan-listesi">
           {t.baglantilar.map((x, i) => (
             <li key={i}>{adlar[x.a] ?? '…'} – {adlar[x.b] ?? '…'} <span class="soluk kucuk">· {gun(x.gun)}</span>{' '}
-              <button class="dugme sade kucuk" onClick={() => yaz({ ...t, baglantilar: t.baglantilar.filter((_, j) => j !== i) })}>Kaldır</button></li>
+              <button class="dugme sade kucuk" onClick={() => onayla('Bu bağlantı kaldırılsın mı?') && yaz({ ...t, baglantilar: t.baglantilar.filter((_, j) => j !== i) })}>Kaldır</button></li>
           ))}
         </ul>
       )}

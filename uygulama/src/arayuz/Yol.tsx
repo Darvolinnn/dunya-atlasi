@@ -5,6 +5,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { GecisSarti, GecisSartiGirdisi, Kayit, KisaKayit, RotaGirdisi, RotaVerisi, Yolculuk, YolculukAsamaGirdisi } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
+import { onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: KisaKayit | null) => (k ? <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a> : <span class="soluk">seçilmedi</span>);
@@ -50,7 +51,7 @@ export function RotaBolumu({ istemci, evren, kayit }: { istemci: Istemci; evren:
         <ul class="yol-listesi">
           {r.sureler.map((s, i) => (
             <li key={i} class="satir"><span>{s.kosul || 'Koşulsuz'}: {gunYaz(s.gun)}</span>
-              <button class="dugme sade kucuk" aria-label={`${s.kosul || 'Koşulsuz'} süresini kaldır`} onClick={() => sessiz(yaz({ sureler: r.sureler.filter((_, j) => j !== i) }))}>Kaldır</button></li>
+              <button class="dugme sade kucuk" aria-label={`${s.kosul || 'Koşulsuz'} süresini kaldır`} onClick={() => onayla('Bu süre kaldırılsın mı?') && sessiz(yaz({ sureler: r.sureler.filter((_, j) => j !== i) }))}>Kaldır</button></li>
           ))}
         </ul>
         <form class="satir" onSubmit={(e) => { e.preventDefault(); yaz({ sureler: [...r.sureler, { kosul: yeniKosul, gun: Number(yeniGun) }] }).then(() => { setYeniKosul(''); setYeniGun(''); }, () => {}); }}>
@@ -61,7 +62,7 @@ export function RotaBolumu({ istemci, evren, kayit }: { istemci: Istemci; evren:
       </div>
       <div class="alan genis"><span class="alan-adi">Duraklar</span>
         <ol class="yol-listesi">
-          {r.duraklar.map((d, i) => <li key={d.kod + i}>{bag(evren, d)} <button class="dugme sade kucuk" onClick={() => sessiz(yaz({ duraklar: girdi().duraklar.filter((_, j) => j !== i) }))}>Kaldır</button></li>)}
+          {r.duraklar.map((d, i) => <li key={d.kod + i}>{bag(evren, d)} <button class="dugme sade kucuk" onClick={() => onayla('Bu durak kaldırılsın mı?') && sessiz(yaz({ duraklar: girdi().duraklar.filter((_, j) => j !== i) }))}>Kaldır</button></li>)}
         </ol>
         <KayitSec istemci={istemci} evren={evren} secili={null} etiket="Durak ekle" sec={(s) => { if (s) sessiz(yaz({ duraklar: [...girdi().duraklar, s.kod] })); }} />
       </div>
@@ -88,7 +89,7 @@ function GecisSartlari({ istemci, evren, rota }: { istemci: Istemci; evren: stri
         <ul class="yol-listesi">
           {l.map((s, i) => (
             <li key={s.kod} class="satir"><span>{s.tur === 'izin' ? <>İzin: {bag(evren, s.kayit)}</> : 'Ücret'}{s.aciklama && ` · ${s.aciklama}`}</span>
-              <button class="dugme sade kucuk" onClick={() => yaz(girdi().filter((_, j) => j !== i))}>Kaldır</button></li>
+              <button class="dugme sade kucuk" onClick={() => onayla('Bu şart kaldırılsın mı?') && yaz(girdi().filter((_, j) => j !== i))}>Kaldır</button></li>
           ))}
         </ul>
       )}

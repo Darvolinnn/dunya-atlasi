@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { EvrenDali, KisaKayit, UyarlamaAdaylari, UyarlamaEslemesi, UyarlamaTanimi, UyarlamaTarafGorunumu } from '../veri/api';
 import { UYARLAMA_TURLERI } from '../alan/uyarlama';
+import { onayla } from './onay';
 
 const bos = (eser: string): UyarlamaTanimi => ({ a: { eser, dal: null, kayitlar: [] }, b: { eser: '', dal: null, kayitlar: [] }, tur: 'karsilik', not: '' });
 const adayBos: UyarlamaAdaylari = { eserler: [], kayitlar: [], sorun: null };
@@ -91,7 +92,7 @@ export function UyarlamaBolumu({ istemci, evren, eser, surum = 0 }: { istemci: I
       {r.uyarilar.map((u) => <p>{u}</p>)}
       <button class="dugme" disabled={bekliyor || r.catismali || r.silindi} onClick={() => void yap(() => istemci.iste('uyarlamaGozdenGecir', { evren, kod: r.kod }))}>Gözden geçirdim</button>{' '}
       <button class="dugme" disabled={bekliyor || r.catismali || r.silindi} onClick={() => { setKod(r.kod); setT(r.tanim); }}>Düzenlemek için seç</button>{' '}
-      <button class="dugme" disabled={bekliyor || r.catismali || r.silindi} onClick={() => void yap(() => istemci.iste('uyarlamaSil', { evren, kod: r.kod }))}>Eşlemeyi sil</button>
+      <button class="dugme" disabled={bekliyor || r.catismali || r.silindi} onClick={() => onayla('Bu eşleme silinsin mi?') && void yap(() => istemci.iste('uyarlamaSil', { evren, kod: r.kod }))}>Eşlemeyi sil</button>
     </article>)}
     {!liste.length && <p>Bu eser için kayıtlı uyarlama eşlemesi yok.</p>}
   </section>;

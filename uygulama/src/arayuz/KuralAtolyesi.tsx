@@ -4,6 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { KuralOrnegi, KuralOrnekleri, OrnekBeklentisi, OrnekSonucu } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
+import { onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const BEKLENTILER: { kod: OrnekBeklentisi; ad: string }[] = [
@@ -44,7 +45,7 @@ export function KuralOrnekleriBolumu({ istemci, evren, kural, surum }: { istemci
             <div class="kucuk"><strong>{HUKUM[o.hukum]}</strong>: kural şu an {SONUC[o.sonuc]}. {o.neden}</div>
             {o.onceki !== null && o.onceki !== o.sonuc && <div class="kucuk uyari">Son değişiklikten önce {SONUC[o.onceki]}.</div>}
             {o.tanim.not && <div class="kucuk soluk">{o.tanim.not}</div>}
-            <button class="dugme sade kucuk" onClick={() => istemci.iste('kuralOrnegiSil', { evren, kod: o.kod }).then(yukle, (x) => setHata(hataYaz(x)))}>Örneği kaldır</button>
+            <button class="dugme sade kucuk" onClick={() => onayla('Bu örnek kaldırılsın mı?') && istemci.iste('kuralOrnegiSil', { evren, kod: o.kod }).then(yukle, (x) => setHata(hataYaz(x)))}>Örneği kaldır</button>
           </li>
         ))}
       </ul>
