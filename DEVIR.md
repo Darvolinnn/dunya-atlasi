@@ -90,7 +90,7 @@ Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yap
 
 ### 3.3 Kalan işler (önerilen sıra)
 
-1. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
+1. **Tablet ve iPhone** (§14.3): kullanıcı 19 Ekim 2026'da süresiz erteledi; şimdilik yalnız Windows tarafına odaklanılıyor.
 2. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
