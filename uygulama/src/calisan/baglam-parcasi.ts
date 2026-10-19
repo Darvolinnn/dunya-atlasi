@@ -87,7 +87,7 @@ export function parcaOku(e: EvrenVt, kod: string): SakliParca & { kayit: string 
 }
 
 export function parcalar(e: EvrenVt, kayit: string): BaglamParcasi[] {
-  return e.db.selectObjects('SELECT * FROM baglam_parcalari WHERE kayit=? AND silindi IS NULL ORDER BY olusturma, kod', [kayit]).map((r) => {
+  return e.db.selectObjects('SELECT * FROM baglam_parcalari WHERE kayit=? AND silindi IS NULL ORDER BY olusturma, rowid', [kayit]).map((r) => {
     const t = JSON.parse(r.tanim as string) as SakliParca;
     const yerler = e.db.selectObjects('SELECT metin FROM metin_isaret_yerleri WHERE isaret=? AND kayit=? ORDER BY sira', [r.kod as string, r.kayit as string]);
     return {

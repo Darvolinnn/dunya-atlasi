@@ -27,7 +27,7 @@ function kisa(e: EvrenVt, kod: string | null): KisaKayit | null {
   return r ? { kod: k, ad: r.ad as string, tur: r.tur as string } : { kod: k, ad: 'Silinmiş kayıt', tur: 'diger' };
 }
 function satirlar(e: EvrenVt, iddia: string, cop = false) {
-  return e.db.selectObjects(`SELECT kod, tanim, silindi FROM anlatimlar WHERE iddia=? AND silindi IS ${cop ? 'NOT ' : ''}NULL ORDER BY olusturma, kod`, [iddia])
+  return e.db.selectObjects(`SELECT kod, tanim, silindi FROM anlatimlar WHERE iddia=? AND silindi IS ${cop ? 'NOT ' : ''}NULL ORDER BY olusturma, rowid`, [iddia])
     .map((r) => ({ kod: r.kod as string, tanim: JSON.parse(r.tanim as string) as AnlatimTanimi, silindi: r.silindi !== null }));
 }
 
