@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -36,6 +36,7 @@ import * as varsayilanMod from './varsayilan';
 import * as kapsama from './kapsama';
 import * as surec from './surec';
 import * as hukuk from './hukuk';
+import * as atolye from './kural-atolyesi';
 import * as uretim from './uretim';
 import * as haber from './haber';
 import * as dilMod from './dil';
@@ -492,6 +493,13 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           alanEtiketi: etiket ?? alan, degerler: degerler.map((d) => ({ ...d, yazi: yazi(d.deger) })) });
         continue;
       }
+      const kor = iliski || dr || alan !== 'kural_ornegi' ? undefined : e.db.selectObject('SELECT h.sahip, h.tanim FROM kural_ornekleri o JOIN hukuk_kurallari h ON h.kod=o.kural WHERE o.kod=?', [nesne]);
+      if (kor) {
+        const bek = (b: unknown) => atolye.BEKLENTILER.find((x) => x.kod === b)?.ad ?? '';
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: kor.sahip as string, baslik: `${kayitAdi(kor.sahip as string)} · ${(JSON.parse(kor.tanim as string) as { ad: string }).ad}`, alanEtiketi: 'Kuralın örnek durumu',
+          degerler: degerler.map((d) => { const t = d.deger as { kisi?: string; yer?: string; tarih?: string; beklenen?: string } | null; return { ...d, yazi: t ? `${kayitAdi(t.kisi ?? '')} · ${kayitAdi(t.yer ?? '')}${t.tarih ? ` · ${t.tarih}` : ''}: ${bek(t.beklenen)}` : '(boş)' }; }) });
+        continue;
+      }
       const hkr = iliski || dr ? undefined : e.db.selectObject('SELECT sahip, tanim FROM hukuk_kurallari WHERE kod=?', [nesne]);
       if (hkr) {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: hkr.sahip as string, baslik: `${kayitAdi(hkr.sahip as string)} · ${(JSON.parse(hkr.tanim as string) as { ad: string }).ad}`, alanEtiketi: 'Hukuk kuralının tanımı',
@@ -882,6 +890,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       this.yaz(evren, [{ tur: 'iz_gozlem', veri: { iz: nesne, sahne, an, deger: deger ?? '', cozum: true } }], [izr.konu as string, sahne]);
       return;
     }
+    const kor = alan === 'kural_ornegi' ? e.db.selectObject('SELECT o.kural, h.sahip, h.tanim FROM kural_ornekleri o JOIN hukuk_kurallari h ON h.kod=o.kural WHERE o.kod=?', [nesne]) : undefined;
+    if (kor) { this.yaz(evren, [{ tur: 'kural_ornegi_yaz', veri: { kod: nesne, kural: kor.kural, tanim: deger, kuralAd: (JSON.parse(kor.tanim as string) as { ad: string }).ad, sahip: kor.sahip, cozum: true } }], [kor.sahip as string]); return; }
     const hkr = e.db.selectObject('SELECT sahip FROM hukuk_kurallari WHERE kod=?', [nesne]);
     if (hkr && alan === 'hukuk') { this.yaz(evren, [{ tur: 'hukuk_kurali_yaz', veri: { kod: nesne, tanim: deger, sahip: hkr.sahip, cozum: true } }], [hkr.sahip as string]); return; }
     const skr = e.db.selectObject('SELECT sahip FROM surec_kurallari WHERE kod=?', [nesne]);
@@ -2177,6 +2187,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   hukukKuraliYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: Omit<HukukTanimi, 'baslangic' | 'bitis'> & { baslangic: string; bitis: string } }) { hukuk.hukukKuraliYaz(this.hukukBaglami(evren), kod, tanim); }
   hukukKuraliSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { hukuk.hukukKuraliSil(this.hukukBaglami(evren), kod, !!geriYukle); }
   uygulananKurallar({ evren, kisi, yer, tarih = null }: { evren: string; kisi: string; yer: string; tarih?: string | null }) { return hukuk.uygulananKurallar(this.evren(evren), kisi, yer, tarih); }
+  // Kural atölyesi (F16)
+  kuralOrnekleri({ evren, kural }: { evren: string; kural: string }) { return atolye.kuralOrnekleri(this.evren(evren), kural); }
+  kuralOrnegiYaz({ evren, kural, kod = null, tanim }: { evren: string; kural: string; kod?: string | null; tanim: KuralOrnegiTanimi }) { return atolye.kuralOrnegiYaz(this.hukukBaglami(evren), kural, kod, tanim); }
+  kuralOrnegiSil({ evren, kod }: { evren: string; kod: string }) { atolye.kuralOrnegiSil(this.hukukBaglami(evren), kod); }
+  hukukKuraliKopyala({ evren, kod, sahip = null }: { evren: string; kod: string; sahip?: string | null }) { return atolye.hukukKuraliKopyala(this.hukukBaglami(evren), kod, sahip); }
   // ---------- Üretim, kesinti, besin ağı (§15-5, F10) ----------
   kosulMasasi({ evren, paket, ...g }: kosulMod.KosulGirdisi & { evren: string; paket?: string | null }) {
     const e = this.evren(evren);

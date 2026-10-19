@@ -4,6 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { HukukKurali, HukukTanimi, UygulananKurallar } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
+import { KuralOrnekleriBolumu } from './KuralAtolyesi';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 export const HUKUK_SAHIPLERI = ['siyasi', 'kultur', 'inanc', 'topluluk', 'sehir', 'mekan', 'makam'];
@@ -28,7 +29,7 @@ export function HukukKurallariBolumu({ istemci, evren, kod, surum }: { istemci: 
     <section class="surecler" aria-label="Hukuk kuralları">
       <h2>Hukuk kuralları</h2>
       <p class="soluk kucuk">Kimlere, nerede: yasak, hak ya da yükümlülük ve yaptırımı. Kâğıttaki kural ile fiilen uygulanışı ayrı yazılır.</p>
-      {l.map((k) => <HukukKuraliDuzenleyici key={k.kod} istemci={istemci} evren={evren} k={k} />)}
+      {l.map((k) => <HukukKuraliDuzenleyici key={k.kod} istemci={istemci} evren={evren} k={k} surum={surum} />)}
       <form class="satir" onSubmit={(e) => { e.preventDefault(); istemci.iste('hukukKuraliOlustur', { evren, sahip: kod, ad }).then(() => { setAd(''); setHata(null); }, (x) => setHata(hataYaz(x))); }}>
         <input class="girdi" style="flex:1;min-width:180px" lang="tr" aria-label="Yeni hukuk kuralının adı" placeholder="Yeni kural (ör. Surda silah yasağı)" value={ad} onInput={(e) => setAd((e.target as HTMLInputElement).value)} />
         <button class="dugme kucuk" type="submit" disabled={!ad.trim()}>Hukuk kuralı ekle</button>
@@ -38,7 +39,7 @@ export function HukukKurallariBolumu({ istemci, evren, kod, surum }: { istemci: 
   );
 }
 
-function HukukKuraliDuzenleyici({ istemci, evren, k }: { istemci: Istemci; evren: string; k: HukukKurali }) {
+function HukukKuraliDuzenleyici({ istemci, evren, k, surum }: { istemci: Istemci; evren: string; k: HukukKurali; surum: number }) {
   const kayitli = JSON.stringify(taslakYap(k));
   const [t, setT] = useState<Taslak>(() => taslakYap(k));
   const [adlar, setAdlar] = useState<Record<string, string>>({});
@@ -91,9 +92,11 @@ function HukukKuraliDuzenleyici({ istemci, evren, k }: { istemci: Istemci; evren
         <span class="bosluk" />
         <button class="dugme ana kucuk" disabled={!degisti} onClick={() => istemci.iste('hukukKuraliYaz', { evren, kod: k.kod, tanim: t }).then(() => setHata(null), (x) => setHata(hataYaz(x)))}>Kaydet</button>
         <button class="dugme kucuk" disabled={!degisti} onClick={() => setT(taslakYap(k))}>Vazgeç</button>
+        <button class="dugme sade kucuk" onClick={() => istemci.iste('hukukKuraliKopyala', { evren, kod: k.kod }).then(() => setHata(null), (x) => setHata(hataYaz(x)))}>Kopyala</button>
         <button class="dugme sade kucuk" onClick={() => istemci.iste('hukukKuraliSil', { evren, kod: k.kod })}>Kuralı kaldır</button>
       </div>
       {hata && <p class="hata kucuk">{hata}</p>}
+      <KuralOrnekleriBolumu istemci={istemci} evren={evren} kural={k.kod} surum={surum} />
     </details>
   );
 }

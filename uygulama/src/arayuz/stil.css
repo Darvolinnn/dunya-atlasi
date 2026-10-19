@@ -663,3 +663,7 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .bakim-formu, .bakim-kaydi-formu { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
 .bakim-tablo-sarmal { overflow-x: auto; max-width: 100%; }
 .bakim-tablosu { width: 100%; border-collapse: collapse; }
+
+/* Kural atölyesi (F16) */
+.kural-ornekleri { margin-top: .75rem; border-top: 1px solid var(--cizgi); padding-top: .5rem; }
+.kural-ornekleri li.ornek-farkli { border-left: 3px solid var(--tehlike); padding-left: .5rem; }

@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **45**. Sınama: 57 dosya, 307 sınama, hepsi geçiyor.*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **46**. Sınama: 58 dosya, 312 sınama, hepsi geçiyor.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -47,7 +47,8 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | F26 | Haklar, yetkiler, yükümlülükler (GPT paketi, birleştirildi) | `6f1851c` |
 | F31 | Keşif sorularına ikinci şablon: aynı şey üzerinde çelişen hak iddiaları | `4430a31` |
 | F32 | Bakım ve tekrarlar (Argon paketi, birleştirildi) | `9809403` |
-| §9.7 | Deneme kopyalarının cihazlar arası eşitlenmesi | bu dosyayı güncelleyen kayıt |
+| §9.7 | Deneme kopyalarının cihazlar arası eşitlenmesi | `26a1dc5` |
+| F16 | Kural atölyesi, formülsüz kısım: hukuk kuralına örnek durumlar, beklenti ve önceki tanımla karşılaştırma, örnekleriyle kopyalama (izdüşüm 46, tablo `kural_ornekleri`) | bu dosyayı güncelleyen kayıt |
 
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
@@ -67,7 +68,7 @@ Bu paketlerin tam promptları kullanıcının proje klasöründedir; depoda değ
 ### 3.3 Kalan işler (önerilen sıra)
 
 1. **F35 baskı ve uyarlama karşılaştırma**: yazar iki eser (ya da eser ile deneme kopyası) arasında eşlemeler tanımlar (iki karakter → tek karakter, olay sırası değişimi); sonraki değişiklikte etkilenebilecek eşlemeler listelenir. Hiçbir dal ötekini kendiliğinden güncellemez. Dallar için `calisan/dal.ts`, eser yapısı için `calisan/anlati.ts`.
-2. **F16 kural atölyesi**: önce **TK8** kararı gerekir. Bu karar kullanıcınındır; kodlamadan önce sor.
+2. **F16 formül yazımı**: formülsüz kısım kodlandı (kullanım sözleşmesi tasarımda §16.1 sonunda). Formül için önce **TK8** sözleşmesi yazılmalı ve kullanıcı onaylamalı; kodlamadan önce sor. Süreç kuralları için örnek durumlar henüz yok.
 3. **Bilinen boşluklar:**
    - Göreli tarihlerde Türkçe iyelik eki eksik.
    - Zaman akışları arasında yaşanan zaman hesaplanmıyor.

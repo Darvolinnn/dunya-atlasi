@@ -482,6 +482,18 @@ export interface BakimUzmanligiSonucu {
   uzmanOldugu: { tanimKod: string; ad: string; siklik: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null; kesinti: string; yer: KisaKayit }[];
   malzemeOldugu: { tanimKod: string; ad: string; siklik: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null; metin: string; yer: KisaKayit }[];
 }
+/** Kural atölyesi (F16): bir hukuk kuralının örnek durumu ve beklenen sonucu. */
+export type OrnekBeklentisi = 'uygulanir' | 'uygulanmaz' | 'sinir';
+export type OrnekSonucu = 'uygulanir' | 'uygulanmaz' | 'belirsiz' | 'hesaplanamadi';
+export interface KuralOrnegiTanimi { kisi: string; yer: string; tarih: string; beklenen: OrnekBeklentisi; not: string }
+export interface KuralOrnegi {
+  kod: string; tanim: KuralOrnegiTanimi; kisi: KisaKayit; yer: KisaKayit; sonuc: OrnekSonucu; neden: string;
+  /** Beklentiyle karşılaştırma. */
+  hukum: 'geciyor' | 'uyariyor' | 'belirsiz';
+  /** Kuralın bir önceki tanımıyla sonuç; önceki tanım yoksa null. */
+  onceki: OrnekSonucu | null;
+}
+export interface KuralOrnekleri { kural: string; oncekiTanimVar: boolean; ornekler: KuralOrnegi[] }
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1070,6 +1082,10 @@ export interface Istekler {
   hukukKuraliYaz(a: { evren: string; kod: string; tanim: Omit<HukukTanimi, 'baslangic' | 'bitis'> & { baslangic: string; bitis: string } }): void;
   hukukKuraliSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   uygulananKurallar(a: { evren: string; kisi: string; yer: string; tarih?: string | null }): UygulananKurallar;
+  kuralOrnekleri(a: { evren: string; kural: string }): KuralOrnekleri;
+  kuralOrnegiYaz(a: { evren: string; kural: string; kod?: string | null; tanim: KuralOrnegiTanimi }): { kod: string };
+  kuralOrnegiSil(a: { evren: string; kod: string }): void;
+  hukukKuraliKopyala(a: { evren: string; kod: string; sahip?: string | null }): { kod: string };
   kesintiZinciri(a: { evren: string; kaynak: string }): KesintiZinciri;
   uretimOzeti(a: { evren: string; urun: string }): UretimOzeti;
   dayaniklilikYaz(a: { evren: string; iliski: string; deger: Dayaniklilik | null }): void;

@@ -1151,7 +1151,7 @@ Bu tablo her fikrin **tek durum kaynağıdır**. "Tasarım" durumundaki bir fikr
 | F13 | **Okura sunulan açıklamalar.** Bir cinayet için üç açıklama açık tutulur; her sahne hangisini desteklemek ya da zayıflatmak için yazıldığıyla işaretlenir (yazarın niyeti). "Sürpriz" ve "gerilim" hedefleri ayrıdır. | Tasarım | Bu satır |
 | F14 | Serbest yazıyı sonradan yapılandırmak | Tasarım | §5.7 |
 | F15 | **Anlatı ve evren sözleşmesi.** "Büyünün kökeni açıklanmayacak", "rüyalardaki zaman kronolojiye eklenmez". Program bu kararları hatırlatır; bilinçli açık bırakılanı eksik saymaz. Her eser farklı sözleşme seçebilir. | Tasarım | Bu satır |
-| F16 | **Kural atölyesi.** Koşul, kapsam, sonuç ve istisna seçilerek kural kurulur; ileri kullanıcı formül yazabilir (alan anlamı: §18). Her kural için örnek durumlar saklanır (geçmeli, uyarmalı, sınır durumu); kural değişince sonuçlar karşılaştırılır. Hazır paketler kopyalanıp değiştirilebilir. Formül dili kodlanmadan önce ayrı bir sözleşme ister (TK8). | Tasarım | Bu satır |
+| F16 | **Kural atölyesi.** Koşul, kapsam, sonuç ve istisna seçilerek kural kurulur; ileri kullanıcı formül yazabilir (alan anlamı: §18). Her kural için örnek durumlar saklanır (geçmeli, uyarmalı, sınır durumu); kural değişince sonuçlar karşılaştırılır. Hazır paketler kopyalanıp değiştirilebilir. Formül dili kodlanmadan önce ayrı bir sözleşme ister (TK8). Formülsüz kısmın kullanım sözleşmesi: §16.1 sonundaki tablo. | Tasarım | Bu satır |
 | F17 | Haritalar da iddia taşır | Tasarım | §8.3 |
 | F18 | **Yayımlanmış eser kilidi.** Yayımlanan eserde okura sunulan iddialar (eser, baskı, anlatı yeri, evren zamanıyla) korunur. Çelişen değişiklikte program engellemez, sorar: *geçmişi düzelt · yeni olay · alternatif devamlılık · baskı düzeltmesi*. Güvenilmez anlatıcının sözü ile yazarın sabitlediği gerçek aynı kilidi taşımaz. | Tasarım | Bu satır |
 | F19 | **Üç özet.** Ayırt etme satırı (seçicide aynı adlı iki kaydı ayırır), sahne hatırlatıcısı (o zamanki yara, amaç, eşya), okur tanıtımı (baskı ve okuma sınırına göre). Uzunluk sınırı dayatılmaz. Ayırt etme satırındaki sır yayına girmez. | Tasarım | Bu satır |
@@ -1171,6 +1171,18 @@ Bu tablo her fikrin **tek durum kaynağıdır**. "Tasarım" durumundaki bir fikr
 | F33 | **Bir sonraki yararlı soru.** "Bu sahnenin yolculuğunu çözmek istiyorum" denince program bu hesap için eksik olanı (ölçek ya da süre ağı, başlangıç, ulaşım biçimi) gösterir. "Üç hesapta kullanılıyor" der; bu bir önem puanı değildir. | Tasarım | Bu satır |
 | F34 | Taşınabilir paket ve kurtarma provası | Tasarım | §10.11 |
 | F35 | **Baskı ve uyarlama karşılaştırma.** Uyarlamada iki karakter tek karaktere indirgenebilir, olay sırası değişebilir. Yazar eşlemeleri tanımlar; sonraki değişiklikte etkilenebilecek eşlemeler listelenir. Hiçbir dal diğerini kendiliğinden güncellemez. | Tasarım | Bu satır |
+
+**F16 kullanım sözleşmesi (formülsüz kısım, §18.2).** Seçmeli kural, hukuk kuralının kendisidir (§15-11): koşul ilişkiler, istisna "değil" koşulu, kapsam yer ya da sahip, sonuç yasak · hak · yükümlülük. Atölye buna örnek durumları ve karşılaştırmayı ekler.
+
+| Soru | Cevap |
+|---|---|
+| Kullanıcı sorusu | "Bu kural benim düşündüğüm durumlarda uygulanıyor mu; kuralı değiştirince hangi durumların sonucu değişti?" |
+| En az veri | Bir hukuk kuralı ve bir örnek: kişi, yer, isteğe bağlı tarih, beklenen sonuç (*uygulanmalı · uygulanmamalı · sınır durumu*: koşulu kayıtsız ya da zamanı belirsiz kalmalı). |
+| Veri eksikse | Koşul kayıtlı değilse ya da tarih sınıra göre belirsizse sonuç "belirsiz"dir ve beklentiyle karşılaştırma "karar verilemiyor" der; kişi ya da yer silinmişse "hesaplanamadı". |
+| Okuduğu | Hukuk kuralları, ilişkiler, yerlerin kapsaması ve bağlılığı, tarihler; kuralın bir önceki tanımı işlem günlüğünden. |
+| Değiştirdiği | Yalnızca örnek kayıtları; yazar isterse kuralın örnekleriyle birlikte kopyası (kopya kaynağına bağlı kalmaz). |
+| Yapmayacağı yorum | Konu ve yaptırım yazısından anlam çıkarmaz; beklentiyi tahmin etmez; kural değişince örneği ya da beklentiyi kendiliğinden değiştirmez. |
+| Kabul örneği | "Lonca üyesi olmayanlara silah yasağı": üyeliği kayıtlı kişi için "uygulanmamalı" örneği beklendiği gibi; üyeliği kayıtsız kişi belirsiz. İstisna kaldırılınca aynı örnek "beklenenden farklı; son değişiklikten önce uygulanmıyordu" gösterir. |
 
 ### 16.2 F36–F47
 

@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 45;
+export const IZDUSUM_SURUMU = 46;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -235,6 +235,14 @@ CREATE TABLE IF NOT EXISTS hukuk_kurallari(
   silindi INTEGER
 );
 CREATE INDEX IF NOT EXISTS hukuk_kurallari_sahip ON hukuk_kurallari(sahip);
+CREATE TABLE IF NOT EXISTS kural_ornekleri(
+  kod TEXT PRIMARY KEY,
+  kural TEXT NOT NULL,
+  tanim TEXT NOT NULL,
+  olusturma INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS kural_ornekleri_kural ON kural_ornekleri(kural);
 CREATE TABLE IF NOT EXISTS dayaniklilik(
   iliski TEXT PRIMARY KEY,
   deger TEXT NOT NULL
@@ -710,6 +718,7 @@ export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar'
 
 IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi', 'kullanim_masalari');
 IZDUSUM_TABLOLARI.push('bakim_tanimlari', 'bakim_kayitlari');
+IZDUSUM_TABLOLARI.push('kural_ornekleri');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -1172,6 +1181,16 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   hukuk_kurali_geri_yukle(db, i) {
     db.exec({ sql: 'UPDATE hukuk_kurallari SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+  /** Kural atölyesi (F16): bir hukuk kuralının örnek durumu. */
+  kural_ornegi_yaz(db, i) {
+    const { kod, kural, tanim } = i.veri as { kod: string; kural: string; tanim: unknown };
+    if (typeof kod !== 'string' || typeof kural !== 'string' || !tanim || typeof tanim !== 'object') return;
+    db.exec({ sql: 'INSERT INTO kural_ornekleri(kod, kural, tanim, olusturma) VALUES(?,?,?,?) ON CONFLICT(kod) DO UPDATE SET tanim=excluded.tanim', bind: [kod, kural, JSON.stringify(tanim), i.zaman] });
+    alanYaz(db, i, kod, 'kural_ornegi', tanim);
+  },
+  kural_ornegi_sil(db, i) {
+    db.exec({ sql: 'UPDATE kural_ornekleri SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
   },
   /** Kesintiye dayanıklılık (F10): bir bağın dayanma süresi ve ikamesi. */
   dayaniklilik_yaz(db, i) {

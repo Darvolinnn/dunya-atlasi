@@ -43,7 +43,7 @@ const metin = (s: unknown, n: number, bos = true) => {
   return x;
 };
 
-function kuralOku(e: EvrenVt, r: Record<string, unknown>): HukukKurali {
+export function kuralOku(e: EvrenVt, r: Record<string, unknown>): HukukKurali {
   const t = JSON.parse(r.tanim as string) as HukukTanimi;
   return {
     kod: r.kod as string, sahip: kisa(e, r.sahip as string), tanim: t,
@@ -51,7 +51,7 @@ function kuralOku(e: EvrenVt, r: Record<string, unknown>): HukukKurali {
     kimlere: t.kimlere.map((k) => ({ ...k, hedefKayit: kisa(e, k.hedef) })),
   };
 }
-function kuralBul(e: EvrenVt, kod: unknown, silinmis = false): HukukKurali {
+export function kuralBul(e: EvrenVt, kod: unknown, silinmis = false): HukukKurali {
   const r = typeof kod === 'string' && kodGecerliMi(kod) ? e.db.selectObject(`SELECT * FROM hukuk_kurallari WHERE kod=? ${silinmis ? '' : 'AND silindi IS NULL'}`, [kod]) : undefined;
   if (!r) throw new Error('Hukuk kuralı bulunamadı.');
   return kuralOku(e, r);
@@ -127,50 +127,66 @@ function yerZinciri(e: EvrenVt, yer: string) {
   return { yerler, yonetimler };
 }
 
-/** Kişi bir yere girince ona uygulanabilecek kayıtlı kurallar. Tarih verilirse geçerlilik aralığı da denetlenir. */
-export function uygulananKurallar(e: EvrenVt, kisi: string, yer: string, tarihIfade: string | null): UygulananKurallar {
+/** Bir kişinin bir yerdeki (ve isteğe bağlı tarihteki) durumu: kuralların değerlendirildiği bağlam. */
+export interface KuralBaglami { e: EvrenVt; kisi: string; yer: string; yerler: string[]; yonetimler: string[]; tarih: EvrenTarihi | null }
+
+export function kuralBaglami(e: EvrenVt, kisi: string, yer: string, tarihIfade: string | null): KuralBaglami {
   kayitTuru(e, kisi);
   if (!YER_TURLERI.includes(kayitTuru(e, yer))) throw new Error('Bir mekân ya da şehir seçin.');
   const tarih = tarihIfade?.trim() ? tarihCoz(tarihIfade, zamanSetiOku(e.db)) : null;
   if (tarihIfade?.trim() && !tarih?.eksen) throw new Error('Tarih okunamadı.');
-  const { yerler, yonetimler } = yerZinciri(e, yer);
+  return { e, kisi, yer, ...yerZinciri(e, yer), tarih: tarih as EvrenTarihi | null };
+}
+
+/** Tek bir kuralın bu bağlamda uygulanıp uygulanmadığı; uygulanmıyorsa nedeni (kural atölyesi bunu gösterir, F16). */
+export function kuralDegerlendir(c: KuralBaglami, k: HukukKurali): { uygulanan: UygulananKural | null; neden: string } {
+  const { e, kisi, yer, yerler, yonetimler, tarih } = c;
   const iliskisi = (iliski: string, hedef: string) => e.db.selectValue(`SELECT 1 FROM iliskiler i WHERE i.a=? AND i.b=? AND i.tur=? AND ${ETKIN}`, [kisi, yonlendir(e.db, hedef), iliski]) !== undefined;
+  const sahipYer = YER_TURLERI.includes(k.sahip.tur);
+  // Kural nerede geçer: açık yer yazıldıysa orada; yoksa sahibi bir yerse orada, bir yönetimse ona bağlı yerlerde;
+  // kültür, inanç, topluluk ve makam kuralları yer yazılmadıysa üyelerine her yerde uygulanır.
+  let nedenYer: string;
+  if (k.yer) {
+    if (!yerler.includes(k.yer.kod)) return { uygulanan: null, neden: `Kural yalnızca “${k.yer.ad}” içinde geçer.` };
+    nedenYer = k.yer.kod === yer ? 'bu yerde geçer' : `“${k.yer.ad}” içinde geçer`;
+  } else if (sahipYer) {
+    if (!yerler.includes(k.sahip.kod)) return { uygulanan: null, neden: `Kural yalnızca “${k.sahip.ad}” içinde geçer.` };
+    nedenYer = k.sahip.kod === yer ? 'bu yerin kuralı' : `“${k.sahip.ad}” içinde`;
+  } else if (k.sahip.tur === 'siyasi') {
+    if (!yonetimler.includes(k.sahip.kod)) return { uygulanan: null, neden: `Bu yer “${k.sahip.ad}” yönetimine bağlı kayıtlı değil.` };
+    nedenYer = `bu yer “${k.sahip.ad}” yönetimine bağlı`;
+  } else nedenYer = 'yer sınırı yazılmamış; kişiyle birlikte gider';
+
+  const kosullar = k.kimlere.map((x) => {
+    const var_ = iliskisi(x.iliski, x.hedef);
+    const ad = `${x.degil ? 'değil: ' : ''}“${x.hedefKayit.ad}” ${KOSUL_ILISKILERI.find((y) => y.kod === x.iliski)!.ad}`;
+    return { ad, durum: (x.degil ? (var_ ? 'tutmuyor' : 'kayitsiz') : (var_ ? 'tutuyor' : 'kayitsiz')) as 'tutuyor' | 'tutmuyor' | 'kayitsiz' };
+  });
+  const tutmayan = kosullar.find((x) => x.durum === 'tutmuyor');
+  if (tutmayan) return { uygulanan: null, neden: `Koşul tutmuyor: ${tutmayan.ad}.` };
+  let zaman: UygulananKural['zaman'] = 'gecerli';
+  if (k.tanim.baslangic || k.tanim.bitis) {
+    if (!tarih) zaman = 'tarihsiz';
+    else if ((k.tanim.baslangic && karsilastir(tarih, k.tanim.baslangic) === 'once') || (k.tanim.bitis && karsilastir(tarih, k.tanim.bitis) === 'sonra')) return { uygulanan: null, neden: 'Tarih, kuralın geçerlilik aralığının dışında.' };
+    else if ((k.tanim.baslangic && karsilastir(tarih, k.tanim.baslangic) === 'belirsiz') || (k.tanim.bitis && karsilastir(tarih, k.tanim.bitis) === 'belirsiz')) zaman = 'belirsiz';
+  }
+  const durum = kosullar.every((x) => x.durum === 'tutuyor') ? 'uygulanir' : 'kosul_kayitsiz';
+  return { uygulanan: { kural: k, nedenYer, kosullar, durum, zaman }, neden: nedenYer };
+}
+
+/** Kişi bir yere girince ona uygulanabilecek kayıtlı kurallar. Tarih verilirse geçerlilik aralığı da denetlenir. */
+export function uygulananKurallar(e: EvrenVt, kisi: string, yer: string, tarihIfade: string | null): UygulananKurallar {
+  const c = kuralBaglami(e, kisi, yer, tarihIfade);
+  const { yerler, yonetimler, tarih } = c;
   const sonuc: UygulananKural[] = [];
   for (const k of hukukKurallari(e)) {
-    const sahipYer = YER_TURLERI.includes(k.sahip.tur);
-    // Kural nerede geçer: açık yer yazıldıysa orada; yoksa sahibi bir yerse orada, bir yönetimse ona bağlı yerlerde;
-    // kültür, inanç, topluluk ve makam kuralları yer yazılmadıysa üyelerine her yerde uygulanır.
-    let nedenYer: string;
-    if (k.yer) {
-      if (!yerler.includes(k.yer.kod)) continue;
-      nedenYer = k.yer.kod === yer ? 'bu yerde geçer' : `“${k.yer.ad}” içinde geçer`;
-    } else if (sahipYer) {
-      if (!yerler.includes(k.sahip.kod)) continue;
-      nedenYer = k.sahip.kod === yer ? 'bu yerin kuralı' : `“${k.sahip.ad}” içinde`;
-    } else if (k.sahip.tur === 'siyasi') {
-      if (!yonetimler.includes(k.sahip.kod)) continue;
-      nedenYer = `bu yer “${k.sahip.ad}” yönetimine bağlı`;
-    } else nedenYer = 'yer sınırı yazılmamış; kişiyle birlikte gider';
-
-    const kosullar = k.kimlere.map((c) => {
-      const var_ = iliskisi(c.iliski, c.hedef);
-      const ad = `${c.degil ? 'değil: ' : ''}“${c.hedefKayit.ad}” ${KOSUL_ILISKILERI.find((x) => x.kod === c.iliski)!.ad}`;
-      return { ad, durum: (c.degil ? (var_ ? 'tutmuyor' : 'kayitsiz') : (var_ ? 'tutuyor' : 'kayitsiz')) as 'tutuyor' | 'tutmuyor' | 'kayitsiz' };
-    });
-    if (kosullar.some((c) => c.durum === 'tutmuyor')) continue;
-    let zaman: UygulananKural['zaman'] = 'gecerli';
-    if (k.tanim.baslangic || k.tanim.bitis) {
-      if (!tarih) zaman = 'tarihsiz';
-      else if ((k.tanim.baslangic && karsilastir(tarih, k.tanim.baslangic) === 'once') || (k.tanim.bitis && karsilastir(tarih, k.tanim.bitis) === 'sonra')) continue;
-      else if ((k.tanim.baslangic && karsilastir(tarih, k.tanim.baslangic) === 'belirsiz') || (k.tanim.bitis && karsilastir(tarih, k.tanim.bitis) === 'belirsiz')) zaman = 'belirsiz';
-    }
-    const durum = kosullar.every((c) => c.durum === 'tutuyor') ? 'uygulanir' : 'kosul_kayitsiz';
-    sonuc.push({ kural: k, nedenYer, kosullar, durum, zaman });
+    const u = kuralDegerlendir(c, k).uygulanan;
+    if (u) sonuc.push(u);
   }
   // Aynı konuda biri yasaklarken öteki hak tanıyorsa: çatışan yetkiler. Konu yazının aynısı olmalıdır; anlam çıkarılmaz.
   const gruplar = new Map<string, UygulananKural[]>();
   for (const x of sonuc) if (x.kural.tanim.konu) gruplar.set(katla(x.kural.tanim.konu), [...(gruplar.get(katla(x.kural.tanim.konu)) ?? []), x]);
   const catismalar = [...gruplar.values()].filter((l) => l.some((x) => x.kural.tanim.tur === 'yasak') && l.some((x) => x.kural.tanim.tur === 'hak'))
     .map((l) => ({ konu: l[0].kural.tanim.konu, kurallar: l.map((x) => x.kural.kod) }));
-  return { yer: kisa(e, yer), kisi: kisa(e, kisi), tarih: tarih as EvrenTarihi | null, kurallar: sonuc, catismalar, yerler: yerler.map((y) => kisa(e, y)), yonetimler: yonetimler.map((y) => kisa(e, y)) };
+  return { yer: kisa(e, yer), kisi: kisa(e, kisi), tarih, kurallar: sonuc, catismalar, yerler: yerler.map((y) => kisa(e, y)), yonetimler: yonetimler.map((y) => kisa(e, y)) };
 }
