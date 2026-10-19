@@ -518,6 +518,18 @@ export interface UyarlamaEslemesi {
   degisiklikler: { taraf: 'a' | 'b'; islem: string; aciklama: string }[]; uyarilar: string[];
 }
 export interface UyarlamaAdaylari { eserler: KisaKayit[]; kayitlar: KisaKayit[]; sorun: string | null }
+/** F07 kurumlar kararları nasıl uygular (§16.1 F07, §3.10, §3.8): adım sorumluları, durdurabilir ve fiilî veto listeleri. */
+export type SurecEngelTuru = 'durdurabilir' | 'veto';
+export interface SurecEngelSatiri { kod: string; kayit: KisaKayit & { silindi: boolean }; not: string }
+export interface SurecSorumluAdimi { kod: string; ad: string; sorumlu: (KisaKayit & { silindi: boolean }) | null; catismali: boolean }
+export interface SurecSorumluSureci {
+  kural: string; kuralAd: string;
+  adimlar: SurecSorumluAdimi[];
+  durdurabilir: SurecEngelSatiri[];
+  veto: SurecEngelSatiri[];
+  catismali: boolean;
+}
+export interface OlaySurecSorumlulari { olay: KisaKayit; surecler: SurecSorumluSureci[]; not: string }
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1239,6 +1251,11 @@ export interface Istekler {
   uyarlamaYaz(a: { evren: string; kod?: string | null; tanim: UyarlamaTanimi }): { kod: string };
   uyarlamaSil(a: { evren: string; kod: string }): void;
   uyarlamaGozdenGecir(a: { evren: string; kod: string }): void;
+  olaySurecSorumlulari(a: { evren: string; olay: string }): OlaySurecSorumlulari;
+  surecAdimSorumlusuYaz(a: { evren: string; olay: string; kural: string; adim: string; sorumlu: string | null }): void;
+  surecEngelEkle(a: { evren: string; olay: string; kural: string; tur: SurecEngelTuru; kayit: string; not?: string }): { kod: string };
+  surecEngelDegistir(a: { evren: string; olay: string; kural: string; tur: SurecEngelTuru; kod: string; kayit?: string; not?: string }): void;
+  surecEngelSil(a: { evren: string; olay: string; kural: string; tur: SurecEngelTuru; kod: string }): void;
 }
 
 export type IstekAdi = keyof Istekler;

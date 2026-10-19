@@ -713,6 +713,14 @@ CREATE TABLE IF NOT EXISTS uyarlama_eslemeleri(
   deger TEXT NOT NULL,
   silindi INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS surec_sorumlulari(
+  olay TEXT NOT NULL,
+  kural TEXT NOT NULL,
+  sorumlular TEXT NOT NULL DEFAULT '{}',
+  durdurabilir TEXT NOT NULL DEFAULT '[]',
+  veto TEXT NOT NULL DEFAULT '[]',
+  PRIMARY KEY(olay, kural)
+);
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'gokyuzu_tanimi',
@@ -725,6 +733,7 @@ IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi', 'kul
 IZDUSUM_TABLOLARI.push('bakim_tanimlari', 'bakim_kayitlari');
 IZDUSUM_TABLOLARI.push('kural_ornekleri');
 IZDUSUM_TABLOLARI.push('uyarlama_eslemeleri');
+IZDUSUM_TABLOLARI.push('surec_sorumlulari');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -2046,5 +2055,36 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const silindi = i.veri.silindi !== false;
     db.exec({ sql: 'UPDATE uyarlama_eslemeleri SET silindi=? WHERE kod=?', bind: [silindi ? 1 : 0, kod] });
     alanYaz(db, i, kod, 'uyarlama_silindi', silindi);
+  },
+  surec_sorumlu_adim_yaz(db, i) {
+    const { olay, kural, adim, sorumlu } = i.veri as { olay: string; kural: string; adim: string; sorumlu: string | null };
+    const o = yonlendir(db, olay) as string;
+    if (!o || typeof kural !== 'string' || typeof adim !== 'string') return;
+    const mevcut = db.selectValue('SELECT sorumlular FROM surec_sorumlulari WHERE olay=? AND kural=?', [o, kural]) as string | undefined;
+    const m: Record<string, string> = mevcut ? JSON.parse(mevcut) : {};
+    const s = typeof sorumlu === 'string' && sorumlu ? (yonlendir(db, sorumlu) as string) : null;
+    if (s) m[adim] = s; else delete m[adim];
+    db.exec({
+      sql: 'INSERT INTO surec_sorumlulari(olay, kural, sorumlular) VALUES(?,?,?) ON CONFLICT(olay, kural) DO UPDATE SET sorumlular=excluded.sorumlular',
+      bind: [o, kural, JSON.stringify(m)],
+    });
+    alanYaz(db, i, o, `surec_sorumlu_adim:${kural}:${adim}`, s);
+  },
+  surec_sorumlu_engel_yaz(db, i) {
+    const { olay, kural, engelTuru, liste } = i.veri as { olay: string; kural: string; engelTuru: string; liste: unknown };
+    const o = yonlendir(db, olay) as string;
+    if (!o || typeof kural !== 'string' || (engelTuru !== 'durdurabilir' && engelTuru !== 'veto')) return;
+    const temiz = (Array.isArray(liste) ? liste : []).slice(0, 100).flatMap((x: Record<string, unknown>) => {
+      const kod = typeof x?.kod === 'string' && x.kod ? x.kod.slice(0, 40) : null;
+      const kayit = typeof x?.kayit === 'string' && x.kayit ? (yonlendir(db, x.kayit) as string) : null;
+      if (!kod || !kayit) return [];
+      return [{ kod, kayit, not: String(x.not ?? '').slice(0, 500) }];
+    });
+    const sutun = engelTuru === 'veto' ? 'veto' : 'durdurabilir';
+    db.exec({
+      sql: `INSERT INTO surec_sorumlulari(olay, kural, ${sutun}) VALUES(?,?,?) ON CONFLICT(olay, kural) DO UPDATE SET ${sutun}=excluded.${sutun}`,
+      bind: [o, kural, JSON.stringify(temiz)],
+    });
+    alanYaz(db, i, o, `surec_sorumlu_${sutun}:${kural}`, temiz);
   },
 };

@@ -190,6 +190,8 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   uyarlama_yaz: () => 'Uyarlama eşlemesi kaydedildi',
   uyarlama_gozden_gecir: () => 'Uyarlama eşlemesi gözden geçirildi',
   uyarlama_sil: (v) => v.silindi === false ? 'Uyarlama eşlemesi geri getirildi' : 'Uyarlama eşlemesi kaldırıldı',
+  surec_sorumlu_adim_yaz: (v, ad) => `${ad(v.olay)}: “${v.kuralAd ?? 'süreç'}” kuralında “${v.adimAd ?? 'adım'}” adımının sorumlusu ${v.sorumlu ? ad(v.sorumlu) + ' olarak kaydedildi' : 'kaldırıldı'}`,
+  surec_sorumlu_engel_yaz: (v, ad) => `${ad(v.olay)}: “${v.kuralAd ?? 'süreç'}” kuralında ${v.engelTuru === 'veto' ? 'fiilî veto' : 'durdurabilir'} listesi güncellendi`,
 };
 
 /** Kullanıcının yaptığı bir değişiklik sayılmayan, başka bir işlemin parçası olan adımlar (listelerde gösterilmez). */
