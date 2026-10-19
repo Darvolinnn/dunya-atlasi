@@ -562,6 +562,19 @@ export interface KalabalikSonucu {
   tahminler: { gozlem: string; miktar: KalabalikMiktari; olaylar: string[]; sonGozlem: boolean; uyusmaz: boolean; belirsiz: boolean }[];
   uyeler: KisaKayit[]; uyarilar: string[];
 }
+export interface HaritaKunyeTanimi {
+  tarih: string;
+  yapan: string | null;
+  amac: string;
+  bilinenHatalar: string[];
+}
+export interface HaritaKunyesi {
+  harita: string;
+  haritaAd: string;
+  tanim: HaritaKunyeTanimi;
+  yapanAd: string | null;
+  catismali: boolean;
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1303,6 +1316,9 @@ export interface Istekler {
   kalabalikGozlemYaz(a: { evren: string; kod?: string | null; tanim: KalabalikGozlemi }): { kod: string };
   kalabalikOlayYaz(a: { evren: string; kod?: string | null; tanim: KalabalikOlayi }): { kod: string };
   kalabalikKaldir(a: { evren: string; kod: string; bicim: 'gozlem' | 'olay'; geriYukle?: boolean }): void;
+  haritaKunyesi(a: { evren: string; harita: string }): HaritaKunyesi | null;
+  haritaKunyeleri(a: { evren: string }): HaritaKunyesi[];
+  haritaKunyeYaz(a: { evren: string; harita: string; tanim: HaritaKunyeTanimi | null }): void;
 }
 
 export type IstekAdi = keyof Istekler;
