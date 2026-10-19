@@ -27,7 +27,14 @@ export function TarihAlani({ istemci, evren, kayit }: { istemci: Istemci; evren:
   const [hata, setHata] = useState<string | null>(null);
   // Tarih değişince etki raporu (§9.2): önceki ifade saklanır, böylece tek dokunuşla geri dönülebilir (T4).
   const [etki, setEtki] = useState<{ once: string | null } | null>(null);
-  useEffect(() => { setYerel(kayit.tarih?.bicim === 'goreli' ? '' : kayit.tarih?.ifade ?? ''); setKip(kayit.tarih?.bicim === 'goreli' ? 'goreli' : 'yaz'); }, [kayit.tarih?.ifade, kayit.tarih?.bicim]);
+  // Kayıttaki tarih değişince girdi ona döner. İlk çizimde çalışmaz: açılır açılmaz yazılan tarih silinmesin.
+  const sonTarih = useRef(`${kayit.tarih?.bicim}|${kayit.tarih?.ifade}`);
+  useEffect(() => {
+    const t = `${kayit.tarih?.bicim}|${kayit.tarih?.ifade}`;
+    if (t === sonTarih.current) return;
+    sonTarih.current = t;
+    setYerel(kayit.tarih?.bicim === 'goreli' ? '' : kayit.tarih?.ifade ?? ''); setKip(kayit.tarih?.bicim === 'goreli' ? 'goreli' : 'yaz');
+  }, [kayit.tarih?.ifade, kayit.tarih?.bicim]);
   const [masa, setMasa] = useState(false);
   useEffect(() => { setEtki(null); setMasa(false); }, [kayit.kod]);
   const z = useTakvim(istemci, evren);

@@ -18,9 +18,10 @@ import { Gorsel } from './gorsel';
 import { MetinGorunumu } from './MetinEditoru';
 import { git } from './Uygulama';
 import { ANA_SAYFALAR, DIGER_SAYFALAR, GORUNUMLER } from './Kabuk';
+import { HesapPenceresi, type HesapTuru } from './Hesaplar';
 import type { YasananSure } from '../veri/api';
 
-export interface PaletBaglami { bagla?: () => void }
+export interface PaletBaglami { bagla?: () => void; hesap?: (h: HesapTuru) => void }
 
 export interface CalismaDenetimi {
   evren: string | null;
@@ -56,6 +57,7 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
   const [aktif, setAktif] = useState<string | null>(null);
   const [kart, setKart] = useState<{ kod: string; yer: DOMRect } | null>(null);
   const [palet, setPalet] = useState<PaletBaglami | null>(null);
+  const [hesap, setHesap] = useState<HesapTuru | null>(null);
   const [kucuk, setKucuk] = useState(() => { try { return localStorage.getItem(panelAnahtari) === '1'; } catch { return false; } });
   const kucult = (v: boolean) => { setKucuk(v); try { localStorage.setItem(panelAnahtari, v ? '1' : '0'); } catch { /* yok */ } };
   const yer = useRef<{ evren: string; kayit: string | null; konum: number | null; not: string } | null>(null);
@@ -208,7 +210,8 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
       )}
       {evren && kart && <OzetKarti istemci={istemci} evren={evren} kod={kart.kod} yer={kart.yer} kapat={() => setKart(null)}
         yanPanelde={() => denetim.yanPanelAc(kart.kod)} />}
-      {palet && <KomutPaleti istemci={istemci} evren={evren} baglam={palet} kapat={() => setPalet(null)} />}
+      {palet && <KomutPaleti istemci={istemci} evren={evren} baglam={{ ...palet, hesap: setHesap }} kapat={() => setPalet(null)} />}
+      {evren && hesap && <HesapPenceresi istemci={istemci} evren={evren} tur={hesap} kapat={() => setHesap(null)} />}
     </Baglam.Provider>
   );
 }
@@ -437,6 +440,10 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
         komutlar.push({ anahtar: 's-' + k, baslik: ad, aciklama: k === 'masa' ? 'Kaldığınız yer, son düzenlenenler' : k === 'yaz' ? 'Eserler, bölümler ve sahneler' : 'Sayfa', yap: () => git(`/e/${evren}/${k}`) });
       }
       if (sorgu.trim()) for (const [k, ad] of GORUNUMLER) komutlar.push({ anahtar: 'g-' + k, baslik: ad, aciklama: 'Görünüm', yap: () => git(`/e/${evren}/${k}`) });
+      if (baglam.hesap) {
+        komutlar.push({ anahtar: 'h-yolculuk', baslik: 'Yolculuk süresi', aciklama: 'İki yer arası, kayıtlı rotalarla', yap: () => baglam.hesap!('yolculuk') });
+        komutlar.push({ anahtar: 'h-takvim', baslik: 'Takvim günü hesabı', aciklama: 'Tarihe gün ya da yıl ekleme, iki tarih arası gün sayısı', yap: () => baglam.hesap!('takvim') });
+      }
       if (d.yanPanel.length) komutlar.push({ anahtar: 'panel-kapat', baslik: 'Yan paneli kapat', yap: () => d.yanPanelKapat() });
     }
     komutlar.push({ anahtar: 'evrenler', baslik: 'Evrenler', yap: () => git('/') });

@@ -82,6 +82,8 @@ function satirCevir(
   olayTarihi: EvrenTarihi | null,
 ): IzKaydi {
   const yer = r.yer ? aktifKayitOku(b.e, r.yer as string) : null;
+  const sy = r.yer && !yer ? b.e.db.selectObject('SELECT kod, ad, tur FROM kayitlar WHERE kod=?', [yonlendir(b.e.db, r.yer as string)]) : undefined;
+  const silinmisYer = sy ? { kod: sy.kod as string, ad: sy.ad as string, tur: sy.tur as string } : null;
   const bitis = r.bitis ? (JSON.parse(r.bitis as string) as EvrenTarihi) : null;
   return {
     kod: r.kod as string,
@@ -94,6 +96,7 @@ function satirCevir(
     gercekKoken: (r.gercek_koken as string) ?? '',
     anlatilanHikaye: (r.anlatilan_hikaye as string) ?? '',
     silindi: r.silindi !== null && r.silindi !== undefined,
+    silinmisYer,
   };
 }
 
@@ -115,7 +118,6 @@ export function izKaydiYaz(
     throw new Error('Geçersiz iz türü.');
   }
   const ad = metinTemizle(girdi.ad, { uzunluk: 200, etiket: 'İz adı' });
-  const yer = yerKontrol(b.e, girdi.yer ?? null);
   const bitis = bitisCoz(b.e, girdi.bitis ?? null);
   const gercekKoken = serbestYaziTemizle(girdi.gercekKoken ?? '');
   const anlatilanHikaye = serbestYaziTemizle(girdi.anlatilanHikaye ?? '');
@@ -130,6 +132,9 @@ export function izKaydiYaz(
   } else {
     kod = yeniKod();
   }
+  // Çöp kutusundaki yere bağlı izi düzenlerken yer değiştirilmediyse bağ korunur.
+  const ayniSilinmisYer = !!girdi.yer && !!oncekiYer && yonlendir(b.e.db, girdi.yer) === yonlendir(b.e.db, oncekiYer) && !aktifKayitOku(b.e, girdi.yer);
+  const yer = ayniSilinmisYer ? { kod: yonlendir(b.e.db, oncekiYer!) as string, ad: '', tur: '' } : yerKontrol(b.e, girdi.yer ?? null);
 
   const etkilenenler = [olay.kod, ...(yer ? [yer.kod] : []), ...(oncekiYer ? [oncekiYer] : [])];
   b.yaz(

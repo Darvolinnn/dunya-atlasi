@@ -551,6 +551,8 @@ Açık sahnenin (ya da imlecin bulunduğu bağlam parçasının) evren tarihine,
 - Bakış açısı karakterinin o anda bildikleri ve eriştiği haberler.
 - Tarih girilmemişse bunu açıkça söyler.
 
+Sahnede tarih, mekân, bakış açısı, anlatıcı, odak karakter ve sahnedeki kimse yoksa sahne **boştur**. Yazma düzeninde (§5.10) panel, kullanıcı açıp kapatmayı seçmediyse boş sahnede kapalı, dolu sahnede açık başlar; seçim cihazda hatırlanır. Kapalıyken başlıktaki düğme boş sahnede "Bağlam ekle", doluda "Bağlamı göster" der. Boş sahnede panel uzun açıklamalar yerine tek cümle söyler; ayrıntı sayfa rehberindedir (§12.4). Okurun bilgisi, kayıt yokken katlı durur.
+
 ### 5.6 Süreklilik defteri
 
 Sahneye bağlı küçük bir panel: sahne başındaki durum, sahne içindeki değişimler ve sahne sonundaki durum. Yalnızca yazarın izlemek istediği ayrıntılar (yaralı el, kimdeki kılıç, kilitli kapı, ok sayısı) izlenir. Değişiklikleri kullanıcı işaretler, program metinden tahmin etmez.
@@ -600,7 +602,7 @@ Aynı verinin farklı görünümleridir; veri kopyalanmaz.
 
 Yazı merkezdedir (K24):
 - **Evren açılınca yazma düzeni gelir.** Solda sabit bir gezinti çubuğu bulunur: Yaz, Masa, Kayıtlar, Haritalar, Takvim, Görünümler ve İnceleme; az kullanılan sayfalar (çalışma masaları, açık meseleler, şablonlar, bahsedilenler, çöp kutusu, geçmiş, sürümler, yedek) "Diğer" altında katlanır.
-- **Yaz** seçiliyken gezinti çubuğunda eserlerin ağacı (eser › bölüm › sahne) görünür; yeni eser, bölüm ve sahne buradan eklenir. Seçili sahnenin metni ortada geniş ve okunaklı durur; sağda dar ve kapatılabilir bir bağlam paneli sahnenin tarihini, mekânını, bakış açısını, sahnedekileri ve o anki bağlamı (§5.5) gösterir. Sahnenin bütün alanları kayıt sayfasındadır; yazma ekranından bir bağlantıyla açılır.
+- **Yaz** seçiliyken gezinti çubuğunda eserlerin ağacı (eser › bölüm › sahne) görünür; yeni eser, bölüm ve sahne buradan eklenir. Seçili sahnenin metni ortada geniş ve okunaklı durur; sağda dar ve kapatılabilir bir bağlam paneli sahnenin tarihini, mekânını, bakış açısını, sahnedekileri ve o anki bağlamı (§5.5) gösterir. Gezinti çubuğunun altında kayıt, eşitleme ve yedek özeti durur (§10.8). Sahnenin bütün alanları kayıt sayfasındadır; yazma ekranından bir bağlantıyla açılır.
 - **Kayıt sayfasında** ad, tür, karar durumu, tarih, şablon alanları, kısa özet, metin ve ilişkiler açık durur; öbür bölümler türüne göre "Diğer bölümler" altında katlanır ve bir dokunuşla açılır.
 
 Yazma ekranında bütün evrenin panelleri ve uyarıları bulunmaz.
@@ -787,6 +789,7 @@ Bu bölüm eşitlemenin tek tanımıdır. §17'deki platform anlatımı ve kabul
 - **Birden çok evren:** Her evren ayrı eşitlenir, ayrı yedeklenir ve Drive'da ayrı klasördedir. Bir kurulum hangi evrenleri taşıyacağını seçer.
 - **Değişiklikler işlem olarak kaydedilir:** "kayıt oluştur, alan değiştir, metin parçası değiştir, ilişki ekle, iki kaydı birleştir" gibi. Her işlemin benzersiz kodu, yazan kurulumun kodu ve o kurulumun sıra numarası vardır. Her işlem, yapıldığı anda hangi değişiklikleri gördüğünü de taşır; çatışma tespiti buna dayanır.
 - **İki katman:** Yapılandırılmış veri (kayıtlar, alanlar, ilişkiler, işlem grupları, birleştirme) programın kendi işlem günlüğünde tutulur; çünkü bu belgenin istediği anlamlar (gizli seçim yok, işlem grubu bütünlüğü, ters birleştirme, silme–düzenleme paketi) hazır eşitleme kütüphanelerinin varsayılan davranışı değildir. Uzun metin alanlarının (sahne, geçmiş) içi bir metin CRDT'siyle tutulur (TK2); onun değişiklikleri de aynı günlükte taşınır (K15).
+- **Tablolar günlükten baştan kurulabilir; büyük evrende de kısa sürer.** Görünen tablolar günlükten türetilir ve gerektiğinde baştan kurulur: tablo yapısı değişen bir program güncellemesinde, evren yeni bir cihaza indirilince, yedekten geri yüklenince ve başka bir cihazdan daha önceye düşen bir işlem gelince. Baştan kurmada bir metin alanının bütün değişiklikleri tek seferde uygulanır; metnin okunuşu, bağlantıları ve çatışma kayıtları alan başına bir kez üretilir. Sonuç, değişiklikleri tek tek uygulamakla aynıdır. Bellekte yalnızca son kullanılan metinler tutulur; gerisi cihazın diskinde durur ve gerektiğinde okunur. Hedef: seri büyüklüğünde (yüz binlerce işlem) bir evrenin dakikalar içinde kurulması ve tablette belleğin 4 GB'ın altında kalması.
 
 ### 10.2 Drive'daki düzen
 
@@ -858,6 +861,7 @@ Dört sürüm ayrıdır: **uygulama sürümü**, **veri biçimi sürümü**, **k
 ### 10.8 Görünen durum ve geri alma
 
 - **Doğrulanabilir eşitleme durumları** her zaman görünür: *Bu cihaza kaydedildi · Drive'a gönderildi · Tablet / bilgisayar / iPhone şu değişikliğe kadar aldı · Yedek doğrulandı*. Drive'a gönderilmiş olmak öbür cihazın aldığı anlamına gelmez; çevrimdışı bir cihaz için "bütün cihazlar güncel" yazılmaz.
+- **Evren içindeki durum özeti** gezinti çubuğunun altında katlı durur. Başlığı en zayıf halkayı söyler ("Yalnız bu cihazda kayıtlı", "3 değişiklik gönderilecek", "Kaydedildi ve eşitlendi"); açılınca bu cihazdaki kayıt, Drive durumu ve son doğrulanan yedek ayrı satırlarda ve kendi eylemleriyle görünür. Eşitleme ile yedeğin farkı tek cümleyle söylenir. Yedek hiç yoksa ya da yedi günden eskiyse satır sarıdır; yazıyı kesen bir uyarı çıkmaz.
 - **Yalnızca bu cihazda olan değişiklikler** ayrıca görünür: "Son eşitlemeden beri 3 değişiklik yalnızca bu telefonda." Cihazın yerel verisi kaybolursa yalnızca Drive'a başarıyla gönderilmiş kısım geri gelir; gönderilmemiş iş uzak kopyada yoktur.
 - **Google oturumu düşünce yazma durmaz.** Üst çubukta "eşitlemek için dokun" görünür; dokununca izin yenilenir ve biriken değişiklikler gönderilir. Oturum modeli TK3'tür ve deneyle kesinleşir.
 - **Geri almanın türleri:** yerel geri al · eşitlenmiş bir değişikliğin tersini yeni işlem olarak yapmak (başka cihazın sonraki doğru işlemleri silinmez) · eski bir yedeği önce ayrı bir **kurtarma alanında** açıp incelemek ve ancak sonra mevcut evrenin yerine koymak. Dışarı yayımlanmış bir wikinin kopyası geri al düğmesiyle geri çağrılamaz.

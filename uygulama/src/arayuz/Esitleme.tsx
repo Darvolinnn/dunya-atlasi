@@ -125,6 +125,68 @@ export function EsitlemeOzeti() {
   return <a href="#/esitleme" class="alt-baglanti">Eşitleme: {metin}</a>;
 }
 
+const GUN = 24 * 60 * 60_000;
+
+/** Evren içindeki kayıt, eşitleme ve yedek özeti (§10.8): başlıkta en zayıf halka, açılınca üç ayrı satır. */
+export function DurumOzeti({ istemci, evren, yedekVar }: { istemci: Istemci; evren: string; yedekVar: boolean }) {
+  const e = useEsitleme();
+  const d = e.durum;
+  const [yedek, setYedek] = useState<{ zaman: number; drive: boolean } | null | undefined>(undefined);
+  const [acik, setAcik] = useState(false);
+  const sonYedekZamani = d?.evrenler.map((x) => x.sonEsitleme ?? 0).join();
+  useEffect(() => {
+    let iptal = false;
+    Promise.all([
+      istemci.iste('sonYedek', { evren }).catch(() => null),
+      istemci.iste('donemselYedekDurumu', { evren }).catch(() => null),
+    ]).then(([dosya, donemsel]) => {
+      if (iptal) return;
+      const drive = donemsel?.son?.dogrulandi ? donemsel.son.zaman : 0;
+      const en = Math.max(dosya ?? 0, drive);
+      setYedek(en ? { zaman: en, drive: drive >= (dosya ?? 0) } : null);
+    });
+    return () => { iptal = true; };
+  }, [evren, acik, sonYedekZamani]);
+  if (!d || yedek === undefined) return null;
+
+  const v = d.evrenler.find((x) => x.kod === evren) ?? d.evrenler.find((x) => x.denemeler.some((y) => y.kod === evren));
+  const esitlenir = !!v?.esitlenir;
+  const yalniz = v ? v.yalnizBuCihazda + v.denemeler.reduce((n, y) => n + y.yalnizBuCihazda, 0) : 0;
+  const driveYok = !esitlenir || (!d.bagli && !e.eposta);
+  const eskiYedek = !yedek || Date.now() - yedek.zaman > 7 * GUN;
+
+  let baslik: string;
+  if (d.calisiyor && !driveYok) baslik = d.yukleme ? `Büyük dosya gönderiliyor · %${Math.floor((100 * d.yukleme.gonderilen) / d.yukleme.toplam)}` : 'Eşitleniyor…';
+  else if (driveYok) baslik = yedek ? 'Bu cihazda kayıtlı · yedek var' : 'Yalnız bu cihazda kayıtlı';
+  else if (d.hata && d.bagli) baslik = 'Eşitlenemedi';
+  else if (yalniz) baslik = `${yalniz} değişiklik gönderilecek`;
+  else if (!d.bagli) baslik = 'Drive izni yenilenmeli';
+  else baslik = 'Kaydedildi ve eşitlendi';
+
+  let drive: preact.ComponentChildren;
+  if (!esitlenir && v) drive = <>Bu evren Drive ile eşitlenmiyor. <a href="#/esitleme">Ayarlar</a></>;
+  else if (!d.bagli && !e.eposta) drive = <>Drive'a bağlı değil. <button class="dugme sade kucuk" onClick={() => void e.baglan()} disabled={e.baglaniyor}>Bağlan</button></>;
+  else if (!d.bagli) drive = <>{yalniz ? `${yalniz} değişiklik Drive'a gönderilecek; izin yenilenmeli.` : 'Drive izni yenilenmeli.'} <button class="dugme sade kucuk" onClick={() => void e.baglan()} disabled={e.baglaniyor}>Bağlan</button></>;
+  else drive = <>{d.hata ? `Eşitlenemedi: ${d.hata.mesaj}` : yalniz ? `${yalniz} değişiklik Drive'a gönderilecek.` : v?.sonEsitleme ? `Drive'a gönderildi · ${saatYaz(v.sonEsitleme)}` : 'Henüz eşitlenmedi.'}
+    {' '}<button class="dugme sade kucuk" onClick={() => void e.esitle()} disabled={d.calisiyor}>{d.calisiyor ? 'Eşitleniyor…' : 'Şimdi eşitle'}</button></>;
+
+  return (
+    <details class="durum-ozeti" open={acik} onToggle={(x) => setAcik((x.target as HTMLDetailsElement).open)}>
+      <summary class={eskiYedek && driveYok ? 'durum-zayif' : undefined}>{baslik}</summary>
+      <ul class="durum-satirlari">
+        <li>Bu cihazda kaydedildi.</li>
+        <li>{drive}</li>
+        <li class={eskiYedek ? 'durum-zayif' : undefined}>
+          {yedek ? `Son yedek: ${zamanYaz(yedek.zaman)}${yedek.drive ? ' (Drive, doğrulandı)' : ' (dosya)'}` : 'Henüz yedek yok.'}
+          {yedekVar && <>{' '}<a class="dugme sade kucuk" href={`#/e/${evren}/yedek`}>Yedek al</a></>}
+        </li>
+      </ul>
+      <p class="kucuk">Eşitleme başka cihazlara taşır; yedek, geri dönebileceğiniz ayrı bir kopyadır.</p>
+      <a class="kucuk" href="#/esitleme">Eşitleme ve cihazlar →</a>
+    </details>
+  );
+}
+
 export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
   const e = useEsitleme();
   const d = e.durum;

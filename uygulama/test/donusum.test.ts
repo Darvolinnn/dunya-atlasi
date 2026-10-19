@@ -76,6 +76,17 @@ describe('evren içi dönüşüm (F25)', () => {
       expect(f.liste()).toEqual([]);
     }
   });
+  it('bir kayıt dönüşümdeki kendi devamıyla birleştirilemez; dönüşüm geri alınınca birleşebilir', () => {
+    const { h, evren, a, b, c, yaz } = kur();
+    const kod = yaz();
+    expect(() => h.birlestir({ evren, kaynak: a, hedef: c })).toThrow(/dönüşümle bağlı/);
+    expect(() => h.birlestir({ evren, kaynak: c, hedef: b })).toThrow(/dönüşümle bağlı/);
+    expect(() => h.birlesmeOnizle({ evren, kaynak: a, hedef: c })).toThrow(/dönüşümle bağlı/);
+    h.birlestir({ evren, kaynak: a, hedef: b }); // aynı taraftaki iki önceki kayıt birleşebilir
+    h.donusumGeriAl({ evren, kod });
+    h.birlestir({ evren, kaynak: b, hedef: c });
+    expect(h.kayit({ evren, kod: b }).birlesti).toMatchObject({ kod: c });
+  });
   it('kendine dönüşüm, tekrarlı seçim ve biçime uymayan kayıt sayıları reddedilir', () => {
     const { a, b, c, yaz } = kur();
     for (const x of [

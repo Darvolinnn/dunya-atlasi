@@ -76,7 +76,7 @@ function sorunlar(e: EvrenVt): Ham[] {
   }
   for (const r of db.selectObjects(`SELECT DISTINCT kayit FROM alan_degerleri WHERE ${yok('kayit')}`)) kodSorunu(`kod:alan:${r.kayit}`, 'Var olmayan bir kayda ait alan değerleri var', null);
   for (const r of db.selectObjects('SELECT kod, ad, tur FROM kayitlar')) {
-    if (!kodGecerliMi(r.kod as string)) kodSorunu(`kod:gecersiz:${r.kod}`, 'Kodu geçersiz bir kayıt var', r);
+    if (!kodGecerliMi(r.kod as string)) kodSorunu(`kod:gecersiz:${r.kod}`, 'Kimliği bozuk bir kayıt var', r);
   }
   return liste.filter((x, i) => liste.findIndex((y) => y.anahtar === x.anahtar) === i);
 }

@@ -8,7 +8,7 @@
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { VERI_BICIMI, type Islem, type IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
-import { UYGULAYICILAR, sonrasi, IZDUSUM_SEMA, IZDUSUM_SURUMU, IZDUSUM_TABLOLARI, metinBelleginiTemizle } from './izdusum';
+import { UYGULAYICILAR, sonrasi, IZDUSUM_SEMA, IZDUSUM_SURUMU, IZDUSUM_TABLOLARI, metinBelleginiTemizle, topluBaslat, topluBirak, topluBitir } from './izdusum';
 
 const GUNLUK_SEMA = `
 CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
@@ -148,6 +148,7 @@ export class EvrenVt {
     const alinanlar: Islem[] = [];
     let bastan = false;
     this.db.exec('BEGIN IMMEDIATE');
+    topluBaslat(this.db);
     try {
       // Bekleyenler ve yeni gelenler birlikte değerlendirilir.
       const adaylar = new Map<string, Islem>();
@@ -161,11 +162,23 @@ export class EvrenVt {
         if ((this.gorulen[i.kurulum] ?? 0) >= i.sira) continue; // aynı yerde başka işlem: bozuk ya da tekrar
         adaylar.set(i.kod, i);
       }
-      // Hazır olanları (gördüğü her işlem burada olanları) sırayla al.
-      let kalan = [...adaylar.values()];
+      // Hazır olanları (gördüğü her işlem burada olanları) sırayla al. Adaylar kurulum ve sıraya göre dizinlenir:
+      // her turda yalnızca kurulumların sıradaki işlemine bakılır (bütün listeyi her turda taramak büyük
+      // günlükte kareli büyüyordu).
+      const dizin = new Map<string, Map<number, Islem[]>>();
+      for (const i of adaylar.values()) {
+        const k = dizin.get(i.kurulum) ?? new Map<number, Islem[]>();
+        dizin.set(i.kurulum, k);
+        k.set(i.sira, [...(k.get(i.sira) ?? []), i]);
+      }
+      const alinanKodlar = new Set<string>();
       for (;;) {
-        const hazir = kalan.filter((i) => (this.gorulen[i.kurulum] ?? 0) === i.sira - 1
-          && Object.entries(i.gordu).every(([k, s]) => k === i.kurulum ? s === i.sira - 1 : (this.gorulen[k] ?? 0) >= s));
+        const hazir: Islem[] = [];
+        for (const [kurulum, siralar] of dizin) {
+          for (const i of siralar.get((this.gorulen[kurulum] ?? 0) + 1) ?? []) {
+            if (Object.entries(i.gordu).every(([k, s]) => k === i.kurulum ? s === i.sira - 1 : (this.gorulen[k] ?? 0) >= s)) hazir.push(i);
+          }
+        }
         if (!hazir.length) break;
         // Her turda her kurulumdan yalnızca sıradaki işlem hazırdır; bunlar birbirini görmemiştir.
         const saatli = hazir.map((i) => {
@@ -182,14 +195,14 @@ export class EvrenVt {
           this.gorulen[i.kurulum] = i.sira;
           alinanlar.push(islem);
         }
-        const alinan = new Set(hazir.map((i) => i.kod));
-        kalan = kalan.filter((i) => !alinan.has(i.kod));
+        for (const i of hazir) { alinanKodlar.add(i.kod); dizin.get(i.kurulum)!.delete(i.sira); }
       }
+      const kalan = [...adaylar.values()].filter((i) => !alinanKodlar.has(i.kod));
       this.db.exec('DELETE FROM bekleyen_islemler');
       for (const i of kalan) {
         this.db.exec({ sql: 'INSERT INTO bekleyen_islemler(kod, islem, ikili) VALUES(?,?,?)', bind: [i.kod, JSON.stringify({ ...i, ikili: null }), i.ikili ?? null] });
       }
-      if (bastan) this.bastanUygula();
+      if (bastan) { topluBirak(this.db); this.bastanUygula(); } else topluBitir(this.db);
       this.db.exec('COMMIT');
       return { alinan: alinanlar.length, bekleyen: kalan.length, bastanKuruldu: bastan, islemler: alinanlar };
     } catch (e) {
@@ -214,11 +227,24 @@ export class EvrenVt {
     if (u) { u(this.db, i); sonrasi(this.db, i); }
   }
 
-  /** İzdüşüm tablolarını silip bütün günlüğü baştan uygular (açık bir veritabanı işleminin içinde). */
+  /**
+   * İzdüşüm tablolarını silip bütün günlüğü baştan uygular (açık bir veritabanı işleminin içinde). Günlük sayfa
+   * sayfa okunur ve metinler toplu uygulanır (§10.1).
+   */
   private bastanUygula() {
     metinBelleginiTemizle(this.db);
     for (const t of IZDUSUM_TABLOLARI) this.db.exec(`DELETE FROM ${t}`);
-    for (const i of this.islemler()) this.uygula(i);
+    topluBaslat(this.db);
+    let son: [number, string, number] = [-Infinity, '', 0];
+    for (;;) {
+      const sayfa = this.db.selectObjects(
+        'SELECT * FROM islemler WHERE (saat, kurulum, sira) > (?, ?, ?) ORDER BY saat, kurulum, sira LIMIT 2000', son).map(satirdan);
+      if (!sayfa.length) break;
+      for (const i of sayfa) this.uygula(i);
+      const x = sayfa[sayfa.length - 1];
+      son = [x.saat!, x.kurulum, x.sira];
+    }
+    topluBitir(this.db);
   }
 
   /** İzdüşüm tablolarını silip bütün günlüğü baştan uygular. Sınama ve onarım için. */

@@ -24,6 +24,8 @@ test('"[[" ile kayda bağlantı', async ({ page: p }) => {
 });
 
 test('sayfa rehberi "?" ile açılır, Esc ile kapanır', async ({ page: p }) => {
+  // Görüntüsüz tarayıcıda kareler geç gelebilir; panel göründüğü an basılan Esc de yakalanmalı.
+  await p.addInitScript(() => { window.requestAnimationFrame = () => 0; });
   await p.goto('/');
   const dugme = p.getByRole('button', { name: 'Bu sayfa ne işe yarar?' });
   await dugme.click();
@@ -96,4 +98,72 @@ test('veri bölümü yüklenemezse "Açılıyor…"da kalmaz, yeniden deneme yol
   await p.goto('/');
   await expect(p.getByText('Bu cihazdaki veriler açılamadı')).toBeVisible({ timeout: 15_000 });
   await expect(p.getByRole('button', { name: 'Yeniden dene' })).toBeVisible();
+});
+
+test('boş sahnede bağlam paneli kapalı; "Bağlam ekle" açar, seçim yeniden açılışta korunur', async ({ page: p }) => {
+  const adres = await sahneAc(p);
+  const panel = p.getByRole('complementary', { name: 'Sahnenin bağlamı' });
+  await expect(panel).toBeHidden();
+  await p.getByRole('button', { name: 'Bağlam ekle' }).click();
+  await expect(panel).toBeVisible();
+  await expect(panel.getByText('Tarih ve mekân eklediğinizde sahnenin o andaki bağlamı burada görünür.')).toBeVisible();
+  await expect(panel.getByText('· bu sahneye kadar kayıt yok')).toBeVisible();
+  await p.reload();
+  await p.goto(adres);
+  await expect(panel).toBeVisible();
+  await panel.getByRole('button', { name: 'Bağlam panelini kapat' }).click();
+  await expect(panel).toBeHidden();
+  await p.reload();
+  await expect(p.getByRole('button', { name: 'Bağlam ekle' })).toBeVisible();
+  await expect(panel).toBeHidden();
+});
+
+test('durum özeti açılınca cihaz, Drive ve yedek ayrı satırlarda görünür', async ({ page: p }) => {
+  await sahneAc(p);
+  const ozet = p.locator('details.durum-ozeti');
+  await expect(ozet.locator('summary')).toHaveText('Yalnız bu cihazda kayıtlı');
+  await ozet.locator('summary').click();
+  await expect(ozet.getByText('Bu cihazda kaydedildi.')).toBeVisible();
+  await expect(ozet.getByText(/Drive'a bağlı değil/)).toBeVisible();
+  await expect(ozet.getByText('Henüz yedek yok.')).toBeVisible();
+  await expect(ozet.getByText('Eşitleme başka cihazlara taşır; yedek, geri dönebileceğiniz ayrı bir kopyadır.')).toBeVisible();
+  await ozet.getByRole('link', { name: 'Yedek al' }).click();
+  await expect(p).toHaveURL(/\/yedek$/);
+});
+
+test('tarihi olan sahnede bağlam paneli kendiliğinden açık; kapatınca "Bağlamı göster"', async ({ page: p }) => {
+  await sahneAc(p);
+  // Kareler geç gelirken de panel açılır açılmaz yazılan tarih silinmemeli.
+  await p.evaluate(() => { window.requestAnimationFrame = () => 0; });
+  const panel = p.getByRole('complementary', { name: 'Sahnenin bağlamı' });
+  await p.getByRole('button', { name: 'Bağlam ekle' }).click();
+  await panel.getByLabel('Evren tarihi', { exact: true }).fill('1200');
+  await panel.getByLabel('Evren tarihi', { exact: true }).press('Enter');
+  await expect(panel.getByText('Tarih ve mekân eklediğinizde')).toBeHidden();
+  await p.evaluate(() => localStorage.removeItem('dunya-atlasi:yazma-baglami-kapali'));
+  await p.reload();
+  await expect(panel).toBeVisible();
+  await panel.getByRole('button', { name: 'Bağlam panelini kapat' }).click();
+  await expect(p.getByRole('button', { name: 'Bağlamı göster' })).toBeVisible();
+});
+
+test('komut paletinden takvim günü hesabı ve yolculuk süresi açılır', async ({ page: p }) => {
+  await sahneAc(p);
+  await p.keyboard.press('Control+k');
+  await p.getByLabel('Kayıt ya da komut ara').fill('takvim günü');
+  await p.keyboard.press('Enter');
+  const takvim = p.getByRole('dialog', { name: 'Takvim günü hesabı' });
+  await takvim.getByLabel('Tarih', { exact: true }).fill('412');
+  await takvim.getByLabel('Fark').fill('3 yıl sonra');
+  await expect(takvim.getByRole('status')).toHaveText('Yıl 415');
+  await takvim.getByText('İki tarih arası').click();
+  await takvim.getByLabel('İkinci tarih').fill('414');
+  await expect(takvim.getByRole('status')).toHaveText('366–1.094 gün sonra');
+  await p.keyboard.press('Escape');
+  await expect(takvim).toBeHidden();
+  await p.keyboard.press('Control+k');
+  await p.getByLabel('Kayıt ya da komut ara').fill('yolculuk');
+  await p.keyboard.press('Enter');
+  const yol = p.getByRole('dialog', { name: 'Yolculuk süresi' });
+  await expect(yol.getByRole('button', { name: 'Hesapla' })).toBeDisabled();
 });

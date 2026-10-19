@@ -4,7 +4,7 @@ import type { IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi } from '../alan/kod';
 import { katla } from '../alan/turkce';
 import { KARARLAR, turBul } from '../alan/turler';
-import type { BirlesmeOnizlemesi, BirlesmeAlani } from '../veri/api';
+import type { BirlesmeOnizlemesi, BirlesmeAlani, DonusumDegeri } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
 import { yonlendir } from './izdusum';
 import * as sablonlar from './sablon';
@@ -65,6 +65,16 @@ function alanlar(e: EvrenVt, kaynak: Satir, hedef: Satir): BirlesmeAlani[] {
 
 export function onizle(e: EvrenVt, kaynakKod: string, hedefKod: string): BirlesmeOnizlemesi {
   if (kaynakKod === hedefKod) throw new Error('Bir kayıt kendisiyle birleştirilemez.');
+  // Biri ötekinin dönüşümle devamıysa birleşme dönüşümü kendi kendine bağlardı (F25).
+  for (const r of e.db.selectObjects('SELECT deger FROM donusum_kayitlari')) {
+    const d = JSON.parse(String(r.deger)) as DonusumDegeri;
+    if (d.geriAlindi) continue;
+    const once = d.tanim.kaynaklar.map((k) => yonlendir(e.db, k)), sonra = d.tanim.hedefler.map((k) => yonlendir(e.db, k));
+    const k = yonlendir(e.db, kaynakKod), h = yonlendir(e.db, hedefKod);
+    if ((once.includes(k) && sonra.includes(h)) || (once.includes(h) && sonra.includes(k))) {
+      throw new Error('Bu iki kayıt bir dönüşümle bağlı: biri ötekinin devamı. Birleştirmek için önce dönüşümü geri alın.');
+    }
+  }
   const kaynak = kayitOku(e, kaynakKod), hedef = kayitOku(e, hedefKod);
   const say = (sql: string, ...p: string[]) => Number(e.db.selectValue(sql, p) ?? 0);
   const hedefAdlari = new Set([hedef.ad as string, ...JSON.parse(hedef.lakaplar as string) as string[]].map(katla));

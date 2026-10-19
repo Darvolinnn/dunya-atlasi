@@ -621,6 +621,8 @@ export type KaliciIzTuru = 'kisa_vadeli' | 'kalici';
 export interface IzKaydi {
   kod: string; olay: KisaKayit; olayTarihi: EvrenTarihi | null; tur: KaliciIzTuru; ad: string;
   yer: KisaKayit | null; bitis: EvrenTarihi | null; gercekKoken: string; anlatilanHikaye: string; silindi: boolean;
+  /** Bağlı yer çöp kutusundaysa: bağ korunur, düzenlemede düşmez. */
+  silinmisYer: KisaKayit | null;
 }
 export interface OlayIzleri { kisaVadeli: IzKaydi[]; kalici: IzKaydi[]; silinenler: IzKaydi[]; yerAdaylari: KisaKayit[] }
 export interface MekanIzKatmani { anahtar: string; baslik: string; tarihsiz: boolean; siraAnahtari: number | null; izler: IzKaydi[] }

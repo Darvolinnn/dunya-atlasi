@@ -75,7 +75,7 @@ function OlayIzleriBolumu({
     } else {
       setIzTuru(hedef.tur);
       setAd(hedef.ad);
-      setYer(hedef.yer?.kod ?? '');
+      setYer(hedef.yer?.kod ?? hedef.silinmisYer?.kod ?? '');
       setBitis(hedef.bitis?.ifade ?? '');
       setGercekKoken(hedef.gercekKoken);
       setAnlatilanHikaye(hedef.anlatilanHikaye);
@@ -131,6 +131,11 @@ function OlayIzleriBolumu({
         {iz.yer && (
           <span class="kucuk">
             Yer: <a href={`#/e/${evren}/k/${iz.yer.kod}`}>{iz.yer.ad}</a>
+          </span>
+        )}
+        {iz.silinmisYer && (
+          <span class="kucuk">
+            Yer: <a href={`#/e/${evren}/k/${iz.silinmisYer.kod}`}>{iz.silinmisYer.ad}</a> <span class="soluk">(çöp kutusunda)</span>
           </span>
         )}
         {iz.bitis && <span class="soluk kucuk">Bitiş: {iz.bitis.ifade}</span>}
@@ -218,6 +223,9 @@ function OlayIzleriBolumu({
                 onChange={(e) => setYer((e.target as HTMLSelectElement).value)}
               >
                 <option value="">(yer seçilmedi)</option>
+                {duzenlenen && duzenlenen !== 'yeni' && duzenlenen.silinmisYer && (
+                  <option value={duzenlenen.silinmisYer.kod}>{duzenlenen.silinmisYer.ad} (çöp kutusunda)</option>
+                )}
                 {veri.yerAdaylari.map((y: KisaKayit) => (
                   <option key={y.kod} value={y.kod}>
                     {y.ad}

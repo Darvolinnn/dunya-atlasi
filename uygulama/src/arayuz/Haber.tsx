@@ -65,6 +65,9 @@ function Cozum({ evren, r }: { evren: string; r: Pick<RotaSonucu, 'hukum' | 'kip
   );
 }
 
+/** En kısa yolun sonucu; komut paletindeki yolculuk hesabı da kullanır. */
+export const RotaCozumu = Cozum;
+
 export function RotaAraci({ istemci, evren, kod, ad }: { istemci: Istemci; evren: string; kod: string; ad: string }) {
   const [nereye, setNereye] = useState<Secim | null>(null);
   const [kisi, setKisi] = useState<Secim | null>(null);
