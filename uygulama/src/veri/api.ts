@@ -305,6 +305,20 @@ export interface BaglamKarsilastirmasi {
   satirlar: BaglamSatiri[]; notlar: string[];
 }
 export interface BaglamSecimi { kaynak: string | null; tarih: string | null; bilen: string | null }
+/** F28 iddia dosyası (§3.9): bir soru hakkındaki bir anlatım ve hangi cevabı desteklediği ya da hangisine itiraz ettiği. */
+export interface AnlatimTanimi {
+  iddia: string; kaynak: string | null; tur: 'resmi' | 'tanik' | 'belge' | 'aile' | 'soylenti' | 'diger';
+  destek: string | null; itiraz: string[]; dayanak: string | null; dayanakTuru: 'kopya' | 'tercume' | 'aktarma' | null;
+  ozet: string; karar: string;
+}
+export interface Anlatim extends AnlatimTanimi { kod: string; kaynakKaydi: KisaKayit | null; kok: string; catismali: boolean }
+export interface IddiaDosyasi {
+  iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null };
+  anlatimlar: Anlatim[];
+  cevaplar: { secenek: { kod: string; metin: string }; gercek: boolean; durum: 'ikisi de' | 'destek var' | 'itiraz var' | 'dayanak yok'; destek: string[]; itiraz: string[]; bagimsizDestek: number; bagimsizItiraz: number }[];
+  kaldirilan: { kod: string; ozet: string; kaynakKaydi: KisaKayit | null }[];
+  not: string;
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -688,6 +702,10 @@ export interface Istekler {
   sozlukGeriYukle(a: { evren: string; kod: string }): void;
   sozlukDenetle(a: { evren: string }): SozlukDenetimi;
   sozlukIsareti(a: { evren: string; sozluk: string; anahtar: string; bilerek: boolean }): void;
+  iddiaDosyasi(a: { evren: string; iddia: string }): IddiaDosyasi;
+  anlatimYaz(a: { evren: string; kod?: string | null; tanim: AnlatimTanimi }): { kod: string };
+  anlatimSil(a: { evren: string; kod: string }): void;
+  anlatimGeriYukle(a: { evren: string; kod: string }): void;
   baslat(): KurulumBilgisi;
   evrenler(): EvrenOzeti[];
   evrenOlustur(a: { ad: string }): { kod: string };

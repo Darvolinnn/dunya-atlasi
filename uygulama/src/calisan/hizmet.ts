@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, AnlatimTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -44,6 +44,7 @@ import * as soyMod from './soy';
 import * as montaj from './montaj';
 import * as gundelik from './gundelik';
 import * as sozluk from './sozluk';
+import * as anlatim from './anlatim';
 import * as niyetMod from './degisiklik-niyeti';
 import * as degMasa from './degisiklik-masasi';
 import * as kosulMod from './kosul-masasi';
@@ -545,6 +546,17 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           }) });
         continue;
       }
+      if (!iliski && (alan === 'anlatim' || alan === 'anlatim_silindi')) {
+        const r = e.db.selectObject('SELECT a.tanim, i.soru, i.konu, i.secenekler FROM anlatimlar a LEFT JOIN iddialar i ON i.kod=a.iddia WHERE a.kod=?', [nesne]);
+        const secenek = (k: string) => (JSON.parse((r?.secenekler as string) ?? '[]') as { kod: string; metin: string }[]).find((s) => s.kod === k)?.metin ?? '?';
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: (r?.konu as string) ?? null, baslik: r ? `Anlatım · ${r.soru}` : 'Anlatım',
+          alanEtiketi: alan === 'anlatim' ? 'Anlatım' : 'Anlatımın kaldırılması',
+          degerler: degerler.map((d) => {
+            const t = d.deger as AnlatimTanimi | null;
+            return { ...d, yazi: alan === 'anlatim' ? t ? [t.kaynak ? kayitAdi(t.kaynak) : 'Kaynağı yazılmamış', t.destek ? `destekler: ${secenek(t.destek)}` : '', t.itiraz.length ? `itiraz: ${t.itiraz.map(secenek).join(', ')}` : '', t.ozet].filter(Boolean).join(' · ') : '(boş)' : d.deger ? 'Evet' : 'Hayır' };
+          }) });
+        continue;
+      }
       if (!iliski && alan === 'yerlesim') {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: 'Sahne yerleşimi',
           degerler: degerler.map((d) => ({ ...d, yazi: `${(d.deger as SahneYerlesimi | null)?.ogeler.length ?? 0} öğe` })) });
@@ -778,6 +790,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const r = e.db.selectObject('SELECT deger FROM alan_yazanlari WHERE nesne=? AND alan=? AND islem=?', [nesne, alan, islem]);
     if (!r) throw new Error('Bu çatışma artık yok.');
     const deger = JSON.parse(r.deger as string);
+    if (alan === 'anlatim') { this.yaz(evren, [{ tur: 'anlatim_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }]); return; }
+    if (alan === 'anlatim_silindi') { this.yaz(evren, [{ tur: deger ? 'anlatim_sil' : 'anlatim_geri_yukle', veri: { kod: nesne, cozum: true } }]); return; }
     if (alan === 'sozluk_tanim') { this.yaz(evren, [{ tur: 'sozluk_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }]); return; }
     if (alan === 'sozluk_silindi') { this.yaz(evren, [{ tur: deger ? 'sozluk_sil' : 'sozluk_geri_yukle', veri: { kod: nesne, cozum: true } }]); return; }
     if (alan.startsWith('sozluk_isareti:')) { this.yaz(evren, [{ tur: 'sozluk_isareti', veri: { kod: nesne, anahtar: alan.slice(15), bilerek: !!deger, cozum: true } }]); return; }
@@ -2223,6 +2237,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   sozlukIsareti({ evren, sozluk: kod, anahtar, bilerek }: { evren: string; sozluk: string; anahtar: string; bilerek: boolean }) {
     sozluk.sozlukIsareti({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod, anahtar, bilerek);
   }
+  iddiaDosyasi({ evren, iddia }: { evren: string; iddia: string }) { return anlatim.iddiaDosyasi(this.evren(evren), iddia); }
+  anlatimYaz({ evren, kod, tanim }: { evren: string; kod?: string | null; tanim: AnlatimTanimi }) {
+    return anlatim.anlatimYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod ?? null, tanim);
+  }
+  anlatimSil({ evren, kod }: { evren: string; kod: string }) { anlatim.anlatimKaldir({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod, false); }
+  anlatimGeriYukle({ evren, kod }: { evren: string; kod: string }) { anlatim.anlatimKaldir({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod, true); }
   yerlesim({ evren, sahne }: { evren: string; sahne: string }): YerlesimOkumasi {
     const e = this.evren(evren), s = yonlendir(e.db, sahne);
     return { yerlesim: yerlesim.oku(e, s), katilimcilar: this.sahneBaglami({ evren, sahne: s }).katilimcilar.filter((k) => k.tur === 'karakter'),

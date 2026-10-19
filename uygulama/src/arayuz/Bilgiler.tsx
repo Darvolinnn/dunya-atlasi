@@ -10,6 +10,7 @@ import { KararRozeti, KararSecici } from './ortak';
 import { KayitSec, SatirGirdisi } from './KayitBolumleri';
 import { SinirAlani, SinirGirdi, sinirYazi, useYukle } from './Anlati';
 import type { Secim } from './BaglantiSecici';
+import { IddiaDosyasiBolumu } from './IddiaDosyasi';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: { kod: string; ad: string }) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
@@ -100,6 +101,7 @@ function IddiaFormu({ istemci, evren, konu, kapat }: { istemci: Istemci; evren: 
 function IddiaKarti({ istemci, evren, iddia }: { istemci: Istemci; evren: string; iddia: IddiaSatiri }) {
   const [duzenle, setDuzenle] = useState(false);
   const [ekle, setEkle] = useState<'kisi' | 'okur' | null>(null);
+  const [dosya, setDosya] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const degistir = (alan: 'soru' | 'secenekler' | 'gercek' | 'karar', deger: unknown) =>
     istemci.iste('iddiaDegistir', { evren, kod: iddia.kod, alan, deger }).then(() => setHata(null), (e) => { setHata(hataYaz(e)); throw e; });
@@ -109,6 +111,7 @@ function IddiaKarti({ istemci, evren, iddia }: { istemci: Istemci; evren: string
       <div class="satir">
         <strong>{iddia.soru}</strong> <KararRozeti karar={iddia.karar} />
         <span class="bosluk" />
+        <button class="dugme sade kucuk" aria-expanded={dosya} onClick={() => setDosya(!dosya)}>{dosya ? 'Dosyayı kapat' : 'İddia dosyası'}</button>
         <button class="dugme sade kucuk" aria-expanded={duzenle} onClick={() => setDuzenle(!duzenle)}>{duzenle ? 'Kapat' : 'Düzenle'}</button>
       </div>
       <div class="satir kucuk">
@@ -131,6 +134,7 @@ function IddiaKarti({ istemci, evren, iddia }: { istemci: Istemci; evren: string
           {hata && <p class="hata kucuk">{hata}</p>}
         </div>
       )}
+      {dosya && <IddiaDosyasiBolumu istemci={istemci} evren={evren} iddia={iddia.kod} />}
       {kisiler.length > 0 && <ul class="bilgi-listesi">{kisiler.map((b) => <BilgiOgesi key={b.kod} istemci={istemci} evren={evren} b={b} />)}</ul>}
       {okurlar.length > 0 && (
         <>

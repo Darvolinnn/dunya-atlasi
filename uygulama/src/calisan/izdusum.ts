@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 39;
+export const IZDUSUM_SURUMU = 40;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -366,6 +366,10 @@ CREATE TABLE IF NOT EXISTS sozluk_isaretleri(
   sozluk TEXT NOT NULL, anahtar TEXT NOT NULL, bilerek INTEGER NOT NULL,
   PRIMARY KEY(sozluk, anahtar)
 );
+CREATE TABLE IF NOT EXISTS anlatimlar(
+  kod TEXT PRIMARY KEY, iddia TEXT NOT NULL, tanim TEXT NOT NULL, silindi INTEGER, olusturma INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS anlatimlar_iddia ON anlatimlar(iddia);
 CREATE TABLE IF NOT EXISTS sahne_yerlesimleri(
   kod TEXT PRIMARY KEY,
   plan TEXT NOT NULL,
@@ -648,7 +652,7 @@ export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar'
   'sozlukler', 'sozluk_isaretleri',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
-IZDUSUM_TABLOLARI.push('sahne_yerlesimleri');
+IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -1336,6 +1340,23 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (typeof kod !== 'string' || typeof anahtar !== 'string' || typeof bilerek !== 'boolean') return;
     db.exec({ sql: 'INSERT OR REPLACE INTO sozluk_isaretleri(sozluk,anahtar,bilerek) VALUES(?,?,?)', bind: [kod, anahtar, bilerek ? 1 : 0] });
     alanYaz(db, i, kod, `sozluk_isareti:${anahtar}`, bilerek);
+  },
+  /** F28 iddia dosyasındaki anlatım (§3.9). */
+  anlatim_yaz(db, i) {
+    const { kod, tanim } = i.veri as { kod?: unknown; tanim?: { iddia?: unknown } };
+    if (typeof kod !== 'string' || !tanim || typeof tanim !== 'object' || typeof tanim.iddia !== 'string') return;
+    db.exec({ sql: 'INSERT INTO anlatimlar(kod,iddia,tanim,olusturma) VALUES(?,?,?,?) ON CONFLICT(kod) DO UPDATE SET tanim=excluded.tanim', bind: [kod, tanim.iddia, JSON.stringify(tanim), i.zaman] });
+    alanYaz(db, i, kod, 'anlatim', tanim);
+  },
+  anlatim_sil(db, i) {
+    const kod = i.veri.kod as string;
+    db.exec({ sql: 'UPDATE anlatimlar SET silindi=? WHERE kod=?', bind: [i.zaman, kod] });
+    alanYaz(db, i, kod, 'anlatim_silindi', true);
+  },
+  anlatim_geri_yukle(db, i) {
+    const kod = i.veri.kod as string;
+    db.exec({ sql: 'UPDATE anlatimlar SET silindi=NULL WHERE kod=?', bind: [kod] });
+    alanYaz(db, i, kod, 'anlatim_silindi', false);
   },
   yerlesim_yaz(db, i) {
     const v = i.veri as unknown as { sahne: string; plan: import('../veri/api').YerlesimPlani; ogeler: import('../veri/api').YerlesimOgesi[] };
