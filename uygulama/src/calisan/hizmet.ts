@@ -88,6 +88,8 @@ import type { BaglamParcasiTanimi } from '../veri/api';
 import type { DairInancTanimi } from '../veri/api';
 import * as donusum from './donusum';
 import type { DonusumGirdisi, DonusumYeniKaydi, DonusumDegeri } from '../veri/api';
+import * as kalabalik from './kalabalik';
+import type { KalabalikGozlemi, KalabalikOlayi } from '../veri/api';
 
 export type DosyaAcici = (ad: string) => Database;
 export type Bildirici = (evren: string, turler: string[], kayitlar: string[], uzaktan?: boolean) => void;
@@ -697,6 +699,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           degerler: degerler.map((d) => ({ ...d, yazi: donusum.catismaYazisi(d.deger as DonusumDegeri, kayitAdi) })) });
         continue;
       }
+      if (!iliski && alan.startsWith('kalabalik_')) {
+        sonuc.push(kalabalik.catismaSatiri(this.durumBaglami(evren), nesne, alan, degerler));
+        continue;
+      }
       const etiket = this.alanEtiketi(e, nesne, alan);
       if (etiket) {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: nesne === 'evren' ? 'evren' : 'kayit', kayit: nesne === 'evren' ? null : nesne,
@@ -1027,6 +1033,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (alan === 'donusum_degeri') {
       const d = deger as DonusumDegeri;
       this.yaz(evren, [{ tur: 'donusum_yaz', veri: { kod: nesne, deger: d, cozum: true } }], donusum.ilgili(d));
+      return;
+    }
+    if (!iliski && alan.startsWith('kalabalik_')) {
+      this.yaz(evren, [kalabalik.cozumGirdisi(nesne, alan, deger)]);
       return;
     }
     if (iliski) { this.yaz(evren, [{ tur: 'iliski_degistir', veri: { kod: nesne, alan, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
@@ -2993,4 +3003,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   donusumSecenekleri({ evren }: { evren: string }) { return donusum.secenekler(this.evren(evren)); }
   donusumYaz({ evren, kod, tanim, yeniKayitlar }: { evren: string; kod?: string | null; tanim: DonusumGirdisi; yeniKayitlar?: DonusumYeniKaydi[] }) { return donusum.yaz(this.donusumBaglami(evren), kod ?? null, tanim, yeniKayitlar); }
   donusumGeriAl({ evren, kod }: { evren: string; kod: string }) { donusum.geriAl(this.donusumBaglami(evren), kod); }
+  kalabalikOku({ evren, kayit, tarih }: { evren: string; kayit: string; tarih?: string | null }) { return kalabalik.oku(this.durumBaglami(evren), kayit, tarih ?? null); }
+  kalabalikGozlemYaz({ evren, kod, tanim }: { evren: string; kod?: string | null; tanim: KalabalikGozlemi }) { return kalabalik.yaz(this.durumBaglami(evren), 'gozlem', kod ?? null, tanim); }
+  kalabalikOlayYaz({ evren, kod, tanim }: { evren: string; kod?: string | null; tanim: KalabalikOlayi }) { return kalabalik.yaz(this.durumBaglami(evren), 'olay', kod ?? null, tanim); }
+  kalabalikKaldir({ evren, kod, bicim, geriYukle }: { evren: string; kod: string; bicim: 'gozlem' | 'olay'; geriYukle?: boolean }) { kalabalik.kaldir(this.durumBaglami(evren), bicim, kod, !!geriYukle); }
 }

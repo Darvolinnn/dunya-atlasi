@@ -196,6 +196,10 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   uyarlama_sil: (v) => v.silindi === false ? 'Uyarlama eşlemesi geri getirildi' : 'Uyarlama eşlemesi kaldırıldı',
   donusum_yaz: () => 'Evren içi dönüşüm kaydedildi',
   donusum_geri_al: () => 'Evren içi dönüşüm geri alındı',
+  kalabalik_gozlem_yaz: () => 'Kalabalık gözlemi kaydedildi',
+  kalabalik_olay_yaz: () => 'Kalabalığı değiştiren olay kaydedildi',
+  kalabalik_gozlem_sil: (v) => v.silindi === false ? 'Kalabalık gözlemi geri getirildi' : 'Kalabalık gözlemi kaldırıldı',
+  kalabalik_olay_sil: (v) => v.silindi === false ? 'Kalabalık olayı geri getirildi' : 'Kalabalık olayı kaldırıldı',
 };
 
 /** Kullanıcının yaptığı bir değişiklik sayılmayan, başka bir işlemin parçası olan adımlar (listelerde gösterilmez). */
