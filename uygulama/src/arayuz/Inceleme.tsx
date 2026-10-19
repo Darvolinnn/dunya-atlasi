@@ -7,6 +7,7 @@ import type { Istemci } from '../veri/istemci';
 import type { DenetimBulgusu, Denetimler, EtkiIncelemeleri, EtkiIncelemesi, PaketOzeti, SaglikBulgusu, SaglikTaramasi } from '../veri/api';
 import { zamanYaz } from '../alan/islem-metni';
 import { CatismaListesi } from './Catismalar';
+import { IsaretIncelemeBolumu } from './Isaretler';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -26,6 +27,7 @@ export function IncelemeKuyrugu({ istemci, evren, surum }: { istemci: Istemci; e
       </section>
       <YayimIncelemesi istemci={istemci} evren={evren} surum={surum} />
       <EtkiBolumu istemci={istemci} evren={evren} surum={surum} />
+      <IsaretIncelemeBolumu istemci={istemci} evren={evren} surum={surum} />
       <DenetimBolumu istemci={istemci} evren={evren} surum={surum} />
       <section aria-label="Sağlık taraması">
         <h2>Sağlık taraması</h2>

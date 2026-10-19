@@ -172,7 +172,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       kayitSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NULL')),
       copSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NOT NULL AND kod NOT IN (SELECT kod FROM yonlendirmeler)')),
       catismaSayisi: this.catismaSayisi({ evren }),
-      sorunSayisi: saglik.acikSorunSayisi(e) + gorunum.etkiIncelemeleri(e).acik.length + denetim.acikDenetimSayisi(e) + (b ? 0 : this.acikYayimCelismeleri(e)),
+      sorunSayisi: saglik.acikSorunSayisi(e) + gorunum.etkiIncelemeleri(e).acik.length + isaretMod.isaretIncelemeleri(e).acik.length + denetim.acikDenetimSayisi(e) + (b ? 0 : this.acikYayimCelismeleri(e)),
     };
   }
 
@@ -505,7 +505,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       }
       const mir = iliski || dr ? undefined : e.db.selectObject('SELECT kayit FROM metin_isaretleri WHERE kod=?', [nesne]);
       if (mir) {
-        const ETIKET: Record<string, string> = { hedef: 'Bağlı olduğu kayıt', hedefAlan: 'Bağlı olduğu bilgi', iddia: 'İddiası', kritik: 'Kritik mi', imza: 'Dayandığı sürüm' };
+        const ETIKET: Record<string, string> = { hedef: 'Bağlı olduğu kayıt', hedefAlan: 'Bağlı olduğu bilgi', iddia: 'İddiası', kritik: 'Kritik mi', imza: 'Dayandığı sürüm', metin: 'Onaylanan cümle' };
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: mir.kayit as string, baslik: `${kayitAdi(mir.kayit as string)} · işaretli cümle`, alanEtiketi: ETIKET[alan] ?? alan,
           degerler: degerler.map((d) => ({ ...d, yazi: d.deger === null ? '(boş)' : typeof d.deger === 'boolean' ? (d.deger ? 'Evet' : 'Hayır') : alan === 'hedef' ? kayitAdi(String(d.deger)) : String(d.deger) })) });
         continue;
@@ -2178,6 +2178,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   metinIsaretiYaz({ evren, kod, alan, deger }: { evren: string; kod: string; alan: isaretMod.IsaretAlaniAdi; deger: unknown }) { isaretMod.isaretYaz(this.isaretBaglami(evren), kod, alan, deger); }
   metinIsaretiSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { isaretMod.isaretSil(this.isaretBaglami(evren), kod, !!geriYukle); }
   kayitIsaretleri({ evren, kod }: { evren: string; kod: string }) { return isaretMod.kayitIsaretleri(this.evren(evren), kod); }
+  isaretIncelemeleri({ evren, kayit = null }: { evren: string; kayit?: string | null }) { return isaretMod.isaretIncelemeleri(this.evren(evren), kayit); }
+  isaretKarari({ evren, anahtar, durum, gerekce = '', niyet = null }: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null; gerekce?: string; niyet?: isaretMod.Niyet | null }) {
+    isaretMod.isaretKarari(this.isaretBaglami(evren), String(anahtar), durum, gerekce, niyet);
+  }
   isaretOzetleri({ evren, kodlar }: { evren: string; kodlar: string[] }) { return isaretMod.isaretOzetleri(this.evren(evren), Array.isArray(kodlar) ? kodlar.slice(0, 50) : []); }
 
   // ---------- Yayımlanmış eser kilidi (F18) ----------

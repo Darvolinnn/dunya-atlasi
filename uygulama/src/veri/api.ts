@@ -229,6 +229,14 @@ export interface MetinIsareti {
   durum: 'yerinde' | 'metinde_yok' | 'belirsiz';
 }
 export interface IsaretAlani { kod: string; ad: string; grup: string }
+/** İşaretli cümlenin incelenmesi (§9.3, F24): bağlı bilgi değişti ya da kritik cümle değişti. */
+export interface IsaretIncelemesi {
+  anahtar: string; tur: 'deger' | 'metin'; isaret: MetinIsareti;
+  /** deger: bağlı bilginin şimdiki hâli; metin: cümlenin onaylanmış ve şimdiki hâli */
+  once: string | null; sonra: string | null; aciklama: string;
+  karar: (IncelemeKarari & { niyet?: string | null }) | null;
+}
+export interface IsaretIncelemeleri { acik: IsaretIncelemesi[]; ertelenen: IsaretIncelemesi[]; kapanan: IsaretIncelemesi[] }
 export interface BelgeSunumu { bicim: 'mektup' | 'gazete' | 'ilan' | 'izin' | 'gunluk' | 'antlasma' | 'mezar'; yazan: string | null; alici: string | null; yer: string | null; muhur: string | null; muhurYazisi: string; imzalayanlar: string[] }
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
@@ -804,6 +812,8 @@ export interface Istekler {
   metinIsaretiYaz(a: { evren: string; kod: string; alan: 'hedef' | 'hedefAlan' | 'iddia' | 'kritik'; deger: unknown }): void;
   metinIsaretiSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   kayitIsaretleri(a: { evren: string; kod: string }): { metindekiler: MetinIsareti[]; buKayda: MetinIsareti[] };
+  isaretIncelemeleri(a: { evren: string; kayit?: string | null }): IsaretIncelemeleri;
+  isaretKarari(a: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null; gerekce?: string; niyet?: 'eski_duzelt' | 'bu_tarihten' | 'taslakta' | 'inanc' | null }): void;
   isaretOzetleri(a: { evren: string; kodlar: string[] }): { kod: string; hedef: KisaKayit | null; hedefAlanAdi: string | null; iddia: string; kritik: boolean }[];
   yayimla(a: { evren: string; eser: string; baski: string }): { kod: string };
   yayimSil(a: { evren: string; kod: string }): void;

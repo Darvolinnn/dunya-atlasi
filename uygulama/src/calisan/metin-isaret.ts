@@ -5,7 +5,7 @@
 import type { IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
 import { iliskiTuruBul } from '../alan/iliski-turleri';
-import type { IsaretAlani, KisaKayit, MetinIsareti } from '../veri/api';
+import type { IncelemeKarari, IsaretAlani, IsaretIncelemeleri, IsaretIncelemesi, KisaKayit, MetinIsareti } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
 import { yonlendir } from './izdusum';
 import { kayitSablonu } from './sablon';
@@ -157,4 +157,119 @@ export function isaretOzetleri(e: EvrenVt, kodlar: string[]): { kod: string; hed
     const s = satir(e, r);
     return [{ kod: k, hedef: s.hedef, hedefAlanAdi: s.hedefAlanAdi, iddia: s.iddia, kritik: s.kritik }];
   });
+}
+
+// ---------- İnceleme (§9.3) ve değişiklik niyeti (F24) ----------
+/** Değişiklik niyeti (F24). Program yeni değeri metinden çıkarmaz; yazarın niyetini kaydeder ve yapılacak yeri gösterir. */
+export const NIYETLER = [
+  { kod: 'eski_duzelt', ad: 'Eski kaydı düzelt', aciklama: 'Evrende doğrusu bu; bağlı bilgi buna göre düzeltilecek.' },
+  { kod: 'bu_tarihten', ad: 'Bu tarihten itibaren değiştir', aciklama: 'Önceki hâl doğruydu; değişiklik bir tarihten sonra geçerli (zamanla değişen değer olarak yazılır).' },
+  { kod: 'taslakta', ad: 'Taslakta dene', aciklama: 'Ana çizgiye değil, bir deneme kopyasına aittir.' },
+  { kod: 'inanc', ad: 'Yalnızca bu kişinin inancını değiştir', aciklama: 'Gerçek değişmedi; bir karakterin bildiği ya da sandığı değişti.' },
+] as const;
+export type Niyet = typeof NIYETLER[number]['kod'];
+
+/** Bağlı bilginin okunur hâli. */
+export function alanYazisi(e: EvrenVt, hedef: string, hedefAlan: string | null): string {
+  const k = yonlendir(e.db, hedef) as string;
+  const kr = e.db.selectObject('SELECT ad, tarih, silindi FROM kayitlar WHERE kod=?', [k]);
+  if (!kr) return 'Kayıt yok';
+  if (kr.silindi) return 'Kayıt çöp kutusunda';
+  if (!hedefAlan) return k !== hedef ? `“${kr.ad}” kaydıyla birleştirildi` : String(kr.ad);
+  const [tur, ...geri] = hedefAlan.split(':');
+  const kod = geri.join(':');
+  const tarih = (s: unknown) => { try { const v = typeof s === 'string' && s ? JSON.parse(s) : null; return v?.ifade ?? v?.tarih?.ifade ?? (v?.olay ? 'bir olaya bağlı' : null); } catch { return null; } };
+  switch (tur) {
+    case 'ad': return String(kr.ad);
+    case 'tarih': return tarih(kr.tarih) ?? 'Tarih yok';
+    case 'alan': {
+      const v = e.db.selectValue('SELECT deger FROM alan_degerleri WHERE kayit=? AND alan=?', [k, kod]) as string | undefined;
+      if (v === undefined) return 'Boş';
+      const d = JSON.parse(v);
+      return typeof d === 'object' && d ? (d.ifade ?? JSON.stringify(d)) : String(d);
+    }
+    case 'durum': {
+      const r = e.db.selectObject('SELECT ozellik, deger, baslangic, bitis, silindi FROM durumlar WHERE kod=?', [kod]);
+      if (!r || r.silindi) return 'Değer kaldırılmış';
+      const b = tarih(r.baslangic), s = tarih(r.bitis);
+      return `${r.ozellik}: ${r.deger}${b || s ? ` (${b ?? '…'} – ${s ?? '…'})` : ''}`;
+    }
+    case 'iddia': {
+      const r = e.db.selectObject('SELECT soru, secenekler, gercek, silindi FROM iddialar WHERE kod=?', [kod]);
+      if (!r || r.silindi) return 'Soru kaldırılmış';
+      const sec = JSON.parse(r.secenekler as string) as { kod: string; metin: string }[];
+      const g = sec.find((x) => x.kod === r.gercek);
+      return `“${r.soru}”${g ? ` · gerçek: ${g.metin}` : ' · gerçek belirlenmedi'}`;
+    }
+    case 'iliski': {
+      const r = e.db.selectObject('SELECT tur, a, b, silindi FROM iliskiler WHERE kod=?', [kod]);
+      if (!r || r.silindi) return 'İlişki kaldırılmış';
+      const t = iliskiTuruBul(r.tur as string);
+      return `${kisa(e, r.a as string).ad} – ${kisa(e, r.b as string).ad} (${t.aIcin.toLocaleLowerCase('tr-TR')})`;
+    }
+    default: return '';
+  }
+}
+
+/** Açık işaret incelemeleri. Bağlı bilgi değişmedikçe (ya da kritik cümle değişmedikçe) inceleme açılmaz. */
+export function isaretIncelemeleri(e: EvrenVt, kayit: string | null = null): IsaretIncelemeleri {
+  const kararlar = new Map(e.db.selectObjects("SELECT * FROM inceleme_kararlari WHERE anahtar LIKE 'isaret%'").map((r) => [r.anahtar as string, r]));
+  const sonuc: IsaretIncelemeleri = { acik: [], ertelenen: [], kapanan: [] };
+  const satirlar = e.db.selectObjects(`SELECT * FROM metin_isaretleri WHERE silindi IS NULL ${kayit ? 'AND kayit=?' : ''} ORDER BY kritik DESC, olusturma`, kayit ? [kayit] : []);
+  for (const r of satirlar) {
+    const kod = r.kod as string;
+    const kr = e.db.selectValue('SELECT silindi FROM kayitlar WHERE kod=?', [r.kayit as string]);
+    if (kr) continue; // metnin kaydı çöp kutusunda
+    let isaret: MetinIsareti | null = null;
+    const ekle = (anahtar: string, tur: 'deger' | 'metin', dayanak: string, once: string | null, sonra: string | null, aciklama: string, acikMi: boolean) => {
+      const kx = kararlar.get(anahtar);
+      const karar = kx ? { durum: kx.durum as IncelemeKarari['durum'], gerekce: kx.gerekce as string, zaman: Number(kx.zaman), niyet: (kx.istisna as string | null) ?? null } : null;
+      isaret ??= satir(e, r);
+      const x: IsaretIncelemesi = { anahtar, tur, isaret, once, sonra, aciklama, karar };
+      if (acikMi) {
+        if (karar?.durum === 'ertelendi' && kx!.dayanak === dayanak) sonuc.ertelenen.push(x);
+        else sonuc.acik.push({ ...x, karar: null });
+      } else if (karar && karar.durum !== 'ertelendi') sonuc.kapanan.push(x);
+    };
+    // 1. Bağlı bilgi değişti (anlamı sınıflandırılmamış işarette yalnızca kayıt silinince ya da birleştirilince).
+    if (r.hedef) {
+      const imza = alanImzasi(e, r.hedef as string, (r.hedef_alan as string | null) ?? null);
+      const degisti = r.imza !== null && imza !== r.imza;
+      ekle(`isaret:${kod}`, 'deger', imza, null, alanYazisi(e, r.hedef as string, (r.hedef_alan as string | null) ?? null),
+        r.hedef_alan ? 'İşaretlendiğinden beri bağlı olduğu bilgi değişti.' : 'Bağlı olduğu kayıt silindi ya da başka bir kayıtla birleştirildi.', degisti);
+    }
+    // 2. Kritik işaretli cümle değişti (F24).
+    if (r.kritik && r.metin !== null) {
+      const yerler = e.db.selectObjects('SELECT metin FROM metin_isaret_yerleri WHERE isaret=? AND kayit=? AND alan=?', [kod, r.kayit as string, r.alan as string]);
+      const simdi = yerler.length === 1 ? (yerler[0].metin as string) : null;
+      ekle(`isaret-metin:${kod}`, 'metin', simdi ?? '', r.metin as string, simdi, 'Kritik işaretli cümle değişti: düzeltme mi, yeni bir şey mi?', simdi !== null && simdi !== r.metin);
+    }
+  }
+  return sonuc;
+}
+
+/** İnceleme kararı. Düzeltildi ya da kabul edildi denince işaret yeni hâle göre güncellenir; yeniden değişmedikçe açılmaz. */
+export function isaretKarari(b: IsaretBaglami, anahtar: string, durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null, gerekce: string, niyet: Niyet | null) {
+  const m = /^(isaret|isaret-metin):(.+)$/.exec(anahtar);
+  if (!m) throw new Error('Bu inceleme artık yok.');
+  const r = bul(b.e, m[2]);
+  if (r.silindi) throw new Error('İşaret kaldırılmış.');
+  if (durum !== null && !['kabul', 'ertelendi', 'duzeltildi'].includes(durum)) throw new Error('Geçersiz karar.');
+  if (niyet !== null && !NIYETLER.some((x) => x.kod === niyet)) throw new Error('Geçersiz seçim.');
+  const g = temiz(gerekce, 500);
+  if (durum === 'kabul' && !g && !niyet) throw new Error('Kabul ederken kısa bir gerekçe yazın.');
+  const metinMi = m[1] === 'isaret-metin';
+  let dayanak = '';
+  const girdiler: IslemGirdisi[] = [];
+  if (metinMi) {
+    const yerler = b.e.db.selectObjects('SELECT metin FROM metin_isaret_yerleri WHERE isaret=? AND kayit=? AND alan=?', [r.kod as string, r.kayit as string, r.alan as string]);
+    dayanak = yerler.length === 1 ? (yerler[0].metin as string) : '';
+    if ((durum === 'kabul' || durum === 'duzeltildi') && dayanak) girdiler.push({ tur: 'metin_isareti_yaz', veri: { kod: r.kod, kayit: r.kayit, alan: 'metin', deger: dayanak } });
+  } else if (r.hedef) {
+    dayanak = alanImzasi(b.e, r.hedef as string, (r.hedef_alan as string | null) ?? null);
+    if (durum === 'kabul' || durum === 'duzeltildi') girdiler.push({ tur: 'metin_isareti_yaz', veri: { kod: r.kod, kayit: r.kayit, alan: 'imza', deger: dayanak } });
+  }
+  const niyetAdi = niyet ? NIYETLER.find((x) => x.kod === niyet)!.ad : '';
+  girdiler.push({ tur: 'inceleme_karari', veri: { anahtar, durum, gerekce: g || niyetAdi, dayanak, istisna: niyet, baslik: 'İşaretli cümle' } });
+  b.yaz(girdiler, [r.kayit as string, ...(r.hedef ? [r.hedef as string] : [])]);
 }

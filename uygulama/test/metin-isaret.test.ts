@@ -58,4 +58,41 @@ describe('metin işaretleme (§5.7)', () => {
     h.metinIsaretiSil({ evren, kod, geriYukle: true });
     expect(h.kayitIsaretleri({ evren, kod: sahne }).metindekiler.length).toBe(1);
   });
+
+  it('bağlı bilgi ya da kritik cümle değişince inceleme açılır; karar verilince kapanır (§9.3, F24)', () => {
+    const h = cihaz('Deneme');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Deneme evreni' });
+    const sahne = h.kayitOlustur({ evren, ad: 'Gece nöbeti', tur: 'sahne' }).kod;
+    const elin = h.kayitOlustur({ evren, ad: 'Elin', tur: 'karakter' }).kod;
+    const kule = h.kayitOlustur({ evren, ad: 'Kule', tur: 'mekan' }).kod;
+    h.kayitTarih({ evren, kod: kule, ifade: '1200' });
+    const a = h.metinIsaretiOlustur({ evren, kayit: sahne, alan: 'govde', hedef: kule, hedefAlan: 'tarih', kritik: true }).kod;
+    const bagsiz = h.metinIsaretiOlustur({ evren, kayit: sahne, alan: 'govde', hedef: elin }).kod;
+    yaz(h, evren, sahne, metin([['Kule eskiydi', a], ' ve ', ['Elin oradaydı', bagsiz], '.']));
+    expect(h.isaretIncelemeleri({ evren }).acik).toEqual([]);
+    // Sıradan alan değişikliği bağsız işareti açmaz.
+    h.kayitDegistir({ evren, kod: elin, alan: 'ozet', deger: 'Nöbetçi' });
+    h.kayitTarih({ evren, kod: kule, ifade: '1250' });
+    let x = h.isaretIncelemeleri({ evren });
+    expect(x.acik.map((y) => [y.tur, y.isaret.kod, y.sonra])).toEqual([['deger', a, '1250']]);
+    expect(h.evrenBilgisi({ evren }).sorunSayisi).toBeGreaterThanOrEqual(1);
+    h.isaretKarari({ evren, anahtar: x.acik[0].anahtar, durum: 'ertelendi' });
+    expect(h.isaretIncelemeleri({ evren }).ertelenen.length).toBe(1);
+    h.isaretKarari({ evren, anahtar: x.acik[0].anahtar, durum: 'duzeltildi' });
+    x = h.isaretIncelemeleri({ evren });
+    expect(x.acik).toEqual([]);
+    expect(x.kapanan.length).toBe(1);
+    // Kritik cümle değişti: niyet sorulur.
+    yaz(h, evren, sahne, metin([['Kule yeniydi', a], ' ve ', ['Elin oradaydı', bagsiz], '.']));
+    x = h.isaretIncelemeleri({ evren });
+    expect(x.acik.map((y) => [y.tur, y.once, y.sonra])).toEqual([['metin', 'Kule eskiydi', 'Kule yeniydi']]);
+    expect(() => h.isaretKarari({ evren, anahtar: x.acik[0].anahtar, durum: 'kabul' })).toThrow(/gerekçe/);
+    h.isaretKarari({ evren, anahtar: x.acik[0].anahtar, durum: 'kabul', niyet: 'bu_tarihten' });
+    x = h.isaretIncelemeleri({ evren });
+    expect(x.acik).toEqual([]);
+    expect(x.kapanan.find((y) => y.tur === 'metin')!.karar).toMatchObject({ niyet: 'bu_tarihten', gerekce: 'Bu tarihten itibaren değiştir' });
+    // Bağsız işaret yalnızca kayıt silinince açılır.
+    h.kayitSil({ evren, kod: elin });
+    expect(h.isaretIncelemeleri({ evren }).acik.map((y) => y.isaret.kod)).toEqual([bagsiz]);
+  });
 });

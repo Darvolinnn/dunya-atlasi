@@ -335,6 +335,7 @@ CREATE TABLE IF NOT EXISTS metin_isaretleri(
   iddia TEXT NOT NULL DEFAULT '',
   kritik INTEGER NOT NULL DEFAULT 0,
   imza TEXT,
+  metin TEXT,
   olusturma INTEGER NOT NULL,
   duzenleme INTEGER NOT NULL,
   silindi INTEGER
@@ -1270,7 +1271,7 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   metin_isareti_yaz(db, i) {
     const { kod, alan, deger } = i.veri as { kod?: unknown; alan?: unknown; deger?: unknown };
-    const sutun: Record<string, string> = { hedef: 'hedef', hedefAlan: 'hedef_alan', iddia: 'iddia', kritik: 'kritik', imza: 'imza' };
+    const sutun: Record<string, string> = { hedef: 'hedef', hedefAlan: 'hedef_alan', iddia: 'iddia', kritik: 'kritik', imza: 'imza', metin: 'metin' };
     if (typeof kod !== 'string' || typeof alan !== 'string' || !sutun[alan]) return;
     const d = alan === 'kritik' ? (deger ? 1 : 0) : alan === 'iddia' ? String(deger ?? '') : typeof deger === 'string' ? deger : null;
     db.exec({ sql: `UPDATE metin_isaretleri SET ${sutun[alan]}=?, duzenleme=? WHERE kod=?`, bind: [d, i.zaman, kod] });
@@ -1607,7 +1608,9 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const { anahtar, durum, gerekce, dayanak, istisna } = i.veri as { anahtar: string; durum: string | null; gerekce?: string; dayanak?: string; istisna?: string | null };
     if (typeof anahtar !== 'string' || !anahtar) return;
     if (durum === 'kabul' || durum === 'ertelendi' || durum === 'duzeltildi') {
-      const ist = durum === 'kabul' && (istisna === 'tercih' || istisna === 'kapsam') ? istisna : null;
+      // İşaret incelemelerinde aynı sütun yazarın değişiklik niyetini (F24) tutar.
+      const ist = durum === 'kabul' && (istisna === 'tercih' || istisna === 'kapsam') ? istisna
+        : anahtar.startsWith('isaret') && typeof istisna === 'string' && /^[a-z_]{1,20}$/.test(istisna) ? istisna : null;
       db.exec({ sql: 'INSERT OR REPLACE INTO inceleme_kararlari(anahtar, durum, gerekce, dayanak, istisna, zaman) VALUES(?,?,?,?,?,?)', bind: [anahtar, durum, gerekce ?? '', dayanak ?? '', ist, i.zaman] });
     } else db.exec({ sql: 'DELETE FROM inceleme_kararlari WHERE anahtar=?', bind: [anahtar] });
   },
@@ -1706,9 +1709,11 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
       sql: 'INSERT INTO baglantilar(kaynak, alan, sira, hedef, metin) VALUES(?,?,?,?,?)', bind: [kayit, alan, sira, b.hedef, b.metin],
     }));
     db.exec({ sql: 'DELETE FROM metin_isaret_yerleri WHERE kayit=? AND alan=?', bind: [kayit, alan] });
-    isaretYerleri(spans).forEach((y, sira) => db.exec({
-      sql: 'INSERT INTO metin_isaret_yerleri(kayit, alan, sira, isaret, metin) VALUES(?,?,?,?,?)', bind: [kayit, alan, sira, y.isaret, y.metin.slice(0, 500)],
-    }));
+    isaretYerleri(spans).forEach((y, sira) => {
+      db.exec({ sql: 'INSERT INTO metin_isaret_yerleri(kayit, alan, sira, isaret, metin) VALUES(?,?,?,?,?)', bind: [kayit, alan, sira, y.isaret, y.metin.slice(0, 500)] });
+      // İşaretli cümlenin ilk görülen hâli; kritik cümle bundan sonra değişirse yazara sorulur (F24).
+      db.exec({ sql: 'UPDATE metin_isaretleri SET metin=? WHERE kod=? AND metin IS NULL AND kayit=? AND alan=?', bind: [y.metin.slice(0, 500), y.isaret, kayit, alan] });
+    });
     db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, kayit] });
     if (!i.veri.ilk) metinYazanlari(db, i, yeni);
   },
