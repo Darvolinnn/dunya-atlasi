@@ -8,7 +8,7 @@ import { iliskiTuruBul } from '../alan/iliski-turleri';
 import type { IslemGirdisi } from '../alan/islem';
 import type { DonusumDegeri, DonusumGirdisi, DonusumYeniKaydi, DonusumOkumasi, DonusumSecenekleri, KisaKayit } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
-import { zamanSetiOku } from './izdusum';
+import { yonlendir, zamanSetiOku } from './izdusum';
 
 export interface DonusumBaglami {
   e: EvrenVt;
@@ -41,6 +41,10 @@ export function secenekler(e: EvrenVt): DonusumSecenekleri {
 export function yaz(b: DonusumBaglami, kod: string | null, t: DonusumGirdisi, yeniler: DonusumYeniKaydi[] = []) {
   if (!t || !BICIMLER.includes(t.bicim) || !Array.isArray(t.kaynaklar) || !Array.isArray(t.hedefler) || !Array.isArray(t.devirler) || !Array.isArray(yeniler)) throw new Error('Dönüşüm seçimi geçersiz.');
   if (t.kaynaklar.length > 50 || t.hedefler.length > 50 || t.devirler.length > 200 || yeniler.length > 50) throw new Error('Çok fazla seçim var.');
+  // Birleştirilmiş kayıtların eski kodları birleştikleri kayda çevrilir.
+  const y = (k: unknown) => typeof k === 'string' ? yonlendir(b.e.db, k) : k as string;
+  t = { ...t, kaynaklar: t.kaynaklar.map(y), hedefler: t.hedefler.map(y), olay: t.olay ? y(t.olay) : t.olay,
+    devirler: t.devirler.map((d) => d && typeof d === 'object' ? { ...d, kaynak: y(d.kaynak), hedef: y(d.hedef) } : d) };
   const kaynaklar = [...new Set(t.kaynaklar)], hedefler = [...new Set(t.hedefler)];
   if (kaynaklar.length !== t.kaynaklar.length || hedefler.length !== t.hedefler.length) throw new Error('Aynı kayıt iki kez seçilemez.');
   const uygun = t.bicim === 'birlesme' ? kaynaklar.length >= 2 && hedefler.length === 1
@@ -95,7 +99,9 @@ function catismali(e: EvrenVt, kod: string): boolean {
   return Number(e.db.selectValue("SELECT count(DISTINCT deger) FROM alan_yazanlari WHERE nesne=? AND alan='donusum_degeri'", [kod])) > 1;
 }
 export function liste(e: EvrenVt, kayit: string): DonusumOkumasi[] {
-  const kisa = (kod: string): KisaKayit => {
+  kayit = yonlendir(e.db, kayit);
+  const kisa = (eski: string): KisaKayit => {
+    const kod = yonlendir(e.db, eski);
     const r = e.db.selectObject('SELECT ad,tur,silindi FROM kayitlar WHERE kod=?', [kod]);
     return { kod, ad: r ? `${r.ad}${r.silindi !== null ? ' (silinmiş)' : ''}` : 'Bulunamayan kayıt', tur: String(r?.tur ?? 'diger') };
   };
@@ -103,8 +109,11 @@ export function liste(e: EvrenVt, kayit: string): DonusumOkumasi[] {
     const kod = String(r.kod), d = JSON.parse(String(r.deger)) as DonusumDegeri;
     // Kaybeden eşzamanlı yazımın katılımcıları da inceleme ve çözüm yolunu görebilir.
     const varyantlar = e.db.selectObjects("SELECT deger FROM alan_yazanlari WHERE nesne=? AND alan='donusum_degeri'", [kod]);
-    if (!ilgili(d).includes(kayit) && !varyantlar.some((v) => ilgili(JSON.parse(String(v.deger))).includes(kayit))) return [];
-    return [{ kod, ...d, kaynaklar: d.tanim.kaynaklar.map(kisa), hedefler: d.tanim.hedefler.map(kisa), olay: d.tanim.olay ? kisa(d.tanim.olay) : null, catismali: catismali(e, kod) }];
+    const ilgiliMi = (x: DonusumDegeri) => ilgili(x).some((k) => yonlendir(e.db, k) === kayit);
+    if (!ilgiliMi(d) && !varyantlar.some((v) => ilgiliMi(JSON.parse(String(v.deger)) as DonusumDegeri))) return [];
+    const tanim = { ...d.tanim, kaynaklar: d.tanim.kaynaklar.map((k) => yonlendir(e.db, k)), hedefler: d.tanim.hedefler.map((k) => yonlendir(e.db, k)),
+      olay: yonlendir(e.db, d.tanim.olay), devirler: d.tanim.devirler.map((v) => ({ ...v, kaynak: yonlendir(e.db, v.kaynak), hedef: yonlendir(e.db, v.hedef) })) };
+    return [{ kod, ...d, tanim, kaynaklar: d.tanim.kaynaklar.map(kisa), hedefler: d.tanim.hedefler.map(kisa), olay: d.tanim.olay ? kisa(d.tanim.olay) : null, catismali: catismali(e, kod) }];
   }).sort((a, b) => (a.tanim.tarih.eksen?.enErken ?? Infinity) - (b.tanim.tarih.eksen?.enErken ?? Infinity) || a.kod.localeCompare(b.kod));
 }
 export function catismaYazisi(d: DonusumDegeri, ad: (k: string) => string): string {

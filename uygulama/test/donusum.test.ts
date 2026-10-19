@@ -147,4 +147,16 @@ describe('evren içi dönüşüm (F25)', () => {
     expect(liste()[0].hedefler[0].ad).toContain('silinmiş');
     expect(kopya().donusumListesi({ evren, kayit: a })).toEqual(liste());
   });
+  it('birleşmiş kayıt kodları okurken ve yazarken birleştiği kayda çevrilir', () => {
+    const { h, evren, a, b, c, yaz, liste } = kur();
+    const kod = yaz({ devirler: [{ kaynak: a, hedef: c, tur: 'uyeler', aciklama: '', iliski: null }] });
+    const yeni = h.kayitOlustur({ evren, ad: 'Uydurma Çakıl Birliği', tur: 'topluluk' }).kod;
+    h.birlestir({ evren, kaynak: a, hedef: yeni });
+    const l = liste(yeni);
+    expect(l.map((d) => d.kod)).toEqual([kod]);
+    expect(l[0].kaynaklar[0]).toMatchObject({ kod: yeni, ad: 'Uydurma Çakıl Birliği' });
+    const d = l[0];
+    h.donusumYaz({ evren, kod, tanim: { ...d.tanim, tarih: d.tanim.tarih.ifade, not: 'Düzenlendi' } });
+    expect(liste(yeni)[0].tanim).toMatchObject({ kaynaklar: [yeni, b], not: 'Düzenlendi', devirler: [{ kaynak: yeni }] });
+  });
 });

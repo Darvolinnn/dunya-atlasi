@@ -77,4 +77,15 @@ describe('başkasının bilgisine dair inanç (F05)', () => {
     expect(liste()).toEqual([]);
     expect(h.islemGunlugu({ evren, sinir: 3 }).some((i) => i.tur === 'dair_inanc_sil')).toBe(true);
   });
+  it('birleşmiş kişi kodu yazarken birleştiği kayda çevrilir', () => {
+    const { h, evren, vezir, yaz, liste } = kur();
+    const a = yaz({});
+    const yeni = h.kayitOlustur({ evren, ad: 'Uydurma başvezir', tur: 'karakter' }).kod;
+    h.birlestir({ evren, kaynak: vezir, hedef: yeni });
+    expect(liste()[0].sanan.kod).toBe(yeni);
+    yaz({ sanilan: 'supheleniyor' }, a); // eski tanımla düzenleme
+    expect(liste()[0].tanim).toMatchObject({ sanan: yeni, sanilan: 'supheleniyor' });
+    yaz({ sanan: vezir });
+    expect(liste()[1].tanim.sanan).toBe(yeni);
+  });
 });

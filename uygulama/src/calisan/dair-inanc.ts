@@ -35,6 +35,8 @@ function iddiaVar(b: DurumBaglami, iddia: string) {
 
 function denetle(b: DurumBaglami, t: DairInancTanimi): DairInancTanimi {
   if (!t || typeof t !== 'object') throw new Error('Kayıt geçersiz.');
+  // Birleştirilmiş kişinin eski kodu birleştiği kayda çevrilir.
+  t = { ...t, sanan: typeof t.sanan === 'string' ? yonlendir(b.e.db, t.sanan) : t.sanan, hakkinda: typeof t.hakkinda === 'string' ? yonlendir(b.e.db, t.hakkinda) : t.hakkinda };
   for (const [kod, ad] of [[t.sanan, 'Sanan kişi'], [t.hakkinda, 'Hakkında olunan kişi']] as const) {
     if (typeof kod !== 'string' || !kodGecerliMi(kod) || b.e.db.selectValue('SELECT 1 FROM kayitlar WHERE kod=? AND silindi IS NULL', [kod]) === undefined) throw new Error(`${ad} seçilmedi.`);
   }
