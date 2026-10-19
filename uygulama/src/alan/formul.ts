@@ -21,7 +21,8 @@ export const FORMUL_ILISKILERI: { kod: string; yazi: string }[] = [
 
 export type Karsilastirici = '=' | '!=' | '<' | '<=' | '>' | '>=';
 export type Dugum =
-  | { t: 've' | 'veya'; l: Dugum[] }
+  | { t: 've'; l: Dugum[] }
+  | { t: 'veya'; l: Dugum[] }
   | { t: 'degil'; a: Dugum }
   | { t: 'iliski'; iliski: string; kayit: string }
   | { t: 'onay'; alan: string }
@@ -44,9 +45,10 @@ export interface FormulCozucu {
 
 // ---------- Okuma ----------
 
+type YaziJetonu = { t: 'kayit' | 'alan' | 'metin' | 'kelime'; s: string; k: number; n: number };
 type Jeton =
   | { t: 'ac' | 'kapa'; k: number; n: number }
-  | { t: 'kayit' | 'alan' | 'metin' | 'kelime'; s: string; k: number; n: number }
+  | YaziJetonu
   | { t: 'sayi'; s: string; v: number; k: number; n: number }
   | { t: 'op'; s: Karsilastirici; k: number; n: number };
 
@@ -112,7 +114,7 @@ export function formulOku(yazi: string, c: FormulCozucu): Formul {
     }
     return null;
   };
-  const kayitCoz = (x: Extract<Jeton, { t: 'kayit' }>) => {
+  const kayitCoz = (x: YaziJetonu) => {
     const { ad, tur } = ayir(x.s);
     let l = c.kayitlar(ad);
     if (tur) l = l.filter((y) => katla(y.turAdi) === katla(tur));
@@ -120,7 +122,7 @@ export function formulOku(yazi: string, c: FormulCozucu): Formul {
     if (l.length > 1) throw new FormulHatasi(`“${ad}” adını taşıyan birden çok kayıt var (${l.map((y) => y.turAdi).join(', ')}). Hangisi olduğunu [${ad} (${l[0].turAdi})] biçiminde yazın.`, x.k, x.n);
     return l[0].kod;
   };
-  const alanCoz = (x: Extract<Jeton, { t: 'alan' }>) => {
+  const alanCoz = (x: YaziJetonu) => {
     const { ad, tur } = ayir(x.s);
     let l = c.alanlar(ad);
     if (tur) l = l.filter((y) => katla(y.turAdi) === katla(tur));
