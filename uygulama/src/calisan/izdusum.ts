@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 38;
+export const IZDUSUM_SURUMU = 39;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -365,6 +365,11 @@ CREATE TABLE IF NOT EXISTS sozlukler(
 CREATE TABLE IF NOT EXISTS sozluk_isaretleri(
   sozluk TEXT NOT NULL, anahtar TEXT NOT NULL, bilerek INTEGER NOT NULL,
   PRIMARY KEY(sozluk, anahtar)
+);
+CREATE TABLE IF NOT EXISTS sahne_yerlesimleri(
+  kod TEXT PRIMARY KEY,
+  plan TEXT NOT NULL,
+  ogeler TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS derlemeler(
   kod TEXT PRIMARY KEY,
@@ -642,6 +647,8 @@ export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar'
   'gokyuzu_tanimi',
   'sozlukler', 'sozluk_isaretleri',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
+
+IZDUSUM_TABLOLARI.push('sahne_yerlesimleri');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -1329,6 +1336,16 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (typeof kod !== 'string' || typeof anahtar !== 'string' || typeof bilerek !== 'boolean') return;
     db.exec({ sql: 'INSERT OR REPLACE INTO sozluk_isaretleri(sozluk,anahtar,bilerek) VALUES(?,?,?)', bind: [kod, anahtar, bilerek ? 1 : 0] });
     alanYaz(db, i, kod, `sozluk_isareti:${anahtar}`, bilerek);
+  },
+  yerlesim_yaz(db, i) {
+    const v = i.veri as unknown as { sahne: string; plan: import('../veri/api').YerlesimPlani; ogeler: import('../veri/api').YerlesimOgesi[] };
+    if (typeof v.sahne !== 'string' || !v.plan || !Array.isArray(v.ogeler)) return;
+    const sahne = yonlendir(db, v.sahne);
+    const plan = { ...v.plan, mekan: yonlendir(db, v.plan.mekan) };
+    const ogeler = v.ogeler.map((o) => o.tur === 'karakter' ? { ...o, kisi: yonlendir(db, o.kisi) } : o);
+    const deger = { plan, ogeler };
+    db.exec({ sql: 'INSERT OR REPLACE INTO sahne_yerlesimleri(kod, plan, ogeler) VALUES(?,?,?)', bind: [sahne, JSON.stringify(plan), JSON.stringify(ogeler)] });
+    alanYaz(db, i, sahne, 'yerlesim', deger);
   },
   /** Gezinti ve görsel pano (§7): yazarın derlediği listeler. İlk yazım derlemeyi kurar. */
   derleme_yaz(db, i) {

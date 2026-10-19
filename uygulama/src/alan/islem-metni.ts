@@ -60,6 +60,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   sozluk_sil: () => 'Sözlük kaldırıldı',
   sozluk_geri_yukle: () => 'Sözlük geri getirildi',
   sozluk_isareti: (v) => v.bilerek ? 'Sözlük eşleşmesi bilerek bırakıldı' : 'Sözlük eşleşmesinin işareti kaldırıldı',
+  yerlesim_yaz: (v, ad) => `${ad(v.sahne)}: sahne yerleşimi değişti`,
   derleme_yaz: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'}: ${v.alan === 'ad' ? (v.derlemeAd === v.deger ? 'oluşturuldu' : `adı “${v.deger}” oldu`) : v.derlemeTuru === 'pano' ? 'görseller değişti' : 'adımlar değişti'}`,
   derleme_sil: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'} kaldırıldı`,
   derleme_geri_yukle: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'} geri getirildi`,
