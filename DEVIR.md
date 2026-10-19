@@ -89,7 +89,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | PR | Dal | Ne | Durum |
 |---|---|---|---|
 | [#2](https://github.com/Darvolinnn/dunya-atlasi/pull/2) (birleştirildi) | `claude/modest-lovelace-ozltpf` | 19 Ekim akşam oturumu: inceleme 5–6 (bağlam paneli, durum özeti), İnceleme 2'nin dört şüphesi, komut paleti hesapları, kırmızı tarayıcı denetiminin onarımı, `disaridanAl` hızı, metnin toplu uygulanması (§10.1), Türkçe düzeltmeler, bu DEVIR | 19 Ekim akşam `main`'e birleştirildi |
-| [#1](https://github.com/Darvolinnn/dunya-atlasi/pull/1) | `claude/project-thread-hdk5g6` | Windows uygulaması (TK6, Tauri 2). Kurulum dosyası: [windows ön sürümü](https://github.com/Darvolinnn/dunya-atlasi/releases/tag/windows) (`Dunya-Atlasi-kurulum.exe`); dal her gönderimde yeniden derlenir. İş listesi §3.2b; aynı dalda karar: iPhone plandan çıktı (K3) | Güncel `main` 19 Ekim akşam alındı (PR #2 dahil). Kullanıcı kurup dener, onaylayınca birleşir |
+| [#1](https://github.com/Darvolinnn/dunya-atlasi/pull/1) | `claude/project-thread-hdk5g6` | Windows uygulaması (TK6, Tauri 2). Kurulum dosyası: [windows ön sürümü](https://github.com/Darvolinnn/dunya-atlasi/releases/tag/windows) (`Dunya-Atlasi-kurulum.exe`); dal her gönderimde yeniden derlenir. İş listesi §3.2b; aynı dalda karar: iPhone plandan çıktı (K3) | Güncel `main` 19 Ekim gece alındı (PR #5 dahil). Kullanıcı kurup denedi, sorun görmedi; Google izinli adresi bekliyor |
 
 Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok. Promptlar kullanıcının proje klasöründe `paket-promptlari/` altındadır, depoda değildir.
 
@@ -101,8 +101,9 @@ Kullanıcı 19 Ekim 2026'da programın site gibi durduğunu söyledi; Windows i�
 - [x] GitHub: `.github/workflows/windows.yml` Windows'ta derler, `windows` ön sürüm sayfasına `Dunya-Atlasi-kurulum.exe` koyar (main ve `claude/**` dallarında).
 - [x] Tasarım: K3, K7, K16, K17, TK3, TK6, §10.7, §10.9, §12.3, §14.3, §17 iPhone'suz ve Tauri'li.
 - [x] Güncel `main` dala alındı (19 Ekim akşam; bağlam paneli, durum özeti, hız ve bellek düzeltmeleri dahil). `package-lock.json` npm ile yeniden üretildi (Tauri ve Playwright birlikte).
-- [ ] Kullanıcının bilgisayarında kur, aç, veritabanı ve yazma çalışıyor mu bak.
-- [ ] Google: `http://localhost:41730` Google projesinde izinli adreslere eklenmeli (kullanıcı yapar). Sonra izin penceresi uygulama içinde açılıyor mu dene. Açılmazsa TK3'ü "sistem tarayıcısında giriş + yenileme jetonu" olarak değiştir.
+- [x] Kullanıcının bilgisayarında kur, aç, veritabanı ve yazma çalışıyor mu bak (19 Ekim: kullanıcı kurdu, "sıkıntı yok gibi").
+- [x] Güncel `main` yeniden alındı (19 Ekim gece; PR #5: ilerleme şeridi, evren kaldırma, anlık görüntü, İlk adımlar, deve tüyü şerit).
+- [ ] Google: `http://localhost:41730` Google projesinde izinli adreslere eklenmeli (kullanıcı yapar; 19 Ekim'de denediğinde `origin_mismatch` aldı, adımlar kendisine verildi). Sonra izin penceresi uygulama içinde açılıyor mu dene. Açılmazsa TK3'ü "sistem tarayıcısında giriş + yenileme jetonu" olarak değiştir.
 - [ ] Veriyi tarayıcı kurulumundan uygulamaya taşı (Drive eşitlemesi ya da Taşıma ekranı); tarayıcı kurulumunu "kullanılmıyor" işaretle.
 - [ ] APK (kullanıcı Windows'u onaylayınca): `tauri android init`, imza anahtarı (depoya girmez), dokunmatik düzen. Tablette bellek 4 GB altı (§3.3-2).
 
