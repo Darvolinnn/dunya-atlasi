@@ -138,6 +138,14 @@ export const MESELE_DURUMLARI: Secenek[] = [
 
 const sorular = (...kodlar: string[]) => kodlar.flatMap((k) => soruSetiBul(k)!.sorular);
 
+export const ESER_CALISMA: Secenek[] = [
+  { kod: 'fikir', ad: 'Fikir' }, { kod: 'plan', ad: 'Plan' }, { kod: 'ilk_taslak', ad: 'İlk taslak' },
+  { kod: 'duzeltme', ad: 'Düzeltme' }, { kod: 'bitti', ad: 'Bitti' }, { kod: 'yayimlandi', ad: 'Yayımlandı' },
+];
+export const SAHNE_CALISMA: Secenek[] = [
+  { kod: 'planlandi', ad: 'Planlandı' }, { kod: 'ilk_taslak', ad: 'İlk taslak' }, { kod: 'duzenleniyor', ad: 'Düzenleniyor' }, { kod: 'gozden_gecirildi', ad: 'Gözden geçirildi' },
+];
+
 /** Türlerin varsayılan şablonları. Yazar değiştirince evrene kaydedilir; değiştirmediği tür bunları kullanır. */
 const VARSAYILANLAR: Record<string, Sablon> = {
   karakter: {
@@ -154,8 +162,9 @@ const VARSAYILANLAR: Record<string, Sablon> = {
   buyu_sistemi: { alanlar: [], sorular: sorular('buyu') },
   kultur: { alanlar: [], sorular: sorular('kultur') },
   dil: { alanlar: [], sorular: sorular('dil') },
-  eser: { alanlar: [], sorular: sorular('cekirdek', 'eser') },
-  sahne: { alanlar: [], sorular: sorular('sahne_plani') },
+  // Çalışma durumu (K27) karar durumundan ayrıdır: kesinleşmiş bir eser hâlâ ilk taslak olabilir. Evren tarihini etkilemez.
+  eser: { alanlar: [{ kod: 'calisma', ad: 'Çalışma durumu', tur: 'secim', secenekler: ESER_CALISMA, ipucu: 'Yazım aşaması; karar durumundan ayrıdır' }], sorular: sorular('cekirdek', 'eser') },
+  sahne: { alanlar: [{ kod: 'calisma', ad: 'Çalışma durumu', tur: 'secim', secenekler: SAHNE_CALISMA, ipucu: 'Aynı eserde sahnelerin farklı durumda olması olağandır' }], sorular: sorular('sahne_plani') },
   kurgu_hatti: { alanlar: [], sorular: sorular('hat') },
   seri: { alanlar: [], sorular: sorular('seri') },
   acik_mesele: {

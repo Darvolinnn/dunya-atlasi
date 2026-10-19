@@ -48,4 +48,16 @@ describe('anlatı soruları (K27)', () => {
     expect(k.sorular[0].cevap).toMatchObject({ cevap: 'Sisli.' });
     expect(varsayilanSablon('sahne').sorular).toHaveLength(4);
   });
+
+  it('eser ve sahnenin çalışma durumu karar durumundan ayrı tutulur', () => {
+    const { h, evren } = kur();
+    const eser = h.kayitOlustur({ evren, ad: 'Unutulanlar', tur: 'eser' }).kod;
+    const sahne = h.kayitOlustur({ evren, ad: 'Arşivde', tur: 'sahne' }).kod;
+    h.kayitAlanYaz({ evren, kod: eser, alan: 'calisma', deger: 'ilk_taslak' });
+    h.kayitAlanYaz({ evren, kod: sahne, alan: 'calisma', deger: 'duzenleniyor' });
+    expect(h.kayitSablonu({ evren, kod: eser }).degerler.calisma).toBe('ilk_taslak');
+    expect(h.kayitSablonu({ evren, kod: sahne }).degerler.calisma).toBe('duzenleniyor');
+    expect(h.kayit({ evren, kod: eser }).karar).toBe('kesin');
+    expect(() => h.kayitAlanYaz({ evren, kod: eser, alan: 'calisma', deger: 'duzenleniyor' })).toThrow();
+  });
 });
