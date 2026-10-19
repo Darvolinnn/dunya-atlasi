@@ -1129,6 +1129,11 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     evrenAlani(db, 'ad', i.veri.ad);
     alanYaz(db, i, 'evren', 'ad', i.veri.ad);
   },
+  // "Şu an çalıştığım" eser ya da seri (K27). Çatışma izlenmez: aynı anda iki cihazda seçilirse günlük sırasında
+  // sonra gelen geçerlidir ve bu her cihazda aynıdır.
+  evren_etkin_calisma(db, i) {
+    evrenAlani(db, 'etkin_calisma', typeof i.veri.kod === 'string' ? i.veri.kod : '');
+  },
 
   kayit_olustur(db, i) {
     const v = i.veri;

@@ -804,6 +804,8 @@ export interface EvrenEsitlemeDurumu {
   denemeler: { kod: string; ad: string; yalnizBuCihazda: number; bekleyen: number }[];
 }
 /** Kaldığın yer (§5.9): cihazlar arasında eşitlenir; panel yerleşimi gibi cihaza özel şeyler burada yok. */
+/** "Şimdi" önerisi (K27): kayıtlı veriye dayanır ve gerekçesini söyler. */
+export interface SimdiOnerisi { tur: 'mesele' | 'soru' | 'sahne'; kayit: KisaKayit; baslik: string; gerekce: string }
 export interface KaldigiYer { kayit: string | null; konum: number | null; yanPanel: string[]; not: string; zaman: number }
 export interface KaldigiYerBilgisi extends KaldigiYer {
   /** Başka bir cihazda bırakıldıysa o cihazın adı. */
@@ -1147,6 +1149,9 @@ export interface Istekler {
   ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
   alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
   kitapSonuAciklar(a: { evren: string; eser: string }): KitapSonuAciklar;
+  etkinCalisma(a: { evren: string }): KisaKayit | null;
+  etkinCalismaYaz(a: { evren: string; kod: string | null }): void;
+  simdi(a: { evren: string }): SimdiOnerisi[];
   seriler(a: { evren: string }): { seriler: { kod: string; ad: string; eserler: { kod: string; ad: string }[] }[]; serisiz: { kod: string; ad: string }[] };
   evrenAdlandir(a: { evren: string; ad: string }): void;
   evrenBilgisi(a: { evren: string }): EvrenBilgisi;

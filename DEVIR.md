@@ -167,6 +167,7 @@ Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda
 - [x] P5 alternatifler: `alternatif` ilişkisi (aynı tür), istek `alternatifler`, kayıt sayfasında kesinleştirince öbürlerini vazgeçirme sorusu, Uyarılar'da "Alternatifler" denetimi; `test/alternatif.test.ts`. Seri sayfasında "Olası finaller" listesi henüz yok (finallerin seriye bağlanma yolu kararlaştırılmalı).
 - [x] P8 çalışma durumları: eser ve sahne şablonunda "Çalışma durumu" seçim alanı (`ESER_CALISMA`, `SAHNE_CALISMA`); bölüm dağılımı ve olay örgüsü masasındaki durum satırı P6 ile.
 - [x] P9 kitap sonunda açık kalanlar: `montaj.kitapSonuAciklar`, eser sayfasında bölüm; `test/kitap-sonu.test.ts`.
+- [x] P10 Şimdi kartı: `Masa.tsx` `SimdiKarti`, istekler `etkinCalisma`, `etkinCalismaYaz`, `simdi`; işlem `evren_etkin_calisma`; `test/simdi.test.ts`. İlk adımların sıradaki adımı karta katılmadı (liste zaten Yaz sayfasında).
 - [ ] Sıradaki: P6 olay örgüsü masası (önce resimli taslak), P7 karakterin kitaptaki yolu, P8 çalışma durumları, P9 kitap sonunda açık olanlar, P10 Şimdi kartı.
 - [x] P1: yazarlık rehberi programın içinde (§12.4): `arayuz/YazarlikRehberi.tsx`, metinler `arayuz/yazarlik-rehberi.ts` (analiz belgesinden üretildi; belge değişirse yeniden üretilmeli: başlıklar `### Konu N — …`, alanlar `**Ne:**` biçiminde). Soru başına "Örnek" henüz yok. Ekran görüntüleri kullanıcı onayı bekliyor (PR #6).
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)

@@ -46,7 +46,7 @@ import * as soyMod from './soy';
 import * as montaj from './montaj';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
-import type { IlerlemeBildirimi } from '../veri/api';
+import type { IlerlemeBildirimi, SimdiOnerisi } from '../veri/api';
 import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
 import * as bakim from './bakim';
@@ -76,7 +76,7 @@ import * as bilgi from './bilgi';
 import { BILGI_KAYNAKLARI, INANCLAR } from '../alan/bilgi';
 import { gorunurlukGecerli, gorunurlukOku, sadeGercekMi, type Gorunurluk } from '../alan/gorunurluk';
 import { yasHesapla } from '../alan/yas';
-import { MESELE_DURUMLARI, type Sablon, type SoruDurumu } from '../alan/sablon';
+import { MESELE_DURUMLARI, type Sablon, type SoruDurumu, SORU_SETLERI } from '../alan/sablon';
 import { gecerlilik, DURUM_KIPLERI } from '../alan/durum';
 import { kisiYasananSure } from './yasanan-sure';
 import { sahneOkurBilgileri } from './sahne-okur';
@@ -491,6 +491,57 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       kayitAdi: k ? k.ad as string : null, kayitTuru: k ? k.tur as string : null,
       yanPanelKayitlari: (y.yanPanel ?? []).map(bilgi).filter(Boolean).map((r) => ({ kod: r!.kod as string, ad: r!.ad as string, tur: r!.tur as string })),
     };
+  }
+
+  // ---------- Şu an çalışılan ve "Şimdi" (K27, Model §5) ----------
+  /** Yalnız kullanıcı seçince değişir; son düzenlenen kayıt etkin çalışma sayılmaz. */
+  etkinCalisma({ evren }: { evren: string }): KisaKayit | null {
+    const e = this.evren(evren);
+    const kod = e.db.selectValue("SELECT v FROM evren WHERE k='etkin_calisma'") as string | undefined;
+    if (!kod) return null;
+    return (e.db.selectObject("SELECT kod, ad, tur FROM kayitlar WHERE kod=? AND silindi IS NULL AND tur IN ('eser','seri')", [kod]) as unknown as KisaKayit | undefined) ?? null;
+  }
+  etkinCalismaYaz({ evren, kod }: { evren: string; kod: string | null }) {
+    const e = this.evren(evren);
+    if (kod !== null) {
+      this.kayitVarMi(e, kod);
+      if (!['eser', 'seri'].includes(e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [kod]) as string)) throw new Error('Yalnız bir eser ya da seri seçilebilir.');
+    }
+    this.yaz(evren, [{ tur: 'evren_etkin_calisma', veri: { kod } }]);
+  }
+
+  /**
+   * Genel bakıştaki "Şimdi" önerileri (Model §5.3): yalnız kayıtlı veriye dayanır, her biri gerekçesini söyler.
+   * Sıra: önemli açık mesele (etkin çalışmaya bağlı olan önce) · sonraya bırakılmış anlatı sorusu (başlangıç ve evren
+   * soruları hariç) · son düzenlenen sahne. Devam notu "Kaldığınız yer" kartında durur, burada tekrarlanmaz.
+   */
+  simdi({ evren }: { evren: string }): SimdiOnerisi[] {
+    const e = this.evren(evren);
+    const etkin = this.etkinCalisma({ evren });
+    // Etkin çalışmanın kapsamı: seri, eserleri, bölümleri ve sahneleri.
+    const kapsam = new Set<string>();
+    if (etkin) {
+      const ekle = (k: string) => { kapsam.add(k); for (const r of e.db.selectObjects('SELECT kod FROM anlati WHERE ust=?', [k])) ekle(r.kod as string); };
+      ekle(etkin.kod);
+      const seri = e.db.selectValue("SELECT a.ust FROM anlati a JOIN kayitlar s ON s.kod=a.ust WHERE a.kod=? AND s.tur='seri'", [etkin.kod]) as string | undefined;
+      if (seri) kapsam.add(seri);
+    }
+    const kapsamda = (kodlar: string[]) => !etkin || kodlar.some((k) => kapsam.has(k));
+    const l: SimdiOnerisi[] = [];
+    const meseleler = sablonlar.meseleler(e).meseleler.filter((m) => m.onemli && m.durum === 'dusunulecek');
+    const mesele = meseleler.find((m) => etkin && kapsamda(m.bagli.map((b) => b.kod))) ?? meseleler[0];
+    if (mesele) l.push({ tur: 'mesele', kayit: { kod: mesele.kod, ad: mesele.ad, tur: 'acik_mesele' }, baslik: mesele.ad, gerekce: 'Bu meseleyi önemli olarak işaretlemiştiniz.' });
+    const sonra = e.db.selectObjects(`SELECT c.kayit, c.soru, k.ad, k.tur FROM soru_cevaplari c JOIN kayitlar k ON k.kod=c.kayit
+      WHERE c.durum='sonra' AND k.silindi IS NULL AND k.tur IN ('eser','seri','sahne','kurgu_hatti') ORDER BY c.duzenleme DESC LIMIT 200`) as { kayit: string; soru: string; ad: string; tur: string }[];
+    const s = sonra.find((r) => kapsamda([r.kayit]));
+    if (s) {
+      const q = SORU_SETLERI.flatMap((x) => x.sorular).find((x) => x.kod === s.soru);
+      l.push({ tur: 'soru', kayit: { kod: s.kayit, ad: s.ad, tur: s.tur }, baslik: `${s.ad}: ${q?.metin ?? 'bir soru'}`, gerekce: 'Bu soruyu sonraya bırakmıştınız.' });
+    }
+    const sahneler = e.db.selectObjects("SELECT kod, ad FROM kayitlar WHERE tur='sahne' AND silindi IS NULL ORDER BY duzenleme DESC LIMIT 50") as { kod: string; ad: string }[];
+    const sahne = sahneler.find((r) => kapsamda([r.kod]));
+    if (sahne) l.push({ tur: 'sahne', kayit: { kod: sahne.kod, ad: sahne.ad, tur: 'sahne' }, baslik: sahne.ad, gerekce: 'En son bu sahne üzerinde çalıştınız.' });
+    return l;
   }
 
   // ---------- Metin kurtarma taslağı (§10.7) ----------

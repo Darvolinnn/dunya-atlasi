@@ -595,6 +595,7 @@ Bir cümle seçilip bir iddiaya, evren durumuna ya da olaya bağlanabilir ("Sarn
 ### 5.9 Konu dosyaları ve kaldığın yere dönme
 
 - **Konu dosyası** (kodda ve eski metinlerde "çalışma masası"): bir konu için oluşturulan alan ("Velkar isyanı": şehir planı, karakterler, tarih aralığı, kaynaklar, açık sorular, sahneler). Kayıtlar kopyalanmaz, dosya onlara bağlanır. Dosyanın düzeni, notları, seçili varsayım paketi (§3.11) ve "bugün burada neyi çözmeye çalışıyorum?" satırı korunur.
+- **Şimdi (K27):** Genel bakış sayfasında kaldığın yerin altında durur. Başında **"Çalışıyorum:"** seçimi vardır: yazarın şu an üzerinde çalıştığı eser ya da seri ("Bütün evren" de olabilir). Bu seçim evrene yazılır ve cihazlar arasında eşitlenir; yalnız yazar değiştirince değişir; başka bir kitaba yazmak ya da son düzenlenen kayıt onu değiştirmez. Kart en çok üç öneri gösterir ve her birinin gerekçesini yazar: önemli işaretlenmiş, düşünülecek bir açık mesele ("Bu meseleyi önemli olarak işaretlemiştiniz."); eser, seri, sahne ya da kurgu hattında sonraya bırakılmış bir soru (başlangıç ve evren soruları hariç); en son çalışılan sahne. Seçili çalışma varsa ona bağlı olanlar önce gelir. Devam notu kaldığın yerde durduğu için burada tekrarlanmaz. Öneriler serbest metinden çıkarılmaz; "eserde sahne yok" gibi yokluktan iş üretilmez.
 - **Kaldığın yere dönme:** son açık sahne, imleç, yan paneldeki kayıtlar, seçili tarih ve kısa bir "buradan devam" notu saklanır ve **cihazlar arasında eşitlenir**. Panel yerleşimi, yakınlaştırma ve pencere ölçüsü **cihaza özeldir** ve eşitlenmez. Bir cihazın açılması öbür cihazın çalışma alanını zorla değiştirmez. Daha geniş bir çalışma devri kartı F47'de öneridir.
 
 ### 5.10 Çalışma düzenleri
@@ -640,7 +641,7 @@ Bu, programın yazara ne zaman ve nasıl soru sorduğunun tek tanımıdır. Soru
 
 | Görünüm | Ne gösterir | Not |
 |---|---|---|
-| **Genel bakış** (eski adı Masa) | Son düzenlenenler, önemli açık meseleler, eksik kayıtlar, hızlı not, kaldığın yer | "Eksik kayıtlar" (metinde anılıp henüz yazılmamış kayıtlar) bir hatırlatmadır, görev listesi değildir; sayı ya da uyarı rengiyle gösterilmez |
+| **Genel bakış** (eski adı Masa) | Kaldığın yer ve devam notu, **Şimdi** kartı (K27), son düzenlenenler, önemli açık meseleler, eksik kayıtlar, hızlı not, Dünya Pusulası | "Eksik kayıtlar" (metinde anılıp henüz yazılmamış kayıtlar) bir hatırlatmadır, görev listesi değildir; sayı ya da uyarı rengiyle gösterilmez |
 | **Kayıt sayfası** | Başlık, görsel, bileşenler, metin, ilişkiler (zamana göre), geri-atıflar, notlar, açık meseleler | Görseli olmayan kayıtta baş harf rozeti |
 | **Ağ** | Seçili kaydın yakın bağlantıları | Bütün evren isteğe bağlı açılır; ilişki türü, dönem, kayıt türü ve bakış açısıyla filtrelenir |
 | **Soy ağacı** | Ebeveyn, eş, kardeş; çoklu evlilik, evlatlık, gayrimeşru çocuk, siyasi evlilik, soy içi evlilik farklı çizgilerle | Çakışmasız çizim vaat edilmez; odaklanma, dal kapatma ve filtre sunulur |

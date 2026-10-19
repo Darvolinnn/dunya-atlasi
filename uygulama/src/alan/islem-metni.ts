@@ -11,6 +11,7 @@ const deger = (alan: string, v: unknown) => alan === 'tur' ? turBul(String(v)).a
 const ACIKLAMALAR: Record<string, Aciklayici> = {
   evren_olustur: (v) => `Evren oluşturuldu: “${v.ad}”`,
   evren_adlandir: (v) => `Evrenin adı “${v.ad}” oldu`,
+  evren_etkin_calisma: (v, ad) => v.kod ? `Şu an çalışılan: “${ad(v.kod)}”` : 'Şu an çalışılan iş temizlendi',
   kayit_olustur: (v) => `${turBul(String(v.tur)).ad} oluşturuldu: “${v.ad}”`,
   kayit_degistir: (v, ad) => {
     const alan = String(v.alan);

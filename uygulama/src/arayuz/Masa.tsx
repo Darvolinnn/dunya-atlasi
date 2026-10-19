@@ -2,7 +2,7 @@
 // "Bahsedilen ama yazılmamış" bir hatırlatmadır; sayı ya da uyarı rengiyle gösterilmez.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { KaldigiYerBilgisi, KayitOzeti } from '../veri/api';
+import type { KaldigiYerBilgisi, KayitOzeti, KisaKayit, SimdiOnerisi } from '../veri/api';
 import { turBul } from '../alan/turler';
 import { zamanYaz } from '../alan/islem-metni';
 import { useCalisma } from './Calisma';
@@ -49,6 +49,8 @@ export function Masa({ istemci, evren, surum, ekler }: { istemci: Istemci; evren
         )}
       </section>
 
+      <SimdiKarti istemci={istemci} evren={evren} surum={surum} />
+
       {ekler}
 
       <section class="masa-bolum" aria-label="Son düzenlenenler">
@@ -88,5 +90,44 @@ export function KisaListe({ evren, kayitlar, zamanli }: { evren: string; kayitla
         );
       })}
     </ul>
+  );
+}
+
+/** "Şimdi" (K27, Model §5): şu an çalışılan eser ya da seri ve kayıtlı veriye dayanan en çok üç küçük iş. Her
+ *  önerinin gerekçesi yazar; serbest metinden çıkarım yapılmaz. Öneri yoksa yalnız seçim kutusu görünür. */
+function SimdiKarti({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
+  const [etkin, setEtkin] = useState<KisaKayit | null | undefined>(undefined);
+  const [secenekler, setSecenekler] = useState<KisaKayit[]>([]);
+  const [l, setL] = useState<SimdiOnerisi[]>([]);
+  useEffect(() => {
+    istemci.iste('etkinCalisma', { evren }).then(setEtkin, () => setEtkin(null));
+    istemci.iste('simdi', { evren }).then(setL, () => setL([]));
+    istemci.iste('seriler', { evren }).then((r) => setSecenekler([
+      ...r.seriler.map((x) => ({ kod: x.kod, ad: x.ad, tur: 'seri' })),
+      ...[...r.seriler.flatMap((x) => x.eserler), ...r.serisiz].map((x) => ({ kod: x.kod, ad: x.ad, tur: 'eser' })),
+    ]), () => {});
+  }, [evren, surum]);
+  if (etkin === undefined) return null;
+  if (!secenekler.length && !l.length) return null;
+  const adres = (o: SimdiOnerisi) => o.tur === 'sahne' ? `#/e/${evren}/yaz/${o.kayit.kod}` : `#/e/${evren}/k/${o.kayit.kod}`;
+  return (
+    <section class="kart masa-simdi" aria-label="Şimdi">
+      <div class="satir">
+        <h2>Şimdi</h2><span class="bosluk" />
+        {secenekler.length > 0 && <label class="satir kucuk">
+          <span class="soluk">Çalışıyorum:</span>
+          <select class="girdi kucuk-secim" aria-label="Şu an çalıştığım eser ya da seri" value={etkin?.kod ?? ''}
+            onChange={(e) => { const v = (e.target as HTMLSelectElement).value; istemci.iste('etkinCalismaYaz', { evren, kod: v || null }); }}>
+            <option value="">Bütün evren</option>
+            {secenekler.map((x) => <option value={x.kod}>{x.tur === 'seri' ? `Seri: ${x.ad}` : x.ad}</option>)}
+          </select>
+        </label>}
+      </div>
+      {l.length ? (
+        <ul class="simdi-listesi">
+          {l.map((o) => <li key={o.tur + o.kayit.kod}><a href={adres(o)}>{o.baslik}</a><span class="soluk kucuk"> · {o.gerekce}</span></li>)}
+        </ul>
+      ) : <p class="soluk kucuk">Önerilecek bir şey yok: önemli işaretli bir mesele, sonraya bırakılmış bir soru ya da bir sahne olunca burada görünür.</p>}
+    </section>
   );
 }
