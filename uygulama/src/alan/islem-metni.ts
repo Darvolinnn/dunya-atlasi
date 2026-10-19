@@ -208,6 +208,10 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   iz_kaydi_yaz: (v, ad) => `${ad(v.olay)}: “${v.ad}” ${v.tur === 'kisa_vadeli' ? 'kısa vadeli sonucu' : 'kalıcı izi'} kaydedildi`,
   iz_kaydi_sil: (v, ad) => `${ad(v.olay)}: “${v.ad ?? 'iz kaydı'}” kaldırıldı`,
   iz_kaydi_geri_yukle: (v, ad) => `${ad(v.olay)}: “${v.ad ?? 'iz kaydı'}” geri getirildi`,
+  olcekli_olcek_yaz: (v) => `“${v.haritaAd || 'Harita'}” haritası: ölçek ${v.olcek ? 'kaydedildi' : 'kaldırıldı'}`,
+  olcekli_varsayilan_hiz_yaz: (v) => `“${v.haritaAd || 'Harita'}” haritası: varsayılan arazi hızları güncellendi`,
+  olcekli_arazi_yaz: (v) => `“${v.haritaAd || 'Harita'}” haritası: arazi tanımı kaydedildi`,
+  olcekli_arazi_sil: (v) => `“${v.haritaAd || 'Harita'}” haritası: arazi ${v.silindi === false ? 'geri getirildi' : 'kaldırıldı'}`,
 };
 
 /** Kullanıcının yaptığı bir değişiklik sayılmayan, başka bir işlemin parçası olan adımlar (listelerde gösterilmez). */

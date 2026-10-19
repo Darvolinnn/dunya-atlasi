@@ -778,6 +778,17 @@ CREATE TABLE IF NOT EXISTS iz_kayitlari(
 );
 CREATE INDEX IF NOT EXISTS iz_kayitlari_olay ON iz_kayitlari(olay);
 CREATE INDEX IF NOT EXISTS iz_kayitlari_yer ON iz_kayitlari(yer);
+CREATE TABLE IF NOT EXISTS olcekli_olcekler(
+  harita TEXT PRIMARY KEY,
+  olcek TEXT,
+  varsayilan_hizlar TEXT NOT NULL DEFAULT '[]'
+);
+CREATE TABLE IF NOT EXISTS olcekli_araziler(
+  kod TEXT PRIMARY KEY,
+  harita TEXT NOT NULL,
+  deger TEXT NOT NULL,
+  silindi INTEGER NOT NULL DEFAULT 0
+);
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'gokyuzu_tanimi',
@@ -797,6 +808,7 @@ IZDUSUM_TABLOLARI.push('kalabalik_gozlemleri', 'kalabalik_olaylari');
 IZDUSUM_TABLOLARI.push('harita_kunyeleri');
 IZDUSUM_TABLOLARI.push('surec_sorumlulari');
 IZDUSUM_TABLOLARI.push('iz_kayitlari');
+IZDUSUM_TABLOLARI.push('olcekli_olcekler', 'olcekli_araziler');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -2268,5 +2280,48 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (typeof kod !== 'string') return;
     db.exec({ sql: 'UPDATE iz_kayitlari SET silindi=NULL, duzenleme=? WHERE kod=?', bind: [i.zaman, kod] });
     alanYaz(db, i, kod, 'iz_kaydi_silindi', false);
+  },
+  olcekli_olcek_yaz(db, i) {
+    const { harita, olcek } = i.veri as { harita?: unknown; olcek?: unknown };
+    if (typeof harita !== 'string' || !harita.trim()) return;
+    const h = harita.trim();
+    const oJson = olcek && typeof olcek === 'object' ? JSON.stringify(olcek) : null;
+    db.exec({
+      sql: 'INSERT INTO olcekli_olcekler(harita, olcek) VALUES(?, ?) ON CONFLICT(harita) DO UPDATE SET olcek=excluded.olcek',
+      bind: [h, oJson],
+    });
+    alanYaz(db, i, `olcekli:${h}`, 'olcekli_olcek', olcek ?? null);
+  },
+  olcekli_varsayilan_hiz_yaz(db, i) {
+    const { harita, varsayilanHizlar } = i.veri as { harita?: unknown; varsayilanHizlar?: unknown };
+    if (typeof harita !== 'string' || !harita.trim()) return;
+    const h = harita.trim();
+    const liste = Array.isArray(varsayilanHizlar) ? varsayilanHizlar : [];
+    db.exec({
+      sql: 'INSERT INTO olcekli_olcekler(harita, varsayilan_hizlar) VALUES(?, ?) ON CONFLICT(harita) DO UPDATE SET varsayilan_hizlar=excluded.varsayilan_hizlar',
+      bind: [h, JSON.stringify(liste)],
+    });
+    alanYaz(db, i, `olcekli:${h}`, 'olcekli_varsayilan_hiz', liste);
+  },
+  olcekli_arazi_yaz(db, i) {
+    const { kod, harita, deger } = i.veri as { kod?: unknown; harita?: unknown; deger?: unknown };
+    if (typeof kod !== 'string' || !kod.trim() || typeof harita !== 'string' || !harita.trim() || !deger || typeof deger !== 'object') return;
+    const k = kod.trim();
+    const h = harita.trim();
+    db.exec({
+      sql: 'INSERT INTO olcekli_araziler(kod, harita, deger, silindi) VALUES(?, ?, ?, 0) ON CONFLICT(kod) DO UPDATE SET harita=excluded.harita, deger=excluded.deger, silindi=0',
+      bind: [k, h, JSON.stringify(deger)],
+    });
+    alanYaz(db, i, k, 'olcekli_arazi', deger);
+    alanYaz(db, i, k, 'olcekli_arazi_silindi', false);
+  },
+  olcekli_arazi_sil(db, i) {
+    const { kod, silindi } = i.veri as { kod?: unknown; silindi?: unknown };
+    if (typeof kod !== 'string' || !kod.trim()) return;
+    const k = kod.trim();
+    if (!db.selectValue('SELECT 1 FROM olcekli_araziler WHERE kod=?', [k])) return;
+    const sil = silindi !== false;
+    db.exec({ sql: 'UPDATE olcekli_araziler SET silindi=? WHERE kod=?', bind: [sil ? 1 : 0, k] });
+    alanYaz(db, i, k, 'olcekli_arazi_silindi', sil);
   },
 };

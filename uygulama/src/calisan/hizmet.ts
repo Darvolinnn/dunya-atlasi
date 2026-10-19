@@ -97,6 +97,8 @@ import * as surecSorumlu from './surec-sorumlu';
 import type { SurecEngelTuru } from '../veri/api';
 import * as kaliciIz from './kalici-iz';
 import type { KaliciIzTuru } from '../veri/api';
+import * as olcekli from './olcekli';
+import type { OlcekliAraziGirdisi, OlcekliHizKurali, OlcekliOlcekTanimi } from '../veri/api';
 
 export type DosyaAcici = (ad: string) => Database;
 export type Bildirici = (evren: string, turler: string[], kayitlar: string[], uzaktan?: boolean) => void;
@@ -654,6 +656,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         sonuc.push(kaliciIz.catismaSatiri(e, nesne, alan, degerler, kayitAdi));
         continue;
       }
+      if (!iliski && (alan === 'olcekli_olcek' || alan === 'olcekli_varsayilan_hiz' || alan === 'olcekli_arazi' || alan === 'olcekli_arazi_silindi')) {
+        sonuc.push(olcekli.catismaSatiri(e, nesne, alan, degerler));
+        continue;
+      }
       if (!iliski && alan === 'delil') {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: 'Delil geçmişi',
           degerler: degerler.map((d) => {
@@ -934,6 +940,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     if (alan === 'iz_kaydi' || alan === 'iz_kaydi_silindi') {
       this.yaz(evren, [kaliciIz.catismaCozumGirdisi(nesne, alan, deger)]);
+      return;
+    }
+    if (alan === 'olcekli_olcek' || alan === 'olcekli_varsayilan_hiz' || alan === 'olcekli_arazi' || alan === 'olcekli_arazi_silindi') {
+      this.yaz(evren, [olcekli.cozumGirdisi(e, nesne, alan, deger)]);
       return;
     }
     if (alan === 'delil') { this.yaz(evren, [{ tur: 'delil_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
@@ -3107,4 +3117,26 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   }
   izKaydiSil({ evren, kod }: { evren: string; kod: string }) { kaliciIz.izKaydiSil(this.kaliciIzBaglami(evren), kod); }
   izKaydiGeriYukle({ evren, kod }: { evren: string; kod: string }) { kaliciIz.izKaydiGeriYukle(this.kaliciIzBaglami(evren), kod); }
+  private olcekliBaglami(evren: string): olcekli.OlcekliBaglami {
+    return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } };
+  }
+  olcekliHaritaDurumu({ evren, harita }: { evren: string; harita: string }) { return olcekli.olcekliHaritaDurumu(this.evren(evren), harita); }
+  olcekliOlcekYaz({ evren, harita, olcek, varsayilanHizlar }: { evren: string; harita: string; olcek: OlcekliOlcekTanimi | null; varsayilanHizlar?: OlcekliHizKurali[] }) {
+    olcekli.olcekliOlcekYaz(this.olcekliBaglami(evren), harita, olcek, varsayilanHizlar);
+  }
+  olcekliVarsayilanHizYaz({ evren, harita, varsayilanHizlar }: { evren: string; harita: string; varsayilanHizlar: OlcekliHizKurali[] }) {
+    olcekli.olcekliVarsayilanHizYaz(this.olcekliBaglami(evren), harita, varsayilanHizlar);
+  }
+  olcekliAraziYaz({ evren, harita, kod, tanim }: { evren: string; harita: string; kod?: string | null; tanim: OlcekliAraziGirdisi }) {
+    return olcekli.olcekliAraziYaz(this.olcekliBaglami(evren), harita, kod, tanim);
+  }
+  olcekliAraziSil({ evren, kod, geriYukle }: { evren: string; kod: string; geriYukle?: boolean }) {
+    olcekli.olcekliAraziSil(this.olcekliBaglami(evren), kod, !!geriYukle);
+  }
+  olcekliOlcum({ evren, ...a }: { evren: string; harita: string; baslangic: [number, number]; bitis: [number, number]; ulasim?: string | null; mevsim?: string | null; katman?: string | null; izgaraBolumu?: number }) {
+    return olcekli.olcekliOlcum(this.evren(evren), a);
+  }
+  olcekliKonturlar({ evren, ...a }: { evren: string; harita: string; baslangic: [number, number]; ulasim: string; mevsim?: string | null; katman?: string | null; izgaraBolumu?: number }) {
+    return olcekli.olcekliKonturlar(this.evren(evren), a);
+  }
 }

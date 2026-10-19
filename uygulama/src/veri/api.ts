@@ -605,6 +605,89 @@ export interface IzKaydi {
 }
 export interface OlayIzleri { kisaVadeli: IzKaydi[]; kalici: IzKaydi[]; silinenler: IzKaydi[]; yerAdaylari: KisaKayit[] }
 export interface MekanIzKatmani { anahtar: string; baslik: string; tarihsiz: boolean; siraAnahtari: number | null; izler: IzKaydi[] }
+/** Ölçekli geometri kipi ve erişim konturları (§8.4, §15-2). */
+export interface OlcekliOlcekTanimi {
+  p1: [number, number];
+  p2: [number, number];
+  mesafe: number;
+  birim: string;
+  molaVarsayimi?: string;
+}
+export interface OlcekliHizKurali {
+  ulasim: string;
+  mevsim: string | null;
+  gecilmez: boolean;
+  gunlukHiz: number | null;
+}
+export interface OlcekliAraziGirdisi {
+  ad: string;
+  cizim?: string | null;
+  noktalar?: [number, number][];
+  kurallar: OlcekliHizKurali[];
+}
+export interface OlcekliArazi {
+  kod: string;
+  harita: string;
+  ad: string;
+  cizim: string | null;
+  noktalar: [number, number][];
+  kurallar: OlcekliHizKurali[];
+  catismali: boolean;
+}
+export interface OlcekliHaritaDurumu {
+  harita: string;
+  en: number;
+  boy: number;
+  olcek: OlcekliOlcekTanimi | null;
+  varsayilanHizlar: OlcekliHizKurali[];
+  araziler: OlcekliArazi[];
+  catismali: boolean;
+}
+export interface OlcekliSonucZarfi {
+  kip: 'olcekli_geometri';
+  sonucTuru: 'bu_varsayimlarla_tahmin';
+  hukum: 'cozum_bulundu' | 'kayitli_seceneklerde_bulunamadi' | 'denetlenemiyor';
+  guncellik: 'guncel' | 'hesaplaniyor' | 'onceki_sonuc';
+  olcekOzeti: string | null;
+  birim: string | null;
+  ulasim: string | null;
+  mevsim: string | null;
+  molaVarsayimi: string;
+  izgaraAraligiUzay: number | null;
+  izgaraAraligiBirim: number | null;
+  bilinmeyenAlanVar: boolean;
+  kapsamNotu: string;
+  varsayimPaketi: null;
+}
+export interface OlcekliOlcumSonucu {
+  durum: 'tamam' | 'olceksiz' | 'bilinmiyor' | 'bulunamadi';
+  uyari: string | null;
+  duzMesafe: number | null;
+  yolMesafesi: number | null;
+  enKisaGun: number | null;
+  yolNoktalari: [number, number][];
+  bilinmeyenAlanVar: boolean;
+  zarf: OlcekliSonucZarfi;
+}
+export interface OlcekliKontur {
+  gun: 1 | 2 | 3;
+  hucreler: [number, number][];
+  merkezler: [number, number][];
+  alanBirimKare: number;
+  svgYolu: string;
+}
+export interface OlcekliKonturSonucu {
+  durum: 'tamam' | 'olceksiz' | 'bilinmiyor';
+  uyari: string | null;
+  baslangic: [number, number];
+  izgaraEn: number;
+  izgaraBoy: number;
+  izgaraAraligiUzay: number | null;
+  izgaraAraligiBirim: number | null;
+  konturlar: OlcekliKontur[];
+  bilinmeyenAlanVar: boolean;
+  zarf: OlcekliSonucZarfi;
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1366,6 +1449,30 @@ export interface Istekler {
   izKaydiYaz(a: { evren: string; kod?: string | null; olay: string; tur: KaliciIzTuru; ad: string; yer?: string | null; bitis?: string | EvrenTarihi | null; gercekKoken?: string; anlatilanHikaye?: string }): { kod: string };
   izKaydiSil(a: { evren: string; kod: string }): void;
   izKaydiGeriYukle(a: { evren: string; kod: string }): void;
+  olcekliHaritaDurumu(a: { evren: string; harita: string }): OlcekliHaritaDurumu;
+  olcekliOlcekYaz(a: { evren: string; harita: string; olcek: OlcekliOlcekTanimi | null; varsayilanHizlar?: OlcekliHizKurali[] }): void;
+  olcekliVarsayilanHizYaz(a: { evren: string; harita: string; varsayilanHizlar: OlcekliHizKurali[] }): void;
+  olcekliAraziYaz(a: { evren: string; harita: string; kod?: string | null; tanim: OlcekliAraziGirdisi }): { kod: string };
+  olcekliAraziSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  olcekliOlcum(a: {
+    evren: string;
+    harita: string;
+    baslangic: [number, number];
+    bitis: [number, number];
+    ulasim?: string | null;
+    mevsim?: string | null;
+    katman?: string | null;
+    izgaraBolumu?: number;
+  }): OlcekliOlcumSonucu;
+  olcekliKonturlar(a: {
+    evren: string;
+    harita: string;
+    baslangic: [number, number];
+    ulasim: string;
+    mevsim?: string | null;
+    katman?: string | null;
+    izgaraBolumu?: number;
+  }): OlcekliKonturSonucu;
 }
 
 export type IstekAdi = keyof Istekler;
