@@ -220,6 +220,8 @@ export interface FarkAlani { alan: string; etiket: string; once: string | null; 
 export interface KayitFarki { kod: string; ad: string; tur: string; durum: 'yeni' | 'silindi' | 'degisti'; alanlar: FarkAlani[] }
 export interface IliskiFarki { kod: string; tur: string; a: KisaKayit; b: KisaKayit; durum: 'yeni' | 'silindi' | 'degisti'; ayrinti: string[] }
 export interface EvrenFarki { kayitlar: KayitFarki[]; iliskiler: IliskiFarki[] }
+export interface Yayim { kod: string; eser: KisaKayit; surum: { kod: string; ad: string }; baski: string; olusturma: number; acik: number }
+export interface YayimCelismesi { anahtar: string; kayit: KisaKayit; baslik: string; once: string | null; sonra: string | null; karar: string | null }
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -782,6 +784,11 @@ export interface Istekler {
   surumSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   surumFarki(a: { evren: string; surum: string }): EvrenFarki;
   dallar(a: { evren: string }): EvrenDali[];
+  yayimlar(a: { evren: string; eser?: string | null }): Yayim[];
+  yayimla(a: { evren: string; eser: string; baski: string }): { kod: string };
+  yayimSil(a: { evren: string; kod: string }): void;
+  yayimCelismeleri(a: { evren: string; yayim: string }): YayimCelismesi[];
+  yayimKarari(a: { evren: string; yayim: string; anahtar: string; karar: string | null }): void;
   dalOlustur(a: { evren: string; ad: string; aciklama?: string }): { kod: string };
   dalYaz(a: { evren: string; kod: string; alan: 'ad' | 'aciklama'; deger: string }): void;
   dalSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;

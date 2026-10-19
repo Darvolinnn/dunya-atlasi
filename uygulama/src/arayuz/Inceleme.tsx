@@ -1,6 +1,7 @@
 // İnceleme kuyruğu (§9.3): bir şeyin ne zaman incelenmeli olduğunun tek yeri. İki cihazda birbirinden habersiz yapılmış
 // değişiklikler ve sağlık taramasının bulduğu yapı sorunları (§9.4) burada. Ertelenen kapanmış sayılmaz, ayrı durur;
 // gerekçeyle kabul edilen, dayanağı değişmedikçe yeniden açılmaz.
+import { YayimIncelemesi } from './Surumler';
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { DenetimBulgusu, Denetimler, EtkiIncelemeleri, EtkiIncelemesi, PaketOzeti, SaglikBulgusu, SaglikTaramasi } from '../veri/api';
@@ -23,6 +24,7 @@ export function IncelemeKuyrugu({ istemci, evren, surum }: { istemci: Istemci; e
         <h2>İki cihazda yapılan değişiklikler</h2>
         <CatismaListesi istemci={istemci} evren={evren} surum={surum} />
       </section>
+      <YayimIncelemesi istemci={istemci} evren={evren} surum={surum} />
       <EtkiBolumu istemci={istemci} evren={evren} surum={surum} />
       <DenetimBolumu istemci={istemci} evren={evren} surum={surum} />
       <section aria-label="Sağlık taraması">

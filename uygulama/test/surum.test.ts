@@ -94,3 +94,38 @@ describe('deneme kopyası (§9.7)', () => {
     expect(duz(evren)).toBe('Kale tepede, nehre bakar.|Surlar yüksek.|Dalda eklenen paragraf.');
   });
 });
+
+describe('yayımlanmış eser kilidi (F18)', () => {
+  it('eserin okura sunduğu bilgiyi değiştiren değişiklik sorulur; eserden sonra başlayan değişiklik sorulmaz', () => {
+    const h = cihaz('Deneme');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Kuzey' });
+    const eser = h.kayitOlustur({ evren, ad: 'Birinci kitap', tur: 'eser' }).kod;
+    const { kod: sahne } = h.anlatiOlustur({ evren, ust: eser, ad: 'Taç giyme', tur: 'sahne' });
+    h.kayitTarih({ evren, kod: sahne, ifade: '430' });
+    const prens = h.kayitOlustur({ evren, ad: 'Prens Aren', tur: 'karakter' }).kod;
+    const fikir = h.kayitOlustur({ evren, ad: 'Söylenti', tur: 'karakter', karar: 'fikir' }).kod;
+    h.iliskiEkle({ evren, tur: 'sahnede', a: prens, b: sahne });
+    h.iliskiEkle({ evren, tur: 'sahnede', a: fikir, b: sahne });
+    h.durumEkle({ evren, kod: prens, durum: { ozellik: 'Unvan', deger: 'Prens', baslangic: { ifade: '410' } } });
+    const { kod: yayim } = h.yayimla({ evren, eser, baski: '1. baskı' });
+    expect(h.yayimlar({ evren, eser })).toMatchObject([{ baski: '1. baskı', acik: 0 }]);
+    // Z6: on yıl sonra kral olur; eserin zamanından sonra başlar, sorulmaz.
+    h.durumEkle({ evren, kod: prens, durum: { ozellik: 'Unvan', deger: 'Kral', baslangic: { ifade: '440' } } });
+    // Kesinleşmemiş kayıt kilit taşımaz.
+    h.kayitDegistir({ evren, kod: fikir, alan: 'ad', deger: 'Başka söylenti' });
+    expect(h.yayimCelismeleri({ evren, yayim })).toEqual([]);
+    // Eserin zamanına dokunan değişiklik sorulur.
+    h.kayitDegistir({ evren, kod: prens, alan: 'ad', deger: 'Prens Arenn' });
+    h.durumEkle({ evren, kod: prens, durum: { ozellik: 'Yara', deger: 'Sol kol', baslangic: { ifade: '425' } } });
+    const c = h.yayimCelismeleri({ evren, yayim });
+    expect(c.map((x) => [x.baslik, x.once, x.sonra])).toEqual([['Adı', 'Prens Aren', 'Prens Arenn'], ['Zamanla değişen', null, 'Yara: Sol kol (425 – …)']]);
+    expect(h.evrenBilgisi({ evren }).sorunSayisi).toBe(2);
+    h.yayimKarari({ evren, yayim, anahtar: c[0].anahtar, karar: 'baski' });
+    expect(h.yayimCelismeleri({ evren, yayim })[0].karar).toBe('baski');
+    expect(h.yayimlar({ evren })[0].acik).toBe(1);
+    // Değer yeniden değişirse karar düşer, yeniden sorulur.
+    h.kayitDegistir({ evren, kod: prens, alan: 'ad', deger: 'Prens Arenç' });
+    expect(h.yayimCelismeleri({ evren, yayim })[0].karar).toBe(null);
+    expect(() => h.yayimKarari({ evren, yayim, anahtar: c[0].anahtar, karar: 'uydurma' })).toThrow();
+  });
+});

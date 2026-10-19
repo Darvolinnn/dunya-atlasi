@@ -1,7 +1,7 @@
 // Adlandırılmış evren sürümleri ve iki hâl arasındaki fark (§9.7).
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { AktarimBirimi, DalFarki, EvrenBilgisi, EvrenDali, EvrenFarki, EvrenSurumu } from '../veri/api';
+import type { AktarimBirimi, DalFarki, EvrenBilgisi, EvrenDali, EvrenFarki, EvrenSurumu, Yayim, YayimCelismesi } from '../veri/api';
 import { zamanYaz } from '../alan/islem-metni';
 import { turBul } from '../alan/turler';
 import { git } from './Uygulama';
@@ -238,5 +238,90 @@ function AktarimEkrani({ istemci, evren, dal, surum }: { istemci: Istemci; evren
       </details>
       {hata && <p class="hata kucuk">{hata}</p>}
     </div>
+  );
+}
+
+// ---------- Yayımlanmış eser kilidi (F18) ----------
+const YAYIM_KARARLARI = [
+  { kod: 'gecmisi_duzelt', ad: 'Geçmişi düzelt', aciklama: 'Evrende doğrusu bu; eser bu noktada eskide kaldı.' },
+  { kod: 'yeni_olay', ad: 'Yeni olay', aciklama: 'Eserden sonra olan bir şey; tarihini eserin sonrasına koyun.' },
+  { kod: 'alternatif', ad: 'Alternatif devamlılık', aciklama: 'Başka bir devamlılığa ait; ana çizgi eserdeki gibi kalır.' },
+  { kod: 'baski', ad: 'Baskı düzeltmesi', aciklama: 'Eser sonraki baskıda düzeltilecek.' },
+];
+
+function YayimCelismeleri({ istemci, evren, yayim, surum }: { istemci: Istemci; evren: string; yayim: Yayim; surum: number }) {
+  const [liste, setListe] = useState<YayimCelismesi[] | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  useEffect(() => { istemci.iste('yayimCelismeleri', { evren, yayim: yayim.kod }).then(setListe, (e) => setHata(hataYaz(e))); }, [yayim.kod, surum]);
+  if (!liste) return hata ? <p class="hata kucuk">{hata}</p> : null;
+  if (!liste.length) return <p class="soluk kucuk">Eserin okura sunduğu bilgiyle çelişebilecek bir değişiklik yok.</p>;
+  return (
+    <>
+      <ul class="fark-listesi">
+        {liste.map((c) => (
+          <li key={c.anahtar} class={c.karar ? 'aktarildi' : 'fark-degisti'}>
+            <a href={`#/e/${evren}/k/${c.kayit.kod}`}>{c.kayit.ad}</a> · {c.baslik}: {c.once === null ? <span class="soluk">yoktu</span> : <del>{c.once}</del>} → {c.sonra === null ? <span class="soluk">yok</span> : <ins>{c.sonra}</ins>}
+            <div class="satir">
+              <select class="girdi kucuk-secim" aria-label={`${c.kayit.ad} ${c.baslik} için karar`} value={c.karar ?? ''}
+                onChange={(e) => { const v = (e.target as HTMLSelectElement).value; istemci.iste('yayimKarari', { evren, yayim: yayim.kod, anahtar: c.anahtar, karar: v || null }).catch((x) => setHata(hataYaz(x))); }}>
+                <option value="">Karar verilmedi</option>
+                {YAYIM_KARARLARI.map((k) => <option value={k.kod}>{k.ad}</option>)}
+              </select>
+              {c.karar && <span class="soluk kucuk">{YAYIM_KARARLARI.find((k) => k.kod === c.karar)?.aciklama}</span>}
+            </div>
+          </li>
+        ))}
+      </ul>
+      {hata && <p class="hata kucuk">{hata}</p>}
+    </>
+  );
+}
+
+/** Eser sayfasında: yayımla, yayımlar ve çelişmeler. */
+export function YayimBolumu({ istemci, evren, kod, surum, saltOkunur }: { istemci: Istemci; evren: string; kod: string; surum: number; saltOkunur: boolean }) {
+  const [liste, setListe] = useState<Yayim[] | null>(null);
+  const [baski, setBaski] = useState('');
+  const [hata, setHata] = useState<string | null>(null);
+  useEffect(() => { if (!saltOkunur) istemci.iste('yayimlar', { evren, eser: kod }).then(setListe, () => {}); }, [kod, surum, saltOkunur]);
+  if (saltOkunur || !liste) return null;
+  return (
+    <section class="surecler" aria-label="Yayımlar">
+      <h2>Yayımlar</h2>
+      <p class="soluk kucuk">Yayımlanan eserin dayandığı bilgi adlandırılmış bir sürüm olarak saklanır. Sonradan eserin okura sunduğu bir bilgi değişirse program engellemez, sorar. Eserin zamanından sonra başlayan değişiklikler ve kesinleşmemiş bilgi sorulmaz.</p>
+      <form class="satir" onSubmit={(e) => { e.preventDefault(); istemci.iste('yayimla', { evren, eser: kod, baski }).then(() => { setBaski(''); setHata(null); }, (x) => setHata(hataYaz(x))); }}>
+        <input class="girdi" lang="tr" aria-label="Baskının adı" placeholder="1. baskı" value={baski} onInput={(e) => setBaski((e.target as HTMLInputElement).value)} />
+        <button class="dugme kucuk" type="submit" disabled={!baski.trim()}>Yayımlandı olarak işaretle</button>
+      </form>
+      {hata && <p class="hata kucuk">{hata}</p>}
+      {liste.map((y) => (
+        <div key={y.kod} class="yayim">
+          <div class="satir">
+            <strong>{y.baski}</strong> <span class="soluk kucuk">{zamanYaz(y.olusturma)} · {y.acik ? `${y.acik} soru bekliyor` : 'soru yok'}</span>
+            <span class="bosluk" />
+            <a class="dugme kucuk" href={`#/e/${y.surum.kod}/k/${kod}`}>Yayımlanan hâli aç</a>
+            <button class="dugme sade kucuk" onClick={() => { if (confirm(`“${y.baski}” yayımı kaldırılsın mı? Saklanan sürüm kalır.`)) istemci.iste('yayimSil', { evren, kod: y.kod }).catch((e) => setHata(hataYaz(e))); }}>Kaldır</button>
+          </div>
+          <YayimCelismeleri istemci={istemci} evren={evren} yayim={y} surum={surum} />
+        </div>
+      ))}
+    </section>
+  );
+}
+
+/** İnceleme kuyruğunda: yanıt bekleyen yayım çelişmeleri. */
+export function YayimIncelemesi({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
+  const [liste, setListe] = useState<Yayim[] | null>(null);
+  useEffect(() => { istemci.iste('yayimlar', { evren }).then(setListe, () => setListe([])); }, [evren, surum]);
+  if (!liste || !liste.some((y) => y.acik)) return null;
+  return (
+    <section aria-label="Yayımlanmış eserle çelişebilecek değişiklikler">
+      <h2>Yayımlanmış eserle çelişebilecek değişiklikler</h2>
+      {liste.filter((y) => y.acik).map((y) => (
+        <div key={y.kod} class="yayim">
+          <h3><a href={`#/e/${evren}/k/${y.eser.kod}`}>{y.eser.ad}</a> · {y.baski}</h3>
+          <YayimCelismeleri istemci={istemci} evren={evren} yayim={y} surum={surum} />
+        </div>
+      ))}
+    </section>
   );
 }

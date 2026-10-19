@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -46,6 +46,7 @@ import * as gundelik from './gundelik';
 import * as derlemeMod from './derleme';
 import * as fark from './fark';
 import * as dalMod from './dal';
+import * as yayimMod from './yayim';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -168,7 +169,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       kayitSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NULL')),
       copSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NOT NULL AND kod NOT IN (SELECT kod FROM yonlendirmeler)')),
       catismaSayisi: this.catismaSayisi({ evren }),
-      sorunSayisi: saglik.acikSorunSayisi(e) + gorunum.etkiIncelemeleri(e).acik.length + denetim.acikDenetimSayisi(e),
+      sorunSayisi: saglik.acikSorunSayisi(e) + gorunum.etkiIncelemeleri(e).acik.length + denetim.acikDenetimSayisi(e) + (b ? 0 : this.acikYayimCelismeleri(e)),
     };
   }
 
@@ -434,6 +435,13 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         const ne = cz.bicim === 'yol' ? 'yolun' : 'bölgenin';
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: cz.kayit as string, baslik: kayitAdi(cz.kayit as string),
           alanEtiketi: `“${cz.ad}” haritasındaki ${ne} ${({ noktalar: 'sınırı', kayit: 'bağlı olduğu kayıt', kip: 'türü', baslangic: 'başlangıcı', bitis: 'bitişi' } as Record<string, string>)[alan] ?? alan}`, degerler });
+        continue;
+      }
+      const yyr = !iliski && alan.startsWith('karar:') ? e.db.selectObject('SELECT eser, baski FROM yayimlar WHERE kod=?', [nesne]) : undefined;
+      if (yyr) {
+        const ad = (k: unknown) => yayimMod.YAYIM_KARARLARI.find((x) => x.kod === k)?.ad ?? '(karar yok)';
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: yyr.eser as string, baslik: `${kayitAdi(yyr.eser as string)} · ${yyr.baski}`, alanEtiketi: 'Yayımlanan eserle çelişen değişiklik kararı',
+          degerler: degerler.map((d) => ({ ...d, yazi: ad(d.deger) })) });
         continue;
       }
       const svr = iliski || dr ? undefined : e.db.selectObject("SELECT ad, 'surum' t FROM evren_surumleri WHERE kod=? UNION ALL SELECT ad, 'dal' t FROM dallar WHERE kod=?", [nesne, nesne]);
@@ -726,6 +734,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const deger = JSON.parse(r.deger as string);
     if (alan === 'rota') { this.yaz(evren, [{ tur: 'rota_yaz', veri: { kod: nesne, rota: deger, cozum: true } }], [nesne]); return; }
     if (alan === 'asamalar') { this.yaz(evren, [{ tur: 'yolculuk_yaz', veri: { kod: nesne, asamalar: deger, cozum: true } }], [nesne]); return; }
+    const yyr = alan.startsWith('karar:') ? e.db.selectObject('SELECT eser FROM yayimlar WHERE kod=?', [nesne]) : undefined;
+    if (yyr) {
+      const r = e.db.selectValue('SELECT imza FROM yayim_kararlari WHERE yayim=? AND anahtar=?', [nesne, alan.slice(6)]) as string | undefined;
+      this.yaz(evren, [{ tur: 'yayim_karari', veri: { yayim: nesne, anahtar: alan.slice(6), karar: deger, imza: r ?? '', eser: yyr.eser, cozum: true } }]);
+      return;
+    }
     const svr = e.db.selectObject('SELECT ad FROM evren_surumleri WHERE kod=?', [nesne]);
     if (svr) { this.yaz(evren, [{ tur: 'surum_yaz', veri: { kod: nesne, alan, deger, surumAd: svr.ad, cozum: true } }]); return; }
     const dlr0 = e.db.selectObject('SELECT ad FROM dallar WHERE kod=?', [nesne]);
@@ -2098,6 +2112,74 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const e = this.anaEvren(evren);
     this.surumBul(e, surum);
     return fark.evrenFarki(this.evren(surum), e);
+  }
+
+  // ---------- Yayımlanmış eser kilidi (F18) ----------
+  private readonly celismeOnbellegi = new Map<string, { sayi: number; liste: Omit<YayimCelismesi, 'karar'>[] }>();
+  private yayimCelismeHam(e: EvrenVt, yayim: Record<string, unknown>) {
+    const k = yayim.kod as string;
+    const sayi = e.islemSayisi();
+    const o = this.celismeOnbellegi.get(k);
+    if (o && o.sayi === sayi) return o.liste;
+    const liste = yayimMod.yayimCelismeleri(this.evren(yayim.surum as string), e, yayim.eser as string);
+    this.celismeOnbellegi.set(k, { sayi, liste });
+    return liste;
+  }
+  private yayimCelismeleriHesapla(e: EvrenVt, yayim: Record<string, unknown>): YayimCelismesi[] {
+    const kararlar = new Map(e.db.selectObjects('SELECT anahtar, karar, imza FROM yayim_kararlari WHERE yayim=?', [yayim.kod as string]).map((r) => [r.anahtar as string, r]));
+    return this.yayimCelismeHam(e, yayim).map((c) => {
+      const r = kararlar.get(c.anahtar);
+      return { ...c, karar: r && r.imza === JSON.stringify([c.once, c.sonra]) ? r.karar as string : null };
+    });
+  }
+  /** Yanıtlanmamış çelişme sayısı (inceleme sayısına eklenir). */
+  private acikYayimCelismeleri(e: EvrenVt) {
+    let n = 0;
+    for (const y of e.db.selectObjects('SELECT * FROM yayimlar WHERE silindi IS NULL')) n += this.yayimCelismeleriHesapla(e, y).filter((c) => !c.karar).length;
+    return n;
+  }
+  yayimlar({ evren, eser = null }: { evren: string; eser?: string | null }) {
+    const e = this.anaEvren(evren);
+    return e.db.selectObjects(`SELECT y.*, s.ad surum_ad FROM yayimlar y JOIN evren_surumleri s ON s.kod=y.surum WHERE y.silindi IS NULL${eser ? ' AND y.eser=?' : ''} ORDER BY y.olusturma DESC`, eser ? [eser] : [])
+      .map((r) => {
+        const k = e.db.selectObject('SELECT ad, tur FROM kayitlar WHERE kod=?', [r.eser as string]);
+        return { kod: r.kod as string, eser: { kod: r.eser as string, ad: (k?.ad as string) ?? 'Silinmiş eser', tur: (k?.tur as string) ?? 'eser' }, surum: { kod: r.surum as string, ad: r.surum_ad as string },
+          baski: r.baski as string, olusturma: Number(r.olusturma), acik: this.yayimCelismeleriHesapla(e, r).filter((c) => !c.karar).length };
+      });
+  }
+  /** Eseri yayımlar: evrenin bugünkü hâli adlandırılmış sürüm olur ve eser ona bağlanır. */
+  yayimla({ evren, eser, baski }: { evren: string; eser: string; baski: string }) {
+    const e = this.anaEvren(evren);
+    const t = e.db.selectObject('SELECT ad, tur FROM kayitlar WHERE kod=? AND silindi IS NULL', [eser]);
+    if (!t || t.tur !== 'eser') throw new Error('Eser bulunamadı.');
+    const b = temizle(baski, { uzunluk: 120 });
+    const surum = yeniKod(), kod = yeniKod();
+    this.yaz(evren, [
+      { tur: 'surum_olustur', veri: { kod: surum, ad: `${t.ad} · ${b}`, aciklama: 'Eser yayımlanırken saklandı.' } },
+      { tur: 'yayim_olustur', veri: { kod, eser, surum, baski: b } },
+    ], [eser]);
+    return { kod };
+  }
+  private yayimBul(e: EvrenVt, kod: string) {
+    const r = kodGecerliMi(kod) ? e.db.selectObject('SELECT * FROM yayimlar WHERE kod=? AND silindi IS NULL', [kod]) : undefined;
+    if (!r) throw new Error('Yayım bulunamadı.');
+    return r;
+  }
+  yayimSil({ evren, kod }: { evren: string; kod: string }) {
+    const r = this.yayimBul(this.anaEvren(evren), kod);
+    this.yaz(evren, [{ tur: 'yayim_sil', veri: { kod, eser: r.eser, baski: r.baski } }], [r.eser as string]);
+  }
+  yayimCelismeleri({ evren, yayim }: { evren: string; yayim: string }) {
+    const e = this.anaEvren(evren);
+    return this.yayimCelismeleriHesapla(e, this.yayimBul(e, yayim));
+  }
+  yayimKarari({ evren, yayim, anahtar, karar }: { evren: string; yayim: string; anahtar: string; karar: string | null }) {
+    const e = this.anaEvren(evren);
+    const y = this.yayimBul(e, yayim);
+    const c = this.yayimCelismeHam(e, y).find((x) => x.anahtar === anahtar);
+    if (!c) throw new Error('Bu çelişme artık yok.');
+    if (karar !== null && !yayimMod.YAYIM_KARARLARI.some((k) => k.kod === karar)) throw new Error('Geçersiz karar.');
+    this.yaz(evren, [{ tur: 'yayim_karari', veri: { yayim, anahtar, karar, imza: JSON.stringify([c.once, c.sonra]), eser: y.eser } }], [y.eser as string]);
   }
 
   // ---------- Deneme kopyaları (§9.7) ----------

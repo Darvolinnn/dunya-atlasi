@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 33;
+export const IZDUSUM_SURUMU = 34;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -310,6 +310,21 @@ CREATE TABLE IF NOT EXISTS dallar(
   gordu TEXT NOT NULL,
   olusturma INTEGER NOT NULL,
   silindi INTEGER
+);
+CREATE TABLE IF NOT EXISTS yayimlar(
+  kod TEXT PRIMARY KEY,
+  eser TEXT NOT NULL,
+  surum TEXT NOT NULL,
+  baski TEXT NOT NULL,
+  olusturma INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE TABLE IF NOT EXISTS yayim_kararlari(
+  yayim TEXT NOT NULL,
+  anahtar TEXT NOT NULL,
+  karar TEXT NOT NULL,
+  imza TEXT NOT NULL,
+  PRIMARY KEY(yayim, anahtar)
 );
 CREATE TABLE IF NOT EXISTS derlemeler(
   kod TEXT PRIMARY KEY,
@@ -583,7 +598,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'derlemeler', 'evren_surumleri', 'dallar', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -1200,6 +1215,22 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   dal_geri_yukle(db, i) {
     db.exec({ sql: 'UPDATE dallar SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
+  /** Yayımlanmış eser (F18): eser, o anın adlandırılmış sürümüne bağlanır. */
+  yayim_olustur(db, i) {
+    const v = i.veri as { kod?: unknown; eser?: unknown; surum?: unknown; baski?: unknown };
+    if (typeof v.kod !== 'string' || typeof v.eser !== 'string' || typeof v.surum !== 'string') return;
+    db.exec({ sql: 'INSERT OR IGNORE INTO yayimlar(kod, eser, surum, baski, olusturma) VALUES(?,?,?,?,?)', bind: [v.kod, yonlendir(db, v.eser), v.surum, String(v.baski ?? '').slice(0, 120), i.zaman] });
+  },
+  yayim_sil(db, i) {
+    db.exec({ sql: 'UPDATE yayimlar SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  yayim_karari(db, i) {
+    const { yayim, anahtar, karar, imza } = i.veri as { yayim?: unknown; anahtar?: unknown; karar?: unknown; imza?: unknown };
+    if (typeof yayim !== 'string' || typeof anahtar !== 'string') return;
+    if (typeof karar !== 'string' || !karar) db.exec({ sql: 'DELETE FROM yayim_kararlari WHERE yayim=? AND anahtar=?', bind: [yayim, anahtar] });
+    else db.exec({ sql: 'INSERT OR REPLACE INTO yayim_kararlari(yayim, anahtar, karar, imza) VALUES(?,?,?,?)', bind: [yayim, anahtar, karar, String(imza ?? '')] });
+    alanYaz(db, i, yayim, `karar:${anahtar}`, typeof karar === 'string' && karar ? karar : null);
   },
   /** Gezinti ve görsel pano (§7): yazarın derlediği listeler. İlk yazım derlemeyi kurar. */
   derleme_yaz(db, i) {
