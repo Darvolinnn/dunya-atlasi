@@ -639,3 +639,7 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 /* Değişiklik niyeti (F24) */
 .niyet-formu { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .niyet-formu .secenek-satiri { display: flex; gap: 8px; align-items: baseline; cursor: pointer; }
+
+/* Değişiklik masası (F04) */
+.degisiklik-masasi { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.masa-listesi li { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }

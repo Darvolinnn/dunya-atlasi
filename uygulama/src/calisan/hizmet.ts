@@ -45,6 +45,7 @@ import * as montaj from './montaj';
 import * as gundelik from './gundelik';
 import * as sozluk from './sozluk';
 import * as niyetMod from './degisiklik-niyeti';
+import * as degMasa from './degisiklik-masasi';
 import * as yerlesim from './yerlesim';
 import * as derlemeMod from './derleme';
 import * as fark from './fark';
@@ -1919,6 +1920,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
 
   nedenSonucAgi({ evren, merkez = null, derinlik }: { evren: string; merkez?: string | null; derinlik?: number }) { return gorunum.nedenSonucAgi(this.evren(evren), merkez, derinlik); }
   etkiRaporu({ evren, kod }: { evren: string; kod: string }) { return gorunum.etkiRaporu(this.evren(evren), kod); }
+  degisiklikMasasi({ evren, kod, ifade, koru }: { evren: string; kod: string; ifade: string; koru: string[] }) { return degMasa.hesapla(this.evren(evren), kod, ifade, koru).masa; }
+  /** F04: olayın yeni tarihi ve seçilen korumalar tek işlem grubu olarak yazılır. */
+  degisiklikUygula({ evren, kod, ifade, koru }: { evren: string; kod: string; ifade: string; koru: string[] }) {
+    const h = degMasa.hesapla(this.evren(evren), kod, ifade, koru);
+    this.yaz(evren, h.girdiler, h.ilgili);
+  }
   etkiIncelemeleri({ evren }: { evren: string }) { return gorunum.etkiIncelemeleri(this.evren(evren)); }
   /** Etki incelemesini kapatma (§9.3): düzeltildi, gerekçeyle kabul ya da ertele; null yeniden açar. */
   etkiKarari({ evren, anahtar, durum, gerekce = '' }: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null; gerekce?: string }) {

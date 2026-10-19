@@ -282,6 +282,16 @@ export interface SahneYerlesimi { plan: YerlesimPlani; ogeler: YerlesimOgesi[] }
 export interface YerlesimOkumasi { yerlesim: SahneYerlesimi | null; katilimcilar: KisaKayit[]; catismali: boolean }
 export interface YerlesimPlanSecimi extends YerlesimPlani { ad: string }
 
+/** F04 değişiklik masası: bir olayın tarihi değişmeden önceki önizleme. */
+export interface MasaSatiri extends KisaKayit {
+  /** Korunabilen satırın anahtarı; yaş gibi hesaplanan değerlerde null. */
+  anahtar: string | null; aciklama: string; once: string; sonra: string;
+  korunabilir: boolean; korunuyor: boolean; korunamaz: string | null;
+}
+export interface DegisiklikMasasi {
+  olay: KisaKayit; once: string; sonra: string;
+  hesap: MasaSatiri[]; celisen: (KisaKayit & { aciklama: string })[]; incelenecek: EtkiSatiri[]; bahseden: EtkiSatiri[];
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -789,6 +799,8 @@ export interface Istekler {
   kayitDurumGecmisi(a: { evren: string; kod: string }): DurumGecmisi[];
   nedenSonucAgi(a: { evren: string; merkez?: string | null; derinlik?: number }): NedenSonucAgi;
   etkiRaporu(a: { evren: string; kod: string }): EtkiRaporu;
+  degisiklikMasasi(a: { evren: string; kod: string; ifade: string; koru: string[] }): DegisiklikMasasi;
+  degisiklikUygula(a: { evren: string; kod: string; ifade: string; koru: string[] }): void;
   etkiIncelemeleri(a: { evren: string }): EtkiIncelemeleri;
   etkiKarari(a: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null; gerekce?: string }): void;
   kurguHatlari(a: { evren: string }): KurguHatlari;

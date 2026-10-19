@@ -12,6 +12,7 @@ import { git } from './Uygulama';
 import { takvimOrnegi, useTakvim } from './Takvim';
 import { gorseldeIsaretle } from './Harita';
 import { EtkiRaporuPaneli } from './Gorunumler';
+import { DegisiklikMasasiPaneli } from './DegisiklikMasasi';
 import { GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
 import { SureklilikDefteri } from './Sureklilik';
 
@@ -26,7 +27,8 @@ export function TarihAlani({ istemci, evren, kayit }: { istemci: Istemci; evren:
   // Tarih değişince etki raporu (§9.2): önceki ifade saklanır, böylece tek dokunuşla geri dönülebilir (T4).
   const [etki, setEtki] = useState<{ once: string | null } | null>(null);
   useEffect(() => { setYerel(kayit.tarih?.bicim === 'goreli' ? '' : kayit.tarih?.ifade ?? ''); setKip(kayit.tarih?.bicim === 'goreli' ? 'goreli' : 'yaz'); }, [kayit.tarih?.ifade, kayit.tarih?.bicim]);
-  useEffect(() => setEtki(null), [kayit.kod]);
+  const [masa, setMasa] = useState(false);
+  useEffect(() => { setEtki(null); setMasa(false); }, [kayit.kod]);
   const z = useTakvim(istemci, evren);
   const onizleme = tarihCoz(yerel, z);
   const bitir = async () => {
@@ -59,7 +61,11 @@ export function TarihAlani({ istemci, evren, kayit }: { istemci: Istemci; evren:
       </> : <GoreliTarih istemci={istemci} evren={evren} kayit={kayit} z={z} />}
       {paralel.map((p) => <span class="soluk kucuk tarih-paralel">{p.takvim}: {p.yazi}</span>)}
       {hata && <span class="hata kucuk">{hata}</span>}
-      {!etki && kayit.tarih && <button class="dugme sade kucuk" style="align-self:flex-start" onClick={() => setEtki({ once: null })}>Bu tarih değişirse neler etkilenir?</button>}
+      {!etki && !masa && kayit.tarih && <span class="satir">
+        <button class="dugme sade kucuk" onClick={() => setEtki({ once: null })}>Bu tarih değişirse neler etkilenir?</button>
+        {kayit.tarih.eksen && <button class="dugme sade kucuk" onClick={() => setMasa(true)}>Değişiklik masasında dene</button>}
+      </span>}
+      {masa && <DegisiklikMasasiPaneli istemci={istemci} evren={evren} kayit={kayit} kapat={() => setMasa(false)} />}
       {etki && <EtkiRaporuPaneli istemci={istemci} evren={evren} kod={kayit.kod} once={etki.once}
         geriAl={etki.once ? async () => { await istemci.iste('kayitTarih', { evren, kod: kayit.kod, ifade: etki.once! }); setEtki(null); } : null}
         kapat={() => setEtki(null)} />}
