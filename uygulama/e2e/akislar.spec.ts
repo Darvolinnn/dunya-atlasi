@@ -24,6 +24,8 @@ test('"[[" ile kayda bağlantı', async ({ page: p }) => {
 });
 
 test('sayfa rehberi "?" ile açılır, Esc ile kapanır', async ({ page: p }) => {
+  // Görüntüsüz tarayıcıda kareler geç gelebilir; panel göründüğü an basılan Esc de yakalanmalı.
+  await p.addInitScript(() => { window.requestAnimationFrame = () => 0; });
   await p.goto('/');
   const dugme = p.getByRole('button', { name: 'Bu sayfa ne işe yarar?' });
   await dugme.click();
@@ -131,6 +133,8 @@ test('durum özeti açılınca cihaz, Drive ve yedek ayrı satırlarda görünü
 
 test('tarihi olan sahnede bağlam paneli kendiliğinden açık; kapatınca "Bağlamı göster"', async ({ page: p }) => {
   await sahneAc(p);
+  // Kareler geç gelirken de panel açılır açılmaz yazılan tarih silinmemeli.
+  await p.evaluate(() => { window.requestAnimationFrame = () => 0; });
   const panel = p.getByRole('complementary', { name: 'Sahnenin bağlamı' });
   await p.getByRole('button', { name: 'Bağlam ekle' }).click();
   await panel.getByLabel('Evren tarihi', { exact: true }).fill('1200');

@@ -1,7 +1,7 @@
 // Komut paletinden açılan iki küçük hesap (§5.8): iki yer arası yolculuk süresi ve takvim günü hesabı.
 // Yolculuk, kayıtlı rotalarla en kısa yolu (§15-2) kullanır; takvim hesabı evrenin takvimiyle (§3.4) yapılır.
 // İkisi de evrende hiçbir şey değiştirmez.
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { RotaSonucu } from '../veri/api';
 import { anaTakvim, eksenAraligi, farkCoz, gunFarki, kaydir, tarihAciklamasi, tarihCoz, type Takvim } from '../alan/tarih';
@@ -14,7 +14,7 @@ type Secim = { kod: string; ad: string };
 
 export function HesapPenceresi({ istemci, evren, tur, kapat }: { istemci: Istemci; evren: string; tur: HesapTuru; kapat: () => void }) {
   const ic = useRef<HTMLDivElement>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     ic.current?.querySelector<HTMLElement>('button, input')?.focus();
     const tus = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('.secici')) kapat(); };
     document.addEventListener('keydown', tus);
