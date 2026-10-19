@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 26;
+export const IZDUSUM_SURUMU = 27;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -260,6 +260,14 @@ CREATE TABLE IF NOT EXISTS ad_bicimleri(
 CREATE TABLE IF NOT EXISTS dil_yeterlilikleri(
   iliski TEXT PRIMARY KEY,
   deger TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS teknoloji_tanimlari(
+  kod TEXT PRIMARY KEY,
+  tanim TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS motif_yorumlari(
+  kod TEXT PRIMARY KEY,
+  yorumlar TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS masalar(
   kod TEXT PRIMARY KEY,
@@ -524,7 +532,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -1037,6 +1045,20 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (!deger || typeof deger !== 'object') db.exec({ sql: 'DELETE FROM dil_yeterlilikleri WHERE iliski=?', bind: [iliski] });
     else db.exec({ sql: 'INSERT OR REPLACE INTO dil_yeterlilikleri(iliski, deger) VALUES(?,?)', bind: [iliski, JSON.stringify(deger)] });
     alanYaz(db, i, iliski, 'dil_yeterliligi', deger ?? null);
+  },
+  /** Teknolojinin alanlara göre düzeyi ve keşif, yayılma, gündelik hayata girme kayıtları. */
+  teknoloji_yaz(db, i) {
+    const { kod, tanim } = i.veri as { kod: string; tanim: unknown };
+    if (typeof kod !== 'string' || !tanim || typeof tanim !== 'object') return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO teknoloji_tanimlari(kod, tanim) VALUES(?,?)', bind: [kod, JSON.stringify(tanim)] });
+    alanYaz(db, i, kod, 'teknoloji', tanim);
+  },
+  /** Motifin yorumlayana ve döneme göre yorumları. */
+  motif_yorum_yaz(db, i) {
+    const { kod, yorumlar } = i.veri as { kod: string; yorumlar: unknown };
+    if (typeof kod !== 'string' || !Array.isArray(yorumlar)) return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO motif_yorumlari(kod, yorumlar) VALUES(?,?)', bind: [kod, JSON.stringify(yorumlar)] });
+    alanYaz(db, i, kod, 'motif_yorumlari', yorumlar);
   },
   /** Çalışma masası (§5.9): kayıtlar kopyalanmaz, masa onlara bağlanır. */
   masa_olustur(db, i) {

@@ -146,6 +146,11 @@ VARSAYILANLAR.sehir.alanlar.push(IKLIM, PARA, HUKUK, DIL, MIMARI);
 VARSAYILANLAR.siyasi.alanlar.push(PARA, HUKUK);
 VARSAYILANLAR.kultur.alanlar.push({ ...DIL, varsayilan: undefined }, { ...MIMARI, varsayilan: undefined });
 VARSAYILANLAR.canli = { alanlar: [{ ...YASAM, varsayilan: undefined }], sorular: [] };
+// Eşyanın ve motifin gerçek geçmişi ile anlatılan efsanesi ayrıdır (§4.6).
+const GERCEK: SablonAlani = { kod: 'gercek_gecmis', ad: 'Gerçek geçmişi', tur: 'uzun' };
+const EFSANE: SablonAlani = { kod: 'efsane', ad: 'Anlatılan efsanesi', tur: 'uzun' };
+VARSAYILANLAR.motif = { alanlar: [{ kod: 'gorunus', ad: 'Görünüşü', tur: 'uzun' }, GERCEK, EFSANE], sorular: [] };
+VARSAYILANLAR.esya = { alanlar: [GERCEK, EFSANE], sorular: [] };
 export const varsayilanSablon = (tur: string): Sablon => structuredClone(VARSAYILANLAR[tur] ?? BOS);
 
 const KOD = /^[a-z0-9_.-]{1,40}$/;

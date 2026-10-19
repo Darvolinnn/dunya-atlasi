@@ -165,6 +165,15 @@ export interface DilBilgisi {
 export interface TuretilenBicim { dil: KisaKayit; kaynakBicim: string; bicim: string; yol: KisaKayit[]; iz: SesIzi[]; hata: string | null; kayitli: string | null }
 export interface AdBicimi { dil: KisaKayit; bicim: string; turetildi: { kaynakDil: KisaKayit; kaynakBicim: string } | null }
 export interface UretilenAd { ad: string; parcalar: { bicim: string; anlam: string }[]; varOlan: boolean }
+/** Teknoloji (§4.4): keşif, yayılma ve gündelik hayata girme ayrı tarihlerdir. */
+export interface TeknolojiAsamasi { asama: 'kesif' | 'yayilma' | 'gundelik'; yer: KisaKayit | null; tarih: EvrenTarihi | null; not: string }
+export interface TeknolojiTanimi { duzeyler: { alan: string; duzey: string }[]; asamalar: TeknolojiAsamasi[] }
+export interface TeknolojiDurumu {
+  yer: KisaKayit; tarih: EvrenTarihi; yerler: KisaKayit[]; not: string;
+  satirlar: { teknoloji: KisaKayit; kesin: TeknolojiAsamasi['asama'] | null; belki: TeknolojiAsamasi['asama'] | null; dayanak: string[]; baskaYerde: KisaKayit[] }[];
+}
+export interface MotifYorumu { yorumlayan: KisaKayit | null; donem: KisaKayit | null; anlam: string }
+export interface MotifBilgisi { yorumlar: MotifYorumu[]; sahneler: { sahne: KisaKayit; eser: { kod: string; ad: string } | null; sira: number | null }[] }
 export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
 export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
 export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
@@ -699,6 +708,11 @@ export interface Istekler {
   uretimOzeti(a: { evren: string; urun: string }): UretimOzeti;
   dayaniklilikYaz(a: { evren: string; iliski: string; deger: Dayaniklilik | null }): void;
   geciselKayitlar(a: { evren: string; kok: string; eksen: GeciselEksen }): GeciselSonuc[];
+  teknoloji(a: { evren: string; kod: string }): TeknolojiTanimi;
+  teknolojiYaz(a: { evren: string; kod: string; tanim: { duzeyler: { alan: string; duzey: string }[]; asamalar: { asama: string; yer: string | null; tarih: string; not: string }[] } }): void;
+  teknolojiDurumu(a: { evren: string; yer: string; tarih: string }): TeknolojiDurumu;
+  motif(a: { evren: string; kod: string }): MotifBilgisi;
+  motifYorumlariYaz(a: { evren: string; kod: string; yorumlar: { yorumlayan: string | null; donem: string | null; anlam: string }[] }): void;
   dil(a: { evren: string; kod: string }): DilBilgisi;
   dilYaz(a: { evren: string; kod: string; tanim: DilTanimi }): void;
   sesDene(a: { evren: string; dil: string; bicim: string }): { sonuc: string; iz: SesIzi[]; hatalar: { sira: number; hata: string }[] };

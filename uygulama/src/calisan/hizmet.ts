@@ -39,6 +39,7 @@ import * as hukuk from './hukuk';
 import * as uretim from './uretim';
 import * as haber from './haber';
 import * as dilMod from './dil';
+import * as tekMod from './teknoloji';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -441,6 +442,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           degerler: degerler.map((d) => ({ ...d, yazi: yazi(d.deger) })) });
         continue;
       }
+      if (!iliski && (alan === 'teknoloji' || alan === 'motif_yorumlari')) {
+        const yazi = (d: unknown) => !d ? '(boş)' : alan === 'teknoloji' ? `${(d as { asamalar: unknown[] }).asamalar.length} yayılma kaydı, ${(d as { duzeyler: unknown[] }).duzeyler.length} düzey` : `${(d as unknown[]).length} yorum`;
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: alan === 'teknoloji' ? 'Teknolojinin düzeyleri ve yayılması' : 'Motifin yorumları',
+          degerler: degerler.map((d) => ({ ...d, yazi: yazi(d.deger) })) });
+        continue;
+      }
       if (!iliski && (alan === 'kanal' || alan === 'haber_cikis')) {
         const yazi = (d: unknown) => {
           if (!d) return '(boş)';
@@ -726,6 +733,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (iliski && alan === 'dil_yeterliligi') { this.yaz(evren, [{ tur: 'dil_yeterliligi_yaz', veri: { iliski: nesne, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
     if (!iliski && alan === 'dil') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'dil_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
     if (!iliski && alan.startsWith('ad_bicimi:')) { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'ad_bicimi_yaz', veri: { kayit: nesne, dil: alan.slice(10), deger, cozum: true } }], [nesne]); return; }
+    if (!iliski && alan === 'teknoloji') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'teknoloji_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
+    if (!iliski && alan === 'motif_yorumlari') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'motif_yorum_yaz', veri: { kod: nesne, yorumlar: deger ?? [], cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'kanal') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'kanal_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'haber_cikis') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'haber_cikis_yaz', veri: { kod: nesne, cikis: deger, cozum: true } }], [nesne]); return; }
     if (iliski && alan === 'dayaniklilik') { this.yaz(evren, [{ tur: 'dayaniklilik_yaz', veri: { iliski: nesne, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
@@ -1935,6 +1944,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   kisiDilleri({ evren, kod }: { evren: string; kod: string }) { return dilMod.kisiDilleri(this.evren(evren), kod); }
   dilYeterliligiYaz({ evren, iliski, deger }: { evren: string; iliski: string; deger: DilYeterliligi | null }) { dilMod.dilYeterliligiYaz(this.dilBaglami(evren), iliski, deger); }
   private dilBaglami(evren: string): dilMod.DilBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
+  teknoloji({ evren, kod }: { evren: string; kod: string }) { return tekMod.teknolojiOku(this.evren(evren), kod); }
+  teknolojiYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: Parameters<typeof tekMod.teknolojiYaz>[2] }) { tekMod.teknolojiYaz(this.tekBaglami(evren), kod, tanim); }
+  teknolojiDurumu({ evren, yer, tarih }: { evren: string; yer: string; tarih: string }) { return tekMod.teknolojiDurumu(this.evren(evren), yer, tarih); }
+  motif({ evren, kod }: { evren: string; kod: string }) { return tekMod.motifBilgisi(this.evren(evren), kod); }
+  motifYorumlariYaz({ evren, kod, yorumlar }: { evren: string; kod: string; yorumlar: Parameters<typeof tekMod.motifYorumlariYaz>[2] }) { tekMod.motifYorumlariYaz(this.tekBaglami(evren), kod, yorumlar); }
+  private tekBaglami(evren: string): tekMod.TeknolojiBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
   kesintiZinciri({ evren, kaynak }: { evren: string; kaynak: string }) { return uretim.kesintiZinciri(this.evren(evren), kaynak); }
   uretimOzeti({ evren, urun }: { evren: string; urun: string }) { return uretim.uretimOzeti(this.evren(evren), urun); }
   dayaniklilikYaz({ evren, iliski, deger }: { evren: string; iliski: string; deger: Dayaniklilik | null }) {
