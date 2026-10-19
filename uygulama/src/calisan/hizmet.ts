@@ -251,8 +251,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       kurulum: this.kurulum, medya: this.medya, evrenVt: (k) => this.evren(k), evrenler: () => this.kurulum.evrenler(),
       islemleriAl: (evren, islemler) => this.islemleriAl({ evren, islemler }),
       evreniDisaridanKur: (kod, islemler) => { this.evreniDisaridanKur({ kod, islemler }); },
-      dallar: (evren) => this.evren(evren).db.selectObjects('SELECT kod, gordu FROM dallar WHERE silindi IS NULL ORDER BY kod')
-        .map((r) => ({ kod: r.kod as string, gordu: JSON.parse(r.gordu as string) as Record<string, number>, yerel: this.kurulum.ayar(`dal_yerel:${r.kod}`) === '1' })),
+      dallar: (evren) => this.evren(evren).db.selectObjects('SELECT kod, ad, gordu FROM dallar WHERE silindi IS NULL ORDER BY kod')
+        .map((r) => ({ kod: r.kod as string, ad: r.ad as string, gordu: JSON.parse(r.gordu as string) as Record<string, number>, yerel: this.kurulum.ayar(`dal_yerel:${r.kod}`) === '1' })),
     };
   }
 

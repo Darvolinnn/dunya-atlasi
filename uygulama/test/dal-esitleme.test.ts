@@ -53,6 +53,28 @@ describe('deneme kopyalarının eşitlenmesi (§9.7, §10)', () => {
     expect(m.h.kayitlar({ evren }).map((k) => k.ad).sort()).toEqual(['Kral Aldren', 'Varis Elin']);
   });
 
+  it('eşitleme durumu deneme kopyasında yalnızca bu cihazda olan değişiklikleri sayar', async () => {
+    const drive = new BellekTasiyici();
+    const m = cihaz('Masaüstü', drive);
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    await m.h.esitle();
+    const { kod: dal } = m.h.dalOlustur({ evren, ad: 'Deneme' });
+    const durum = () => m.h.esitlemeDurumu().evrenler.find((x) => x.kod === evren)!;
+    expect(durum().denemeler).toEqual([{ kod: dal, ad: 'Deneme', yalnizBuCihazda: 0, bekleyen: 0 }]);
+    const once = durum().yalnizBuCihazda; // kopyanın açılması ana evrende bir değişikliktir
+    m.h.kayitOlustur({ evren: dal, ad: 'Varis Elin', tur: 'karakter' });
+    expect(durum().yalnizBuCihazda).toBe(once); // ana evren etkilenmez
+    m.h.kayitOlustur({ evren, ad: 'Danışman Orin', tur: 'karakter' });
+    // Aynı iş, ana evrende ve kopyada aynı sayıda değişiklik olarak görünür.
+    expect(durum().denemeler[0].yalnizBuCihazda).toBe(durum().yalnizBuCihazda - once);
+    expect(durum().denemeler[0].yalnizBuCihazda).toBeGreaterThan(0);
+    await m.h.esitle();
+    expect(durum().yalnizBuCihazda).toBe(0);
+    expect(durum().denemeler[0].yalnizBuCihazda).toBe(0);
+    m.h.dalSil({ evren, kod: dal });
+    expect(durum().denemeler).toEqual([]);
+  });
+
   it('hiç açılmamış ve Drive\'da dosyası olmayan dal kurulmaz; silinen dal eşitlenmez', async () => {
     const drive = new BellekTasiyici();
     const m = cihaz('Masaüstü', drive);

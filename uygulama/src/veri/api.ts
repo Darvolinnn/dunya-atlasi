@@ -601,6 +601,8 @@ export interface DonemselYedekDurumu {
 export interface EvrenEsitlemeDurumu {
   kod: string; ad: string; esitlenir: boolean; sonEsitleme: number | null; yalnizBuCihazda: number; bekleyen: number; guncellemeGerekli: boolean;
   cihazlar: { kod: string; ad: string; sonGorulme: number; kullanimDisi: boolean; bekleyen: number; buCihaz: boolean }[];
+  /** Bu cihazdaki deneme kopyaları (§9.7); ana evrenle birlikte eşitlenir. */
+  denemeler: { kod: string; ad: string; yalnizBuCihazda: number; bekleyen: number }[];
 }
 /** Kaldığın yer (§5.9): cihazlar arasında eşitlenir; panel yerleşimi gibi cihaza özel şeyler burada yok. */
 export interface KaldigiYer { kayit: string | null; konum: number | null; yanPanel: string[]; not: string; zaman: number }

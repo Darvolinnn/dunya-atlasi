@@ -109,7 +109,7 @@ export function EsitlemeOzeti() {
   const e = useEsitleme();
   const d = e.durum;
   if (!d) return null;
-  const yalniz = d.evrenler.filter((x) => x.esitlenir).reduce((n, x) => n + x.yalnizBuCihazda, 0);
+  const yalniz = d.evrenler.filter((x) => x.esitlenir).reduce((n, x) => n + x.yalnizBuCihazda + x.denemeler.reduce((m, y) => m + y.yalnizBuCihazda, 0), 0);
   const son = Math.max(0, ...d.evrenler.map((x) => x.sonEsitleme ?? 0));
   let metin: string;
   if (!d.bagli && !e.eposta) metin = 'Drive\'a bağlı değil';
@@ -185,6 +185,10 @@ export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
                 <li>{v.yalnizBuCihazda ? <strong>{v.yalnizBuCihazda} değişiklik yalnızca bu cihazda (henüz Drive'a gönderilmedi).</strong> : v.sonEsitleme ? 'Bütün değişiklikler Drive\'a gönderildi.' : 'Henüz eşitlenmedi.'}</li>
                 {v.sonEsitleme && <li>Son eşitleme: {zamanYaz(v.sonEsitleme)}</li>}
                 {v.bekleyen > 0 && <li>Başka cihazdan {v.bekleyen} değişiklik eksik parçası gelince uygulanacak.</li>}
+                {v.denemeler.map((y) => (
+                  <li key={y.kod}>Deneme kopyası “{y.ad}”: {y.yalnizBuCihazda ? <strong>{y.yalnizBuCihazda} değişiklik yalnızca bu cihazda.</strong> : 'bütün değişiklikler Drive\'a gönderildi.'}
+                    {y.bekleyen > 0 && ` Başka cihazdan ${y.bekleyen} değişiklik eksik parçası gelince uygulanacak.`}</li>
+                ))}
                 {v.cihazlar.filter((c) => !c.buCihaz).map((c) => (
                   <li key={c.kod} class={c.kullanimDisi ? 'soluk' : ''}>
                     {c.ad}: {c.kullanimDisi ? 'kullanılmıyor olarak işaretli' : c.bekleyen ? `bu cihazın ${c.bekleyen} değişikliğini henüz almadı` : 'bu cihazın gönderdiği her şeyi aldı'}

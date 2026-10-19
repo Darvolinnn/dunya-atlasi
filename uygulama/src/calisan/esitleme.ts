@@ -46,7 +46,7 @@ export interface EsitlemeErisimi {
    * Evrenin silinmemiş deneme kopyaları: açıldıkları andaki görülenler (`gordu`) ve bu cihazda bulunup bulunmadığı.
    * Bu cihazda olmayan bir kopya ancak Drive'da dosyası varsa kurulur.
    */
-  dallar(evren: string): { kod: string; gordu: Record<string, number>; yerel: boolean }[];
+  dallar(evren: string): { kod: string; ad: string; gordu: Record<string, number>; yerel: boolean }[];
 }
 
 interface KurulumDosyasi {
@@ -71,6 +71,8 @@ export interface EvrenEsitlemeDurumu {
   /** Daha yeni bir program sürümüyle yazılmış, bu sürümün okuyamadığı dosya var. */
   guncellemeGerekli: boolean;
   cihazlar: CihazDurumu[];
+  /** Bu cihazdaki deneme kopyaları (§9.7); ana evrenle birlikte eşitlenir. */
+  denemeler: { kod: string; ad: string; yalnizBuCihazda: number; bekleyen: number }[];
 }
 
 const ozellikYap = (evren: string, tur: string, ek: Record<string, string> = {}) => ({ uygulama: UYGULAMA, evren, tur, ...ek });
@@ -359,6 +361,12 @@ export class Esitleme {
         // Bu cihazın gönderdiği değişikliklerden o cihazın henüz almadıkları.
         bekleyen: c.kod === ben ? 0 : Math.max(0, gonderilen - (c.aldigi[ben] ?? 0)),
       })),
+      // Dosyası bu cihazda olmayan deneme kopyası açılmaz (açmak boş dosya yaratır).
+      denemeler: this.x.dallar(evren).filter((d) => d.yerel || this.ayar(`gonderilen:${d.kod}`) !== undefined).map((d) => {
+        const de = this.x.evrenVt(d.kod);
+        const gonderildi = Number(this.ayar(`gonderilen:${d.kod}`) ?? d.gordu[ben] ?? 0);
+        return { kod: d.kod, ad: d.ad, yalnizBuCihazda: Math.max(0, (de.gorulenler()[ben] ?? 0) - gonderildi), bekleyen: de.bekleyenSayisi() };
+      }),
     };
   }
 }
