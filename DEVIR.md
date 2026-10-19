@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 76 dosya, 441 sınama, hepsi geçiyor. GitHub Actions'ta otomatik denetim var.*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 78 dosya, 446 sınama, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -105,13 +105,34 @@ Kullanıcı isteği: her sekmeye "?" ile açılan ayrıntılı rehber; programı
 - [x] Taslak (üç seçenek: sayfa içi kart, yan panel, ortada pencere) resimleriyle gösterildi; **kullanıcı B'yi seçti: sağdan açılan yan panel**
 - [x] **Kullanıcı kararı: hitap "siz"** (açıklama, uyarı, hata metinleri "seçin, yazın"; düğmeler kısa kalır)
 - [x] Tasarım: K25 satırı, §12.4 "Sayfa rehberi ve dil", konu dizini, geçmiş dosyasına bir satır
-- [x] Rehber metinleri `arayuz/rehber.ts` (33 sayfa: evrenler, eşitleme, yaz, masa, kayıtlar, kayıt sayfası, haritalar, takvim, inceleme, "Diğer" altındakiler, 17 görünüm); panel `arayuz/Rehber.tsx` (`SayfaYardimi`), stiller `stil.css` sonunda
+- [x] Rehber metinleri `arayuz/rehber-metinleri.ts` (eski adı `rehber.ts`; 33 sayfa: evrenler, eşitleme, yaz, masa, kayıtlar, kayıt sayfası, haritalar, takvim, inceleme, "Diğer" altındakiler, 17 görünüm); panel `arayuz/SayfaYardimi.tsx` (eski adı `Rehber.tsx`), stiller `stil.css` sonunda
 - [x] "?" düğmesi her sayfanın başlığında: `EvrenEkrani.tsx` (bütün sekmeler ve Masa), `YazEkrani.tsx`, `KayitEkrani.tsx`, `EvrenlerEkrani.tsx`, `Esitleme.tsx`
 - [x] Bütün kullanıcıya görünen metinler (arayüz, `alan/`, `calisan/` hata ve uyarı iletileri, işlem günlüğü) "siz" hitabına ve doğal Türkçeye çevrildi; terimler birleştirildi (ör. "oturtma" → "hizalama", "dal/taslak" → "deneme kopyası"); metni bekleyen sınamalar güncellendi. Kaydedilen değerler (seçenek adları, şablon alan adları, gerekçe ve sonuç sabitleri) bilerek değiştirilmedi
 - [x] Sınamalar (441) ve tür denetimi yeşil; tarayıcıda denendi (panel açılıyor, Esc ile kapanıyor, konsolda hata yok)
 - [x] Kaynak kodlar zip'lendi (`main` ve Windows dalı, .git hariç): proje klasöründe `kaynak/dunya-atlasi-kaynak.zip`, kullanıcının masaüstünde `dunya-atlasi-kaynak.zip`
 
-**Yeni sayfa eklerken:** `rehber.ts`'e o sayfanın rehberini ekle; başlığa `<SayfaYardimi sayfa="…" />` koy. Yeni metinler "siz" hitabıyla yazılır (§12.4).
+**Yeni sayfa eklerken:** `rehber-metinleri.ts`'e o sayfanın rehberini ekle; başlığa `<SayfaYardimi sayfa="…" />` koy. Yeni metinler "siz" hitabıyla yazılır (§12.4).
+
+### 3.2d Biten iş: dış inceleme raporunun ilk üç maddesi (19 Ekim 2026)
+
+Kullanıcı bir dış inceleme raporu (`INCELEME-VE-ONERILER.md`, kullanıcının eki; depoda değil) gönderip görüş sordu. 1–3. maddeler doğrulandı ve düzeltildi; 4–10 aşağıda yapılacak/öneri olarak duruyor, kodlanmadı.
+
+- [x] **Windows derlemesi:** `Rehber.tsx` ile `rehber.ts` yalnız harf büyüklüğüyle ayrılıyordu; Windows'ta `./Rehber` içe aktarması metin dosyasına gidiyor, derleme kırılıyordu. Dosyalar `SayfaYardimi.tsx` ve `rehber-metinleri.ts` oldu. Sınama `test/dosya-adlari.test.ts` aynı klasörde böyle iki dosya bulununca kırılır. Otomatik denetim artık Ubuntu ve Windows'ta çalışıyor (`denetim.yml`, `matrix.os`)
+- [x] **Kurtarma taslağı kaybı:** `acilistaTaslak` kurtarma alanına yazamadığında asıl taslağı yine de siliyordu. Artık yazım başarılı değilse asıl taslak yerinde kalır, sonraki açılışta yine bulunur (`test/taslak.test.ts`)
+- [x] **"Açılıyor…"da takılma:** `Istemci` çalışanın `error` ve `messageerror` olaylarını dinlemiyordu. Artık çalışan yüklenemez ya da çökerse bekleyen istekler Türkçe bir iletiyle hata verir, sonraki istekler beklemeden reddedilir; okunamayan yanıtta bekleyenler hatayla biter. Açılış hata ekranına "Yeniden dene" eklendi. İstemci sınamada sahte çalışan alabiliyor (`test/istemci.test.ts`)
+- [ ] Windows'ta derlemenin gerçekten geçtiğini otomatik denetimin Windows işinde gör (ilk gönderimden sonra)
+
+### 3.2e Dış inceleme raporunun 4–10. maddeleri (yapılacak / öneri; kodlanmadı)
+
+Arayüzü değiştirenler önce seçenekli taslakla kullanıcıya gösterilir (§2). Yeni özellik değildir; mevcut davranışın iyileştirilmesidir, yine de tasarımda karşılığı yoksa önce §16'ya Öneri olarak yazılır (K11).
+
+4. **Kademeli açılış:** ilk kullanımda atlanabilir kısa yol (eser aç → sahne yaz → karaktere bağla → tarih/mekân). Zorunlu sihirbaz yok. Görünümlerin gruplanması K16 gerçek kullanım gözlemine göre. *Öneri; taslak gerekir.*
+5. **Bağlam panelinde boş durum:** tarih ve karakter yokken uzun açıklamalar yerine tek kısa cümle ve ilgili eylem; ayrıntı rehbere, okur bilgisi içerik oluşana kadar katlı. *Yapılacak; taslak gerekir.*
+6. **Kayıt / eşitleme / yedek özeti:** "Bu cihazda kaydedildi · Drive'a gönderilecek N değişiklik · Son doğrulanan yedek …" tek bakışta; eşitlendi ile yedek var ayrı söylenir; uzun süre yedek yoksa yazıyı kesmeyen hatırlatma. *Yapılacak; taslak gerekir.*
+7. **Windows uygulamasına geçiş:** PR #1 güncel `main`'i (rehber, Türkçe, bu düzeltmeler) içermiyor; birleştirmeden önce `main` dala alınır. Kabul akışı: tam yedek → uygulamaya ayrı evren olarak yükle → metin/görsel denetimi; eski kopya korunur. Ayarlarda görünen sürüm ve derleme tarihi. Gerçek kurulumda: açılış, yeniden açılış, ikinci başlatma, yedek, geri yükleme, EPUB/PDF, Google izin yenilemesi. *Yapılacak (§3.2'deki PR'a bağlı).*
+8. **Büyük görselde kaldığı yerden yükleme:** `drive.ts` sürdürülebilir oturum açıp tek parça gönderiyor (§3.3-3'te zaten var). İlerleme, iptal, süre sınırı ve kesintiden sonra devam sınaması. *Yapılacak; ilk üç maddeden sonra.*
+9. **Kullanıcı akışı ve hata anı sınamaları:** küçük bir tarayıcı sınaması grubu (yeni evren/sahne, yaz-yeniden aç, `[[` bağlantısı, rehber paneli, yedek ve ayrı evren olarak geri yükleme); kayıt sürerken sahne değiştirme, taslak yazılamazken kapatma, süreç öldürme, yedekten dönüşte karşılaştırma, iki kopyada çatışma. Kapanışta taslak yazımı çalışana asenkron gider; yazıldığı ayrıca kanıtlanmalı. *Yapılacak.*
+10. **Performans ve bakım:** temsili büyük evrende (ör. 50.000 işlem) açılış, arama, sahne değiştirme, kaydetme, yeniden kurma, yedekten dönüş süreleri ölçülür (§3.3-3'teki ölçümle aynı iş). `hizmet.ts`, `izdusum.ts`, `api.ts` baştan yazılmaz; bir hata düzeltilirken ilgili kısım küçük modüle taşınır. Seyrek açılan ekranların ihtiyaç anında yüklenmesi değerlendirilir. *Öneri.*
 
 ### 3.3 Kalan işler (önerilen sıra)
 

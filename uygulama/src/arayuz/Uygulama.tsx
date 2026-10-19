@@ -57,7 +57,7 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
 
   const evren = yol.ekran === 'evren' ? yol.kod : yol.ekran === 'kayit' || yol.ekran === 'yaz' ? yol.evren : null;
   const acikKayit = yol.ekran === 'kayit' ? yol.kod : yol.ekran === 'yaz' ? yol.kod : null;
-  if (hata) return <main class="sayfa"><h1>Dünya Atlası</h1><p class="hata">Bu cihazdaki veriler açılamadı: {hata}</p></main>;
+  if (hata) return <main class="sayfa"><h1>Dünya Atlası</h1><p class="hata">Bu cihazdaki veriler açılamadı: {hata}</p><button class="dugme" onClick={() => location.reload()}>Yeniden dene</button></main>;
   if (!kurulum) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
 
   return (

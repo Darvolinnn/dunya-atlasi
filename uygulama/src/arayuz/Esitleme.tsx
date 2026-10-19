@@ -7,7 +7,7 @@ import type { Istemci } from '../veri/istemci';
 import type { EsitlemeDurumu } from '../veri/api';
 import { zamanYaz, saatYaz } from '../alan/islem-metni';
 import { epostaKaydet, googleHazirla, izinAl, izniGeriAl, kayitliEposta } from './google';
-import { SayfaYardimi } from './Rehber';
+import { SayfaYardimi } from './SayfaYardimi';
 import { git } from './Uygulama';
 
 const YOKLAMA = 3 * 60_000;

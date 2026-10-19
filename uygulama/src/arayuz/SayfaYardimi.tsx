@@ -1,7 +1,7 @@
 // Sayfa rehberi (§12.4, K25): başlığın yanındaki "?" düğmesi, sayfanın ne işe yaradığını anlatan yan paneli açar.
 // Panel sayfayı örtmez; sağdan gelir, Esc ya da yeniden "?" ile kapanır.
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { REHBERLER } from './rehber';
+import { REHBERLER } from './rehber-metinleri';
 
 export function SayfaYardimi({ sayfa }: { sayfa: string }) {
   const rehber = REHBERLER[sayfa];

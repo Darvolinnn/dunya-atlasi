@@ -3,7 +3,7 @@ import type { Istemci } from '../veri/istemci';
 import type { EvrenOzeti } from '../veri/api';
 import { zamanYaz } from '../alan/islem-metni';
 import { git } from './Uygulama';
-import { SayfaYardimi } from './Rehber';
+import { SayfaYardimi } from './SayfaYardimi';
 import { IceAktar, YedektenGeriYukle } from './Tasima';
 
 export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {

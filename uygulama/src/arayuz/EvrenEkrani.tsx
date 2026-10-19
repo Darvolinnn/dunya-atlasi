@@ -22,7 +22,7 @@ import { BagSeridi, SurumlerSekmesi } from './Surumler';
 import { MarkdownCiktisi } from './Cikti';
 import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
 
-import { SayfaYardimi } from './Rehber';
+import { SayfaYardimi } from './SayfaYardimi';
 import { ANA_SAYFALAR, DIGER_SAYFALAR, EvrenKabugu, GORUNUMLER, gorunumMu } from './Kabuk';
 
 const SAYFA_ADLARI = new Map<string, string>([...ANA_SAYFALAR, ...DIGER_SAYFALAR, ...GORUNUMLER]);

@@ -13,7 +13,7 @@ import { CatismaListesi } from './Catismalar';
 import { YAZMA_TURLERI, useCalisma } from './Calisma';
 import { git } from './Uygulama';
 import { onayla } from './onay';
-import { SayfaYardimi } from './Rehber';
+import { SayfaYardimi } from './SayfaYardimi';
 
 const baglamAnahtari = 'dunya-atlasi:yazma-baglami-kapali';
 const okuYerel = (a: string) => { try { return localStorage.getItem(a); } catch { return null; } };

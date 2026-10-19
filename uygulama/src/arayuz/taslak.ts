@@ -29,15 +29,16 @@ export async function taslakSil(depo: TaslakDeposu, anahtar: string) {
 
 /**
  * Metin açılınca: önceki oturumdan karar bekleyen taslak varsa o, yoksa son oturumun taslağı. Taslak kayıtlı
- * metinle aynıysa (kayıt yetişmiş) silinir. Farklıysa kurtarma alanına taşınır ve döner.
+ * metinle aynıysa (kayıt yetişmiş) silinir. Farklıysa kurtarma alanına taşınır ve döner; taşıma yazılamazsa asıl
+ * taslak yerinde kalır.
  */
 export async function acilistaTaslak(depo: TaslakDeposu, anahtar: string, kayitli: Spans): Promise<Taslak | null> {
   const ayni = (t: Taslak) => JSON.stringify(t.spans) === JSON.stringify(kayitli);
   const bekleyen = await taslakOku(depo, kurtarmaAnahtari(anahtar));
   const son = await taslakOku(depo, anahtar);
   if (son && !ayni(son) && (!bekleyen || son.zaman > bekleyen.zaman)) {
-    await taslakYaz(depo, kurtarmaAnahtari(anahtar), son);
-    await taslakSil(depo, anahtar);
+    // Kurtarma alanına yazılamadıysa asıl taslak silinmez; bir sonraki açılışta yine bulunur.
+    if (await taslakYaz(depo, kurtarmaAnahtari(anahtar), son)) await taslakSil(depo, anahtar);
     return son;
   }
   await taslakSil(depo, anahtar);

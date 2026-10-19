@@ -18,7 +18,7 @@ import { MotifBolumu, TEKNOLOJI_YERLERI, TeknolojiBolumu, TeknolojiDurumuAraci }
 import { KalitimBolumu, VerasetBolumu } from './Soy';
 import { GUNDELIK_YERLERI, GundelikBolumu } from './Gundelik';
 import { BagSeridi, YayimBolumu } from './Surumler';
-import { SayfaYardimi } from './Rehber';
+import { SayfaYardimi } from './SayfaYardimi';
 import { EserCiktisi } from './Cikti';
 import { BelgeSunumBolumu } from './Belge';
 import { EserSozlesmesiBolumu, SozlesmeHatirlatmasiSatiri } from './AnlatiSozlesmesi';
