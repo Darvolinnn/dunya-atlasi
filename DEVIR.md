@@ -19,6 +19,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 - Kullanıcı Türkçe yazar; ona Türkçe, kısa ve sade cevap ver. Programdaki metinlerde hitap "siz"dir (kullanıcı kararı, 19 Ekim 2026; §12.4). Arayüzdeki ve hata iletilerindeki her metin Türkçedir; kullanıcıya görünen metinde programlama terimi olmaz.
 - Her adım bitince DEVIR.md'de yapılan ve yapılacak adımlar güncellenir ve gönderilir (kullanıcı isteği, 19 Ekim 2026).
 - Kullanıcının açık tercihi: **bir aşama ya da madde bitince onay beklemeden sıradakine geç.** Yalnızca geri alınamaz işlerde (zorla gönderme, toplu silme, dışarıya mesaj) ya da kullanıcının vermesi gereken bir kararda dur ve sor.
+- **PR'ları ajan birleştirir (kullanıcı kararı, 19 Ekim 2026):** otomatik denetim (Ubuntu, Windows, tarayıcı) yeşil ve çakışma yoksa PR'ı ajan kendisi `main`'e birleştirir; kırmızıysa önce düzeltir. Görünüşü değiştiren işlerde birleştirmeden önce ekran görüntüsü gösterilip onay alınır (aşağıdaki taslak kuralı). Kullanıcı yazılımcı değil; kod incelemesi beklenmez.
 - **Arayüz değişikliklerinde önce taslak:** görünüşü ya da düzeni değiştiren bir işe kodlayarak başlama; önce seçenekli bir taslak göster, kullanıcı seçince kodla (kullanıcı isteği, 19 Ekim 2026).
 - **Tamamen bulut (kullanıcı kararı, 19 Ekim 2026, öncekinin yerine):** bütün iş bulut oturumunda yapılır; kullanıcının bilgisayarındaki proje klasörüne, masaüstüne ve oradaki programa dokunulmaz, zip oraya konmaz. Kullanıcı programı denemek isterse klasörü kendisi günceller. Windows denetimini GitHub'daki Windows işi yapar.
 - Tablet ve iPhone denemeleri süresiz ertelendi; yalnız Windows (19 Ekim 2026).
@@ -186,7 +187,7 @@ Kurallar: veritabanına yalnızca `EvrenVt.islemYap()` (hizmette `this.yaz`) yaz
 
 ## 7. Git
 
-- Doğrudan `main` üzerinde çalışılıyor; kullanıcı bunu onayladı. Bulut oturumu kendisine verilen dalda (`claude/...`) çalışıp taslak PR açabilir; kullanıcı birleştirir. Paralel ajanlar `paket/<ad>` dallarında çalışır.
+- Bulut oturumu kendisine verilen dalda (`claude/...`) çalışır, PR açar ve denetim yeşilse kendisi birleştirir (§2). Birleşen PR'ın dalı yeni iş için güncel `main`'den yeniden başlatılır. Aynı anda birden çok oturum çalışıyorsa DEVIR.md gibi ortak dosyalarda çakışma çıkar; birleştirmeden önce `main` dala alınır. Paralel ajanlar `paket/<ad>` dallarında çalışır.
 - Kayıt mesajları Türkçedir: ilk satır kısa başlık (ör. "Delil geçmişi ve soruşturma masası (F08)"), altında ne değiştiği ve yeni tablo varsa izdüşüm sürümü.
 - Zorla gönderme (force push) yapma; başkasının dalının geçmişini yeniden yazma.
 - Depo herkese açıktır: sır, gerçek evren içeriği, dışa aktarılmış veri, ekran görüntüsü ve lisans dosyası girmez. Test ve örnek adları uydurmadır.
