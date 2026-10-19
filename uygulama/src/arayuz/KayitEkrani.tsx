@@ -13,6 +13,7 @@ import { KayitIzleri } from './Sureklilik';
 import { KayitMasalari } from './Masalar';
 import { AltBirimlerdenToplananlar } from './Kapsama';
 import { HUKUK_SAHIPLERI, HukukKurallariBolumu, UygulananKurallarAraci } from './Hukuk';
+import { HaberYayilimiBolumu, KanalBolumu, ROTA_ARACI_TURLERI, RotaAraci } from './Haber';
 import { KESINTI_TURLERI, KesintiBolumu, UretimOzetiBolumu } from './Uretim';
 import { MakamYurutenleri, OlaySurecBolumu, SUREC_SAHIPLERI, SurecKurallariBolumu } from './Surec';
 import { git } from './Uygulama';
@@ -133,6 +134,9 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         <Gorseller istemci={istemci} evren={evren} kayit={kayit} />
         <KayitHaritaBolumu istemci={istemci} evren={evren} kayit={kayit} />
         {kayit.tur === 'rota' && <RotaBolumu istemci={istemci} evren={evren} kayit={kayit} />}
+        {ROTA_ARACI_TURLERI.includes(kayit.tur) && <RotaAraci istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} />}
+        {kayit.tur === 'haberlesme' && <KanalBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+        {kayit.tur === 'haber' && <HaberYayilimiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {kayit.tur === 'yolculuk' && <YolculukBolumu istemci={istemci} evren={evren} kayit={kayit} />}
 
         <MetinEditoru key={editorAnahtari} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} baslangic={editorAnahtari === 0 ? baslangic : null} />

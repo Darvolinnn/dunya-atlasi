@@ -31,6 +31,7 @@ export const TURLER: Tur[] = [
   { kod: 'donem', ad: 'Dönem / çağ', grup: 'Zaman ve tarih', kisa: 'Dö' },
   { kod: 'antlasma', ad: 'Antlaşma / yükümlülük', grup: 'Zaman ve tarih', kisa: 'An' },
   { kod: 'haber', ad: 'Haber / söylenti', grup: 'Zaman ve tarih', kisa: 'Ha' },
+  { kod: 'haberlesme', ad: 'Haberleşme yöntemi', grup: 'Zaman ve tarih', kisa: 'Hy' },
   { kod: 'belge', ad: 'Evren içi belge', grup: 'Zaman ve tarih', kisa: 'Be' },
   { kod: 'eser', ad: 'Eser', grup: 'Anlatı ve yazarlık', kisa: 'Es' },
   { kod: 'bolum', ad: 'Bölüm', grup: 'Anlatı ve yazarlık', kisa: 'Bö' },

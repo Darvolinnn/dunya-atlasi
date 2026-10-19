@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { Dayaniklilik, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { Dayaniklilik, KanalTanimi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -37,6 +37,7 @@ import * as kapsama from './kapsama';
 import * as surec from './surec';
 import * as hukuk from './hukuk';
 import * as uretim from './uretim';
+import * as haber from './haber';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -427,6 +428,17 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           degerler: degerler.map((d) => ({ ...d, yazi: g ? (d.deger as string | null) ?? '(gözlem yok)' : (d.deger as { ad?: string } | null)?.ad ?? '(boş)' })) });
         continue;
       }
+      if (!iliski && (alan === 'kanal' || alan === 'haber_cikis')) {
+        const yazi = (d: unknown) => {
+          if (!d) return '(boş)';
+          if (alan === 'kanal') { const t = d as KanalTanimi; return `${t.rotalar ? `rotalar ×${t.carpan}` : 'rotaları kullanmaz'}, ${t.baglantilar.length} bağlantı`; }
+          const c = d as { yer: string | null; kanallar: string[] };
+          return `${c.yer ? kayitAdi(c.yer) : 'yer yok'}, ${c.kanallar.length} kanal`;
+        };
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: alan === 'kanal' ? 'Haberleşme bağlantıları' : 'Haberin çıkışı',
+          degerler: degerler.map((d) => ({ ...d, yazi: yazi(d.deger) })) });
+        continue;
+      }
       if (nesne.startsWith('sablon:')) {
         const tur = nesne.slice(7);
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: `“${turBul(tur).ad}” şablonu`, alanEtiketi: 'Şablon',
@@ -698,6 +710,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       this.yaz(evren, [{ tur: 'anlati_yerlestir', veri: { kod: nesne, ust: v?.ust ?? null, konum: v?.konum ?? null, cozum: true } }], [nesne, ...(v ? [v.ust] : [])]);
       return;
     }
+    if (!iliski && alan === 'kanal') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'kanal_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
+    if (!iliski && alan === 'haber_cikis') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'haber_cikis_yaz', veri: { kod: nesne, cikis: deger, cozum: true } }], [nesne]); return; }
     if (iliski && alan === 'dayaniklilik') { this.yaz(evren, [{ tur: 'dayaniklilik_yaz', veri: { iliski: nesne, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
     if (iliski) { this.yaz(evren, [{ tur: 'iliski_degistir', veri: { kod: nesne, alan, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
     this.kayitVarMi(e, nesne);
@@ -1876,6 +1890,21 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   hukukKuraliSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { hukuk.hukukKuraliSil(this.hukukBaglami(evren), kod, !!geriYukle); }
   uygulananKurallar({ evren, kisi, yer, tarih = null }: { evren: string; kisi: string; yer: string; tarih?: string | null }) { return hukuk.uygulananKurallar(this.evren(evren), kisi, yer, tarih); }
   // ---------- Üretim, kesinti, besin ağı (§15-5, F10) ----------
+  enKisaRota({ evren, nereden, nereye, kosul, kisi, paket }: { evren: string; nereden: string; nereye: string; kosul?: string | null; kisi?: string | null; paket?: string | null }) {
+    const e = this.evren(evren);
+    return haber.enKisaRota(e, nereden, nereye, kosul || null, kisi || null, masaMod.paketEtkisi(e, paket));
+  }
+  kanal({ evren, kod }: { evren: string; kod: string }) { return haber.kanalOku(this.evren(evren), kod); }
+  kanalYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: KanalTanimi }) { haber.kanalYaz(this.haberBaglami(evren), kod, tanim); }
+  haberCikisi({ evren, kod }: { evren: string; kod: string }) { return haber.haberCikisiOku(this.evren(evren), kod); }
+  haberCikisiYaz({ evren, kod, yer, tarih, kanallar }: { evren: string; kod: string; yer: string | null; tarih: string; kanallar: string[] }) {
+    haber.haberCikisiYaz(this.haberBaglami(evren), kod, { yer, tarih, kanallar });
+  }
+  haberYayilimi({ evren, kod, paket }: { evren: string; kod: string; paket?: string | null }) {
+    const e = this.evren(evren);
+    return haber.haberYayilimi(e, kod, masaMod.paketEtkisi(e, paket));
+  }
+  private haberBaglami(evren: string): haber.HaberBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
   kesintiZinciri({ evren, kaynak }: { evren: string; kaynak: string }) { return uretim.kesintiZinciri(this.evren(evren), kaynak); }
   uretimOzeti({ evren, urun }: { evren: string; urun: string }) { return uretim.uretimOzeti(this.evren(evren), urun); }
   dayaniklilikYaz({ evren, iliski, deger }: { evren: string; iliski: string; deger: Dayaniklilik | null }) {

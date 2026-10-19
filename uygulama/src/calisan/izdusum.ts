@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 24;
+export const IZDUSUM_SURUMU = 25;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -238,6 +238,16 @@ CREATE INDEX IF NOT EXISTS hukuk_kurallari_sahip ON hukuk_kurallari(sahip);
 CREATE TABLE IF NOT EXISTS dayaniklilik(
   iliski TEXT PRIMARY KEY,
   deger TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS haber_kanallari(
+  kod TEXT PRIMARY KEY,
+  tanim TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS haber_cikislari(
+  kod TEXT PRIMARY KEY,
+  yer TEXT,
+  tarih TEXT,
+  kanallar TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS masalar(
   kod TEXT PRIMARY KEY,
@@ -502,7 +512,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -550,7 +560,7 @@ function yonlendirNotla(db: Database, kod: string | null | undefined, tablo: str
 /** Birleştirmede kaynak kayda bağlı satırlar hedefe taşınır; geri almak için hangi satırın taşındığı tutulur. */
 const BIRLESME_SUTUNLARI: [string, string][] = [['iliskiler', 'a'], ['iliskiler', 'b'], ['durumlar', 'konu'], ['durumlar', 'hedef'], ['isaretler', 'kayit'], ['cizimler', 'kayit'], ['rotalar', 'a'], ['rotalar', 'b'],
   ['haritalar', 'yer'], ['degisimler', 'konu'], ['degisimler', 'olay'], ['izler', 'konu'], ['kayitlar', 'sahne_olayi'], ['anlati', 'ust'], ['yonlendirmeler', 'hedef'],
-  ['iddialar', 'konu'], ['surec_kurallari', 'sahip'], ['hukuk_kurallari', 'sahip'], ['surec_baglari', 'olay'], ['surec_adimlari', 'olay'], ['bilgiler', 'bilen'], ['bilgiler', 'kaynak_kayit'], ['bilgiler', 'sahne']];
+  ['iddialar', 'konu'], ['surec_kurallari', 'sahip'], ['hukuk_kurallari', 'sahip'], ['surec_baglari', 'olay'], ['surec_adimlari', 'olay'], ['bilgiler', 'bilen'], ['bilgiler', 'kaynak_kayit'], ['bilgiler', 'sahne'], ['haber_cikislari', 'yer']];
 
 export type Kesinlik = 'kesin' | 'yaklasik' | 'bilinmiyor';
 export interface IsaretKonumu { kesinlik: Kesinlik; x: number | null; y: number | null; yaricap: number | null }
@@ -974,6 +984,22 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (!deger || typeof deger !== 'object') db.exec({ sql: 'DELETE FROM dayaniklilik WHERE iliski=?', bind: [iliski] });
     else db.exec({ sql: 'INSERT OR REPLACE INTO dayaniklilik(iliski, deger) VALUES(?,?)', bind: [iliski, JSON.stringify(deger)] });
     alanYaz(db, i, iliski, 'dayaniklilik', deger ?? null);
+  },
+  /** Haberleşme yönteminin kanal tanımı (§15-3). */
+  kanal_yaz(db, i) {
+    const { kod, tanim } = i.veri as { kod: string; tanim: unknown };
+    if (typeof kod !== 'string' || !tanim || typeof tanim !== 'object') return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO haber_kanallari(kod, tanim) VALUES(?,?)', bind: [kod, JSON.stringify(tanim)] });
+    alanYaz(db, i, kod, 'kanal', tanim);
+  },
+  /** Haberin çıkış yeri, tarihi ve kanalları. */
+  haber_cikis_yaz(db, i) {
+    const { kod, cikis } = i.veri as { kod: string; cikis: { yer?: unknown; tarih?: unknown; kanallar?: unknown } | null };
+    if (typeof kod !== 'string' || !cikis || typeof cikis !== 'object') return;
+    const yer = typeof cikis.yer === 'string' ? yonlendirNotla(db, cikis.yer, 'haber_cikislari', 'yer', kod) : null;
+    const kanallar = Array.isArray(cikis.kanallar) ? cikis.kanallar.filter((x): x is string => typeof x === 'string') : [];
+    db.exec({ sql: 'INSERT OR REPLACE INTO haber_cikislari(kod, yer, tarih, kanallar) VALUES(?,?,?,?)', bind: [kod, yer, cikis.tarih ? JSON.stringify(cikis.tarih) : null, JSON.stringify(kanallar)] });
+    alanYaz(db, i, kod, 'haber_cikis', cikis);
   },
   /** Çalışma masası (§5.9): kayıtlar kopyalanmaz, masa onlara bağlanır. */
   masa_olustur(db, i) {

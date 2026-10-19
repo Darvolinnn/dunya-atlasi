@@ -131,6 +131,21 @@ export interface UretimOzeti {
   urun: KisaKayit; ureten: KisaKayit[]; girdiler: KisaKayit[]; kullananUrunler: KisaKayit[];
   fazlasiOlan: KisaKayit[]; acigiOlan: KisaKayit[]; tasiyanYollar: KisaKayit[]; bagimlilar: KisaKayit[];
 }
+/** Haberleşme yöntemi (§15-3): kayıtlı rotaları kullanabilir (hız katsayısıyla) ve kendi bağlantıları olabilir. */
+export interface KanalTanimi { rotalar: boolean; kosul: string | null; carpan: number; baglantilar: { a: string; b: string; gun: number }[] }
+export interface HaberCikisi { yer: KisaKayit | null; tarih: EvrenTarihi | null; kanallar: KisaKayit[] }
+export interface RotaAdimi { rota: KisaKayit; nereden: KisaKayit; nereye: KisaKayit; gun: number | null; kosul: string | null }
+interface RotaCozumu { hukum: 'bulundu' | 'bulunamadi'; kip: 'sure' | 'kroki' | null; toplam: number | null; adimlar: RotaAdimi[]; eksik: KisaKayit[] }
+export interface RotaSonucu extends RotaCozumu {
+  nereden: KisaKayit; nereye: KisaKayit; kosul: string | null;
+  bilinen: (RotaCozumu & { kisi: KisaKayit; bildigiRota: number }) | null;
+  paket: { kod: string; ad: string } | null; kapsam: string;
+}
+export interface HaberYayilimi {
+  cikis: HaberCikisi; kanallar: KisaKayit[];
+  ulasilan: { yer: KisaKayit; gun: number; yazi: string; tarih: string | null; yol: string[] }[];
+  suresiz: KisaKayit[]; durum: 'cikis_yok' | 'kanal_yok' | 'hesaplandi'; not: string;
+}
 export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
 export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
 export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
@@ -665,6 +680,12 @@ export interface Istekler {
   uretimOzeti(a: { evren: string; urun: string }): UretimOzeti;
   dayaniklilikYaz(a: { evren: string; iliski: string; deger: Dayaniklilik | null }): void;
   geciselKayitlar(a: { evren: string; kok: string; eksen: GeciselEksen }): GeciselSonuc[];
+  enKisaRota(a: { evren: string; nereden: string; nereye: string; kosul?: string | null; kisi?: string | null; paket?: string | null }): RotaSonucu;
+  kanal(a: { evren: string; kod: string }): KanalTanimi;
+  kanalYaz(a: { evren: string; kod: string; tanim: KanalTanimi }): void;
+  haberCikisi(a: { evren: string; kod: string }): HaberCikisi;
+  haberCikisiYaz(a: { evren: string; kod: string; yer: string | null; tarih: string; kanallar: string[] }): void;
+  haberYayilimi(a: { evren: string; kod: string; paket?: string | null }): HaberYayilimi;
   altBirimlerdenToplananlar(a: { evren: string; kod: string }): ToplananKayit[];
   fetihCevabi(a: { evren: string; kod: string; gecis: string; alan: string; cevap: { durum: FetihCevabi['durum']; tarih?: string } | null }): void;
   haritaYukle(a: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ kod: string }>;
