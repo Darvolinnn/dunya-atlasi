@@ -575,3 +575,4 @@ label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; 
 .adim-listesi { margin: 4px 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
 .sonuc-dogdu { color: var(--metin); font-weight: 600; }
 .uretilen-adlar { columns: 3 160px; padding-left: 1.2em; margin: 4px 0; } .dil-bolumu h3 { margin: 12px 0 4px; font-size: 0.95rem; }
+.uyari-yazisi { color: var(--uyari, #9a5b00); }

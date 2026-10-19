@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 27;
+export const IZDUSUM_SURUMU = 28;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -268,6 +268,19 @@ CREATE TABLE IF NOT EXISTS teknoloji_tanimlari(
 CREATE TABLE IF NOT EXISTS motif_yorumlari(
   kod TEXT PRIMARY KEY,
   yorumlar TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS kalitim_ozellikleri(
+  kod TEXT PRIMARY KEY,
+  tanim TEXT NOT NULL,
+  olusturma INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS kalitim_degerleri(
+  kod TEXT PRIMARY KEY,
+  degerler TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS veraset_kurallari(
+  kod TEXT PRIMARY KEY,
+  tanim TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS masalar(
   kod TEXT PRIMARY KEY,
@@ -532,7 +545,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -1059,6 +1072,32 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (typeof kod !== 'string' || !Array.isArray(yorumlar)) return;
     db.exec({ sql: 'INSERT OR REPLACE INTO motif_yorumlari(kod, yorumlar) VALUES(?,?)', bind: [kod, JSON.stringify(yorumlar)] });
     alanYaz(db, i, kod, 'motif_yorumlari', yorumlar);
+  },
+  /** Kalıtım özelliğinin tanımı; boş tanım özelliği kaldırır. */
+  kalitim_ozelligi_yaz(db, i) {
+    const { kod, tanim } = i.veri as { kod: string; tanim: unknown };
+    if (typeof kod !== 'string') return;
+    if (!tanim || typeof tanim !== 'object') db.exec({ sql: 'DELETE FROM kalitim_ozellikleri WHERE kod=?', bind: [kod] });
+    else db.exec({ sql: 'INSERT INTO kalitim_ozellikleri(kod, tanim, olusturma) VALUES(?,?,?) ON CONFLICT(kod) DO UPDATE SET tanim=excluded.tanim', bind: [kod, JSON.stringify(tanim), i.zaman] });
+    alanYaz(db, i, kod, 'kalitim_ozelligi', tanim ?? null);
+  },
+  /** Kişinin bir kalıtım özelliğindeki değeri. */
+  kalitim_degeri_yaz(db, i) {
+    const { kisi, ozellik, deger } = i.veri as { kisi: string; ozellik: string; deger: unknown };
+    if (typeof kisi !== 'string' || typeof ozellik !== 'string') return;
+    const r = db.selectValue('SELECT degerler FROM kalitim_degerleri WHERE kod=?', [kisi]) as string | undefined;
+    const m = r ? JSON.parse(r) as Record<string, unknown> : {};
+    if (deger && typeof deger === 'object') m[ozellik] = deger; else delete m[ozellik];
+    db.exec({ sql: 'INSERT OR REPLACE INTO kalitim_degerleri(kod, degerler) VALUES(?,?)', bind: [kisi, JSON.stringify(m)] });
+    alanYaz(db, i, kisi, `kalitim:${ozellik}`, deger ?? null);
+  },
+  /** Makamın ya da siyasi varlığın veraset kuralı. */
+  veraset_yaz(db, i) {
+    const { kod, tanim } = i.veri as { kod: string; tanim: unknown };
+    if (typeof kod !== 'string') return;
+    if (!tanim || typeof tanim !== 'object') db.exec({ sql: 'DELETE FROM veraset_kurallari WHERE kod=?', bind: [kod] });
+    else db.exec({ sql: 'INSERT OR REPLACE INTO veraset_kurallari(kod, tanim) VALUES(?,?)', bind: [kod, JSON.stringify(tanim)] });
+    alanYaz(db, i, kod, 'veraset', tanim ?? null);
   },
   /** Çalışma masası (§5.9): kayıtlar kopyalanmaz, masa onlara bağlanır. */
   masa_olustur(db, i) {

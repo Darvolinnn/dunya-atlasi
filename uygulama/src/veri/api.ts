@@ -174,6 +174,19 @@ export interface TeknolojiDurumu {
 }
 export interface MotifYorumu { yorumlayan: KisaKayit | null; donem: KisaKayit | null; anlam: string }
 export interface MotifBilgisi { yorumlar: MotifYorumu[]; sahneler: { sahne: KisaKayit; eser: { kod: string; ad: string } | null; sira: number | null }[] }
+/** Kalıtım (§15-8): yazarın tanımladığı özellik; tek genli (baskın, çekinik) ya da çok genli. */
+export interface KalitimOzelligi { kod: string; ad: string; kip: 'baskin' | 'cekinik' | 'cok_genli'; not: string }
+/** Kişinin özellikteki değeri: görünür mü, kaç kopya taşıyor (biliniyorsa). */
+export interface KalitimDegeri { gorunur: boolean | null; kopya: 0 | 1 | 2 | null }
+export interface KalitimSatiri { ozellik: KalitimOzelligi; deger: KalitimDegeri | null; olasilik: { enAz: number; enCok: number } | null; aciklama: string; beklenmez: boolean }
+export interface KalitimBilgisi { ozellikler: KalitimSatiri[]; ebeveynler: KisaKayit[]; evlatlik: KisaKayit[] }
+export interface VerasetKurali { tur: 'ilk_dogan' | 'kardes_once' | 'secim'; evlatlik: boolean; evlilikDisi: boolean; not: string }
+export interface TahtSirasi {
+  makam: KisaKayit; tarih: EvrenTarihi; kural: VerasetKurali | null; yuruten: KisaKayit | null;
+  durum: 'hesaplandi' | 'yuruten_yok' | 'birden_cok' | 'kural_yok' | 'secim';
+  sira: { kisi: KisaKayit; yakinlik: string; uyarilar: string[] }[];
+  sonrakiler: { kisi: KisaKayit; baslangic: string }[]; not: string;
+}
 export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
 export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
 export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
@@ -708,6 +721,13 @@ export interface Istekler {
   uretimOzeti(a: { evren: string; urun: string }): UretimOzeti;
   dayaniklilikYaz(a: { evren: string; iliski: string; deger: Dayaniklilik | null }): void;
   geciselKayitlar(a: { evren: string; kok: string; eksen: GeciselEksen }): GeciselSonuc[];
+  kalitimOzellikleri(a: { evren: string }): KalitimOzelligi[];
+  kalitimOzelligiYaz(a: { evren: string; kod: string | null; tanim: Omit<KalitimOzelligi, 'kod'> | null }): { kod: string };
+  kalitim(a: { evren: string; kod: string }): KalitimBilgisi;
+  kalitimDegeriYaz(a: { evren: string; kod: string; ozellik: string; deger: KalitimDegeri | null }): void;
+  veraset(a: { evren: string; kod: string }): VerasetKurali | null;
+  verasetYaz(a: { evren: string; kod: string; kural: VerasetKurali | null }): void;
+  tahtSirasi(a: { evren: string; kod: string; tarih: string }): TahtSirasi;
   teknoloji(a: { evren: string; kod: string }): TeknolojiTanimi;
   teknolojiYaz(a: { evren: string; kod: string; tanim: { duzeyler: { alan: string; duzey: string }[]; asamalar: { asama: string; yer: string | null; tarih: string; not: string }[] } }): void;
   teknolojiDurumu(a: { evren: string; yer: string; tarih: string }): TeknolojiDurumu;
