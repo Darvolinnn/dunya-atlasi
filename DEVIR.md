@@ -109,7 +109,7 @@ Kullanıcı isteği: her sekmeye "?" ile açılan ayrıntılı rehber; programı
 - [x] "?" düğmesi her sayfanın başlığında: `EvrenEkrani.tsx` (bütün sekmeler ve Masa), `YazEkrani.tsx`, `KayitEkrani.tsx`, `EvrenlerEkrani.tsx`, `Esitleme.tsx`
 - [x] Bütün kullanıcıya görünen metinler (arayüz, `alan/`, `calisan/` hata ve uyarı iletileri, işlem günlüğü) "siz" hitabına ve doğal Türkçeye çevrildi; terimler birleştirildi (ör. "oturtma" → "hizalama", "dal/taslak" → "deneme kopyası"); metni bekleyen sınamalar güncellendi. Kaydedilen değerler (seçenek adları, şablon alan adları, gerekçe ve sonuç sabitleri) bilerek değiştirilmedi
 - [x] Sınamalar (441) ve tür denetimi yeşil; tarayıcıda denendi (panel açılıyor, Esc ile kapanıyor, konsolda hata yok)
-- [ ] Kaynak kodlar zip'lendi (`main` ve Windows dalı), proje klasörüne ve kullanıcının masaüstüne kondu
+- [x] Kaynak kodlar zip'lendi (`main` ve Windows dalı, .git hariç): proje klasöründe `kaynak/dunya-atlasi-kaynak.zip`, kullanıcının masaüstünde `dunya-atlasi-kaynak.zip`
 
 **Yeni sayfa eklerken:** `rehber.ts`'e o sayfanın rehberini ekle; başlığa `<SayfaYardimi sayfa="…" />` koy. Yeni metinler "siz" hitabıyla yazılır (§12.4).
 
