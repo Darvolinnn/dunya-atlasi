@@ -84,7 +84,7 @@ export function kuralOrnekleri(e: EvrenVt, kural: string): KuralOrnekleri {
   const r0 = e.db.selectObject('SELECT * FROM hukuk_kurallari WHERE kod=?', [kural])!;
   const onceki = oncekiTanim(e, kural);
   const eski = onceki && JSON.stringify(onceki) !== JSON.stringify(k.tanim) ? kuralOku(e, { ...r0, tanim: JSON.stringify(onceki) }) : null;
-  const ornekler = e.db.selectObjects('SELECT kod, tanim FROM kural_ornekleri WHERE kural=? AND silindi IS NULL ORDER BY olusturma, kod', [kural]).map((r): KuralOrnegi => {
+  const ornekler = e.db.selectObjects('SELECT kod, tanim FROM kural_ornekleri WHERE kural=? AND silindi IS NULL ORDER BY olusturma, rowid', [kural]).map((r): KuralOrnegi => {
     const t = JSON.parse(r.tanim as string) as KuralOrnegiTanimi;
     const kisi = kisa(e, t.kisi), yer = kisa(e, t.yer);
     const temel = { kod: r.kod as string, tanim: t, kisi, yer };
@@ -120,7 +120,7 @@ export function hukukKuraliKopyala(b: AtolyeBaglami, kod: string, sahip: string 
   const yeni = yeniKod();
   const tanim: HukukTanimi = { ...structuredClone(k.tanim), ad: `${k.tanim.ad} (kopya)`.slice(0, 120) };
   const girdiler: IslemGirdisi[] = [{ tur: 'hukuk_kurali_olustur', veri: { kod: yeni, sahip: hedef, tanim, kaynak: kod } }];
-  for (const r of b.e.db.selectObjects('SELECT tanim FROM kural_ornekleri WHERE kural=? AND silindi IS NULL ORDER BY olusturma, kod', [kod])) {
+  for (const r of b.e.db.selectObjects('SELECT tanim FROM kural_ornekleri WHERE kural=? AND silindi IS NULL ORDER BY olusturma, rowid', [kod])) {
     girdiler.push({ tur: 'kural_ornegi_yaz', veri: { kod: yeniKod(), kural: yeni, tanim: JSON.parse(r.tanim as string), kuralAd: tanim.ad, sahip: hedef } });
   }
   b.yaz(girdiler, [hedef]);
