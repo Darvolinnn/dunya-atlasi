@@ -1,7 +1,8 @@
 // Bir evrenin kayıtları: yeni kayıt, süzme, sıralama ve çöp kutusu.
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { AramaSonucu, KayitOzeti } from '../veri/api';
+import type { AramaSonucu, GeciselEksen, GeciselSonuc, KayitOzeti } from '../veri/api';
+import { KayitSec } from './KayitBolumleri';
 import { turBul } from '../alan/turler';
 import { turkceKarsilastir } from '../alan/turkce';
 import { siraAnahtari } from '../alan/tarih';
@@ -50,7 +51,15 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
   const [siralama, setSiralama] = useState<Siralama>('son');
   const [bulunan, setBulunan] = useState<AramaSonucu[] | null>(null);
   const [vazgecilenGizli, setVazgecilenGizli] = useState(false);
+  // Geçişli sorgu (§3.7): seçilen yerin, yönetimin ya da kültürün altındakiler.
+  const [kok, setKok] = useState<{ kod: string; ad: string } | null>(null);
+  const [eksen, setEksen] = useState<GeciselEksen>('kapsama');
+  const [icindekiler, setIcindekiler] = useState<Map<string, GeciselSonuc> | null>(null);
   useEffect(() => { istemci.iste('kayitlar', { evren }).then(setKayitlar); }, [evren, surum]);
+  useEffect(() => {
+    if (!kok) { setIcindekiler(null); return; }
+    istemci.iste('geciselKayitlar', { evren, kok: kok.kod, eksen }).then((l) => setIcindekiler(new Map(l.map((x) => [x.kod, x]))), () => setKok(null));
+  }, [evren, kok?.kod, eksen, surum]);
   useEffect(() => {
     let iptal = false;
     if (!arama.trim()) { setBulunan(null); return; }
@@ -64,13 +73,17 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
     // Arama varken sıra aramanın sırasıdır (en iyi eşleşme önce).
     const s = (bulunan ? bulunan.filter((b) => harita.has(b.kod)).map((b) => ({ k: harita.get(b.kod)!, nereden: neredenYazisi(b.nereden), parca: b.parca }))
       : kayitlar.map((k) => ({ k, nereden: null as string | null, parca: undefined as string | undefined })))
-      .filter((x) => (!tur || x.k.tur === tur) && (!vazgecilenGizli || x.k.karar !== 'vazgecildi'));
+      .filter((x) => (!tur || x.k.tur === tur) && (!vazgecilenGizli || x.k.karar !== 'vazgecildi') && (!icindekiler || icindekiler.has(x.k.kod)))
+      .map((x) => {
+        const g = icindekiler?.get(x.k.kod);
+        return g ? { ...x, nereden: [x.nereden, g.birim ? `${g.birim.ad}: ${g.etiket.toLocaleLowerCase('tr-TR')}` : g.etiket].filter(Boolean).join(' · ') } : x;
+      });
     if (bulunan) return s;
     if (siralama === 'tarih') s.sort((x, y) => siraAnahtari(x.k.tarih ?? null) - siraAnahtari(y.k.tarih ?? null) || turkceKarsilastir(x.k.ad, y.k.ad));
     if (siralama === 'ad') s.sort((x, y) => turkceKarsilastir(x.k.ad, y.k.ad));
     if (siralama === 'tur') s.sort((x, y) => turkceKarsilastir(turBul(x.k.tur).ad, turBul(y.k.tur).ad) || turkceKarsilastir(x.k.ad, y.k.ad));
     return s;
-  }, [kayitlar, bulunan, tur, siralama, vazgecilenGizli]);
+  }, [kayitlar, bulunan, tur, siralama, vazgecilenGizli, icindekiler]);
 
   if (!kayitlar) return null;
   return (
@@ -94,6 +107,17 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
               <option value="tarih">Evren tarihine göre</option>
             </select>
             <label class="satir kucuk soluk"><input type="checkbox" checked={vazgecilenGizli} onChange={() => setVazgecilenGizli(!vazgecilenGizli)} /> Vazgeçilenleri gizle</label>
+          </div>
+          <div class="suzgec satir kucuk">
+            <span class="soluk">İçindekiler:</span>
+            <KayitSec istemci={istemci} evren={evren} secili={kok} sec={setKok} etiket="Yer, yönetim ya da kültür seç" />
+            <select class="girdi kucuk-secim" aria-label="Hangi ilişki üzerinden" value={eksen} onChange={(e) => setEksen((e.target as HTMLSelectElement).value as GeciselEksen)}>
+              <option value="kapsama">Fiziksel kapsama (parçaları)</option>
+              <option value="bagli">Siyasi bağlılık (bağlı olanlar)</option>
+              <option value="kultur">Kültürel aidiyet (bu kültürden olanlar)</option>
+            </select>
+            {kok && <button class="dugme sade kucuk" onClick={() => setKok(null)}>Kaldır</button>}
+            {kok && <span class="soluk">Alt birimler ve onlara bağlı kayıtlar; seçilen kaydın kendisi listede yok.</span>}
           </div>
           <p class="soluk kucuk">{gorunen.length === kayitlar.length ? `${kayitlar.length} kayıt` : `${kayitlar.length} kayıttan ${gorunen.length} tanesi`}</p>
           {gorunen.length === 0 ? <div class="bos"><p>Aramaya uyan kayıt yok.</p></div> : (

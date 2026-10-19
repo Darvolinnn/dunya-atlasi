@@ -53,6 +53,11 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   iz_geri_yukle: (v, ad) => `${ad(v.konu)}: izlenen ayrıntı geri getirildi “${v.ad}”`,
   alan_boslugu: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” ${({ acik: 'bilerek açık bırakıldı', bilinmiyor: 'evrende bilinmiyor olarak işaretlendi', gecersiz: 'bu kayıt için geçersiz sayıldı' } as Record<string, string>)[String(v.tur)] ?? 'yeniden düşünülecekler arasına alındı'}`,
   varsayilan_karari: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” için kaynaklar ${({ birlikte: 'birlikte geçerli sayıldı', kapsam: 'kapsamları farklı sayıldı', oncelik: 'arasında öncelik seçildi' } as Record<string, string>)[String((v.karar as { durum?: string } | null)?.durum)] ?? 'yeniden çözülmemiş sayıldı'}`,
+  fetih_cevabi: (v, ad) => {
+    const c = v.cevap as { durum?: string; tarih?: { ifade?: string } | null } | null;
+    const ne = !c ? 'henüz karar verilmedi' : c.durum === 'suruyor' ? 'eski uygulama sürüyor' : c.durum === 'birlikte' ? 'eski ve yeni uygulama birlikte geçerli' : `yeni uygulama ${c.tarih?.ifade ? `${c.tarih.ifade} tarihinde ` : ''}başladı`;
+    return `${ad(v.kod)}: “${v.ad ?? 'alan'}” bağlılık değişikliğinden sonra ${ne}`;
+  },
   iz_gozlem: (v, ad) => `${ad(v.sahne)}: “${v.izAd ?? 'ayrıntı'}” ${v.an === 'bas' ? 'başta' : 'sonda'} ${v.deger ? `“${v.deger}” olarak gözlendi` : 'gözlemi kaldırıldı'}`,
   anlati_yerlestir: (v, ad) => v.ust ? `${ad(v.kod)}: ${ad(v.ust)} içinde yeri değişti` : `${ad(v.kod)}: eser yapısından çıkarıldı`,
   durum_ekle: (v, ad) => `${ad(v.konu)}: durum eklendi “${v.ozellik}: ${v.hedef ? ad(v.hedef) : v.deger}”`,

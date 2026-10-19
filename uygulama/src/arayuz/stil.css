@@ -567,3 +567,6 @@ label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; 
 .paket-notu { margin: 4px 0 8px; }
 .varsayilan { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; padding: 4px 8px; border-left: 2px solid var(--cizgi); }
 .varsayilan-kaynaklari { list-style: none; padding: 0; margin: 0; }
+.toplananlar { margin-top: 16px; }
+.toplanan-listesi { margin: 4px 0 8px; padding-left: 18px; }
+.fetih-sorusu { display: flex; flex-direction: column; gap: 4px; }

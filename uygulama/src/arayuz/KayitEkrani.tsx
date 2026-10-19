@@ -11,6 +11,7 @@ import { KararSecici, TurSecici } from './ortak';
 import { Gorseller, Iliskiler, KayitDegisimleri, NotDonustur, SahneBolumu, TarihAlani } from './KayitBolumleri';
 import { KayitIzleri } from './Sureklilik';
 import { KayitMasalari } from './Masalar';
+import { AltBirimlerdenToplananlar } from './Kapsama';
 import { git } from './Uygulama';
 import { CatismaListesi } from './Catismalar';
 import { useCalisma } from './Calisma';
@@ -141,6 +142,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
         <KayitMeseleleri istemci={istemci} evren={evren} kayit={kayit} />
         <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />
+        <AltBirimlerdenToplananlar istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} surum={surum} />
         <KayitDegisimleri istemci={istemci} evren={evren} kod={kod} surum={surum} />
         <KayitMasalari istemci={istemci} evren={evren} kod={kod} surum={surum} />
         {!['sahne', 'not', 'eser', 'bolum'].includes(kayit.tur) && <KayitIzleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}

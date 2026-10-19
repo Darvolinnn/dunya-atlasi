@@ -7,7 +7,9 @@ import type { IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi } from '../alan/kod';
 import { katla } from '../alan/turkce';
 import type { VarsayilanEkseni } from '../alan/sablon';
-import type { AlanVarsayilani, BoslukTuru, KisaKayit, VarsayilanKarari, VarsayilanKaynagi } from '../veri/api';
+import type { AlanVarsayilani, BoslukTuru, FetihCevabi, FetihSorusu, KisaKayit, VarsayilanKarari, VarsayilanKaynagi } from '../veri/api';
+import { tarihCoz, type EvrenTarihi } from '../alan/tarih';
+import { zamanSetiOku } from './izdusum';
 import type { EvrenVt } from './evren-vt';
 import { sablonOku } from './sablon';
 
@@ -45,7 +47,7 @@ function acikDeger(e: EvrenVt, kaynak: string, alan: string, ad: string): unknow
  * kendi bağlı olduğu yönetim; yoksa içinde bulunduğu yerin yönetimi; yönetimde değer yoksa onun bağlı olduğu yönetim.
  * Kültür: kendi kültürleri; yer ise içinde bulunduğu yerin kültürü. Tür: kendi türü.
  */
-function kaynaklar(e: EvrenVt, kod: string, eksen: VarsayilanEkseni, alan: string, ad: string): VarsayilanKaynagi[] {
+function kaynaklar(e: EvrenVt, kod: string, eksen: VarsayilanEkseni, alan: string, ad: string, eskiYonetim?: string): VarsayilanKaynagi[] {
   const kisi = !['mekan', 'sehir', 'siyasi'].includes(e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [kod]) as string);
   const sonuc: VarsayilanKaynagi[] = [];
   const ekle = (kaynak: string, yol: string[]) => {
@@ -80,7 +82,7 @@ function kaynaklar(e: EvrenVt, kod: string, eksen: VarsayilanEkseni, alan: strin
   } else {
     // Yönetim değer vermiyorsa onun bağlı olduğu yönetime çıkılır (vasal → metbu).
     const yonetimden = (y: string, yol: string[]) => tirman([{ kod: y, yol }], (k) => ustler(e, k, ['bagli']), (k, yl) => ekle(k, yl));
-    const kendi = ustler(e, kod, ['bagli']);
+    const kendi = eskiYonetim ? [eskiYonetim] : ustler(e, kod, ['bagli']);
     if (kendi.length) for (const u of kendi) yonetimden(u, [u]);
     else tirman(kapsayan(kod).map((u) => ({ kod: u, yol: [u] })), kapsayan, (k, yol) => ustler(e, k, ['bagli']).map((y) => yonetimden(y, [...yol, y])).some(Boolean));
   }
@@ -89,27 +91,55 @@ function kaynaklar(e: EvrenVt, kod: string, eksen: VarsayilanEkseni, alan: strin
 
 const ayni = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
+/** Kaydın en son biten kendi bağlılığı: fetih ya da siyasi değişiklik (§3.7). Bitişi yazılmış, vazgeçilmemiş ilişki. */
+function sonGecis(e: EvrenVt, kod: string) {
+  const r = e.db.selectObject(`SELECT i.kod, i.b, i.bitis FROM iliskiler i JOIN kayitlar k ON k.kod=i.b WHERE i.a=? AND i.tur='bagli'
+    AND i.silindi IS NULL AND i.bitis IS NOT NULL AND i.karar<>'vazgecildi' AND k.silindi IS NULL ORDER BY i.olusturma DESC LIMIT 1`, [kod]);
+  if (!r) return null;
+  const bitis = JSON.parse(r.bitis as string) as EvrenTarihi | null;
+  return { kod: r.kod as string, eski: r.b as string, bitis: bitis?.ifade ?? null };
+}
+
 /** Bir kaydın boş alanları için varsayılanlar. Değeri olan, "henüz düşünülmedi" dışında boş bırakılan alan gösterilmez. */
 export function kayitVarsayilanlari(e: EvrenVt, kod: string): Record<string, AlanVarsayilani> {
   const tur = e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [kod]) as string | undefined;
   if (!tur) return {};
   const sonuc: Record<string, AlanVarsayilani> = {};
+  const gecis = sonGecis(e, kod);
   const bosluk = new Map(e.db.selectObjects('SELECT alan, tur FROM alan_bosluklari WHERE kayit=?', [kod]).map((r) => [r.alan as string, r.tur as BoslukTuru]));
   for (const a of sablonOku(e, tur).alanlar) {
     if (!a.varsayilan) continue;
     if (e.db.selectValue('SELECT 1 FROM alan_degerleri WHERE kayit=? AND alan=?', [kod, a.kod]) !== undefined) continue;
     const b = bosluk.get(a.kod) ?? null;
-    if (b) { sonuc[a.kod] = { eksen: a.varsayilan, eksenAdi: EKSEN_ADI[a.varsayilan], kaynaklar: [], durum: 'gizli', bosluk: b, karar: null }; continue; }
-    const k = kaynaklar(e, kod, a.varsayilan, a.kod, a.ad);
+    if (b) { sonuc[a.kod] = { eksen: a.varsayilan, eksenAdi: EKSEN_ADI[a.varsayilan], kaynaklar: [], durum: 'gizli', bosluk: b, karar: null, fetih: null }; continue; }
+    let k = kaynaklar(e, kod, a.varsayilan, a.kod, a.ad);
+    // Bağlılık değişince eski yönetimden gelen değer o gün kendiliğinden değişmez; her alan için ayrı sorulur.
+    let fetih: FetihSorusu | null = null;
+    if (a.varsayilan === 'bagli' && gecis) {
+      const eski = kaynaklar(e, kod, 'bagli', a.kod, a.ad, gecis.eski);
+      const eskiKayit = kisa(e, gecis.eski);
+      if (eski.length && eskiKayit) {
+        const c = e.db.selectObject('SELECT durum, tarih FROM fetih_cevaplari WHERE kayit=? AND gecis=? AND alan=?', [kod, gecis.kod, a.kod]);
+        const cevap: FetihCevabi | null = c ? { durum: c.durum as FetihCevabi['durum'], tarih: c.tarih ? JSON.parse(c.tarih as string) : null } : null;
+        fetih = { gecis: gecis.kod, eski: eskiKayit, bitis: gecis.bitis, eskiKaynaklar: eski, yeniKaynaklar: k, cevap };
+        if (!cevap) {
+          sonuc[a.kod] = { eksen: a.varsayilan, eksenAdi: EKSEN_ADI[a.varsayilan], kaynaklar: [...eski, ...k], durum: 'fetih', bosluk: null, karar: null, fetih };
+          continue;
+        }
+        if (cevap.durum === 'suruyor') k = eski;
+        else if (cevap.durum === 'birlikte') k = [...eski, ...k.filter((x) => !eski.some((y) => y.kaynak.kod === x.kaynak.kod))];
+      }
+    }
     const r = e.db.selectObject('SELECT * FROM varsayilan_kararlari WHERE kayit=? AND alan=?', [kod, a.kod]);
     const karar: VarsayilanKarari | null = r ? { durum: r.durum as VarsayilanKarari['durum'], oncelikli: (r.oncelikli as string) ?? null, aciklama: r.aciklama as string } : null;
     const farkli = k.some((x) => !ayni(x.deger, k[0].deger));
     let durum: AlanVarsayilani['durum'] = !k.length ? 'yok' : !farkli ? 'tek' : 'cozulmemis';
-    if (farkli && karar) {
+    if (farkli && fetih?.cevap?.durum === 'birlikte') durum = 'birlikte';
+    else if (farkli && karar) {
       if (karar.durum === 'oncelik') durum = k.some((x) => x.kaynak.kod === karar.oncelikli) ? 'oncelik' : 'cozulmemis';
       else durum = karar.durum;
     }
-    sonuc[a.kod] = { eksen: a.varsayilan, eksenAdi: EKSEN_ADI[a.varsayilan], kaynaklar: k, durum, bosluk: null, karar };
+    sonuc[a.kod] = { eksen: a.varsayilan, eksenAdi: EKSEN_ADI[a.varsayilan], kaynaklar: k, durum, bosluk: null, karar, fetih };
   }
   return sonuc;
 }
@@ -141,4 +171,24 @@ export function varsayilanKarari(b: VarsayilanBaglami, kod: string, alan: string
     karar = { durum: karar.durum, oncelikli: karar.durum === 'oncelik' ? karar.oncelikli : null, aciklama: ac };
   }
   b.yaz([{ tur: 'varsayilan_karari', veri: { kod, alan, karar, ad: a.ad } }], [kod]);
+}
+
+/** Fetih sorusunun cevabı; null "henüz karar vermedim"dir. "Yeni uygulama" için tarih isteğe bağlıdır ama okunabilmelidir. */
+export function fetihCevabi(b: VarsayilanBaglami, kod: string, gecis: string, alan: string, cevap: { durum: FetihCevabi['durum']; tarih?: string } | null) {
+  const a = alanBul(b.e, kod, alan);
+  if (a.varsayilan !== 'bagli') throw new Error('Bu alan siyasi bağlılıktan varsayılan almıyor.');
+  const g = sonGecis(b.e, kod);
+  if (!g || g.kod !== gecis) throw new Error('Bu bağlılık değişikliği artık geçerli değil.');
+  let veri: FetihCevabi | null = null;
+  if (cevap) {
+    if (!['suruyor', 'yeni', 'birlikte'].includes(cevap.durum)) throw new Error('Geçersiz seçim.');
+    let tarih: EvrenTarihi | null = null;
+    const ifade = String(cevap.tarih ?? '').trim();
+    if (cevap.durum === 'yeni' && ifade) {
+      tarih = tarihCoz(ifade, zamanSetiOku(b.e.db));
+      if (!tarih?.eksen) throw new Error('Tarih okunamadı.');
+    }
+    veri = { durum: cevap.durum, tarih };
+  }
+  b.yaz([{ tur: 'fetih_cevabi', veri: { kod, gecis, alan, cevap: veri, ad: a.ad, eski: kisa(b.e, g.eski)?.ad ?? '' } }], [kod]);
 }

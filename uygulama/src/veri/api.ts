@@ -84,11 +84,21 @@ export type BoslukTuru = 'acik' | 'bilinmiyor' | 'gecersiz';
 export type VarsayilanEkseniAdi = 'kapsama' | 'bagli' | 'kultur' | 'tur';
 export interface VarsayilanKaynagi { kaynak: KisaKayit; deger: unknown; eksen: VarsayilanEkseniAdi; yol: KisaKayit[] }
 export interface VarsayilanKarari { durum: 'birlikte' | 'kapsam' | 'oncelik'; oncelikli: string | null; aciklama: string }
+export interface FetihCevabi { durum: 'suruyor' | 'yeni' | 'birlikte'; tarih: EvrenTarihi | null }
+/** Bağlılığı değişmiş kayıtta eski yönetimden gelen alan için soru (§3.7). */
+export interface FetihSorusu {
+  gecis: string; eski: KisaKayit; bitis: string | null;
+  eskiKaynaklar: VarsayilanKaynagi[]; yeniKaynaklar: VarsayilanKaynagi[]; cevap: FetihCevabi | null;
+}
 export interface AlanVarsayilani {
   eksen: VarsayilanEkseniAdi; eksenAdi: string; kaynaklar: VarsayilanKaynagi[];
-  durum: 'yok' | 'tek' | 'cozulmemis' | 'birlikte' | 'kapsam' | 'oncelik' | 'gizli';
-  bosluk: BoslukTuru | null; karar: VarsayilanKarari | null;
+  durum: 'yok' | 'tek' | 'cozulmemis' | 'birlikte' | 'kapsam' | 'oncelik' | 'gizli' | 'fetih';
+  bosluk: BoslukTuru | null; karar: VarsayilanKarari | null; fetih: FetihSorusu | null;
 }
+export type GeciselEksen = 'kapsama' | 'bagli' | 'kultur';
+/** Geçişli sorgu sonucu: alt birim (birim null) ya da bir birime bağlı kayıt (birim, bağlandığı yer). */
+export interface GeciselSonuc { kod: string; birim: KisaKayit | null; etiket: string }
+export interface ToplananKayit { kayit: KisaKayit; birimler: KisaKayit[] }
 export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
 export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
 export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
@@ -605,6 +615,9 @@ export interface Istekler {
   kayitVarsayilanlari(a: { evren: string; kod: string }): Record<string, AlanVarsayilani>;
   alanBoslugu(a: { evren: string; kod: string; alan: string; tur: BoslukTuru | null }): void;
   varsayilanKarari(a: { evren: string; kod: string; alan: string; karar: VarsayilanKarari | null }): void;
+  geciselKayitlar(a: { evren: string; kok: string; eksen: GeciselEksen }): GeciselSonuc[];
+  altBirimlerdenToplananlar(a: { evren: string; kod: string }): ToplananKayit[];
+  fetihCevabi(a: { evren: string; kod: string; gecis: string; alan: string; cevap: { durum: FetihCevabi['durum']; tarih?: string } | null }): void;
   haritaYukle(a: { evren: string; ad: string; yer?: string | null; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ kod: string }>;
   gorseldenHarita(a: { evren: string; kayit: string; gorsel: string }): { kod: string };
   haritaDegistir(a: { evren: string; kod: string; alan: 'ad' | 'yer'; deger: unknown }): void;

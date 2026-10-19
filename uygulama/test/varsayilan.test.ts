@@ -104,4 +104,81 @@ describe('varsayılan değerler (§3.7)', () => {
     expect(m.catismalar({ evren }).filter((x) => x.tur === 'alan')).toHaveLength(0);
     expect(m.kayitVarsayilanlari({ evren, kod }).iklim.bosluk).toBe('gecersiz');
   });
+
+  it('fetih: eski yönetimden gelen her alan ayrı sorulur; değer o gün kendiliğinden değişmez', () => {
+    const h = cihaz('Deneme');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Deneme evreni' });
+    h.takvimYaz({ evren, takvim: { kod: 'ana', surum: 1, ad: 'Yıl', yilGun: 0, aylar: [{ ad: 'Tohum', gun: 30 }, { ad: 'Hasat', gun: 30 }] } });
+    const kayit = (ad: string, tur: string) => h.kayitOlustur({ evren, ad, tur }).kod;
+    const liman = kayit('Taşliman', 'sehir');
+    const eski = kayit('Orvan Krallığı', 'siyasi');
+    const yeni = kayit('Deniz Birliği', 'siyasi');
+    h.kayitAlanYaz({ evren, kod: eski, alan: 'resmi_para', deger: 'Gümüş akçe' });
+    h.kayitAlanYaz({ evren, kod: eski, alan: 'hukuk', deger: 'Kral divanı' });
+    h.kayitAlanYaz({ evren, kod: yeni, alan: 'resmi_para', deger: 'Deniz pulu' });
+    const { kod: il } = h.iliskiEkle({ evren, tur: 'bagli', a: liman, b: eski });
+    h.iliskiEkle({ evren, tur: 'bagli', a: liman, b: yeni, baslangic: '412' });
+    let v = h.kayitVarsayilanlari({ evren, kod: liman });
+    expect(v.resmi_para.fetih).toBeNull();
+    expect(v.resmi_para.durum).toBe('cozulmemis');
+    h.iliskiDegistir({ evren, kod: il, alan: 'bitis', deger: '412' });
+
+    v = h.kayitVarsayilanlari({ evren, kod: liman });
+    expect(v.resmi_para.durum).toBe('fetih');
+    expect(v.resmi_para.fetih).toMatchObject({ eski: { ad: 'Orvan Krallığı' }, bitis: '412', cevap: null });
+    expect(v.resmi_para.kaynaklar.map((x) => x.deger)).toEqual(['Gümüş akçe', 'Deniz pulu']);
+    // Hukuk için yeni yönetimde değer yok; yine de sorulur.
+    expect(v.hukuk.durum).toBe('fetih');
+
+    const gecis = v.resmi_para.fetih!.gecis;
+    expect(() => h.fetihCevabi({ evren, kod: liman, gecis, alan: 'resmi_para', cevap: { durum: 'yeni', tarih: 'bir gün' } })).toThrow(/okunamadı/);
+    h.fetihCevabi({ evren, kod: liman, gecis, alan: 'resmi_para', cevap: { durum: 'yeni', tarih: '432' } });
+    h.fetihCevabi({ evren, kod: liman, gecis, alan: 'hukuk', cevap: { durum: 'suruyor' } });
+    v = h.kayitVarsayilanlari({ evren, kod: liman });
+    expect(v.resmi_para).toMatchObject({ durum: 'tek', kaynaklar: [{ deger: 'Deniz pulu' }] });
+    expect(v.resmi_para.fetih!.cevap!.tarih!.ifade).toBe('432');
+    expect(v.hukuk).toMatchObject({ durum: 'tek', kaynaklar: [{ deger: 'Kral divanı' }] });
+    h.fetihCevabi({ evren, kod: liman, gecis, alan: 'resmi_para', cevap: { durum: 'birlikte' } });
+    expect(h.kayitVarsayilanlari({ evren, kod: liman }).resmi_para.durum).toBe('birlikte');
+    h.fetihCevabi({ evren, kod: liman, gecis, alan: 'resmi_para', cevap: null });
+    expect(h.kayitVarsayilanlari({ evren, kod: liman }).resmi_para.durum).toBe('fetih');
+    const gunluk = h.islemGunlugu({ evren, sinir: 50 }).map((x) => islemAciklamasi(x.tur, x.veri)).join('\n');
+    expect(gunluk).toContain('bağlılık değişikliğinden sonra eski uygulama sürüyor');
+  });
+});
+
+describe('geçişli sorgu ve alt birimlerden toplananlar (§3.7)', () => {
+  it('alt birimlerdeki kayıtlar sonuca girer; aynı kayıt bir kez sayılır', () => {
+    const h = cihaz('Deneme');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Deneme evreni' });
+    const kayit = (ad: string, tur: string) => h.kayitOlustur({ evren, ad, tur }).kod;
+    const sehir = kayit('Taşliman', 'sehir');
+    const m1 = kayit('Balıkçı mahallesi', 'mekan');
+    const m2 = kayit('Tersane mahallesi', 'mekan');
+    const han = kayit('Mavi han', 'mekan');
+    const lonca = kayit('Halatçılar loncası', 'topluluk');
+    const tuz = kayit('Tuz', 'urun');
+    const elin = kayit('Elin', 'karakter');
+    const krallik = kayit('Orvan Krallığı', 'siyasi');
+    h.iliskiEkle({ evren, tur: 'parca', a: m1, b: sehir });
+    h.iliskiEkle({ evren, tur: 'parca', a: m2, b: sehir });
+    h.iliskiEkle({ evren, tur: 'parca', a: han, b: m1 });
+    h.iliskiEkle({ evren, tur: 'ilgili', a: lonca, b: m1 });
+    h.iliskiEkle({ evren, tur: 'ilgili', a: lonca, b: m2 });
+    h.iliskiEkle({ evren, tur: 'ilgili', a: tuz, b: han });
+    h.iliskiEkle({ evren, tur: 'yasar', a: elin, b: han });
+    h.iliskiEkle({ evren, tur: 'bagli', a: sehir, b: krallik });
+
+    const g = h.geciselKayitlar({ evren, kok: sehir, eksen: 'kapsama' });
+    expect(g.map((x) => x.kod).sort()).toEqual([m1, m2, han, lonca, tuz, elin].sort());
+    expect(g.find((x) => x.kod === elin)).toMatchObject({ birim: { ad: 'Mavi han' }, etiket: 'Yaşadığı yer' });
+    expect(g.find((x) => x.kod === han)!.etiket).toBe('Balıkçı mahallesi içinden');
+    // Üst yönetim alt birim değildir; bağlılık ekseninde krallıktan şehre inilir.
+    expect(g.some((x) => x.kod === krallik)).toBe(false);
+    expect(h.geciselKayitlar({ evren, kok: krallik, eksen: 'bagli' }).map((x) => x.kod)).toContain(elin);
+
+    const t = h.altBirimlerdenToplananlar({ evren, kod: sehir });
+    expect(t.map((x) => x.kayit.ad).sort()).toEqual(['Halatçılar loncası', 'Tuz']);
+    expect(t.find((x) => x.kayit.kod === lonca)!.birimler.map((x) => x.ad)).toEqual(['Balıkçı mahallesi', 'Tersane mahallesi']);
+  });
 });

@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 20;
+export const IZDUSUM_SURUMU = 21;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -191,6 +191,14 @@ CREATE TABLE IF NOT EXISTS varsayilan_kararlari(
   oncelikli TEXT,
   aciklama TEXT NOT NULL DEFAULT '',
   PRIMARY KEY(kayit, alan)
+);
+CREATE TABLE IF NOT EXISTS fetih_cevaplari(
+  kayit TEXT NOT NULL,
+  gecis TEXT NOT NULL,
+  alan TEXT NOT NULL,
+  durum TEXT NOT NULL,
+  tarih TEXT,
+  PRIMARY KEY(kayit, gecis, alan)
 );
 CREATE TABLE IF NOT EXISTS masalar(
   kod TEXT PRIMARY KEY,
@@ -455,7 +463,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -844,6 +852,15 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     else db.exec({ sql: 'INSERT OR REPLACE INTO varsayilan_kararlari(kayit, alan, durum, oncelikli, aciklama) VALUES(?,?,?,?,?)',
       bind: [kod, alan, karar.durum as string, typeof karar.oncelikli === 'string' ? yonlendir(db, karar.oncelikli) : null, String(karar.aciklama ?? '').slice(0, 300)] });
     alanYaz(db, i, kod, 'varsayilan:' + alan, karar ?? null);
+  },
+  /** Bağlılık değişince eski yönetimden gelen alan için cevap (§3.7): eski sürüyor, yeni şu tarihte başladı, ikisi birlikte. */
+  fetih_cevabi(db, i) {
+    const { kod, gecis, alan, cevap } = i.veri as { kod: string; gecis: string; alan: string; cevap: { durum?: unknown; tarih?: unknown } | null };
+    if (typeof kod !== 'string' || typeof gecis !== 'string' || typeof alan !== 'string') return;
+    if (!cevap || !['suruyor', 'yeni', 'birlikte'].includes(cevap.durum as string)) db.exec({ sql: 'DELETE FROM fetih_cevaplari WHERE kayit=? AND gecis=? AND alan=?', bind: [kod, gecis, alan] });
+    else db.exec({ sql: 'INSERT OR REPLACE INTO fetih_cevaplari(kayit, gecis, alan, durum, tarih) VALUES(?,?,?,?,?)',
+      bind: [kod, gecis, alan, cevap.durum as string, cevap.durum === 'yeni' && cevap.tarih ? JSON.stringify(cevap.tarih) : null] });
+    alanYaz(db, i, kod, `fetih:${gecis}:${alan}`, cevap ?? null);
   },
   /** Çalışma masası (§5.9): kayıtlar kopyalanmaz, masa onlara bağlanır. */
   masa_olustur(db, i) {

@@ -43,7 +43,7 @@ export function SablonAlanlari({ istemci, evren, kayit, ks }: { istemci: Istemci
   return (
     <>
       {ks.sablon.alanlar.map((a) => (
-        <div class={a.tur === 'uzun' || (vs?.[a.kod]?.kaynaklar.length ?? 0) > 1 ? 'alan genis' : 'alan'} key={a.kod}>
+        <div class={a.tur === 'uzun' || ((vs?.[a.kod]?.kaynaklar.length ?? 0) > 1 || vs?.[a.kod]?.fetih) ? 'alan genis' : 'alan'} key={a.kod}>
           <span class="alan-adi satir">{a.ad}
             <KararSecici etiket={a.ad} karar={kayit.alanKararlari[`f:${a.kod}`] ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod: kayit.kod, alan: `f:${a.kod}`, karar: k })} />
           </span>
@@ -87,9 +87,10 @@ function VarsayilanGosterimi({ istemci, evren, kod, a, v, kabul, hata }: {
     isle(istemci.iste('varsayilanKarari', { evren, kod, alan: a.kod, karar: k && { durum: k.durum, oncelikli: k.oncelikli ?? null, aciklama: k.aciklama ?? '' } }));
   const bosluk = (t: string) => isle(istemci.iste('alanBoslugu', { evren, kod, alan: a.kod, tur: (t || null) as BoslukTuru | null }));
   const yol = (x: AlanVarsayilani['kaynaklar'][0]) => x.yol.length > 1 ? ` (${x.yol.map((y) => y.ad).join(' → ')} üzerinden)` : '';
-  const coklu = v.kaynaklar.length > 1 && v.durum !== 'tek';
+  const coklu = v.kaynaklar.length > 1 && v.durum !== 'tek' && v.durum !== 'fetih';
   return (
     <div class="varsayilan kucuk">
+      {v.fetih && <FetihSorusuGosterimi istemci={istemci} evren={evren} kod={kod} a={a} f={v.fetih} hata={hata} />}
       {v.durum === 'yok' && <span class="soluk">{v.eksenAdi[0].toLocaleUpperCase('tr-TR') + v.eksenAdi.slice(1)} yoluyla varsayılan veren kayıt yok.</span>}
       {v.durum === 'tek' && (
         <span class="satir"><span>Varsayılan: <strong>{degerMetni(a, v.kaynaklar[0].deger)}</strong>
@@ -131,6 +132,44 @@ function VarsayilanGosterimi({ istemci, evren, kod, a, v, kabul, hata }: {
         </select>
         {v.bosluk && <span>Bu durumda varsayılan gösterilmez.</span>}
       </label>
+    </div>
+  );
+}
+
+/** Bağlılık değişince eski yönetimden gelen alan için tek soru (§3.7); her alan ayrı cevaplanır. */
+function FetihSorusuGosterimi({ istemci, evren, kod, a, f, hata }: {
+  istemci: Istemci; evren: string; kod: string; a: SablonAlani; f: NonNullable<AlanVarsayilani['fetih']>; hata: (h: string | null) => void;
+}) {
+  const [tarihli, setTarihli] = useState(false);
+  const [tarih, setTarih] = useState('');
+  const cevapla = (c: { durum: 'suruyor' | 'yeni' | 'birlikte'; tarih?: string } | null) =>
+    istemci.iste('fetihCevabi', { evren, kod, gecis: f.gecis, alan: a.kod, cevap: c }).then(() => { hata(null); setTarihli(false); }, (e) => hata(hataYaz(e)));
+  const degerler = (l: AlanVarsayilani['kaynaklar']) => l.length ? l.map((x) => `${degerMetni(a, x.deger)} (${x.kaynak.ad})`).join(', ') : 'değer yok';
+  const c = f.cevap;
+  return (
+    <div class="fetih-sorusu">
+      <span><strong>Bağlılık değişti:</strong> “{f.eski.ad}” yönetimi{f.bitis ? ` ${f.bitis} tarihinde` : ''} sona erdi. Eski yönetimden: {degerler(f.eskiKaynaklar)}. Yeni yönetimden: {degerler(f.yeniKaynaklar)}.</span>
+      {c ? (
+        <span class="satir"><span class="rozet">{c.durum === 'suruyor' ? 'Eski uygulama sürüyor' : c.durum === 'birlikte' ? 'İkisi birlikte geçerli' : `Yeni uygulama başladı${c.tarih ? `: ${c.tarih.ifade}` : ''}`}</span>
+          <button class="dugme sade kucuk" onClick={() => cevapla(null)}>Henüz karar vermedim</button></span>
+      ) : (
+        <>
+          <span>Bu alan için sonra ne oldu? Değer o gün kendiliğinden değişmez.</span>
+          <span class="satir">
+            <button class="dugme sade kucuk" onClick={() => cevapla({ durum: 'suruyor' })}>Eski uygulama sürüyor</button>
+            <button class="dugme sade kucuk" onClick={() => setTarihli(true)}>Yeni uygulama şu tarihte başladı</button>
+            <button class="dugme sade kucuk" onClick={() => cevapla({ durum: 'birlikte' })}>İkisi birlikte geçerli</button>
+            <span class="soluk">Henüz karar vermedin.</span>
+          </span>
+          {tarihli && (
+            <form class="satir" onSubmit={(e) => { e.preventDefault(); cevapla({ durum: 'yeni', tarih }); }}>
+              <input class="girdi" style="flex:1;min-width:120px" lang="tr" aria-label={`${a.ad}: yeni uygulamanın başladığı tarih`} placeholder="Tarih (boş bırakılabilir)" value={tarih} onInput={(e) => setTarih((e.target as HTMLInputElement).value)} />
+              <button class="dugme ana kucuk" type="submit">Kaydet</button>
+              <button class="dugme sade kucuk" type="button" onClick={() => setTarihli(false)}>Vazgeç</button>
+            </form>
+          )}
+        </>
+      )}
     </div>
   );
 }
