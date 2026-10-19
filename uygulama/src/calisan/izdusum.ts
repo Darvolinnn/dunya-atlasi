@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 46;
+export const IZDUSUM_SURUMU = 47;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -708,6 +708,11 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   hedef TEXT NOT NULL,
   zaman INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS uyarlama_eslemeleri(
+  kod TEXT PRIMARY KEY,
+  deger TEXT NOT NULL,
+  silindi INTEGER NOT NULL DEFAULT 0
+);
 `;
 export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'gokyuzu_tanimi',
@@ -719,6 +724,7 @@ export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar'
 IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi', 'kullanim_masalari');
 IZDUSUM_TABLOLARI.push('bakim_tanimlari', 'bakim_kayitlari');
 IZDUSUM_TABLOLARI.push('kural_ornekleri');
+IZDUSUM_TABLOLARI.push('uyarlama_eslemeleri');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -2023,5 +2029,22 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     });
     db.exec({ sql: 'UPDATE kayitlar SET duzenleme=? WHERE kod=?', bind: [i.zaman, kayit] });
     if (!i.veri.ilk) metinYazanlari(db, i, yeni);
+  },
+  uyarlama_yaz(db, i) {
+    const { kod, deger } = i.veri as { kod: string; deger: unknown };
+    db.exec({ sql: 'INSERT INTO uyarlama_eslemeleri(kod,deger) VALUES(?,?) ON CONFLICT(kod) DO UPDATE SET deger=excluded.deger', bind: [kod, JSON.stringify(deger)] });
+    alanYaz(db, i, kod, 'uyarlama_esleme', deger);
+    if (!i.veri.sadeceTanim) {
+      db.exec({ sql: 'UPDATE uyarlama_eslemeleri SET silindi=0 WHERE kod=?', bind: [kod] });
+      alanYaz(db, i, kod, 'uyarlama_silindi', false);
+    }
+  },
+  uyarlama_gozden_gecir(db, i) { UYGULAYICILAR.uyarlama_yaz(db, i); },
+  uyarlama_sil(db, i) {
+    const { kod } = i.veri as { kod: string };
+    if (!db.selectValue('SELECT 1 FROM uyarlama_eslemeleri WHERE kod=?', [kod])) return;
+    const silindi = i.veri.silindi !== false;
+    db.exec({ sql: 'UPDATE uyarlama_eslemeleri SET silindi=? WHERE kod=?', bind: [silindi ? 1 : 0, kod] });
+    alanYaz(db, i, kod, 'uyarlama_silindi', silindi);
   },
 };

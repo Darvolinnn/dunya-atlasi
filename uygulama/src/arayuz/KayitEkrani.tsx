@@ -43,6 +43,7 @@ import { BirlesmeBilgisi, BirlestirDugmesi } from './Birlesme';
 import { KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
 import { BilinenlerBolumu, GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
 import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
+import { UyarlamaBolumu } from './Uyarlama';
 
 /** Durum geçmişi tutulmayan türler (anlatı parçaları ve notlar). */
 const DURUMSUZ = new Set(['sahne', 'bolum', 'eser', 'not']);
@@ -176,6 +177,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {kayit.tur === 'eser' && <EserCiktisi istemci={istemci} evren={evren} eser={kod} />}
         {kayit.tur === 'eser' && <YayimBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
         {kayit.tur === 'eser' && <KurguMontajiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+        {kayit.tur === 'eser' && <UyarlamaBolumu istemci={istemci} evren={evren} eser={kod} surum={surum} />}
         {kayit.tur === 'sahne' && <SahneNiyetleriBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {kayit.tur === 'sahne' && <SahneBolumu istemci={istemci} evren={evren} kayit={kayit} surum={surum} />}
         {kayit.tur === 'makam' && <MakamYurutenleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}
