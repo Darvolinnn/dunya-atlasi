@@ -106,6 +106,20 @@ export interface SurecSonucu { durum: 'dogdu' | 'dogmadi' | 'bilinmiyor' | 'tani
 export interface OlaySureci { kural: SurecKurali; silinmis: boolean; durumlar: Record<string, AdimDurumu>; sonuc: SurecSonucu; fiili: boolean; celismeler: string[] }
 export interface OlaySurecleri { surecler: OlaySureci[]; catisma: boolean }
 export interface MakamYurutucusu { iliski: string; kisi: KisaKayit; baslangic: EvrenTarihi | null; bitis: EvrenTarihi | null; fikir: boolean; not: string | null }
+export interface HukukKosulu { iliski: string; hedef: string; degil: boolean }
+export interface HukukTanimi {
+  ad: string; tur: 'yasak' | 'hak' | 'yukumluluk'; konu: string; kimlere: HukukKosulu[]; yer: string | null; yaptirim: string;
+  fiili: 'uygulaniyor' | 'gevsek' | 'uygulanmiyor' | null; fiiliNot: string; baslangic: EvrenTarihi | null; bitis: EvrenTarihi | null;
+}
+export interface HukukKurali { kod: string; sahip: KisaKayit; tanim: HukukTanimi; yer: KisaKayit | null; kimlere: (HukukKosulu & { hedefKayit: KisaKayit })[] }
+export interface UygulananKural {
+  kural: HukukKurali; nedenYer: string; kosullar: { ad: string; durum: 'tutuyor' | 'tutmuyor' | 'kayitsiz' }[];
+  durum: 'uygulanir' | 'kosul_kayitsiz'; zaman: 'gecerli' | 'tarihsiz' | 'belirsiz';
+}
+export interface UygulananKurallar {
+  kisi: KisaKayit; yer: KisaKayit; tarih: EvrenTarihi | null; kurallar: UygulananKural[];
+  catismalar: { konu: string; kurallar: string[] }[]; yerler: KisaKayit[]; yonetimler: KisaKayit[];
+}
 export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
 export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
 export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
@@ -631,6 +645,11 @@ export interface Istekler {
   surecAdimi(a: { evren: string; olay: string; kural: string; adim: string; durum: AdimDurumu | null }): void;
   surecFiili(a: { evren: string; olay: string; kural: string | null }): void;
   makamYurutenleri(a: { evren: string; makam: string }): MakamYurutucusu[];
+  hukukKurallari(a: { evren: string; sahip?: string }): HukukKurali[];
+  hukukKuraliOlustur(a: { evren: string; sahip: string; ad: string }): { kod: string };
+  hukukKuraliYaz(a: { evren: string; kod: string; tanim: Omit<HukukTanimi, 'baslangic' | 'bitis'> & { baslangic: string; bitis: string } }): void;
+  hukukKuraliSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  uygulananKurallar(a: { evren: string; kisi: string; yer: string; tarih?: string | null }): UygulananKurallar;
   geciselKayitlar(a: { evren: string; kok: string; eksen: GeciselEksen }): GeciselSonuc[];
   altBirimlerdenToplananlar(a: { evren: string; kod: string }): ToplananKayit[];
   fetihCevabi(a: { evren: string; kod: string; gecis: string; alan: string; cevap: { durum: FetihCevabi['durum']; tarih?: string } | null }): void;

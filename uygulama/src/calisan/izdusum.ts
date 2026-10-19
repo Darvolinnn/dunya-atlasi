@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 22;
+export const IZDUSUM_SURUMU = 23;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -227,6 +227,14 @@ CREATE TABLE IF NOT EXISTS surec_adimlari(
   durum TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS surec_adimlari_olay ON surec_adimlari(olay, kural);
+CREATE TABLE IF NOT EXISTS hukuk_kurallari(
+  kod TEXT PRIMARY KEY,
+  sahip TEXT NOT NULL,
+  tanim TEXT NOT NULL,
+  olusturma INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS hukuk_kurallari_sahip ON hukuk_kurallari(sahip);
 CREATE TABLE IF NOT EXISTS masalar(
   kod TEXT PRIMARY KEY,
   ad TEXT NOT NULL,
@@ -490,7 +498,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -538,7 +546,7 @@ function yonlendirNotla(db: Database, kod: string | null | undefined, tablo: str
 /** Birleştirmede kaynak kayda bağlı satırlar hedefe taşınır; geri almak için hangi satırın taşındığı tutulur. */
 const BIRLESME_SUTUNLARI: [string, string][] = [['iliskiler', 'a'], ['iliskiler', 'b'], ['durumlar', 'konu'], ['durumlar', 'hedef'], ['isaretler', 'kayit'], ['cizimler', 'kayit'], ['rotalar', 'a'], ['rotalar', 'b'],
   ['haritalar', 'yer'], ['degisimler', 'konu'], ['degisimler', 'olay'], ['izler', 'konu'], ['kayitlar', 'sahne_olayi'], ['anlati', 'ust'], ['yonlendirmeler', 'hedef'],
-  ['iddialar', 'konu'], ['surec_kurallari', 'sahip'], ['surec_baglari', 'olay'], ['surec_adimlari', 'olay'], ['bilgiler', 'bilen'], ['bilgiler', 'kaynak_kayit'], ['bilgiler', 'sahne']];
+  ['iddialar', 'konu'], ['surec_kurallari', 'sahip'], ['hukuk_kurallari', 'sahip'], ['surec_baglari', 'olay'], ['surec_adimlari', 'olay'], ['bilgiler', 'bilen'], ['bilgiler', 'kaynak_kayit'], ['bilgiler', 'sahne']];
 
 export type Kesinlik = 'kesin' | 'yaklasik' | 'bilinmiyor';
 export interface IsaretKonumu { kesinlik: Kesinlik; x: number | null; y: number | null; yaricap: number | null }
@@ -935,6 +943,25 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const o = yonlendir(db, olay) as string;
     db.exec({ sql: 'UPDATE surec_baglari SET fiili=(kural IS ?) WHERE olay=?', bind: [typeof kural === 'string' ? kural : null, o] });
     alanYaz(db, i, o, 'surec_fiili', typeof kural === 'string' ? kural : null);
+  },
+  /** Hukuk kuralı (§15-11): koşul → yasak / hak / yükümlülük → yaptırım; fiilî uygulama ayrı. */
+  hukuk_kurali_olustur(db, i) {
+    const v = i.veri as Record<string, unknown>;
+    if (typeof v.kod !== 'string' || typeof v.sahip !== 'string' || !v.tanim) return;
+    db.exec({ sql: 'INSERT OR IGNORE INTO hukuk_kurallari(kod, sahip, tanim, olusturma) VALUES(?,?,?,?)',
+      bind: [v.kod, yonlendirNotla(db, v.sahip, 'hukuk_kurallari', 'sahip', v.kod) as string, JSON.stringify(v.tanim), i.zaman] });
+  },
+  hukuk_kurali_yaz(db, i) {
+    const { kod, tanim } = i.veri as { kod: string; tanim: unknown };
+    if (typeof kod !== 'string' || !tanim || typeof tanim !== 'object') return;
+    db.exec({ sql: 'UPDATE hukuk_kurallari SET tanim=? WHERE kod=?', bind: [JSON.stringify(tanim), kod] });
+    alanYaz(db, i, kod, 'hukuk', tanim);
+  },
+  hukuk_kurali_sil(db, i) {
+    db.exec({ sql: 'UPDATE hukuk_kurallari SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  hukuk_kurali_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE hukuk_kurallari SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
   },
   /** Çalışma masası (§5.9): kayıtlar kopyalanmaz, masa onlara bağlanır. */
   masa_olustur(db, i) {
