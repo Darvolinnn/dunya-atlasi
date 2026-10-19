@@ -55,9 +55,19 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | F35 | Baskı ve uyarlama karşılaştırma: iki eser ya da eser ile deneme kopyası arasında yazarın eşlemeleri, gözden geçirmeden sonraki değişikliklerin listesi; eser sayfasında (GPT paketi, izdüşüm 47, tablo `uyarlama_eslemeleri`) | `c23ccce` |
 | Boşluk | Eşitleme ekranında deneme kopyalarının yalnızca bu cihazda olan ve bekleyen değişiklikleri | `f5941dc` |
 
-### 3.2 Başka ajanlarda olan paketler
+### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
-Şu an yok. 19 Ekim 2026'da verilen dört paketin hepsi birleştirildi. Yeni paket verilirse tabloyu buraya yaz; dalı uzak depoda belirince birleştir (§6). Paketler `IZDUSUM_SURUMU`'nu artırmaz; artırmayı birleştiren yapar. Tam promptlar kullanıcının proje klasöründe `paket-promptlari/` altındadır; depoda değildir. Prompt yazarken §6 yeterlidir.
+19 Ekim 2026'daki ilk dört paket birleştirildi. Aynı gün ikinci tur beş paket verildi. Dalı uzak depoda belirince birleştir (§6). Paketler `IZDUSUM_SURUMU`'nu artırmaz; artırmayı birleştiren yapar. Promptlar kullanıcının proje klasöründe `paket-promptlari/tur2/` altındadır; depoda değildir.
+
+| Dal | Madde | İşlem adı öneki | Tablolar | Not |
+|---|---|---|---|---|
+| `paket/kalabalik` (GPT) | F40 kalabalıklar (§3.8) | `kalabalik_` | `kalabalik_…` | Yeni kayıt türü eklemez |
+| `paket/evren-donusum` (GPT) | F25 evren içi birleşme, bölünme, dönüşüm (§9.5) | `donusum_` | `donusum_…` | `birlesme.ts`'e dokunmaz, yönlendirme yok |
+| `paket/harita-kunye` (Argon) | F17 harita künyesi (§8.3) | `harita_kunye_` | `harita_kunyeleri` | `Harita.tsx`'e tek satır |
+| `paket/surec-sorumlu` (Argon) | F07 adım sorumluları, durdurabilir/veto | `surec_sorumlu_` | `surec_sorumlu…` | `surec.ts`'i değiştirmez |
+| `paket/kalici-iz` (Argon) | F11 geçmişin bugünkü izleri | `iz_kaydi_` | `iz_kayitlari` | Var olan `izler` (süreklilik) ayrı |
+
+Kodlanmamış ama paket olarak verilmeyen "Tasarım" maddeleri: F05 (başkasının bilgisine inanç), F06 (kişi, kimlik, beden), F29 (sahne içi bağlam parçaları), F30 (metin ve kullanım yeri); var olan davranışı değiştirdikleri için ana ajanda yapılmalı. Kısmen olanlar: F09 (izin, ücret katmanları), F19 (sahne hatırlatıcısı ve okur tanıtımı özetleri), §15-2 (ölçekli erişim konturları).
 
 ### 3.3 Kalan işler (önerilen sıra)
 
