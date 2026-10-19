@@ -159,7 +159,10 @@ Kullanıcı etkileşimli bir taslak ve gerekçe belgesi gönderdi (ekler depoda 
 
 Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda açık olanlar" montajdaki okur soruları ve sahne niyetleri üzerinden hesaplanmalı. (2) Plan için ayrı katman gerekmez; kayıt ve alan düzeyi karar durumu var, eksik olan `alternatif` ilişkisi. (3) Olay örgüsü masası yeni veri istemez; var olan dört görünümü birleştirir. Onaylanırsa K11 gereği önce §16'ya *Öneri* olarak girer. Sıradaki adım: kullanıcı D1–D13'ü seçer; ilk kodlanacak P1 (rehber) ve P2 (soru setleri).
 - [x] Kullanıcı kararları (19 Ekim, gece): D1–D13'ün hepsi önerildiği gibi; sıra önce rehber ve sorular (P1, P2). Menü adları önerilen tablo (Masa → Genel bakış, İnceleme → Uyarılar, Görünümler → Grafikler, Çalışma masaları → Konu dosyaları, Açık meseleler → Karar bekleyenler, Bahsedilen ama yazılmamış → Eksik kayıtlar, Geçmiş → Değişiklik geçmişi, Sürümler → Kayıtlı anlar). #5'in üç görünüşü onaylandı; şerit sarısı deve tüyü oldu.
-- [ ] Kararları tasarıma işlemek (§0.2: ilgili bölümler, §1.1 K27, §16) ve P1+P2'yi kodlamak.
+- [x] K27 tasarıma girdi (§1.1); kavram modeli paket paket işlenecek.
+- [x] P2 (ilk kısım): eser (`cekirdek`, `eser`), sahne (`sahne_plani`) ve kurgu hattı (`hat`) soru setleri varsayılan; Ek A, §4.6; `test/anlati-sorulari.test.ts`. Şablonu değiştirilmiş evrende kendiliğinden eklenmez.
+- [ ] P2 (kalan): Yaz ekranında bağlam panelinin üstünde katlı "Sahne planı" (önce ekran görüntüsü). `seri` seti P4 ile.
+- [ ] P1: yazarlık rehberi programın içinde (yan panel, "Neden?/Örnek"); önce ekran görüntüsü.
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
 
 ## 4. Kod yapısı ve yeni bir özellik ekleme tarifi

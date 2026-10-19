@@ -86,6 +86,33 @@ export const SORU_SETLERI: SoruSeti[] = [
     ['Ses paleti ne?', 'Tekrar eden heceler; sert ↔ akıcı; kısa ↔ uzun. Aynı kültürün karakter, şehir ve ülke adları bu seslerden türetilir.'],
   ]),
   set('haritasiz', 'Haritasız evren büyütme', ['Uzak yerlerden nasıl söz ettiriliyor?', 'Hangi ticaret izleri var?', 'Hangi farklı diller duyuluyor?', 'Hangi eski olaylar anılıyor?', 'Hangi söylentiler dolaşıyor?']),
+  // Anlatı soruları (K27): eser, sahne ve kurgu hattı için. Evrenin kuralı (`baslangic.1`) ile hikâyenin çekirdeği ayrıdır.
+  set('cekirdek', 'Hikâye çekirdeği', [
+    ['Kim, ne istiyor?', 'Somut bir hedef: "kardeşinin dosyasını bulmak", "mutlu olmak" değil'],
+    ['Ona ne engel oluyor?', 'Bir kişi, bir kurum, bir kural ya da kendi inancı olabilir'],
+    'Başaramazsa ne kaybeder?',
+    'Okur hangi sorunun cevabını merak edecek?',
+    ['Bu hikâye hangi soruyu soruyor?', 'Cevap vermeden, soru biçiminde yazın'],
+  ]),
+  set('eser', 'Bu kitabın görevi', [
+    'Bu kitabın merkez sorusu ne?',
+    ['Dengeyi bozan olay ne?', 'Karakterin artık eskisi gibi yaşayamadığı an'],
+    'Doruk noktası ne?',
+    'Bu kitapta ne çözülüyor?',
+    ['Ne açık kalıyor?', 'Sonraki kitaba ya da bilerek cevapsız bırakılanlar'],
+  ]),
+  set('sahne_plani', 'Sahne planı', [
+    'Kim ne istiyor?',
+    'Ne engel oluyor?',
+    ['Sahne sonunda ne değişiyor?', 'Bir karar, yeni bir bilgi, bir ilişki ya da dış bir olay. Atmosfer sahnesinde "İlgisiz" diyebilirsiniz'],
+    'Okur ne öğreniyor?',
+  ]),
+  set('hat', 'Kurgu hattı', [
+    ['Bu hattın sorusu ne?', 'Ör. "Deniz\'e ne oldu?"'],
+    'Şu anki durumu ne?',
+    'Olası karşılığı ne?',
+    ['Bilerek açık mı kalacak?', 'Bazı hatlar bilinçli olarak belirsiz kalır'],
+  ]),
   set('rehber', 'Evren kurma rehberi', [
     ['Kim hüküm sürüyor?', 'Bir topluluk kaydıyla da cevaplayabilirsiniz'], 'Büyünün bedeli ne?', ['İnsanlar neye inanıyor?', 'Bir inanç kaydıyla da cevaplayabilirsiniz'],
   ]),
@@ -119,6 +146,9 @@ const VARSAYILANLAR: Record<string, Sablon> = {
   buyu_sistemi: { alanlar: [], sorular: sorular('buyu') },
   kultur: { alanlar: [], sorular: sorular('kultur') },
   dil: { alanlar: [], sorular: sorular('dil') },
+  eser: { alanlar: [], sorular: sorular('cekirdek', 'eser') },
+  sahne: { alanlar: [], sorular: sorular('sahne_plani') },
+  kurgu_hatti: { alanlar: [], sorular: sorular('hat') },
   acik_mesele: {
     alanlar: [
       { kod: 'durum', ad: 'Durum', tur: 'secim', secenekler: MESELE_DURUMLARI, sabit: true },

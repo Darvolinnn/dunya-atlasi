@@ -146,6 +146,7 @@ Bölüm numaraları Sürüm 6'ya aittir. Bölüm numaralarında değişiklik yok
 | Tutarlılık düzeltmesi (19 Ekim) | Belge başlığı | "Aşama: tasarım. Program kodu yazılmadı" eskimişti; kodlama K9 onayıyla başlamış ve §14.1 aşamaları kodlanmıştı. Başlık "Aşama: kodlama" oldu (kullanıcı onayı). |
 | Kullanıcı kararı (19 Ekim) | Durum şeridi rengi | Eşitleme ve hazırlanma şeridiyle "zayıf durum" satırındaki sarı fazla göze batıyordu; yerine soluk deve tüyü (açık temada #e9dcc6 zemin, koyu temada #3d3122) seçildi. |
 | Kullanıcı kararı (19 Ekim) | Menü adları | Kullanıcı "Masa" gibi adları anlamsız buldu; önerilen tablo seçildi: Masa → Genel bakış, İnceleme → Uyarılar, Görünümler → Grafikler, Çalışma masaları → Konu dosyaları, Açık meseleler → Karar bekleyenler, Bahsedilen ama yazılmamış → Eksik kayıtlar, Geçmiş → Değişiklik geçmişi, Sürümler → Kayıtlı anlar (§5.10). Kayıt türü adları (açık mesele) ve değişiklik/kullanım/koşul masası araç adları değişmedi. |
+| Kullanıcı kararı (19 Ekim) | Rehberli yazarlık ve roman serisi (K27) | Kullanıcı roman yazma yöntemini bilmediğini, programın yol göstermesini istedi; iki brif gönderdi (istek ve ilk sürümün eleştirisi). Öneriler `analiz/` altında; kullanıcı D1–D13 için önerilen varsayılanların hepsini seçti, sıra önce rehber ve sorular. İlk işlenen: eser, sahne ve kurgu hattı soru setleri (Ek A). |
 | Alınmayanlar | — | B10 6.2'deki eser için `.docx` dışa aktarımı yeni bir fikir sayıldı (K11). F26'nın ayrıntısı ve 2.2'nin tam birleştirmesi bekliyor. B10 6.2 lisans önerisi yerine K19 |
 
 ---

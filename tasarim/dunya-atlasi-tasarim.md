@@ -137,6 +137,7 @@ Aşağıdaki sözcükler belgede yalnızca bu anlamlarda kullanılır. Kodu yaza
 | K24 | **Arayüzde yazı merkezdedir.** Evren açılınca yazma düzeni gelir; ekran sadeleşir, az kullanılan araçlar katlanır ve görünüş yenilenir. Ayrıntı §5.10, §12.1. | 19 Ekim |
 | K25 | **Her sayfanın rehberi ve tek hitap.** Her sayfanın başlığında bir "?" düğmesi vardır; sayfanın ne işe yaradığını ve nasıl kullanıldığını anlatan rehberi sağdan açılan yan panelde gösterir. Program kullanıcıya "siz" diye hitap eder. Ayrıntı §12.4. | 19 Ekim |
 | K26 | **Yeni evrende ilk adımlar.** Yaz sayfasının üstünde dört adımlık bir liste durur: eser oluşturmak, ilk sahneyi eklemek, metinde bir kayda bağlanmak, sahneye tarih ya da mekân vermek. Yapılanlar evrenden anlaşılır ve işaretlenir; hepsi bitince ya da gizlenince görünmez. Zorunlu sihirbaz yoktur. Ayrıntı §5.10. | 19 Ekim |
+| K27 | **Rehberli yazarlık ve roman serisi.** Program yazarlık yöntemini öğretir ama dayatmaz: programla gelen bir yazarlık rehberi, eser, sahne ve kurgu hattı için soru setleri, İlk adımlarda başlangıç yolu, seri kaydı, olası finallerin birbirine alternatif olarak bağlanması, karakterin kitaptaki yolu, eser ve sahne çalışma durumu, "şu an çalıştığım" seçimi ve olay örgüsü masası. Evrenin kuralı, serinin büyük sorusu ve hikâyenin çekirdeği ayrı tutulur. Kullanıcı önerilen varsayılanların hepsini seçti (D1–D13). Kavram modeli `analiz/roman-serisi-veri-ve-kavram-modeli.md`'dedir ve bu belgeye paket paket işlenir; işlenen: anlatı soru setleri (Ek A, §4.6). Görünüşü değiştiren her paketten önce resimli taslak gösterilir. | 19 Ekim |
 
 ### 1.2 Açık kararlar
 
@@ -497,10 +498,10 @@ Her tür bir **varsayılan bileşen listesi** ve bir **soru kütüphanesi** ile 
 
 | Tür | Öne çıkan alanlar |
 |---|---|
-| **Eser** | Bölümler, sahneler, okuma sırası, açık meseleler, sabit başvuru sürümü (§9.7), anlatı sözleşmesi (F15) |
+| **Eser** | Bölümler, sahneler, okuma sırası, açık meseleler, sabit başvuru sürümü (§9.7), anlatı sözleşmesi (F15) · sorular: hikâye çekirdeği ve bu kitabın görevi (Ek A, K27) |
 | **Bölüm** | Sıra, sahneler |
-| **Sahne** | Evren tarihi, mekân, bakış açısı, anlatıcı ve odak karakter, bağlam parçaları (§3.3), katılımcılar ve rolleri · süreklilik defteri (§5.6) · geçici sahne yerleşimi |
-| **Kurgu hattı** | Gizem, siyasi mücadele, ilişki ya da hedef · bağlı sahneler · ipuçları (*planlandı · metne yerleştirildi · karşılığı verildi · vazgeçildi*; okurun bunlardan ne öğrendiği §3.6 okur modelindedir) · "son bağlantılı sahne sekiz sahne önceydi" gibi somut bilgiler. Tempo yargısı verilmez. |
+| **Sahne** | Evren tarihi, mekân, bakış açısı, anlatıcı ve odak karakter, bağlam parçaları (§3.3), katılımcılar ve rolleri · süreklilik defteri (§5.6) · geçici sahne yerleşimi · sorular: sahne planı (Ek A, K27) |
+| **Kurgu hattı** | Gizem, siyasi mücadele, ilişki ya da hedef · bağlı sahneler · ipuçları (*planlandı · metne yerleştirildi · karşılığı verildi · vazgeçildi*; okurun bunlardan ne öğrendiği §3.6 okur modelindedir) · "son bağlantılı sahne sekiz sahne önceydi" gibi somut bilgiler. Tempo yargısı verilmez. · sorular: kurgu hattı (Ek A, K27) |
 | **Motif / simge** | Görünüşü, anlamı, kimin nasıl yorumladığı (kültüre ve döneme göre), geçtiği sahneler · eşyanın gerçek geçmişi ile anlatılan efsanesi ayrı |
 | **Not** | Şablon (sahne fikri, karakter notu, evren notu, araştırma) · iliştirildiği kayıtlar · her zaman özel · tek dokunuşla kayda dönüşür ve bağ korunur |
 | **Açık mesele** | Soru, bağlı kayıt ya da sahne · *düşünülecek · kararlaştırıldı · şu an gerekmiyor* · önemli olarak işaretlenebilir |
@@ -1413,3 +1414,11 @@ Bunlar türlerin ilk soru setleridir. Hepsi isteğe bağlıdır; kullanıcı sor
 **Haritasız evren büyütme:** Uzak yerlerden söz ettir · ticaret izleri bırak · farklı diller duyur · eski olayları an · söylentiler kullan.
 
 **Evren kurma rehberi:** Kim hüküm sürüyor? (topluluk) · Büyünün bedeli ne? · İnsanlar neye inanıyor? (inanç)
+
+**Hikâye çekirdeği** (eser; K27): Kim, ne istiyor? · Ona ne engel oluyor? · Başaramazsa ne kaybeder? · Okur hangi sorunun cevabını merak edecek? · Bu hikâye hangi soruyu soruyor? Yeni evren başlangıcındaki "Temel fikir" evrenin kuralını sorar; hikâyenin çekirdeği ondan ayrıdır.
+
+**Bu kitabın görevi** (eser): Merkez sorusu ne? · Dengeyi bozan olay ne? · Doruk noktası ne? · Bu kitapta ne çözülüyor? · Ne açık kalıyor?
+
+**Sahne planı** (sahne): Kim ne istiyor? · Ne engel oluyor? · Sahne sonunda ne değişiyor? · Okur ne öğreniyor? Sahnenin tarihi, mekânı, bakış açısı ve katılımcıları sahne alanlarıdır, burada sorulmaz.
+
+**Kurgu hattı** (kurgu hattı): Bu hattın sorusu ne? · Şu anki durumu ne? · Olası karşılığı ne? · Bilerek açık mı kalacak?
