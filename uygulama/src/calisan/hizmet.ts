@@ -75,6 +75,7 @@ import { gorunurlukGecerli, gorunurlukOku, sadeGercekMi, type Gorunurluk } from 
 import { yasHesapla } from '../alan/yas';
 import { MESELE_DURUMLARI, type Sablon, type SoruDurumu } from '../alan/sablon';
 import { gecerlilik, DURUM_KIPLERI } from '../alan/durum';
+import { kisiYasananSure } from './yasanan-sure';
 
 export type DosyaAcici = (ad: string) => Database;
 export type Bildirici = (evren: string, turler: string[], kayitlar: string[], uzaktan?: boolean) => void;
@@ -1742,6 +1743,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         .map((d) => ({ ...d, sira: karsilastir(d.tarih, an) }))
         .filter((d) => d.sira !== 'sonra') : [],
       yas: yasHesapla(sablonlar.tarihDegeri(e, k.kod, 'dogum'), an, sablonlar.tarihDegeri(e, k.kod, 'olum'), zamanSetiOku(e.db))?.metin ?? null,
+      yasananSure: kisiYasananSure(db, k.kod, an, sahne),
     }));
     return {
       tarih: an,
@@ -2866,5 +2868,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const eski = `${asilAd} (eski, ${new Date().toLocaleDateString('tr-TR')})`;
     this.evrenAdlandir({ evren: asil, ad: eski });
     this.evrenAdlandir({ evren: kopya, ad: asilAd });
+  }
+  yasananSure({ evren, kisi, olay }: { evren: string; kisi: string; olay: string }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kisi); this.kayitVarMi(e, olay);
+    return kisiYasananSure(this.durumBaglami(evren), kisi, this.olayTarihi(e, olay), olay);
   }
 }

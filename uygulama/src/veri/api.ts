@@ -5,6 +5,7 @@ import type { DurumKipi, Gecerlilik } from '../alan/durum';
 import type { Sablon, Soru, SoruDurumu } from '../alan/sablon';
 import type { BilgiEtiketi, BilgiKaynagi, Inanc } from '../alan/bilgi';
 import type { Gorunurluk } from '../alan/gorunurluk';
+import type { YasananSure } from '../alan/yasanan-sure';
 
 export interface KurulumBilgisi { kod: string; ad: string; sqlite: string }
 export interface EvrenOzeti { kod: string; ad: string; olusturma: number; sonAcilis: number | null }
@@ -482,6 +483,7 @@ export interface BakimUzmanligiSonucu {
   uzmanOldugu: { tanimKod: string; ad: string; siklik: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null; kesinti: string; yer: KisaKayit }[];
   malzemeOldugu: { tanimKod: string; ad: string; siklik: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null; metin: string; yer: KisaKayit }[];
 }
+export type { YasananSure } from '../alan/yasanan-sure';
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -623,6 +625,7 @@ export interface SahneKatilimcisi extends KisaKayit {
   degisimler: (DegisimSatiri & { sira: Karsilastirma })[];
   /** Doğum tarihi biliniyorsa sahnenin tarihindeki yaşı. */
   yas: string | null;
+  yasananSure: YasananSure | null;
 }
 export interface SahneBaglami {
   tarih: EvrenTarihi | null;
@@ -1189,6 +1192,7 @@ export interface Istekler {
   adDuzeltmeOnizle(a: { evren: string; kod: string; eskiAd: string; yeniAd: string; eskiOkunus?: string }): AdDuzeltmesi[];
   adDuzeltmeUygula(a: { evren: string; kod: string; eskiAd: string; yeniAd: string; eskiOkunus?: string; secilenler: string[] }): { degisen: number };
   metinGeriYukle(a: { evren: string; kayit: string; alan: string; basliklar: Basliklar }): { basliklar: Basliklar; degisti: boolean };
+  yasananSure(a: { evren: string; kisi: string; olay: string }): YasananSure;
 }
 
 export type IstekAdi = keyof Istekler;
