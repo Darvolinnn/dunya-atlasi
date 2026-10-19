@@ -9,6 +9,7 @@ import type { Database } from '@sqlite.org/sqlite-wasm';
 import { VERI_BICIMI, type Islem, type IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
 import { UYGULAYICILAR, sonrasi, IZDUSUM_SEMA, IZDUSUM_SURUMU, IZDUSUM_TABLOLARI, metinBelleginiTemizle, topluBaslat, topluBirak, topluBitir } from './izdusum';
+import { goruntuAl, goruntuBul, goruntuleriSil, goruntuSemasi, goruntuYukle, sonGoruntuIslemi, type Goruntu } from './anlik-goruntu';
 
 const GUNLUK_SEMA = `
 CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
@@ -48,6 +49,12 @@ export class EvrenVt {
   private gorulen: Record<string, number> = {};
   /** Uygulanmış en son işlemin sıra anahtarı. */
   private son: Anahtar = [0, '', 0];
+  /** Günlükteki işlem sayısı (her kayıtta saymamak için bellekte tutulur). */
+  private islemAdedi = 0;
+  /** Bu kadar işlemde bir anlık görüntü alınır (§10.1). Sınamalar küçültebilir. */
+  static goruntuAraligi = 5000;
+  /** Son baştan kurmanın nasıl yapıldığı (sınama ve ölçüm için). */
+  sonKurma: { goruntudenMi: boolean; uygulanan: number } | null = null;
 
   constructor(readonly db: Database, readonly kurulum: string, private readonly ilerleme: Ilerleme = () => {}) {
     db.exec('PRAGMA foreign_keys=ON;');
@@ -60,12 +67,16 @@ export class EvrenVt {
     db.exec('CREATE INDEX IF NOT EXISTS islemler_sira ON islemler(saat, kurulum, sira)');
     const izdusum = Number(this.meta('izdusum_surumu') ?? 0);
     if (izdusum !== IZDUSUM_SURUMU) {
-      // Tabloların yapısı değişti: tablolar silinir ve günlükten baştan kurulur (veri günlükte durur).
+      // Tabloların yapısı değişti: tablolar ve eski görüntüleri silinir, günlükten baştan kurulur (veri günlükte durur).
+      goruntuSemasi(db);
+      goruntuleriSil(db);
       for (const t of IZDUSUM_TABLOLARI) db.exec(`DROP TABLE IF EXISTS ${t}`);
       db.exec(IZDUSUM_SEMA);
       this.yenidenKur('guncelleme');
       db.exec({ sql: "INSERT INTO meta VALUES('izdusum_surumu', ?) ON CONFLICT(k) DO UPDATE SET v=excluded.v", bind: [String(IZDUSUM_SURUMU)] });
     } else db.exec(IZDUSUM_SEMA);
+    goruntuSemasi(db);
+    this.islemAdedi = this.islemSayisi();
     for (const r of db.selectObjects('SELECT kurulum, max(sira) s FROM islemler GROUP BY kurulum')) {
       this.gorulen[r.kurulum as string] = Number(r.s);
     }
@@ -138,6 +149,8 @@ export class EvrenVt {
       metinBelleginiTemizle(this.db); // bellekteki belgeler geri alınan işlemi içermesin
       throw e;
     }
+    this.islemAdedi += yazilan.length;
+    this.goruntuGerekirseAl();
     return yazilan;
   }
 
@@ -152,6 +165,8 @@ export class EvrenVt {
     const oncekiSon = this.son;
     const alinanlar: Islem[] = [];
     let bastan = false;
+    /** Daha önceye düşen işlemlerin en küçük anahtarı: görüntü bundan önce alınmış olmalı. */
+    let enErkenGec: Anahtar | null = null;
     this.db.exec('BEGIN IMMEDIATE');
     topluBaslat(this.db);
     try {
@@ -198,7 +213,11 @@ export class EvrenVt {
           this.kaydet(islem);
           const a = anahtari(islem);
           if (!bastan && anahtarKarsilastir(a, this.son) > 0) { this.uygula(islem); this.son = a; }
-          else { bastan = true; if (anahtarKarsilastir(a, this.son) > 0) this.son = a; }
+          else {
+            bastan = true;
+            if (anahtarKarsilastir(a, this.son) > 0) this.son = a;
+            else if (!enErkenGec || anahtarKarsilastir(a, enErkenGec) < 0) enErkenGec = a;
+          }
           this.gorulen[i.kurulum] = i.sira;
           alinanlar.push(islem);
         }
@@ -213,9 +232,17 @@ export class EvrenVt {
       for (const i of kalan) {
         this.db.exec({ sql: 'INSERT INTO bekleyen_islemler(kod, islem, ikili) VALUES(?,?,?)', bind: [i.kod, JSON.stringify({ ...i, ikili: null }), i.ikili ?? null] });
       }
-      if (bastan) { topluBirak(this.db); this.bastanUygula('kurulum'); } else topluBitir(this.db);
+      if (bastan) {
+        topluBirak(this.db);
+        // Önce gelen işlemden önce alınmış görüntü kullanılır; ondan sonra alınmışlar artık yanlıştır.
+        const g = enErkenGec ? goruntuBul(this.db, enErkenGec) : null;
+        if (enErkenGec) goruntuleriSil(this.db, enErkenGec);
+        this.bastanUygula('kurulum', g);
+      } else topluBitir(this.db);
       if (bildir) this.ilerleme({ neden: 'kurulum', yapilan: adaylar.size, toplam: adaylar.size });
       this.db.exec('COMMIT');
+      this.islemAdedi += alinanlar.length;
+      this.goruntuGerekirseAl();
       return { alinan: alinanlar.length, bekleyen: kalan.length, bastanKuruldu: bastan, islemler: alinanlar };
     } catch (e) {
       this.db.exec('ROLLBACK');
@@ -243,15 +270,18 @@ export class EvrenVt {
    * İzdüşüm tablolarını silip bütün günlüğü baştan uygular (açık bir veritabanı işleminin içinde). Günlük sayfa
    * sayfa okunur ve metinler toplu uygulanır (§10.1).
    */
-  private bastanUygula(neden: 'guncelleme' | 'kurulum') {
+  private bastanUygula(neden: 'guncelleme' | 'kurulum', goruntu: Goruntu | null = null) {
     metinBelleginiTemizle(this.db);
-    for (const t of IZDUSUM_TABLOLARI) this.db.exec(`DELETE FROM ${t}`);
+    // Görüntü varsa tablolar onun hâline getirilir ve yalnızca ondan sonraki işlemler uygulanır.
+    if (goruntu) goruntuYukle(this.db, goruntu.yuva);
+    else for (const t of IZDUSUM_TABLOLARI) this.db.exec(`DELETE FROM ${t}`);
     topluBaslat(this.db);
-    const toplam = Number(this.db.selectValue('SELECT count(*) FROM islemler'));
+    let son: [number, string, number] = goruntu ? goruntu.anahtar : [-Infinity, '', 0];
+    const toplam = Number(this.db.selectValue('SELECT count(*) FROM islemler WHERE (saat, kurulum, sira) > (?, ?, ?)', son));
+    this.sonKurma = { goruntudenMi: !!goruntu, uygulanan: toplam };
     const bildir = toplam >= ILERLEME_ESIGI;
     let yapilan = 0;
     if (bildir) this.ilerleme({ neden, yapilan, toplam });
-    let son: [number, string, number] = [-Infinity, '', 0];
     for (;;) {
       const sayfa = this.db.selectObjects(
         'SELECT * FROM islemler WHERE (saat, kurulum, sira) > (?, ?, ?) ORDER BY saat, kurulum, sira LIMIT 2000', son).map(satirdan);
@@ -264,6 +294,14 @@ export class EvrenVt {
     }
     topluBitir(this.db);
     if (bildir) this.ilerleme({ neden, yapilan: toplam, toplam });
+  }
+
+  /** Son görüntüden bu yana yeterince işlem olduysa yeni görüntü alır (kendi veritabanı işleminde). */
+  private goruntuGerekirseAl() {
+    if (this.islemAdedi - sonGoruntuIslemi(this.db) < EvrenVt.goruntuAraligi) return;
+    this.db.exec('BEGIN IMMEDIATE');
+    try { goruntuAl(this.db, this.son, this.islemAdedi); this.db.exec('COMMIT'); }
+    catch { this.db.exec('ROLLBACK'); } // görüntü yalnızca hızlandırmadır; alınamazsa baştan kurma yine çalışır
   }
 
   /** İzdüşüm tablolarını silip bütün günlüğü baştan uygular. Sınama ve onarım için. */

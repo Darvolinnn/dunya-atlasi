@@ -819,7 +819,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       sonuc.push({ tur: 'ters_birlesme', islem: r.islem as string, kayit: yonlendirKod(e, r.hedef as string), baslik: kayitAdi(yonlendirKod(e, r.hedef as string)),
         diger: { kod: r.kaynak as string, ad: kayitAdi(r.kaynak as string) }, zaman: Number(r.zaman) });
     }
-    for (const r of e.db.selectObjects(`SELECT * FROM metin_catismalari ${kod ? 'WHERE kayit=?' : ''} ORDER BY b_zaman`, kod ? [kod] : [])) {
+    for (const r of e.db.selectObjects(`SELECT * FROM metin_catismalari ${kod ? 'WHERE kayit=?' : ''} ORDER BY b_zaman, kayit, alan, a, b`, kod ? [kod] : [])) {
       sonuc.push({ tur: 'metin', kayit: r.kayit as string, alan: r.alan as string, baslik: kayitAdi(r.kayit as string),
         temel: JSON.parse(r.temel as string), a: { basliklar: JSON.parse(r.a_basliklar as string), kurulum: this.kurulumAdi(r.a_kurulum as string), zaman: Number(r.a_zaman) },
         b: { basliklar: JSON.parse(r.b_basliklar as string), kurulum: this.kurulumAdi(r.b_kurulum as string), zaman: Number(r.b_zaman) } });
