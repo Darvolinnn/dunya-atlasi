@@ -319,6 +319,24 @@ export interface IddiaDosyasi {
   kaldirilan: { kod: string; ozet: string; kaynakKaydi: KisaKayit | null }[];
   not: string;
 }
+export type HakTuru = 'mulkiyet' | 'kullanim' | 'yetki' | 'yukumluluk' | 'izin';
+export type HakTanimaDurumu = 'taniyor' | 'tanimiyor' | 'bilinmiyor';
+export interface HakGirdisi {
+  tur: HakTuru; sahipler: string[]; konu: string; kapsam: string; kosul: string; otorite: string | null; karar: string;
+  baslangic?: SinirGirdisi | null; bitis?: SinirGirdisi | null;
+}
+export interface HakSiniri { tarih?: EvrenTarihi | null; olay?: string | null; fark?: Fark | null }
+export interface HakTanimi extends Omit<HakGirdisi, 'baslangic' | 'bitis'> { baslangic: HakSiniri | null; bitis: HakSiniri | null }
+export interface HakTanimasi { kod: string; otorite: KisaKayit; durum: HakTanimaDurumu; secenekler: string[] }
+export interface HakSatiri {
+  kod: string; tanim: HakTanimi; konu: KisaKayit; sahipler: KisaKayit[]; otorite: KisaKayit | null;
+  baslangic: SinirBilgisi | null; bitis: SinirBilgisi | null; tanimalar: HakTanimasi[];
+  gecerli: Gecerlilik; zaman: string; silindi: boolean; secenekler: string[];
+}
+export interface HakListesi {
+  konu: HakSatiri[]; sahibi: HakSatiri[]; tarih: EvrenTarihi | null;
+  bilgiler: { haklar: string[]; ileti: string }[];
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -692,6 +710,12 @@ export interface CizelgeOgesi { kod: string; ad: string; tur: string; karar: str
 export type DegisebilirAlan = 'ad' | 'tur' | 'ozet' | 'okunus' | 'karar';
 
 export interface Istekler {
+  haklar(a: { evren: string; kayit: string; tarih?: string | null; cop?: boolean }): HakListesi;
+  hakEkle(a: { evren: string; hak: HakGirdisi }): { kod: string };
+  hakDegistir(a: { evren: string; kod: string; hak: HakGirdisi }): void;
+  hakSil(a: { evren: string; kod: string }): void;
+  hakGeriYukle(a: { evren: string; kod: string }): void;
+  hakTanimaYaz(a: { evren: string; hak: string; kod?: string | null; otorite: string; durum: HakTanimaDurumu }): { kod: string };
   gokyuzuTanimi(a: { evren: string }): GokyuzuTanimi | null;
   gokyuzuYaz(a: { evren: string; tanim: GokyuzuTanimi }): void;
   gokyuzuHesapla(a: { evren: string; tarih: string }): GokyuzuSonucu;
