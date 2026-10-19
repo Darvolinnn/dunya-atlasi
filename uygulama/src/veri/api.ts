@@ -146,6 +146,25 @@ export interface HaberYayilimi {
   ulasilan: { yer: KisaKayit; gun: number; yazi: string; tarih: string | null; yol: string[] }[];
   suresiz: KisaKayit[]; durum: 'cikis_yok' | 'kanal_yok' | 'hesaplandi'; not: string;
 }
+/** Dil tanımı (§4.3, §15-4): ses paleti, ses sınıfları, ses değişim kuralları, örnekler, sözlük. */
+export interface DilSozcugu { bicim: string; anlam: string; tur: 'kok' | 'onek' | 'sonek' }
+export interface DilTanimi {
+  heceler: string[]; siniflar: { ad: string; harfler: string }[]; kurallar: { kural: string; not: string }[];
+  ornekler: { kaynak: string; beklenen: string }[]; sozluk: DilSozcugu[];
+}
+export interface SesIzi { sira: number; kural: string; once: string; sonra: string }
+export type YeterlilikDuzeyi = 'yok' | 'az' | 'orta' | 'iyi' | 'ana';
+/** Dil yeterliliği tek bir yüzde değildir: dört beceri ayrı tutulur. */
+export interface DilYeterliligi { konusma: YeterlilikDuzeyi | null; anlama: YeterlilikDuzeyi | null; okuma: YeterlilikDuzeyi | null; yazma: YeterlilikDuzeyi | null; not: string }
+export interface KisiDili { dil: KisaKayit; iliski: string; yeterlilik: DilYeterliligi | null }
+export interface DilBilgisi {
+  tanim: DilTanimi; kaynaklar: KisaKayit[]; turevler: KisaKayit[]; kuralHatalari: { sira: number; hata: string }[];
+  ornekler: { kaynak: string; beklenen: string; sonuc: string; tutuyor: boolean | null; iz: SesIzi[] }[];
+  bilenler: { kisi: KisaKayit; iliski: string; yeterlilik: DilYeterliligi | null }[];
+}
+export interface TuretilenBicim { dil: KisaKayit; kaynakBicim: string; bicim: string; yol: KisaKayit[]; iz: SesIzi[]; hata: string | null; kayitli: string | null }
+export interface AdBicimi { dil: KisaKayit; bicim: string; turetildi: { kaynakDil: KisaKayit; kaynakBicim: string } | null }
+export interface UretilenAd { ad: string; parcalar: { bicim: string; anlam: string }[]; varOlan: boolean }
 export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
 export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
 export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
@@ -680,6 +699,15 @@ export interface Istekler {
   uretimOzeti(a: { evren: string; urun: string }): UretimOzeti;
   dayaniklilikYaz(a: { evren: string; iliski: string; deger: Dayaniklilik | null }): void;
   geciselKayitlar(a: { evren: string; kok: string; eksen: GeciselEksen }): GeciselSonuc[];
+  dil(a: { evren: string; kod: string }): DilBilgisi;
+  dilYaz(a: { evren: string; kod: string; tanim: DilTanimi }): void;
+  sesDene(a: { evren: string; dil: string; bicim: string }): { sonuc: string; iz: SesIzi[]; hatalar: { sira: number; hata: string }[] };
+  adTuret(a: { evren: string; dil: string; bicim: string; kayit?: string | null }): TuretilenBicim[];
+  adUret(a: { evren: string; dil: string; kip: 'hece' | 'bicim'; enAz: number; enCok: number; adet: number }): UretilenAd[];
+  adBicimleri(a: { evren: string; kod: string }): AdBicimi[];
+  adBicimiYaz(a: { evren: string; kod: string; dil: string; bicim: string | null; kaynakDil?: string | null; kaynakBicim?: string | null }): void;
+  kisiDilleri(a: { evren: string; kod: string }): KisiDili[];
+  dilYeterliligiYaz(a: { evren: string; iliski: string; deger: DilYeterliligi | null }): void;
   enKisaRota(a: { evren: string; nereden: string; nereye: string; kosul?: string | null; kisi?: string | null; paket?: string | null }): RotaSonucu;
   kanal(a: { evren: string; kod: string }): KanalTanimi;
   kanalYaz(a: { evren: string; kod: string; tanim: KanalTanimi }): void;

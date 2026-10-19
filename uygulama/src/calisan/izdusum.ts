@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 25;
+export const IZDUSUM_SURUMU = 26;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -248,6 +248,18 @@ CREATE TABLE IF NOT EXISTS haber_cikislari(
   yer TEXT,
   tarih TEXT,
   kanallar TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS dil_tanimlari(
+  kod TEXT PRIMARY KEY,
+  tanim TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS ad_bicimleri(
+  kod TEXT PRIMARY KEY,
+  bicimler TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS dil_yeterlilikleri(
+  iliski TEXT PRIMARY KEY,
+  deger TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS masalar(
   kod TEXT PRIMARY KEY,
@@ -512,7 +524,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -1000,6 +1012,31 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const kanallar = Array.isArray(cikis.kanallar) ? cikis.kanallar.filter((x): x is string => typeof x === 'string') : [];
     db.exec({ sql: 'INSERT OR REPLACE INTO haber_cikislari(kod, yer, tarih, kanallar) VALUES(?,?,?,?)', bind: [kod, yer, cikis.tarih ? JSON.stringify(cikis.tarih) : null, JSON.stringify(kanallar)] });
     alanYaz(db, i, kod, 'haber_cikis', cikis);
+  },
+  /** Dil tanımı (§15-4). */
+  dil_yaz(db, i) {
+    const { kod, tanim } = i.veri as { kod: string; tanim: unknown };
+    if (typeof kod !== 'string' || !tanim || typeof tanim !== 'object') return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO dil_tanimlari(kod, tanim) VALUES(?,?)', bind: [kod, JSON.stringify(tanim)] });
+    alanYaz(db, i, kod, 'dil', tanim);
+  },
+  /** Kaydın bir dildeki biçimi; yazar seçmeden yazılmaz. */
+  ad_bicimi_yaz(db, i) {
+    const { kayit, dil, deger } = i.veri as { kayit: string; dil: string; deger: unknown };
+    if (typeof kayit !== 'string' || typeof dil !== 'string') return;
+    const r = db.selectValue('SELECT bicimler FROM ad_bicimleri WHERE kod=?', [kayit]) as string | undefined;
+    const m = r ? JSON.parse(r) as Record<string, unknown> : {};
+    if (deger && typeof deger === 'object') m[dil] = deger; else delete m[dil];
+    db.exec({ sql: 'INSERT OR REPLACE INTO ad_bicimleri(kod, bicimler) VALUES(?,?)', bind: [kayit, JSON.stringify(m)] });
+    alanYaz(db, i, kayit, `ad_bicimi:${dil}`, deger ?? null);
+  },
+  /** Dil yeterliliği: konuşma, anlama, okuma, yazma ayrı. */
+  dil_yeterliligi_yaz(db, i) {
+    const { iliski, deger } = i.veri as { iliski: string; deger: unknown };
+    if (typeof iliski !== 'string') return;
+    if (!deger || typeof deger !== 'object') db.exec({ sql: 'DELETE FROM dil_yeterlilikleri WHERE iliski=?', bind: [iliski] });
+    else db.exec({ sql: 'INSERT OR REPLACE INTO dil_yeterlilikleri(iliski, deger) VALUES(?,?)', bind: [iliski, JSON.stringify(deger)] });
+    alanYaz(db, i, iliski, 'dil_yeterliligi', deger ?? null);
   },
   /** Çalışma masası (§5.9): kayıtlar kopyalanmaz, masa onlara bağlanır. */
   masa_olustur(db, i) {

@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { Dayaniklilik, KanalTanimi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { Dayaniklilik, KanalTanimi, DilTanimi, DilYeterliligi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -38,6 +38,7 @@ import * as surec from './surec';
 import * as hukuk from './hukuk';
 import * as uretim from './uretim';
 import * as haber from './haber';
+import * as dilMod from './dil';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -428,6 +429,18 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           degerler: degerler.map((d) => ({ ...d, yazi: g ? (d.deger as string | null) ?? '(gözlem yok)' : (d.deger as { ad?: string } | null)?.ad ?? '(boş)' })) });
         continue;
       }
+      if (iliski && alan === 'dil_yeterliligi') {
+        const yazi = (d: DilYeterliligi | null) => d ? (['konusma', 'anlama', 'okuma', 'yazma'] as const).map((k) => `${({ konusma: 'konuşma', anlama: 'anlama', okuma: 'okuma', yazma: 'yazma' })[k]}: ${d[k] ?? '?'}`).join(', ') : '(boş)';
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'iliski', kayit: iliski.a as string, baslik: `${kayitAdi(iliski.a as string)} – ${kayitAdi(iliski.b as string)} ilişkisi`,
+          alanEtiketi: 'Dil yeterliliği', degerler: degerler.map((d) => ({ ...d, yazi: yazi(d.deger as DilYeterliligi | null) })) });
+        continue;
+      }
+      if (!iliski && (alan === 'dil' || alan.startsWith('ad_bicimi:'))) {
+        const yazi = (d: unknown) => !d ? '(boş)' : alan === 'dil' ? `${(d as DilTanimi).kurallar.length} kural, ${(d as DilTanimi).sozluk.length} sözcük, ${(d as DilTanimi).heceler.length} hece` : (d as { bicim: string }).bicim;
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: alan === 'dil' ? 'Dil tanımı' : `${kayitAdi(alan.slice(10))} dilindeki biçimi`,
+          degerler: degerler.map((d) => ({ ...d, yazi: yazi(d.deger) })) });
+        continue;
+      }
       if (!iliski && (alan === 'kanal' || alan === 'haber_cikis')) {
         const yazi = (d: unknown) => {
           if (!d) return '(boş)';
@@ -710,6 +723,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       this.yaz(evren, [{ tur: 'anlati_yerlestir', veri: { kod: nesne, ust: v?.ust ?? null, konum: v?.konum ?? null, cozum: true } }], [nesne, ...(v ? [v.ust] : [])]);
       return;
     }
+    if (iliski && alan === 'dil_yeterliligi') { this.yaz(evren, [{ tur: 'dil_yeterliligi_yaz', veri: { iliski: nesne, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
+    if (!iliski && alan === 'dil') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'dil_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
+    if (!iliski && alan.startsWith('ad_bicimi:')) { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'ad_bicimi_yaz', veri: { kayit: nesne, dil: alan.slice(10), deger, cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'kanal') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'kanal_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'haber_cikis') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'haber_cikis_yaz', veri: { kod: nesne, cikis: deger, cozum: true } }], [nesne]); return; }
     if (iliski && alan === 'dayaniklilik') { this.yaz(evren, [{ tur: 'dayaniklilik_yaz', veri: { iliski: nesne, deger, cozum: true } }], [iliski.a as string, iliski.b as string]); return; }
@@ -1905,6 +1921,20 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return haber.haberYayilimi(e, kod, masaMod.paketEtkisi(e, paket));
   }
   private haberBaglami(evren: string): haber.HaberBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
+  dil({ evren, kod }: { evren: string; kod: string }) { return dilMod.dilBilgisi(this.evren(evren), kod); }
+  dilYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: DilTanimi }) { dilMod.dilYaz(this.dilBaglami(evren), kod, tanim); }
+  sesDene({ evren, dil, bicim }: { evren: string; dil: string; bicim: string }) { return dilMod.sesDene(this.evren(evren), dil, bicim); }
+  adTuret({ evren, dil, bicim, kayit }: { evren: string; dil: string; bicim: string; kayit?: string | null }) { return dilMod.adTuret(this.evren(evren), dil, bicim, kayit ?? null); }
+  adUret({ evren, dil, kip, enAz, enCok, adet }: { evren: string; dil: string; kip: 'hece' | 'bicim'; enAz: number; enCok: number; adet: number }) {
+    return dilMod.adUret(this.evren(evren), dil, kip, enAz, enCok, adet);
+  }
+  adBicimleri({ evren, kod }: { evren: string; kod: string }) { return dilMod.adBicimleriOku(this.evren(evren), kod); }
+  adBicimiYaz({ evren, kod, dil, bicim, kaynakDil, kaynakBicim }: { evren: string; kod: string; dil: string; bicim: string | null; kaynakDil?: string | null; kaynakBicim?: string | null }) {
+    dilMod.adBicimiYaz(this.dilBaglami(evren), kod, dil, bicim, kaynakDil ?? null, kaynakBicim ?? null);
+  }
+  kisiDilleri({ evren, kod }: { evren: string; kod: string }) { return dilMod.kisiDilleri(this.evren(evren), kod); }
+  dilYeterliligiYaz({ evren, iliski, deger }: { evren: string; iliski: string; deger: DilYeterliligi | null }) { dilMod.dilYeterliligiYaz(this.dilBaglami(evren), iliski, deger); }
+  private dilBaglami(evren: string): dilMod.DilBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
   kesintiZinciri({ evren, kaynak }: { evren: string; kaynak: string }) { return uretim.kesintiZinciri(this.evren(evren), kaynak); }
   uretimOzeti({ evren, urun }: { evren: string; urun: string }) { return uretim.uretimOzeti(this.evren(evren), urun); }
   dayaniklilikYaz({ evren, iliski, deger }: { evren: string; iliski: string; deger: Dayaniklilik | null }) {

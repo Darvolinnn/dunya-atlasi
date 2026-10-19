@@ -13,6 +13,7 @@ import { KayitIzleri } from './Sureklilik';
 import { KayitMasalari } from './Masalar';
 import { AltBirimlerdenToplananlar } from './Kapsama';
 import { HUKUK_SAHIPLERI, HukukKurallariBolumu, UygulananKurallarAraci } from './Hukuk';
+import { AdBicimleriBolumu, DilBolumu, KisiDilleriBolumu } from './Dil';
 import { HaberYayilimiBolumu, KanalBolumu, ROTA_ARACI_TURLERI, RotaAraci } from './Haber';
 import { KESINTI_TURLERI, KesintiBolumu, UretimOzetiBolumu } from './Uretim';
 import { MakamYurutenleri, OlaySurecBolumu, SUREC_SAHIPLERI, SurecKurallariBolumu } from './Surec';
@@ -148,6 +149,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {SUREC_SAHIPLERI.includes(kayit.tur) && <SurecKurallariBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {HUKUK_SAHIPLERI.includes(kayit.tur) && <HukukKurallariBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {kayit.tur === 'karakter' && <UygulananKurallarAraci istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+        {kayit.tur === 'dil' && <DilBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+        {kayit.tur === 'karakter' && <KisiDilleriBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {kayit.tur === 'olay' && <OlaySurecBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {!DURUMSUZ.has(kayit.tur) && <DurumGecmisi istemci={istemci} evren={evren} kayit={kayit} />}
         {kayit.tur !== 'not' && <BilinenlerBolumu istemci={istemci} evren={evren} kayit={kayit} />}
@@ -156,6 +159,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />
         {kayit.tur === 'urun' && <UretimOzetiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {KESINTI_TURLERI.includes(kayit.tur) && <KesintiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+        {!['dil', 'not', 'sahne', 'eser', 'bolum'].includes(kayit.tur) && <AdBicimleriBolumu istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} surum={surum} />}
         <AltBirimlerdenToplananlar istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} surum={surum} />
         <KayitDegisimleri istemci={istemci} evren={evren} kod={kod} surum={surum} />
         <KayitMasalari istemci={istemci} evren={evren} kod={kod} surum={surum} />
