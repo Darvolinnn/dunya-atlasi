@@ -18,7 +18,7 @@ function MaddeMetni({ m, evren, acikRozeti = true }: { m: SozlesmeMaddesi; evren
     <p>{m.metin}</p>
     <p class="soluk kucuk">{TURLER[m.tur]} · {KARARLAR.find((k) => k.kod === m.karar)?.ad} · {m.kapsam.tur === 'evren' ? 'Bütün evren' : m.eserler.map((k) => k.ad).join(', ')}</p>
     {m.bagli.length > 0 && <p class="kucuk">Bağlı kayıtlar: {m.bagli.map((k, i) => <span key={k.kod}>{i > 0 && ', '}{bag(evren, k)}{acikRozeti && m.tur === 'acik_birakildi' && m.karar !== 'vazgecildi' && !m.silindi && !m.catismali && <span class="soluk"> · açık bırakıldı</span>}</span>)}</p>}
-    {m.catismali && <p>İki cihazdan gelen değerlerden birini seçmeniz gerekiyor. <a href={`#/e/${evren}/inceleme`}>İncelemeyi aç</a></p>}
+    {m.catismali && <p>İki cihazdan gelen değerlerden birini seçmeniz gerekiyor. <a href={`#/e/${evren}/inceleme`}>Uyarıları aç</a></p>}
   </>;
 }
 function MaddeFormu({ istemci, evren, eser, madde, saltOkunur, bitir }: { istemci: Istemci; evren: string; eser?: string; madde?: SozlesmeMaddesi; saltOkunur: boolean; bitir: () => void }) {
@@ -96,7 +96,7 @@ export function EserSozlesmesiBolumu({ istemci, evren, kod, surum, saltOkunur }:
     try { await istemci.iste('sozlesmeDisaridaYaz', { evren, madde, eser: kod, disarida }); setHata(''); } catch (e) { setHata((e as Error).message); } finally { setMesgul(false); }
   };
   const satir = (m: EserSozlesmesi['maddeler'][number]) => <li key={m.madde.kod}><MaddeMetni m={m.madde} evren={evren} acikRozeti={m.durum === 'gecerli'} />
-    {m.durum === 'belirsiz' ? <div><p>Bu maddenin bu eserde geçerli olup olmadığını seçmeniz gerekiyor. <a href={`#/e/${evren}/inceleme`}>İncelemeyi aç</a></p>
+    {m.durum === 'belirsiz' ? <div><p>Bu maddenin bu eserde geçerli olup olmadığını seçmeniz gerekiyor. <a href={`#/e/${evren}/inceleme`}>Uyarıları aç</a></p>
       {!m.madde.catismali && m.madde.kapsam.tur === 'evren' && <><button class="dugme" disabled={mesgul || saltOkunur} onClick={() => void sec(m.madde.kod, false)}>Bu eserde geçerli</button>{' '}<button class="dugme" disabled={mesgul || saltOkunur} onClick={() => void sec(m.madde.kod, true)}>Bu eserde geçerli değil</button></>}
     </div> : m.madde.kapsam.tur === 'evren' && <button class="dugme" disabled={mesgul || saltOkunur} onClick={() => void sec(m.madde.kod, m.durum === 'gecerli')}>{m.durum === 'gecerli' ? 'Bu eserde geçerli değil' : 'Bu eserde yeniden geçerli'}</button>}
   </li>;

@@ -122,7 +122,7 @@ const VARSAYILANLAR: Record<string, Sablon> = {
   acik_mesele: {
     alanlar: [
       { kod: 'durum', ad: 'Durum', tur: 'secim', secenekler: MESELE_DURUMLARI, sabit: true },
-      { kod: 'onemli', ad: 'Önemli', tur: 'onay', sabit: true, ipucu: 'Önemli olarak işaretlenen meseleler Masa\'da öne çıkar' },
+      { kod: 'onemli', ad: 'Önemli', tur: 'onay', sabit: true, ipucu: 'Önemli olarak işaretlenen meseleler Genel bakış sayfasında öne çıkar' },
     ],
     sorular: [],
   },

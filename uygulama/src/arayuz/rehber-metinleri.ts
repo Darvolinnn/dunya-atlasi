@@ -50,7 +50,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ipuclari: [
       'Google izni yaklaşık bir saat geçerlidir. Süresi dolunca ekranın üstünde “eşitlemek için tıklayın” uyarısı çıkar; bu arada yazmaya devam edebilirsiniz, hiçbir şey kaybolmaz.',
       'Aynı bilgisayardaki iki farklı tarayıcı ayrı cihaz sayılır.',
-      'İki cihazda aynı şey farklı değiştirilirse program birini seçmez; İnceleme sayfasında ikisini yan yana gösterir, siz seçersiniz.',
+      'İki cihazda aynı şey farklı değiştirilirse program birini seçmez; Uyarılar sayfasında ikisini yan yana gösterir, siz seçersiniz.',
     ],
   },
   yaz: {
@@ -79,7 +79,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
   },
   masa: {
-    baslik: 'Masa',
+    baslik: 'Genel bakış',
     ne: [
       'Evrenin özet sayfası: nerede kaldığınızı, son neyle uğraştığınızı ve bekleyen düşüncelerinizi tek bakışta gösterir.',
       'Burada şunlar durur: kaldığınız yer ve devam notu, son düzenlenen kayıtlar, önemli açık meseleler, hızlı notlar, metinde adı geçip henüz yazılmamış kayıtlar ve Dünya Pusulası.',
@@ -93,7 +93,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
     ipuclari: [
       'Evrenin adını bu sayfadaki “Adı değiştir” ile değiştirebilirsiniz.',
-      'Hiçbir liste bir “eksikler listesi” değildir; boş bırakılan alanlar size borç gibi gösterilmez.',
+      'Hiçbir liste bir görev listesi değildir; boş bırakılan alanlar size borç gibi gösterilmez.',
     ],
   },
   kayitlar: {
@@ -175,12 +175,12 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
   },
   inceleme: {
-    baslik: 'İnceleme',
+    baslik: 'Uyarılar',
     ne: [
       'Programın dikkatinize sunduğu her şeyin toplandığı sayfa: iki cihazda farklı yapılmış değişiklikler, bir değişikliğin etkilediği kayıtlar, tutarlılık uyarıları (ör. bir karakter öldükten sonra bir sahnede görünüyor) ve kopuk bağlantılar.',
       'Program yalnızca kaydettiğiniz tarihlere, ilişkilere ve sahne bilgilerine bakar; metninizi okuyup anlam çıkarmaz.',
     ],
-    neZaman: 'Gezinti çubuğunda “İnceleme”nin yanında bir sayı gördüğünüzde ya da bir yazma oturumunu bitirdiğinizde.',
+    neZaman: 'Gezinti çubuğunda “Uyarılar”ın yanında bir sayı gördüğünüzde ya da bir yazma oturumunu bitirdiğinizde.',
     adimlar: [
       '“İki cihazda yapılan değişiklikler” varsa her biri için hangi hâlin kalacağını seçin.',
       '“Değişikliklerin etkisi”nde bir olayın tarihi değişince etkilenen sahne ve kayıtlara bakın; düzelttiyseniz “Düzelttim”e basın.',
@@ -193,34 +193,34 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
   },
   masalar: {
-    baslik: 'Çalışma masaları',
+    baslik: 'Konu dosyaları',
     ne: [
-      'Belli bir konu üzerinde çalışmak için kurduğunuz çalışma alanları. Bir masaya ilgili kayıtları, bir tarih aralığını, haritaları ve notları toplarsınız; örneğin “Kuşatma” masasında kale, iki ordu, komutanlar ve o yılın olayları bir arada durur.',
-      'Kayıtlar masaya kopyalanmaz, yalnızca bağlanır. Masadan çıkarmak kaydı silmez.',
+      'Belli bir konu üzerinde çalışmak için kurduğunuz dosyalar. Bir konu dosyasına ilgili kayıtları, bir tarih aralığını, haritaları ve notları toplarsınız; örneğin “Kuşatma” dosyasında kale, iki ordu, komutanlar ve o yılın olayları bir arada durur.',
+      'Kayıtlar dosyaya kopyalanmaz, yalnızca bağlanır. Dosyadan çıkarmak kaydı silmez.',
       'Aynı sayfada varsayım paketleri de vardır: “köprü açık olsaydı” gibi küçük düşünce deneyleri. Bir pakette tuttuğunuz varsayımlar, siz istemedikçe evrene yazılmaz.',
     ],
     neZaman: 'Birçok kaydı birlikte düşünmeniz gereken bir konu ya da sahne dizisi üzerinde çalışırken.',
     adimlar: [
-      'Yeni bir masa oluşturup ona bir ad verin.',
+      'Yeni bir konu dosyası oluşturup ona bir ad verin.',
       '“Bugün burada neyi çözmeye çalışıyorum?” sorusuna kısa bir cevap yazın.',
-      'İsterseniz bir tarih aralığı seçin; masa bu aralıktaki olayları gösterir.',
-      'Kayıtları ve haritaları masaya bağlayın, notlarınızı yazın.',
-      'Bir varsayımı denemek için bir varsayım paketi oluşturup masaya seçin; hesaplar o varsayımlarla yapılır.',
+      'İsterseniz bir tarih aralığı seçin; dosya bu aralıktaki olayları gösterir.',
+      'Kayıtları ve haritaları dosyaya bağlayın, notlarınızı yazın.',
+      'Bir varsayımı denemek için bir varsayım paketi oluşturup dosyaya seçin; hesaplar o varsayımlarla yapılır.',
     ],
     ipuclari: [
       'İki seçenekten yalnızca biri doğru olabiliyorsa (ör. köprü açık ya da kapalı) onları iki ayrı pakette tutun.',
-      'Büyük bir “ya şöyle olsaydı” denemesi için Sürümler sayfasındaki deneme kopyalarını kullanın.',
+      'Büyük bir “ya şöyle olsaydı” denemesi için Kayıtlı anlar sayfasındaki deneme kopyalarını kullanın.',
     ],
   },
   meseleler: {
-    baslik: 'Açık meseleler',
+    baslik: 'Karar bekleyenler',
     ne: [
       'Henüz karar vermediğiniz soruların ve verdiğiniz kararların gerekçelerinin durduğu sayfa.',
       '“Açık meseleler” sizin yazdığınız sorulardır (ör. “Büyü bedeli kimden alınıyor?”); boş alanlar burada sayılmaz. “Gerekçe defteri” ise verdiğiniz kararları nedenleriyle saklar (ör. “Büyü iyileştiremez, çünkü yaralar hikâyede ağırlığını korumalı”).',
     ],
     neZaman: 'Aklınıza bir soru takıldığında ya da önemli bir karar verdiğinizde.',
     adimlar: [
-      'Yeni bir açık mesele yazın; önemliyse “Önemli” işaretleyin, Masa sayfasında öne çıkar.',
+      'Yeni bir açık mesele yazın; önemliyse “Önemli” işaretleyin, Genel bakış sayfasında öne çıkar.',
       'Meseleler durumlarına göre gruplanır: “Düşünülecek”, “Kararlaştırıldı”, “Şu an gerekmiyor”. Karar verince meselenin durumunu değiştirin.',
       'Bir karar verdiğinizde nedeniyle birlikte gerekçe defterine yazın; aylar sonra “bunu neden böyle yapmıştım?” dediğinizde burada bulursunuz.',
     ],
@@ -245,10 +245,10 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
   },
   bahsedilen: {
-    baslik: 'Bahsedilen ama yazılmamış',
+    baslik: 'Eksik kayıtlar',
     ne: [
       'Metinlerinizde adını bağlantıyla andığınız ama kendi sayfasına henüz bir şey yazmadığınız kayıtlar. En çok anılan en üsttedir.',
-      'Bu bir eksikler listesi değil, bir hatırlatmadır: belki bu kayıtların bir kısmı hiç yazılmayacak, o da olur.',
+      'Adı “eksik” olsa da bu bir görev listesi değil, bir hatırlatmadır: belki bu kayıtların bir kısmı hiç yazılmayacak, o da olur.',
     ],
     neZaman: 'Evreninizde neyi derinleştirebileceğinize bakmak istediğinizde.',
     adimlar: [
@@ -269,7 +269,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
   },
   gecmis: {
-    baslik: 'Geçmiş',
+    baslik: 'Değişiklik geçmişi',
     ne: [
       'Bu evrende yapılan her değişikliğin sırasıyla listesi: hangi kayıt oluşturuldu, hangi ilişki eklendi, hangi tarih değişti. En yenisi en üsttedir.',
     ],
@@ -280,7 +280,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
   },
   surumler: {
-    baslik: 'Sürümler',
+    baslik: 'Kayıtlı anlar',
     ne: [
       'Evrenin belli bir anını saklamak ve büyük değişiklikleri güvenle denemek için üç araç:',
       'Adlandırılmış sürümler, evrenin bugünkü hâlini bir adla saklar (ör. “Birinci kitabın yayımlanan hâli”); sonra o hâli salt okunur açıp bugünle karşılaştırabilirsiniz. Deneme kopyaları, “kral yaşasaydı” gibi büyük bir değişikliği evreni bozmadan denemenizi sağlar. Yayımlar ise yayımlanmış bir eserin dayandığı bilgiyi saklar ve sonradan bu bilgiyle çelişen bir değişiklik yaparsanız sizi uyarır.',
@@ -294,7 +294,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
     ipuclari: [
       'Deneme kopyasındaki değişiklikler yalnızca bu cihazda tutulur; Drive ile eşitlenmez.',
-      'Küçük düşünce deneyleri için Çalışma masalarındaki varsayım paketleri yeterlidir.',
+      'Küçük düşünce deneyleri için konu dosyalarındaki varsayım paketleri yeterlidir.',
     ],
   },
   yedek: {

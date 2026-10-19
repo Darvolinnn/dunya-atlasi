@@ -145,6 +145,7 @@ Bölüm numaraları Sürüm 6'ya aittir. Bölüm numaralarında değişiklik yok
 | Kullanıcı kararı (19 Ekim) | Rehberli arayüz (dış öneri): başlangıç akışı | İki taslaktan B seçildi: Yaz sayfasında "İlk adımlar" listesi (K26, §5.10). Sol menü yapısı K24'teki gibi kalır. A ("Nereden başlamak istersiniz?" kartları) alınmadı. |
 | Tutarlılık düzeltmesi (19 Ekim) | Belge başlığı | "Aşama: tasarım. Program kodu yazılmadı" eskimişti; kodlama K9 onayıyla başlamış ve §14.1 aşamaları kodlanmıştı. Başlık "Aşama: kodlama" oldu (kullanıcı onayı). |
 | Kullanıcı kararı (19 Ekim) | Durum şeridi rengi | Eşitleme ve hazırlanma şeridiyle "zayıf durum" satırındaki sarı fazla göze batıyordu; yerine soluk deve tüyü (açık temada #e9dcc6 zemin, koyu temada #3d3122) seçildi. |
+| Kullanıcı kararı (19 Ekim) | Menü adları | Kullanıcı "Masa" gibi adları anlamsız buldu; önerilen tablo seçildi: Masa → Genel bakış, İnceleme → Uyarılar, Görünümler → Grafikler, Çalışma masaları → Konu dosyaları, Açık meseleler → Karar bekleyenler, Bahsedilen ama yazılmamış → Eksik kayıtlar, Geçmiş → Değişiklik geçmişi, Sürümler → Kayıtlı anlar (§5.10). Kayıt türü adları (açık mesele) ve değişiklik/kullanım/koşul masası araç adları değişmedi. |
 | Alınmayanlar | — | B10 6.2'deki eser için `.docx` dışa aktarımı yeni bir fikir sayıldı (K11). F26'nın ayrıntısı ve 2.2'nin tam birleştirmesi bekliyor. B10 6.2 lisans önerisi yerine K19 |
 
 ---

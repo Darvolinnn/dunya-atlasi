@@ -418,7 +418,7 @@ Taç giyme, kuşatma, ritüel, antlaşma, yolculuk ve büyü uygulaması gibi s�
 
 (F37, K23.) Bir varsayım paketi, birlikte geçerli sayılan varsayımların adlandırılmış listesidir: "köprü açık", "haberci yola çıkmadı", "Kaelen yemini duydu". Bütün evreni kopyalamadan küçük düşünce deneyleri için kullanılır; büyük değişiklikler için deneme kopyası vardır (§9.7).
 
-- Bir çalışma masasında (§5.9) ya da bir hesapta bir paket seçilir; rota, haber, hukuk ve sahne bağlamı aynı paketi kullanır. Farklı araçların sonuçları ancak aynı paketle hesaplandıysa birlikte geçerlidir (§2.2 kural 14).
+- Bir konu dosyasında (§5.9) ya da bir hesapta bir paket seçilir; rota, haber, hukuk ve sahne bağlamı aynı paketi kullanır. Farklı araçların sonuçları ancak aynı paketle hesaplandıysa birlikte geçerlidir (§2.2 kural 14).
 - Her sonuç hangi paketle hesaplandığını taşır (§2.3). Başka paketle çıkan sonuç yan yana karşılaştırılabilir.
 - Varsayım, kullanıcı istemeden kanona yazılmaz. Paketteki bir varsayımı evrene yazmak ayrı bir kullanıcı işlemidir (§2.2 kural 1).
 - "Henüz karar vermedim" ile "iki seçenekten biri doğru" ayrıdır: ikincisi iki ayrı paket olarak tutulur ve sonuç iki koşul altında gösterilir.
@@ -586,9 +586,9 @@ Bir cümle seçilip bir iddiaya, evren durumuna ya da olaya bağlanabilir ("Sarn
 - `Ctrl+K` ile ya da boş bir satırın başında veya metin dışındayken `/` ile açılan komut paleti (cümle içinde "ve/veya" ya da "12/3" yazarken açılmaz): kayıt aç, yan panele al, hızlı not, iki mekân arası yolculuk süresi, takvim günü hesabı, yeni kayıt.
 - **Hızlı not** her ekrandan erişilir. Telefonda tek dokunuşla açılır, uzun form göstermez ve kaydedildiğini açıkça söyler.
 
-### 5.9 Çalışma masaları ve kaldığın yere dönme
+### 5.9 Konu dosyaları ve kaldığın yere dönme
 
-- **Çalışma masası:** bir konu için oluşturulan alan ("Velkar isyanı": şehir planı, karakterler, tarih aralığı, kaynaklar, açık sorular, sahneler). Kayıtlar kopyalanmaz, masa onlara bağlanır. Masanın düzeni, notları, seçili varsayım paketi (§3.11) ve "bugün burada neyi çözmeye çalışıyorum?" satırı korunur.
+- **Konu dosyası** (kodda ve eski metinlerde "çalışma masası"): bir konu için oluşturulan alan ("Velkar isyanı": şehir planı, karakterler, tarih aralığı, kaynaklar, açık sorular, sahneler). Kayıtlar kopyalanmaz, dosya onlara bağlanır. Dosyanın düzeni, notları, seçili varsayım paketi (§3.11) ve "bugün burada neyi çözmeye çalışıyorum?" satırı korunur.
 - **Kaldığın yere dönme:** son açık sahne, imleç, yan paneldeki kayıtlar, seçili tarih ve kısa bir "buradan devam" notu saklanır ve **cihazlar arasında eşitlenir**. Panel yerleşimi, yakınlaştırma ve pencere ölçüsü **cihaza özeldir** ve eşitlenmez. Bir cihazın açılması öbür cihazın çalışma alanını zorla değiştirmez. Daha geniş bir çalışma devri kartı F47'de öneridir.
 
 ### 5.10 Çalışma düzenleri
@@ -602,7 +602,7 @@ Aynı verinin farklı görünümleridir; veri kopyalanmaz.
 | Tutarlılık inceleme | İnceleme kuyruğu, zaman çizelgesi, etkilenen kayıtlar |
 
 Yazı merkezdedir (K24):
-- **Evren açılınca yazma düzeni gelir.** Solda sabit bir gezinti çubuğu bulunur: Yaz, Masa, Kayıtlar, Haritalar, Takvim, Görünümler ve İnceleme; az kullanılan sayfalar (çalışma masaları, açık meseleler, şablonlar, bahsedilenler, çöp kutusu, geçmiş, sürümler, yedek) "Diğer" altında katlanır.
+- **Evren açılınca yazma düzeni gelir.** Solda sabit bir gezinti çubuğu bulunur: Yaz, Genel bakış, Kayıtlar, Haritalar, Takvim, Grafikler ve Uyarılar; az kullanılan sayfalar (konu dosyaları, karar bekleyenler, şablonlar, eksik kayıtlar, çöp kutusu, değişiklik geçmişi, kayıtlı anlar, yedek) "Diğer" altında katlanır. Bu adlar kullanıcı seçimidir (19 Ekim); bu belgenin geri kalanında aynı sayfalar eski adlarıyla anılabilir: Masa = Genel bakış, Görünümler = Grafikler, inceleme kuyruğu = Uyarılar sayfası, açık meseleler sayfası = Karar bekleyenler, bahsedilen ama yazılmamış = Eksik kayıtlar, geçmiş = Değişiklik geçmişi, sürümler sayfası = Kayıtlı anlar.
 - **Yaz** seçiliyken gezinti çubuğunda eserlerin ağacı (eser › bölüm › sahne) görünür; yeni eser, bölüm ve sahne buradan eklenir. Seçili sahnenin metni ortada geniş ve okunaklı durur; sağda dar ve kapatılabilir bir bağlam paneli sahnenin tarihini, mekânını, bakış açısını, sahnedekileri ve o anki bağlamı (§5.5) gösterir. Gezinti çubuğunun altında kayıt, eşitleme ve yedek özeti durur (§10.8). Sahnenin bütün alanları kayıt sayfasındadır; yazma ekranından bir bağlantıyla açılır.
 - **İlk adımlar (K26):** yeni bir evrende Yaz sayfasının üstünde dört adım sırayla gösterilir; sıradaki adım vurgulanır, yapılanlar üstü çizili işaretlenir. Program adımın yapıldığını kaydedilmiş veriden anlar (eser, sahne, sahne metninde bağlantı, sahnenin tarihi ya da mekânı); ayrıca bir şey saklanmaz. "Gizle" seçimi o cihazda evren başına hatırlanır.
 - **Kayıt sayfasında** ad, tür, karar durumu, tarih, şablon alanları, kısa özet, metin ve ilişkiler açık durur; öbür bölümler türüne göre "Diğer bölümler" altında katlanır ve bir dokunuşla açılır.
@@ -615,7 +615,7 @@ Yazma ekranında bütün evrenin panelleri ve uyarıları bulunmaz.
 
 - **Soru kütüphanesi:** Her türün soru seti vardır (başlangıç seti: Ek A). Her soru **cevaplanabilir**, **sonraya bırakılabilir** ya da **ilgisiz** işaretlenebilir. Bir soru yeni bir kayıtla da cevaplanabilir ("İnsanlar neye inanıyor?" → inanç kaydı).
 - **Yeni evren başlangıcı** isteğe bağlıdır ve atlanabilir: temel fikir, çatışma, karakter. Kullanıcı bunun yerine bir dinle, coğrafyayla ya da tarihle başlayabilir.
-- **Dünya Pusulası:** beş temel soru (merkez çatışma, gündelik hayat, güç ve bedeli, kırılırsa her şeyi değiştiren kural, evrenin karakteri nasıl dönüştürdüğü) bir panelde durur. **Doluluk göstergesi yoktur.** Masada yalnızca kullanıcının *önemli* işaretlediği açık sorular öne çıkar.
+- **Dünya Pusulası:** beş temel soru (merkez çatışma, gündelik hayat, güç ve bedeli, kırılırsa her şeyi değiştiren kural, evrenin karakteri nasıl dönüştürdüğü) bir panelde durur. **Doluluk göstergesi yoktur.** Genel bakış sayfasında yalnızca kullanıcının *önemli* işaretlediği açık sorular öne çıkar.
 - **Açık meseleler** ve **gerekçe defteri** (§4.6) boş alanları eksik saymadan anlamlı bir çalışma listesi verir. "Önce ihtiyacın olanı kur" ilkesi bunun gerekçesidir (K5).
 
 ### 6.1 Programın yazara sorduğu sorular
@@ -634,7 +634,7 @@ Bu, programın yazara ne zaman ve nasıl soru sorduğunun tek tanımıdır. Soru
 
 | Görünüm | Ne gösterir | Not |
 |---|---|---|
-| **Masa** | Son düzenlenenler, önemli açık meseleler, bahsedilen ama yazılmamış sayfalar, hızlı not, kaldığın yer | "Bahsedilen ama yazılmamış" bir hatırlatmadır, eksik listesi değildir; sayı ya da uyarı rengiyle gösterilmez |
+| **Genel bakış** (eski adı Masa) | Son düzenlenenler, önemli açık meseleler, eksik kayıtlar, hızlı not, kaldığın yer | "Eksik kayıtlar" (metinde anılıp henüz yazılmamış kayıtlar) bir hatırlatmadır, görev listesi değildir; sayı ya da uyarı rengiyle gösterilmez |
 | **Kayıt sayfası** | Başlık, görsel, bileşenler, metin, ilişkiler (zamana göre), geri-atıflar, notlar, açık meseleler | Görseli olmayan kayıtta baş harf rozeti |
 | **Ağ** | Seçili kaydın yakın bağlantıları | Bütün evren isteğe bağlı açılır; ilişki türü, dönem, kayıt türü ve bakış açısıyla filtrelenir |
 | **Soy ağacı** | Ebeveyn, eş, kardeş; çoklu evlilik, evlatlık, gayrimeşru çocuk, siyasi evlilik, soy içi evlilik farklı çizgilerle | Çakışmasız çizim vaat edilmez; odaklanma, dal kapatma ve filtre sunulur |

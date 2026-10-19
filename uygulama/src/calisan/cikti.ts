@@ -23,7 +23,7 @@ const KAYIPLAR = [
   'Alan alan karar durumları (yalnızca kaydın genel karar durumu yazılır)',
   'Haritalar, harita işaretleri ve bölgeler',
   'Takvim hesapları: tarihler yalnızca yazıldığı gibi durur',
-  'Hesap kuralları, süreçler, hukuk kuralları, varsayım paketleri ve çalışma masaları',
+  'Hesap kuralları, süreçler, hukuk kuralları, varsayım paketleri ve konu dosyaları',
   'Görsel panolardaki notlar, gezintiler ve sahne niyet işaretleri',
   'İki cihaz arasında henüz çözülmemiş farklar',
 ];

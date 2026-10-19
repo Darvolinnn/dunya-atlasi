@@ -588,7 +588,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         const etiket = msr ? ({ ad: 'Adı', amac: 'Çözmeye çalışılan soru', notlar: 'Notlar', bas: 'Aralığın başı', bit: 'Aralığın sonu', paket: 'Seçili varsayım paketi', uyeler: 'Bağlı kayıtlar' } as Record<string, string>)[alan]
           : ({ ad: 'Adı', aciklama: 'Açıklaması', varsayimlar: 'Varsayımları' } as Record<string, string>)[alan];
         const yazi = (d: unknown) => (Array.isArray(d) ? `${d.length} öge` : d && typeof d === 'object' ? (d as { ifade?: string }).ifade ?? '' : d === null ? '(boş)' : alan === 'paket' ? ((e.db.selectValue('SELECT ad FROM paketler WHERE kod=?', [String(d)]) as string | undefined) ?? 'silinmiş paket') : String(d));
-        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: msr ? `“${msr.ad}” çalışma masası` : `“${pkr!.ad}” varsayım paketi`,
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: msr ? `“${msr.ad}” konu dosyası` : `“${pkr!.ad}” varsayım paketi`,
           alanEtiketi: etiket ?? alan, degerler: degerler.map((d) => ({ ...d, yazi: yazi(d.deger) })) });
         continue;
       }

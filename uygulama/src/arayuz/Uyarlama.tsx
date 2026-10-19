@@ -88,7 +88,7 @@ export function UyarlamaBolumu({ istemci, evren, eser, surum = 0 }: { istemci: I
       <h4>{UYARLAMA_TURLERI.find((x) => x.kod === r.tanim.tur)?.ad}</h4>
       <div class="gun-yan-yana"><Taraf s={r.a} evren={evren} /><Taraf s={r.b} evren={evren} /></div>
       {r.tanim.not && <p>{r.tanim.not}</p>}
-      {r.catismali && <p>İki cihazdaki seçimler çelişiyor. <a href={`#/e/${evren}/inceleme`}>İncelemede seçim yapın.</a></p>}
+      {r.catismali && <p>İki cihazdaki seçimler çelişiyor. <a href={`#/e/${evren}/inceleme`}>Uyarılar sayfasında seçim yapın.</a></p>}
       {r.uyarilar.map((u) => <p>{u}</p>)}
       <button class="dugme" disabled={bekliyor || r.catismali || r.silindi} onClick={() => void yap(() => istemci.iste('uyarlamaGozdenGecir', { evren, kod: r.kod }))}>Gözden geçirdim</button>{' '}
       <button class="dugme" disabled={bekliyor || r.catismali || r.silindi} onClick={() => { setKod(r.kod); setT(r.tanim); }}>Düzenlemek için seç</button>{' '}

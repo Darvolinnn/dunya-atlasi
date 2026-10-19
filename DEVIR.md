@@ -148,7 +148,7 @@ Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok.
 Kullanıcı etkileşimli bir taslak ve gerekçe belgesi gönderdi (ekler depoda değil): program kullanıcıyı küçük, atlanabilir adımlarla yönlendirsin, yalnız o anda gereken alanları göstersin, sonraki adımı anlaşılır kılsın. Öneri proje klasöründe `analiz/rehberli-arayuz-uyarlama.md`. Özeti: boş evrende "Nereden başlamak istersiniz?" ve üç kısa akış (sahne, kayıt, not) + sonuç kartında tek sonraki adım (Aşama A); gezinti Yaz / Evren / İncele / Masa / Yönetim, seyrek işler "⋯" menüsünde (Aşama B, önce resimli taslak); kayıt sayfasında boş bölümlerin gizlenmesi (Aşama C). Yeni veri yok; onaylanırsa tasarıma K26 olarak girer. Boş bağlam panelinin kapalı olması ve durum özeti artık kodda (PR #2), öneri bunlarla uyumlu.
 
 - [x] Kullanıcı kararları (19 Ekim): başlangıç akışı taslak B ("İlk adımlar"), menü yapısı K24 gibi kalır
-- [x] Menü adları: kullanıcı önerilen tabloyu seçti (aşağıda); kodlanacak
+- [x] Menü adları: kullanıcı önerilen tabloyu seçti ve kodlandı (§5.10). Kayıt türü "Açık mesele" ve değişiklik/kullanım/koşul masası araç adları değişmedi; kod içi adlar (`masa`, `masalar`) aynı kaldı.
 
 **Rehberli yazarlık ve roman serisi (kullanıcı isteği, 19 Ekim 2026; öneri, karar bekliyor, kodlanmadı).** Kullanıcı roman yazma yöntemini bilmediğini, programın bu konuda yol göstermesini istediğini yazdı ve iki brif gönderdi (depoda değil): önce istek, sonra ilk sürümün eleştirisi. İkinci brif üzerine ilk sürümün tasarım, akış ve farklar belgeleri kaldırıldı (git geçmişinde, `6fa89ac`). Şimdiki belgeler `analiz/` altında; hiçbiri bağlayıcı değil:
 - `yazarlik-ve-roman-serisi-calisma-rehberi.md`: 24 konuluk yazarlık rehberi, yöntem haritası (A.6), uydurma örnek seri *Hatıra İmparatorluğu*. Kod beklemeden okunabilir.
@@ -159,7 +159,7 @@ Kullanıcı etkileşimli bir taslak ve gerekçe belgesi gönderdi (ekler depoda 
 
 Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda açık olanlar" montajdaki okur soruları ve sahne niyetleri üzerinden hesaplanmalı. (2) Plan için ayrı katman gerekmez; kayıt ve alan düzeyi karar durumu var, eksik olan `alternatif` ilişkisi. (3) Olay örgüsü masası yeni veri istemez; var olan dört görünümü birleştirir. Onaylanırsa K11 gereği önce §16'ya *Öneri* olarak girer. Sıradaki adım: kullanıcı D1–D13'ü seçer; ilk kodlanacak P1 (rehber) ve P2 (soru setleri).
 - [x] Kullanıcı kararları (19 Ekim, gece): D1–D13'ün hepsi önerildiği gibi; sıra önce rehber ve sorular (P1, P2). Menü adları önerilen tablo (Masa → Genel bakış, İnceleme → Uyarılar, Görünümler → Grafikler, Çalışma masaları → Konu dosyaları, Açık meseleler → Karar bekleyenler, Bahsedilen ama yazılmamış → Eksik kayıtlar, Geçmiş → Değişiklik geçmişi, Sürümler → Kayıtlı anlar). #5'in üç görünüşü onaylandı; şerit sarısı deve tüyü oldu.
-- [ ] Kararları tasarıma işlemek (§0.2: ilgili bölümler, §1.1 K27, §16) ve P1+P2'yi kodlamak; menü adlarını kodlamak.
+- [ ] Kararları tasarıma işlemek (§0.2: ilgili bölümler, §1.1 K27, §16) ve P1+P2'yi kodlamak.
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
 
 ## 4. Kod yapısı ve yeni bir özellik ekleme tarifi

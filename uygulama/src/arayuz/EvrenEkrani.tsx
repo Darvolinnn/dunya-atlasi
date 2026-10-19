@@ -49,7 +49,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
             <p class="soluk kucuk">Oluşturulma: {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik</p>
           </>
         )}
-        {baslik && <div class="baslik-satiri sayfa-basligi"><h1>{gorunumMu(sekme) ? <><span class="soluk">Görünümler · </span>{baslik}</> : baslik}</h1><SayfaYardimi sayfa={sekme} /></div>}
+        {baslik && <div class="baslik-satiri sayfa-basligi"><h1>{gorunumMu(sekme) ? <><span class="soluk">Grafikler · </span>{baslik}</> : baslik}</h1><SayfaYardimi sayfa={sekme} /></div>}
         {sekme === 'inceleme' ? <IncelemeKuyrugu istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><MarkdownCiktisi istemci={istemci} evren={kod} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
           : sekme === 'surumler' && !bilgi.bag ? <SurumlerSekmesi istemci={istemci} evren={kod} surum={surum} />

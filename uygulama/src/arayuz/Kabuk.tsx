@@ -15,9 +15,9 @@ export const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy
 export const gorunumMu = (s: string) => GORUNUMLER.some(([g]) => g === s);
 
 /** Ana sayfalar ve "Diğer" altındakiler; komut paleti de bu listeyi kullanır. */
-export const ANA_SAYFALAR = [['yaz', 'Yaz'], ['masa', 'Masa'], ['kayitlar', 'Kayıtlar'], ['haritalar', 'Haritalar'], ['takvim', 'Takvim'], ['gorunumler', 'Görünümler'], ['inceleme', 'İnceleme']] as const;
-export const DIGER_SAYFALAR = [['masalar', 'Çalışma masaları'], ['meseleler', 'Açık meseleler'], ['sablonlar', 'Şablonlar'], ['bahsedilen', 'Bahsedilen ama yazılmamış'],
-  ['cop', 'Çöp kutusu'], ['gecmis', 'Geçmiş'], ['surumler', 'Sürümler'], ['yedek', 'Yedek']] as const;
+export const ANA_SAYFALAR = [['yaz', 'Yaz'], ['masa', 'Genel bakış'], ['kayitlar', 'Kayıtlar'], ['haritalar', 'Haritalar'], ['takvim', 'Takvim'], ['gorunumler', 'Grafikler'], ['inceleme', 'Uyarılar']] as const;
+export const DIGER_SAYFALAR = [['masalar', 'Konu dosyaları'], ['meseleler', 'Karar bekleyenler'], ['sablonlar', 'Şablonlar'], ['bahsedilen', 'Eksik kayıtlar'],
+  ['cop', 'Çöp kutusu'], ['gecmis', 'Değişiklik geçmişi'], ['surumler', 'Kayıtlı anlar'], ['yedek', 'Yedek']] as const;
 
 let sonGorunum = 'cizelge';
 const digerAnahtari = 'dunya-atlasi:diger-acik';

@@ -443,8 +443,8 @@ export function MeseleSekmesi({ istemci, evren }: { istemci: Istemci; evren: str
   if (!l) return null;
   return (
     <div class="meseleler">
-      <section aria-label="Açık meseleler">
-        <h2>Açık meseleler</h2>
+      <section aria-label="Karar bekleyenler">
+        <h2>Karar bekleyenler</h2>
         <p class="soluk kucuk">Henüz karara bağlamadığınız sorular. Boş alanlar burada listelenmez, yalnızca sizin yazdıklarınız yer alır.</p>
         <YazarKaydiFormu istemci={istemci} evren={evren} tur="acik_mesele" />
         {MESELE_DURUMLARI.map((d) => {

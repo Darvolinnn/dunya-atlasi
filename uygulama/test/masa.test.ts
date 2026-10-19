@@ -79,7 +79,7 @@ describe('çalışma masaları (§5.9)', () => {
     const c = m.catismalar({ evren }).filter((x) => x.tur === 'alan');
     expect(c).toHaveLength(1);
     const ca = c[0] as Extract<typeof c[0], { tur: 'alan' }>;
-    expect(ca.baslik).toContain('çalışma masası');
+    expect(ca.baslik).toContain('konu dosyası');
     m.alanCatismasiCoz({ evren, nesne: kod, alan: 'amac', islem: ca.degerler.find((d) => d.deger === 'Liman kimin elinde?')!.islem });
     expect(m.catismalar({ evren }).filter((x) => x.tur === 'alan')).toHaveLength(0);
     (m as unknown as { evren(k: string): { yenidenKur(): void } }).evren(evren).yenidenKur();
