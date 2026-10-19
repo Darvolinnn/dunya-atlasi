@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 34;
+export const IZDUSUM_SURUMU = 35;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -325,6 +325,10 @@ CREATE TABLE IF NOT EXISTS yayim_kararlari(
   karar TEXT NOT NULL,
   imza TEXT NOT NULL,
   PRIMARY KEY(yayim, anahtar)
+);
+CREATE TABLE IF NOT EXISTS belge_sunumlari(
+  kod TEXT PRIMARY KEY,
+  sunum TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS derlemeler(
   kod TEXT PRIMARY KEY,
@@ -598,7 +602,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -1231,6 +1235,13 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (typeof karar !== 'string' || !karar) db.exec({ sql: 'DELETE FROM yayim_kararlari WHERE yayim=? AND anahtar=?', bind: [yayim, anahtar] });
     else db.exec({ sql: 'INSERT OR REPLACE INTO yayim_kararlari(yayim, anahtar, karar, imza) VALUES(?,?,?,?)', bind: [yayim, anahtar, karar, String(imza ?? '')] });
     alanYaz(db, i, yayim, `karar:${anahtar}`, typeof karar === 'string' && karar ? karar : null);
+  },
+  /** Evren içi belgenin sunumu (§11.5): biçim, mühür, bağlı kişiler. */
+  belge_sunumu_yaz(db, i) {
+    const { kod, sunum } = i.veri as { kod?: unknown; sunum?: unknown };
+    if (typeof kod !== 'string' || !sunum || typeof sunum !== 'object') return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO belge_sunumlari(kod, sunum) VALUES(?,?)', bind: [kod, JSON.stringify(sunum)] });
+    alanYaz(db, i, kod, 'belge_sunumu', sunum);
   },
   /** Gezinti ve görsel pano (§7): yazarın derlediği listeler. İlk yazım derlemeyi kurar. */
   derleme_yaz(db, i) {

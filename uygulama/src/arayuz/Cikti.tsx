@@ -12,7 +12,7 @@ function indir(ad: string, veri: Uint8Array, tur: string) {
 }
 
 /** Sayfayı görünmez bir çerçevede açıp yazdırma penceresini getirir; oradan "PDF olarak kaydet" seçilir. */
-function yazdir(html: string) {
+export function yazdir(html: string) {
   const c = document.createElement('iframe');
   c.setAttribute('aria-hidden', 'true');
   c.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';

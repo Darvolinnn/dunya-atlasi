@@ -222,6 +222,7 @@ export interface IliskiFarki { kod: string; tur: string; a: KisaKayit; b: KisaKa
 export interface EvrenFarki { kayitlar: KayitFarki[]; iliskiler: IliskiFarki[] }
 export interface Yayim { kod: string; eser: KisaKayit; surum: { kod: string; ad: string }; baski: string; olusturma: number; acik: number }
 export interface YayimCelismesi { anahtar: string; kayit: KisaKayit; baslik: string; once: string | null; sonra: string | null; karar: string | null }
+export interface BelgeSunumu { bicim: 'mektup' | 'gazete' | 'ilan' | 'izin' | 'gunluk' | 'antlasma' | 'mezar'; yazan: string | null; alici: string | null; yer: string | null; muhur: string | null; muhurYazisi: string; imzalayanlar: string[] }
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -788,6 +789,9 @@ export interface Istekler {
   markdownDisaAktar(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Uint8Array; kayitSayisi: number; eksikGorsel: number }>;
   epubYaz(a: { evren: string; eser: string; sahneBasliklari?: boolean }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
   eserBaskiSayfasi(a: { evren: string; eser: string; sahneBasliklari?: boolean }): { html: string };
+  belgeSunumu(a: { evren: string; kod: string }): { sunum: BelgeSunumu; adlar: Record<string, string> };
+  belgeSunumuYaz(a: { evren: string; kod: string; sunum: BelgeSunumu }): void;
+  belgeCiktisi(a: { evren: string; kod: string }): { html: string };
   yayimla(a: { evren: string; eser: string; baski: string }): { kod: string };
   yayimSil(a: { evren: string; kod: string }): void;
   yayimCelismeleri(a: { evren: string; yayim: string }): YayimCelismesi[];
