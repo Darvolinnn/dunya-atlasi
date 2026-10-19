@@ -378,6 +378,37 @@ CREATE TABLE IF NOT EXISTS sahne_yerlesimleri(
   plan TEXT NOT NULL,
   ogeler TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS bakim_tanimlari(
+  kod TEXT PRIMARY KEY,
+  kayit TEXT NOT NULL,
+  ad TEXT NOT NULL,
+  siklik TEXT,
+  uzmanlar TEXT NOT NULL DEFAULT '[]',
+  malzemeler TEXT NOT NULL DEFAULT '[]',
+  bedel TEXT NOT NULL DEFAULT '',
+  kesinti TEXT NOT NULL DEFAULT '',
+  kesinti_suresi TEXT,
+  karar TEXT NOT NULL DEFAULT 'kesin',
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_bakim_tanimlari_kayit ON bakim_tanimlari(kayit);
+CREATE TABLE IF NOT EXISTS bakim_kayitlari(
+  kod TEXT PRIMARY KEY,
+  tanim TEXT NOT NULL,
+  kayit TEXT NOT NULL,
+  tarih TEXT NOT NULL,
+  durum TEXT NOT NULL,
+  yapan TEXT,
+  olay TEXT,
+  not_metni TEXT NOT NULL DEFAULT '',
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_bakim_kayitlari_tanim ON bakim_kayitlari(tanim);
+CREATE INDEX IF NOT EXISTS idx_bakim_kayitlari_kayit ON bakim_kayitlari(kayit);
 CREATE TABLE IF NOT EXISTS derlemeler(
   kod TEXT PRIMARY KEY,
   tur TEXT NOT NULL,
@@ -656,6 +687,7 @@ export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar'
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi');
+IZDUSUM_TABLOLARI.push('bakim_tanimlari', 'bakim_kayitlari');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -1377,6 +1409,83 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const deger = { plan, ogeler };
     db.exec({ sql: 'INSERT OR REPLACE INTO sahne_yerlesimleri(kod, plan, ogeler) VALUES(?,?,?)', bind: [sahne, JSON.stringify(plan), JSON.stringify(ogeler)] });
     alanYaz(db, i, sahne, 'yerlesim', deger);
+  },
+  bakim_tanim_yaz(db, i) {
+    const r = i.veri as {
+      kod?: unknown; kayit?: unknown; ad?: unknown; siklik?: unknown; uzmanlar?: unknown;
+      malzemeler?: unknown; bedel?: unknown; kesinti?: unknown; kesintiSuresi?: unknown; karar?: unknown; olusturma?: unknown;
+    };
+    if (typeof r.kod !== 'string' || typeof r.kayit !== 'string' || typeof r.ad !== 'string') return;
+    const mevcut = db.selectObject('SELECT olusturma, silindi FROM bakim_tanimlari WHERE kod=?', [r.kod]);
+    const olusturma = typeof r.olusturma === 'number' ? r.olusturma : mevcut ? Number(mevcut.olusturma) : i.zaman;
+    const silindi = mevcut ? (mevcut.silindi as number | null) : null;
+    const uzmanlar = Array.isArray(r.uzmanlar) ? r.uzmanlar : [];
+    const malzemeler = Array.isArray(r.malzemeler) ? r.malzemeler : [];
+    const bedel = typeof r.bedel === 'string' ? r.bedel : '';
+    const kesinti = typeof r.kesinti === 'string' ? r.kesinti : '';
+    const karar = typeof r.karar === 'string' ? r.karar : 'kesin';
+    db.exec({
+      sql: `INSERT INTO bakim_tanimlari(kod, kayit, ad, siklik, uzmanlar, malzemeler, bedel, kesinti, kesinti_suresi, karar, olusturma, duzenleme, silindi)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(kod) DO UPDATE SET kayit=excluded.kayit, ad=excluded.ad, siklik=excluded.siklik, uzmanlar=excluded.uzmanlar,
+              malzemeler=excluded.malzemeler, bedel=excluded.bedel, kesinti=excluded.kesinti, kesinti_suresi=excluded.kesinti_suresi,
+              karar=excluded.karar, duzenleme=excluded.duzenleme`,
+      bind: [
+        r.kod, r.kayit, r.ad, r.siklik ? JSON.stringify(r.siklik) : null, JSON.stringify(uzmanlar), JSON.stringify(malzemeler),
+        bedel, kesinti, r.kesintiSuresi ? JSON.stringify(r.kesintiSuresi) : null, karar, olusturma, i.zaman, silindi,
+      ],
+    });
+    alanYaz(db, i, r.kod, 'bakim_tanim', {
+      kayit: r.kayit, ad: r.ad, siklik: r.siklik ?? null, uzmanlar, malzemeler,
+      bedel, kesinti, kesintiSuresi: r.kesintiSuresi ?? null, karar, olusturma,
+    });
+  },
+  bakim_tanim_sil(db, i) {
+    const { kod } = i.veri as { kod?: unknown };
+    if (typeof kod !== 'string') return;
+    db.exec({ sql: 'UPDATE bakim_tanimlari SET silindi=?, duzenleme=? WHERE kod=?', bind: [i.zaman, i.zaman, kod] });
+    alanYaz(db, i, kod, 'bakim_tanim_silindi', true);
+  },
+  bakim_tanim_geri_yukle(db, i) {
+    const { kod } = i.veri as { kod?: unknown };
+    if (typeof kod !== 'string') return;
+    db.exec({ sql: 'UPDATE bakim_tanimlari SET silindi=NULL, duzenleme=? WHERE kod=?', bind: [i.zaman, kod] });
+    alanYaz(db, i, kod, 'bakim_tanim_silindi', false);
+  },
+  bakim_kaydi_yaz(db, i) {
+    const r = i.veri as {
+      kod?: unknown; tanim?: unknown; kayit?: unknown; tarih?: unknown; durum?: unknown;
+      yapan?: unknown; olay?: unknown; not?: unknown; olusturma?: unknown;
+    };
+    if (typeof r.kod !== 'string' || typeof r.tanim !== 'string' || typeof r.kayit !== 'string' || !r.tarih || typeof r.durum !== 'string') return;
+    const mevcut = db.selectObject('SELECT olusturma, silindi FROM bakim_kayitlari WHERE kod=?', [r.kod]);
+    const olusturma = typeof r.olusturma === 'number' ? r.olusturma : mevcut ? Number(mevcut.olusturma) : i.zaman;
+    const silindi = mevcut ? (mevcut.silindi as number | null) : null;
+    const yapan = typeof r.yapan === 'string' ? r.yapan : null;
+    const olay = typeof r.olay === 'string' ? r.olay : null;
+    const not = typeof r.not === 'string' ? r.not : '';
+    db.exec({
+      sql: `INSERT INTO bakim_kayitlari(kod, tanim, kayit, tarih, durum, yapan, olay, not_metni, olusturma, duzenleme, silindi)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(kod) DO UPDATE SET tanim=excluded.tanim, kayit=excluded.kayit, tarih=excluded.tarih, durum=excluded.durum,
+              yapan=excluded.yapan, olay=excluded.olay, not_metni=excluded.not_metni, duzenleme=excluded.duzenleme`,
+      bind: [r.kod, r.tanim, r.kayit, JSON.stringify(r.tarih), r.durum, yapan, olay, not, olusturma, i.zaman, silindi],
+    });
+    alanYaz(db, i, r.kod, 'bakim_kaydi', {
+      tanim: r.tanim, kayit: r.kayit, tarih: r.tarih, durum: r.durum, yapan, olay, not, olusturma,
+    });
+  },
+  bakim_kaydi_sil(db, i) {
+    const { kod } = i.veri as { kod?: unknown };
+    if (typeof kod !== 'string') return;
+    db.exec({ sql: 'UPDATE bakim_kayitlari SET silindi=?, duzenleme=? WHERE kod=?', bind: [i.zaman, i.zaman, kod] });
+    alanYaz(db, i, kod, 'bakim_kaydi_silindi', true);
+  },
+  bakim_kaydi_geri_yukle(db, i) {
+    const { kod } = i.veri as { kod?: unknown };
+    if (typeof kod !== 'string') return;
+    db.exec({ sql: 'UPDATE bakim_kayitlari SET silindi=NULL, duzenleme=? WHERE kod=?', bind: [i.zaman, kod] });
+    alanYaz(db, i, kod, 'bakim_kaydi_silindi', false);
   },
   /** Gezinti ve görsel pano (§7): yazarın derlediği listeler. İlk yazım derlemeyi kurar. */
   derleme_yaz(db, i) {

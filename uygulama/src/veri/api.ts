@@ -341,6 +341,86 @@ export interface SonrakiSoru {
   hesap: 'yolculuk' | 'yol' | 'haber' | 'yas' | 'yaslar' | 'gokyuzu'; ad: string; kayit: KisaKayit;
   girdiler: SonrakiSoruGirdisi[]; hazir: boolean; siradaki: SonrakiSoruGirdisi | null; not: string;
 }
+/** F32 bakım ve tekrarlar (§16.1): bakım tanımı, bakım kayıtları, durum hesabı ve uzman/malzeme ters görünümü. */
+export interface BakimTanimi {
+  kayit: string;
+  ad: string;
+  siklik?: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null;
+  uzmanlar?: string[];
+  malzemeler?: { kayit: string | null; metin: string }[];
+  bedel?: string;
+  kesinti?: string;
+  kesintiSuresi?: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null;
+  karar?: string;
+}
+export interface BakimKaydiTanimi {
+  tanim: string;
+  tarih: string;
+  durum: 'yapildi' | 'yapilmadi' | 'yarida';
+  yapan?: string | null;
+  olay?: string | null;
+  not?: string;
+}
+export interface BakimKaydiOkumasi {
+  kod: string;
+  tanim: string;
+  kayit: string;
+  tarih: EvrenTarihi;
+  durum: 'yapildi' | 'yapilmadi' | 'yarida';
+  yapan: KisaKayit | null;
+  olay: KisaKayit | null;
+  not: string;
+  uzmanDisi: boolean;
+  bilgiNotu: string | null;
+  olusturma: number;
+  duzenleme: number;
+  silindi: number | null;
+  catismali: boolean;
+}
+export interface BakimTanimiOkumasi {
+  kod: string;
+  kayit: string;
+  ad: string;
+  siklik: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null;
+  uzmanlar: KisaKayit[];
+  malzemeler: { kayit: KisaKayit | null; metin: string }[];
+  bedel: string;
+  kesinti: string;
+  kesintiSuresi: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null;
+  karar: string;
+  olusturma: number;
+  duzenleme: number;
+  silindi: number | null;
+  catismali: boolean;
+  kayitlar: BakimKaydiOkumasi[];
+}
+export interface BakimDosyasi {
+  kayit: KisaKayit;
+  tanimlar: BakimTanimiOkumasi[];
+}
+export interface BakimTanimiDurumu {
+  tanim: BakimTanimiOkumasi;
+  sonYapildi: BakimKaydiOkumasi | null;
+  sonrakiAralik: { enErken: number; enGec: number; yazi: string } | null;
+  durum: 'zamaninda' | 'gecikmis_olabilir' | 'gecikmis' | 'kesinti_olabilir' | 'bilinmiyor';
+  durumEtiketi: string;
+  kesinti: string | null;
+  ozet: string;
+  dayanak: string;
+  not: string;
+  uzmanNotlari: string[];
+}
+export interface BakimDurumuSonucu {
+  kayit: KisaKayit;
+  tarih: EvrenTarihi | null;
+  tanimlar: BakimTanimiDurumu[];
+  not: string;
+}
+export interface BakimUzmanligiSonucu {
+  kayit: KisaKayit;
+  uzmanOldugu: { tanimKod: string; ad: string; siklik: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null; kesinti: string; yer: KisaKayit }[];
+  malzemeOldugu: { tanimKod: string; ad: string; siklik: { deger: number; birim: 'gun' | 'ay' | 'yil' } | null; metin: string; yer: KisaKayit }[];
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -724,6 +804,15 @@ export interface Istekler {
   sozlukGeriYukle(a: { evren: string; kod: string }): void;
   sozlukDenetle(a: { evren: string }): SozlukDenetimi;
   sozlukIsareti(a: { evren: string; sozluk: string; anahtar: string; bilerek: boolean }): void;
+  bakimTanimYaz(a: { evren: string; kod?: string | null; tanim: BakimTanimi }): { kod: string };
+  bakimTanimSil(a: { evren: string; kod: string }): void;
+  bakimTanimGeriYukle(a: { evren: string; kod: string }): void;
+  bakimKaydiYaz(a: { evren: string; kod?: string | null; kayit?: BakimKaydiTanimi; tanim?: BakimKaydiTanimi }): { kod: string; bilgiNotu: string | null };
+  bakimKaydiSil(a: { evren: string; kod: string }): void;
+  bakimKaydiGeriYukle(a: { evren: string; kod: string }): void;
+  bakimOku(a: { evren: string; kayit?: string; kod?: string; cop?: boolean }): BakimDosyasi;
+  bakimDurumu(a: { evren: string; kayit?: string; kod?: string; tarih?: string | null }): BakimDurumuSonucu;
+  bakimUzmanligi(a: { evren: string; kayit?: string; kod?: string }): BakimUzmanligiSonucu;
   iddiaDosyasi(a: { evren: string; iddia: string }): IddiaDosyasi;
   anlatimYaz(a: { evren: string; kod?: string | null; tanim: AnlatimTanimi }): { kod: string };
   anlatimSil(a: { evren: string; kod: string }): void;

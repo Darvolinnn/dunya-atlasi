@@ -656,3 +656,8 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 /* F33 bir sonraki yararlı soru */
 .sonraki-soru-listesi { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .sonraki-soru-listesi .girdi-eksik > span:first-child { color: var(--uyari, #a0522d); }
+/* F32 bakım ve tekrarlar */
+.bakim-karti { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+.bakim-formu, .bakim-kaydi-formu { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+.bakim-tablo-sarmal { overflow-x: auto; max-width: 100%; }
+.bakim-tablosu { width: 100%; border-collapse: collapse; }
