@@ -89,7 +89,7 @@ async function hazirla(): Promise<Hizmet> {
   havuz = h as never;
   const ac = (ad: string) => new h.OpfsSAHPoolDb(ad);
   return new Hizmet(ac, kurulumAdi(), sqlite3.version.libVersion, (evren, turler, kayitlar, uzaktan) => postMessage({ degisti: { evren, turler, kayitlar, uzaktan } }),
-    new OpfsDeposu(), tarayiciIsleyici, () => new sqlite3.oo1.DB(':memory:'));
+    new OpfsDeposu(), tarayiciIsleyici, () => new sqlite3.oo1.DB(':memory:'), (ilerleme) => postMessage({ ilerleme }));
 }
 
 onmessage = async (e: MessageEvent<{ no: number; ad: IstekAdi; arg: unknown }>) => {

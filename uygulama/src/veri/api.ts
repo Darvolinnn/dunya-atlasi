@@ -1510,4 +1510,6 @@ export type IstekArg<K extends IstekAdi> = Parameters<Istekler[K]>[0];
 export type IstekSonuc<K extends IstekAdi> = Awaited<ReturnType<Istekler[K]>>;
 
 /** Çalışandan arayüze: bir evrende işlem yazıldı (ekranlar yenilensin). */
+/** Uzun süren baştan kurmanın ilerlemesi (§10.1, §10.7): neden program güncellemesi ya da dışarıdan gelen günlüktür. */
+export interface IlerlemeBildirimi { evren: string; /** Bu cihazda henüz yoksa boş. */ ad: string; neden: 'guncelleme' | 'kurulum'; yapilan: number; toplam: number }
 export interface DegisiklikBildirimi { degisti: { evren: string; turler: string[]; kayitlar: string[]; uzaktan?: boolean } }

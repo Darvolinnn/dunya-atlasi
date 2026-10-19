@@ -851,3 +851,6 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .durum-zayif { background: #f7e7b8; color: #5a3f00; border-radius: 6px; padding: 2px 6px; }
 :root[data-tema="koyu"] .durum-zayif { background: #4a3d1c; color: #f3dfa6; }
 @media (prefers-color-scheme: dark) { :root:not([data-tema="acik"]) .durum-zayif { background: #4a3d1c; color: #f3dfa6; } }
+
+/* Uzun süren baştan kurmanın şeridi (§10.7). */
+.hazirlanma-seridi progress { flex: 1; min-width: 160px; height: 10px; accent-color: var(--vurgu); }

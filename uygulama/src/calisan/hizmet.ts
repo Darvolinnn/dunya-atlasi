@@ -46,6 +46,7 @@ import * as soyMod from './soy';
 import * as montaj from './montaj';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
+import type { IlerlemeBildirimi } from '../veri/api';
 import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
 import * as bakim from './bakim';
@@ -133,9 +134,17 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     private readonly bildir: Bildirici = () => {},
     private readonly medya: MedyaDeposu | null = null, private readonly gorselIsle: GorselIsleyici | null = null,
     /** Kalıcı olmayan veritabanı (sabit sürüm görünümleri); tarayıcıda bellekte açılır. */
-    private readonly gecici: () => Database = () => ac(`/gecici-${yeniKod()}.db`)) {
+    private readonly gecici: () => Database = () => ac(`/gecici-${yeniKod()}.db`),
+    /** Uzun süren baştan kurmanın ilerlemesi (§10.7); arayüz şerit gösterir. */
+    private readonly ilerle: (d: IlerlemeBildirimi) => void = () => {}) {
     this.kurulum = new KurulumVt(ac('/kurulum.db'), varsayilanKurulumAdi);
     this.aktor = aktor(this.kurulum.kod);
+  }
+
+  /** Evrenin veritabanını açar; uzun kurma sürerse ilerleme bildirilir. */
+  private evrenVt(kod: string, db: Database = this.ac(`/evren-${kod}.db`)) {
+    const ad = this.kurulum.evrenler().find((x) => x.kod === kod)?.ad ?? '';
+    return new EvrenVt(db, this.kurulum.kod, (d) => this.ilerle({ evren: kod, ad, ...d }));
   }
 
   private evren(kod: string): EvrenVt {
@@ -143,7 +152,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     let e = this.acik.get(kod);
     if (!e) {
       if (!this.kurulum.evrenler().some((x) => x.kod === kod)) return this.bagliAc(kod);
-      e = new EvrenVt(this.ac(`/evren-${kod}.db`), this.kurulum.kod);
+      e = this.evrenVt(kod);
       this.acik.set(kod, e);
     }
     return e;
@@ -161,7 +170,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       const d = s ? undefined : ana.db.selectObject('SELECT gordu FROM dallar WHERE kod=?', [kod]);
       if (!s && !d) continue;
       const gordu = JSON.parse((s ?? d)!.gordu as string) as Record<string, number>;
-      const e = new EvrenVt(s ? this.gecici() : this.ac(`/evren-${kod}.db`), this.kurulum.kod);
+      const e = this.evrenVt(kod, s ? this.gecici() : this.ac(`/evren-${kod}.db`));
       if (e.islemSayisi() === 0) e.disaridanAl(ana.islemler().filter((i) => i.sira <= (gordu[i.kurulum] ?? 0)));
       if (!s) this.kurulum.ayarYaz(`dal_yerel:${kod}`, '1');
       this.acik.set(kod, e);
@@ -254,7 +263,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   evreniDisaridanKur({ kod, islemler }: { kod: string; islemler: Islem[] }) {
     if (!kodGecerliMi(kod)) throw new Error('Evren bulunamadı.');
     if (this.kurulum.evrenler().some((x) => x.kod === kod)) return { kod, yeni: false };
-    const e = new EvrenVt(this.ac(`/evren-${kod}.db`), this.kurulum.kod);
+    const e = this.evrenVt(kod);
     if (e.islemSayisi() === 0) e.disaridanAl(islemler);
     const ad = (e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined) ?? 'Adsız evren';
     if (e.db.selectValue("SELECT v FROM evren WHERE k='kod'") !== kod) throw new Error('Gelen evren eksik.');
@@ -3115,7 +3124,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (!dosya.endsWith('.onizleme') && (await icerikAdi(icerik)) !== dosya) throw new Error(`Yedekteki görsel bozuk: ${dosya}`);
       if (!(await this.medya.var(dosya))) await this.medya.yaz(dosya, icerik);
     }
-    const e = new EvrenVt(this.ac(`/evren-${kod}.db`), this.kurulum.kod);
+    const e = this.evrenVt(kod);
     if (e.islemSayisi() > 0) throw new Error('Bu evren bu cihazda zaten var.');
     e.disaridanAl(islemler);
     const adi = (e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined) ?? String(paket.evren.ad);
