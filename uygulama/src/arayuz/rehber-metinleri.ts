@@ -72,7 +72,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       'Sahnenin evren tarihi girilmemişse panel kayıtları belirli bir ana göre süzemez; tarihi girdiğinizde o andaki durum gösterilir. Mekânı, bakış açısını ya da sahnedekileri girdiğinizde onların o andaki durumları da panelde toplanır.',
       'Okurun bilgisi bölümü, okur için kaydettiğiniz bilgi yokken katlı durur. Okur için zaman evren tarihine göre değil, okuma sırasına göre ilerler.',
       'Soldaki çubuğun altındaki özet, yazınızın nerede güvende olduğunu söyler: bu cihazda kayıt, Drive ile eşitleme ve son yedek ayrı satırlardır. Eşitleme başka cihazlara taşır; yedek, geri dönebileceğiniz ayrı bir kopyadır.',
-      'Ctrl+K komut paletini açar: herhangi bir sayfayı ya da kaydı adını yazarak bulabilirsiniz.',
+      'Ctrl+K komut paletini açar: herhangi bir sayfayı ya da kaydı adını yazarak bulabilirsiniz. İki yer arası yolculuk süresini ve takvim günü hesabını da buradan yaparsınız.',
       'Alt+N her ekranda hızlı not açar.',
     ],
   },

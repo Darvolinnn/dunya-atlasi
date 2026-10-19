@@ -142,3 +142,24 @@ test('tarihi olan sahnede bağlam paneli kendiliğinden açık; kapatınca "Bağ
   await panel.getByRole('button', { name: 'Bağlam panelini kapat' }).click();
   await expect(p.getByRole('button', { name: 'Bağlamı göster' })).toBeVisible();
 });
+
+test('komut paletinden takvim günü hesabı ve yolculuk süresi açılır', async ({ page: p }) => {
+  await sahneAc(p);
+  await p.keyboard.press('Control+k');
+  await p.getByLabel('Kayıt ya da komut ara').fill('takvim günü');
+  await p.keyboard.press('Enter');
+  const takvim = p.getByRole('dialog', { name: 'Takvim günü hesabı' });
+  await takvim.getByLabel('Tarih', { exact: true }).fill('412');
+  await takvim.getByLabel('Fark').fill('3 yıl sonra');
+  await expect(takvim.getByRole('status')).toHaveText('Yıl 415');
+  await takvim.getByText('İki tarih arası').click();
+  await takvim.getByLabel('İkinci tarih').fill('414');
+  await expect(takvim.getByRole('status')).toHaveText('366–1.094 gün sonra');
+  await p.keyboard.press('Escape');
+  await expect(takvim).toBeHidden();
+  await p.keyboard.press('Control+k');
+  await p.getByLabel('Kayıt ya da komut ara').fill('yolculuk');
+  await p.keyboard.press('Enter');
+  const yol = p.getByRole('dialog', { name: 'Yolculuk süresi' });
+  await expect(yol.getByRole('button', { name: 'Hesapla' })).toBeDisabled();
+});

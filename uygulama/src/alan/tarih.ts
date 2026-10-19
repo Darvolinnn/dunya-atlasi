@@ -361,6 +361,15 @@ export function karsilastir(a: EvrenTarihi | null, b: EvrenTarihi | null): Karsi
   return 'belirsiz';
 }
 
+/** İki tarih arasındaki gün sayısı [en az, en çok]; b, a'dan önceyse eksi. Uçlardan biri bilinmiyorsa null. */
+export function gunFarki(a: EvrenTarihi | null, b: EvrenTarihi | null): { enAz: number; enCok: number } | null {
+  if (!a?.eksen || !b?.eksen) return null;
+  const { enErken: a1, enGec: a2 } = a.eksen, { enErken: b1, enGec: b2 } = b.eksen;
+  if (a1 === null || a2 === null || b1 === null || b2 === null) return null;
+  const g = (n: number) => Math.floor(n / GUN_PARCA);
+  return { enAz: g(b1) - g(a2), enCok: g(b2) - g(a1) };
+}
+
 /** Eksendeki bir noktanın yılı (ana takvimde). */
 export const eksenYili = (n: number, t: TakvimYa = VARSAYILAN_TAKVIM) => Math.floor(n / yilParcasi(anaTakvim(t)));
 
