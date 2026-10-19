@@ -1418,7 +1418,20 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   }
 
   /** Otomatik kaydetme: editördeki metin tek değişiklik olarak yazılır (TK2). */
-  metinKaydet({ evren, kayit, alan, spans, temel }: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar }) {
+  metinKaydet(a: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar; taslak?: { anahtar: string; zaman: number } }) {
+    const r = this.metniKaydet(a);
+    // Kayıt ile taslağın silinmesi aynı istekte: sayfa arada kapanırsa kayıtlı yazı için eski taslak kalıp
+    // "kurtar" ile ikinci kez eklenmesin. Kayıt isteğinden sonra yazılmış (daha yeni) taslak kalır.
+    if (a.taslak) {
+      const k = this.taslakAnahtari(a.taslak.anahtar);
+      let zaman: number;
+      try { zaman = Number(JSON.parse(this.kurulum.taslak(k) ?? 'null')?.zaman ?? 0); } catch { zaman = 0; }
+      if (zaman <= a.taslak.zaman) this.kurulum.taslakSil(k);
+    }
+    return r;
+  }
+
+  private metniKaydet({ evren, kayit, alan, spans, temel }: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar }) {
     const d = this.belge(this.evren(evren), kayit, alan);
     const simdiki = A.getHeads(d);
     const ayni = JSON.stringify([...simdiki].sort()) === JSON.stringify([...temel].sort());

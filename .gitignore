@@ -3,3 +3,5 @@ deneyler/
 node_modules/
 dist/
 .claude/
+test-results/
+playwright-report/

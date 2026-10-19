@@ -188,10 +188,11 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       if (!kirli || !gorunum.current) return;
       kirli = false;
       const spans = pmNodeToSpans(metinSemasi, gorunum.current.state.doc) as Spans;
+      const istekZamani = Date.now();
       setDurum({ tur: 'kaydediliyor' });
       suren = (async () => {
         try {
-          const r = await istemci.iste('metinKaydet', { evren, kayit, alan, spans, temel });
+          const r = await istemci.iste('metinKaydet', { evren, kayit, alan, spans, temel, taslak: { anahtar, zaman: istekZamani } });
           temel = r.basliklar;
           // Bu arada başka cihazdan gelen değişiklikle birleşti: editör birleşmiş metni gösterir.
           if (r.birlesti && r.spans && !kirli) icerigiDegistir(r.spans);

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
-    "denetle": "tsc --noEmit"
+    "denetle": "tsc --noEmit",
+    "sina:tarayici": "playwright test"
   },
   "dependencies": {
     "@automerge/automerge": "3.5.0",
@@ -24,6 +25,7 @@
     "prosemirror-view": "1.42.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/node": "24.19.1",
     "typescript": "5.9.3",
     "vite": "8.3.2",

@@ -1141,7 +1141,8 @@ export interface Istekler {
   kayitGecmisi(a: { evren: string; kod: string }): GunlukSatiri[];
 
   metinAc(a: { evren: string; kayit: string; alan: string }): { spans: Spans; basliklar: Basliklar };
-  metinKaydet(a: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar }): { basliklar: Basliklar; degisti: boolean; birlesti: boolean; spans?: Spans };
+  /** taslak: bu kayıtla aynı anda silinecek kurtarma taslağı; yalnız kayıt isteğinden önce yazılmışsa silinir (§10.7). */
+  metinKaydet(a: { evren: string; kayit: string; alan: string; spans: Spans; temel: Basliklar; taslak?: { anahtar: string; zaman: number } }): { basliklar: Basliklar; degisti: boolean; birlesti: boolean; spans?: Spans };
   metinSurumu(a: { evren: string; kayit: string; alan: string; basliklar: Basliklar }): { spans: Spans };
   kayitTarih(a: { evren: string; kod: string; ifade?: string; kisitlar?: { olay: string; fark: string }[] | null }): { tarih: EvrenTarihi | null };
   alanKarari(a: { evren: string; kod: string; alan: string; karar: string }): void;

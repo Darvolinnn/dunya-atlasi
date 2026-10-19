@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 79 dosya, 450 sınama, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **57**. Sınama: 80 dosya, 451 sınama; tarayıcıda 7 akış sınaması, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -20,7 +20,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 - Her adım bitince DEVIR.md'de yapılan ve yapılacak adımlar güncellenir ve gönderilir (kullanıcı isteği, 19 Ekim 2026).
 - Kullanıcının açık tercihi: **bir aşama ya da madde bitince onay beklemeden sıradakine geç.** Yalnızca geri alınamaz işlerde (zorla gönderme, toplu silme, dışarıya mesaj) ya da kullanıcının vermesi gereken bir kararda dur ve sor.
 - **Arayüz değişikliklerinde önce taslak:** görünüşü ya da düzeni değiştiren bir işe kodlayarak başlama; önce seçenekli bir taslak göster, kullanıcı seçince kodla (kullanıcı isteği, 19 Ekim 2026).
-- **Her değişiklik kullanıcının bilgisayarına da yüklenir** (19 Ekim 2026): gönderdikten sonra bilgisayarındaki proje klasöründe (yolu proje belleğinde) `main` dalında `git fetch` ve `git merge --ff-only origin/main`; bağımlılıklar değiştiyse PowerShell'de `$env:NODE_ENV='development'; npm install --include=dev` (uygulama klasöründe; ortam üretim modunda olduğundan aksi hâlde geliştirme araçları silinir); `npm run dev` 5173'te çalışır kalsın.
+- **Tamamen bulut (kullanıcı kararı, 19 Ekim 2026, öncekinin yerine):** bütün iş bulut oturumunda yapılır; kullanıcının bilgisayarındaki proje klasörüne, masaüstüne ve oradaki programa dokunulmaz, zip oraya konmaz. Kullanıcı programı denemek isterse klasörü kendisi günceller. Windows denetimini GitHub'daki Windows işi yapar.
 - Tablet ve iPhone denemeleri süresiz ertelendi; yalnız Windows (19 Ekim 2026).
 - Kullanıcı bazen başka ajanları (GPT/Codex, Argon) ayrı dallarda paralel çalıştırır. Onlara verilecek promptları sen yazarsın; dalları sen birleştirir, sürümü sen artırır, denetimi sen yaparsın (bkz. §6).
 
@@ -132,7 +132,7 @@ Arayüzü değiştirenler önce seçenekli taslakla kullanıcıya gösterilir (�
 5. **Bağlam panelinde boş durum:** tarih ve karakter yokken uzun açıklamalar yerine tek kısa cümle ve ilgili eylem; ayrıntı rehbere, okur bilgisi içerik oluşana kadar katlı. *Yapılacak; taslak gerekir.*
 6. **Kayıt / eşitleme / yedek özeti:** "Bu cihazda kaydedildi · Drive'a gönderilecek N değişiklik · Son doğrulanan yedek …" tek bakışta; eşitlendi ile yedek var ayrı söylenir; uzun süre yedek yoksa yazıyı kesmeyen hatırlatma. *Yapılacak; taslak gerekir.*
 7. **Windows uygulamasına geçiş:** PR #1 güncel `main`'i (rehber, Türkçe, bu düzeltmeler) içermiyor; birleştirmeden önce `main` dala alınır. Kabul akışı: tam yedek → uygulamaya ayrı evren olarak yükle → metin/görsel denetimi; eski kopya korunur. Ayarlarda görünen sürüm ve derleme tarihi. Gerçek kurulumda: açılış, yeniden açılış, ikinci başlatma, yedek, geri yükleme, EPUB/PDF, Google izin yenilemesi. *Yapılacak (§3.2'deki PR'a bağlı).*
-8. **Büyük görselde kaldığı yerden yükleme:** `drive.ts` sürdürülebilir oturum açıp tek parça gönderiyor (§3.3-3'te zaten var). İlerleme, iptal, süre sınırı ve kesintiden sonra devam sınaması. *Yapıldı, bkz. §3.2f.*
+8. **Büyük görselde kaldığı yerden yükleme:** `drive.ts` sürdürülebilir oturum açıp tek parça gönderiyor (§3.3-3'te zaten var). İlerleme, iptal, süre sınırı ve kesintiden sonra devam sınaması. *Yapıldı, bkz. §3.2g.*
 9. **Kullanıcı akışı ve hata anı sınamaları:** küçük bir tarayıcı sınaması grubu (yeni evren/sahne, yaz-yeniden aç, `[[` bağlantısı, rehber paneli, yedek ve ayrı evren olarak geri yükleme); kayıt sürerken sahne değiştirme, taslak yazılamazken kapatma, süreç öldürme, yedekten dönüşte karşılaştırma, iki kopyada çatışma. Kapanışta taslak yazımı çalışana asenkron gider; yazıldığı ayrıca kanıtlanmalı. *Yapılacak.*
 10. **Performans ve bakım:** temsili büyük evrende (ör. 50.000 işlem) açılış, arama, sahne değiştirme, kaydetme, yeniden kurma, yedekten dönüş süreleri ölçülür (§3.3-3'teki ölçümle aynı iş). `hizmet.ts`, `izdusum.ts`, `api.ts` baştan yazılmaz; bir hata düzeltilirken ilgili kısım küçük modüle taşınır. Seyrek açılan ekranların ihtiyaç anında yüklenmesi değerlendirilir. *Öneri.*
 
@@ -149,10 +149,10 @@ Kullanıcı etkileşimli bir taslak ve gerekçe belgesi gönderdi (ekler depoda 
 Kullanıcı "şu 4'ü de yap" dedi (5, 6, 8, 9). 5 ve 6 ekranı değiştirir: önce taslak; kullanıcı aynı anda "rehberli arayüz" yaklaşımı gönderdi (§3.2f), 5 ve 6'nın taslakları o yaklaşımla uyumlu olacak ve ekran kodu o öneri netleşince yazılacak.
 
 - [x] **8. Büyük dosyada kaldığı yerden yükleme (TK5):** `drive.ts` artık 5 MB üstünü 8 MB'lık parçalarla gönderiyor; bağlantı koparsa, parça 2 dakikada bitmezse ya da Drive geçici hata verirse ulaşan bayt sorulup oradan sürüyor (en çok 5 deneme). Yükleme adresi kurulum veritabanında (`ayar`, `yukleme:<içerik özeti>:<ad>:<id>`) saklanıyor; program kapanıp açılınca da sürer, aynı adla farklı içerik sürdürmez, Drive adresi unuttuysa yeniden başlar. Bağlantı kesilince (`baglantiyiKes`) sürmekte olan istekler durur. İlerleme eşitleme durumunda (`yukleme`) ve alttaki eşitleme özetinde "Büyük dosya gönderiliyor · %40". Sınama `test/drive-yukleme.test.ts` (sahte Drive). Gerçek Drive'da denenmedi: 308 yanıtındaki `Range` başlığı tarayıcıdan okunamazsa ulaşan kısım 0 sayılır (doğru ama baştan gönderir)
-- [ ] **9. Kullanıcı akışı ve hata anı sınamaları:** tarayıcı sınaması grubu (Playwright) ve kayıt güvenilirliği sınırları
+- [x] **9. Kullanıcı akışı ve hata anı sınamaları:** tarayıcı sınamaları `uygulama/e2e/akislar.spec.ts` (Playwright; `npm run sina:tarayici`; yerelde hazır Chromium için `PW_CHROMIUM=<yol>`), otomatik denetimde ayrı `tarayici` işi. Kapsam: yeni evren → eser → sahne → yaz → yeniden aç; `[[` bağlantısı; rehber paneli ve Esc; dosyaya yedek → ayrı evren olarak geri yükleme → metin yerinde; kayıt sürerken başka sahneye geçme; yazıp beklemeden sayfayı kapatma; veri bölümü yüklenemeyince hata ekranı. İki kopyada çatışma ve yedekten dönüş karşılaştırması zaten birim sınamalarında (`catisma`, `esitleme`, `tasima`). **Bulunan hata düzeltildi:** kayıttan hemen sonra sayfa kapanırsa kayıtlı yazının eski taslağı kalıyor, açılışta "kaydedilmemiş yazı bulundu" çıkıyor ve "Kurtar" yazıyı ikinci kez ekliyordu. Artık `metinKaydet` taslağı aynı istekte siler (yalnız kayıt isteğinden önce yazılmışsa; `test/taslak-kayit.test.ts`)
 - [ ] **5. Bağlam panelinde boş durum:** taslak, rehberli arayüz önerisiyle uyumlu
 - [ ] **6. Kayıt / eşitleme / yedek özeti:** taslak, rehberli arayüz önerisiyle uyumlu
-- [ ] Kullanıcı seçince 5 ve 6'yı kodla; DEVIR, zip, bilgisayardaki klasör
+- [ ] Kullanıcı seçince 5 ve 6'yı kodla; DEVIR (tamamen bulut: zip ve bilgisayar yok)
 
 ### 3.3 Kalan işler (önerilen sıra)
 
