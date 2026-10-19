@@ -83,6 +83,8 @@ import type { UyarlamaTanimi } from '../veri/api';
 import * as dairInanc from './dair-inanc';
 import { SANILAN_DURUMLAR } from '../alan/bilgi';
 import * as kimlik from './kimlik';
+import * as parca from './baglam-parcasi';
+import type { BaglamParcasiTanimi } from '../veri/api';
 import type { DairInancTanimi } from '../veri/api';
 import * as donusum from './donusum';
 import type { DonusumGirdisi, DonusumYeniKaydi, DonusumDegeri } from '../veri/api';
@@ -510,6 +512,13 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           degerler: degerler.map((d) => { const t = d.deger as { kisi?: string; yer?: string; tarih?: string; beklenen?: string } | null; return { ...d, yazi: t ? `${kayitAdi(t.kisi ?? '')} · ${kayitAdi(t.yer ?? '')}${t.tarih ? ` · ${t.tarih}` : ''}: ${bek(t.beklenen)}` : '(boş)' }; }) });
         continue;
       }
+      const bpr = iliski || dr || alan !== 'baglam_parcasi' ? undefined : e.db.selectObject('SELECT kayit FROM baglam_parcalari WHERE kod=?', [nesne]);
+      if (bpr) {
+        const kip = (a: { kip: string } | undefined, deger: string) => a?.kip === 'sahne' ? 'sahneyle aynı' : a?.kip === 'bos' ? 'belirtilmemiş' : deger;
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: bpr.kayit as string, baslik: `${kayitAdi(bpr.kayit as string)} · sahne içindeki bir parça`, alanEtiketi: 'Parçanın bağlamı',
+          degerler: degerler.map((d) => { const t = d.deger as parca.SakliParca | null; return { ...d, yazi: t ? `tarih: ${kip(t.tarih, t.tarih.deger?.ifade ?? '')} · yer: ${kip(t.yer, kayitAdi(t.yer.kod ?? ''))} · bakış: ${kip(t.bakis, kayitAdi(t.bakis.kod ?? ''))}${t.not ? ` · ${t.not}` : ''}` : '(boş)' }; }) });
+        continue;
+      }
       const dir = iliski || dr || alan !== 'dair_inanc' ? undefined : e.db.selectObject('SELECT i.konu, i.soru FROM dair_inanclar d JOIN iddialar i ON i.kod=d.iddia WHERE d.kod=?', [nesne]);
       if (dir) {
         const san = (k: unknown) => SANILAN_DURUMLAR.find((x) => x.kod === k)?.ad ?? '';
@@ -922,6 +931,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     const kor = alan === 'kural_ornegi' ? e.db.selectObject('SELECT o.kural, h.sahip, h.tanim FROM kural_ornekleri o JOIN hukuk_kurallari h ON h.kod=o.kural WHERE o.kod=?', [nesne]) : undefined;
     if (kor) { this.yaz(evren, [{ tur: 'kural_ornegi_yaz', veri: { kod: nesne, kural: kor.kural, tanim: deger, kuralAd: (JSON.parse(kor.tanim as string) as { ad: string }).ad, sahip: kor.sahip, cozum: true } }], [kor.sahip as string]); return; }
+    const bpr = alan === 'baglam_parcasi' ? e.db.selectObject('SELECT kayit, alan FROM baglam_parcalari WHERE kod=?', [nesne]) : undefined;
+    if (bpr) { this.yaz(evren, [{ tur: 'baglam_parcasi_yaz', veri: { kod: nesne, kayit: bpr.kayit, alan: bpr.alan, tanim: deger, cozum: true } }], [bpr.kayit as string]); return; }
     const dir = alan === 'dair_inanc' ? e.db.selectObject('SELECT d.iddia, i.konu FROM dair_inanclar d JOIN iddialar i ON i.kod=d.iddia WHERE d.kod=?', [nesne]) : undefined;
     if (dir) { this.yaz(evren, [{ tur: 'dair_inanc_yaz', veri: { kod: nesne, iddia: dir.iddia, tanim: deger, konu: dir.konu, cozum: true } }], [dir.konu as string]); return; }
     const hkr = e.db.selectObject('SELECT sahip FROM hukuk_kurallari WHERE kod=?', [nesne]);
@@ -1751,18 +1762,27 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   }
 
   /** Sahnenin evren tarihindeki hâli (§5.5): katılımcıların durumu, o tarihte süren ilişkileri, önceki değişimleri; mekânın durumu. */
-  sahneBaglami({ evren, sahne }: { evren: string; sahne: string }): SahneBaglami {
+  sahneBaglami({ evren, sahne, parca: parcaKod = null }: { evren: string; sahne: string; parca?: string | null }): SahneBaglami {
     const e = this.evren(evren);
     this.kayitVarMi(e, sahne);
-    const an = this.olayTarihi(e, sahne);
+    // İmlecin bulunduğu bağlam parçası (F29) sahnenin tarihini, yerini ve bakış açısını değiştirebilir.
+    const p = parcaKod ? parca.parcaOku(e, parcaKod) : null;
+    if (p && p.kayit !== sahne) throw new Error('Bağlam parçası bu sahnede değil.');
+    const an = !p || p.tarih.kip === 'sahne' ? this.olayTarihi(e, sahne) : p.tarih.deger;
     const db = this.durumBaglami(evren);
     const tek = (alan: SahneAlani): KisaKayit | null => {
       const m = this.sahneIliskileri(e, sahne, alan)[0];
       return m ? { kod: m.kod, ad: m.ad, tur: m.tur } : null;
     };
     const gorunur = <T extends { gecerli?: string }>(x: T) => x.gecerli !== 'hayir';
-    const yer = tek('sahne_yeri');
-    const bakis = tek('bakis'), anlatici = tek('anlatici'), odak = tek('odak');
+    const parcadan = (a: { kip: string; kod: string | null } | undefined, varsayilan: KisaKayit | null): KisaKayit | null => {
+      if (!a || a.kip === 'sahne') return varsayilan;
+      if (a.kip === 'bos' || !a.kod) return null;
+      const r = e.db.selectObject('SELECT kod, ad, tur FROM kayitlar WHERE kod=? AND silindi IS NULL', [yonlendir(e.db, a.kod)]);
+      return r ? { kod: r.kod as string, ad: r.ad as string, tur: r.tur as string } : null;
+    };
+    const yer = parcadan(p?.yer, tek('sahne_yeri'));
+    const bakis = parcadan(p?.bakis, tek('bakis')), anlatici = tek('anlatici'), odak = tek('odak');
 
     const katilim = new Map<string, KisaKayit & { roller: string[] }>();
     const ekle = (k: KisaKayit, rol: string) => {
@@ -2235,6 +2255,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   dairInanclar({ evren, iddia }: { evren: string; iddia: string }) { return dairInanc.dairInanclar(this.durumBaglami(evren), iddia); }
   dairInancYaz({ evren, iddia, kod = null, tanim }: { evren: string; iddia: string; kod?: string | null; tanim: DairInancTanimi }) { return dairInanc.dairInancYaz(this.durumBaglami(evren), iddia, kod, tanim); }
   dairInancSil({ evren, kod }: { evren: string; kod: string }) { dairInanc.dairInancSil(this.durumBaglami(evren), kod); }
+  // ---------- Sahne içinde bağlam parçaları (F29) ----------
+  private parcaBaglami(evren: string): parca.ParcaBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
+  baglamParcalari({ evren, kayit }: { evren: string; kayit: string }) { return parca.parcalar(this.evren(evren), kayit); }
+  baglamParcasiOlustur({ evren, kayit, alan, tanim }: { evren: string; kayit: string; alan: string; tanim: BaglamParcasiTanimi }) { return parca.parcaOlustur(this.parcaBaglami(evren), kayit, alan, tanim); }
+  baglamParcasiYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: BaglamParcasiTanimi }) { parca.parcaYaz(this.parcaBaglami(evren), kod, tanim); }
+  baglamParcasiSil({ evren, kod }: { evren: string; kod: string }) { parca.parcaSil(this.parcaBaglami(evren), kod); }
   // ---------- Kişi, kimlik ve beden (F06) ----------
   private kimlikBaglami(evren: string): kimlik.KimlikBaglami {
     const e = this.evren(evren);

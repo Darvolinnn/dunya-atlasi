@@ -69,6 +69,9 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   useEffect(() => { if (kayit) document.title = `${kayit.ad} · Dünya Atlası`; return () => { document.title = 'Dünya Atlası'; }; }, [kayit?.ad]);
 
   const sahneBaglami = useSahneBaglami(istemci, evren, kayit?.tur === 'sahne' ? kod : null);
+  const [imlecParcasi, setImlecParcasi] = useState<string | null>(null);
+  useEffect(() => setImlecParcasi(null), [kod]);
+  const parcaBaglami = useSahneBaglami(istemci, evren, kayit?.tur === 'sahne' && imlecParcasi ? kod : null, imlecParcasi);
   const ks = useKayitSablonu(istemci, evren, kod);
 
   if (hata) return <main class="sayfa"><p class="hata">{hata}</p><a href={`#/e/${evren}`}>Kayıtlara dön</a></main>;
@@ -162,10 +165,11 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {kayit.tur === 'haber' && <HaberYayilimiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {kayit.tur === 'yolculuk' && <YolculukBolumu istemci={istemci} evren={evren} kayit={kayit} />}
 
-        <MetinEditoru saltOkunur={bag?.tur === 'surum'} key={editorAnahtari} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} baslangic={editorAnahtari === 0 ? baslangic : null} />
+        <MetinEditoru saltOkunur={bag?.tur === 'surum'} key={editorAnahtari} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} baslangic={editorAnahtari === 0 ? baslangic : null}
+          baglamParcalari={kayit.tur === 'sahne'} parcaDegisti={setImlecParcasi} />
 
         {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}
-        {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={sahneBaglami} />}
+        {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={imlecParcasi && parcaBaglami ? parcaBaglami : sahneBaglami} parca={!!(imlecParcasi && parcaBaglami)} />}
         <IsaretlerBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />
         {kayit.tur === 'sahne' && <SahneYerlesimi key={kod} istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
         {kayit.tur === 'eser' && <EserSozlesmesiBolumu key={kod} istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}

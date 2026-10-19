@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 49;
+export const IZDUSUM_SURUMU = 50;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -251,6 +251,15 @@ CREATE TABLE IF NOT EXISTS dair_inanclar(
   silindi INTEGER
 );
 CREATE INDEX IF NOT EXISTS dair_inanclar_iddia ON dair_inanclar(iddia);
+CREATE TABLE IF NOT EXISTS baglam_parcalari(
+  kod TEXT PRIMARY KEY,
+  kayit TEXT NOT NULL,
+  alan TEXT NOT NULL,
+  tanim TEXT NOT NULL,
+  olusturma INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE INDEX IF NOT EXISTS baglam_parcalari_kayit ON baglam_parcalari(kayit);
 CREATE TABLE IF NOT EXISTS dayaniklilik(
   iliski TEXT PRIMARY KEY,
   deger TEXT NOT NULL
@@ -738,6 +747,7 @@ IZDUSUM_TABLOLARI.push('bakim_tanimlari', 'bakim_kayitlari');
 IZDUSUM_TABLOLARI.push('kural_ornekleri');
 IZDUSUM_TABLOLARI.push('uyarlama_eslemeleri');
 IZDUSUM_TABLOLARI.push('dair_inanclar');
+IZDUSUM_TABLOLARI.push('baglam_parcalari');
 IZDUSUM_TABLOLARI.push('donusum_kayitlari');
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -1211,6 +1221,16 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   kural_ornegi_sil(db, i) {
     db.exec({ sql: 'UPDATE kural_ornekleri SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  /** Sahne içinde bağlam parçası (F29). */
+  baglam_parcasi_yaz(db, i) {
+    const { kod, kayit, alan, tanim } = i.veri as { kod: string; kayit: string; alan: string; tanim: unknown };
+    if (typeof kod !== 'string' || typeof kayit !== 'string' || typeof alan !== 'string' || !tanim || typeof tanim !== 'object') return;
+    db.exec({ sql: 'INSERT INTO baglam_parcalari(kod, kayit, alan, tanim, olusturma) VALUES(?,?,?,?,?) ON CONFLICT(kod) DO UPDATE SET tanim=excluded.tanim', bind: [kod, kayit, alan, JSON.stringify(tanim), i.zaman] });
+    alanYaz(db, i, kod, 'baglam_parcasi', tanim);
+  },
+  baglam_parcasi_sil(db, i) {
+    db.exec({ sql: 'UPDATE baglam_parcalari SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
   },
   /** Başkasının bilgisine dair inanç (F05). */
   dair_inanc_yaz(db, i) {

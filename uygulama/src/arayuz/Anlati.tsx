@@ -238,16 +238,17 @@ export function SahneAlanlari({ istemci, evren, kayit, baglam }: { istemci: Iste
 
 // ---------- Sahne bağlam paneli (§5.5) ----------
 /** Sahne değilse (sahne null) hiçbir şey okunmaz. */
-export function useSahneBaglami(istemci: Istemci, evren: string, sahne: string | null) {
-  return useYukle<SahneBaglami | null>(istemci, evren, () => (sahne ? istemci.iste('sahneBaglami', { evren, sahne }) : Promise.resolve(null)), [sahne])[0];
+export function useSahneBaglami(istemci: Istemci, evren: string, sahne: string | null, parca: string | null = null) {
+  return useYukle<SahneBaglami | null>(istemci, evren, () => (sahne ? istemci.iste('sahneBaglami', { evren, sahne, parca }).catch(() => null) : Promise.resolve(null)), [sahne, parca])[0];
 }
 
-export function SahneBaglamPaneli({ evren, baglam }: { evren: string; baglam: SahneBaglami | null }) {
+export function SahneBaglamPaneli({ evren, baglam, parca = false }: { evren: string; baglam: SahneBaglami | null; parca?: boolean }) {
   if (!baglam) return null;
   const { tarih, yer, katilimcilar } = baglam;
   return (
     <section class="baglam-paneli" aria-label="Sahnenin bağlamı">
-      <h2>Sahnenin bağlamı</h2>
+      <h2>{parca ? 'İmlecin bulunduğu parçanın bağlamı' : 'Sahnenin bağlamı'}</h2>
+      {parca && <p class="soluk kucuk">Bu parçanın kendi tarihi, yeri ya da bakış açısı var; aşağıdakiler ona göre. Parçanın dışına çıkınca sahnenin bağlamı döner.</p>}
       {tarih
         ? <p class="soluk kucuk">Her şey sahnenin evren tarihine göre: <strong>{tarih.ifade}</strong>. “Belki” işaretliler bu tarihte geçerli olabilir de olmayabilir de.</p>
         : <p class="uyari kucuk">Bu sahnenin evren tarihi girilmemiş. Aşağıdakiler belirli bir ana göre süzülmedi; tarih girince o andaki hâl gösterilir.</p>}

@@ -540,6 +540,13 @@ export interface DonusumYeniKaydi { kod: string; ad: string; tur: string }
 export interface DonusumDegeri { tanim: DonusumTanimi; geriAlindi: boolean }
 export interface DonusumOkumasi extends DonusumDegeri { kod: string; kaynaklar: KisaKayit[]; hedefler: KisaKayit[]; olay: KisaKayit | null; catismali: boolean }
 export interface DonusumSecenekleri { kayitlar: KisaKayit[]; iliskiler: { kod: string; a: string; b: string; ad: string }[] }
+/** Sahne içinde bağlam parçası (F29): her alan sahneyle aynı, belirtilmemiş ya da parçaya özgü. */
+export type ParcaKipi = 'sahne' | 'bos' | 'deger';
+export interface BaglamParcasiTanimi { tarih: { kip: ParcaKipi; ifade?: string }; yer: { kip: ParcaKipi; kod?: string | null }; bakis: { kip: ParcaKipi; kod?: string | null }; not: string }
+export interface BaglamParcasi {
+  kod: string; metin: string[]; not: string;
+  tarih: { kip: ParcaKipi; ifade: string }; yer: { kip: ParcaKipi; kayit: KisaKayit | null }; bakis: { kip: ParcaKipi; kayit: KisaKayit | null };
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1044,7 +1051,7 @@ export interface Istekler {
   durumNiyeti(a: { evren: string; kod: string; alan: 'deger' | 'hedef'; deger: unknown; niyet: 'eski_duzelt' | 'bu_tarihten' | 'taslakta' | 'inanc'; tarih?: SinirGirdisi | null; bilen?: string | null }): { evren: string };
   ozellikAdlari(a: { evren: string }): string[];
   sahneAlaniAyarla(a: { evren: string; sahne: string; alan: SahneAlani; kayit: string | null }): void;
-  sahneBaglami(a: { evren: string; sahne: string }): SahneBaglami;
+  sahneBaglami(a: { evren: string; sahne: string; parca?: string | null }): SahneBaglami;
   sablon(a: { evren: string; tur: string }): SablonBilgisi;
   sablonYaz(a: { evren: string; tur: string; sablon: Sablon | null }): void;
   kayitSablonu(a: { evren: string; kod: string }): KayitSablonu;
@@ -1269,6 +1276,10 @@ export interface Istekler {
   kimlikAyir(a: { evren: string; kisi: string; ad: string; iliskiler: string[]; baslangic?: string; bitis?: string }): { kod: string };
   kimlikBirlestirOnizle(a: { evren: string; kisi: string; diger: string }): string[];
   kimlikBirlestir(a: { evren: string; kisi: string; diger: string; baslangic?: string; bitis?: string }): void;
+  baglamParcalari(a: { evren: string; kayit: string }): BaglamParcasi[];
+  baglamParcasiOlustur(a: { evren: string; kayit: string; alan: string; tanim: BaglamParcasiTanimi }): { kod: string };
+  baglamParcasiYaz(a: { evren: string; kod: string; tanim: BaglamParcasiTanimi }): void;
+  baglamParcasiSil(a: { evren: string; kod: string }): void;
   donusumListesi(a: { evren: string; kayit: string }): DonusumOkumasi[];
   donusumSecenekleri(a: { evren: string }): DonusumSecenekleri;
   donusumYaz(a: { evren: string; kod?: string | null; tanim: DonusumGirdisi; yeniKayitlar?: DonusumYeniKaydi[] }): { kod: string };
