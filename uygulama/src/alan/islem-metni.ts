@@ -55,6 +55,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   metin_isareti_sil: (v, ad) => `${ad(v.kayit)}: cümle işareti kaldırıldı`,
   metin_isareti_geri_yukle: (v, ad) => `${ad(v.kayit)}: cümle işareti geri getirildi`,
   belge_sunumu_yaz: (v, ad) => `${ad(v.kod)}: belgenin sunumu değişti`,
+  gokyuzu_yaz: () => 'Gökyüzü tanımı değişti',
   derleme_yaz: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'}: ${v.alan === 'ad' ? (v.derlemeAd === v.deger ? 'oluşturuldu' : `adı “${v.deger}” oldu`) : v.derlemeTuru === 'pano' ? 'görseller değişti' : 'adımlar değişti'}`,
   derleme_sil: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'} kaldırıldı`,
   derleme_geri_yukle: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'} geri getirildi`,

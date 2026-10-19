@@ -15,7 +15,7 @@ import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ekKalibi, ekYaz, kokAdaylari, sesBilgisi } from '../alan/turkce-ek';
 import { kararGecerli, turBul, turGecerli } from '../alan/turler';
-import type { BelgeSunumu, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { BelgeSunumu, GokyuzuKosulu, GokyuzuTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import { KurulumVt } from './kurulum-vt';
@@ -50,6 +50,7 @@ import * as yayimMod from './yayim';
 import * as cikti from './cikti';
 import * as belgeMod from './belge';
 import * as isaretMod from './metin-isaret';
+import * as gokyuzu from './gokyuzu';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -516,6 +517,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           degerler: degerler.map((d) => ({ ...d, yazi: bic(d.deger) })) });
         continue;
       }
+      if (!iliski && alan === 'gokyuzu') {
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: 'Gökyüzü', alanEtiketi: 'Gökyüzü tanımı',
+          degerler: degerler.map((d) => ({ ...d, yazi: gokyuzu.tanimYazisi(d.deger) })) });
+        continue;
+      }
       if (!iliski && alan === 'gundelik') {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: 'Gündelik hayat kartları',
           degerler: degerler.map((d) => ({ ...d, yazi: `${(d.deger as unknown[] | null)?.length ?? 0} kart` })) });
@@ -846,6 +852,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const mir = e.db.selectObject('SELECT kayit FROM metin_isaretleri WHERE kod=?', [nesne]);
     if (mir) { this.yaz(evren, [{ tur: 'metin_isareti_yaz', veri: { kod: nesne, kayit: mir.kayit, alan, deger, cozum: true } }], [mir.kayit as string]); return; }
     if (!iliski && alan === 'belge_sunumu') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'belge_sunumu_yaz', veri: { kod: nesne, sunum: deger ?? belgeMod.BOS_SUNUM, cozum: true } }], [nesne]); return; }
+    if (!iliski && nesne === 'evren' && alan === 'gokyuzu') { this.yaz(evren, [{ tur: 'gokyuzu_yaz', veri: { tanim: deger, cozum: true } }], gokyuzu.ilgiliKayitlar(deger)); return; }
     if (!iliski && alan === 'gundelik') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'gundelik_yaz', veri: { yer: nesne, kartlar: deger ?? [], cozum: true } }], [nesne]); return; }
     if (!iliski && alan === 'niyetler') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'sahne_niyeti_yaz', veri: { sahne: nesne, niyetler: deger ?? [], cozum: true } }], [nesne]); return; }
     if (!iliski && alan.startsWith('hedef:')) { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'montaj_hedefi_yaz', veri: { eser: nesne, iddia: alan.slice(6), hedef: deger, cozum: true } }], [nesne]); return; }
@@ -2093,6 +2100,25 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   siradanGun({ evren, yer, donem, statu }: { evren: string; yer: string; donem?: string | null; statu?: string | null }) { return gundelik.siradanGun(this.evren(evren), yer, donem ?? null, statu ?? null); }
   karsilastirmaliOkuma({ evren, sutunlar }: { evren: string; sutunlar: { kayit: string; tarih: string | null }[] }) {
     return gundelik.karsilastirmaliOkuma(this.evren(evren), sutunlar, (kod, an) => durum.durumlar(this.durumBaglami(evren), kod, an ?? undefined));
+  }
+  gokyuzuTanimi({ evren }: { evren: string }) { return gokyuzu.tanimOku(this.evren(evren)); }
+  gokyuzuYaz({ evren, tanim }: { evren: string; tanim: GokyuzuTanimi }) {
+    const e = this.evren(evren);
+    const deger = gokyuzu.tanimDogrula(tanim, zamanSetiOku(e.db));
+    for (const k of gokyuzu.ilgiliKayitlar(deger)) {
+      this.kayitVarMi(e, k);
+      const tur = e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=? AND silindi IS NULL', [k]);
+      if (!['mekan', 'sehir'].includes(String(tur))) throw new Error('Gelgit için bir kıyı yeri seçin.');
+    }
+    this.yaz(evren, [{ tur: 'gokyuzu_yaz', veri: { tanim: deger } }], gokyuzu.ilgiliKayitlar(deger));
+  }
+  gokyuzuHesapla({ evren, tarih }: { evren: string; tarih: string }) {
+    const e = this.evren(evren);
+    return gokyuzu.hesapla(gokyuzu.hesapTanimi(e), zamanSetiOku(e.db), tarih);
+  }
+  gokyuzuCakismaAra({ evren, baslangic, bitis, kosullar, mevsim }: { evren: string; baslangic: string; bitis: string; kosullar: GokyuzuKosulu[]; mevsim?: string | null }) {
+    const e = this.evren(evren);
+    return gokyuzu.cakismaAra(gokyuzu.hesapTanimi(e), zamanSetiOku(e.db), baslangic, bitis, kosullar, mevsim);
   }
   // ---------- Adlandırılmış evren sürümleri (§9.7) ----------
   private anaEvren(evren: string) {
