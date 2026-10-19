@@ -46,6 +46,7 @@ import * as gundelik from './gundelik';
 import * as sozluk from './sozluk';
 import * as niyetMod from './degisiklik-niyeti';
 import * as degMasa from './degisiklik-masasi';
+import * as kosulMod from './kosul-masasi';
 import * as yerlesim from './yerlesim';
 import * as derlemeMod from './derleme';
 import * as fark from './fark';
@@ -2097,6 +2098,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   hukukKuraliSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { hukuk.hukukKuraliSil(this.hukukBaglami(evren), kod, !!geriYukle); }
   uygulananKurallar({ evren, kisi, yer, tarih = null }: { evren: string; kisi: string; yer: string; tarih?: string | null }) { return hukuk.uygulananKurallar(this.evren(evren), kisi, yer, tarih); }
   // ---------- Üretim, kesinti, besin ağı (§15-5, F10) ----------
+  kosulMasasi({ evren, paket, ...g }: kosulMod.KosulGirdisi & { evren: string; paket?: string | null }) {
+    const e = this.evren(evren);
+    return kosulMod.kosulMasasi(e, g, masaMod.paketEtkisi(e, paket));
+  }
   enKisaRota({ evren, nereden, nereye, kosul, kisi, paket }: { evren: string; nereden: string; nereye: string; kosul?: string | null; kisi?: string | null; paket?: string | null }) {
     const e = this.evren(evren);
     return haber.enKisaRota(e, nereden, nereye, kosul || null, kisi || null, masaMod.paketEtkisi(e, paket));

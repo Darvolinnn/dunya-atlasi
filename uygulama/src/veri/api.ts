@@ -292,6 +292,12 @@ export interface DegisiklikMasasi {
   olay: KisaKayit; once: string; sonra: string;
   hesap: MasaSatiri[]; celisen: (KisaKayit & { aciklama: string })[]; incelenecek: EtkiSatiri[]; bahseden: EtkiSatiri[];
 }
+/** §15-13 sonuçtan koşullara masası (F03). */
+export interface KosulPlani { adimlar: RotaAdimi[]; toplam: number; pay: number; varis: string | null; bilinmeyen: KisaKayit[]; gerekenler: string[] }
+export interface KosulMasasi {
+  tur: 'kayıtlı ağa göre zorunlu sonuç'; hukum: 'çözüm bulundu' | 'kayıtlı seçeneklerde bulunamadı'; guncellik: 'güncel';
+  planlar: KosulPlani[]; dahaFazla: boolean; nedenler: string[]; suresizler: KisaKayit[]; kapsam: string; varsayimlar: string[];
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -929,6 +935,7 @@ export interface Istekler {
   kisiDilleri(a: { evren: string; kod: string }): KisiDili[];
   dilYeterliligiYaz(a: { evren: string; iliski: string; deger: DilYeterliligi | null }): void;
   enKisaRota(a: { evren: string; nereden: string; nereye: string; kosul?: string | null; kisi?: string | null; paket?: string | null }): RotaSonucu;
+  kosulMasasi(a: { evren: string; nereden: string; nereye: string; enCokGun: number; cikis?: string | null; kosul?: string | null; kisi?: string | null; yasakRotalar?: string[]; yasakYerler?: string[]; paket?: string | null }): KosulMasasi;
   kanal(a: { evren: string; kod: string }): KanalTanimi;
   kanalYaz(a: { evren: string; kod: string; tanim: KanalTanimi }): void;
   haberCikisi(a: { evren: string; kod: string }): HaberCikisi;

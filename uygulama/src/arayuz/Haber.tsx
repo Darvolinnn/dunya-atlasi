@@ -11,7 +11,7 @@ const gun = (n: number) => `${n.toLocaleString('tr-TR', { maximumFractionDigits:
 const bag = (evren: string, k: KisaKayit) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
 type Secim = { kod: string; ad: string };
 
-function PaketSecimi({ istemci, evren, paket, sec, id }: { istemci: Istemci; evren: string; paket: string | null; sec: (p: string | null) => void; id: string }) {
+export function PaketSecimi({ istemci, evren, paket, sec, id }: { istemci: Istemci; evren: string; paket: string | null; sec: (p: string | null) => void; id: string }) {
   const [paketler, setPaketler] = useState<PaketOzeti[]>([]);
   useEffect(() => { istemci.iste('paketler', { evren }).then(setPaketler, () => {}); }, [evren]);
   if (!paketler.length) return null;

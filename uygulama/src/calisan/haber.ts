@@ -17,7 +17,7 @@ export interface HaberBaglami {
   yaz(girdiler: IslemGirdisi[], kayitlar: string[]): void;
 }
 
-interface Kenar { a: string; b: string; gun: number | null; kod: string; ad: string; kosul: string | null }
+export interface Kenar { a: string; b: string; gun: number | null; kod: string; ad: string; kosul: string | null }
 
 const kisa = (e: EvrenVt, kod: string): KisaKayit => {
   const k = yonlendir(e.db, kod) as string;
@@ -32,7 +32,7 @@ function kayitTuru(e: EvrenVt, kod: unknown): string {
 const gunYaz = (n: number) => `${n.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} gün`;
 
 /** Rotaların kenarları: koşul verilirse o koşuldaki süre, verilmezse en kısa tanımlı süre; süre yoksa null. */
-function rotaKenarlari(e: EvrenVt, kosul: string | null, p: PaketEtkisi | null, carpan = 1, izinli?: Set<string>): Kenar[] {
+export function rotaKenarlari(e: EvrenVt, kosul: string | null, p: PaketEtkisi | null, carpan = 1, izinli?: Set<string>): Kenar[] {
   return rotalar(e).filter((r) => r.a && r.b && p?.rota.get(r.kod) !== false && (!izinli || izinli.has(r.kod))).map((r) => {
     const s = kosul ? r.sureler.find((x) => x.kosul === kosul) ?? null : enKisaSure(r.sureler);
     return { a: r.a!, b: r.b!, gun: s ? s.gun * carpan : null, kod: r.kod, ad: r.ad, kosul: s?.kosul ?? null };
