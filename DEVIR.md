@@ -81,7 +81,7 @@ Kullanıcı kuralı: her adım bitince bu liste güncellenir ve gönderilir; yap
 
 - [x] Kullanıcı TK8 taslağını onayladı, sayılarla birlikte seçti (19 Ekim 2026)
 - [x] Sözleşmeyi tasarım belgesine yaz (§18.1 "Kural ve formül dili", §1.3 TK8 satırı, geçmiş dosyasına bir satır)
-- [ ] Şablonlara birimli sayı alanı ekle (nicelik türü, birim, hassasiyet)
+- [x] Şablonlara birimli sayı alanı ekle (nicelik türü, birim, hassasiyet): `alan/nicelik.ts`, değer alanın birimine çevrilip `{ enAz, enCok, birim }` olarak saklanır; boşken varsayılan ayarı şablon kaydında artık korunuyor
 - [ ] Formül çözümleyici ve üç değerli değerlendirme (alan/formul.ts)
 - [ ] Hukuk kuralının "kimlere" kısmına formül alanı; kural atölyesi örnekleriyle sınama
 - [ ] Arayüz: formül yazma, hatanın yerini gösterme

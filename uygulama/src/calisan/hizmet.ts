@@ -100,6 +100,7 @@ import * as kaliciIz from './kalici-iz';
 import type { KaliciIzTuru } from '../veri/api';
 import * as olcekli from './olcekli';
 import type { OlcekliAraziGirdisi, OlcekliHizKurali, OlcekliOlcekTanimi } from '../veri/api';
+import { sayiDegeriMi, sayiMetni } from '../alan/nicelik';
 
 export type DosyaAcici = (ad: string) => Database;
 export type Bildirici = (evren: string, turler: string[], kayitlar: string[], uzaktan?: boolean) => void;
@@ -859,6 +860,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (deger === null || deger === undefined) return '(boş)';
       if (deger === true) return 'Evet';
       if (typeof deger === 'object' && 'ifade' in (deger as object)) return (deger as { ifade: string }).ifade;
+      if (sayiDegeriMi(deger)) return sayiMetni(deger);
       const secenek = MESELE_DURUMLARI.find((x) => x.kod === deger);
       if (alan === 'f:durum' && secenek) return secenek.ad;
       const tur = e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [nesne]) as string | undefined;

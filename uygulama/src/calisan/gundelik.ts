@@ -8,6 +8,7 @@ import type { DurumSatiri, GundelikKart, KarsilastirmaliOkuma, KisaKayit, Sirada
 import type { EvrenVt } from './evren-vt';
 import { yonlendir, zamanSetiOku } from './izdusum';
 import { kayitSablonu } from './sablon';
+import { sayiDegeriMi, sayiMetni } from '../alan/nicelik';
 
 export interface GundelikBaglami {
   e: EvrenVt;
@@ -96,6 +97,7 @@ export function siradanGun(e: EvrenVt, yer: string, donem: string | null, statu:
 const degerYazisi = (d: unknown, secenekler?: { kod: string; ad: string }[]): string | null => {
   if (d === null || d === undefined || d === '') return null;
   if (typeof d === 'object' && d && 'ifade' in d) return (d as EvrenTarihi).ifade;
+  if (sayiDegeriMi(d)) return sayiMetni(d);
   if (d === true) return 'Evet';
   if (secenekler) return secenekler.find((s) => s.kod === d)?.ad ?? String(d);
   return String(d);

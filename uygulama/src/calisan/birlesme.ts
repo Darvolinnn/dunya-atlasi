@@ -8,6 +8,7 @@ import type { BirlesmeOnizlemesi, BirlesmeAlani } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
 import { yonlendir } from './izdusum';
 import * as sablonlar from './sablon';
+import { sayiDegeriMi, sayiMetni } from '../alan/nicelik';
 
 export interface BirlesmeBaglami {
   e: EvrenVt;
@@ -35,6 +36,7 @@ const yazi = (alan: string, v: unknown): string => {
   if (alan === 'karar') return KARARLAR.find((k) => k.kod === v)?.ad ?? String(v);
   if (v === true) return 'Evet';
   if (typeof v === 'object' && v && 'ifade' in v) return String((v as { ifade: string }).ifade);
+  if (sayiDegeriMi(v)) return sayiMetni(v);
   return String(v);
 };
 const anaDeger = (r: Satir, alan: string) => (alan === 'tarih' ? (r.tarih ? JSON.parse(r.tarih as string) : null) : r[alan]);

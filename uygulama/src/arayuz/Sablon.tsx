@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AlanVarsayilani, BoslukTuru, Kayit, KayitSablonu, MeseleListesi, SablonBilgisi, SoruSatiri } from '../veri/api';
+import { EN_COK_HASSASIYET, NICELIK_TURLERI, sayiDegeriMi, sayiMetni } from '../alan/nicelik';
 import { ALAN_TURLERI, VARSAYILAN_EKSENLERI, EVREN_SETLERI, MESELE_DURUMLARI, SORU_SETLERI, soruSetiBul, yeniAlanKodu, type Sablon, type SablonAlani, type Secenek } from '../alan/sablon';
 import { tarihAciklamasi, tarihCoz, type EvrenTarihi, type TakvimYa } from '../alan/tarih';
 import { TURLER, turBul } from '../alan/turler';
@@ -29,6 +30,7 @@ export function degerMetni(a: SablonAlani | undefined, d: unknown): string {
   if (d === null || d === undefined) return '';
   if (d === true) return 'Evet';
   if (typeof d === 'object' && d && 'ifade' in d) return (d as EvrenTarihi).ifade;
+  if (sayiDegeriMi(d)) return sayiMetni(d);
   if (a?.tur === 'secim') return a.secenekler?.find((x) => x.kod === d)?.ad ?? `${String(d)} (kaldırılmış seçenek)`;
   return String(d);
 }
@@ -197,7 +199,7 @@ function AlanGirdisi({ a, takvim, deger, yaz }: { a: SablonAlani; takvim: Takvim
   const onizleme = a.tur === 'tarih' && yerel.trim() ? tarihCoz(yerel, takvim) : null;
   return (
     <>
-      <input class="girdi" lang="tr" aria-label={a.ad} placeholder={a.ipucu ?? (a.tur === 'tarih' ? takvimOrnegi(takvim) : '')} value={yerel}
+      <input class="girdi" lang="tr" aria-label={a.ad} placeholder={a.ipucu ?? (a.tur === 'tarih' ? takvimOrnegi(takvim) : a.tur === 'sayi' ? `Sayı ya da aralık (${a.birim})` : '')} value={yerel}
         onInput={(e) => setYerel((e.target as HTMLInputElement).value)} onBlur={bitir} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
       {a.tur === 'tarih' && <span class="soluk kucuk">{onizleme ? tarihAciklamasi(onizleme, takvim) : a.ipucu ?? ''}</span>}
     </>
@@ -324,7 +326,11 @@ function SablonEditoru({ istemci, evren, tur }: { istemci: Istemci; evren: strin
             <div class="satir">
               <input class="girdi" style="flex:2;min-width:140px" aria-label="Alanın adı" lang="tr" value={a.ad} onInput={(e) => guncelle((s) => { s.alanlar[i].ad = (e.target as HTMLInputElement).value; })} />
               <select class="girdi" style="flex:1;min-width:130px" aria-label="Alanın türü" value={a.tur} disabled={a.sabit || kullanilan(a) > 0}
-                onChange={(e) => guncelle((s) => { const t = (e.target as HTMLSelectElement).value as SablonAlani['tur']; s.alanlar[i].tur = t; if (t === 'secim') s.alanlar[i].secenekler ??= [{ kod: 'o1', ad: 'Birinci' }]; else delete s.alanlar[i].secenekler; })}>
+                onChange={(e) => guncelle((s) => {
+                  const t = (e.target as HTMLSelectElement).value as SablonAlani['tur']; const x = s.alanlar[i]; x.tur = t;
+                  if (t === 'secim') x.secenekler ??= [{ kod: 'o1', ad: 'Birinci' }]; else delete x.secenekler;
+                  if (t === 'sayi') { x.nicelik ??= 'uzunluk'; x.birim ??= 'm'; x.hassasiyet ??= 0; } else { delete x.nicelik; delete x.birim; delete x.hassasiyet; }
+                })}>
                 {ALAN_TURLERI.map((t) => <option value={t.kod}>{t.ad}</option>)}
               </select>
               <button class="dugme sade kucuk" aria-label={`${a.ad}: yukarı`} disabled={i === 0} onClick={() => guncelle((s) => tasi(s.alanlar, i, i - 1))}>↑</button>
@@ -338,6 +344,7 @@ function SablonEditoru({ istemci, evren, tur }: { istemci: Istemci; evren: strin
                 <option value="">Almaz</option>
                 {VARSAYILAN_EKSENLERI.map((x) => <option value={x.kod}>{x.ad} ({x.ornek})</option>)}
               </select></label>
+            {a.tur === 'sayi' && <NicelikDuzenleyici a={a} kilitli={kullanilan(a) > 0} degis={(f) => guncelle((s) => f(s.alanlar[i]))} />}
             {a.tur === 'secim' && <SecenekDuzenleyici secenekler={a.secenekler ?? []} degis={(l) => guncelle((s) => { s.alanlar[i].secenekler = l; })} sabit={a.sabit} />}
             <span class="soluk kucuk">
               {a.sabit ? 'Program bu alanı kullanıyor; adı değişebilir, kaldırılamaz. ' : ''}
@@ -383,6 +390,33 @@ function SablonEditoru({ istemci, evren, tur }: { istemci: Istemci; evren: strin
         {!bilgi.varsayilan && <button class="dugme sade" onClick={() => kaydet(null)}>Varsayılana dön</button>}
         {kaydedildi && !degisti && <span class="soluk kucuk">Kaydedildi.</span>}
       </div>
+    </div>
+  );
+}
+
+/** Birimli sayı alanının nicelik türü, birimi ve ondalık basamak sayısı (§18.1). */
+function NicelikDuzenleyici({ a, kilitli, degis }: { a: SablonAlani; kilitli: boolean; degis: (f: (x: SablonAlani) => void) => void }) {
+  const tur = NICELIK_TURLERI.find((t) => t.kod === a.nicelik) ?? NICELIK_TURLERI[0];
+  return (
+    <div class="satir kucuk">
+      <label class="satir"><span class="soluk">Ne ölçülüyor</span>
+        <select class="girdi kucuk-secim" aria-label={`${a.ad}: ne ölçülüyor`} value={tur.kod} disabled={kilitli}
+          onChange={(e) => degis((x) => { const t = NICELIK_TURLERI.find((y) => y.kod === (e.target as HTMLSelectElement).value)!; x.nicelik = t.kod; x.birim = t.birimler[0] ?? ''; })}>
+          {NICELIK_TURLERI.map((t) => <option value={t.kod}>{t.ad}</option>)}
+        </select></label>
+      <label class="satir"><span class="soluk">Birim</span>
+        {tur.serbest
+          ? <input class="girdi" style="width:110px" lang="tr" aria-label={`${a.ad}: birim`} list={`birimler-${a.kod}`} placeholder={tur.kod === 'para' ? 'ör. altın' : 'ör. adet'} value={a.birim ?? ''} onInput={(e) => degis((x) => { x.birim = (e.target as HTMLInputElement).value; })} />
+          : <select class="girdi kucuk-secim" aria-label={`${a.ad}: birim`} value={a.birim} onChange={(e) => degis((x) => { x.birim = (e.target as HTMLSelectElement).value; })}>
+            {tur.birimler.map((b) => <option value={b}>{b}</option>)}
+          </select>}
+        {tur.serbest && <datalist id={`birimler-${a.kod}`}>{tur.birimler.map((b) => <option value={b} />)}</datalist>}
+      </label>
+      <label class="satir"><span class="soluk">Ondalık basamak</span>
+        <input class="girdi" style="width:60px" type="number" min="0" max={EN_COK_HASSASIYET} aria-label={`${a.ad}: ondalık basamak`} value={a.hassasiyet ?? 0}
+          onInput={(e) => degis((x) => { x.hassasiyet = Math.max(0, Math.min(EN_COK_HASSASIYET, Math.trunc(Number((e.target as HTMLInputElement).value) || 0))); })} /></label>
+      {tur.kod === 'sure' && <span class="soluk">Ay ve yıl takvime bağlı olduğu için güne çevrilmez.</span>}
+      {(tur.kod === 'para' || tur.kod === 'diger' || tur.kod === 'miktar') && <span class="soluk">Bu birim başka birime çevrilmez.</span>}
     </div>
   );
 }
