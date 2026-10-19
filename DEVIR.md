@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **53**. Sınama: 68 dosya, 400 sınama, hepsi geçiyor.*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **54**. Sınama: 69 dosya, 403 sınama, hepsi geçiyor.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -61,6 +61,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | F40 | Kalabalık ve toplu sayım: tarihli gözlemler, sayımı değiştiren olaylar, tarihe göre tahmin (GPT paketi, izdüşüm 51, tablolar `kalabalik_gozlemleri`, `kalabalik_olaylari`) | `86d8d19` |
 | F17 | Harita künyesi: evren içi tarih, yapan, amaç, bilinen hatalar (Argon paketi, izdüşüm 52, tablo `harita_kunyeleri`) | `7697a46` |
 | F07 | Süreç adımlarının sorumluları, durdurabilir / fiilî veto listeleri (Argon paketi, izdüşüm 53, tablo `surec_sorumlulari`) | `9a0aa6b` |
+| F30 | Metin ile kullanım yeri: editörde "Metin al" (ortak kaynağa bağla / kopyala / bağımsız türev), bağlı kullanımda kaynak değişti uyarısı ve kaynaktan güncelleme, başka metne taşıma, kaynak sayfasında kullanıldığı yerler. Baskıya sabitlenmiş kopya yayım sürümüdür (F18) (izdüşüm 54, tablo `metin_kullanimlari`) | `1d932fc` |
 | F19 | İnceleme: ayırt etme satırı var, sahne hatırlatıcısını sahne paneli karşılıyor; okur tanıtımı ve "sır yayına girmez" yayına (§11) bağlı, K20 gereği kapsam dışı | — |
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
@@ -70,7 +71,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 |---|---|---|---|---|
 | `paket/kalici-iz` (Argon) | F11 geçmişin bugünkü izleri | `iz_kaydi_` | `iz_kayitlari` | Var olan `izler` (süreklilik) ayrı |
 
-Kodlanmamış ama paket olarak verilmeyen "Tasarım" maddeleri: F30 (metin ve kullanım yeri); var olan davranışı değiştirdiği için ana ajanda yapılmalı. Kısmen olanlar: F09 (izin, ücret katmanları), §15-2 (ölçekli erişim konturları).
+Paket dışında kalan "Tasarım" maddelerinin hepsi kodlandı. Kısmen olanlar: F09 (izin, ücret katmanları), §15-2 (ölçekli erişim konturları).
 
 ### 3.3 Kalan işler (önerilen sıra)
 
