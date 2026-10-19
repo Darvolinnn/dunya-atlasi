@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **46**. Sınama: 58 dosya, 312 sınama, hepsi geçiyor.*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **46**. Sınama: 60 dosya, 342 sınama, hepsi geçiyor.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -48,18 +48,18 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | F31 | Keşif sorularına ikinci şablon: aynı şey üzerinde çelişen hak iddiaları | `4430a31` |
 | F32 | Bakım ve tekrarlar (Argon paketi, birleştirildi) | `9809403` |
 | §9.7 | Deneme kopyalarının cihazlar arası eşitlenmesi | `26a1dc5` |
-| F16 | Kural atölyesi, formülsüz kısım: hukuk kuralına örnek durumlar, beklenti ve önceki tanımla karşılaştırma, örnekleriyle kopyalama (izdüşüm 46, tablo `kural_ornekleri`) | bu dosyayı güncelleyen kayıt |
+| F16 | Kural atölyesi, formülsüz kısım: hukuk kuralına örnek durumlar, beklenti ve önceki tanımla karşılaştırma, örnekleriyle kopyalama (izdüşüm 46, tablo `kural_ornekleri`) | `c522478` |
+| Boşluk | Göreli tarihlerde ayrılma eki; gökyüzü tarih hatası girdinin yanında (Argon paketi) | `a76e230` |
+| §3.4 | Zaman akışlarında yaşanan süre; kalış yalnızca "orada yaşayan" ilişkisinden (GPT paketi) | `b75fe2f` |
+| §5.5 | Sahne panelinde okur bilgisi, okuma sırasına göre (GPT paketi) | `3e029cc` |
 
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
-19 Ekim 2026'da dört paket verildi. Dalı uzak depoda belirince birleştir (§6). Hiçbiri `IZDUSUM_SURUMU`'nu artırmamalı; artırmayı birleştiren yapar.
+19 Ekim 2026'da dört paket verildi; üçü birleştirildi, biri bekliyor. Dalı uzak depoda belirince birleştir (§6). Hiçbiri `IZDUSUM_SURUMU`'nu artırmamalı; artırmayı birleştiren yapar.
 
 | Dal | Madde | İşlem adı öneki | Tablolar | Not |
 |---|---|---|---|---|
 | `paket/uyarlama` (GPT) | F35 baskı ve uyarlama karşılaştırma | `uyarlama_` | `uyarlama_eslemeleri` | `dal.ts`, `anlati.ts`, `esitleme.ts`'e dokunmaz |
-| `paket/akis-suresi` (GPT) | Zaman akışlarında yaşanan süre (§3.4 Yaş) | yok | yok | `sahneBaglami`'nda `yas:` satırının ardına ekler |
-| `paket/sahne-okur` (GPT) | Sahne panelinde okur bilgisi (§5.5, §3.6) | yok | yok | `sahneBaglami`'nda `bakisBilgileri:` satırının ardına ekler |
-| `paket/kucuk-duzeltmeler` (Argon) | Göreli tarih iyelik eki, gökyüzü tarih hatasının yeri | yok | yok | `turkce-ek.ts`'e yeni işlev |
 
 Promptlar proje klasöründe `paket-promptlari/` altındadır.
 
@@ -67,13 +67,9 @@ Bu paketlerin tam promptları kullanıcının proje klasöründedir; depoda değ
 
 ### 3.3 Kalan işler (önerilen sıra)
 
-1. **F35 baskı ve uyarlama karşılaştırma**: yazar iki eser (ya da eser ile deneme kopyası) arasında eşlemeler tanımlar (iki karakter → tek karakter, olay sırası değişimi); sonraki değişiklikte etkilenebilecek eşlemeler listelenir. Hiçbir dal ötekini kendiliğinden güncellemez. Dallar için `calisan/dal.ts`, eser yapısı için `calisan/anlati.ts`.
+1. **F35 baskı ve uyarlama karşılaştırma** (`paket/uyarlama` dalında GPT'de): yazar iki eser (ya da eser ile deneme kopyası) arasında eşlemeler tanımlar (iki karakter → tek karakter, olay sırası değişimi); sonraki değişiklikte etkilenebilecek eşlemeler listelenir. Hiçbir dal ötekini kendiliğinden güncellemez. Dallar için `calisan/dal.ts`, eser yapısı için `calisan/anlati.ts`.
 2. **F16 formül yazımı**: formülsüz kısım kodlandı (kullanım sözleşmesi tasarımda §16.1 sonunda). Formül için önce **TK8** sözleşmesi yazılmalı ve kullanıcı onaylamalı; kodlamadan önce sor. Süreç kuralları için örnek durumlar henüz yok.
-3. **Bilinen boşluklar:**
-   - Göreli tarihlerde Türkçe iyelik eki eksik.
-   - Zaman akışları arasında yaşanan zaman hesaplanmıyor.
-   - Sahne panelinde okur bilgisi gösterilmiyor.
-   - Gökyüzü sekmesinde tarih hatası sekmenin en altında görünüyor; girdinin yanına taşınmalı.
+3. **Bilinen boşluklar:** eşitleme ekranı deneme kopyalarının bekleyen değişikliklerini ayrıca göstermiyor.
 4. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
 5. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
 
