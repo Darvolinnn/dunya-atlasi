@@ -784,7 +784,7 @@ export interface EsitlemeDurumu {
 }
 export interface DriveYedegi { id: string; gun: string; zaman: number; ad: string; kurulum: string }
 export interface DonemselYedekDurumu {
-  son: { zaman: number; gun: string; dogrulandi: boolean } | null; gunSayisi: number; aySayisi: number; hata: string | null;
+  son: { zaman: number; gun: string; dogrulandi: boolean; eksikGorsel?: number } | null; gunSayisi: number; aySayisi: number; hata: string | null;
   bagli: boolean; esitlenir: boolean;
 }
 export interface EvrenEsitlemeDurumu {
@@ -1186,7 +1186,7 @@ export interface Istekler {
   donemselYedekDurumu(a: { evren: string }): DonemselYedekDurumu;
   driveYedekleri(a: { evren: string }): Promise<DriveYedegi[]>;
   drivedaYedekAl(a: { evren: string }): Promise<DonemselYedekDurumu>;
-  drivedanGeriYukle(a: { id: string }): Promise<{ kod: string; ayri: boolean }>;
+  drivedanGeriYukle(a: { id: string }): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] }>;
   yedekAyarlari(a: { gunSayisi: number; aySayisi: number }): void;
   esitle(): Promise<EsitlemeDurumu>;
   esitlemeDurumu(): EsitlemeDurumu;

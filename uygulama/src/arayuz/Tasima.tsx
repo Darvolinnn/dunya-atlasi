@@ -65,7 +65,7 @@ export function DriveYedekleri({ istemci, evren, surum }: { istemci: Istemci; ev
   const [liste, setListe] = useState<DriveYedegi[] | null>(null);
   const [mesgul, setMesgul] = useState<string | null>(null);
   const [hata, setHata] = useState<string | null>(null);
-  const [sonuc, setSonuc] = useState<{ kod: string; ayri: boolean } | null>(null);
+  const [sonuc, setSonuc] = useState<{ kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] } | null>(null);
   const [ayar, setAyar] = useState<{ gun: string; ay: string } | null>(null);
   const bagli = !!es?.durum?.bagli;
 
@@ -104,7 +104,8 @@ export function DriveYedekleri({ istemci, evren, surum }: { istemci: Istemci; ev
       {!d.esitlenir
         ? <p class="kucuk">Bu evren Drive'a gönderilmiyor; Drive'a yedeği de alınmaz. “Eşitleme ve cihazlar” sayfasından açabilirsin.</p>
         : <p class="kucuk">{d.son
-            ? <>Son yedek: <strong>{zamanYaz(d.son.zaman)}</strong>{d.son.dogrulandi ? ' · geri okunup doğrulandı' : ' · doğrulanamadı'}</>
+            ? <>Son yedek: <strong>{zamanYaz(d.son.zaman)}</strong>{d.son.dogrulandi ? ' · geri okunup doğrulandı' : ' · doğrulanamadı'}
+              {d.son.eksikGorsel ? ` · ${d.son.eksikGorsel} görsel bu cihazda olmadığı için yedekte yok` : ''}</>
             : 'Bu evrenin Drive\'da yedeği henüz yok.'}</p>}
       {d.hata && <p class="uyari kucuk">Son yedekleme denemesi başarısız oldu: {d.hata}</p>}
       {!bagli && d.esitlenir && <p class="soluk kucuk">Yedekler Google Drive'a bağlıyken alınır; bağlantı yokken kaçan yedek bağlanınca alınır.</p>}
@@ -116,6 +117,12 @@ export function DriveYedekleri({ istemci, evren, surum }: { istemci: Istemci; ev
       {sonuc && (
         <div style="margin-top:12px" role="status">
           <p>{sonuc.ayri ? 'Yedek ayrı bir evren olarak açıldı. Bu evrene dokunulmadı.' : 'Evren geri yüklendi.'}</p>
+          {(sonuc.eksikGorseller.length > 0 || sonuc.bozukGorseller.length > 0) && (
+            <p class="uyari kucuk">Kayıtlar ve metinler eksiksiz geldi, ama {[
+              sonuc.eksikGorseller.length ? `${sonuc.eksikGorseller.length} görsel yedek klasöründe bulunamadı` : '',
+              sonuc.bozukGorseller.length ? `${sonuc.bozukGorseller.length} görsel bozuk olduğu için alınmadı` : '',
+            ].filter(Boolean).join(', ')}. Bu görsellerin yerinde “görsel yok” görünür.</p>
+          )}
           <button class="dugme ana" onClick={() => git(`/e/${sonuc.kod}`)}>Evreni aç</button>
         </div>
       )}

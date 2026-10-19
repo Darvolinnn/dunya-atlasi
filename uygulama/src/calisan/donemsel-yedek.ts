@@ -19,7 +19,9 @@ export interface YedekTasiyici extends Tasiyici {
 export interface DonemselYedekErisimi {
   kurulum: KurulumVt;
   medya: MedyaDeposu | null;
-  paketYaz(evren: string, medyaDahil: boolean): Promise<{ dosyaAdi: string; veri: Uint8Array; zaman: number; medyaAdlari: string[]; ad: string }>;
+  paketYaz(evren: string, medyaDahil: boolean): Promise<{ dosyaAdi: string; veri: Uint8Array; zaman: number; medyaAdlari: string[]; ad: string; islemSayisi: number }>;
+  /** Paketi açar ve her değişiklik satırını denetler (bozuksa hata atar); evrene dokunmaz. */
+  yedekIncele(veri: Uint8Array): Promise<{ evrenKod: string; islemSayisi: number }>;
   yedektenYukle(veri: Uint8Array): Promise<{ kod: string; ayri: boolean }>;
 }
 
@@ -91,29 +93,44 @@ export class DonemselYedek {
         return 'zaten-var';
       }
       const p = await this.x.paketYaz(evren, false);
-      // Görseller: klasörde olmayanlar bir kez yüklenir.
+      // Görseller: klasörde olmayanlar bir kez yüklenir. Bu cihazda olmayan görsel yedeğe giremez; sayısı yazılır.
+      let eksikGorsel = 0;
       if (this.x.medya && p.medyaAdlari.length) {
         const uzak = new Set((await this.t.listele({ uygulama: UYGULAMA, tur: 'yedek-medya' })).map((d) => d.ozellikler.ad));
         for (const ad of p.medyaAdlari) for (const dosya of [ad, onizlemeAdi(ad)]) {
           if (uzak.has(dosya)) continue;
           const veri = await this.x.medya.oku(dosya);
-          if (veri) await this.t.yukle(dosya, { uygulama: UYGULAMA, tur: 'yedek-medya', ad: dosya }, veri, undefined, medya);
+          if (veri) { await this.t.yukle(dosya, { uygulama: UYGULAMA, tur: 'yedek-medya', ad: dosya }, veri, undefined, medya); uzak.add(dosya); }
+          else if (dosya === ad) eksikGorsel++;
         }
       }
       const dosyaAdi = p.dosyaAdi.replace(/-yedek-\d{4}-\d{2}-\d{2}\.zip$/, `-yedek-${bugun}.zip`);
+      // Yeni yedek her zaman yeni bir dosyadır: bugünün önceki yedeği, yenisi doğrulanana kadar yerinde kalır.
       const d = await this.t.yukle(dosyaAdi, { uygulama: UYGULAMA, tur: 'yedek', evren, gun: bugun, zaman: String(p.zaman), kurulum: this.x.kurulum.kod },
-        p.veri, bugunku?.id, ana);
-      // Doğrulama: yedek geri indirilip açılır (§10.8 "yedek doğrulandı").
-      const geri = await this.t.indir(d.id);
-      const icerik = await zipOku(geri);
-      const paket = JSON.parse(new TextDecoder().decode(icerik.get('paket.json')!));
-      const dogrulandi = paket.evren?.kod === evren && icerik.has('islemler.jsonl');
-      this.kaydet(evren, { zaman: p.zaman, gun: bugun, dogrulandi });
-      // Saklama süresi dolanlar silinir.
+        p.veri, undefined, ana);
+      // Doğrulama (§10.10): yedek geri indirilir, açılır, her değişiklik satırı okunur ve sayı karşılaştırılır.
+      let sorun: string | null = null;
+      try {
+        const geri = await this.t.indir(d.id);
+        const inc = await this.x.yedekIncele(geri);
+        if (inc.evrenKod !== evren) sorun = 'yedekteki evren farklı';
+        else if (inc.islemSayisi !== p.islemSayisi) sorun = `yedekte ${inc.islemSayisi} değişiklik var, ${p.islemSayisi} olmalıydı`;
+      } catch (e) { sorun = (e as Error).message; }
+      if (sorun) {
+        // Doğrulanamayan yedek başarılı sayılmaz ve hiçbir eski yedek silinmez.
+        try { await this.t.sil(d.id); } catch { /* kalsa da eski yedekler yerinde */ }
+        throw new Error(`Yeni yedek geri okunurken doğrulanamadı (${sorun}). Eski yedeklerin hiçbiri silinmedi.`);
+      }
+      this.kaydet(evren, { zaman: p.zaman, gun: bugun, dogrulandi: true, ...(eksikGorsel ? { eksikGorsel } : {}) });
+      this.x.kurulum.ayarYaz(`donemsel_hata:${evren}`, '');
+      // Ancak şimdi: bugünün eski yedeği ve saklama süresi dolanlar silinir. Silme hatası yeni yedeği bozmaz.
       const { gunSayisi, aySayisi } = this.ayarlar();
       const sil = new Set(silinecekGunler([...mevcut.map((y) => y.gun), bugun], bugun, gunSayisi, aySayisi));
-      for (const y of mevcut) if (sil.has(y.gun)) await this.t.sil(y.id);
-      this.x.kurulum.ayarYaz(`donemsel_hata:${evren}`, '');
+      try {
+        for (const y of mevcut) if (y.gun === bugun || sil.has(y.gun)) await this.t.sil(y.id);
+      } catch (e) {
+        this.x.kurulum.ayarYaz(`donemsel_hata:${evren}`, `Yedek alındı ve doğrulandı, ama eski yedekler kaldırılamadı: ${(e as Error).message}`);
+      }
       return 'alindi';
     } catch (e) {
       this.x.kurulum.ayarYaz(`donemsel_hata:${evren}`, (e as Error).message);
@@ -121,7 +138,7 @@ export class DonemselYedek {
     }
   }
 
-  private kaydet(evren: string, son: { zaman: number; gun: string; dogrulandi: boolean }) {
+  private kaydet(evren: string, son: { zaman: number; gun: string; dogrulandi: boolean; eksikGorsel?: number }) {
     this.x.kurulum.ayarYaz(`donemsel:${evren}`, JSON.stringify(son));
     this.x.kurulum.ayarYaz(`donemsel_gun:${evren}`, son.gun);
   }
@@ -133,23 +150,29 @@ export class DonemselYedek {
       .sort((a, b) => b.gun.localeCompare(a.gun));
   }
 
-  /** Drive'daki bir yedeği geri yükler: önce görseller yerel depoya, sonra paket (mevcut evrene dokunmaz). */
-  async geriYukle(id: string) {
+  /**
+   * Drive'daki bir yedeği geri yükler: önce görseller yerel depoya, sonra paket (mevcut evrene dokunmaz).
+   * Yedek klasöründe bulunmayan ya da bozuk görseller atlanmaz gibi yapılmaz: listesi sonuçla döner.
+   */
+  async geriYukle(id: string): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] }> {
     const veri = await this.t.indir(id);
     const icerik = await zipOku(veri);
     const paket = JSON.parse(new TextDecoder().decode(icerik.get('paket.json') ?? new Uint8Array()));
     const adlar: string[] = Array.isArray(paket.medyaAdlari) ? paket.medyaAdlari : [];
+    const eksikGorseller: string[] = [];
+    const bozukGorseller: string[] = [];
     if (this.x.medya && adlar.length) {
       const uzak = new Map((await this.t.listele({ uygulama: UYGULAMA, tur: 'yedek-medya' })).map((d) => [d.ozellikler.ad, d.id]));
       for (const ad of adlar) for (const dosya of [ad, onizlemeAdi(ad)]) {
         if (!/^[0-9a-f]{64}(\.onizleme)?$/.test(dosya) || (await this.x.medya.var(dosya))) continue;
         const uid = uzak.get(dosya);
-        if (!uid) continue;
+        // Önizleme yoksa görsel yine açılır; yalnızca asıl dosyanın eksikliği bildirilir.
+        if (!uid) { if (dosya === ad) eksikGorseller.push(ad); continue; }
         const v = await this.t.indir(uid);
-        if (dosya === ad && (await icerikAdi(v)) !== ad) continue;
+        if (dosya === ad && (await icerikAdi(v)) !== ad) { bozukGorseller.push(ad); continue; }
         await this.x.medya.yaz(dosya, v);
       }
     }
-    return this.x.yedektenYukle(veri);
+    return { ...(await this.x.yedektenYukle(veri)), eksikGorseller, bozukGorseller };
   }
 }

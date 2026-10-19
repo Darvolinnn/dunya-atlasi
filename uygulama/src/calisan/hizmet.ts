@@ -283,6 +283,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     this.donemsel = t && yedek ? new DonemselYedek({
       kurulum: this.kurulum, medya: this.medya,
       paketYaz: (evren, medyaDahil) => this.paketYaz(evren, medyaDahil),
+      yedekIncele: (veri) => this.yedekIncele({ veri }),
       yedektenYukle: (veri) => this.yedektenYukle({ veri }),
     }, yedek) : null;
     if (t && this.esitlemeHatasi?.izin) this.esitlemeHatasi = null;
@@ -3003,7 +3004,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const gun = new Date(simdi).toISOString().slice(0, 10);
     // Dosya adı yalnız İngiliz harfleriyle: bazı tarayıcılar Türkçe harfli indirme adını yok sayıyor.
     const dosyaAdi = `${katla(bilgi.ad).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'evren'}-yedek-${gun}.zip`;
-    return { dosyaAdi, veri: zip, zaman: simdi, medyaAdlari, ad: bilgi.ad };
+    return { dosyaAdi, veri: zip, zaman: simdi, medyaAdlari, ad: bilgi.ad, islemSayisi: islemler.length };
   }
 
   sonYedek({ evren }: { evren: string }) {
