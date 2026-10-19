@@ -589,3 +589,30 @@ label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; 
 .yh.yok { background: var(--tehlike); border-color: transparent; }
 .yh.once { background: transparent; border-style: dotted; }
 .montaj h3, .surecler h3 { margin: 12px 0 4px; font-size: 0.95rem; }
+/* Sıradan bir gün, karşılaştırmalı okuma, gezinti, görsel pano (§7) */
+.gun-yan-yana { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.gun-sutunu { border: 1px solid var(--cizgi); border-radius: var(--yaricap); padding: 8px 12px; }
+.gun-sutunu h3 { margin: 10px 0 2px; font-size: 0.95rem; }
+.karsilastirma-secimi { gap: 4px; }
+table.karsilastirma { border-collapse: collapse; width: 100%; margin-top: 8px; }
+table.karsilastirma th, table.karsilastirma td { border: 1px solid var(--cizgi); padding: 4px 8px; text-align: left; vertical-align: top; }
+table.karsilastirma tbody th { font-weight: 500; color: var(--metin-2); white-space: nowrap; }
+table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.85rem; }
+.derleme { margin-top: 12px; }
+.gezinti-adimlari { padding-left: 22px; }
+.gezinti-adimlari li { margin-bottom: 8px; }
+.genis-girdi { width: 100%; box-sizing: border-box; }
+.gezinti-gez { max-width: 760px; }
+.gezinti-notu { border-left: 3px solid var(--vurgu); padding-left: 8px; }
+.pano-izgara { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+.pano-ogesi { width: 132px; display: flex; flex-direction: column; gap: 2px; }
+.pano-ogesi.eski { opacity: 0.6; }
+.pano-kaynak { border: 1px dashed var(--cizgi); border-radius: var(--yaricap); padding: 8px; margin: 8px 0; }
+.pano-karsilastirma { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0; }
+.pano-buyuk { margin: 0; }
+.pano-gorsel { position: relative; display: inline-block; max-width: 100%; }
+.pano-gorsel img { display: block; max-width: 100%; max-height: calc(100vh - 220px); }
+.pano-gorsel.not-kipi { cursor: crosshair; }
+.pano-isaret { position: absolute; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 50%; background: var(--vurgu); color: #fff; font-size: 0.75rem; display: grid; place-items: center; pointer-events: none; box-shadow: 0 0 0 2px #fff; }
+.pano-notlari { margin: 4px 0; padding-left: 20px; }
+.pano-perde { overflow: auto; }

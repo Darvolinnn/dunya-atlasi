@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 29;
+export const IZDUSUM_SURUMU = 31;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -289,6 +289,19 @@ CREATE TABLE IF NOT EXISTS sahne_niyetleri(
 CREATE TABLE IF NOT EXISTS montaj_hedefleri(
   kod TEXT PRIMARY KEY,
   hedefler TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS gundelik_kartlari(
+  kod TEXT PRIMARY KEY,
+  kartlar TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS derlemeler(
+  kod TEXT PRIMARY KEY,
+  tur TEXT NOT NULL,
+  ad TEXT NOT NULL,
+  ogeler TEXT NOT NULL DEFAULT '[]',
+  olusturma INTEGER NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
 );
 CREATE TABLE IF NOT EXISTS masalar(
   kod TEXT PRIMARY KEY,
@@ -553,7 +566,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'derlemeler', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -1124,7 +1137,30 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     db.exec({ sql: 'INSERT OR REPLACE INTO montaj_hedefleri(kod, hedefler) VALUES(?,?)', bind: [eser, JSON.stringify(m)] });
     alanYaz(db, i, eser, `hedef:${iddia}`, hedef ?? null);
   },
+  /** Bir yerin gündelik hayat kartları (sıradan bir gün). */
+  gundelik_yaz(db, i) {
+    const { yer, kartlar } = i.veri as { yer: string; kartlar: unknown };
+    if (typeof yer !== 'string' || !Array.isArray(kartlar)) return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO gundelik_kartlari(kod, kartlar) VALUES(?,?)', bind: [yer, JSON.stringify(kartlar)] });
+    alanYaz(db, i, yer, 'gundelik', kartlar);
+  },
   /** Çalışma masası (§5.9): kayıtlar kopyalanmaz, masa onlara bağlanır. */
+  /** Gezinti ve görsel pano (§7): yazarın derlediği listeler. İlk yazım derlemeyi kurar. */
+  derleme_yaz(db, i) {
+    const { kod, derlemeTuru, alan, deger } = i.veri as { kod?: unknown; derlemeTuru?: unknown; alan?: unknown; deger?: unknown };
+    if (typeof kod !== 'string' || (derlemeTuru !== 'gezinti' && derlemeTuru !== 'pano')) return;
+    db.exec({ sql: 'INSERT OR IGNORE INTO derlemeler(kod, tur, ad, olusturma, duzenleme) VALUES(?,?,?,?,?)', bind: [kod, derlemeTuru, '', i.zaman, i.zaman] });
+    if (alan === 'ad') db.exec({ sql: 'UPDATE derlemeler SET ad=?, duzenleme=? WHERE kod=?', bind: [String(deger ?? '').slice(0, 120), i.zaman, kod] });
+    else if (alan === 'ogeler') db.exec({ sql: 'UPDATE derlemeler SET ogeler=?, duzenleme=? WHERE kod=?', bind: [JSON.stringify(Array.isArray(deger) ? deger.slice(0, 300) : []), i.zaman, kod] });
+    else return;
+    alanYaz(db, i, kod, alan, deger ?? null);
+  },
+  derleme_sil(db, i) {
+    db.exec({ sql: 'UPDATE derlemeler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+  },
+  derleme_geri_yukle(db, i) {
+    db.exec({ sql: 'UPDATE derlemeler SET silindi=NULL WHERE kod=?', bind: [i.veri.kod as string] });
+  },
   masa_olustur(db, i) {
     const v = i.veri as { kod?: unknown; ad?: unknown };
     if (typeof v.kod !== 'string') return;

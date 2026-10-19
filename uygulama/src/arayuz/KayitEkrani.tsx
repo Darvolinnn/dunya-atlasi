@@ -16,6 +16,7 @@ import { HUKUK_SAHIPLERI, HukukKurallariBolumu, UygulananKurallarAraci } from '.
 import { AdBicimleriBolumu, DilBolumu, KisiDilleriBolumu } from './Dil';
 import { MotifBolumu, TEKNOLOJI_YERLERI, TeknolojiBolumu, TeknolojiDurumuAraci } from './Teknoloji';
 import { KalitimBolumu, VerasetBolumu } from './Soy';
+import { GUNDELIK_YERLERI, GundelikBolumu } from './Gundelik';
 import { KurguMontajiBolumu, SahneNiyetleriBolumu } from './Montaj';
 import { HaberYayilimiBolumu, KanalBolumu, ROTA_ARACI_TURLERI, RotaAraci } from './Haber';
 import { KESINTI_TURLERI, KesintiBolumu, UretimOzetiBolumu } from './Uretim';
@@ -161,6 +162,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {TEKNOLOJI_YERLERI.includes(kayit.tur) && <TeknolojiDurumuAraci istemci={istemci} evren={evren} kod={kod} />}
         {kayit.tur === 'karakter' && <KalitimBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {(kayit.tur === 'makam' || kayit.tur === 'siyasi') && <VerasetBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+        {GUNDELIK_YERLERI.includes(kayit.tur) && <GundelikBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {kayit.tur === 'olay' && <OlaySurecBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {!DURUMSUZ.has(kayit.tur) && <DurumGecmisi istemci={istemci} evren={evren} kayit={kayit} />}
         {kayit.tur !== 'not' && <BilinenlerBolumu istemci={istemci} evren={evren} kayit={kayit} />}

@@ -201,6 +201,21 @@ export interface KurguMontaji {
   yokluk: { kisi: KisaKayit; hucreler: number[]; sayi: number }[];
   not: string;
 }
+/** Gündelik hayat kartı (§7 sıradan bir gün): bir yere, isteğe bağlı döneme ve statüye yazılır. */
+export interface GundelikKart { kod: string; konu: 'barinma' | 'yemek' | 'ulasim' | 'is' | 'ibadet' | 'eglence'; metin: string; yer: KisaKayit; donem: KisaKayit | null; statu: KisaKayit | null }
+export interface SiradanGun {
+  yer: KisaKayit; donem: KisaKayit | null; statu: KisaKayit | null; yerler: KisaKayit[]; not: string;
+  konular: { konu: GundelikKart['konu']; ad: string; kartlar: (GundelikKart & { genel: boolean })[] }[];
+}
+export interface KarsilastirmaliOkuma {
+  sutunlar: { kayit: KisaKayit; tarih: EvrenTarihi | null; ozet: string }[];
+  satirlar: { baslik: string; grup: 'alan' | 'soru' | 'durum'; degerler: (string | null)[] }[]; not: string;
+}
+export interface DerlemeOzeti { kod: string; tur: 'gezinti' | 'pano'; ad: string; ogeSayisi: number; duzenleme: number }
+export interface GezintiAdimi { kayit: string; not: string }
+export interface PanoNotu { x: number; y: number; metin: string }
+export interface PanoOgesi { kod: string; gorsel: string; kayit: KisaKayit | null; baslik: string; durum: 'guncel' | 'eski' | null; notlar: PanoNotu[]; eksik: boolean }
+export interface Derleme { kod: string; tur: 'gezinti' | 'pano'; ad: string; adimlar: { kayit: KisaKayit; not: string }[]; ogeler: PanoOgesi[] }
 export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
 export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
 export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
@@ -735,6 +750,19 @@ export interface Istekler {
   uretimOzeti(a: { evren: string; urun: string }): UretimOzeti;
   dayaniklilikYaz(a: { evren: string; iliski: string; deger: Dayaniklilik | null }): void;
   geciselKayitlar(a: { evren: string; kok: string; eksen: GeciselEksen }): GeciselSonuc[];
+  gundelikKartlari(a: { evren: string; yer: string }): GundelikKart[];
+  gundelikYaz(a: { evren: string; yer: string; kartlar: { kod?: string | null; konu: string; donem: string | null; statu: string | null; metin: string }[] }): void;
+  siradanGun(a: { evren: string; yer: string; donem?: string | null; statu?: string | null }): SiradanGun;
+  karsilastirmaliOkuma(a: { evren: string; sutunlar: { kayit: string; tarih: string | null }[] }): KarsilastirmaliOkuma;
+  derlemeler(a: { evren: string; tur: 'gezinti' | 'pano' }): DerlemeOzeti[];
+  derleme(a: { evren: string; kod: string }): Derleme;
+  derlemeOlustur(a: { evren: string; tur: 'gezinti' | 'pano'; ad: string }): { kod: string };
+  derlemeAdYaz(a: { evren: string; kod: string; ad: string }): void;
+  gezintiYaz(a: { evren: string; kod: string; adimlar: GezintiAdimi[] }): void;
+  panoYaz(a: { evren: string; kod: string; ogeler: (Omit<PanoOgesi, 'kayit' | 'eksik'> & { kayit: string | null })[] }): void;
+  panoGorseliSakla(a: { evren: string; dosyaAdi: string; tur: string; veri: Uint8Array }): Promise<{ ad: string }>;
+  derlemeSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
+  kayitDerlemeleri(a: { evren: string; kod: string }): DerlemeOzeti[];
   kurguMontaji(a: { evren: string; eser: string }): KurguMontaji;
   sahneNiyetleri(a: { evren: string; sahne: string }): SahneNiyeti[];
   sahneNiyetleriYaz(a: { evren: string; sahne: string; niyetler: SahneNiyeti[] }): void;
