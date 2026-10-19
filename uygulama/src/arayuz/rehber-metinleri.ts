@@ -27,6 +27,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       'Var olan bir evreni açmak için kartına basın. Evren açılınca doğrudan yazma sayfası (Yaz) gelir.',
       'Başka bir bilgisayardan aldığınız yedek dosyasını geri getirmek için “Yedekten geri yükle”yi kullanın.',
       'Obsidian gibi programlardaki Markdown notlarınızı almak için “İçe aktar”ı kullanın; içe alınanlar yeni ve ayrı bir evren olur.',
+      'Bir evreni bu cihazdan kaldırmak için kartının köşesindeki “Kaldır”a basın. Evren Drive ile eşitlenmişse oradaki kopyası ve öbür cihazlarınız etkilenmez; yeniden indirebilirsiniz. Yalnızca bu cihazdaysa geri getirilemez; program bunu ve son yedeğin tarihini sorarken söyler.',
     ],
     ipuclari: [
       'Sağ üstteki “Eşitleme ve cihazlar” ile evrenlerinizi Google Drive üzerinden öbür cihazlarınızla eşitleyebilirsiniz.',

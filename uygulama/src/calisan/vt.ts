@@ -9,11 +9,11 @@ import { OpfsDeposu, tarayiciIsleyici } from './medya-tarayici';
 import { DriveTasiyici } from './drive';
 
 let hizmet: Hizmet | null = null;
-let havuz: { getFileCount(): number; getCapacity(): number; addCapacity(n: number): Promise<number> } | null = null;
+let havuz: { getFileCount(): number; getCapacity(): number; addCapacity(n: number): Promise<number>; unlink(ad: string): boolean } | null = null;
 let hazirlik: Promise<Hizmet> | null = null;
 
 // Arayüzün çağırabildiği istekler; başka hiçbir yöntem dışarıdan çağrılamaz.
-const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', 'evrenOlustur', 'evrenAdlandir', 'evrenBilgisi', 'islemGunlugu',
+const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', 'evrenOlustur', 'evrenKaldir', 'evrenAdlandir', 'evrenBilgisi', 'islemGunlugu',
   'yogunluk',
   'sozlesmeMaddeleri', 'sozlesmeMaddeYaz', 'sozlesmeMaddeSil', 'sozlesmeMaddeGeriYukle', 'sozlesmeDisaridaYaz', 'eserSozlesmesi', 'sozlesmeHatirlatmalari',
   'haklar', 'hakEkle', 'hakDegistir', 'hakSil', 'hakGeriYukle', 'hakTanimaYaz',
@@ -89,7 +89,7 @@ async function hazirla(): Promise<Hizmet> {
   havuz = h as never;
   const ac = (ad: string) => new h.OpfsSAHPoolDb(ad);
   return new Hizmet(ac, kurulumAdi(), sqlite3.version.libVersion, (evren, turler, kayitlar, uzaktan) => postMessage({ degisti: { evren, turler, kayitlar, uzaktan } }),
-    new OpfsDeposu(), tarayiciIsleyici, () => new sqlite3.oo1.DB(':memory:'), (ilerleme) => postMessage({ ilerleme }));
+    new OpfsDeposu(), tarayiciIsleyici, () => new sqlite3.oo1.DB(':memory:'), (ilerleme) => postMessage({ ilerleme }), (ad) => { havuz?.unlink(ad); });
 }
 
 onmessage = async (e: MessageEvent<{ no: number; ad: IstekAdi; arg: unknown }>) => {

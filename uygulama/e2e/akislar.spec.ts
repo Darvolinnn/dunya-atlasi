@@ -167,3 +167,33 @@ test('komut paletinden takvim günü hesabı ve yolculuk süresi açılır', asy
   const yol = p.getByRole('dialog', { name: 'Yolculuk süresi' });
   await expect(yol.getByRole('button', { name: 'Hesapla' })).toBeDisabled();
 });
+
+test('evren bu cihazdan kaldırılır; onaydan vazgeçilirse yerinde kalır', async ({ page: p }) => {
+  await p.goto('/');
+  for (const ad of ['Kalacak Evren', 'Gidecek Evren']) {
+    await p.getByRole('button', { name: 'Yeni evren' }).click();
+    await p.locator('#yeni-evren-adi').fill(ad);
+    await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
+    await expect(p).toHaveURL(/#\/e\//);
+    await p.goto('/');
+  }
+  const kartlar = p.locator('button.kart h3');
+  await expect(kartlar).toHaveCount(2);
+  const kaldir = p.getByRole('button', { name: '“Gidecek Evren” evrenini bu cihazdan kaldır' });
+  // Önce vazgeç: hiçbir şey silinmez.
+  const [ilk] = await Promise.all([p.waitForEvent('dialog'), kaldir.click()]);
+  expect(ilk.message()).toContain('yalnızca bu cihazda');
+  expect(ilk.message()).toContain('hiç yedeği yok');
+  await ilk.dismiss();
+  await expect(kartlar).toHaveCount(2);
+  // Yedeği olmayan evren için iki kez sorulur.
+  const sorular: string[] = [];
+  p.on('dialog', (d) => { sorular.push(d.message()); void d.accept(); });
+  await kaldir.click();
+  await expect(kartlar).toHaveCount(1);
+  expect(sorular).toHaveLength(2);
+  await expect(kartlar).toHaveText('Kalacak Evren');
+  expect(sorular.at(-1)).toContain('Son kez soruyoruz');
+  await p.reload();
+  await expect(kartlar).toHaveText('Kalacak Evren');
+});

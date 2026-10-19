@@ -35,6 +35,12 @@ export class KurulumVt {
     this.db.exec({ sql: 'INSERT INTO evrenler(kod, ad, olusturma) VALUES(?,?,?)', bind: [kod, ad, olusturma] });
   }
 
+  /** Evreni bu kurulumun listesinden ve ona ait ayarlardan çıkarır (§10.1). */
+  evrenSil(kod: string) {
+    this.db.exec({ sql: 'DELETE FROM evrenler WHERE kod=?', bind: [kod] });
+    this.db.exec({ sql: "DELETE FROM ayar WHERE k LIKE '%:' || ?", bind: [kod] });
+  }
+
   evrenAdi(kod: string, ad: string) {
     this.db.exec({ sql: 'UPDATE evrenler SET ad=? WHERE kod=?', bind: [ad, kod] });
   }

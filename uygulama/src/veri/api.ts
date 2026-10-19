@@ -1129,6 +1129,7 @@ export interface Istekler {
   baslat(): KurulumBilgisi;
   evrenler(): EvrenOzeti[];
   evrenOlustur(a: { ad: string }): { kod: string };
+  evrenKaldir(a: { evren: string }): void;
   evrenAdlandir(a: { evren: string; ad: string }): void;
   evrenBilgisi(a: { evren: string }): EvrenBilgisi;
   islemGunlugu(a: { evren: string; sinir: number }): GunlukSatiri[];

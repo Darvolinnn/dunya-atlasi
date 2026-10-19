@@ -854,3 +854,8 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 
 /* Uzun süren baştan kurmanın şeridi (§10.7). */
 .hazirlanma-seridi progress { flex: 1; min-width: 160px; height: 10px; accent-color: var(--vurgu); }
+
+/* Evrenler sayfasında kartın köşesindeki "Kaldır" (§10.1). */
+.evren-karti { position: relative; }
+.evren-karti .kart { padding-right: 76px; height: 100%; }
+.evren-kaldir { position: absolute; top: 8px; right: 8px; }

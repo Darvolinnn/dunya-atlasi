@@ -136,7 +136,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     /** Kalıcı olmayan veritabanı (sabit sürüm görünümleri); tarayıcıda bellekte açılır. */
     private readonly gecici: () => Database = () => ac(`/gecici-${yeniKod()}.db`),
     /** Uzun süren baştan kurmanın ilerlemesi (§10.7); arayüz şerit gösterir. */
-    private readonly ilerle: (d: IlerlemeBildirimi) => void = () => {}) {
+    private readonly ilerle: (d: IlerlemeBildirimi) => void = () => {},
+    /** Kapatılmış bir veritabanı dosyasını siler (evreni bu cihazdan kaldırırken). */
+    private readonly dosyaSil: (ad: string) => void = () => {}) {
     this.kurulum = new KurulumVt(ac('/kurulum.db'), varsayilanKurulumAdi);
     this.aktor = aktor(this.kurulum.kod);
   }
@@ -196,6 +198,28 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   // ---------- Evrenler ----------
   baslat() { return { kod: this.kurulum.kod, ad: this.kurulum.ad, sqlite: this.sqliteSurumu }; }
   evrenler() { return this.kurulum.evrenler(); }
+
+  /**
+   * Evreni yalnızca bu cihazdan kaldırır (§10.1): veritabanı dosyası, deneme kopyaları ve bu evrene ait ayarlar silinir.
+   * Drive'daki kopyaya ve öbür cihazlara dokunulmaz; eşitlenmişse Eşitleme sayfasından yeniden indirilebilir.
+   * Ortak görsel deposundaki dosyalar başka evrenlerce de kullanılabildiği için silinmez.
+   */
+  evrenKaldir({ evren }: { evren: string }) {
+    if (!kodGecerliMi(evren) || !this.kurulum.evrenler().some((x) => x.kod === evren)) throw new Error('Evren bulunamadı.');
+    const e = this.evren(evren);
+    const dallar = (e.db.selectObjects('SELECT kod FROM dallar') as { kod: string }[]).map((r) => r.kod);
+    // Bu evrene bağlı açık sürüm ve deneme kopyaları kapatılır.
+    for (const [kod, b] of [...this.bagli]) {
+      if (b.evren !== evren) continue;
+      this.acik.get(kod)?.db.close();
+      this.acik.delete(kod);
+      this.bagli.delete(kod);
+    }
+    e.db.close();
+    this.acik.delete(evren);
+    this.kurulum.evrenSil(evren);
+    for (const kod of [evren, ...dallar]) for (const ek of ['', '-journal']) this.dosyaSil(`/evren-${kod}.db${ek}`);
+  }
 
   evrenOlustur({ ad }: { ad: string }) {
     const temiz = temizle(ad);
