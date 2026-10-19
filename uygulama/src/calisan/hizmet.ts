@@ -568,7 +568,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       if (dir) {
         const san = (k: unknown) => SANILAN_DURUMLAR.find((x) => x.kod === k)?.ad ?? '';
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: dir.konu as string, baslik: `${kayitAdi(dir.konu as string)} · ${dir.soru}`, alanEtiketi: 'Başkasının bilgisine dair inanç',
-          degerler: degerler.map((d) => { const t = d.deger as DairInancTanimi | null; return { ...d, yazi: t ? `${kayitAdi(t.sanan)}, ${kayitAdi(t.hakkinda)} için “${san(t.sanilan)}” sanıyor${t.tarih ? ` (${t.tarih})` : ''}${t.aciklama ? `: ${t.aciklama}` : ''}` : '(boş)' }; }) });
+          degerler: degerler.map((d) => { const t = d.deger as DairInancTanimi | null; return { ...d, yazi: t ? `${kayitAdi(t.sanan)}, ${kayitAdi(t.hakkinda)} için “${san(t.sanilan)}” sanıyor${t.tarih ? ` (${t.tarih})` : ''}${t.aciklama ? `: ${t.aciklama}` : ''}` : 'Kaldırıldı' }; }) });
         continue;
       }
       const hkr = iliski || dr ? undefined : e.db.selectObject('SELECT sahip, tanim FROM hukuk_kurallari WHERE kod=?', [nesne]);
@@ -1025,7 +1025,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     const bpr = alan === 'baglam_parcasi' ? e.db.selectObject('SELECT kayit, alan FROM baglam_parcalari WHERE kod=?', [nesne]) : undefined;
     if (bpr) { this.yaz(evren, [{ tur: 'baglam_parcasi_yaz', veri: { kod: nesne, kayit: bpr.kayit, alan: bpr.alan, tanim: deger, cozum: true } }], [bpr.kayit as string]); return; }
-    const dir = alan === 'dair_inanc' ? e.db.selectObject('SELECT d.iddia, i.konu FROM dair_inanclar d JOIN iddialar i ON i.kod=d.iddia WHERE d.kod=?', [nesne]) : undefined;
+    const dir = alan === 'dair_inanc' ? e.db.selectObject('SELECT d.iddia, d.tanim, i.konu FROM dair_inanclar d JOIN iddialar i ON i.kod=d.iddia WHERE d.kod=?', [nesne]) : undefined;
+    if (dir && deger === null) {
+      const t = JSON.parse(dir.tanim as string) as DairInancTanimi;
+      this.yaz(evren, [{ tur: 'dair_inanc_sil', veri: { kod: nesne, iddia: dir.iddia, konu: dir.konu, sanan: t.sanan, hakkinda: t.hakkinda, cozum: true } }], [dir.konu as string, t.sanan, t.hakkinda]);
+      return;
+    }
     if (dir) { this.yaz(evren, [{ tur: 'dair_inanc_yaz', veri: { kod: nesne, iddia: dir.iddia, tanim: deger, konu: dir.konu, cozum: true } }], [dir.konu as string]); return; }
     const hkr = e.db.selectObject('SELECT sahip FROM hukuk_kurallari WHERE kod=?', [nesne]);
     if (hkr && alan === 'hukuk') { this.yaz(evren, [{ tur: 'hukuk_kurali_yaz', veri: { kod: nesne, tanim: deger, sahip: hkr.sahip, cozum: true } }], [hkr.sahip as string]); return; }

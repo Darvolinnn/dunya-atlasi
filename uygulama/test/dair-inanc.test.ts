@@ -77,6 +77,32 @@ describe('başkasının bilgisine dair inanç (F05)', () => {
     expect(liste()).toEqual([]);
     expect(h.islemGunlugu({ evren, sinir: 3 }).some((i) => i.tur === 'dair_inanc_sil')).toBe(true);
   });
+  it('bir cihazda kaldırma, öbüründe aynı anda düzenleme çatışma olarak görünür', () => {
+    const { h, evren, iddia, yaz, liste } = kur();
+    const a = yaz({ aciklama: 'Saray dedikodusu' });
+    const t = liste()[0].tanim;
+    const kopya = () => { const b = cihaz(); b.evreniDisaridanKur({ kod: evren, islemler: h.islemleriVer({ evren, gorulen: {} }) }); return b; };
+    const ikiCihaz = (sanilan: DairInancTanimi['sanilan']) => {
+      const b = kopya();
+      h.dairInancSil({ evren, kod: a });
+      b.dairInancYaz({ evren, iddia, kod: a, tanim: { ...t, sanilan } });
+      h.islemleriAl({ evren, islemler: b.islemleriVer({ evren, gorulen: h.gorulenler({ evren }) }) });
+      const c = h.catismalar({ evren }).find((x) => x.tur === 'alan' && x.alan === 'dair_inanc');
+      if (c?.tur !== 'alan') throw new Error('Çatışma bekleniyordu.');
+      expect(c.degerler.map((d) => d.yazi)).toContain('Kaldırıldı');
+      return c;
+    };
+    // Düzenleme seçilirse inanç geri gelir.
+    let c = ikiCihaz('biliyor');
+    h.alanCatismasiCoz({ evren, nesne: a, alan: 'dair_inanc', islem: c.degerler.find((d) => d.yazi !== 'Kaldırıldı')!.islem });
+    expect(h.catismalar({ evren })).toHaveLength(0);
+    expect(liste()[0].tanim.sanilan).toBe('biliyor');
+    // Kaldırma seçilirse inanç kalkar.
+    c = ikiCihaz('supheleniyor');
+    h.alanCatismasiCoz({ evren, nesne: a, alan: 'dair_inanc', islem: c.degerler.find((d) => d.yazi === 'Kaldırıldı')!.islem });
+    expect(h.catismalar({ evren })).toHaveLength(0);
+    expect(liste()).toEqual([]);
+  });
   it('birleşmiş kişi kodu yazarken birleştiği kayda çevrilir', () => {
     const { h, evren, vezir, yaz, liste } = kur();
     const a = yaz({});

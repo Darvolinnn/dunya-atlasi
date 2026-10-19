@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 57;
+export const IZDUSUM_SURUMU = 58;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -1319,11 +1319,16 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   dair_inanc_yaz(db, i) {
     const { kod, iddia, tanim } = i.veri as { kod: string; iddia: string; tanim: unknown };
     if (typeof kod !== 'string' || typeof iddia !== 'string' || !tanim || typeof tanim !== 'object') return;
-    db.exec({ sql: 'INSERT INTO dair_inanclar(kod, iddia, tanim, olusturma) VALUES(?,?,?,?) ON CONFLICT(kod) DO UPDATE SET tanim=excluded.tanim', bind: [kod, iddia, JSON.stringify(tanim), i.zaman] });
+    // Çatışma çözümünde değer seçilirse, öbür cihazdaki kaldırma geri alınır.
+    db.exec({ sql: 'INSERT INTO dair_inanclar(kod, iddia, tanim, olusturma) VALUES(?,?,?,?) ON CONFLICT(kod) DO UPDATE SET tanim=excluded.tanim, silindi=CASE WHEN ? THEN NULL ELSE silindi END',
+      bind: [kod, iddia, JSON.stringify(tanim), i.zaman, i.veri.cozum ? 1 : 0] });
     alanYaz(db, i, kod, 'dair_inanc', tanim);
   },
   dair_inanc_sil(db, i) {
-    db.exec({ sql: 'UPDATE dair_inanclar SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
+    const kod = i.veri.kod as string;
+    db.exec({ sql: 'UPDATE dair_inanclar SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, kod] });
+    // Kaldırma da tanımın bir değeridir: kaldırmayı görmeden yapılan düzenleme çatışma olarak görünür.
+    alanYaz(db, i, kod, 'dair_inanc', null);
   },
   /** Kesintiye dayanıklılık (F10): bir bağın dayanma süresi ve ikamesi. */
   dayaniklilik_yaz(db, i) {
