@@ -341,6 +341,9 @@ export interface SonrakiSoru {
   hesap: 'yolculuk' | 'yol' | 'haber' | 'yas' | 'yaslar' | 'gokyuzu'; ad: string; kayit: KisaKayit;
   girdiler: SonrakiSoruGirdisi[]; hazir: boolean; siradaki: SonrakiSoruGirdisi | null; not: string;
 }
+/** F31 keşif sorusu: tanımlı ilişkilerden çıkan aday; "mümkün" der, "oldu" demez. */
+export interface KesifAdayi { kisiler: KisaKayit[]; yer: KisaKayit; aralik: string; yazi: string; dayanaklar: string[] }
+export interface KesifSonucu { sablon: 'farkli_inananlar'; soru: string; adaylar: KesifAdayi[]; dahaFazla: boolean; kapsam: string; not: string }
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -731,6 +734,8 @@ export interface Istekler {
   delilGecmisi(a: { evren: string; kod: string }): DelilGecmisi;
   delilYaz(a: { evren: string; kod: string; tanim: DelilTanimi }): void;
   sorulabilirHesaplar(a: { evren: string; kod: string }): { hesap: SonrakiSoru['hesap']; ad: string }[];
+  kesifSorusu(a: { evren: string; sablon: KesifSonucu['sablon']; iddia: string }): KesifSonucu;
+  kesifAdayiKaydet(a: { evren: string; bicim: 'sahne' | 'mesele'; ad: string; aciklama: string; kisiler: string[]; yer: string | null }): { kod: string };
   sonrakiSoru(a: { evren: string; kod: string; hesap: SonrakiSoru['hesap']; nereden?: string | null; tarih?: string | null }): SonrakiSoru;
   baslat(): KurulumBilgisi;
   evrenler(): EvrenOzeti[];

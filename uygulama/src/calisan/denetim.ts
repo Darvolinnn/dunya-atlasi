@@ -59,6 +59,25 @@ function bulunmalar(e: EvrenVt): Bulunma[] {
   });
 }
 
+/** Kişilerin olay, sahne ve yolculuklarda fiziksel olarak bulunduğu yer ve tarih (F31 keşif soruları da kullanır). */
+export function fizikselBulunmalar(e: EvrenVt): { kisi: KisaKayit; yer: KisaKayit; tarih: EvrenTarihi; dayanak: KisaKayit; fikir: boolean }[] {
+  const yerler = new Map<string, KisaKayit[]>();
+  for (const r of e.db.selectObjects(`SELECT i.a olay, y.kod, y.ad, y.tur FROM iliskiler i JOIN kayitlar y ON y.kod=i.b
+      WHERE i.tur='sahne_yeri' AND i.silindi IS NULL AND y.silindi IS NULL AND i.karar<>'vazgecildi' AND y.karar<>'vazgecildi'`)) {
+    yerler.set(r.olay as string, [...(yerler.get(r.olay as string) ?? []), kisa(r)]);
+  }
+  const l: { kisi: KisaKayit; yer: KisaKayit; tarih: EvrenTarihi; dayanak: KisaKayit; fikir: boolean }[] = [];
+  for (const x of bulunmalar(e)) {
+    if (!x.tarih?.eksen) continue;
+    for (const y of yerler.get(x.olay.kod) ?? (x.sahneOlayi ? yerler.get(x.sahneOlayi) ?? [] : [])) l.push({ kisi: x.kisi, yer: y, tarih: x.tarih, dayanak: x.olay, fikir: x.fikir });
+  }
+  for (const x of yolculukBulunmalari(e)) {
+    const y = e.db.selectObject('SELECT kod, ad, tur FROM kayitlar WHERE kod=?', [x.yer]);
+    if (y) l.push({ kisi: x.kisi, yer: kisa(y), tarih: x.tarih, dayanak: x.yolculuk, fikir: x.fikir });
+  }
+  return l;
+}
+
 /** Yaşam süresi: doğumdan önce ya da ölümden sonra bir olayda fiziksel olarak bulunma. */
 function yasam(e: EvrenVt, b: Bulunma[]): { bulgular: Ham[]; denetlenen: number; tarihsiz: number; kisiVar: boolean } {
   const bulgular: Ham[] = [];

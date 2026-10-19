@@ -47,6 +47,7 @@ import * as sozluk from './sozluk';
 import * as anlatim from './anlatim';
 import * as delil from './delil';
 import * as sonraki from './sonraki-soru';
+import * as kesif from './kesif';
 import * as niyetMod from './degisiklik-niyeti';
 import * as degMasa from './degisiklik-masasi';
 import * as kosulMod from './kosul-masasi';
@@ -2257,6 +2258,30 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   delilGecmisi({ evren, kod }: { evren: string; kod: string }) { return delil.delilGecmisi(this.evren(evren), kod); }
   delilYaz({ evren, kod, tanim }: { evren: string; kod: string; tanim: DelilTanimi }) {
     delil.delilYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, kod, tanim);
+  }
+  kesifSorusu({ evren, sablon, iddia }: { evren: string; sablon: 'farkli_inananlar'; iddia: string }) {
+    if (sablon !== 'farkli_inananlar') throw new Error('Bilinmeyen soru şablonu.');
+    return kesif.farkliInananlar(this.evren(evren), iddia);
+  }
+  /** Keşif adayını yazarın isteğiyle bir sahne fikrine ya da açık meseleye dönüştürür (tek işlem grubu). */
+  kesifAdayiKaydet({ evren, bicim, ad, aciklama, kisiler, yer }: { evren: string; bicim: 'sahne' | 'mesele'; ad: string; aciklama: string; kisiler: string[]; yer: string | null }) {
+    const e = this.evren(evren);
+    if (bicim !== 'sahne' && bicim !== 'mesele') throw new Error('Geçersiz biçim.');
+    const temizAd = temizle(ad);
+    if (!Array.isArray(kisiler) || !kisiler.length || kisiler.length > 10) throw new Error('Adaydaki kişiler okunamadı.');
+    for (const k of [...kisiler, ...(yer ? [yer] : [])]) this.kayitVarMi(e, k);
+    const kod = yeniKod();
+    const girdiler: IslemGirdisi[] = [...this.kayitGirdileri(kod, { ad: temizAd, tur: bicim === 'sahne' ? 'sahne' : 'acik_mesele', karar: bicim === 'sahne' ? 'fikir' : 'kesin', ozet: temizle(aciklama, { bos: true, uzunluk: 500 }) })];
+    const kisiKodlari = [...new Set(kisiler.map((k) => yonlendir(e.db, k)))];
+    if (bicim === 'sahne') {
+      for (const k of kisiKodlari) girdiler.push({ tur: 'iliski_ekle', veri: { kod: yeniKod(), tur: 'sahnede', a: k, b: kod, rol: 'bulunuyor', karar: 'fikir' } });
+      if (yer) girdiler.push({ tur: 'iliski_ekle', veri: { kod: yeniKod(), tur: 'sahne_yeri', a: kod, b: yonlendir(e.db, yer), karar: 'fikir' } });
+    } else {
+      girdiler.push({ tur: 'kayit_alan', veri: { kod, alan: 'durum', ad: 'Durum', deger: 'dusunulecek', onceki: null } });
+      for (const k of [...kisiKodlari, ...(yer ? [yonlendir(e.db, yer)] : [])]) girdiler.push({ tur: 'iliski_ekle', veri: { kod: yeniKod(), tur: 'mesele_konusu', a: kod, b: k, karar: 'kesin' } });
+    }
+    this.yaz(evren, girdiler, [kod, ...kisiKodlari, ...(yer ? [yer] : [])]);
+    return { kod };
   }
   sorulabilirHesaplar({ evren, kod }: { evren: string; kod: string }) {
     const e = this.evren(evren); this.kayitVarMi(e, kod);
