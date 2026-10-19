@@ -3,6 +3,7 @@
 Bu depo, bir yazarın kurgu evrenlerini kurmasına yardım eden kişisel bir web uygulamasıdır (PWA). Kullanıcı Türkçe yazar; arayüz ve kayıt mesajları Türkçedir.
 
 ## Bağlayıcı kaynaklar
+- **İşi devralıyorsan önce `DEVIR.md`'yi oku:** güncel durum, kalan işler, paralel dallar ve çalışma yöntemi oradadır. Her işin sonunda `DEVIR.md`'yi güncelle.
 - Programın davranışının tek kaynağı `tasarim/dunya-atlasi-tasarim.md` belgesidir. Okuma ve güncelleme kuralları o belgenin §0 bölümündedir; bir değişiklik yapmadan önce §0'ı okuyun. Kod için ayrıca bağlayıcı olan bölüm **§18**'dir (veri sözleşmeleri, arama, özellik kullanım sözleşmesi).
 - Bir bölümü tek başına uygulamayın; bölümdeki bağlantıları izleyin ve konu dizinindeki (§0.4) tanım yerini esas alın.
 - `tasarim/tasarim-gecmisi.md` davranış tanımlamaz; yalnızca gerekçe ve geçmiştir. `tasarim/tasarim.md` ilk araştırmanın kaydıdır.

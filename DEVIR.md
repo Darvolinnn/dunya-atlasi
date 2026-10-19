@@ -1,0 +1,115 @@
+# Devir notu: işi devralan ajan için
+
+*Son güncelleme: 19 Ekim 2026. `main` son kayıt: bu dosyayı ekleyen kayıt. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **41**. Sınama: 51 dosya, 247 sınama, hepsi geçiyor.*
+
+Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
+
+**Her işin sonunda bu dosyayı güncelle:** durum tablosu, kalan işler ve son kayıt. Bir sonraki ajan buradan başlayacak.
+
+---
+
+## 1. Önce oku (sırayla)
+
+1. `AGENTS.md`: bağlayıcı kurallar.
+2. Bu dosya.
+3. `tasarim/dunya-atlasi-tasarim.md`: §0 (okuma ve güncelleme kuralları), §0.4 (konu dizini), §1.3 (teknik kararlar), §14 (geliştirme sırası), §16.1 (fikirler F01–F35 ve durumları), §18 (kod için bağlayıcı sözleşmeler). Bir maddeyi kodlamadan önce o maddenin satırını ve bağlantı verdiği bölümleri oku.
+
+## 2. Kullanıcı ve çalışma tercihi
+
+- Kullanıcı Türkçe yazar; ona Türkçe, kısa ve sade cevap ver. Arayüzdeki ve hata iletilerindeki her metin Türkçedir; kullanıcıya görünen metinde programlama terimi olmaz.
+- Kullanıcının açık tercihi: **bir aşama ya da madde bitince onay beklemeden sıradakine geç.** Yalnızca geri alınamaz işlerde (zorla gönderme, toplu silme, dışarıya mesaj) ya da kullanıcının vermesi gereken bir kararda (ör. TK8) dur ve sor.
+- Kullanıcı bazen başka ajanları (GPT/Codex, Argon) ayrı dallarda paralel çalıştırır. Onlara verilecek promptları sen yazarsın; dalları sen birleştirir, sürümü sen artırır, denetimi sen yaparsın (bkz. §6).
+
+## 3. Durum
+
+### 3.1 Bitenler
+
+- **§14.1 geliştirme sırasının bütün aşamaları (0, 1a, 1b, 2, 3, 4, 5) kodlandı.** Tasarımda aşama 6 ve sonrası yok.
+- Aşama 5'ten sonra kodlanan "Tasarım" durumundaki maddeler:
+
+| Madde | Ne | Kayıt |
+|---|---|---|
+| §5.7 / F14 | Metin işaretleme (cümleyi kayda ve bilgisine bağlama) | `87a1fa4` |
+| §15-7 | Gökyüzü, ay evreleri (birinci düzey) | `5f9a3d1` |
+| F20 | Sözlük ve anakronizm denetimi | `d9a0656` |
+| §15-6 | Sahne yerleşimi, görüş ve ses | `3cc8150` |
+| F24 | Önemli değişiklikte niyet sorusu (iki kısım) | `9997621`, `824addc` |
+| F04 | Değişiklik masası (korunacakları seçerek tarih değiştirme) | `f7de1dd` |
+| §15-13 / F03 | Sonuçtan koşullara masası | `9fb52c5` |
+| F23 | Bağlam karşılaştırma masası | `b6cafe0` |
+| F28 | Çelişen anlatılar için iddia dosyası | `4f76ad1` |
+| F08 | Delil geçmişi ve soruşturma masası | `ea19c5b` |
+| F33 | Bir sonraki yararlı soru | `238fac0` |
+| F31 | Açık verilere dayanan keşif soruları (ilk şablon) | `5111598` |
+
+### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
+
+Bu dallar uzak depoda belirince birleştir (§6). Hiçbiri `IZDUSUM_SURUMU`'nu artırmamalı; artırmayı birleştiren yapar.
+
+| Dal | Madde | İşlem adı öneki | Tablolar | Not |
+|---|---|---|---|---|
+| `paket/haklar` | F26 haklar, yetkiler, yükümlülükler | `hak_` | `haklar`, `hak_tanimalari` | Birleşince F31'e "aynı konuda çelişen hak iddiası olanlar" şablonunu ekle. |
+| `paket/anlati-sozlesmesi` | F15 anlatı ve evren sözleşmesi | `sozlesme_` | `sozlesme_maddeleri`, `sozlesme_disarida` | Paket "açık bırakılan" kayıtları veren bir işlev dışa aktaracak (ör. `acikBirakilanKayitlar`). Birleşince bu kümeyi eksik sayan yerlere bağla: F33 (`calisan/sonraki-soru.ts`), açık meseleler ve soru setleri (`calisan/sablon.ts`). |
+| `paket/yogunluk` | F22 yoğunluk ve boşluk | (yok) | (yok) | Salt okunur. Sürüm artırmaya gerek yok. |
+| `paket/bakim` | F32 bakım ve tekrarlar | `bakim_` | `bakim_tanimlari`, `bakim_kayitlari` | Argon ajanında. |
+
+Bu paketlerin tam promptları kullanıcının proje klasöründedir; depoda değildir. Prompt yazarken kalıp olarak bu tablodaki bilgiler ve §6 yeterlidir.
+
+### 3.3 Kalan işler (önerilen sıra)
+
+1. **Hazır olan paketleri birleştir** (§3.2), her birinden sonra sınama ve tarayıcıda deneme.
+2. **F12 "Büyü neden her yerde kullanılmıyor"**: büyü uygulaması, büyü sistemi, teknoloji ve evren kuralı kayıtlarının sayfasında bir masa: yazar bağlı alanları (mahkeme, diplomasi, ticaret… bir kayda bağlı ya da kısa adla) ekler; her alan için maliyet, erişim, karşı önlem ve yasak hücreleri yazarın kısa metinleridir. Aday alanlar yalnızca o kayda doğrudan ilişkisi olan kayıtlardan gösterilir. Boş hücre "yazılmamış" diye gösterilir, eksik sayılmaz. Toplumsal hüküm verilmez. Tek tablo, tek "yaz" işlemi (örnek: `calisan/delil.ts`); `IZDUSUM_SURUMU` 1 artar.
+3. **F35 baskı ve uyarlama karşılaştırma**: yazar iki eser (ya da eser ile deneme kopyası) arasında eşlemeler tanımlar (iki karakter → tek karakter, olay sırası değişimi); sonraki değişiklikte etkilenebilecek eşlemeler listelenir. Hiçbir dal ötekini kendiliğinden güncellemez. Dallar için `calisan/dal.ts`, eser yapısı için `calisan/anlati.ts`.
+4. **F16 kural atölyesi**: önce **TK8** kararı gerekir. Bu karar kullanıcınındır; kodlamadan önce sor.
+5. **Bilinen boşluklar:**
+   - Deneme kopyası (dal) değişiklikleri yalnızca o cihazda kalıyor, eşitlenmiyor.
+   - Göreli tarihlerde Türkçe iyelik eki eksik.
+   - Zaman akışları arasında yaşanan zaman hesaplanmıyor.
+   - Sahne panelinde okur bilgisi gösterilmiyor.
+   - Gökyüzü sekmesinde tarih hatası sekmenin en altında görünüyor; girdinin yanına taşınmalı.
+6. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
+7. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
+
+"Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
+
+## 4. Kod yapısı ve yeni bir özellik ekleme tarifi
+
+`uygulama/src/`:
+- `alan/`: tarayıcıdan bağımsız kurallar ve arayüzün de kullandığı sabitler (ör. `alan/anlatim.ts`, `alan/delil.ts`). Arayüz `calisan/` altından içe aktarma yapmaz.
+- `calisan/`: veritabanı çalışanı. `hizmet.ts` (bütün istekler), `izdusum.ts` (işlemlerin tablolara uygulanması), her özellik için ayrı modül.
+- `veri/api.ts`: istek ve veri tipleri; `Istekler` arayüzü.
+- `arayuz/`: ekranlar. Kayıt sayfası `KayitEkrani.tsx`, evren sekmeleri `EvrenEkrani.tsx` (`GORUNUMLER`).
+
+Yeni bir yazma isteği eklemek (sırayla):
+1. `veri/api.ts`: tipler `export interface EvrenDali {` satırının önüne; istek satırı `Istekler` içine.
+2. `calisan/vt.ts`: istek adını `IZINLI` kümesine ekle (eklenmezse arayüz çağıramaz).
+3. Özellik modülü `calisan/<ad>.ts`: doğrulama ve okuma. Yazma yalnızca `b.yaz(girdiler, ilgiliKayitlar)` ile; birden çok girdi tek işlem grubudur.
+4. `calisan/izdusum.ts`: tablo (`CREATE TABLE IF NOT EXISTS …`), tablo adı `IZDUSUM_TABLOLARI`'na, uygulayıcı `UYGULAYICILAR`'a. Uygulayıcı her alan için `alanYaz(db, i, nesne, alan, deger)` çağırır; iki cihazdaki farklı yazım böyle çatışma olarak görünür. **Tablo eklenince ya da tablonun türetilişi değişince `IZDUSUM_SURUMU`'nu 1 artır.**
+5. `calisan/hizmet.ts`: modül içe aktarması ve istek yöntemi; `catismalar` yöntemine etiket dalı, `alanCatismasiCoz` yöntemine çözüm dalı (`delil` ve `anlatim` dalları örnektir).
+6. `alan/islem-metni.ts`: işlem günlüğünde görünen Türkçe açıklama.
+7. Arayüz bileşeni ve `KayitEkrani.tsx` ya da `EvrenEkrani.tsx` satırı; gerekirse `arayuz/stil.css` sonuna sınıflar.
+8. `test/<ad>.test.ts`: bellekte SQLite ile `Hizmet` (kalıp: `test/delil.test.ts`). İki cihaz çatışması kalıbı: `test/anlatim.test.ts`.
+
+Kurallar: veritabanına yalnızca `EvrenVt.islemYap()` (hizmette `this.yaz`) yazar; serbest metinden anlam çıkarılmaz; kayıt kodları `yonlendir` ile birleşmiş kayda çevrilir; yeni kod `yeniKod()`.
+
+## 5. Komutlar ve denetim
+
+- `cd uygulama && npm ci`, sonra `npm test` (bütün sınamalar) ve `npm run denetle` (tür denetimi). İkisi de hatasız olmadan kayıt yapma.
+- `npm run dev` → http://localhost:5173 (Google girişine izin verilen adres bu).
+- Arayüzü denemek için Playwright kullanılabilir: yeni evren oluştur, kayıt oluştur, bölümü kullan, tarayıcı konsolunda hata olmadığını gör. Ekran görüntülerini depoya koyma.
+
+## 6. Paralel ajan dallarını birleştirme
+
+- Dal promptunda şunlar olmalı: önce okunacaklar, görev, yeni dosyalar, ortak dosyalara **yalnızca ekleme** ve ekleme yerleri (bir satırın hemen önü/ardı), `IZDUSUM_SURUMU`'na dokunmama, işlem adı öneki, yasaklar, sınama listesi, `paket/<ad>` dalına gönderme.
+- Birleştirme: `git fetch origin && git merge --no-ff origin/paket/<ad>`.
+- **Çakışma eklemlerine dikkat:** iki taraf aynı yere satır eklediğinde git ortak kapanış satırlarını (`}`, `},`, `);`) bir kez yazıp diğerini düşürebilir. Her çakışma bölgesini elle oku; özellikle `izdusum.ts` içindeki SQL dizgelerinde kapanmayan `);` tür denetiminde görünmez, yalnızca çalışırken bozulur. Birleştirmeden sonra `npm test` mutlaka çalışsın.
+- Tablolu her paket için `IZDUSUM_SURUMU`'nu 1 artır ve birleştirme kaydına yaz.
+- Satır içi `import('../veri/api').Tip` gibi yazımları dosya başındaki içe aktarmaya çevir.
+- Birleştirdikten sonra tarayıcıda dene, sonra bu dosyanın §3'ünü güncelle.
+
+## 7. Git
+
+- Doğrudan `main` üzerinde çalışılıyor; kullanıcı bunu onayladı. Paralel ajanlar `paket/<ad>` dallarında çalışır.
+- Kayıt mesajları Türkçedir: ilk satır kısa başlık (ör. "Delil geçmişi ve soruşturma masası (F08)"), altında ne değiştiği ve yeni tablo varsa izdüşüm sürümü.
+- Zorla gönderme (force push) yapma; başkasının dalının geçmişini yeniden yazma.
+- Depo herkese açıktır: sır, gerçek evren içeriği, dışa aktarılmış veri, ekran görüntüsü ve lisans dosyası girmez. Test ve örnek adları uydurmadır.
