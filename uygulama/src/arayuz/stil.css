@@ -701,3 +701,8 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .olcekli-nokta.bit { fill: #b84a39; stroke: #fff; stroke-width: 1.5; }
 .olcekli-nokta.kontur-merkez { fill: #3b6ea5; stroke: #fff; stroke-width: 1.5; }
 .olcekli-sonuc { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--cizgi, #ccc); }
+
+/* Formül yazımı (TK8) */
+.formul-yazici textarea { width: 100%; box-sizing: border-box; font-family: ui-monospace, monospace; }
+.formul-hata-yeri { white-space: pre-wrap; word-break: break-word; }
+.formul-hata-yeri mark { background: transparent; color: var(--tehlike); outline: 2px solid var(--tehlike); border-radius: 2px; }

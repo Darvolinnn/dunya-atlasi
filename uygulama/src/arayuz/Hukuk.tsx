@@ -2,7 +2,7 @@
 // uygulama ayrıdır; çatışan yetkiler yan yana gösterilir.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { HukukKurali, HukukTanimi, UygulananKurallar } from '../veri/api';
+import type { HukukKurali, HukukTanimGirdisi, UygulananKurallar } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
 import { KuralOrnekleriBolumu } from './KuralAtolyesi';
 
@@ -16,8 +16,11 @@ const ILISKILER = [
 ];
 const turAdi = (t: string) => TURLER.find((x) => x.kod === t)?.ad ?? t;
 
-type Taslak = Omit<HukukTanimi, 'baslangic' | 'bitis'> & { baslangic: string; bitis: string };
-const taslakYap = (k: HukukKurali): Taslak => ({ ...structuredClone(k.tanim), baslangic: k.tanim.baslangic?.ifade ?? '', bitis: k.tanim.bitis?.ifade ?? '' });
+type Taslak = HukukTanimGirdisi & { formul: string };
+const taslakYap = (k: HukukKurali): Taslak => {
+  const { formul: _f, ...t } = structuredClone(k.tanim);
+  return { ...t, baslangic: k.tanim.baslangic?.ifade ?? '', bitis: k.tanim.bitis?.ifade ?? '', formul: k.formulYazisi ?? '' };
+};
 
 export function HukukKurallariBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; evren: string; kod: string; surum: number }) {
   const [l, setL] = useState<HukukKurali[] | null>(null);
@@ -44,7 +47,8 @@ function HukukKuraliDuzenleyici({ istemci, evren, k, surum }: { istemci: Istemci
   const [t, setT] = useState<Taslak>(() => taslakYap(k));
   const [adlar, setAdlar] = useState<Record<string, string>>({});
   const [hata, setHata] = useState<string | null>(null);
-  useEffect(() => setT(taslakYap(k)), [kayitli]);
+  const [formulKipi, setFormulKipi] = useState(!!k.formulYazisi);
+  useEffect(() => { setT(taslakYap(k)); if (k.formulYazisi) setFormulKipi(true); }, [kayitli]);
   const ad = (kod: string) => adlar[kod] ?? (k.kimlere.find((x) => x.hedef === kod)?.hedefKayit.ad ?? (k.yer?.kod === kod ? k.yer.ad : '…'));
   const degisti = JSON.stringify(t) !== kayitli;
   const yaz = (f: (x: Taslak) => void) => { const y = structuredClone(t); f(y); setT(y); };
@@ -58,7 +62,12 @@ function HukukKuraliDuzenleyici({ istemci, evren, k, surum }: { istemci: Istemci
         </select>
       </div>
       <input class="girdi" lang="tr" aria-label="Neyle ilgili" placeholder="Neyle ilgili (ör. kılıç taşımak). Aynı yazılan konular karşılaştırılır." value={t.konu} onInput={(e) => yaz((x) => { x.konu = (e.target as HTMLInputElement).value; })} />
-      <div class="kucuk">
+      <div class="satir kucuk">
+        <span class="soluk">Kimlere yazımı:</span>
+        <button class={`dugme kucuk ${formulKipi ? 'sade' : 'ana'}`} aria-pressed={!formulKipi} disabled={!!t.formul.trim()} title={t.formul.trim() ? 'Önce formülü boşaltın' : undefined} onClick={() => setFormulKipi(false)}>Koşul listesi</button>
+        <button class={`dugme kucuk ${formulKipi ? 'ana' : 'sade'}`} aria-pressed={formulKipi} disabled={!!t.kimlere.length} title={t.kimlere.length ? 'Önce koşul listesini boşaltın' : undefined} onClick={() => setFormulKipi(true)}>Formül</button>
+      </div>
+      {formulKipi ? <FormulYazici istemci={istemci} evren={evren} deger={t.formul} degistir={(v) => yaz((x) => { x.formul = v; })} /> : <div class="kucuk">
         <span class="soluk">Kimlere: </span>{!t.kimlere.length && <span class="soluk">herkese</span>}
         {t.kimlere.map((c, i) => (
           <span class="satir" key={i}>
@@ -71,7 +80,7 @@ function HukukKuraliDuzenleyici({ istemci, evren, k, surum }: { istemci: Istemci
           </span>
         ))}
         <KayitSec istemci={istemci} evren={evren} secili={null} etiket="Koşul ekle" sec={(s) => { if (s) { setAdlar({ ...adlar, [s.kod]: s.ad }); yaz((x) => { x.kimlere.push({ iliski: 'uye', hedef: s.kod, degil: false }); }); } }} />
-      </div>
+      </div>}
       <div class="satir kucuk">
         <span class="soluk">Nerede:</span>
         <KayitSec istemci={istemci} evren={evren} secili={t.yer ? { kod: t.yer, ad: ad(t.yer) } : null} etiket="Sahibinin alanında" sec={(s) => { if (s) { setAdlar({ ...adlar, [s.kod]: s.ad }); yaz((x) => { x.yer = s.kod; }); } }} />
@@ -98,6 +107,44 @@ function HukukKuraliDuzenleyici({ istemci, evren, k, surum }: { istemci: Istemci
       {hata && <p class="hata kucuk">{hata}</p>}
       <KuralOrnekleriBolumu istemci={istemci} evren={evren} kural={k.kod} surum={surum} />
     </details>
+  );
+}
+
+/** Formül yazımı (TK8): yazarken denetlenir; okunamıyorsa hatanın yeri işaretlenir, okunuyorsa programın okuyuşu gösterilir. */
+function FormulYazici({ istemci, evren, deger, degistir }: { istemci: Istemci; evren: string; deger: string; degistir: (v: string) => void }) {
+  const [d, setD] = useState<{ yazi: string } | { hata: string; konum: number; uzunluk: number } | null>(null);
+  const [yardim, setYardim] = useState(false);
+  useEffect(() => {
+    if (!deger.trim()) { setD(null); return; }
+    let iptal = false;
+    const z = setTimeout(() => { istemci.iste('formulDenetle', { evren, yazi: deger }).then((x) => { if (!iptal) setD(x); }, () => {}); }, 300);
+    return () => { iptal = true; clearTimeout(z); };
+  }, [deger]);
+  const h = d && 'hata' in d ? d : null;
+  return (
+    <div class="kucuk formul-yazici">
+      <textarea class="girdi" rows={2} lang="tr" spellcheck={false} aria-label="Kimlere uygulanır (formül)" aria-invalid={!!h}
+        placeholder={'Ör. üyesi [Kuzey Loncası] ve ({Rütbe} = "Subay" veya yaş < 16 yıl)'} value={deger}
+        onInput={(e) => degistir((e.target as HTMLTextAreaElement).value)} />
+      {!deger.trim() && <p class="soluk">Boş formül: herkese.</p>}
+      {h && (
+        <p class="hata" role="alert">
+          {h.hata}
+          <br /><code class="formul-hata-yeri">{deger.slice(0, h.konum)}<mark>{deger.slice(h.konum, h.konum + h.uzunluk) || ' '}</mark>{deger.slice(h.konum + h.uzunluk)}</code>
+        </p>
+      )}
+      {d && 'yazi' in d && d.yazi && <p class="soluk">Program şöyle okuyor: <code>{d.yazi}</code></p>}
+      <button class="dugme sade kucuk" aria-expanded={yardim} onClick={() => setYardim(!yardim)}>{yardim ? 'Yazım kılavuzunu gizle' : 'Nasıl yazılır?'}</button>
+      {yardim && (
+        <ul class="soluk">
+          <li>Kayıt köşeli parantezle: <code>üyesi [Kuzey Loncası]</code>; ayrıca kültüründen, türünden, makamını yürüten, hizmetinde, orada yaşayan.</li>
+          <li>Alan süslü parantezle: <code>{'{Rütbe} = "Subay"'}</code>, <code>{'{Mühürlü}'}</code>, <code>{'{Doğum tarihi} < "400"'}</code>, <code>{'{Boy} >= 180 cm'}</code>.</li>
+          <li>Yaş: <code>yaş &gt;= 16 yıl</code> (örnekteki ya da sorulan tarihe göre).</li>
+          <li><code>ve</code>, <code>veya</code>, <code>değil</code> ve parantez. Aynı adı taşıyan iki kayıt ya da alan varsa türünü yazın: <code>[Kuzey (Şehir)]</code>.</li>
+          <li>Bilgi eksik ya da çelişkiliyse sonuç “belirsiz” olur, “hayır” sayılmaz.</li>
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -128,7 +175,9 @@ export function UygulananKurallarAraci({ istemci, evren, kod, surum }: { istemci
                 <strong>{turAdi(x.kural.tanim.tur)}</strong>{x.kural.tanim.konu ? `: ${x.kural.tanim.konu}` : ''} <span class="soluk kucuk">· {x.kural.tanim.ad} · <a href={`#/e/${evren}/k/${x.kural.sahip.kod}`}>{x.kural.sahip.ad}</a> · {x.nedenYer}</span>
                 {x.kural.tanim.yaptirim && <div class="kucuk">Yaptırım: {x.kural.tanim.yaptirim}</div>}
                 <div class="kucuk soluk">Fiilen: {FIILI.find((f) => f.kod === (x.kural.tanim.fiili ?? ''))!.ad.toLocaleLowerCase('tr-TR')}{x.kural.tanim.fiiliNot ? ` · ${x.kural.tanim.fiiliNot}` : ''}</div>
-                {x.durum === 'kosul_kayitsiz' && <div class="kucuk">Koşulu kayıtlı değil: {x.kosullar.filter((c) => c.durum === 'kayitsiz').map((c) => c.ad).join(', ')}. Uygulanmadığı söylenemez.</div>}
+                {x.durum === 'kosul_kayitsiz' && x.kosullar.some((c) => c.durum === 'kayitsiz') && <div class="kucuk">Koşulu kayıtlı değil: {x.kosullar.filter((c) => c.durum === 'kayitsiz').map((c) => c.ad).join(', ')}. Uygulanmadığı söylenemez.</div>}
+                {x.formulNedenleri && <div class="kucuk">Formül kesin sonuç vermiyor: {x.formulNedenleri.join(' ')} Uygulanmadığı söylenemez.</div>}
+                {x.durum === 'hesaplanamadi' && <div class="kucuk hata">{x.hesaplanamadi} Kuralı açıp formülü düzeltin.</div>}
                 {x.zaman === 'tarihsiz' && <div class="kucuk soluk">Kuralın geçerlilik aralığı var; tarih verilmediği için denetlenmedi.</div>}
                 {x.zaman === 'belirsiz' && <div class="kucuk soluk">Tarih, kuralın geçerlilik sınırına göre belirsiz.</div>}
               </li>

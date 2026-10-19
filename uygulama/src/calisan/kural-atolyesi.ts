@@ -1,9 +1,9 @@
-// Kural atölyesi (F16, ilk kısım: formülsüz). Bir hukuk kuralı için yazar örnek durumlar saklar: kişi, yer, isteğe
+// Kural atölyesi (F16). Bir hukuk kuralı için yazar örnek durumlar saklar: kişi, yer, isteğe
 // bağlı tarih ve beklenen sonuç (uygulanmalı · uygulanmamalı · sınır durumu). Program her örneği kuralın bugünkü
 // tanımıyla ve bir önceki tanımıyla değerlendirir; beklentiyle uyuşmayanları ve kural değişince sonucu değişenleri
 // gösterir. Örneği ya da beklentiyi kendiliğinden değiştirmez; konu ve yaptırım yazısından anlam çıkarmaz (K1).
 // Kural kopyalanırken örnekleri de kopyalanır; kopya ayrı bir kuraldır, kaynağına bağlı kalmaz.
-// Formül yazımı (TK8) bu kısımda yoktur.
+// Kural "kimlere" kısmını formülle yazdıysa (TK8) formül de değerlendirilir; bozulmuş formül "hesaplanamadı" der.
 import { kodGecerliMi, yeniKod } from '../alan/kod';
 import type { IslemGirdisi } from '../alan/islem';
 import type { HukukTanimi, KisaKayit, KuralOrnegi, KuralOrnegiTanimi, KuralOrnekleri, OrnekBeklentisi, OrnekSonucu } from '../veri/api';
@@ -97,6 +97,8 @@ export function kuralOrnekleri(e: EvrenVt, kural: string): KuralOrnekleri {
       const d = kuralDegerlendir(c, kk);
       if (!d.uygulanan) return { sonuc: 'uygulanmaz', neden: d.neden };
       const u = d.uygulanan;
+      if (u.durum === 'hesaplanamadi') return { sonuc: 'hesaplanamadi', neden: u.hesaplanamadi ?? 'Formül hesaplanamadı.' };
+      if (u.formulNedenleri) return { sonuc: 'belirsiz', neden: `Formül kesin sonuç vermiyor: ${u.formulNedenleri.join(' ')}` };
       if (u.durum === 'kosul_kayitsiz') return { sonuc: 'belirsiz', neden: `Koşulu kayıtlı değil: ${u.kosullar.filter((x) => x.durum === 'kayitsiz').map((x) => x.ad).join(', ')}.` };
       if (u.zaman === 'tarihsiz') return { sonuc: 'belirsiz', neden: 'Kuralın geçerlilik aralığı var; örnekte tarih yok.' };
       if (u.zaman === 'belirsiz') return { sonuc: 'belirsiz', neden: 'Tarih, kuralın geçerlilik sınırına göre belirsiz.' };

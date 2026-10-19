@@ -6,8 +6,10 @@ import type { IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
 import { karsilastir, tarihCoz, type EvrenTarihi } from '../alan/tarih';
 import { katla } from '../alan/turkce';
-import type { HukukKosulu, HukukKurali, HukukTanimi, KisaKayit, UygulananKural, UygulananKurallar } from '../veri/api';
+import type { HukukKosulu, HukukKurali, HukukTanimGirdisi, HukukTanimi, KisaKayit, UygulananKural, UygulananKurallar } from '../veri/api';
+import { formulDegerlendir, FormulHatasi, Hesaplanamadi } from '../alan/formul';
 import type { EvrenVt } from './evren-vt';
+import { formulCoz, formulGoster, formulOrtami } from './formul-ortami';
 import { yonlendir, zamanSetiOku } from './izdusum';
 
 export interface HukukBaglami {
@@ -49,6 +51,7 @@ export function kuralOku(e: EvrenVt, r: Record<string, unknown>): HukukKurali {
     kod: r.kod as string, sahip: kisa(e, r.sahip as string), tanim: t,
     yer: t.yer ? kisa(e, t.yer) : null,
     kimlere: t.kimlere.map((k) => ({ ...k, hedefKayit: kisa(e, k.hedef) })),
+    formulYazisi: t.formul ? formulGoster(e, t.formul) : null,
   };
 }
 export function kuralBul(e: EvrenVt, kod: unknown, silinmis = false): HukukKurali {
@@ -72,7 +75,7 @@ export function hukukKuraliOlustur(b: HukukBaglami, sahip: string, ad: string) {
 }
 
 /** Tarihler yazarın ifadesiyle gelir, burada çözülür. Koşul hedefi ve yer kayıt olmalıdır. */
-export function hukukKuraliYaz(b: HukukBaglami, kod: string, g: Omit<HukukTanimi, 'baslangic' | 'bitis'> & { baslangic: string; bitis: string }) {
+export function hukukKuraliYaz(b: HukukBaglami, kod: string, g: HukukTanimGirdisi) {
   const k = kuralBul(b.e, kod);
   if (!TURLER.includes(g.tur as typeof TURLER[number])) throw new Error('Geçersiz kural türü.');
   if (g.fiili !== null && !FIILI.includes(g.fiili as typeof FIILI[number])) throw new Error('Geçersiz seçim.');
@@ -82,6 +85,13 @@ export function hukukKuraliYaz(b: HukukBaglami, kod: string, g: Omit<HukukTanimi
     kayitTuru(b.e, x.hedef);
     return { iliski: x.iliski, hedef: x.hedef, degil: !!x.degil };
   });
+  // Formül yazı olarak gelir; gelmezse (ya da saklanan biçimiyle geri gelirse) kuralın formülü değişmez.
+  let formul = k.tanim.formul ?? null;
+  if (typeof g.formul === 'string' || g.formul === null) try { formul = formulCoz(b.e, g.formul); } catch (x) {
+    if (x instanceof FormulHatasi) throw new Error(`Formül okunamadı: ${x.message}`);
+    throw x;
+  }
+  if (formul && kimlere.length) throw new Error('Koşul listesi ile formül birlikte kullanılmaz; birini boşaltın.');
   if (g.yer !== null && !YER_TURLERI.includes(kayitTuru(b.e, g.yer))) throw new Error('Kuralın geçtiği yer bir mekân ya da şehir olmalı.');
   const z = zamanSetiOku(b.e.db);
   const tarih = (s: string, ad: string) => {
@@ -95,6 +105,7 @@ export function hukukKuraliYaz(b: HukukBaglami, kod: string, g: Omit<HukukTanimi
     ad: metin(g.ad, 120, false), tur: g.tur, konu: metin(g.konu, 200), kimlere, yer: g.yer, yaptirim: metin(g.yaptirim, 300),
     fiili: g.fiili, fiiliNot: metin(g.fiiliNot, 300), baslangic: tarih(g.baslangic, 'Başlangıç'), bitis: tarih(g.bitis, 'Bitiş'),
   };
+  if (formul) tanim.formul = formul;
   if (JSON.stringify(tanim) === JSON.stringify(k.tanim)) return;
   b.yaz([{ tur: 'hukuk_kurali_yaz', veri: { kod, tanim, sahip: k.sahip.kod } }], [k.sahip.kod]);
 }
@@ -164,14 +175,29 @@ export function kuralDegerlendir(c: KuralBaglami, k: HukukKurali): { uygulanan: 
   });
   const tutmayan = kosullar.find((x) => x.durum === 'tutmuyor');
   if (tutmayan) return { uygulanan: null, neden: `Koşul tutmuyor: ${tutmayan.ad}.` };
+  // Formül (TK8): evet → uygulanır; hayır → uygulanmaz; belirsiz → bilgi eksik; bozulmuşsa hesaplanamadı.
+  let formulNedenleri: string[] | undefined, hesaplanamadi: string | undefined;
+  if (k.tanim.formul) {
+    try {
+      const f = formulDegerlendir(k.tanim.formul, formulOrtami(e, kisi, tarih));
+      if (f.sonuc === 'hayir') return { uygulanan: null, neden: 'Formül bu kişi için tutmuyor.' };
+      if (f.sonuc === 'belirsiz') formulNedenleri = f.nedenler;
+    } catch (x) {
+      if (!(x instanceof Hesaplanamadi)) throw x;
+      hesaplanamadi = `Formül hesaplanamadı: ${x.message}`;
+    }
+  }
   let zaman: UygulananKural['zaman'] = 'gecerli';
   if (k.tanim.baslangic || k.tanim.bitis) {
     if (!tarih) zaman = 'tarihsiz';
     else if ((k.tanim.baslangic && karsilastir(tarih, k.tanim.baslangic) === 'once') || (k.tanim.bitis && karsilastir(tarih, k.tanim.bitis) === 'sonra')) return { uygulanan: null, neden: 'Tarih, kuralın geçerlilik aralığının dışında.' };
     else if ((k.tanim.baslangic && karsilastir(tarih, k.tanim.baslangic) === 'belirsiz') || (k.tanim.bitis && karsilastir(tarih, k.tanim.bitis) === 'belirsiz')) zaman = 'belirsiz';
   }
-  const durum = kosullar.every((x) => x.durum === 'tutuyor') ? 'uygulanir' : 'kosul_kayitsiz';
-  return { uygulanan: { kural: k, nedenYer, kosullar, durum, zaman }, neden: nedenYer };
+  const durum = hesaplanamadi ? 'hesaplanamadi' : kosullar.every((x) => x.durum === 'tutuyor') && !formulNedenleri ? 'uygulanir' : 'kosul_kayitsiz';
+  const u: UygulananKural = { kural: k, nedenYer, kosullar, durum, zaman };
+  if (formulNedenleri) u.formulNedenleri = formulNedenleri;
+  if (hesaplanamadi) u.hesaplanamadi = hesaplanamadi;
+  return { uygulanan: u, neden: nedenYer };
 }
 
 /** Kişi bir yere girince ona uygulanabilecek kayıtlı kurallar. Tarih verilirse geçerlilik aralığı da denetlenir. */
@@ -189,4 +215,15 @@ export function uygulananKurallar(e: EvrenVt, kisi: string, yer: string, tarihIf
   const catismalar = [...gruplar.values()].filter((l) => l.some((x) => x.kural.tanim.tur === 'yasak') && l.some((x) => x.kural.tanim.tur === 'hak'))
     .map((l) => ({ konu: l[0].kural.tanim.konu, kurallar: l.map((x) => x.kural.kod) }));
   return { yer: kisa(e, yer), kisi: kisa(e, kisi), tarih, kurallar: sonuc, catismalar, yerler: yerler.map((y) => kisa(e, y)), yonetimler: yonetimler.map((y) => kisa(e, y)) };
+}
+
+/** Yazılan formülün okunup okunamadığı; okunduysa güncel adlarla yazısı, okunamadıysa hatanın yeri (yazarken). */
+export function formulDenetle(e: EvrenVt, yazi: string): { yazi: string } | { hata: string; konum: number; uzunluk: number } {
+  try {
+    const f = formulCoz(e, yazi);
+    return { yazi: f ? formulGoster(e, f) : '' };
+  } catch (x) {
+    if (x instanceof FormulHatasi) return { hata: x.message, konum: x.konum, uzunluk: x.uzunluk };
+    throw x;
+  }
 }
