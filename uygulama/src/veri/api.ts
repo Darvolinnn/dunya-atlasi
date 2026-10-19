@@ -785,6 +785,9 @@ export interface Istekler {
   surumFarki(a: { evren: string; surum: string }): EvrenFarki;
   dallar(a: { evren: string }): EvrenDali[];
   yayimlar(a: { evren: string; eser?: string | null }): Yayim[];
+  markdownDisaAktar(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Uint8Array; kayitSayisi: number; eksikGorsel: number }>;
+  epubYaz(a: { evren: string; eser: string; sahneBasliklari?: boolean }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
+  eserBaskiSayfasi(a: { evren: string; eser: string; sahneBasliklari?: boolean }): { html: string };
   yayimla(a: { evren: string; eser: string; baski: string }): { kod: string };
   yayimSil(a: { evren: string; kod: string }): void;
   yayimCelismeleri(a: { evren: string; yayim: string }): YayimCelismesi[];

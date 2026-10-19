@@ -14,6 +14,7 @@ import { IncelemeKuyrugu } from './Inceleme';
 import { KarsilastirmaSekmesi, SiradanGunSekmesi } from './Gundelik';
 import { DerlemeSekmesi } from './Derleme';
 import { BagSeridi, SurumlerSekmesi } from './Surumler';
+import { MarkdownCiktisi } from './Cikti';
 import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
 
 /** İnceleme görünümleri (§7) tek sekme altında; aynı verinin farklı çizimleri. */
@@ -57,7 +58,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           </div>
         )}
         {sekme === 'inceleme' ? <IncelemeKuyrugu istemci={istemci} evren={kod} surum={surum} />
-          : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
+          : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><MarkdownCiktisi istemci={istemci} evren={kod} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
           : sekme === 'surumler' && !bilgi.bag ? <SurumlerSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
           : sekme === 'bahsedilen' ? <Bahsedilenler istemci={istemci} evren={kod} surum={surum} />

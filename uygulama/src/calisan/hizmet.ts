@@ -47,6 +47,7 @@ import * as derlemeMod from './derleme';
 import * as fark from './fark';
 import * as dalMod from './dal';
 import * as yayimMod from './yayim';
+import * as cikti from './cikti';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
 import * as gorunum from './gorunum';
 import * as bilgi from './bilgi';
@@ -2112,6 +2113,31 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const e = this.anaEvren(evren);
     this.surumBul(e, surum);
     return fark.evrenFarki(this.evren(surum), e);
+  }
+
+  // ---------- Okunabilir dışa aktarma (§10.11) ----------
+  private dosyaKoku(ad: string) { return katla(ad).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'evren'; }
+  /** Bütün evren, bağlantıları korunmuş Markdown klasörü olarak (zip). */
+  async markdownDisaAktar({ evren }: { evren: string }) {
+    const e = this.evren(evren);
+    const ad = this.evrenBilgisi({ evren }).ad;
+    const r = await cikti.markdownDosyalari(e, ad, (g) => (this.medya ? this.medya.oku(g) : Promise.resolve(null)));
+    const veri = await zipYaz(r.dosyalar);
+    return { dosyaAdi: `${this.dosyaKoku(ad)}-markdown-${new Date().toISOString().slice(0, 10)}.zip`, veri, kayitSayisi: r.kayitSayisi, eksikGorsel: r.eksikGorsel };
+  }
+  private eserKontrol(e: EvrenVt, eser: string) {
+    if (e.db.selectValue("SELECT 1 FROM kayitlar WHERE kod=? AND tur='eser' AND silindi IS NULL", [eser]) === undefined) throw new Error('Eser bulunamadı.');
+  }
+  async epubYaz({ evren, eser, sahneBasliklari = false }: { evren: string; eser: string; sahneBasliklari?: boolean }) {
+    const e = this.evren(evren);
+    this.eserKontrol(e, eser);
+    const r = cikti.epubDosyalari(e, eser, !!sahneBasliklari);
+    return { dosyaAdi: `${this.dosyaKoku(r.ad)}.epub`, veri: await zipYaz(r.dosyalar) };
+  }
+  eserBaskiSayfasi({ evren, eser, sahneBasliklari = false }: { evren: string; eser: string; sahneBasliklari?: boolean }) {
+    const e = this.evren(evren);
+    this.eserKontrol(e, eser);
+    return { html: cikti.eserBaskiSayfasi(e, eser, !!sahneBasliklari) };
   }
 
   // ---------- Yayımlanmış eser kilidi (F18) ----------
