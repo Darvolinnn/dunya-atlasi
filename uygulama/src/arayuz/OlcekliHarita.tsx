@@ -764,7 +764,7 @@ function SonucZarfiGorunumu({
 }) {
   return (
     <details class="soluk kucuk">
-      <summary>Sonuç dayanağı ve varsayımlar (§2.3)</summary>
+      <summary>Sonuç dayanağı ve varsayımlar</summary>
       <ul class="isaret-listesi">
         <li><strong>Çalışma kipi:</strong> Ölçekli geometri</li>
         <li><strong>Sonucun türü:</strong> Bu varsayımlarla tahmin</li>
