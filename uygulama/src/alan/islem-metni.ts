@@ -190,6 +190,8 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   uyarlama_yaz: () => 'Uyarlama eşlemesi kaydedildi',
   uyarlama_gozden_gecir: () => 'Uyarlama eşlemesi gözden geçirildi',
   uyarlama_sil: (v) => v.silindi === false ? 'Uyarlama eşlemesi geri getirildi' : 'Uyarlama eşlemesi kaldırıldı',
+  donusum_yaz: () => 'Evren içi dönüşüm kaydedildi',
+  donusum_geri_al: () => 'Evren içi dönüşüm geri alındı',
 };
 
 /** Kullanıcının yaptığı bir değişiklik sayılmayan, başka bir işlemin parçası olan adımlar (listelerde gösterilmez). */
