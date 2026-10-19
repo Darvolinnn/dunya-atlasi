@@ -215,6 +215,11 @@ export interface TahtSirasi {
 export interface SahneNiyeti { iddia: string; secenek: string | null; tur: 'destekler' | 'zayiflatir' | 'aciklar' }
 export type MontajHedefi = 'surpriz' | 'gerilim';
 /** Kitap sonunda açık olanlar (K27): okura sorulup bu eserde açıklanmayan sorular; sonraki kitapta açıklanıyorsa nerede. */
+/** Karakterlerin kitaplardaki yolu (K27): karakter × eser; her hücre bir `eser_odagi` ilişkisi ve onun soruları. */
+export interface KarakterYollari {
+  eserler: { kod: string; ad: string }[];
+  karakterler: (KisaKayit & { hucreler: Record<string, { iliski: string; sorular: SoruSatiri[] }> })[];
+}
 export interface KitapSonuAciklar {
   eser: KisaKayit; seride: boolean;
   sorular: { iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null }; ipucu: number; yaniltmaca: number; destekler: number;
@@ -1152,6 +1157,7 @@ export interface Istekler {
   etkinCalisma(a: { evren: string }): KisaKayit | null;
   etkinCalismaYaz(a: { evren: string; kod: string | null }): void;
   simdi(a: { evren: string }): SimdiOnerisi[];
+  karakterYollari(a: { evren: string; kapsam: string }): KarakterYollari;
   seriler(a: { evren: string }): { seriler: { kod: string; ad: string; eserler: { kod: string; ad: string }[] }[]; serisiz: { kod: string; ad: string }[] };
   evrenAdlandir(a: { evren: string; ad: string }): void;
   evrenBilgisi(a: { evren: string }): EvrenBilgisi;

@@ -1779,6 +1779,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (!iliskiTuruGecerli(tur)) throw new Error('Bilinmeyen ilişki türü.');
     if (!kararGecerli(karar)) throw new Error('Geçersiz karar durumu.');
     const t = iliskiTuruBul(tur);
+    if (tur === 'eser_odagi' && (e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [a]) !== 'karakter' || e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [b]) !== 'eser'))
+      throw new Error('Odak karakter bağı bir karakterden bir esere kurulur.');
     if (tur === 'alternatif' && e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [a]) !== e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [b]))
       throw new Error('Alternatifler aynı türden olmalı: iki olay, iki sahne ya da iki kurgu hattı gibi.');
     if (!rol && t.rolIstegeBagli) rol = null;
@@ -2101,6 +2103,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     sablonlar.kayitSoruSeti(this.sablonBaglami(evren), kod, set, ekle);
   }
   evrenSorulari({ evren }: { evren: string }) { return sablonlar.evrenSorulari(this.evren(evren)); }
+  karakterYollari({ evren, kapsam }: { evren: string; kapsam: string }) { return sablonlar.karakterYollari(this.evren(evren), kapsam); }
   meseleler({ evren, kod }: { evren: string; kod?: string }) {
     const e = this.evren(evren);
     if (kod) this.kayitVarMi(e, kod);

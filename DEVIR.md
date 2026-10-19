@@ -168,6 +168,7 @@ Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda
 - [x] P8 çalışma durumları: eser ve sahne şablonunda "Çalışma durumu" seçim alanı (`ESER_CALISMA`, `SAHNE_CALISMA`); bölüm dağılımı ve olay örgüsü masasındaki durum satırı P6 ile.
 - [x] P9 kitap sonunda açık kalanlar: `montaj.kitapSonuAciklar`, eser sayfasında bölüm; `test/kitap-sonu.test.ts`.
 - [x] P10 Şimdi kartı: `Masa.tsx` `SimdiKarti`, istekler `etkinCalisma`, `etkinCalismaYaz`, `simdi`; işlem `evren_etkin_calisma`; `test/simdi.test.ts`. İlk adımların sıradaki adımı karta katılmadı (liste zaten Yaz sayfasında).
+- [x] P7 karakterin kitaptaki yolu: `eser_odagi` ilişkisi, `karakter_kitapta` soruları (`ILISKI_SETLERI`; `sablon.ts` `odakIliskisiMi` ilişki kodunu soru sahibi kabul eder), istek `karakterYollari`, eser sayfasında "Odak karakterler", seri sayfasında tablo; `test/karakter-yolu.test.ts`. Karar/sahne bağlantısı (5. ve 6. soru) ilk sürümde yalnız metin.
 - [ ] Sıradaki: P6 olay örgüsü masası (önce resimli taslak), P7 karakterin kitaptaki yolu, P8 çalışma durumları, P9 kitap sonunda açık olanlar, P10 Şimdi kartı.
 - [x] P1: yazarlık rehberi programın içinde (§12.4): `arayuz/YazarlikRehberi.tsx`, metinler `arayuz/yazarlik-rehberi.ts` (analiz belgesinden üretildi; belge değişirse yeniden üretilmeli: başlıklar `### Konu N — …`, alanlar `**Ne:**` biçiminde). Soru başına "Örnek" henüz yok. Ekran görüntüleri kullanıcı onayı bekliyor (PR #6).
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)

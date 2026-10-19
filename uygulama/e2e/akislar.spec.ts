@@ -295,3 +295,27 @@ test('seri: yazma ağacında serinin altında kitaplar; seriden çıkarılan kit
   await p.getByRole('link', { name: 'Yaz', exact: true }).click();
   await expect(p.locator('.eser-agaci > .agac-eser .agac-eser-ad', { hasText: 'Kuzey Yolu' })).toBeVisible();
 });
+
+test('eser sayfasında odak karakter eklenir, bu kitaptaki yolu yazılır; seri tablosunda görünür', async ({ page: p }) => {
+  await sahneAc(p);
+  await p.keyboard.press('Control+k');
+  await p.getByLabel('Kayıt ya da komut ara').fill('Lale');
+  await p.getByText('Yeni kayıt: “Lale”').click();
+  await p.getByRole('option', { name: /^Karakter/ }).first().click();
+  await expect(p.getByRole('textbox', { name: 'Ad' })).toHaveValue('Lale');
+  await p.getByRole('link', { name: 'Yaz', exact: true }).click();
+  await p.getByRole('button', { name: '+ Yeni seri' }).click();
+  await p.getByPlaceholder('Serinin adı').fill('Hatıra İmparatorluğu');
+  await p.getByPlaceholder('Serinin adı').press('Enter');
+  await p.getByLabel('Seriye kitap ekle').selectOption({ label: 'Kuzey Yolu' });
+  await p.getByRole('region', { name: 'Serinin kitapları' }).getByRole('link', { name: 'Kuzey Yolu' }).click();
+  const odak = p.getByRole('region', { name: 'Odak karakterler' });
+  await odak.getByLabel('Odak karakter ekle').selectOption({ label: 'Lale' });
+  await odak.locator('summary', { hasText: 'Lale' }).click();
+  await odak.getByLabel('Kitabın başında ne istiyor?').fill('Kardeşini bulmak.');
+  await odak.getByLabel('Kitabın başında ne istiyor?').blur();
+  await expect(odak.locator('summary')).toContainText('Kardeşini bulmak.');
+  await expect(odak.getByRole('button', { name: 'Yeni kayıtla cevapla' })).toHaveCount(0);
+  await p.getByRole('link', { name: 'Hatıra İmparatorluğu' }).first().click();
+  await expect(p.getByRole('region', { name: 'Karakterlerin yolu' })).toContainText('başta: Kardeşini bulmak.');
+});

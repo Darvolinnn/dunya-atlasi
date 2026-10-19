@@ -42,7 +42,7 @@ import { KullanimMasasiBolumu } from './KullanimMasasi';
 import { KULLANIM_SAHIPLERI } from '../alan/kullanim-masasi';
 import { BakimBolumu, BakimUzmanligiBolumu } from './Bakim';
 import { BirlesmeBilgisi, BirlestirDugmesi } from './Birlesme';
-import { KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
+import { KarakterYollariBolumu, KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
 import { BilinenlerBolumu, GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
 import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, KitapSonuBolumu, SeriBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
 import { UyarlamaBolumu } from './Uyarlama';
@@ -196,6 +196,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
 
         {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         {kayit.tur === 'eser' && <KitapSonuBolumu istemci={istemci} evren={evren} eser={kod} />}
+        {(kayit.tur === 'eser' || kayit.tur === 'seri') && <KarakterYollariBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         {kayit.tur === 'seri' && <><SeriBolumu istemci={istemci} evren={evren} kayit={kayit} /><SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} acik /></>}
         {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={imlecParcasi && parcaBaglami ? parcaBaglami : sahneBaglami} parca={!!(imlecParcasi && parcaBaglami)} />}
         {kayit.tur === 'sahne' && <SahneBolumu istemci={istemci} evren={evren} kayit={kayit} surum={surum} />}

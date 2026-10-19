@@ -153,6 +153,7 @@ Bölüm numaraları Sürüm 6'ya aittir. Bölüm numaralarında değişiklik yok
 | K27 uygulaması (19 Ekim) | Alternatifler (§3.6, §9.1) | `alternatif` ilişkisi (aynı türden kayıtlar), kesinleştirmede öbürlerini vazgeçirme sorusu, iki kesin alternatif için uyarı. Ayrı plan katmanı kurulmadı; karar durumları yetiyor. |
 | K27 uygulaması (19 Ekim) | Çalışma durumu ve kitap sonunda açık kalanlar (§4.6) | Eser ve sahne için ayrı, karar durumundan bağımsız çalışma durumu. Kitap sonu listesi kurgu hattı ipucu sayılarına değil montajdaki sahne niyetlerine dayanır; kurgu hattı ipucu rolleri tek tek ipucunu ayırt etmediği için tarihsel doğru sonuç veremezdi. |
 | K27 uygulaması (19 Ekim) | Şimdi kartı ve "Çalışıyorum" seçimi (§5.9, §7) | Etkin çalışma evrene yazılan ayrı bir değer (`evren_etkin_calisma` işlemi; çatışma izlenmez, günlükte sonra gelen geçerli). Devam notu "Kaldığınız yer"de kaldığı için kartta tekrarlanmadı. |
+| K27 uygulaması (19 Ekim) | Karakterin kitaptaki yolu (§4.6, Ek A) | Soru taşıyan `eser_odagi` ilişkisi (kayıt kodu yerine ilişki kodu soru cevaplarının sahibi olabilir). Ayrı tür açılmadı; kayıt listesi kalabalıklaşmasın diye. Sahne/olay bağlantısı ilk sürümde yok (ilişkiye "yeni kayıtla cevapla" kapalı). |
 | Alınmayanlar | — | B10 6.2'deki eser için `.docx` dışa aktarımı yeni bir fikir sayıldı (K11). F26'nın ayrıntısı ve 2.2'nin tam birleştirmesi bekliyor. B10 6.2 lisans önerisi yerine K19 |
 
 ---

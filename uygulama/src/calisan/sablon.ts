@@ -8,7 +8,7 @@ import {
   EVREN_SETLERI, MESELE_DURUMLARI, sablonGecerli, soruDurumuGecerli, soruSetiBul, varsayilanSablon,
   type Sablon, type SablonAlani,
 } from '../alan/sablon';
-import type { EvrenSorulari, KayitSablonu, KisaKayit, MeseleListesi, SablonBilgisi, SoruSatiri } from '../veri/api';
+import type { EvrenSorulari, KayitSablonu, KisaKayit, MeseleListesi, SablonBilgisi, SoruSatiri, KarakterYollari } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
 import { zamanSetiOku } from './izdusum';
 
@@ -70,6 +70,34 @@ function cevaplar(e: EvrenVt, kayit: string) {
 }
 const cevapYaz = (e: EvrenVt, r: Record<string, unknown> | undefined) =>
   r ? { durum: r.durum as never, cevap: r.cevap as string, kayitla: kisa(e, (r.kayitla as string) ?? null) } : null;
+
+/**
+ * Karakterlerin kitaplardaki yolu (K27, Model §8): kapsam bir eserse yalnız o eser, bir seriyse serinin eserleri
+ * önerilen okuma sırasıyla. Her karakter × eser hücresi bir `eser_odagi` ilişkisi ve onun sorularıdır; hücreler
+ * birbirini değiştirmez. Karakterin evren kaydı tektir.
+ */
+export function karakterYollari(e: EvrenVt, kapsam: string): KarakterYollari {
+  const tur = kayitTuru(e, kapsam);
+  if (tur !== 'eser' && tur !== 'seri') throw new Error('Bir eser ya da seri seçin.');
+  const eserler = (tur === 'eser'
+    ? e.db.selectObjects('SELECT kod, ad FROM kayitlar WHERE kod=?', [kapsam])
+    : e.db.selectObjects(`SELECT k.kod, k.ad FROM anlati a JOIN kayitlar k ON k.kod=a.kod WHERE a.ust=? AND k.tur='eser' AND k.silindi IS NULL ORDER BY a.konum, a.kod`, [kapsam])) as { kod: string; ad: string }[];
+  const set = soruSetiBul('karakter_kitapta')!;
+  const karakterler = new Map<string, KarakterYollari['karakterler'][number]>();
+  for (const x of eserler) {
+    for (const r of e.db.selectObjects(`SELECT i.kod iliski, k.kod, k.ad FROM iliskiler i JOIN kayitlar k ON k.kod=i.a
+      WHERE i.tur='eser_odagi' AND i.b=? AND i.silindi IS NULL AND k.silindi IS NULL ORDER BY i.olusturma, i.rowid`, [x.kod])) {
+      const kod = r.kod as string;
+      if (!karakterler.has(kod)) karakterler.set(kod, { kod, ad: r.ad as string, tur: 'karakter', hucreler: {} });
+      const c = cevaplar(e, r.iliski as string);
+      karakterler.get(kod)!.hucreler[x.kod] = {
+        iliski: r.iliski as string,
+        sorular: set.sorular.map((q) => ({ ...q, set: null, eski: false, cevap: cevapYaz(e, c.get(q.kod)) })),
+      };
+    }
+  }
+  return { eserler, karakterler: [...karakterler.values()] };
+}
 
 function kayitTuru(e: EvrenVt, kod: string): string {
   const t = kodGecerliMi(kod) ? e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [kod]) as string | undefined : undefined;
@@ -143,7 +171,16 @@ export function alanDegeri<T = unknown>(e: EvrenVt, kod: string, alan: string): 
 }
 export const tarihDegeri = (e: EvrenVt, kod: string, alan: string) => alanDegeri<EvrenTarihi>(e, kod, alan);
 
+/** Sorusu olan ilişki (K27): karakterin bir eserdeki yolu. */
+const odakIliskisiMi = (e: EvrenVt, kod: string) => kodGecerliMi(kod)
+  && e.db.selectValue("SELECT 1 FROM iliskiler WHERE kod=? AND tur='eser_odagi' AND silindi IS NULL", [kod]) !== undefined;
+
 function soruMetni(e: EvrenVt, kod: string, soru: string): string {
+  if (odakIliskisiMi(e, kod)) {
+    const q = soruSetiBul('karakter_kitapta')!.sorular.find((x) => x.kod === soru);
+    if (!q) throw new Error('Bilinmeyen soru.');
+    return q.metin;
+  }
   if (kod === 'evren') {
     for (const s of EVREN_SETLERI) { const q = soruSetiBul(s)!.sorular.find((x) => x.kod === soru); if (q) return q.metin; }
     throw new Error('Bilinmeyen soru.');
@@ -154,7 +191,7 @@ function soruMetni(e: EvrenVt, kod: string, soru: string): string {
 }
 
 export function soruCevapla(b: SablonBaglami, kod: string, soru: string, durum: string | null, cevap = '', kayitla: string | null = null) {
-  if (kod !== 'evren') kayitTuru(b.e, kod);
+  if (kod !== 'evren' && !odakIliskisiMi(b.e, kod)) kayitTuru(b.e, kod);
   if (durum !== null && !soruDurumuGecerli(durum)) throw new Error('Geçersiz soru durumu.');
   const metin = soruMetni(b.e, kod, soru);
   const temiz = String(cevap ?? '').replace(/[ \t]+/g, ' ').trim();
@@ -168,6 +205,7 @@ export function soruKayitla(b: SablonBaglami, kod: string, soru: string, ad: str
   if (!turGecerli(tur)) throw new Error('Bilinmeyen tür.');
   const temizAd = String(ad ?? '').replace(/\s+/g, ' ').trim();
   if (!temizAd) throw new Error('Ad boş olamaz.');
+  if (odakIliskisiMi(b.e, kod)) throw new Error('Bu soru yeni bir kayıtla cevaplanamaz.');
   if (kod !== 'evren') kayitTuru(b.e, kod);
   const metin = soruMetni(b.e, kod, soru);
   const yeni = yeniKod();

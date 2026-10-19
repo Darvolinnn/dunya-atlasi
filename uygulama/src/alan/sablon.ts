@@ -115,6 +115,16 @@ export const SORU_SETLERI: SoruSeti[] = [
     ['Orta evrede ne değişiyor?', 'Karakterlerin istediği şey nasıl dönüşüyor?'],
     ['Bilerek cevapsız kalacaklar neler?', 'Olası finaller ayrı olay kayıtları olarak tutulur'],
   ]),
+  set('karakter_kitapta', 'Karakterin bu kitaptaki yolu', [
+    'Kitabın başında ne istiyor?',
+    'Kitabın sonunda ne istiyor?',
+    ['Başlangıçtaki inancı ya da yanlış varsayımı ne?', 'Ör. "Devlet kayıtları yalan söylemez."'],
+    'Bu kitapta inancı nasıl sınanıyor?',
+    'Aldığı en zor karar ve vazgeçtiği seçenek ne?',
+    'Aştığı sınır, ödediği bedel ne?',
+    'İlişkilerinde ne değişiyor?',
+    'Sonraki kitaba hangi iç çatışmayı taşıyor?',
+  ]),
   set('hat', 'Kurgu hattı', [
     ['Bu hattın sorusu ne?', 'Ör. "Deniz\'e ne oldu?"'],
     'Şu anki durumu ne?',
@@ -129,6 +139,8 @@ const setler = new Map(SORU_SETLERI.map((s) => [s.kod, s]));
 export const soruSetiBul = (kod: string) => setler.get(kod);
 /** Kaydın değil evrenin soruları (Masa'da durur). */
 export const EVREN_SETLERI = ['pusula', 'baslangic', 'rehber', 'haritasiz'];
+/** Bir kaydın değil bir ilişkinin soruları (K27: karakterin bir eserdeki yolu); kayıtlara eklenemez. */
+export const ILISKI_SETLERI = ['karakter_kitapta'];
 
 export const MESELE_DURUMLARI: Secenek[] = [
   { kod: 'dusunulecek', ad: 'Düşünülecek' },
