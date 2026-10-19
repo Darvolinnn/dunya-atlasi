@@ -64,6 +64,8 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   kalitim_ozelligi_yaz: (v) => v.tanim ? `kalıtım özelliği yazıldı “${(v.tanim as { ad?: string }).ad ?? ''}”` : 'kalıtım özelliği kaldırıldı',
   kalitim_degeri_yaz: (v, ad) => `${ad(v.kisi)}: kalıtım özelliğindeki değeri ${v.deger ? 'yazıldı' : 'kaldırıldı'}`,
   veraset_yaz: (v, ad) => `${ad(v.kod)}: veraset kuralı ${v.tanim ? 'yazıldı' : 'kaldırıldı'}`,
+  sahne_niyeti_yaz: (v, ad) => `${ad(v.sahne)}: sahnenin niyet işaretleri değişti`,
+  montaj_hedefi_yaz: (v, ad) => `${ad(v.eser)}: bir soru için hedef ${v.hedef === 'surpriz' ? 'sürpriz' : v.hedef === 'gerilim' ? 'gerilim' : 'kaldırıldı'}`,
   hukuk_kurali_olustur: (v, ad) => `${ad(v.sahip)}: hukuk kuralı eklendi “${(v.tanim as { ad?: string } | null)?.ad ?? ''}”`,
   hukuk_kurali_yaz: (v, ad) => `${v.sahip ? `${ad(v.sahip)}: ` : ''}“${(v.tanim as { ad?: string } | null)?.ad ?? 'hukuk'}” kuralının tanımı değişti`,
   hukuk_kurali_sil: (v, ad) => `${ad(v.sahip)}: hukuk kuralı kaldırıldı “${v.ad}”`,

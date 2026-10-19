@@ -88,7 +88,7 @@ function YerSecici({ istemci, evren, tur, sec, kapat }: { istemci: Istemci; evre
 }
 
 /** Taşımadan sonra adların ilk anıldığı sahne değiştiyse (§3.3). Yalnızca metindeki bağlantılara dayanır. */
-function EtkiOzeti({ evren, etki, kapat }: { evren: string; etki: AnlatiEtkisi[]; kapat: () => void }) {
+export function EtkiOzeti({ evren, etki, kapat }: { evren: string; etki: AnlatiEtkisi[]; kapat: () => void }) {
   if (!etki.length) return null;
   return (
     <div class="kart etki-ozeti" role="status">

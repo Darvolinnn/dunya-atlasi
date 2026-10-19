@@ -187,6 +187,20 @@ export interface TahtSirasi {
   sira: { kisi: KisaKayit; yakinlik: string; uyarilar: string[] }[];
   sonrakiler: { kisi: KisaKayit; baslangic: string }[]; not: string;
 }
+/** Sahnenin yazarca işaretlenen niyeti (F13): bir açıklamayı destekler, zayıflatır ya da açıklar. */
+export interface SahneNiyeti { iddia: string; secenek: string | null; tur: 'destekler' | 'zayiflatir' | 'aciklar' }
+export type MontajHedefi = 'surpriz' | 'gerilim';
+export interface KurguMontaji {
+  eser: KisaKayit; sahneler: { kod: string; ad: string; sira: number; bolum: string | null }[];
+  sorular: {
+    iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null }; hedef: MontajHedefi | null; okurOgrenir: number | null; uyarilar: string[];
+    olaylar: { sira: number; sahne: KisaKayit; tur: 'ipucu' | 'yaniltmaca' | 'destekler' | 'zayiflatir' | 'aciklama' | 'okur'; secenek: string | null; inanc?: string; gercegi?: boolean }[];
+  }[];
+  izler: { kayit: KisaKayit; siralar: number[]; enUzunAra: number; sondan: number }[];
+  /** Hücre: 0 bulunuyor, n son görüldüğünden bu yana sahne sayısı, -1 henüz görünmedi. */
+  yokluk: { kisi: KisaKayit; hucreler: number[]; sayi: number }[];
+  not: string;
+}
 export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
 export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
 export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
@@ -721,6 +735,11 @@ export interface Istekler {
   uretimOzeti(a: { evren: string; urun: string }): UretimOzeti;
   dayaniklilikYaz(a: { evren: string; iliski: string; deger: Dayaniklilik | null }): void;
   geciselKayitlar(a: { evren: string; kok: string; eksen: GeciselEksen }): GeciselSonuc[];
+  kurguMontaji(a: { evren: string; eser: string }): KurguMontaji;
+  sahneNiyetleri(a: { evren: string; sahne: string }): SahneNiyeti[];
+  sahneNiyetleriYaz(a: { evren: string; sahne: string; niyetler: SahneNiyeti[] }): void;
+  montajHedefiYaz(a: { evren: string; eser: string; iddia: string; hedef: MontajHedefi | null }): void;
+  montajTasi(a: { evren: string; sahne: string; yon: -1 | 1 }): { etki: AnlatiEtkisi[] };
   kalitimOzellikleri(a: { evren: string }): KalitimOzelligi[];
   kalitimOzelligiYaz(a: { evren: string; kod: string | null; tanim: Omit<KalitimOzelligi, 'kod'> | null }): { kod: string };
   kalitim(a: { evren: string; kod: string }): KalitimBilgisi;

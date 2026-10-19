@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 28;
+export const IZDUSUM_SURUMU = 29;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -281,6 +281,14 @@ CREATE TABLE IF NOT EXISTS kalitim_degerleri(
 CREATE TABLE IF NOT EXISTS veraset_kurallari(
   kod TEXT PRIMARY KEY,
   tanim TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sahne_niyetleri(
+  kod TEXT PRIMARY KEY,
+  niyetler TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS montaj_hedefleri(
+  kod TEXT PRIMARY KEY,
+  hedefler TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS masalar(
   kod TEXT PRIMARY KEY,
@@ -545,7 +553,7 @@ CREATE TABLE IF NOT EXISTS ters_birlesmeler(
   zaman INTEGER NOT NULL
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'masalar', 'paketler', 'medya',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 type Uygulayici = (db: Database, i: Islem) => void;
@@ -1098,6 +1106,23 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (!tanim || typeof tanim !== 'object') db.exec({ sql: 'DELETE FROM veraset_kurallari WHERE kod=?', bind: [kod] });
     else db.exec({ sql: 'INSERT OR REPLACE INTO veraset_kurallari(kod, tanim) VALUES(?,?)', bind: [kod, JSON.stringify(tanim)] });
     alanYaz(db, i, kod, 'veraset', tanim ?? null);
+  },
+  /** Sahnenin niyet işaretleri (F13). */
+  sahne_niyeti_yaz(db, i) {
+    const { sahne, niyetler } = i.veri as { sahne: string; niyetler: unknown };
+    if (typeof sahne !== 'string' || !Array.isArray(niyetler)) return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO sahne_niyetleri(kod, niyetler) VALUES(?,?)', bind: [sahne, JSON.stringify(niyetler)] });
+    alanYaz(db, i, sahne, 'niyetler', niyetler);
+  },
+  /** Eserde bir soru için yazarın hedefi: sürpriz ya da gerilim. */
+  montaj_hedefi_yaz(db, i) {
+    const { eser, iddia, hedef } = i.veri as { eser: string; iddia: string; hedef: unknown };
+    if (typeof eser !== 'string' || typeof iddia !== 'string') return;
+    const r = db.selectValue('SELECT hedefler FROM montaj_hedefleri WHERE kod=?', [eser]) as string | undefined;
+    const m = r ? JSON.parse(r) as Record<string, unknown> : {};
+    if (hedef === 'surpriz' || hedef === 'gerilim') m[iddia] = hedef; else delete m[iddia];
+    db.exec({ sql: 'INSERT OR REPLACE INTO montaj_hedefleri(kod, hedefler) VALUES(?,?)', bind: [eser, JSON.stringify(m)] });
+    alanYaz(db, i, eser, `hedef:${iddia}`, hedef ?? null);
   },
   /** Çalışma masası (§5.9): kayıtlar kopyalanmaz, masa onlara bağlanır. */
   masa_olustur(db, i) {

@@ -16,6 +16,7 @@ import { HUKUK_SAHIPLERI, HukukKurallariBolumu, UygulananKurallarAraci } from '.
 import { AdBicimleriBolumu, DilBolumu, KisiDilleriBolumu } from './Dil';
 import { MotifBolumu, TEKNOLOJI_YERLERI, TeknolojiBolumu, TeknolojiDurumuAraci } from './Teknoloji';
 import { KalitimBolumu, VerasetBolumu } from './Soy';
+import { KurguMontajiBolumu, SahneNiyetleriBolumu } from './Montaj';
 import { HaberYayilimiBolumu, KanalBolumu, ROTA_ARACI_TURLERI, RotaAraci } from './Haber';
 import { KESINTI_TURLERI, KesintiBolumu, UretimOzetiBolumu } from './Uretim';
 import { MakamYurutenleri, OlaySurecBolumu, SUREC_SAHIPLERI, SurecKurallariBolumu } from './Surec';
@@ -146,6 +147,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
 
         {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={sahneBaglami} />}
+        {kayit.tur === 'eser' && <KurguMontajiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+        {kayit.tur === 'sahne' && <SahneNiyetleriBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {kayit.tur === 'sahne' && <SahneBolumu istemci={istemci} evren={evren} kayit={kayit} surum={surum} />}
         {kayit.tur === 'makam' && <MakamYurutenleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}
         {SUREC_SAHIPLERI.includes(kayit.tur) && <SurecKurallariBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}

@@ -576,3 +576,16 @@ label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; 
 .sonuc-dogdu { color: var(--metin); font-weight: 600; }
 .uretilen-adlar { columns: 3 160px; padding-left: 1.2em; margin: 4px 0; } .dil-bolumu h3 { margin: 12px 0 4px; font-size: 0.95rem; }
 .uyari-yazisi { color: var(--uyari, #9a5b00); }
+.montaj-sahneleri { padding-left: 1.6em; margin: 4px 0; }
+.montaj .rozet { margin: 2px 4px 2px 0; }
+.rozet.montaj-ipucu { border-color: var(--basari, #2f7d4f); }
+.rozet.montaj-yaniltmaca { border-style: dashed; }
+.rozet.montaj-aciklama { font-weight: 700; }
+.yokluk-haritasi { overflow-x: auto; display: grid; gap: 2px; margin: 6px 0; }
+.yokluk-satiri { display: flex; align-items: center; gap: 2px; }
+.yokluk-satiri > a { flex: 0 0 140px; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.yh { flex: 0 0 14px; height: 14px; border-radius: 3px; border: 1px solid var(--cizgi); }
+.yh.var { background: var(--metin); border-color: var(--metin); }
+.yh.yok { background: var(--tehlike); border-color: transparent; }
+.yh.once { background: transparent; border-style: dotted; }
+.montaj h3, .surecler h3 { margin: 12px 0 4px; font-size: 0.95rem; }
