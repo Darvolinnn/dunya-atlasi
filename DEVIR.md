@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **46**. Sınama: 60 dosya, 342 sınama, hepsi geçiyor.*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **47**. Sınama: 61 dosya, 357 sınama, hepsi geçiyor.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -52,26 +52,18 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | Boşluk | Göreli tarihlerde ayrılma eki; gökyüzü tarih hatası girdinin yanında (Argon paketi) | `a76e230` |
 | §3.4 | Zaman akışlarında yaşanan süre; kalış yalnızca "orada yaşayan" ilişkisinden (GPT paketi) | `b75fe2f` |
 | §5.5 | Sahne panelinde okur bilgisi, okuma sırasına göre (GPT paketi) | `3e029cc` |
+| F35 | Baskı ve uyarlama karşılaştırma: iki eser ya da eser ile deneme kopyası arasında yazarın eşlemeleri, gözden geçirmeden sonraki değişikliklerin listesi; eser sayfasında (GPT paketi, izdüşüm 47, tablo `uyarlama_eslemeleri`) | `c23ccce` |
 
-### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
+### 3.2 Başka ajanlarda olan paketler
 
-19 Ekim 2026'da dört paket verildi; üçü birleştirildi, biri bekliyor. Dalı uzak depoda belirince birleştir (§6). Hiçbiri `IZDUSUM_SURUMU`'nu artırmamalı; artırmayı birleştiren yapar.
-
-| Dal | Madde | İşlem adı öneki | Tablolar | Not |
-|---|---|---|---|---|
-| `paket/uyarlama` (GPT) | F35 baskı ve uyarlama karşılaştırma | `uyarlama_` | `uyarlama_eslemeleri` | `dal.ts`, `anlati.ts`, `esitleme.ts`'e dokunmaz |
-
-Promptlar proje klasöründe `paket-promptlari/` altındadır.
-
-Bu paketlerin tam promptları kullanıcının proje klasöründedir; depoda değildir. Prompt yazarken kalıp olarak bu tablodaki bilgiler ve §6 yeterlidir.
+Şu an yok. 19 Ekim 2026'da verilen dört paketin hepsi birleştirildi. Yeni paket verilirse tabloyu buraya yaz; dalı uzak depoda belirince birleştir (§6). Paketler `IZDUSUM_SURUMU`'nu artırmaz; artırmayı birleştiren yapar. Tam promptlar kullanıcının proje klasöründe `paket-promptlari/` altındadır; depoda değildir. Prompt yazarken §6 yeterlidir.
 
 ### 3.3 Kalan işler (önerilen sıra)
 
-1. **F35 baskı ve uyarlama karşılaştırma** (`paket/uyarlama` dalında GPT'de): yazar iki eser (ya da eser ile deneme kopyası) arasında eşlemeler tanımlar (iki karakter → tek karakter, olay sırası değişimi); sonraki değişiklikte etkilenebilecek eşlemeler listelenir. Hiçbir dal ötekini kendiliğinden güncellemez. Dallar için `calisan/dal.ts`, eser yapısı için `calisan/anlati.ts`.
-2. **F16 formül yazımı**: formülsüz kısım kodlandı (kullanım sözleşmesi tasarımda §16.1 sonunda). Formül için önce **TK8** sözleşmesi yazılmalı ve kullanıcı onaylamalı; kodlamadan önce sor. Süreç kuralları için örnek durumlar henüz yok.
-3. **Bilinen boşluklar:** eşitleme ekranı deneme kopyalarının bekleyen değişikliklerini ayrıca göstermiyor.
-4. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
-5. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
+1. **F16 formül yazımı**: formülsüz kısım kodlandı (kullanım sözleşmesi tasarımda §16.1 sonunda). Formül için önce **TK8** sözleşmesi yazılmalı ve kullanıcı onaylamalı; kodlamadan önce sor. Süreç kuralları için örnek durumlar henüz yok.
+2. **Bilinen boşluklar:** eşitleme ekranı deneme kopyalarının bekleyen değişikliklerini ayrıca göstermiyor.
+3. **Tablet ve iPhone** (§14.3): kullanıcının cihazlarında deney gerektirir; kullanıcıyla birlikte yapılır.
+4. **K16**: iki haftalık gerçek kullanım. Kod işi değildir; kullanıcı yapar.
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
 
