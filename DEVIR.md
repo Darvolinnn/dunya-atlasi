@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **49**. Sınama: 64 dosya, 378 sınama, hepsi geçiyor.*
+*Son güncelleme: 19 Ekim 2026. İzdüşüm sürümü (`IZDUSUM_SURUMU`): **50**. Sınama: 65 dosya, 381 sınama, hepsi geçiyor.*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -57,6 +57,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | F05 | Başkasının bilgisine dair inanç: soru kartında "kim, kimin hakkında ne sanıyor", kayıtlı bilgiyle karşılaştırma (izdüşüm 48, tablo `dair_inanclar`) | `8d735e2` |
 | F06 | Kişi, kimlik, beden: "Kimlik" türü ve "kullandığı kimlik" ilişkisi, kimliğe ayırma / kimlik olarak bağlama (önizlemeli, tek işlem grubu), beden rolleri ve dirilmeyi tanıyan yaşam denetimi. Okur görünümünde ayrı kalma yayına (§11.2) bağlı, yapılmadı | `6627690` |
 | F25 | Evren içi birleşme, bölünme, dönüşüm (GPT paketi, izdüşüm 49, tablo `donusum_kayitlari`) | `6d31ea8` |
+| F29 | Sahne içi bağlam parçaları: seçili parçaya ayrı tarih, yer, bakış açısı (sahneyle aynı / belirtilmemiş / bu parçaya özgü); metindeki işaretle durur, yan panel imlecin parçasını gösterir (izdüşüm 50, tablo `baglam_parcalari`) | `295ac1a` |
 | F19 | İnceleme: ayırt etme satırı var, sahne hatırlatıcısını sahne paneli karşılıyor; okur tanıtımı ve "sır yayına girmez" yayına (§11) bağlı, K20 gereği kapsam dışı | — |
 ### 3.2 Başka ajanlarda olan paketler (henüz `main`'de değil)
 
@@ -69,7 +70,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | `paket/surec-sorumlu` (Argon) | F07 adım sorumluları, durdurabilir/veto | `surec_sorumlu_` | `surec_sorumlu…` | `surec.ts`'i değiştirmez |
 | `paket/kalici-iz` (Argon) | F11 geçmişin bugünkü izleri | `iz_kaydi_` | `iz_kayitlari` | Var olan `izler` (süreklilik) ayrı |
 
-Kodlanmamış ama paket olarak verilmeyen "Tasarım" maddeleri: F29 (sahne içi bağlam parçaları), F30 (metin ve kullanım yeri); var olan davranışı değiştirdikleri için ana ajanda yapılmalı. Kısmen olanlar: F09 (izin, ücret katmanları), §15-2 (ölçekli erişim konturları).
+Kodlanmamış ama paket olarak verilmeyen "Tasarım" maddeleri: F30 (metin ve kullanım yeri); var olan davranışı değiştirdiği için ana ajanda yapılmalı. Kısmen olanlar: F09 (izin, ücret katmanları), §15-2 (ölçekli erişim konturları).
 
 ### 3.3 Kalan işler (önerilen sıra)
 
