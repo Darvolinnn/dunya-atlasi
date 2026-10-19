@@ -136,6 +136,14 @@ Arayüzü değiştirenler önce seçenekli taslakla kullanıcıya gösterilir (�
 9. **Kullanıcı akışı ve hata anı sınamaları:** küçük bir tarayıcı sınaması grubu (yeni evren/sahne, yaz-yeniden aç, `[[` bağlantısı, rehber paneli, yedek ve ayrı evren olarak geri yükleme); kayıt sürerken sahne değiştirme, taslak yazılamazken kapatma, süreç öldürme, yedekten dönüşte karşılaştırma, iki kopyada çatışma. Kapanışta taslak yazımı çalışana asenkron gider; yazıldığı ayrıca kanıtlanmalı. *Yapılacak.*
 10. **Performans ve bakım:** temsili büyük evrende (ör. 50.000 işlem) açılış, arama, sahne değiştirme, kaydetme, yeniden kurma, yedekten dönüş süreleri ölçülür (§3.3-3'teki ölçümle aynı iş). `hizmet.ts`, `izdusum.ts`, `api.ts` baştan yazılmaz; bir hata düzeltilirken ilgili kısım küçük modüle taşınır. Seyrek açılan ekranların ihtiyaç anında yüklenmesi değerlendirilir. *Öneri.*
 
+### 3.2f Rehberli arayüz (kullanıcı isteği, 19 Ekim 2026; karar bekliyor, kodlanmadı)
+
+Kullanıcı etkileşimli bir taslak ve gerekçe belgesi gönderdi (ekler depoda değil): program kullanıcıyı küçük, atlanabilir adımlarla yönlendirsin, yalnız o anda gereken alanları göstersin, sonraki adımı anlaşılır kılsın. İstek: önce uyarlama önerisi, kod yok. Öneri proje klasöründe `analiz/rehberli-arayuz-uyarlama.md`. Özeti: boş evrende "Nereden başlamak istersiniz?" ve üç kısa akış (sahne, kayıt, not) + sonuç kartında tek sonraki adım (Aşama A); gezinti Yaz / Evren / İncele / Masa / Yönetim, boşken kapalı bağlam paneli, seyrek işler "⋯" menüsünde (Aşama B, önce resimli taslak); kayıt sayfasında boş bölümlerin gizlenmesi (Aşama C). Yeni veri yok; onaylanırsa tasarıma K26 olarak girer. §3.2e madde 4'ün yerini alır; madde 5 (boş bağlam paneli), 6 (durum özetinin yeri) ve 9 (ilk açılış sınaması) ile çakışma ve iş bölümü öneride §4'te.
+
+- [x] Taslak ve gerekçe okundu, mevcut ekranlarla karşılaştırıldı, öneri yazıldı
+- [ ] Kullanıcı kararları: Aşama A'ya başlansın mı; gezinti gruplaması; bağlam paneli boşken kapalı mı; Masa ayrı mı kalsın
+- [ ] Onaylanırsa: tasarım belgesi (K26, §5.10, §12.4, §13), sonra Aşama A kodu
+
 ### 3.3 Kalan işler (önerilen sıra)
 
 1. **Tablet ve iPhone** (§14.3): kullanıcı 19 Ekim 2026'da süresiz erteledi; şimdilik yalnız Windows tarafına odaklanılıyor.
