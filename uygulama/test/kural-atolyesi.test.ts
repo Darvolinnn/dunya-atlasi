@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { Hizmet } from '../src/calisan/hizmet';
@@ -55,6 +55,17 @@ describe('kural atölyesi (F16)', () => {
     const o = liste().ornekler[0];
     expect(o).toMatchObject({ sonuc: 'uygulanir', onceki: 'uygulanmaz', hukum: 'uyariyor' });
     expect(o.tanim.beklenen).toBe('uygulanmaz');
+  });
+
+  it('aynı anda oluşturulan örnekler oluşturuldukları sırayla gelir', () => {
+    const { ornek, liste } = kur();
+    // Kopyalamada olduğu gibi aynı milisaniyede oluşturma: sıra rastgele kimliğe değil eklenme sırasına bağlı.
+    vi.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
+    try {
+      const notlar = ['bir', 'iki', 'üç', 'dört', 'beş', 'altı'];
+      for (const not of notlar) ornek({ not });
+      expect(liste().ornekler.map((o) => o.tanim.not)).toEqual(notlar);
+    } finally { vi.restoreAllMocks(); }
   });
 
   it('tarih ve geçerlilik aralığı; silinen kişi hesaplanamaz; doğrulama', () => {
