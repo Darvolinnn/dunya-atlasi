@@ -1870,6 +1870,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return anlati.anlatiYeri(e, kod);
   }
   yerlesmemisler({ evren }: { evren: string }) { return anlati.yerlesmemisler(this.evren(evren)); }
+  seriler({ evren }: { evren: string }) { return anlati.seriler(this.evren(evren)); }
   eserler({ evren }: { evren: string }): KisaKayit[] {
     return this.evren(evren).db.selectObjects("SELECT kod, ad, tur FROM kayitlar WHERE tur='eser' AND silindi IS NULL ORDER BY olusturma") as unknown as KisaKayit[];
   }
@@ -2238,7 +2239,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const bk = gorunum.bakisHazirla(e, bakis);
     const eserOf = new Map<string, string>();
     for (const r of e.db.selectObjects(`SELECT a.kod, CASE WHEN u.tur='bolum' THEN (SELECT ust FROM anlati WHERE kod=u.kod) ELSE a.ust END eser
-        FROM anlati a JOIN kayitlar u ON u.kod=a.ust`)) if (r.eser) eserOf.set(r.kod as string, r.eser as string);
+        FROM anlati a JOIN kayitlar u ON u.kod=a.ust WHERE u.tur IN ('eser','bolum')`)) if (r.eser) eserOf.set(r.kod as string, r.eser as string);
     return e.db.selectObjects(`SELECT kod, ad, tur, karar, tarih, gorunurluk FROM kayitlar WHERE tarih IS NOT NULL AND silindi IS NULL`)
       .filter((r) => bk.gorur(r.gorunurluk))
       .map((r) => ({ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string, karar: r.karar as string, tarih: this.tarihGoster(e, r.tarih)!, eser: eserOf.get(r.kod as string) ?? null,

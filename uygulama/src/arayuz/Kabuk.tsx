@@ -85,7 +85,8 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
   const [eserler, setEserler] = useState<KisaKayit[] | null>(null);
   const [yapilar, setYapilar] = useState<Record<string, EserYapisi>>({});
   const [disarida, setDisarida] = useState<YapiSahnesi[]>([]);
-  const [yeni, setYeni] = useState<{ ust: string | null; tur: 'eser' | 'bolum' | 'sahne' } | null>(null);
+  const [yeni, setYeni] = useState<{ ust: string | null; tur: 'eser' | 'bolum' | 'sahne' | 'seri' } | null>(null);
+  const [seriler, setSeriler] = useState<{ kod: string; ad: string; eserler: { kod: string }[] }[]>([]);
   const [hata, setHata] = useState<string | null>(null);
   useEffect(() => {
     istemci.iste('eserler', { evren }).then(async (l) => {
@@ -94,31 +95,40 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
       setYapilar(y); setEserler(l);
     }, () => setEserler([]));
     istemci.iste('yerlesmemisler', { evren }).then((l) => setDisarida(l.filter((x) => x.tur === 'sahne')), () => {});
+    istemci.iste('seriler', { evren }).then((r) => setSeriler(r.seriler), () => setSeriler([]));
   }, [evren, surum]);
   if (!eserler) return null;
 
   const ekle = async (ad: string) => {
     if (!yeni) return;
     try {
+      if (yeni.tur === 'seri') {
+        const { kod } = await istemci.iste('kayitOlustur', { evren, ad, tur: 'seri' });
+        setYeni(null); setHata(null);
+        git(`/e/${evren}/k/${kod}`);
+        return;
+      }
       const { kod } = yeni.tur === 'eser'
         ? await istemci.iste('kayitOlustur', { evren, ad, tur: 'eser' })
         : await istemci.iste('anlatiOlustur', { evren, ust: yeni.ust!, ad, tur: yeni.tur });
+      if (yeni.tur === 'eser' && yeni.ust) await istemci.iste('anlatiYerlestir', { evren, kod, ust: yeni.ust });
       setYeni(null); setHata(null);
       git(`/e/${evren}/yaz/${kod}`);
     } catch (e) { setHata(hataYaz(e)); }
   };
-  const yeniSatir = (ust: string | null, tur: 'eser' | 'bolum' | 'sahne', etiket: string) =>
+  const yeniSatir = (ust: string | null, tur: 'eser' | 'bolum' | 'sahne' | 'seri', etiket: string) =>
     saltOkunur ? null : yeni && yeni.ust === ust && yeni.tur === tur
-      ? <YeniAd ipucu={tur === 'eser' ? 'Eserin adı' : tur === 'bolum' ? 'Bölümün adı' : 'Sahnenin adı'} ekle={ekle} vazgec={() => setYeni(null)} />
+      ? <YeniAd ipucu={tur === 'eser' ? 'Eserin adı' : tur === 'bolum' ? 'Bölümün adı' : tur === 'seri' ? 'Serinin adı' : 'Sahnenin adı'} ekle={ekle} vazgec={() => setYeni(null)} />
       : <button class="agac-ekle" onClick={() => { setYeni({ ust, tur }); setHata(null); }}>{etiket}</button>;
   const dal = (k: { kod: string; ad: string }, sinif: string) => (
     <a class={k.kod === acik ? `${sinif} secili` : sinif} aria-current={k.kod === acik ? 'page' : undefined} href={`#/e/${evren}/yaz/${k.kod}`}>{k.ad}</a>
   );
   const sahneler = (l: YapiSahnesi[]) => l.map((s) => <li key={s.kod}>{dal(s, 'agac-sahne')}</li>);
 
-  return (
-    <div class="eser-agaci">
-      {eserler.map((e) => {
+  // Seriler (K27): eserler serinin altında önerilen okuma sırasıyla; serisi olmayanlar en üst düzeyde.
+  const seride = new Set(seriler.flatMap((s) => s.eserler.map((x) => x.kod)));
+  const eserBul = (kod: string) => eserler.find((x) => x.kod === kod);
+  const eserDali = (e: KisaKayit) => {
         const y = yapilar[e.kod];
         return (
           <div key={e.kod} class="agac-eser">
@@ -141,7 +151,20 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
             )}
           </div>
         );
-      })}
+  };
+
+  return (
+    <div class="eser-agaci">
+      {seriler.map((s) => (
+        <div key={s.kod} class="agac-seri">
+          <a class={s.kod === acik ? 'agac-seri-ad secili' : 'agac-seri-ad'} href={`#/e/${evren}/k/${s.kod}`}>{s.ad}</a>
+          <div class="agac-seri-ici">
+            {s.eserler.map((x) => eserBul(x.kod)).filter((x): x is KisaKayit => !!x).map(eserDali)}
+            {yeniSatir(s.kod, 'eser', '+ Bu seriye eser')}
+          </div>
+        </div>
+      ))}
+      {eserler.filter((e) => !seride.has(e.kod)).map(eserDali)}
       {disarida.length > 0 && (
         <details class="agac-disarida">
           <summary>Esere yerleştirilmemiş ({disarida.length})</summary>
@@ -149,6 +172,7 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
         </details>
       )}
       {yeniSatir(null, 'eser', '+ Yeni eser')}
+      {yeniSatir(null, 'seri', '+ Yeni seri')}
       {hata && <p class="hata kucuk">{hata}</p>}
     </div>
   );

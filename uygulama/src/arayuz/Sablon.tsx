@@ -208,7 +208,7 @@ function AlanGirdisi({ a, takvim, deger, yaz }: { a: SablonAlani; takvim: Takvim
 }
 
 // ---------- Sorular ----------
-export function SoruBolumu({ istemci, evren, kayit, ks }: { istemci: Istemci; evren: string; kayit: Kayit; ks: KayitSablonu | null }) {
+export function SoruBolumu({ istemci, evren, kayit, ks, acik = false }: { istemci: Istemci; evren: string; kayit: Kayit; ks: KayitSablonu | null; acik?: boolean }) {
   const [hata, setHata] = useState<string | null>(null);
   if (!ks) return null;
   const sablondakiler = new Set(ks.sablon.sorular.map((q) => q.kod));
@@ -224,7 +224,7 @@ export function SoruBolumu({ istemci, evren, kayit, ks }: { istemci: Istemci; ev
     ['Şablondan çıkarılmış sorular', null, ks.sorular.filter((q) => q.eski)]];
   return (
     <section class="sorular" aria-label="Sorular">
-      <details open={ks.sorular.some((q) => q.cevap)}>
+      <details open={acik || ks.sorular.some((q) => q.cevap)}>
         <summary><h2 style="display:inline">Sorular</h2></summary>
         <p class="soluk kucuk">Hepsi isteğe bağlı. Cevaplayabilir, sonraya bırakabilir, bu kayıtla ilgisiz sayabilir ya da yeni bir kayıt oluşturarak cevaplayabilirsiniz.
           {' '}<a href={`#/e/${evren}/sablonlar/${kayit.tur}`}>{turBul(kayit.tur).ad} şablonunu düzenle</a></p>

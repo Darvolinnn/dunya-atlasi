@@ -1139,6 +1139,7 @@ export interface Istekler {
   evrenKaldir(a: { evren: string }): void;
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
   ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
+  seriler(a: { evren: string }): { seriler: { kod: string; ad: string; eserler: { kod: string; ad: string }[] }[]; serisiz: { kod: string; ad: string }[] };
   evrenAdlandir(a: { evren: string; ad: string }): void;
   evrenBilgisi(a: { evren: string }): EvrenBilgisi;
   islemGunlugu(a: { evren: string; sinir: number }): GunlukSatiri[];

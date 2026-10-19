@@ -44,7 +44,7 @@ import { BakimBolumu, BakimUzmanligiBolumu } from './Bakim';
 import { BirlesmeBilgisi, BirlestirDugmesi } from './Birlesme';
 import { KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
 import { BilinenlerBolumu, GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
-import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
+import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, SeriBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
 import { UyarlamaBolumu } from './Uyarlama';
 import { KimlikBolumu } from './Kimlik';
 import { KullanildigiYerler } from './MetinKullanim';
@@ -185,6 +185,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           baglamParcalari={kayit.tur === 'sahne'} parcaDegisti={setImlecParcasi} />
 
         {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}
+        {kayit.tur === 'seri' && <><SeriBolumu istemci={istemci} evren={evren} kayit={kayit} /><SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} acik /></>}
         {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={imlecParcasi && parcaBaglami ? parcaBaglami : sahneBaglami} parca={!!(imlecParcasi && parcaBaglami)} />}
         {kayit.tur === 'sahne' && <SahneBolumu istemci={istemci} evren={evren} kayit={kayit} surum={surum} />}
         <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />
@@ -227,7 +228,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           <KaliciIzBolumu istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} surum={surum} saltOkunur={bag?.tur === 'surum'} />
           {!DURUMSUZ.has(kayit.tur) && <DurumGecmisi istemci={istemci} evren={evren} kayit={kayit} />}
           {kayit.tur !== 'not' && <BilinenlerBolumu istemci={istemci} evren={evren} kayit={kayit} />}
-          <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
+          {kayit.tur !== 'seri' && <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />}
           <KayitMeseleleri istemci={istemci} evren={evren} kayit={kayit} />
           {!bag && <SonrakiSoruBolumu istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} />}
           {!bag && <BaglamKarsilastirmaBolumu istemci={istemci} evren={evren} kod={kod} />}

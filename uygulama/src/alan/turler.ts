@@ -34,6 +34,7 @@ export const TURLER: Tur[] = [
   { kod: 'haber', ad: 'Haber / söylenti', grup: 'Zaman ve tarih', kisa: 'Ha' },
   { kod: 'haberlesme', ad: 'Haberleşme yöntemi', grup: 'Zaman ve tarih', kisa: 'Hy' },
   { kod: 'belge', ad: 'Evren içi belge', grup: 'Zaman ve tarih', kisa: 'Be' },
+  { kod: 'seri', ad: 'Seri', grup: 'Anlatı ve yazarlık', kisa: 'Sr' },
   { kod: 'eser', ad: 'Eser', grup: 'Anlatı ve yazarlık', kisa: 'Es' },
   { kod: 'bolum', ad: 'Bölüm', grup: 'Anlatı ve yazarlık', kisa: 'Bö' },
   { kod: 'sahne', ad: 'Sahne', grup: 'Anlatı ve yazarlık', kisa: 'Sa' },

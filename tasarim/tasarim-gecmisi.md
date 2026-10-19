@@ -149,6 +149,7 @@ Bölüm numaraları Sürüm 6'ya aittir. Bölüm numaralarında değişiklik yok
 | Kullanıcı kararı (19 Ekim) | Rehberli yazarlık ve roman serisi (K27) | Kullanıcı roman yazma yöntemini bilmediğini, programın yol göstermesini istedi; iki brif gönderdi (istek ve ilk sürümün eleştirisi). Öneriler `analiz/` altında; kullanıcı D1–D13 için önerilen varsayılanların hepsini seçti, sıra önce rehber ve sorular. İlk işlenen: eser, sahne ve kurgu hattı soru setleri (Ek A). |
 | K27 uygulaması (19 Ekim) | Yazarlık rehberi programın içinde (§12.4) | 24 konu yan panelde; sayfa rehberinden, soru gruplarından ve komut paletinden açılır. İçerik analiz belgesinden üretildi. |
 | K27 uygulaması (19 Ekim) | İlk adımlarda başlangıç yolları (§5.10) | Dört yol (sahne, hikâye fikri, karakter, dünya); "Geç" adımı yapılmış saymaz; dayanaklar kayıtlı veriden. Seri yolu seri kaydıyla gelecek. |
+| K27 uygulaması (19 Ekim) | Seri (§3.3, §4.6, §5.10) | Yeni kayıt türü; eser anlatı ağacında serinin altında, sıra önerilen okuma sırası. Silme altındakilere dokunmaz; geri gelince arada taşınan eser yerinde kalır. Ek seri üyeliği ve seri okuma yolları sonraya. |
 | Alınmayanlar | — | B10 6.2'deki eser için `.docx` dışa aktarımı yeni bir fikir sayıldı (K11). F26'nın ayrıntısı ve 2.2'nin tam birleştirmesi bekliyor. B10 6.2 lisans önerisi yerine K19 |
 
 ---

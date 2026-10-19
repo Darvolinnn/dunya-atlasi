@@ -18,7 +18,7 @@ export const SAYFA_KONULARI: Record<string, number[]> = {
 
 /** Programla gelen soru setlerinin rehber konusu ("Neden?" bağlantısı). */
 export const SET_KONULARI: Record<string, number> = {
-  baslangic: 1, pusula: 4, cekirdek: 2, eser: 11, sahne_plani: 14, hat: 15, karakter: 5, olay_izi: 5, aliskanlik: 6,
+  baslangic: 1, pusula: 4, cekirdek: 2, eser: 11, seri: 10, sahne_plani: 14, hat: 15, karakter: 5, olay_izi: 5, aliskanlik: 6,
   karsit: 7, iliski: 8, buyu: 9, mekan: 19, sehir: 19, siyasi: 4, topluluk: 4, kultur: 19, dil: 19, haritasiz: 19, rehber: 19,
 };
 

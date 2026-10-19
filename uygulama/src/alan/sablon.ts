@@ -107,6 +107,14 @@ export const SORU_SETLERI: SoruSeti[] = [
     ['Sahne sonunda ne değişiyor?', 'Bir karar, yeni bir bilgi, bir ilişki ya da dış bir olay. Atmosfer sahnesinde "İlgisiz" diyebilirsiniz'],
     'Okur ne öğreniyor?',
   ]),
+  set('seri', 'Serinin büyük planı', [
+    ['Serinin büyük sorusu ne?', 'Birden çok kitap boyunca okurun taşıyacağı soru'],
+    'Merkez çatışma ne?',
+    ['Başlangıç dengesi ne?', 'Seri başladığında dünya nasıl işliyor?'],
+    ['İlk büyük kırılma ne?', 'Dengeyi geri dönülmez biçimde bozan olay'],
+    ['Orta evrede ne değişiyor?', 'Karakterlerin istediği şey nasıl dönüşüyor?'],
+    ['Bilerek cevapsız kalacaklar neler?', 'Olası finaller ayrı olay kayıtları olarak tutulur'],
+  ]),
   set('hat', 'Kurgu hattı', [
     ['Bu hattın sorusu ne?', 'Ör. "Deniz\'e ne oldu?"'],
     'Şu anki durumu ne?',
@@ -149,6 +157,7 @@ const VARSAYILANLAR: Record<string, Sablon> = {
   eser: { alanlar: [], sorular: sorular('cekirdek', 'eser') },
   sahne: { alanlar: [], sorular: sorular('sahne_plani') },
   kurgu_hatti: { alanlar: [], sorular: sorular('hat') },
+  seri: { alanlar: [], sorular: sorular('seri') },
   acik_mesele: {
     alanlar: [
       { kod: 'durum', ad: 'Durum', tur: 'secim', secenekler: MESELE_DURUMLARI, sabit: true },

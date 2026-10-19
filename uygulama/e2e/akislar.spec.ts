@@ -276,3 +276,22 @@ test('İlk adımlarda yol seçilir; "Geç" adımı yapılmış saymaz; seçim ye
   await liste.getByLabel('Bir sahneyle').check();
   await expect(liste).toContainText('Bir eser oluşturun');
 });
+
+test('seri: yazma ağacında serinin altında kitaplar; seriden çıkarılan kitap silinmez', async ({ page: p }) => {
+  await sahneAc(p);
+  await p.getByRole('button', { name: '+ Yeni seri' }).click();
+  await p.getByPlaceholder('Serinin adı').fill('Hatıra İmparatorluğu');
+  await p.getByPlaceholder('Serinin adı').press('Enter');
+  await expect(p.getByRole('heading', { name: 'Kitaplar' })).toBeVisible();
+  await expect(p.getByText('Serinin büyük sorusu ne?')).toBeVisible();
+  await p.getByLabel('Seriye kitap ekle').selectOption({ label: 'Kuzey Yolu' });
+  const kitaplar = p.getByRole('region', { name: 'Serinin kitapları' });
+  await expect(kitaplar.getByRole('link', { name: 'Kuzey Yolu' })).toBeVisible();
+  await p.getByRole('link', { name: 'Yaz', exact: true }).click();
+  await expect(p.locator('.agac-seri .agac-eser-ad', { hasText: 'Kuzey Yolu' })).toBeVisible();
+  await p.locator('.agac-seri-ad').click();
+  await kitaplar.getByRole('button', { name: 'Kuzey Yolu: seriden çıkar' }).click();
+  await expect(kitaplar).toContainText('Bu seride henüz kitap yok.');
+  await p.getByRole('link', { name: 'Yaz', exact: true }).click();
+  await expect(p.locator('.eser-agaci > .agac-eser .agac-eser-ad', { hasText: 'Kuzey Yolu' })).toBeVisible();
+});

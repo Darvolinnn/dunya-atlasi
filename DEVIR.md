@@ -163,7 +163,8 @@ Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda
 - [x] P2 (ilk kısım): eser (`cekirdek`, `eser`), sahne (`sahne_plani`) ve kurgu hattı (`hat`) soru setleri varsayılan; Ek A, §4.6; `test/anlati-sorulari.test.ts`. Şablonu değiştirilmiş evrende kendiliğinden eklenmez.
 - [x] P2 (kalan): Yaz ekranında bağlam panelinin üstünde katlı "Sahne planı" (`Sablon.tsx` `SahnePlani`, §5.10). `seri` seti P4 ile. Ekran görüntüsü onayı bekliyor (PR #6).
 - [x] P3: İlk adımlarda başlangıç yolları (§5.10; `YazEkrani.tsx` `YOLLAR`, istek `ilkAdimlar` dayanakları; sınamalar). Ekran görüntüsü onayı bekliyor (PR #6).
-- [ ] Sıradaki: P4 seri (yeni tür, eser ağaçta seri altında, seri sayfası; Model §3) — görünüş değiştirdiği için önce resimli taslak.
+- [x] P4 seri (ilk kısım): `seri` türü, `anlati.yerlestir` eseri seri altına kabul eder, istek `seriler`, yazma ağacında seri başlığı, seri sayfasında "Kitaplar" ve sorular, eser sayfasında "Serisi" seçimi; `test/seri.test.ts` (silme/geri getirme, iki cihaz). Zaman çizelgesinde eserin serisi eser sanılmasın diye `zamanCizelgesi` yalnız eser/bölüm üstlerini sayar. Ekran görüntüsü onayı bekliyor (PR #6).
+- [ ] Sıradaki: P5 alternatifler (`alternatif` ilişkisi, kesinleştirme önizlemesi, seri sayfasında olası finaller), sonra P6 olay örgüsü masası (önce resimli taslak), P7 karakterin kitaptaki yolu, P8 çalışma durumları, P9 kitap sonunda açık olanlar, P10 Şimdi kartı.
 - [x] P1: yazarlık rehberi programın içinde (§12.4): `arayuz/YazarlikRehberi.tsx`, metinler `arayuz/yazarlik-rehberi.ts` (analiz belgesinden üretildi; belge değişirse yeniden üretilmeli: başlıklar `### Konu N — …`, alanlar `**Ne:**` biçiminde). Soru başına "Örnek" henüz yok. Ekran görüntüleri kullanıcı onayı bekliyor (PR #6).
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
 

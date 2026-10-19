@@ -886,3 +886,10 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .ilk-adim-yollari legend { padding: 0; margin-bottom: 4px; width: 100%; }
 .ilk-adim-yollari label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
 .ilk-adimlar li.gecildi { color: var(--metin-2); }
+/* Seriler (K27): yazma ağacında eserlerin üstünde, katlanmayan bir başlık. */
+.agac-seri { display: flex; flex-direction: column; margin-bottom: 4px; }
+.agac-seri-ad { display: block; padding: 3px 8px; border-radius: 6px; color: var(--metin-2); text-decoration: none; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; }
+.agac-seri-ad:hover { background: var(--yuzey-2); }
+.agac-seri-ad.secili { background: var(--yuzey); color: var(--metin); }
+.agac-seri-ici { border-left: 2px solid var(--cizgi); margin-left: 8px; padding-left: 4px; }
+.eserin-serisi { gap: 8px; margin: 12px 0 4px; }
