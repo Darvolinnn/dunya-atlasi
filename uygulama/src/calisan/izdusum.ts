@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 40;
+export const IZDUSUM_SURUMU = 41;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -370,6 +370,9 @@ CREATE TABLE IF NOT EXISTS anlatimlar(
   kod TEXT PRIMARY KEY, iddia TEXT NOT NULL, tanim TEXT NOT NULL, silindi INTEGER, olusturma INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS anlatimlar_iddia ON anlatimlar(iddia);
+CREATE TABLE IF NOT EXISTS delil_gecmisi(
+  kod TEXT PRIMARY KEY, tanim TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS sahne_yerlesimleri(
   kod TEXT PRIMARY KEY,
   plan TEXT NOT NULL,
@@ -652,7 +655,7 @@ export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar'
   'sozlukler', 'sozluk_isaretleri',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
-IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar');
+IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi');
 
 type Uygulayici = (db: Database, i: Islem) => void;
 
@@ -1357,6 +1360,13 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const kod = i.veri.kod as string;
     db.exec({ sql: 'UPDATE anlatimlar SET silindi=NULL WHERE kod=?', bind: [kod] });
     alanYaz(db, i, kod, 'anlatim_silindi', false);
+  },
+  /** F08 belgenin delil geçmişi (§3.9). */
+  delil_yaz(db, i) {
+    const { kod, tanim } = i.veri as { kod?: unknown; tanim?: unknown };
+    if (typeof kod !== 'string' || !tanim || typeof tanim !== 'object') return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO delil_gecmisi(kod, tanim) VALUES(?,?)', bind: [kod, JSON.stringify(tanim)] });
+    alanYaz(db, i, kod, 'delil', tanim);
   },
   yerlesim_yaz(db, i) {
     const v = i.veri as unknown as { sahne: string; plan: import('../veri/api').YerlesimPlani; ogeler: import('../veri/api').YerlesimOgesi[] };

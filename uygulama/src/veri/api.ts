@@ -319,6 +319,22 @@ export interface IddiaDosyasi {
   kaldirilan: { kod: string; ozet: string; kaynakKaydi: KisaKayit | null }[];
   not: string;
 }
+/** F08 delil geçmişi (§3.9): gerçek yazar, belge ailesi ve elden ele geçiş. Görünen yazar belge sunumundadır. */
+export interface DelilTanimi {
+  gercekYazar: string | null;
+  aile: { ana: string; tur: 'kopya' | 'tercume' | 'sansurlu' } | null;
+  elde: { kisi: string; tarih: string; nasil: string }[];
+}
+export interface DelilGecmisi {
+  belge: KisaKayit; tanim: DelilTanimi;
+  gorunenYazar: KisaKayit | null; gercekYazar: KisaKayit | null;
+  yazarDurumu: 'aynı' | 'farklı' | 'gerçek yazılmamış' | 'görünen yazılmamış';
+  aile: { kok: KisaKayit; uyeler: { kayit: KisaKayit; tur: 'kopya' | 'tercume' | 'sansurlu' | null; ana: KisaKayit | null; bu: boolean }[] };
+  elde: { kisi: KisaKayit; tarih: string; nasil: string }[];
+  deliller: { iddia: string; soru: string; konu: KisaKayit; anlatim: string; belge: KisaKayit; destek: string | null; itiraz: string[]; karar: string }[];
+  okuyanlar: { kisi: KisaKayit; belge: KisaKayit }[];
+  notlar: string[];
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -706,6 +722,8 @@ export interface Istekler {
   anlatimYaz(a: { evren: string; kod?: string | null; tanim: AnlatimTanimi }): { kod: string };
   anlatimSil(a: { evren: string; kod: string }): void;
   anlatimGeriYukle(a: { evren: string; kod: string }): void;
+  delilGecmisi(a: { evren: string; kod: string }): DelilGecmisi;
+  delilYaz(a: { evren: string; kod: string; tanim: DelilTanimi }): void;
   baslat(): KurulumBilgisi;
   evrenler(): EvrenOzeti[];
   evrenOlustur(a: { ad: string }): { kod: string };

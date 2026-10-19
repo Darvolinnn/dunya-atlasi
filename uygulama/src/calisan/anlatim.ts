@@ -10,6 +10,7 @@ import type { Anlatim, AnlatimTanimi, IddiaDosyasi, KisaKayit } from '../veri/ap
 import type { EvrenVt } from './evren-vt';
 import { yonlendir } from './izdusum';
 import { ANLATIM_TURLERI, DAYANAK_TURLERI } from '../alan/anlatim';
+import { belgeAilesiKoku } from './delil';
 
 
 export interface AnlatimBaglami { e: EvrenVt; yaz(g: IslemGirdisi[], k: string[]): void }
@@ -86,7 +87,16 @@ export function iddiaDosyasi(e: EvrenVt, iddiaKod: string): IddiaDosyasi {
   const iddia = iddiaOku(e, iddiaKod);
   const l = satirlar(e, iddia.kod);
   const tum = new Map(l.map((x) => [x.kod, x.tanim]));
-  const kok = (kod: string) => { let x = kod, n = 0; while (tum.get(x)?.dayanak && tum.has(tum.get(x)!.dayanak!) && n++ < 500) x = tum.get(x)!.dayanak!; return x; };
+  // Kök: dayanak zincirinin başı; o anlatımın kaynağı bir evren içi belgeyse belgenin ailesi (F08). Aynı belgeden ya da
+  // onun kopyası, tercümesi, sansürlü sürümünden gelen anlatımlar tek kaynaktır.
+  const aileKoku = belgeAilesiKoku(e);
+  const belgeMi = (k: string) => e.db.selectValue("SELECT 1 FROM kayitlar WHERE kod=? AND tur='belge'", [k]) !== undefined;
+  const kok = (kod: string) => {
+    let x = kod, n = 0;
+    while (tum.get(x)?.dayanak && tum.has(tum.get(x)!.dayanak!) && n++ < 500) x = tum.get(x)!.dayanak!;
+    const k = tum.get(x)?.kaynak ? yonlendir(e.db, tum.get(x)!.kaynak!) : null;
+    return k && belgeMi(k) ? `belge:${aileKoku(k)}` : x;
+  };
   const anlatimlar: Anlatim[] = l.map((x) => ({
     ...x.tanim, kod: x.kod, kaynakKaydi: kisa(e, x.tanim.kaynak), kok: kok(x.kod),
     catismali: !!e.db.selectValue("SELECT 1 FROM alan_yazanlari WHERE nesne=? AND alan IN ('anlatim','anlatim_silindi') GROUP BY alan HAVING count(DISTINCT deger)>1 LIMIT 1", [x.kod]),
@@ -101,6 +111,6 @@ export function iddiaDosyasi(e: EvrenVt, iddiaKod: string): IddiaDosyasi {
   return {
     iddia: { kod: iddia.kod, soru: iddia.soru, konu: kisa(e, iddia.konu)!, gercek: iddia.gercek },
     anlatimlar, cevaplar, kaldirilan: satirlar(e, iddia.kod, true).map((x) => ({ kod: x.kod, ozet: x.tanim.ozet, kaynakKaydi: kisa(e, x.tanim.kaynak) })),
-    not: 'Anlatımlar gerçeği belirlemez; gerçek yazarın kararıdır. Kopya, tercüme ya da aktarma ile aynı kökten gelen anlatımlar tek bağımsız kaynak sayılır. Vazgeçilmiş anlatımlar sayılmaz.',
+    not: 'Anlatımlar gerçeği belirlemez; gerçek yazarın kararıdır. Kopya, tercüme ya da aktarma ile aynı kökten gelen anlatımlar ve aynı belge ailesinden gelenler tek bağımsız kaynak sayılır. Vazgeçilmiş anlatımlar sayılmaz.',
   };
 }
