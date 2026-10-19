@@ -667,3 +667,5 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 /* Kural atölyesi (F16) */
 .kural-ornekleri { margin-top: .75rem; border-top: 1px solid var(--cizgi); padding-top: .5rem; }
 .kural-ornekleri li.ornek-farkli { border-left: 3px solid var(--tehlike); padding-left: .5rem; }
+.dair-inanclar { margin-top: 6px; }
+.dair-inanclar .dair-yanilgi { border-left: 3px solid var(--uyari, #c98a2b); padding-left: 6px; }

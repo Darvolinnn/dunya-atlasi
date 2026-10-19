@@ -55,6 +55,13 @@ export function bilgiDegeri(alan: string, v: unknown): unknown {
   return undefined;
 }
 
+/** Başkasının bilgisine dair inançta sanılan durum (F05); kısa listeyle aynı adlar. */
+export type SanilanDurum = 'bilmiyor' | 'supheleniyor' | 'biliyor' | 'sakliyor' | 'yanlis';
+export const SANILAN_DURUMLAR: { kod: SanilanDurum; ad: string }[] = [
+  { kod: 'bilmiyor', ad: 'bilmiyor' }, { kod: 'supheleniyor', ad: 'şüpheleniyor' }, { kod: 'biliyor', ad: 'biliyor' },
+  { kod: 'sakliyor', ad: 'biliyor ama saklıyor' }, { kod: 'yanlis', ad: 'yanlış biliyor' },
+];
+
 export type BilgiEtiketiKodu = 'bilmiyor' | 'yanlis' | 'supheleniyor' | 'sakliyor' | 'biliyor' | 'inaniyor' | 'reddediyor';
 export interface BilgiEtiketi {
   kod: BilgiEtiketiKodu; ad: string;

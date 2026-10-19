@@ -80,6 +80,9 @@ import { kisiYasananSure } from './yasanan-sure';
 import { sahneOkurBilgileri } from './sahne-okur';
 import * as uyarlama from './uyarlama';
 import type { UyarlamaTanimi } from '../veri/api';
+import * as dairInanc from './dair-inanc';
+import { SANILAN_DURUMLAR } from '../alan/bilgi';
+import type { DairInancTanimi } from '../veri/api';
 
 export type DosyaAcici = (ad: string) => Database;
 export type Bildirici = (evren: string, turler: string[], kayitlar: string[], uzaktan?: boolean) => void;
@@ -504,6 +507,13 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           degerler: degerler.map((d) => { const t = d.deger as { kisi?: string; yer?: string; tarih?: string; beklenen?: string } | null; return { ...d, yazi: t ? `${kayitAdi(t.kisi ?? '')} · ${kayitAdi(t.yer ?? '')}${t.tarih ? ` · ${t.tarih}` : ''}: ${bek(t.beklenen)}` : '(boş)' }; }) });
         continue;
       }
+      const dir = iliski || dr || alan !== 'dair_inanc' ? undefined : e.db.selectObject('SELECT i.konu, i.soru FROM dair_inanclar d JOIN iddialar i ON i.kod=d.iddia WHERE d.kod=?', [nesne]);
+      if (dir) {
+        const san = (k: unknown) => SANILAN_DURUMLAR.find((x) => x.kod === k)?.ad ?? '';
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: dir.konu as string, baslik: `${kayitAdi(dir.konu as string)} · ${dir.soru}`, alanEtiketi: 'Başkasının bilgisine dair inanç',
+          degerler: degerler.map((d) => { const t = d.deger as DairInancTanimi | null; return { ...d, yazi: t ? `${kayitAdi(t.sanan)}, ${kayitAdi(t.hakkinda)} için “${san(t.sanilan)}” sanıyor${t.tarih ? ` (${t.tarih})` : ''}${t.aciklama ? `: ${t.aciklama}` : ''}` : '(boş)' }; }) });
+        continue;
+      }
       const hkr = iliski || dr ? undefined : e.db.selectObject('SELECT sahip, tanim FROM hukuk_kurallari WHERE kod=?', [nesne]);
       if (hkr) {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: hkr.sahip as string, baslik: `${kayitAdi(hkr.sahip as string)} · ${(JSON.parse(hkr.tanim as string) as { ad: string }).ad}`, alanEtiketi: 'Hukuk kuralının tanımı',
@@ -904,6 +914,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     const kor = alan === 'kural_ornegi' ? e.db.selectObject('SELECT o.kural, h.sahip, h.tanim FROM kural_ornekleri o JOIN hukuk_kurallari h ON h.kod=o.kural WHERE o.kod=?', [nesne]) : undefined;
     if (kor) { this.yaz(evren, [{ tur: 'kural_ornegi_yaz', veri: { kod: nesne, kural: kor.kural, tanim: deger, kuralAd: (JSON.parse(kor.tanim as string) as { ad: string }).ad, sahip: kor.sahip, cozum: true } }], [kor.sahip as string]); return; }
+    const dir = alan === 'dair_inanc' ? e.db.selectObject('SELECT d.iddia, i.konu FROM dair_inanclar d JOIN iddialar i ON i.kod=d.iddia WHERE d.kod=?', [nesne]) : undefined;
+    if (dir) { this.yaz(evren, [{ tur: 'dair_inanc_yaz', veri: { kod: nesne, iddia: dir.iddia, tanim: deger, konu: dir.konu, cozum: true } }], [dir.konu as string]); return; }
     const hkr = e.db.selectObject('SELECT sahip FROM hukuk_kurallari WHERE kod=?', [nesne]);
     if (hkr && alan === 'hukuk') { this.yaz(evren, [{ tur: 'hukuk_kurali_yaz', veri: { kod: nesne, tanim: deger, sahip: hkr.sahip, cozum: true } }], [hkr.sahip as string]); return; }
     const skr = e.db.selectObject('SELECT sahip FROM surec_kurallari WHERE kod=?', [nesne]);
@@ -2206,6 +2218,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   kuralOrnegiYaz({ evren, kural, kod = null, tanim }: { evren: string; kural: string; kod?: string | null; tanim: KuralOrnegiTanimi }) { return atolye.kuralOrnegiYaz(this.hukukBaglami(evren), kural, kod, tanim); }
   kuralOrnegiSil({ evren, kod }: { evren: string; kod: string }) { atolye.kuralOrnegiSil(this.hukukBaglami(evren), kod); }
   hukukKuraliKopyala({ evren, kod, sahip = null }: { evren: string; kod: string; sahip?: string | null }) { return atolye.hukukKuraliKopyala(this.hukukBaglami(evren), kod, sahip); }
+  // ---------- Başkasının bilgisine dair inanç (F05) ----------
+  dairInanclar({ evren, iddia }: { evren: string; iddia: string }) { return dairInanc.dairInanclar(this.durumBaglami(evren), iddia); }
+  dairInancYaz({ evren, iddia, kod = null, tanim }: { evren: string; iddia: string; kod?: string | null; tanim: DairInancTanimi }) { return dairInanc.dairInancYaz(this.durumBaglami(evren), iddia, kod, tanim); }
+  dairInancSil({ evren, kod }: { evren: string; kod: string }) { dairInanc.dairInancSil(this.durumBaglami(evren), kod); }
   // ---------- Üretim, kesinti, besin ağı (§15-5, F10) ----------
   kosulMasasi({ evren, paket, ...g }: kosulMod.KosulGirdisi & { evren: string; paket?: string | null }) {
     const e = this.evren(evren);

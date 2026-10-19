@@ -4,8 +4,8 @@
 // bakış açısı seçicisi buradadır.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { AnBilgisi, BilgiAlani, BilgiSatiri, EserYapisi, GorunurlukBilgisi, IddiaOzeti, IddiaSatiri, Kayit, KisaKayit, SinirGirdisi } from '../veri/api';
-import { BILGI_KAYNAKLARI, INANCLAR, type Inanc } from '../alan/bilgi';
+import type { AnBilgisi, BilgiAlani, BilgiSatiri, DairInanc, SanilanDurum, EserYapisi, GorunurlukBilgisi, IddiaOzeti, IddiaSatiri, Kayit, KisaKayit, SinirGirdisi } from '../veri/api';
+import { BILGI_KAYNAKLARI, INANCLAR, SANILAN_DURUMLAR, type Inanc } from '../alan/bilgi';
 import { KararRozeti, KararSecici } from './ortak';
 import { KayitSec, SatirGirdisi } from './KayitBolumleri';
 import { SinirAlani, SinirGirdi, sinirYazi, useYukle } from './Anlati';
@@ -142,6 +142,7 @@ function IddiaKarti({ istemci, evren, iddia }: { istemci: Istemci; evren: string
           <ul class="bilgi-listesi">{okurlar.map((b) => <BilgiOgesi key={b.kod} istemci={istemci} evren={evren} b={b} />)}</ul>
         </>
       )}
+      <DairInanclar istemci={istemci} evren={evren} iddia={iddia.kod} />
       {ekle && <BilgiFormu istemci={istemci} evren={evren} iddia={iddia} okur={ekle === 'okur'} kapat={() => setEkle(null)} />}
       {!ekle && (
         <div class="satir">
@@ -149,6 +150,60 @@ function IddiaKarti({ istemci, evren, iddia }: { istemci: Istemci; evren: string
           <button class="dugme sade kucuk" onClick={() => setEkle('okur')}>Okura açıklanmasını ekle</button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Başkasının bilgisine dair inanç (F05): yalnızca yazar açınca görünür. */
+function DairInanclar({ istemci, evren, iddia }: { istemci: Istemci; evren: string; iddia: string }) {
+  const [l] = useYukle<DairInanc[]>(istemci, evren, () => istemci.iste('dairInanclar', { evren, iddia }), [iddia]);
+  const [acik, setAcik] = useState(false);
+  const [sanan, setSanan] = useState<Secim | null>(null);
+  const [hakkinda, setHakkinda] = useState<Secim | null>(null);
+  const [sanilan, setSanilan] = useState<SanilanDurum>('bilmiyor');
+  const [tarih, setTarih] = useState('');
+  const [aciklama, setAciklama] = useState('');
+  const [hata, setHata] = useState<string | null>(null);
+  if (!l) return null;
+  const ekle = () => {
+    if (!sanan || !hakkinda) { setHata('İki kişiyi de seçin.'); return; }
+    istemci.iste('dairInancYaz', { evren, iddia, tanim: { sanan: sanan.kod, hakkinda: hakkinda.kod, sanilan, tarih, aciklama } })
+      .then(() => { setTarih(''); setAciklama(''); setHata(null); setAcik(false); }, (x) => setHata(hataYaz(x)));
+  };
+  const ad = (k: SanilanDurum) => SANILAN_DURUMLAR.find((x) => x.kod === k)!.ad;
+  return (
+    <div class="dair-inanclar">
+      {l.length > 0 && <span class="soluk kucuk">Başkasının bildiğine dair inançlar</span>}
+      {l.length > 0 && (
+        <ul class="bilgi-listesi">
+          {l.map((d) => (
+            <li key={d.kod} class={d.uyum === 'yanlis' ? 'dair-yanilgi' : ''}>
+              <strong>{d.sanan.ad}</strong>, {d.hakkinda.ad} için “{ad(d.tanim.sanilan)}” sanıyor{d.tanim.tarih ? ` (${d.tanim.tarih})` : ''}.
+              <div class="kucuk">{d.uyum === 'dogru' ? `Doğru sanıyor: ${d.gercekDurum?.toLocaleLowerCase('tr-TR')}.` : d.uyum === 'yanlis' ? `Yanılıyor: kayıtlara göre ${d.gercekDurum?.toLocaleLowerCase('tr-TR')}.` : d.neden}</div>
+              {d.tanim.aciklama && <div class="kucuk soluk">{d.tanim.aciklama}</div>}
+              <button class="dugme sade kucuk" onClick={() => istemci.iste('dairInancSil', { evren, kod: d.kod }).catch((x) => setHata(hataYaz(x)))}>Kaldır</button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {acik ? (
+        <div class="iliski-duzenle">
+          <div class="satir kucuk">
+            <KayitSec istemci={istemci} evren={evren} secili={sanan} etiket="Kim sanıyor?" sec={setSanan} />
+            <KayitSec istemci={istemci} evren={evren} secili={hakkinda} etiket="Kimin hakkında?" sec={setHakkinda} />
+            <select class="girdi kucuk-secim" aria-label="Ne sanıyor" value={sanilan} onChange={(e) => setSanilan((e.target as HTMLSelectElement).value as SanilanDurum)}>
+              {SANILAN_DURUMLAR.map((x) => <option value={x.kod}>{x.ad} sanıyor</option>)}
+            </select>
+            <input class="girdi" style="max-width:140px" aria-label="Tarih" placeholder="Tarih (isteğe bağlı)" value={tarih} onInput={(e) => setTarih((e.target as HTMLInputElement).value)} />
+          </div>
+          <div class="satir">
+            <input class="girdi" style="flex:1;min-width:160px" lang="tr" aria-label="Açıklama" placeholder="Açıklama (isteğe bağlı)" value={aciklama} onInput={(e) => setAciklama((e.target as HTMLInputElement).value)} />
+            <button class="dugme kucuk" onClick={ekle}>Ekle</button>
+            <button class="dugme sade kucuk" onClick={() => { setAcik(false); setHata(null); }}>Vazgeç</button>
+          </div>
+        </div>
+      ) : <button class="dugme sade kucuk" onClick={() => setAcik(true)}>Birinin, başkasının bunu bildiğine dair inancını ekle</button>}
+      {hata && <p class="hata kucuk">{hata}</p>}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import type { Islem } from '../alan/islem';
 import type { Akis, EvrenTarihi, Fark, Karsilastirma, ParalelTakvim, Takvim, ZamanSeti } from '../alan/tarih';
 import type { DurumKipi, Gecerlilik } from '../alan/durum';
 import type { Sablon, Soru, SoruDurumu } from '../alan/sablon';
-import type { BilgiEtiketi, BilgiKaynagi, Inanc } from '../alan/bilgi';
+import type { BilgiEtiketi, BilgiKaynagi, Inanc, SanilanDurum } from '../alan/bilgi';
 import type { Gorunurluk } from '../alan/gorunurluk';
 import type { YasananSure } from '../alan/yasanan-sure';
 
@@ -518,6 +518,15 @@ export interface UyarlamaEslemesi {
   degisiklikler: { taraf: 'a' | 'b'; islem: string; aciklama: string }[]; uyarilar: string[];
 }
 export interface UyarlamaAdaylari { eserler: KisaKayit[]; kayitlar: KisaKayit[]; sorun: string | null }
+/** Başkasının bilgisine dair inanç (F05): "vezir, prensesin bilmediğini sanıyor". */
+export type { SanilanDurum };
+export interface DairInancTanimi { sanan: string; hakkinda: string; sanilan: SanilanDurum; tarih: string; aciklama: string }
+export interface DairInanc {
+  kod: string; tanim: DairInancTanimi; sanan: KisaKayit; hakkinda: KisaKayit;
+  /** Hakkında olunan kişinin kayıtlı durumu; karşılaştırılamıyorsa null. */
+  gercekDurum: string | null;
+  uyum: 'dogru' | 'yanlis' | 'belirsiz'; neden: string;
+}
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1239,6 +1248,9 @@ export interface Istekler {
   uyarlamaYaz(a: { evren: string; kod?: string | null; tanim: UyarlamaTanimi }): { kod: string };
   uyarlamaSil(a: { evren: string; kod: string }): void;
   uyarlamaGozdenGecir(a: { evren: string; kod: string }): void;
+  dairInanclar(a: { evren: string; iddia: string }): DairInanc[];
+  dairInancYaz(a: { evren: string; iddia: string; kod?: string | null; tanim: DairInancTanimi }): { kod: string };
+  dairInancSil(a: { evren: string; kod: string }): void;
 }
 
 export type IstekAdi = keyof Istekler;
