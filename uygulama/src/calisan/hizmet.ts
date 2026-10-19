@@ -44,7 +44,8 @@ import * as soyMod from './soy';
 import * as montaj from './montaj';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
-import type { SozlesmeTanimi } from '../veri/api';
+import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu } from '../veri/api';
+import * as haklar from './haklar';
 import * as sozluk from './sozluk';
 import * as anlatim from './anlatim';
 import * as delil from './delil';
@@ -536,6 +537,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           degerler: degerler.map((d) => ({ ...d, yazi: gokyuzu.tanimYazisi(d.deger) })) });
         continue;
       }
+      if (!iliski && (alan === 'hak_tanim' || alan === 'hak_silindi' || alan.startsWith('hak_tanima:'))) {
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: 'Haklar ve yükümlülükler',
+          alanEtiketi: alan === 'hak_tanim' ? 'Hak kaydı' : alan === 'hak_silindi' ? 'Hakkın kaldırılması' : 'Otoritenin tanıması',
+          degerler: degerler.map((d) => ({ ...d, yazi: haklar.catismaYazisi(e, alan, d.deger) })) });
+        continue;
+      }
       if (!iliski && alan === 'gundelik') {
         sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'kayit', kayit: nesne, baslik: kayitAdi(nesne), alanEtiketi: 'Gündelik hayat kartları',
           degerler: degerler.map((d) => ({ ...d, yazi: `${(d.deger as unknown[] | null)?.length ?? 0} kart` })) });
@@ -832,6 +839,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (alan === 'anlatim') { this.yaz(evren, [{ tur: 'anlatim_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }]); return; }
     if (alan === 'anlatim_silindi') { this.yaz(evren, [{ tur: deger ? 'anlatim_sil' : 'anlatim_geri_yukle', veri: { kod: nesne, cozum: true } }]); return; }
     if (alan === 'sozluk_tanim') { this.yaz(evren, [{ tur: 'sozluk_yaz', veri: { kod: nesne, tanim: deger, cozum: true } }]); return; }
+    if (alan === 'hak_tanim') { this.yaz(evren, [{ tur: 'hak_degistir', veri: { kod: nesne, tanim: deger, cozum: true } }], [...haklar.ilgiliKayitlar(e, nesne), ...haklar.ilgiliKayitlar(e, nesne, deger)]); return; }
+    if (alan === 'hak_silindi') { this.yaz(evren, [{ tur: deger ? 'hak_sil' : 'hak_geri_yukle', veri: { kod: nesne, cozum: true } }], haklar.ilgiliKayitlar(e, nesne)); return; }
+    if (alan.startsWith('hak_tanima:')) { this.yaz(evren, [{ tur: 'hak_tanima_yaz', veri: { kod: alan.slice(11), hak: nesne, ...deger, cozum: true } }], [...haklar.ilgiliKayitlar(e, nesne), deger.otorite]); return; }
     if (alan === 'sozluk_silindi') { this.yaz(evren, [{ tur: deger ? 'sozluk_sil' : 'sozluk_geri_yukle', veri: { kod: nesne, cozum: true } }]); return; }
     if (alan.startsWith('sozluk_isareti:')) { this.yaz(evren, [{ tur: 'sozluk_isareti', veri: { kod: nesne, anahtar: alan.slice(15), bilerek: !!deger, cozum: true } }]); return; }
     if (alan === 'rota') { this.yaz(evren, [{ tur: 'rota_yaz', veri: { kod: nesne, rota: deger, cozum: true } }], [nesne]); return; }
@@ -2352,6 +2362,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   sozlesmeDisaridaYaz({ evren, madde, eser, disarida }: { evren: string; madde: string; eser: string; disarida: boolean }) { sozlesme.sozlesmeDisaridaYaz(this.sozlesmeBaglami(evren), madde, eser, disarida); }
   eserSozlesmesi({ evren, eser }: { evren: string; eser: string }) { return sozlesme.eserSozlesmesi(this.evren(evren), eser); }
   sozlesmeHatirlatmalari({ evren, kayit }: { evren: string; kayit: string }) { return sozlesme.sozlesmeHatirlatmalari(this.evren(evren), kayit); }
+  haklar({ evren, kayit, tarih, cop }: { evren: string; kayit: string; tarih?: string | null; cop?: boolean }) { return haklar.haklar(this.durumBaglami(evren), kayit, tarih ?? null, cop); }
+  hakEkle({ evren, hak }: { evren: string; hak: HakGirdisi }) { return haklar.hakEkle(this.durumBaglami(evren), hak); }
+  hakDegistir({ evren, kod, hak }: { evren: string; kod: string; hak: HakGirdisi }) { haklar.hakDegistir(this.durumBaglami(evren), kod, hak); }
+  hakSil({ evren, kod }: { evren: string; kod: string }) { haklar.hakSil(this.durumBaglami(evren), kod); }
+  hakGeriYukle({ evren, kod }: { evren: string; kod: string }) { haklar.hakSil(this.durumBaglami(evren), kod, true); }
+  hakTanimaYaz({ evren, hak, kod, otorite, durum }: { evren: string; hak: string; kod?: string | null; otorite: string; durum: HakTanimaDurumu }) { return haklar.hakTanimaYaz(this.durumBaglami(evren), hak, kod ?? null, otorite, durum); }
   // ---------- Adlandırılmış evren sürümleri (§9.7) ----------
   private anaEvren(evren: string) {
     const e = this.evren(evren);

@@ -16,6 +16,7 @@ let hazirlik: Promise<Hizmet> | null = null;
 const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', 'evrenOlustur', 'evrenAdlandir', 'evrenBilgisi', 'islemGunlugu',
   'yogunluk',
   'sozlesmeMaddeleri', 'sozlesmeMaddeYaz', 'sozlesmeMaddeSil', 'sozlesmeMaddeGeriYukle', 'sozlesmeDisaridaYaz', 'eserSozlesmesi', 'sozlesmeHatirlatmalari',
+  'haklar', 'hakEkle', 'hakDegistir', 'hakSil', 'hakGeriYukle', 'hakTanimaYaz',
   'gokyuzuTanimi', 'gokyuzuYaz', 'gokyuzuHesapla', 'gokyuzuCakismaAra',
   'durumNiyeti', 'iddiaDosyasi', 'anlatimYaz', 'anlatimSil', 'anlatimGeriYukle', 'delilGecmisi', 'delilYaz', 'sorulabilirHesaplar', 'sonrakiSoru', 'kesifSorusu', 'kullanimMasasi', 'kullanimMasasiYaz', 'kesifAdayiKaydet', 'baglamKarsilastir', 'kosulMasasi', 'degisiklikMasasi', 'degisiklikUygula', 'sozlukler', 'sozlukYaz', 'sozlukSil', 'sozlukGeriYukle', 'sozlukDenetle', 'sozlukIsareti',
   'yerlesim', 'yerlesimPlanlari', 'yerlesimYaz',

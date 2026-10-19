@@ -102,7 +102,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 43;
+export const IZDUSUM_SURUMU = 44;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -392,6 +392,12 @@ CREATE TABLE IF NOT EXISTS sozlesme_disarida(
   disarida INTEGER NOT NULL,
   PRIMARY KEY(madde,eser)
 );
+CREATE TABLE IF NOT EXISTS haklar(
+  kod TEXT PRIMARY KEY, tanim TEXT NOT NULL, silindi INTEGER
+);
+CREATE TABLE IF NOT EXISTS hak_tanimalari(
+  kod TEXT PRIMARY KEY, hak TEXT NOT NULL, otorite TEXT NOT NULL, durum TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS derlemeler(
   kod TEXT PRIMARY KEY,
   tur TEXT NOT NULL,
@@ -668,6 +674,7 @@ export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar'
   'gokyuzu_tanimi',
   'sozlukler', 'sozluk_isaretleri',
   'sozlesme_maddeleri', 'sozlesme_disarida',
+  'haklar', 'hak_tanimalari',
   'alan_yazanlari', 'silme_catismalari', 'metin_yazanlari', 'metin_catismalari', 'anlati', 'durumlar', 'sablonlar', 'alan_degerleri', 'soru_cevaplari', 'kayit_soru_setleri', 'haritalar', 'isaretler', 'cizimler', 'rotalar', 'yolculuklar', 'yonlendirmeler', 'birlesme_tasinanlar', 'ters_birlesmeler', 'inceleme_kararlari', 'etki_incelemeleri', 'iddialar', 'bilgiler', 'goreli_tarihler'];
 
 IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi', 'kullanim_masalari');
@@ -1428,6 +1435,39 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     }
     db.exec({ sql: 'INSERT OR REPLACE INTO sozlesme_disarida(madde,eser,disarida) VALUES(?,?,?)', bind: [madde, hedef, disarida ? 1 : 0] });
     alanYaz(db, i, madde, `sozlesme_disarida:${hedef}`, disarida);
+  },
+  hak_ekle(db, i) {
+    const { kod, tanim } = i.veri as { kod: string; tanim: import('../veri/api').HakTanimi };
+    if (!kod || !tanim || !Array.isArray(tanim.sahipler)) return;
+    const sinir = (s: typeof tanim.baslangic) => s ? sinirTz(db, { ...s, ...(s.olay ? { olay: yonlendir(db, s.olay) } : {}) }) : null;
+    const t = { ...tanim, konu: yonlendir(db, tanim.konu), sahipler: tanim.sahipler.map((k) => yonlendir(db, k)), otorite: yonlendir(db, tanim.otorite), baslangic: sinir(tanim.baslangic), bitis: sinir(tanim.bitis) };
+    db.exec({ sql: 'INSERT OR IGNORE INTO haklar(kod,tanim) VALUES(?,?)', bind: [kod, JSON.stringify(t)] });
+    alanYaz(db, i, kod, 'hak_tanim', t);
+  },
+  hak_degistir(db, i) {
+    const { kod, tanim } = i.veri as { kod: string; tanim: import('../veri/api').HakTanimi };
+    if (!kod || !tanim || !Array.isArray(tanim.sahipler)) return;
+    const sinir = (s: typeof tanim.baslangic) => s ? sinirTz(db, { ...s, ...(s.olay ? { olay: yonlendir(db, s.olay) } : {}) }) : null;
+    const t = { ...tanim, konu: yonlendir(db, tanim.konu), sahipler: tanim.sahipler.map((k) => yonlendir(db, k)), otorite: yonlendir(db, tanim.otorite), baslangic: sinir(tanim.baslangic), bitis: sinir(tanim.bitis) };
+    db.exec({ sql: 'UPDATE haklar SET tanim=? WHERE kod=?', bind: [JSON.stringify(t), kod] });
+    alanYaz(db, i, kod, 'hak_tanim', t);
+  },
+  hak_sil(db, i) {
+    const kod = i.veri.kod as string;
+    db.exec({ sql: 'UPDATE haklar SET silindi=? WHERE kod=?', bind: [i.zaman, kod] });
+    alanYaz(db, i, kod, 'hak_silindi', true);
+  },
+  hak_geri_yukle(db, i) {
+    const kod = i.veri.kod as string;
+    db.exec({ sql: 'UPDATE haklar SET silindi=NULL WHERE kod=?', bind: [kod] });
+    alanYaz(db, i, kod, 'hak_silindi', false);
+  },
+  hak_tanima_yaz(db, i) {
+    const { kod, hak, otorite, durum } = i.veri as { kod: string; hak: string; otorite: string; durum: string };
+    if (!kod || !hak || !otorite || !['taniyor', 'tanimiyor', 'bilinmiyor'].includes(durum)) return;
+    const hedef = yonlendir(db, otorite);
+    db.exec({ sql: 'INSERT OR REPLACE INTO hak_tanimalari(kod,hak,otorite,durum) VALUES(?,?,?,?)', bind: [kod, hak, hedef, durum] });
+    alanYaz(db, i, hak, `hak_tanima:${kod}`, { otorite: hedef, durum });
   },
   /** Gezinti ve görsel pano (§7): yazarın derlediği listeler. İlk yazım derlemeyi kurar. */
   derleme_yaz(db, i) {
