@@ -1,8 +1,8 @@
 # Dünya Atlası
 
-Kurgu evrenleri için bir dünya kurma programı: kayıtlar, ilişkiler, zaman çizelgesi, harita, bilgi katmanları ve tutarlılık denetimleri. Yapay zekâ içermez; yalnızca yazarın girdiği veri ve tanımladığı kurallarla çalışır. Windows 11, Android tablet ve iPhone'da aynı evrenle çalışan bir web uygulaması (PWA) olarak tasarlanıyor; eşitleme ve yedek Google Drive üzerinden.
+Kurgu evrenleri için bir dünya kurma programı: kayıtlar, ilişkiler, zaman çizelgesi, harita, bilgi katmanları ve tutarlılık denetimleri. Yapay zekâ içermez; yalnızca yazarın girdiği veri ve tanımladığı kurallarla çalışır. Önce Windows 11 için (tarayıcıda ve Tauri ile Windows uygulaması olarak); Android tablet sonraya bırakıldı. Eşitleme ve yedek Google Drive üzerinden.
 
-**Durum:** Geliştirme sırasının bütün aşamaları (0–5) kodlandı; kalan tasarım maddeleri üzerinde çalışılıyor. Ayrıntı ve kalan işler: [DEVIR.md](DEVIR.md). Program `uygulama/` klasöründe.
+**Durum:** Geliştirme sırasının bütün aşamaları ve tasarımdaki bütün maddeler kodlandı; kullanıcının denemesi bekleniyor. Ayrıntı ve kalan işler: [DEVIR.md](DEVIR.md). Program `uygulama/` klasöründe.
 
 | Belge | İçerik |
 |---|---|
