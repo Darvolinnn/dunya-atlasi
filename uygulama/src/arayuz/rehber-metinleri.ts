@@ -57,7 +57,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     baslik: 'Yaz',
     ne: [
       'Evrenin ana sayfası ve asıl yazı masanız. Romanlarınızı, öykülerinizi burada yazarsınız. Sol tarafta eserlerinizin ağacı durur: eser › bölüm › sahne.',
-      'Bir sahne açıkken metin ortada, o sahnenin bağlamı (kimler orada, nerede, hangi tarihte, kim ne biliyor) sağdaki panelde görünür.',
+      'Bir sahne açıkken metin ortada, o sahnenin bağlamı sağdaki panelde görünür. Panelin dört sekmesi vardır: Bağlam (ne zaman, nerede, kimin gözünden, kimler orada ve o andaki durumları), Plan (sahne planının soruları), Süreklilik (sahnenin süreklilik defteri) ve Bilgi (bakış açısındaki karakterin ve okurun o anda bildikleri).',
     ],
     neZaman: 'Yazmaya oturduğunuz her an. Evren açılınca bu sayfa gelir.',
     adimlar: [
@@ -66,13 +66,15 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       'Soldaki ağaçta “+ Bölüm” ile bölüm, “+ Sahne” ile sahne ekleyin.',
       'Bir sahneye basıp yazmaya başlayın. Yazdıklarınız kendiliğinden kaydedilir.',
       'Metinde bir karakterin ya da yerin adını [[ ya da @ ile yazarsanız ona bağlantı kurulur; kayıt yoksa “fikir” olarak oluşturulur.',
-      'Sağdaki bağlam panelini başlıktaki düğmeyle açıp × ile kapatabilirsiniz. Sahnenin bütün ayrıntıları için “Bütün alanlar”a basın.',
+      'Bağlam sekmesindeki “Bu sahne” kartı sahnenin tarihini, mekânını ve bakış açısını okunacak biçimde gösterir. Değiştirmek için karttaki “Düzenle”ye basın.',
+      'Sağdaki bağlam panelini başlıktaki düğmeyle açıp × ile kapatabilirsiniz. Sahnenin bütün ayrıntıları ve çöp kutusuna taşıma, başlıktaki “Sahne ⋯” menüsündedir.',
     ],
     ipuclari: [
       'Kaldığınız yer hatırlanır; “Devam et” sizi son yazdığınız yere götürür.',
+      'Bir sahne açıkken soldaki ağaçta yalnız onun eseri ve bölümü açık durur; öbürlerini yanlarındaki okla açabilirsiniz. Bağlam panelinde en son seçtiğiniz sekme de hatırlanır.',
       'Tarihi, mekânı ve sahnedekileri henüz girilmemiş bir sahnede bağlam paneli kapalı başlar; başlıkta “Bağlam ekle” görünür. Siz paneli bir kez açar ya da kapatırsanız bu seçim hatırlanır.',
       'Sahnenin evren tarihi girilmemişse panel kayıtları belirli bir ana göre süzemez; tarihi girdiğinizde o andaki durum gösterilir. Mekânı, bakış açısını ya da sahnedekileri girdiğinizde onların o andaki durumları da panelde toplanır.',
-      'Okurun bilgisi bölümü, okur için kaydettiğiniz bilgi yokken katlı durur. Okur için zaman evren tarihine göre değil, okuma sırasına göre ilerler.',
+      'Bilgi sekmesindeki okurun bilgisi bölümü, okur için kaydettiğiniz bilgi yokken katlı durur. Okur için zaman evren tarihine göre değil, okuma sırasına göre ilerler.',
       'Soldaki çubuğun altındaki özet, yazınızın nerede güvende olduğunu söyler: bu cihazda kayıt, Drive ile eşitleme ve son yedek ayrı satırlardır. Eşitleme başka cihazlara taşır; yedek, geri dönebileceğiniz ayrı bir kopyadır.',
       'Ctrl+K komut paletini açar: herhangi bir sayfayı ya da kaydı adını yazarak bulabilirsiniz. İki yer arası yolculuk süresini ve takvim günü hesabını da buradan yaparsınız.',
       'Alt+N her ekranda hızlı not açar.',
@@ -143,12 +145,15 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     neZaman: 'Coğrafyayı kurarken, bir yolculuğu planlarken ya da bir yerin nerede olduğunu hatırlamak istediğinizde.',
     adimlar: [
       '“Harita yükle” ile bir görsel seçin ve haritaya ad verin.',
-      'Haritayı açın. Araçlardan “Kesin yer işaretle”, “Yaklaşık bölge işaretle”, “Bölge çiz” ya da “Yol çiz”i seçin.',
+      'Haritayı açın. Harita bütün alanı kaplar; araçlar sol kenardadır: “Kesin yer”, “Yaklaşık bölge”, “Bölge çiz” ya da “Yol çiz”i seçin.',
       'Haritaya basın ve işareti bir kayda bağlayın.',
-      'Yeri bilinmeyen ama bu haritada olduğu bilinen yerleri (ör. efsanevi bir şehir) “Yeri bilinmeyenler” listesine ekleyin.',
+      'Bir işarete basınca sağdaki çekmecede o yerin kartı açılır: kısa özeti, orada geçen sahneler, bağları ve oradan geçen yollar.',
+      'Yeri bilinmeyen ama bu haritada olduğu bilinen yerleri (ör. efsanevi bir şehir) çekmecedeki “Yeri bilinmeyenler” listesine ekleyin.',
       'Zaman kaydırıcısıyla haritayı belli bir yıldaki hâliyle görün: o tarihte geçerli olmayan bölge ve yollar gizlenir, o tarihe denk gelen olaylar listelenir.',
     ],
     ipuclari: [
+      'Sağdaki çekmecenin üç sekmesi vardır: İşaretler (aranabilir liste), Katmanlar ve Künye (haritayı kim, ne zaman, ne amaçla yaptı; haritayı kaldırma da buradadır). Çekmeceyi ✕ ile kapatınca harita genişler.',
+      'Haritanın altındaki lejant işaretlerin ve çizgilerin anlamını gösterir. Sağ alttaki “Sığdır” haritayı ekrana bütünüyle sığdırır.',
       '“Katmanlar” ile eski bir haritayı ya da eskizi aynı haritanın üstüne bindirebilirsiniz. İşaretler görsele değil haritaya bağlı olduğundan görsel değişince yerinden oynamaz.',
       'Tartışmalı topraklarda her tarafın iddiasını ayrı bölge olarak çizin; “fiilî denetim” ile “iddia edilen” ayrımını yapabilirsiniz.',
       'Fotoğraflardaki konum bilgisi yüklenirken silinir.',
@@ -320,29 +325,39 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
   cizelge: {
     baslik: 'Zaman çizelgesi',
     ne: [
-      'Evren tarihi verilmiş bütün kayıtları (olaylar, doğumlar, sahneler…) zaman sırasıyla bir şeritte gösterir.',
+      'Evren tarihi verilmiş bütün kayıtları (olaylar, doğumlar, sahneler…) zaman sırasıyla gösterir. Eserlere bağlı olmayan olaylar “Olaylar” şeridinde, her eserin sahneleri kendi şeridindedir; çağlar arka planda renkli bant olarak durur.',
       'Kesin tarihler nokta, aralıklar ve yaklaşık tarihler bant, “şundan önce / sonra” gibi tarihler ok olarak çizilir. Bir olaya göre verilmiş tarihler (ör. “savaştan üç yıl sonra”) kesik çizgili bantla gösterilir.',
     ],
     neZaman: 'Olayların sırasını görmek, aralarındaki boşlukları ya da çakışmaları fark etmek istediğinizde.',
     adimlar: [
-      'Üstteki süzgeçlerle kayıt türü, eser ya da zaman akışı seçin.',
-      'Yakınlaştırıp uzaklaştırarak dönemler arasında gezinin.',
+      'Üstteki düğmelerle şeritleri açıp kapatın; kayıt türü ya da zaman akışı seçin.',
+      'Alttaki özet çizgisinde sürükleyerek bir aralık seçin; çizelge o aralığa yakınlaşır. “Bütün zamanı göster” geri döndürür.',
       'Bir kayda basarak sayfasını açın.',
     ],
     ipuclari: [
+      'Hiç kayıt olmayan uzun aralıklar “≈” işaretiyle kısaltılır; böylece yüzyıllar sonraki kalabalık bir yıl da okunur kalır. Kısaltma yalnız boşluktadır, hiçbir kaydın süresi kısalmaz.',
+      '“Tarih defteri” aynı kayıtları yıl yıl alt alta gösterir; aynı eserde aynı tarihli sahneler tek kartta toplanır. Dar ekranda kendiliğinden bu görünüm gelir.',
       'Tarih vermek için bir kaydın sayfasındaki “Evren tarihi” alanını kullanın.',
       '“Sıralamaya yerleşmeyenler”, takvime çevrilemeyen ya da çelişen tarihleri gösterir; yazdığınız hâliyle dururlar.',
     ],
   },
   ag: {
     baslik: 'Ağ',
-    ne: ['Bir kaydın ilişkilerini (aile, dostluk, üyelik, düşmanlık…) bir ağ çizimi olarak gösterir. İsterseniz bütün evrenin ağını da açabilirsiniz.'],
+    ne: [
+      'Bir kaydın ilişkilerini (aile, dostluk, üyelik, düşmanlık…) gösterir. Seçili kayıt ortada durur, doğrudan bağlıları ilk halkada, onların bağlıları dış halkada. İsterseniz bütün evrenin ağını da açabilirsiniz.',
+      'Bağın türü yalnız renkle değil çizgi biçimi ve yazıyla da ayrılır: aile düz kalın, düşmanlık kesik, sahneler noktalı çizgidir.',
+    ],
     neZaman: 'Bir karakterin kimlerle bağlantılı olduğunu ya da toplulukların birbirine nasıl bağlandığını görmek istediğinizde.',
     adimlar: [
       'Bir merkez kayıt seçin ya da “Bütün evren”i açın.',
       'Uzaklığı seçin: yalnızca doğrudan bağlılar, iki adım ya da üç adım.',
       'İsterseniz metindeki bağlantıları ve vazgeçilen kayıtları da gösterin.',
       'Bir kayda basıp “Merkeze al” ile ağı ondan yeniden çizin ya da “Kaydı aç” ile sayfasına gidin.',
+    ],
+    ipuclari: [
+      'Üstteki bağ türü düğmeleri o türden bağları çizimden gizler ya da geri getirir.',
+      'Sağdaki “Liste olarak” aynı bağları yazıyla verir; bir ada basınca o kayıt seçilir.',
+      '“Tablo” kim kimin nesi olduğunu bir tabloda gösterir: hücrede satırdaki kaydın sütundakine ne olduğu yazar. Bir hücreye basınca bağın ayrıntısı açılır. Çok kişili evrenlerde çizimden kolay okunur.',
     ],
   },
   soy: {

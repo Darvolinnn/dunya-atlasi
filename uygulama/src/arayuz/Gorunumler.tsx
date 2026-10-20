@@ -2,8 +2,8 @@
 // kayıtlarını gösterir; burada değiştirilen bir şey yoktur, düzenleme kaydın sayfasında yapılır.
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { AgKenari, AgSonucu, BolumMatrisi, DurumGecmisi, DurumSatiri, EtkiRaporu, KurguHatlari, NedenSonucAgi, SoyAgaci } from '../veri/api';
-import { ILISKI_TURLERI, iliskiTuruBul, rolAdi } from '../alan/iliski-turleri';
+import type { AgDugumu, AgKenari, AgSonucu, BolumMatrisi, DurumGecmisi, DurumSatiri, EtkiRaporu, KurguHatlari, NedenSonucAgi, SoyAgaci } from '../veri/api';
+import { BAG_TURLERI, ILISKI_TURLERI, bagTuru, iliskiTuruBul, rolAdi, type BagTuru } from '../alan/iliski-turleri';
 import { TURLER, turBul, grupSinifi } from '../alan/turler';
 import { anaTakvim, eksenYili, tarihAciklamasi, yilYazisi, type EvrenTarihi, type TakvimYa } from '../alan/tarih';
 import { KararRozeti } from './ortak';
@@ -13,7 +13,7 @@ import { aralikYazi } from './Anlati';
 import { git } from './Uygulama';
 import { BakisAciklamasi, BakisSecici } from './Bilgiler';
 import type { Secim } from './BaglantiSecici';
-import { kuvvetYerlesimi, soyYerlesimi, SOY_BOY, SOY_EN, type Nokta } from './yerlesim';
+import { bagYayi, halkaYerlesimi, kuvvetYerlesimi, soyYerlesimi, SOY_BOY, SOY_EN, type Nokta } from './yerlesim';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const kisalt = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
@@ -247,7 +247,19 @@ function SoyAciklamasi({ kisiler }: { kisiler: boolean }) {
 // ---------- Ağ ----------
 const GRUPLAR = [...new Set(TURLER.map((t) => t.grup))];
 const ILISKI_GRUPLARI = [...new Set(ILISKI_TURLERI.map((t) => t.grup))];
+const agGorunusAnahtari = 'dunya-atlasi:ag-gorunus';
+const okuYerel = (a: string) => { try { return localStorage.getItem(a); } catch { return null; } };
+const yazYerel = (a: string, v: string) => { try { localStorage.setItem(a, v); } catch { /* yok */ } };
+const kenarTuru = (e: AgKenari) => bagTuru(e.tur, e.baglanti);
+const BAG_SIRASI = new Map(BAG_TURLERI.map((t, i) => [t.kod, i]));
+const kucukHarf = (s: string) => s.toLocaleLowerCase('tr-TR');
+/** Bağın, `bakan` kaydın gözünden adı: "Deniz'in annesi" için bakan Deniz'dir. */
+const kenarEtiketi = (e: AgKenari, bakan: string | null) => kucukHarf(e.baglanti ? e.etiket : bakan === e.a ? e.aIcin : bakan === e.b ? e.bIcin : e.etiket);
+const karsiUc = (e: AgKenari, kod: string) => (e.a === kod ? e.b : e.a);
+const sureYazi = (e: AgKenari) => (e.baslangic || e.bitis ? `${e.baslangic?.ifade ?? '…'} – ${e.bitis?.ifade ?? '…'}` : '');
 
+/** Ağ (§7, taslak 2A ve 2B): seçili kaydın yakın bağları odak halkasında; bağ türü renk, çizgi biçimi ve yazıyla
+ *  ayrılır. Yanda aynı bağlar liste olarak durur; "Tablo" kişiler arası bağ tablosunu gösterir. */
 export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren: string; merkez: string | null }) {
   const n = useYenile(istemci, evren);
   const [tumu, setTumu] = useState(false);
@@ -258,7 +270,10 @@ export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren
   const [bakis, setBakis] = useState<Secim | null>(null);
   const [baglantilar, setBaglantilar] = useState(false);
   const [vazgecilmis, setVazgecilmis] = useState(false);
-  const [r, setR] = useState<AgSonucu | null>(null);
+  const [gizli, setGizli] = useState<BagTuru[]>([]);
+  const [gorunus, setGorunusDurumu] = useState<'cizim' | 'tablo'>(() => okuYerel(agGorunusAnahtari) === 'tablo' ? 'tablo' : 'cizim');
+  const setGorunus = (g: 'cizim' | 'tablo') => { setGorunusDurumu(g); yazYerel(agGorunusAnahtari, g); };
+  const [ham, setR] = useState<AgSonucu | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const [secili, setSecili] = useState<string | null>(null);
   const [olcek, setOlcek] = useState(1);
@@ -270,15 +285,59 @@ export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren
     istemci.iste('ag', { evren, merkez: etkin, derinlik, iliskiTurleri: iTur, kayitTurleri: kTur, an: an || null, baglantilar, vazgecilmis, bakis: bakis?.kod ?? null })
       .then((x) => { setR(x); setHata(null); }, (e) => setHata(hataYaz(e)));
   }, [evren, etkin, tumu, derinlik, iTur.join(), kTur.join(), an, baglantilar, vazgecilmis, bakis?.kod, n]);
-  const konum = useMemo(() => (r ? kuvvetYerlesimi(r.dugumler.map((d) => d.kod), r.kenarlar, r.merkez) : null), [r]);
+  // Gizlenen bağ türleri yalnız çizimden kalkar; merkeze yolu kalmayan kayıtlar da gizlenir.
+  const r = useMemo(() => {
+    if (!ham || !gizli.length) return ham;
+    const kenarlar = ham.kenarlar.filter((e) => !gizli.includes(kenarTuru(e)));
+    let kalan: Set<string>;
+    if (ham.merkez) {
+      kalan = new Set([ham.merkez]);
+      for (let degisti = true; degisti;) {
+        degisti = false;
+        for (const e of kenarlar) for (const [x, y] of [[e.a, e.b], [e.b, e.a]]) if (kalan.has(x) && !kalan.has(y)) { kalan.add(y); degisti = true; }
+      }
+    } else kalan = new Set(kenarlar.flatMap((e) => [e.a, e.b]));
+    return { ...ham, dugumler: ham.dugumler.filter((d) => kalan.has(d.kod)), kenarlar: kenarlar.filter((e) => kalan.has(e.a) && kalan.has(e.b)) };
+  }, [ham, gizli.join()]);
+  const ad = useMemo(() => new Map((r?.dugumler ?? []).map((d) => [d.kod, d])), [r]);
+  const yerlesim = useMemo(() => {
+    if (!r) return null;
+    if (r.merkez) {
+      // İlk halkada aynı türden bağlar yan yana durur.
+      const ilkTur = new Map<string, number>();
+      for (const e of r.kenarlar) if (e.a === r.merkez || e.b === r.merkez) {
+        const o = karsiUc(e, r.merkez); ilkTur.set(o, Math.min(ilkTur.get(o) ?? 9, BAG_SIRASI.get(kenarTuru(e)) ?? 9));
+      }
+      return halkaYerlesimi(r.dugumler.map((d) => d.kod), r.kenarlar, r.merkez, (k) => `${ilkTur.get(k) ?? 9} ${ad.get(k)?.ad ?? ''}`);
+    }
+    return { konum: kuvvetYerlesimi(r.dugumler.map((d) => d.kod), r.kenarlar, null), halkalar: [] as number[] };
+  }, [r]);
+  const varolanTurler = BAG_TURLERI.filter((t) => ham?.kenarlar.some((e) => kenarTuru(e) === t.kod));
 
   const secimler = (
-    <div class="ag-suzgec">
+    <div class="ag-suzgec" role="group" aria-label="Süz">
       <div class="satir">
-        <span>Merkez</span>
+        <span class="soluk">Merkez</span>
         <KayitSec istemci={istemci} evren={evren} secili={merkez && merkezAdi ? { kod: merkez, ad: merkezAdi } : null}
           sec={(s) => { if (s) { setTumu(false); git(`/e/${evren}/ag/${s.kod}`); } }} etiket="Bir kayıt seç" />
         <button class={`dugme kucuk ${tumu ? 'ana' : ''}`} aria-pressed={tumu} onClick={() => setTumu(!tumu)}>Bütün evren</button>
+        {varolanTurler.map((t) => {
+          const acik = !gizli.includes(t.kod);
+          return (
+            <button key={t.kod} class={`cip bag-cipi ${acik ? 'aktif' : ''}`} aria-pressed={acik} title={acik ? 'Bu bağları gizle' : 'Bu bağları göster'}
+              onClick={() => setGizli(acik ? [...gizli, t.kod] : gizli.filter((x) => x !== t.kod))}>
+              <BagOrnegi tur={t.kod} />{t.ad}
+            </button>
+          );
+        })}
+        <span class="bosluk" />
+        {ham && gorunus === 'cizim' && <Yakinlastir olcek={olcek} setOlcek={setOlcek} />}
+        <span class="dugme-grubu" role="group" aria-label="Gösterim">
+          <button class={`dugme kucuk ${gorunus === 'cizim' ? 'ana' : ''}`} aria-pressed={gorunus === 'cizim'} onClick={() => setGorunus('cizim')}>Çizim</button>
+          <button class={`dugme kucuk ${gorunus === 'tablo' ? 'ana' : ''}`} aria-pressed={gorunus === 'tablo'} onClick={() => setGorunus('tablo')}>Tablo</button>
+        </span>
+      </div>
+      <div class="satir">
         {!tumu && (
           <label class="satir kucuk"><span class="soluk">Uzaklık</span>
             <select class="girdi kucuk-girdi" value={derinlik} onChange={(e) => setDerinlik(Number((e.target as HTMLSelectElement).value))}>
@@ -287,37 +346,29 @@ export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren
         )}
         <AnGirdisi an={an} setAn={setAn} />
         <BakisSecici istemci={istemci} evren={evren} bakis={bakis} sec={setBakis} />
-      </div>
-      <div class="satir">
         <CokluSecim etiket="İlişki türleri" secili={iTur} setSecili={setITur}
           gruplar={ILISKI_GRUPLARI.map((g) => ({ ad: g, secenekler: ILISKI_TURLERI.filter((t) => t.grup === g).map((t) => ({ kod: t.kod, ad: t.karsilikli ? t.aIcin : `${t.bIcin} / ${t.aIcin}` })) }))} />
         <CokluSecim etiket="Kayıt türleri" secili={kTur} setSecili={setKTur}
           gruplar={GRUPLAR.map((g) => ({ ad: g, secenekler: TURLER.filter((t) => t.grup === g).map((t) => ({ kod: t.kod, ad: t.ad })) }))} />
-        <label class="satir kucuk"><input type="checkbox" checked={baglantilar} onChange={(e) => setBaglantilar((e.target as HTMLInputElement).checked)} /> Metindeki bağlantılar</label>
-        <label class="satir kucuk"><input type="checkbox" checked={vazgecilmis} onChange={(e) => setVazgecilmis((e.target as HTMLInputElement).checked)} /> Vazgeçilen kayıtlar</label>
-        {r && <Yakinlastir olcek={olcek} setOlcek={setOlcek} />}
+        <details class="coklu-secim">
+          <summary class="dugme kucuk">Diğer{baglantilar || vazgecilmis ? ` (${Number(baglantilar) + Number(vazgecilmis)})` : ''}</summary>
+          <div class="coklu-secim-icerik kart">
+            <label class="satir kucuk"><input type="checkbox" checked={baglantilar} onChange={(e) => setBaglantilar((e.target as HTMLInputElement).checked)} /> Metindeki bağlantılar</label>
+            <label class="satir kucuk"><input type="checkbox" checked={vazgecilmis} onChange={(e) => setVazgecilmis((e.target as HTMLInputElement).checked)} /> Vazgeçilen kayıtlar</label>
+          </div>
+        </details>
       </div>
     </div>
   );
   if (!etkin && !tumu) return <div class="gorunum">{secimler}<p class="soluk">Bir kaydın yakın ilişkilerini görmek için merkeze bir kayıt seçin ya da bütün evreni açın.</p></div>;
   if (hata) return <div class="gorunum">{secimler}<p class="hata">{hata}</p></div>;
-  if (!r || !konum) return <div class="gorunum">{secimler}<p class="soluk">Açılıyor…</p></div>;
+  if (!r || !yerlesim) return <div class="gorunum">{secimler}<p class="soluk">Açılıyor…</p></div>;
   if (!r.dugumler.length) {
     return <div class="gorunum">{secimler}<p class="soluk">Bu süzgeçlerle gösterilecek kayıt yok.{!r.merkez && r.baglantisiz > 0 && ` Hiçbir bağı olmayan ${r.baglantisiz} kayıt ağda gösterilmiyor.`}</p></div>;
   }
 
-  const xs = [...konum.values()];
-  const pay = 70;
-  const minX = Math.min(...xs.map((p) => p.x)) - pay, maxX = Math.max(...xs.map((p) => p.x)) + pay;
-  const minY = Math.min(...xs.map((p) => p.y)) - pay, maxY = Math.max(...xs.map((p) => p.y)) + pay;
-  const gen = Math.max(320, maxX - minX), yuk = Math.max(240, maxY - minY);
-  const ad = new Map(r.dugumler.map((d) => [d.kod, d]));
-  const s = secili ? ad.get(secili) : null;
-  const seciliKenarlar = s ? r.kenarlar.filter((e) => e.a === s.kod || e.b === s.kod) : [];
-  const etiketGoster = r.kenarlar.length <= 40;
-  return (
-    <div class="gorunum">
-      {secimler}
+  const bilgi = (
+    <>
       <p class="soluk kucuk">
         {r.dugumler.length} kayıt, {r.kenarlar.length} bağ.
         {r.an && ` ${tarihAciklamasi(r.an)} itibarıyla: o tarihte sürmediği bilinen ilişkiler gizlendi, sürüp sürmediği belirsiz olanlar soluk gösteriliyor.`}
@@ -325,52 +376,195 @@ export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren
       </p>
       <BakisAciklamasi bakis={r.bakis} />
       {r.kesildi && <p class="uyari kucuk">Çizilebilecek kayıt sayısı aşıldı. En çok bağı olan {r.dugumler.length} kayıt gösteriliyor. Süzgeçlerle daraltabilirsiniz.</p>}
+    </>
+  );
+  if (gorunus === 'tablo') return <div class="gorunum">{secimler}{bilgi}<BagTablosu evren={evren} r={r} /></div>;
+
+  const { konum, halkalar } = yerlesim;
+  const xs = [...konum.values()];
+  // Yaylar ve yazılar düğümlerin dışına taşabilir.
+  const pay = halkalar.length ? 140 : 90;
+  const minX = Math.min(...xs.map((p) => p.x)) - pay, maxX = Math.max(...xs.map((p) => p.x)) + pay;
+  const minY = Math.min(...xs.map((p) => p.y)) - pay, maxY = Math.max(...xs.map((p) => p.y)) + pay;
+  const gen = Math.max(360, maxX - minX), yuk = Math.max(300, maxY - minY);
+  const s = secili ? ad.get(secili) : null;
+  const bakan = s?.kod ?? r.merkez;
+  const etiketGoster = r.kenarlar.length <= 25;
+  // Aynı iki kayıt arasındaki bağlar ayrı yaylarla çizilir.
+  const ciftSirasi = new Map<string, [number, number]>();
+  const ciftler = new Map<string, AgKenari[]>();
+  for (const e of r.kenarlar) { const k = [e.a, e.b].sort().join('|'); ciftler.set(k, [...(ciftler.get(k) ?? []), e]); }
+  for (const l of ciftler.values()) l.forEach((e, i) => ciftSirasi.set(e.kod, [i, l.length]));
+  const ilk = new Set(r.merkez ? r.kenarlar.filter((e) => e.a === r.merkez || e.b === r.merkez).map((e) => karsiUc(e, r.merkez!)) : []);
+  return (
+    <div class="gorunum">
+      {secimler}
+      {bilgi}
       {!r.kenarlar.length && <p class="soluk">Bu süzgeçlerle gösterilecek bağ yok.</p>}
-      <div class="cizim-alani" role="region" aria-label="Ağ çizimi">
-        <svg class="ag" width={gen * olcek} height={yuk * olcek} viewBox={`${minX} ${minY} ${gen} ${yuk}`}>
-          <defs>
-            <marker id="ag-ok" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ag-ok" /></marker>
-          </defs>
-          {r.kenarlar.map((e) => {
-            const a = konum.get(e.a)!, b = konum.get(e.b)!;
-            const vurgu = s && (e.a === s.kod || e.b === s.kod);
-            return (
-              <g key={e.kod} class={`ag-kenar ${e.baglanti ? 'baglanti' : ''} ${e.gecerlilik === 'belirsiz' ? 'belirsiz' : ''} ${e.inanc ? 'inanc' : ''} karar-${e.karar} ${vurgu ? 'vurgu' : ''}`}>
-                <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} marker-end={e.karsilikli ? undefined : 'url(#ag-ok)'}>
-                  <title>{kenarYazisi(e, ad)}</title>
-                </line>
-                {(etiketGoster || vurgu) && !e.baglanti && <text x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - 3} text-anchor="middle" class="ag-etiket">{kisalt(e.aIcin, 20)}</text>}
-              </g>
-            );
-          })}
-          {r.dugumler.map((d) => {
-            const p = konum.get(d.kod)!;
-            return (
-              <g key={d.kod} class={`ag-dugum ${grupSinifi(d.tur)} ${d.kod === r.merkez ? 'odak' : ''} ${d.kod === secili ? 'secili' : ''} ${d.inanc ? 'inanc' : ''} karar-${d.karar}`}
-                transform={`translate(${p.x},${p.y})`} role="button" tabIndex={0} aria-label={d.ad}
-                onClick={() => setSecili(d.kod)} onKeyDown={(e) => { if (e.key === 'Enter') setSecili(d.kod); }}>
-                <circle r={d.kod === r.merkez ? 13 : 9} />
-                <text y={d.kod === r.merkez ? 28 : 23} text-anchor="middle">{kisalt(d.ad, 22)}</text>
-              </g>
-            );
-          })}
-        </svg>
+      <div class="ag-duzen">
+        <div class="cizim-alani" role="region" aria-label="Ağ çizimi">
+          <svg class="ag" width={gen * olcek} height={yuk * olcek} viewBox={`${minX} ${minY} ${gen} ${yuk}`}>
+            <defs>
+              <marker id="ag-ok" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ag-ok" /></marker>
+            </defs>
+            {halkalar.map((h) => <circle key={h} class="ag-halka" r={h} cx={0} cy={0} />)}
+            {r.kenarlar.map((e) => {
+              const a = konum.get(e.a)!, b = konum.get(e.b)!;
+              const vurgu = !!s && (e.a === s.kod || e.b === s.kod);
+              const merkezde = !!r.merkez && (e.a === r.merkez || e.b === r.merkez);
+              const ra = dugumYaricapi(e.a, r.merkez, ilk), rb = dugumYaricapi(e.b, r.merkez, ilk) + 3;
+              const [sira, adet] = ciftSirasi.get(e.kod) ?? [0, 1];
+              // Merkezdeki bağın yazısı karşı uca yakın durur; merkezin çevresi kalabalıklaşmaz.
+              const t = merkezde ? (e.a === r.merkez ? 0.55 : 0.45) : 0.5;
+              const yay = bagYayi(a, b, ra, rb, sira, adet, !!r.merkez && !merkezde, t);
+              const yazi = (etiketGoster || vurgu || merkezde) && !e.baglanti ? kisalt(kenarEtiketi(e, merkezde && !vurgu ? r.merkez : bakan), 22) : null;
+              const w = yazi ? yazi.length * 7.2 + 16 : 0;
+              return (
+                <g key={e.kod} class={`ag-kenar bag-${kenarTuru(e)} ${e.baglanti ? 'baglanti' : ''} ${e.gecerlilik === 'belirsiz' ? 'belirsiz' : ''} ${e.inanc ? 'inanc' : ''} karar-${e.karar} ${vurgu ? 'vurgu' : ''} ${s && !vurgu ? 'soluk-kenar' : ''}`}>
+                  <path d={yay.d} marker-end={e.karsilikli ? undefined : 'url(#ag-ok)'}>
+                    <title>{kenarYazisi(e, ad)}</title>
+                  </path>
+                  {yazi && <g class="ag-etiket-kutu" aria-hidden="true">
+                    <rect x={yay.etiket.x - w / 2} y={yay.etiket.y - 11} width={w} height={22} rx={11} />
+                    <text x={yay.etiket.x} y={yay.etiket.y + 4.5} text-anchor="middle" class="ag-etiket">{yazi}</text>
+                  </g>}
+                </g>
+              );
+            })}
+            {r.dugumler.map((d) => {
+              const p = konum.get(d.kod)!;
+              const yr = dugumYaricapi(d.kod, r.merkez, ilk);
+              return (
+                <g key={d.kod} class={`ag-dugum ${grupSinifi(d.tur)} ${d.kod === r.merkez ? 'odak' : ''} ${d.kod === secili ? 'secili' : ''} ${r.merkez && d.kod !== r.merkez && !ilk.has(d.kod) ? 'uzak' : ''} ${d.inanc ? 'inanc' : ''} karar-${d.karar}`}
+                  transform={`translate(${p.x},${p.y})`} role="button" tabIndex={0} aria-label={`${d.ad}, ${turBul(d.tur).ad}`} aria-pressed={d.kod === secili}
+                  onClick={() => setSecili(d.kod === secili ? null : d.kod)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSecili(d.kod === secili ? null : d.kod); } }}>
+                  <circle r={yr} />
+                  <text y={yr + 17} text-anchor="middle">{kisalt(d.ad, 24)}</text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+        <AgListesi evren={evren} r={r} ad={ad} secili={s ?? null} sec={setSecili} merkezAl={(k) => { setTumu(false); git(`/e/${evren}/ag/${k}`); }} />
       </div>
-      {s && (
+    </div>
+  );
+}
+
+const dugumYaricapi = (kod: string, merkez: string | null, ilk: Set<string>) => (kod === merkez ? 26 : !merkez || ilk.has(kod) ? 17 : 12);
+
+/** Bağ türünün çizgi örneği: süzgeç çiplerinde ve listede lejant olarak. */
+function BagOrnegi({ tur }: { tur: BagTuru }) {
+  return <svg class={`bag-ornegi bag-${tur}`} width="22" height="10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" /></svg>;
+}
+
+/** Çizimin yazılı eşi: bağlar türe göre gruplu liste; seçili kaydın kartı en üstte. */
+function AgListesi({ evren, r, ad, secili, sec, merkezAl }: {
+  evren: string; r: AgSonucu; ad: Map<string, AgDugumu>; secili: AgDugumu | null; sec: (k: string | null) => void; merkezAl: (k: string) => void;
+}) {
+  const bakan = secili?.kod ?? r.merkez;
+  const kenarlar = bakan ? r.kenarlar.filter((e) => e.a === bakan || e.b === bakan) : r.kenarlar;
+  const gruplar = BAG_TURLERI.map((t) => ({ ...t, l: kenarlar.filter((e) => kenarTuru(e) === t.kod) })).filter((g) => g.l.length);
+  const baslik = bakan ? `${ad.get(bakan)?.ad ?? ''} kayıtlarının bağları` : 'Bütün bağlar';
+  return (
+    <aside class="ag-listesi" aria-label="Liste olarak">
+      {secili && (
         <div class="kart secili-kayit" role="status">
+          <div class="soluk kucuk">Seçili</div>
+          <div class="satir"><strong>{secili.ad}</strong> <span class="soluk kucuk">{turBul(secili.tur).ad}</span> <KararRozeti karar={secili.karar} /></div>
           <div class="satir">
-            <strong>{s.ad}</strong> <span class="soluk kucuk">{turBul(s.tur).ad}</span> <KararRozeti karar={s.karar} />
-            <span class="bosluk" />
-            <a class="dugme kucuk" href={`#/e/${evren}/k/${s.kod}`}>Kaydı aç</a>
-            {s.kod !== r.merkez && <button class="dugme kucuk" onClick={() => { setTumu(false); git(`/e/${evren}/ag/${s.kod}`); }}>Merkeze al</button>}
+            <a class="dugme kucuk" href={`#/e/${evren}/k/${secili.kod}`}>Kaydı aç</a>
+            {secili.kod !== r.merkez && <button class="dugme kucuk" onClick={() => merkezAl(secili.kod)}>Merkeze al</button>}
+            <button class="dugme sade kucuk" onClick={() => sec(null)}>Seçimi kaldır</button>
           </div>
-          <ul class="kucuk">{seciliKenarlar.map((e) => <li key={e.kod}>{kenarYazisi(e, ad)}</li>)}</ul>
         </div>
       )}
-      <details>
-        <summary>Bağların listesi ({r.kenarlar.length})</summary>
-        <ul class="kucuk">{r.kenarlar.map((e) => <li key={e.kod}>{kenarYazisi(e, ad)}</li>)}</ul>
-      </details>
+      <h3 class="etiket-baslik">Liste olarak</h3>
+      <p class="soluk kucuk">{bakan ? `${ad.get(bakan)?.ad ?? ''}: ${kenarlar.length} bağ` : baslik}</p>
+      {gruplar.map((g) => (
+        <section key={g.kod} class="ag-liste-grubu">
+          <h4 class="satir"><BagOrnegi tur={g.kod} />{g.ad}</h4>
+          <ul>
+            {g.l.map((e) => {
+              const o = bakan ? karsiUc(e, bakan) : null;
+              return (
+                <li key={e.kod}>
+                  {o ? <>
+                    <button class="baglanti-dugmesi" onClick={() => sec(o)}>{ad.get(o)?.ad}</button>
+                    <span class="soluk"> · {kenarEtiketi(e, bakan)}</span>
+                  </> : <span>{kenarYazisi(e, ad)}</span>}
+                  {sureYazi(e) && <span class="soluk kucuk"> · {sureYazi(e)}</span>}
+                  {e.gecerlilik === 'belirsiz' && <span class="rozet">belki</span>}
+                  {e.karar === 'fikir' && <span class="rozet">fikir</span>}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+      {!gruplar.length && <p class="soluk kucuk">Bağ yok.</p>}
+    </aside>
+  );
+}
+
+const TABLO_SINIRI = 16;
+/** Kim kimin nesi? (taslak 2B): satırdaki kaydın sütundakine ne olduğu hücrede yazar. Sahne ve metin bağlantıları
+ *  tabloya girmez; onlar çizimde ve listede durur. */
+function BagTablosu({ evren, r }: { evren: string; r: AgSonucu }) {
+  const [hucre, setHucre] = useState<string | null>(null);
+  const kenarlar = r.kenarlar.filter((e) => !e.baglanti && kenarTuru(e) !== 'sahne');
+  const bagli = new Set(kenarlar.flatMap((e) => [e.a, e.b]));
+  const tumKisiler = r.dugumler.filter((d) => bagli.has(d.kod));
+  // Merkez ve en çok bağı olanlar önce gelir.
+  const sayi = (k: string) => kenarlar.filter((e) => e.a === k || e.b === k).length;
+  const kisiler = [...tumKisiler].sort((a, b) => Number(b.kod === r.merkez) - Number(a.kod === r.merkez) || sayi(b.kod) - sayi(a.kod) || a.ad.localeCompare(b.ad, 'tr')).slice(0, TABLO_SINIRI);
+  const ad = new Map(r.dugumler.map((d) => [d.kod, d]));
+  const arasinda = (x: string, y: string) => kenarlar.filter((e) => (e.a === x && e.b === y) || (e.a === y && e.b === x));
+  const sec = hucre ? kenarlar.find((e) => e.kod === hucre) : null;
+  if (!kisiler.length) return <p class="soluk">Bu süzgeçlerle kayıtlar arasında tabloya girecek bağ yok. Sahne ve metin bağlantıları tabloda gösterilmez.</p>;
+  return (
+    <div class="bag-tablosu">
+      <h3>Kim kimin nesi?</h3>
+      <p class="soluk kucuk">Hücrede satırdaki kaydın sütundakine ne olduğu yazar. Bir hücre seçince bağın ayrıntısı altta açılır.{tumKisiler.length > TABLO_SINIRI && ` En çok bağı olan ${TABLO_SINIRI} kayıt gösteriliyor; süzgeçlerle daraltabilirsiniz.`}</p>
+      <div class="tablo-kaydir">
+        <table class="bag-tablo">
+          <thead><tr><td class="kose" />{kisiler.map((k) => <th key={k.kod} scope="col"><a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a></th>)}</tr></thead>
+          <tbody>
+            {kisiler.map((satir) => (
+              <tr key={satir.kod}>
+                <th scope="row"><a href={`#/e/${evren}/k/${satir.kod}`}>{satir.ad}</a></th>
+                {kisiler.map((sutun) => {
+                  if (satir.kod === sutun.kod) return <td key={sutun.kod} class="bos-hucre" />;
+                  const l = arasinda(satir.kod, sutun.kod);
+                  return (
+                    <td key={sutun.kod}>
+                      {l.map((e) => (
+                        <button key={e.kod} class={`hucre-bagi bag-${kenarTuru(e)} ${hucre === e.kod ? 'secili' : ''} ${e.gecerlilik === 'belirsiz' || e.karar === 'fikir' ? 'soluk' : ''}`}
+                          aria-pressed={hucre === e.kod} aria-label={`${satir.ad}, ${sutun.ad} kaydının ${kenarEtiketi(e, sutun.kod)}`} onClick={() => setHucre(hucre === e.kod ? null : e.kod)}>
+                          {kenarEtiketi(e, sutun.kod)}
+                        </button>
+                      ))}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {sec && (
+        <div class="kart secili-bag" role="status">
+          <div class="soluk kucuk">Seçili bağ</div>
+          <div><strong>{ad.get(sec.a)?.ad}</strong> <span class="soluk">→ {kenarEtiketi(sec, sec.a)} →</span> <strong>{ad.get(sec.b)?.ad}</strong></div>
+          <div class="kucuk">
+            {sureYazi(sec) ? sureYazi(sec) : 'Tarih aralığı girilmemiş'} · <KararRozeti karar={sec.karar} />
+            {sec.rolAdi && ` · ${kucukHarf(sec.rolAdi)}`}
+            {sec.gecerlilik === 'belirsiz' && ' · bu tarihte sürüp sürmediği belirsiz'}
+            {sec.inanc && ' · yalnızca seçilen bakış açısının inancı'}
+          </div>
+          <div class="satir"><a class="dugme kucuk" href={`#/e/${evren}/k/${sec.a}`}>{ad.get(sec.a)?.ad} kaydını aç</a><a class="dugme kucuk" href={`#/e/${evren}/k/${sec.b}`}>{ad.get(sec.b)?.ad} kaydını aç</a></div>
+        </div>
+      )}
     </div>
   );
 }

@@ -55,6 +55,7 @@ test('sahne soru sorulmadan çöp kutusuna gider; alttaki şeritten "Geri al" il
   const adres = await sahneAc(p, 'Silinecek Sahne');
   await yaz(p, 'Kısa bir sahne.');
   await kaydedildi(p);
+  await p.locator('.islem-menusu summary').click();
   await p.getByRole('button', { name: 'Çöp kutusuna taşı' }).click();
   const serit = p.locator('.geri-al-seridi');
   await expect(serit).toContainText('“Silinecek Sahne” çöp kutusuna taşındı.');

@@ -51,6 +51,8 @@ export class EvrenVt {
   private son: Anahtar = [0, '', 0];
   /** Günlükteki işlem sayısı (her kayıtta saymamak için bellekte tutulur). */
   private islemAdedi = 0;
+  /** `topluYaz` içindeyken islemYap kendi veritabanı işlemini açmaz, dıştakinin içinde bir kayıt noktası kullanır. */
+  private topluDerinlik = 0;
   /** Bu kadar işlemde bir anlık görüntü alınır (§10.1). Sınamalar küçültebilir. */
   static goruntuAraligi = 5000;
   /** Son baştan kurmanın nasıl yapıldığı (sınama ve ölçüm için). */
@@ -154,7 +156,8 @@ export class EvrenVt {
     const yazilan: Islem[] = [];
     const onceki = { ...this.gorulen };
     const oncekiSon = this.son;
-    this.db.exec('BEGIN IMMEDIATE');
+    const icte = this.topluDerinlik > 0;
+    this.db.exec(icte ? 'SAVEPOINT islem_yap' : 'BEGIN IMMEDIATE');
     try {
       for (const g of girdiler) {
         const sira = (this.gorulen[this.kurulum] ?? 0) + 1;
@@ -169,17 +172,42 @@ export class EvrenVt {
         this.son = anahtari(islem);
         yazilan.push(islem);
       }
-      this.db.exec('COMMIT');
+      this.db.exec(icte ? 'RELEASE islem_yap' : 'COMMIT');
     } catch (e) {
-      this.db.exec('ROLLBACK');
+      this.db.exec(icte ? 'ROLLBACK TO islem_yap; RELEASE islem_yap' : 'ROLLBACK');
       this.gorulen = onceki;
       this.son = oncekiSon;
       metinBelleginiTemizle(this.db); // bellekteki belgeler geri alınan işlemi içermesin
       throw e;
     }
     this.islemAdedi += yazilan.length;
-    this.goruntuGerekirseAl();
+    if (!icte) this.goruntuGerekirseAl();
     return yazilan;
+  }
+
+  /**
+   * İçindeki bütün islemYap çağrılarını tek veritabanı işleminde diske yazar (örnek evren kurulumu gibi çok sayıda
+   * küçük yazı). Her çağrı yine ayrı işlem ya da işlem grubudur ve günlükteki sırası aynıdır; yalnız diske tek seferde
+   * yazılır. Biri hata verirse yalnız o geri alınır; `yap` hata verirse hepsi geri alınır.
+   */
+  async topluYaz<T>(yap: () => Promise<T> | T): Promise<T> {
+    if (this.topluDerinlik) return yap();
+    const onceki = { ...this.gorulen }, oncekiSon = this.son, oncekiAdet = this.islemAdedi;
+    this.db.exec('BEGIN IMMEDIATE');
+    this.topluDerinlik++;
+    let sonuc: T;
+    try { sonuc = await yap(); }
+    catch (e) {
+      this.topluDerinlik--;
+      this.db.exec('ROLLBACK');
+      this.gorulen = onceki; this.son = oncekiSon; this.islemAdedi = oncekiAdet;
+      metinBelleginiTemizle(this.db);
+      throw e;
+    }
+    this.topluDerinlik--;
+    this.db.exec('COMMIT');
+    this.goruntuGerekirseAl();
+    return sonuc;
   }
 
   /**
