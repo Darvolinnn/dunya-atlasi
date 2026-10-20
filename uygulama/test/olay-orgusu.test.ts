@@ -31,7 +31,7 @@ describe('olay örgüsü masası (K27)', () => {
     h.sahneNiyetleriYaz({ evren, sahne: muhur, niyetler: [{ iddia: q, secenek: sec[1].kod, tur: 'destekler' }] });
     h.sahneNiyetleriYaz({ evren, sahne: sise, niyetler: [{ iddia: q, secenek: sec[0].kod, tur: 'destekler' }] });
 
-    const o = h.olayOrgusu({ evren, eser });
+    const o = h.olayOrgusu({ evren, kapsam: eser });
     expect(o.sutunlar.map((x) => [x.ad, x.bolum])).toEqual([['Vergi günü', '1. bölüm'], ['Mühür izi', '1. bölüm'], ['Annenin şişesi', '2. bölüm']]);
     expect(o.sutunlar.map((x) => x.donum)).toEqual([false, false, true]);
     expect(o.sutunlar[2].olaylar.map((x) => x.ad)).toEqual(['Anı silinir']);
@@ -43,10 +43,35 @@ describe('olay örgüsü masası (K27)', () => {
 
     // Şişe sahnesi 1. bölümün başına taşınır: bütün satırlar yeni sırayı izler.
     h.anlatiYerlestir({ evren, kod: sise, ust: b1, sira: 0 });
-    const t = h.olayOrgusu({ evren, eser });
+    const t = h.olayOrgusu({ evren, kapsam: eser });
     expect(t.sutunlar.map((x) => x.ad)).toEqual(['Annenin şişesi', 'Vergi günü', 'Mühür izi']);
     expect(t.sorular[0].hucreler).toEqual(['ipucu', null, 'yaniltmaca']);
     expect(t.karakterler[1].hucreler).toEqual([true, false, false]);
-    expect(() => h.olayOrgusu({ evren, eser: lale })).toThrow(/eser/);
+    expect(() => h.olayOrgusu({ evren, kapsam: lale })).toThrow(/eser/);
+  });
+
+  it('seride sütunlar bütün kitapların sahneleridir; aynı soru kitaplara yayılır', () => {
+    const dosyalar = new Map<string, Database>();
+    const h = new Hizmet((d) => { let x = dosyalar.get(d); if (!x) { x = new sqlite3.oo1.DB(':memory:'); dosyalar.set(d, x); } return x; }, 'Deneme', 'x');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Hatıra' });
+    const k = (ad: string, tur: string) => h.kayitOlustur({ evren, ad, tur }).kod;
+    const seri = k('Hatıra İmparatorluğu', 'seri'), i = k('Unutulanlar', 'eser'), ii = k('Hatırlayanlar', 'eser');
+    for (const x of [i, ii]) h.anlatiYerlestir({ evren, kod: x, ust: seri });
+    const s = (ad: string, ust: string) => h.anlatiOlustur({ evren, ust, ad, tur: 'sahne' }).kod;
+    const [a1, a2, b1] = [s('Arşivde', i), s('Mühür', i), s('Liman', ii)];
+    const deniz = k('Deniz', 'karakter');
+    const { kod: q } = h.iddiaEkle({ evren, konu: deniz, soru: 'Deniz’e ne oldu?', secenekler: ['İsyancılarla', 'Öldü'], gercek: 0 });
+    const sec = h.iddialar({ evren }).find((x) => x.kod === q)!.secenekler;
+    h.sahneNiyetleriYaz({ evren, sahne: a2, niyetler: [{ iddia: q, secenek: sec[0].kod, tur: 'destekler' }] });
+    h.sahneNiyetleriYaz({ evren, sahne: b1, niyetler: [{ iddia: q, secenek: sec[0].kod, tur: 'aciklar' }] });
+    const o = h.olayOrgusu({ evren, kapsam: seri });
+    expect(o.kapsam.tur).toBe('seri');
+    expect(o.sutunlar.map((x) => [x.ad, x.eser.ad, x.sira])).toEqual([['Arşivde', 'Unutulanlar', 1], ['Mühür', 'Unutulanlar', 2], ['Liman', 'Hatırlayanlar', 3]]);
+    expect(o.sorular).toEqual([{ iddia: { kod: q, soru: 'Deniz’e ne oldu?' }, hucreler: [null, 'ipucu', 'aciklama'], acikKaliyor: false }]);
+    // Tek kitapta soru açık kalır.
+    expect(h.olayOrgusu({ evren, kapsam: i }).sorular[0].acikKaliyor).toBe(true);
+    // Sahne kitaplar arasında taşınabilir.
+    h.anlatiYerlestir({ evren, kod: a1, ust: ii, sira: 1 });
+    expect(h.olayOrgusu({ evren, kapsam: seri }).sutunlar.map((x) => x.ad)).toEqual(['Mühür', 'Liman', 'Arşivde']);
   });
 });

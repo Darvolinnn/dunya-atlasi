@@ -11,6 +11,7 @@ import type { EvrenVt } from './evren-vt';
 import { yonlendir } from './izdusum';
 import { rolAdi } from '../alan/iliski-turleri';
 import { DONUM_ETIKETI } from '../alan/sablon';
+import { okumaYollari, seriEserleri } from './seri';
 
 export interface MontajBaglami {
   e: EvrenVt;
@@ -188,11 +189,16 @@ export function montajTasi(b: AnlatiBaglami, sahne: string, yon: -1 | 1) {
  *  "açıklar" niyeti taşıyan sahnesi olmayan okur soruları. Konuma dayanır: sonraki kitaplar yazılınca bu eserin
  *  sütunu değişmez; yalnız "sonra" sütunu, serinin önerilen okuma sırasında bu eserden sonraki eserlere bakar.
  *  Serbest metinden "çözüldü" çıkarılmaz. */
-export function kitapSonuAciklar(e: EvrenVt, eser: string): KitapSonuAciklar {
+export function kitapSonuAciklar(e: EvrenVt, eser: string, yolKod: string | null = null): KitapSonuAciklar {
   const m = kurguMontaji(e, eser);
   const seri = e.db.selectValue(`SELECT a.ust FROM anlati a JOIN kayitlar s ON s.kod=a.ust WHERE a.kod=? AND s.tur='seri' AND s.silindi IS NULL`, [eser]) as string | undefined;
+  // Bu kitabın geçtiği okuma yolları: ana serisinde ve ek olarak katıldığı serilerde (K27).
+  const seriKodlari = [...new Set([...(seri ? [seri] : []), ...(e.db.selectObjects(`SELECT i.a FROM iliskiler i JOIN kayitlar s ON s.kod=i.a WHERE i.tur='seri_eseri' AND i.b=? AND i.silindi IS NULL AND s.silindi IS NULL`, [eser]) as { a: string }[]).map((r) => r.a)])];
+  const yollar = seriKodlari.flatMap((s) => okumaYollari(e, s)).filter((y) => y.eserler.some((x) => x.kod === eser));
+  const yol = yolKod ? yollar.find((y) => y.kod === yolKod) ?? null : null;
   const sonrakiler: { kod: string; ad: string }[] = [];
-  if (seri) {
+  if (yol) sonrakiler.push(...yol.eserler.slice(yol.eserler.findIndex((x) => x.kod === eser) + 1));
+  else if (seri) {
     const l = e.db.selectObjects(`SELECT k.kod, k.ad FROM anlati a JOIN kayitlar k ON k.kod=a.kod WHERE a.ust=? AND k.tur='eser' AND k.silindi IS NULL ORDER BY a.konum, a.kod`, [seri]) as { kod: string; ad: string }[];
     sonrakiler.push(...l.slice(l.findIndex((x) => x.kod === eser) + 1));
   }
@@ -212,15 +218,18 @@ export function kitapSonuAciklar(e: EvrenVt, eser: string): KitapSonuAciklar {
       sonra,
     };
   });
-  return { eser: m.eser, seride: !!seri, sorular };
+  return { eser: m.eser, seride: !!seri || !!yol, sorular, yollar: yollar.map((y) => ({ kod: y.kod, ad: y.ad })), yol: yol?.kod ?? null };
 }
 
 /** Olay örgüsü masası (K27, P6): bir eserin okuma sırası sütunlarda; satırlar var olan verilerden gelir (dönüm
  *  noktası etiketi ve anlatılan olay, kurgu hatları, montajdaki okur soruları, sahnedeki karakterler, çalışma
  *  durumu). Yeni veri tutulmaz; taşıma bugünkü yerleştirmeyle yapılır. */
-export function olayOrgusu(e: EvrenVt, eser: string): OlayOrgusu {
-  if (kayitTuru(e, eser) !== 'eser') throw new Error('Bu bir eser kaydı değil.');
-  const sahneler = sira(e, eser);
+export function olayOrgusu(e: EvrenVt, kapsam: string): OlayOrgusu {
+  const tur = kayitTuru(e, kapsam);
+  if (tur !== 'eser' && tur !== 'seri') throw new Error('Bir eser ya da seri seçin.');
+  // Seride sütunlar serinin kitaplarının sahneleridir, önerilen okuma sırasıyla (ek üyeler sonda).
+  const eserler = tur === 'seri' ? seriEserleri(e, kapsam).map((x) => x.kod) : [kapsam];
+  const sahneler = eserler.flatMap((x) => sira(e, x).map((s) => ({ ...s, eser: x })));
   const kodlar = sahneler.map((s) => s.kod);
   const sutun = new Map(kodlar.map((k, i) => [k, i]));
   const yer = kodlar.map(() => '?').join(',');
@@ -246,12 +255,19 @@ export function olayOrgusu(e: EvrenVt, eser: string): OlayOrgusu {
   const hatlar = [...hat].map(([k, hucreler]) => ({ hat: kisa(e, k), hucreler })).sort((a, b) => a.hat.ad.localeCompare(b.hat.ad, 'tr'));
 
   // Okur soruları: yazarın sahnelere koyduğu niyetler (ipucu, yanıltmaca, açıklama…).
-  const m = kurguMontaji(e, eser);
-  const sorular = m.sorular.filter((s) => s.olaylar.some((o) => o.tur !== 'okur')).map((s) => {
-    const hucreler = bos<OlayOrgusu['sorular'][number]['hucreler'][number]>(null);
-    for (const o of s.olaylar) if (o.tur !== 'okur') hucreler[o.sira - 1] = o.tur;
-    return { iddia: { kod: s.iddia.kod, soru: s.iddia.soru }, hucreler, acikKaliyor: !s.olaylar.some((o) => o.tur === 'aciklama') };
-  });
+  // Montaj her eser için ayrıdır (okur eser başınadır); seride aynı soru bütün kitapların sütunlarına yayılır.
+  const soru = new Map<string, OlayOrgusu['sorular'][number]>();
+  for (const x of eserler) {
+    for (const s of kurguMontaji(e, x).sorular) {
+      const n = s.olaylar.filter((o) => o.tur !== 'okur');
+      if (!n.length) continue;
+      const q = soru.get(s.iddia.kod) ?? { iddia: { kod: s.iddia.kod, soru: s.iddia.soru }, hucreler: bos<OlayOrgusu['sorular'][number]['hucreler'][number]>(null), acikKaliyor: true };
+      for (const o of n) q.hucreler[sutun.get(o.sahne.kod)!] = o.tur as OlayOrgusu['sorular'][number]['hucreler'][number];
+      if (n.some((o) => o.tur === 'aciklama')) q.acikKaliyor = false;
+      soru.set(s.iddia.kod, q);
+    }
+  }
+  const sorular = [...soru.values()];
 
   // Karakterler: sahnede bulunanlar, en çok görünenden aza.
   const kisi = new Map<string, boolean[]>();
@@ -264,10 +280,11 @@ export function olayOrgusu(e: EvrenVt, eser: string): OlayOrgusu {
   const karakterler = [...kisi].map(([k, hucreler]) => ({ kisi: kisa(e, k), hucreler, sayi: hucreler.filter(Boolean).length }))
     .sort((a, b) => b.sayi - a.sayi || a.kisi.ad.localeCompare(b.kisi.ad, 'tr'));
 
+  const eserAdi = new Map(eserler.map((x) => [x, kisa(e, x)]));
   return {
-    eser: kisa(e, eser),
-    sutunlar: sahneler.map((s) => ({
-      kod: s.kod, ad: s.ad, sira: s.sira, ust: s.ust, bolum: s.bolum, calisma: calisma.get(s.kod) ?? null, metinVar: metinli.has(s.kod),
+    kapsam: kisa(e, kapsam),
+    sutunlar: sahneler.map((s, i) => ({
+      kod: s.kod, ad: s.ad, sira: i + 1, eser: eserAdi.get(s.eser)!, ust: s.ust, bolum: s.bolum, calisma: calisma.get(s.kod) ?? null, metinVar: metinli.has(s.kod),
       donum: donumMu(s.kod), olaylar: olaylar.get(s.kod) ?? [],
     })),
     hatlar, sorular, karakterler,

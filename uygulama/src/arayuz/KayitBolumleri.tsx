@@ -223,14 +223,19 @@ export function KayitSec({ istemci, evren, secili, sec, etiket = 'Kayıt seç' }
 // ---------- İlişkiler ----------
 const aralikYaz = (i: IliskiSatiri) => i.baslangic || i.bitis ? `${i.baslangic?.ifade ?? '…'} – ${i.bitis?.ifade ?? '…'}` : '';
 
-export function Iliskiler({ istemci, evren, kayit, surum }: { istemci: Istemci; evren: string; kayit: Kayit; surum: number }) {
+/** gizli: bölüm boşken çizilmez (Aşama C); sayiBildir görünen ilişki sayısını bildirir; formAcik ekleme formuyla açar. */
+export function Iliskiler({ istemci, evren, kayit, surum, gizli = false, sayiBildir, formAcik = false }: {
+  istemci: Istemci; evren: string; kayit: Kayit; surum: number; gizli?: boolean; sayiBildir?: (n: number) => void; formAcik?: boolean;
+}) {
   const [liste, setListe] = useState<IliskiSatiri[] | null>(null);
-  const [ekle, setEkle] = useState(false);
+  const [ekle, setEkle] = useState(formAcik);
+  useEffect(() => { if (formAcik) setEkle(true); }, [formAcik]);
   useEffect(() => { istemci.iste('iliskiler', { evren, kod: kayit.kod }).then(setListe); }, [kayit.kod, surum]);
-  if (!liste) return null;
   // Sahne katılımcıları ve anlatılan olaylar sahne bölümünde gösterilir.
   // Mekân, bakış açısı, anlatıcı ve odak sahnenin alanlarında gösterilir.
-  const gorunen = kayit.tur === 'sahne' ? liste.filter((i) => !(i.ben === 'b' && ['sahnede', 'bakis', 'anlatici', 'odak'].includes(i.tur)) && !(i.ben === 'a' && ['anlatir', 'sahne_yeri'].includes(i.tur))) : liste;
+  const gorunen = !liste ? null : kayit.tur === 'sahne' ? liste.filter((i) => !(i.ben === 'b' && ['sahnede', 'bakis', 'anlatici', 'odak'].includes(i.tur)) && !(i.ben === 'a' && ['anlatir', 'sahne_yeri'].includes(i.tur))) : liste;
+  useEffect(() => { if (gorunen) sayiBildir?.(gorunen.length); }, [gorunen?.length]);
+  if (!gorunen || gizli) return null;
   return (
     <section class="iliskiler" aria-label="İlişkiler">
       <div class="satir">

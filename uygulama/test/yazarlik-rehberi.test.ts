@@ -23,3 +23,17 @@ describe('yazarlık rehberi (K27)', () => {
     for (const [set, n] of Object.entries(SET_KONULARI)) { expect(setler.has(set), set).toBe(true); expect(var_.has(n)).toBe(true); }
   });
 });
+
+describe('soru örnekleri (K27)', () => {
+  it('programla gelen her sorunun örneği var; fazlası yok; metni değişen soruda gösterilmez', async () => {
+    const { SORU_SETLERI } = await import('../src/alan/sablon');
+    const { SORU_ORNEKLERI, soruOrnegi } = await import('../src/alan/soru-ornekleri');
+    const kodlar = SORU_SETLERI.flatMap((s) => s.sorular.map((q) => q.kod));
+    expect(kodlar.filter((k) => !SORU_ORNEKLERI[k])).toEqual([]);
+    expect(Object.keys(SORU_ORNEKLERI).filter((k) => !kodlar.includes(k))).toEqual([]);
+    const q = SORU_SETLERI.find((s) => s.kod === 'sahne_plani')!.sorular[0];
+    expect(soruOrnegi(q)).toBe(SORU_ORNEKLERI[q.kod]);
+    expect(soruOrnegi({ ...q, metin: 'Benim sorum' })).toBeNull();
+    expect(soruOrnegi({ kod: 'kendi.1', metin: 'Hava nasıl?' })).toBeNull();
+  });
+});
