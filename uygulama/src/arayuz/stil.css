@@ -1247,3 +1247,23 @@ a.defter-karti.belirsiz { border-left-style: dashed; }
 .harita-alt-sol { left: 112px; }
 .harita-lejant { padding-left: 100px; }
 @media (max-width: 900px) { .harita-alt-sol { left: 12px; } .harita-lejant { padding-left: 4px; } }
+
+/* ---------- Gezinti çubuğu ekrana sığar, kendisi hiç kaymaz ---------- */
+/* Menü her zaman tam boy ve yerinde durur; ana öğeler ve alttaki kayıt özeti hep görünür. Uzun eser ağacı, açık
+   grafik listesi ya da "Diğer" kendi alanında kayar ve kaydırma sayfaya taşmaz (Windows'ta %150 ölçekli 2K ekran). */
+@media (min-width: 861px) {
+  .gezinti { overflow: hidden; overscroll-behavior: contain; }
+  .gezinti > * { flex: none; }
+  .gezinti > .gezinti-listesi { flex: 0 1 auto; min-height: 0; }
+  .gezinti > .gezinti-listesi > li { flex: none; }
+  .gezinti > .gezinti-listesi > li:has(> .eser-agaci), .gezinti > .gezinti-listesi > li:has(> .gezinti-alt) { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .gezinti > .gezinti-listesi > li > .eser-agaci, .gezinti > .gezinti-listesi > li > .gezinti-alt { flex: 0 1 auto; min-height: 60px; max-height: none; overflow-y: auto; overscroll-behavior: contain; }
+  .gezinti > .gezinti-diger { flex: 0 1 auto; min-height: 36px; overflow-y: auto; overscroll-behavior: contain; }
+}
+@media (min-width: 861px) and (max-height: 1000px) {
+  .gezinti { padding-top: 12px; padding-bottom: 10px; }
+  .gezinti-evren { margin: 4px 8px 8px; }
+  .gezinti-ogesi { min-height: 32px; padding: 4px 10px; }
+  .gezinti-diger summary { min-height: 32px; padding: 4px 10px; }
+  .gezinti-alti { padding-top: 8px; }
+}
