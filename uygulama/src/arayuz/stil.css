@@ -992,3 +992,14 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .nd-arsiv { background: var(--tg-diger-z); color: var(--tg-diger-y); }
 .not-arsivi { margin-top: 12px; }
 .not-arsivi summary { cursor: pointer; color: var(--metin-2); padding: 4px 0; }
+/* "Ne yazıyorsunuz?" (§4, K28) */
+.kurgu-secici { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.kurgu-karti { font: inherit; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--cizgi); background: var(--yuzey); color: var(--metin); cursor: pointer; }
+.kurgu-karti .kucuk { color: var(--metin-2); }
+.kurgu-karti:hover { border-color: var(--vurgu); }
+.kurgu-karti.secili { border: 2px solid var(--vurgu); background: var(--vurgu-zemin); padding: 9px 11px; }
+.kurgu-ayari { margin: 4px 0 12px; }
+.kurgu-ayari summary { cursor: pointer; }
+.kurgu-ayari .kurgu-secici { margin-top: 6px; }
+.gezinti-uzak summary { cursor: pointer; list-style: none; }
+.gezinti-uzak p { margin: 4px 8px; }

@@ -6,10 +6,12 @@ import { git } from './Uygulama';
 import { SayfaYardimi } from './SayfaYardimi';
 import { IceAktar, YedektenGeriYukle } from './Tasima';
 import { onayla } from './onay';
+import { KurguSecici } from './ortak';
 
 export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
   const [evrenler, setEvrenler] = useState<EvrenOzeti[] | null>(null);
   const [yeniAd, setYeniAd] = useState('');
+  const [kurgu, setKurgu] = useState<string | null>(null);
   const [aciliyor, setAciliyor] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const [panel, setPanel] = useState<'yok' | 'yedek' | 'ice'>('yok');
@@ -46,8 +48,8 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
     e.preventDefault();
     setHata(null);
     try {
-      const { kod } = await istemci.iste('evrenOlustur', { ad: yeniAd });
-      setYeniAd(''); setAciliyor(false);
+      const { kod } = await istemci.iste('evrenOlustur', { ad: yeniAd, kurgu });
+      setYeniAd(''); setKurgu(null); setAciliyor(false);
       git(`/e/${kod}`);
     } catch (err) { setHata((err as Error).message); }
   };
@@ -73,8 +75,13 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
             <div class="satir">
               <input id="yeni-evren-adi" class="girdi" style="flex:1;min-width:200px" value={yeniAd} autoFocus
                 onInput={(e) => setYeniAd((e.target as HTMLInputElement).value)} />
+            </div>
+            <h3 style="margin-top:16px">Ne yazıyorsunuz? <span class="soluk kucuk">(isteğe bağlı)</span></h3>
+            <p class="soluk kucuk">Kurgunuza uzak bölümleri menüde “Diğer” altına alırız. Gizlenen bölümlerin kayıtları silinmez, yalnızca menüden kalkar. Seçimi sonra Genel bakış sayfasından değiştirebilirsiniz.</p>
+            <KurguSecici deger={kurgu} degis={setKurgu} />
+            <div class="satir" style="margin-top:12px">
               <button class="dugme ana" type="submit" disabled={!yeniAd.trim()}>Oluştur</button>
-              <button class="dugme" type="button" onClick={() => { setAciliyor(false); setYeniAd(''); }}>Vazgeç</button>
+              <button class="dugme" type="button" onClick={() => { setAciliyor(false); setYeniAd(''); setKurgu(null); }}>Vazgeç</button>
             </div>
           </form>
         )}

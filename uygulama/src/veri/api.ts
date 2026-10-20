@@ -12,6 +12,8 @@ export interface KurulumBilgisi { kod: string; ad: string; sqlite: string }
 export interface EvrenOzeti { kod: string; ad: string; olusturma: number; sonAcilis: number | null }
 export interface EvrenBilgisi extends EvrenOzeti {
   islemSayisi: number; kayitSayisi: number; copSayisi: number; catismaSayisi: number; sorunSayisi: number;
+  /** "Ne yazıyorsunuz?" seçimi (K28); seçilmediyse null. */
+  kurguTuru: string | null;
   /** Adlandırılmış sürüm (salt okunur) ya da deneme kopyasıysa bağlı olduğu evren (§9.7). */
   bag?: { tur: 'surum' | 'dal'; evren: string; evrenAdi: string; ad: string } | null;
 }
@@ -1175,7 +1177,8 @@ export interface Istekler {
   sonrakiSoru(a: { evren: string; kod: string; hesap: SonrakiSoru['hesap']; nereden?: string | null; tarih?: string | null }): SonrakiSoru;
   baslat(): KurulumBilgisi;
   evrenler(): EvrenOzeti[];
-  evrenOlustur(a: { ad: string }): { kod: string };
+  evrenOlustur(a: { ad: string; kurgu?: string | null }): { kod: string };
+  kurguTuruYaz(a: { evren: string; kurgu: string | null }): void;
   evrenKaldir(a: { evren: string }): void;
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
   ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;

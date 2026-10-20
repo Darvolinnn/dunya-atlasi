@@ -14,7 +14,7 @@ import { VERI_BICIMI, type Islem } from '../alan/islem';
 import { b64, b64Coz } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ayrilmaYazisi, kokAdaylari } from '../alan/turkce-ek';
-import { kararGecerli, turBul, turGecerli } from '../alan/turler';
+import { kararGecerli, kurguTuruGecerli, turBul, turGecerli } from '../alan/turler';
 import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
@@ -261,14 +261,20 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     for (const kod of [evren, ...dallar]) for (const ek of ['', '-journal']) this.dosyaSil(`/evren-${kod}.db${ek}`);
   }
 
-  evrenOlustur({ ad }: { ad: string }) {
+  evrenOlustur({ ad, kurgu = null }: { ad: string; kurgu?: string | null }) {
     const temiz = temizle(ad);
+    if (kurgu !== null && !kurguTuruGecerli(kurgu)) throw new Error('Geçersiz seçim.');
     const kod = yeniKod();
     const e = new EvrenVt(this.ac(`/evren-${kod}.db`), this.kurulum.kod);
-    const [islem] = e.islemYap([{ tur: 'evren_olustur', veri: { kod, ad: temiz } }]);
+    const [islem] = e.islemYap([{ tur: 'evren_olustur', veri: { kod, ad: temiz } }, ...(kurgu ? [{ tur: 'evren_kurgu_turu', veri: { kurgu } }] : [])]);
     this.kurulum.evrenEkle(kod, temiz, islem.zaman);
     this.acik.set(kod, e);
     return { kod };
+  }
+
+  kurguTuruYaz({ evren, kurgu }: { evren: string; kurgu: string | null }) {
+    if (kurgu !== null && !kurguTuruGecerli(kurgu)) throw new Error('Geçersiz seçim.');
+    this.yaz(evren, [{ tur: 'evren_kurgu_turu', veri: { kurgu } }]);
   }
 
   evrenAdlandir({ evren, ad }: { evren: string; ad: string }) {
@@ -288,6 +294,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const ad = bag ? `${anaAd} · ${bag.ad}` : anaAd;
     return {
       ...oz, ad, bag, islemSayisi: e.islemSayisi(),
+      kurguTuru: (e.db.selectValue("SELECT v FROM evren WHERE k='kurgu_turu'") as string | undefined) ?? null,
       kayitSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NULL')),
       copSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NOT NULL AND kod NOT IN (SELECT kod FROM yonlendirmeler)')),
       catismaSayisi: this.catismaSayisi({ evren }),

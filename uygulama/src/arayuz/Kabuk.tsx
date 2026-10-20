@@ -8,6 +8,8 @@ import type { Istemci } from '../veri/istemci';
 import type { EserYapisi, EvrenBilgisi, KisaKayit, YapiSahnesi } from '../veri/api';
 import { git } from './Uygulama';
 import { DurumOzeti } from './Esitleme';
+import { uzakGorunumMu } from '../alan/turler';
+import { KurguBaglami } from './kurgu';
 
 /** İnceleme görünümleri (§7): aynı verinin farklı çizimleri. */
 export const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy', 'Soy ağacı'], ['neden', 'Neden–sonuç'], ['durumlar', 'Durum geçmişi'],
@@ -39,6 +41,7 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
   const sayi = (k: string) => !bilgi ? '' : k === 'kayitlar' ? bilgi.kayitSayisi : k === 'cop' ? bilgi.copSayisi
     : k === 'inceleme' ? (bilgi.catismaSayisi + bilgi.sorunSayisi || '') : '';
   const bagli = !!bilgi?.bag;
+  const kurgu = bilgi?.kurguTuru ?? null;
   const oge = (k: string, ad: string) => {
     const secili = k === 'gorunumler' ? gorunumMu(etkin) : etkin === k;
     const n = sayi(k);
@@ -51,9 +54,15 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
         {k === 'yaz' && etkin === 'yaz' && <EserAgaci istemci={istemci} evren={evren} acik={acik} surum={surum} saltOkunur={bagli} />}
         {k === 'gorunumler' && gorunumMu(etkin) && (
           <ul class="gezinti-alt">
-            {GORUNUMLER.map(([g, gad]) => (
+            {GORUNUMLER.filter(([g]) => !uzakGorunumMu(kurgu, g) || etkin === g).map(([g, gad]) => (
               <li key={g}><a class={etkin === g ? 'gezinti-ogesi kucuk secili' : 'gezinti-ogesi kucuk'} aria-current={etkin === g ? 'page' : undefined} href={`#/e/${evren}/${g}`}>{gad}</a></li>
             ))}
+            {GORUNUMLER.some(([g]) => uzakGorunumMu(kurgu, g) && etkin !== g) && <li><details class="gezinti-uzak">
+              <summary class="gezinti-ogesi kucuk">Diğer grafikler</summary>
+              <ul class="gezinti-alt">{GORUNUMLER.filter(([g]) => uzakGorunumMu(kurgu, g) && etkin !== g).map(([g, gad]) => (
+                <li key={g}><a class="gezinti-ogesi kucuk" href={`#/e/${evren}/${g}`}>{gad}</a></li>))}</ul>
+              <p class="soluk kucuk">Gizlenen bölümlerin kayıtları silinmez, yalnızca menüden kalkar.</p>
+            </details></li>}
           </ul>
         )}
       </li>
@@ -75,7 +84,7 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
           <span>Komutlar: Ctrl+K</span>
         </div>
       </nav>
-      <div class="kabuk-ic">{!bagli && !(etkin === 'yaz' && !acik) && <SiradakiAdim istemci={istemci} evren={evren} />}{children}</div>
+      <div class="kabuk-ic">{!bagli && !(etkin === 'yaz' && !acik) && <SiradakiAdim istemci={istemci} evren={evren} />}<KurguBaglami.Provider value={kurgu}>{children}</KurguBaglami.Provider></div>
     </div>
   );
 }

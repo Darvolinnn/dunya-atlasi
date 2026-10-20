@@ -57,6 +57,22 @@ export const grupSinifi = (t: Tur | string) => GRUP_SINIFI[(typeof t === 'string
 export const turBul = (kod: string): Tur => harita.get(kod) ?? { kod, ad: 'Diğer', grup: 'Diğer', kisa: '··' };
 export const turGecerli = (kod: unknown): kod is string => typeof kod === 'string' && harita.has(kod);
 
+/** "Ne yazıyorsunuz?" (§4, K28): seçime göre kurguya uzak türler ve grafikler "Diğer" altına katlanır; hiçbir şey silinmez. */
+export interface KurguTuru { kod: string; ad: string; aciklama: string; uzakTurler: string[]; uzakGorunumler: string[] }
+const BUYU = ['buyu_sistemi', 'buyu_uygulamasi'];
+const GERCEK_DISI = [...BUYU, 'canli', 'evren_kurali', 'dil', 'para'];
+export const KURGU_TURLERI: KurguTuru[] = [
+  { kod: 'fantastik', ad: 'Fantastik', aciklama: 'büyü, canlılar, kehanet', uzakTurler: [], uzakGorunumler: [] },
+  { kod: 'bilimkurgu', ad: 'Bilimkurgu', aciklama: 'teknoloji, gezegenler', uzakTurler: BUYU, uzakGorunumler: [] },
+  { kod: 'tarihi', ad: 'Tarihî', aciklama: 'gerçek dönem, takvim', uzakTurler: BUYU, uzakGorunumler: ['gokyuzu', 'sozluk'] },
+  { kod: 'gercekci', ad: 'Gerçekçi / çağdaş', aciklama: 'bugünün dünyası', uzakTurler: GERCEK_DISI, uzakGorunumler: ['gokyuzu', 'sozluk'] },
+  { kod: 'polisiye', ad: 'Polisiye / gizem', aciklama: 'delil, soruşturma', uzakTurler: GERCEK_DISI, uzakGorunumler: ['gokyuzu', 'sozluk'] },
+  { kod: 'diger', ad: 'Diğer', aciklama: 'hepsi açık kalır', uzakTurler: [], uzakGorunumler: [] },
+];
+export const kurguTuruGecerli = (k: unknown): k is string => typeof k === 'string' && KURGU_TURLERI.some((x) => x.kod === k);
+export const uzakTurMu = (kurgu: string | null | undefined, tur: string) => !!kurgu && !!KURGU_TURLERI.find((x) => x.kod === kurgu)?.uzakTurler.includes(tur);
+export const uzakGorunumMu = (kurgu: string | null | undefined, g: string) => !!kurgu && !!KURGU_TURLERI.find((x) => x.kod === kurgu)?.uzakGorunumler.includes(g);
+
 /** Karar durumu (§3.6). */
 export const KARARLAR = [
   { kod: 'fikir', ad: 'Fikir' },
