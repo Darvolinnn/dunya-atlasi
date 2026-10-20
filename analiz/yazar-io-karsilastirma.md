@@ -252,3 +252,22 @@ Kullanıcının hesabındaki "Deneme" projesi üzerinden gezildi; hiçbir şey o
 - Raporun sonucu: asıl fırsat, bağlantılı dünya kurmayı yazma ekranıyla birleştirmek; Dünya Atlası bunu zaten yapıyor.
 
 Ek öneri adayları (K11, karar bekliyor): kaydetmeden çıkışta uyarı gerekmez (Dünya Atlası her şeyi kendiliğinden kaydediyor); türe göre bölüm açma (8.2-4) güçlendi; ipucu satırı gibi sürekli değişen öğelerden kaçınılmalı.
+
+## 10. Arayüz ve kullanım incelemesi, üçüncü rapor (20 Ekim 2026)
+
+Eklenti "Deneme" projesinde uydurma bir karakter oluşturup bir kez düzenledi; başka bir yere dokunmadı. Dar ekran denenemedi, o kısım sitenin stil kodundan çıkarıldı. Yeni ya da daha kesin olanlar:
+
+- **Görünüş:** sıcak, kâğıt renkli zemin; koyu lacivert kenar çubuğu; tek vurgu rengi (eski altın). Başlıklarda tırnaklı yazı (serif), gövdede sade yazı. Renkler az sayıda değişkenle tanımlanmış; açık ve koyu tema var.
+- **Gezinme:** sabit kenar çubuğu. Bir kaydın sayfasına girince menüde hiçbir bölüm seçili görünmüyor ("neredeyim" kayboluyor).
+- **⌘K araması:** boşken sayfaları listeliyor; yazınca sonuçları türe göre gruplayıp tür simgesiyle gösteriyor; ok tuşları ve Enter ile çalışıyor; metnin içinde de arıyor ama eşleşen parçayı göstermiyor (sonucun neden çıktığı anlaşılmıyor).
+- **Boş ekranlar:** tek satır italik cümle; düğme sağ üstte. Listelerin sonunda kesik çizgili "+ Yeni" kartı.
+- **Başlangıç listesi:** ilerleme çubuğu ("5 / 6"), biten adım soluk ve işaretli, her adım ilgili sayfaya götürüyor.
+- **İpucu satırı:** her sayfada değişiyor, kapatılamıyor.
+- **Kayıt yazma:** ad büyük başlığa doğrudan yazılıyor, altında kısa tanım satırı; zorunlu alan yalnız ad. Kaydetme elle: "Kaydedilmemiş değişiklik" → "Kaydediliyor…" → "Kaydedildi". Uzun formda Kaydet düğmesi ekrandan çıkıyor. Kaydetmeden çıkışta uyarı penceresi. Okuma görünümünde boş alanlar gizli.
+- **Hatalar:** "İsim gerekli" yazısı ad yazıldıktan sonra da kalıyor; kısa tanımın her kelimesi kendiliğinden büyük harfle başlıyor; erkek karaktere de aynı kadın silueti konuyor.
+- **Bağlantılar:** `@` yazınca öneri kutusu; bağlantı altın renkli, alt çizgisiz; üzerine gelince önizleme yok. Ad yazınca kendiliğinden bağlama kaydederken çalışıyor ama **Türkçe ekleri tanımıyor** ("Kuzey Arşivi'nde" bağlanmadı) ve eski metinleri geriye dönük güncellemiyor. "Bağlantılı sayfalar" iki yönlü ama "bahsettikleri" ile "bahsedenler" ayrılmıyor.
+- **Küçük dokunuşlar:** sayfa geçişinde üstte ince yükleme çizgisi; birkaç saniyede kaybolan bildirimler ("Geri al" yok); her kayıt türünün her yerde aynı rengi; "hareketi azalt" ayarına uyuyor.
+- **Dil:** kısa, eylem bildiren düğmeler; kaygı gideren açıklamalar ("Kapattığın bölümün kayıtları silinmez, yalnızca gizlenir."). Ama "sen" ve "siz" karışık; "Wiki" menüsü ayarlara, "Alıntılar" görsel üretme aracına gidiyor.
+- **Erişilebilirlik:** Tab ile geziliyor, odak çerçevesi silik; "içeriğe atla" yok. Soluk metin (2,7:1) ve altın düğme üstündeki yazı (2,9:1) okunurluk sınırının (4,5:1) altında; 9–12 piksellik italik yazılar zor okunuyor.
+
+Bu raporun önerileri ve önceki bütün öneriler `analiz/birlesik-karar-listesi.md` belgesinde tek listede toplandı.
