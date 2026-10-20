@@ -1003,3 +1003,4 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .kurgu-ayari .kurgu-secici { margin-top: 6px; }
 .gezinti-uzak summary { cursor: pointer; list-style: none; }
 .gezinti-uzak p { margin: 4px 8px; }
+.son-yedek { font-size: 0.8rem; font-weight: 400; } .durum-ozeti summary .son-yedek { color: var(--metin-2); }

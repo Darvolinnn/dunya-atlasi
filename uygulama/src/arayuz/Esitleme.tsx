@@ -128,12 +128,9 @@ export function EsitlemeOzeti() {
 const GUN = 24 * 60 * 60_000;
 
 /** Evren içindeki kayıt, eşitleme ve yedek özeti (§10.8): başlıkta en zayıf halka, açılınca üç ayrı satır. */
-export function DurumOzeti({ istemci, evren, yedekVar }: { istemci: Istemci; evren: string; yedekVar: boolean }) {
-  const e = useEsitleme();
-  const d = e.durum;
+/** Son doğrulanan yedek (dosya ya da doğrulanmış Drive yedeği); undefined okunuyor, null hiç yok. */
+function useSonYedek(istemci: Istemci, evren: string, bag: unknown[]) {
   const [yedek, setYedek] = useState<{ zaman: number; drive: boolean } | null | undefined>(undefined);
-  const [acik, setAcik] = useState(false);
-  const sonYedekZamani = d?.evrenler.map((x) => x.sonEsitleme ?? 0).join();
   useEffect(() => {
     let iptal = false;
     Promise.all([
@@ -146,7 +143,42 @@ export function DurumOzeti({ istemci, evren, yedekVar }: { istemci: Istemci; evr
       setYedek(en ? { zaman: en, drive: drive >= (dosya ?? 0) } : null);
     });
     return () => { iptal = true; };
-  }, [evren, acik, sonYedekZamani]);
+  }, [evren, ...bag]);
+  return yedek;
+}
+
+/** "dün 21:04", "bugün 09:12", "9 gün önce" (K28). */
+export function goreceZaman(t: number, simdi = Date.now()): string {
+  const g = new Date(t), s = new Date(simdi);
+  const gunBasi = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const fark = Math.round((gunBasi(s) - gunBasi(g)) / GUN);
+  const saat = `${String(g.getHours()).padStart(2, '0')}:${String(g.getMinutes()).padStart(2, '0')}`;
+  return fark <= 0 ? `bugün ${saat}` : fark === 1 ? `dün ${saat}` : `${fark} gün önce`;
+}
+
+/** Son yedeğin kısa satırı (§10.8, K28): durum özetinin kapalı başlığında ve Genel bakışta. */
+function SonYedekYazisi({ evren, yedek, yedekVar }: { evren: string; yedek: { zaman: number; drive: boolean } | null; yedekVar: boolean }) {
+  const eski = !yedek || Date.now() - yedek.zaman > 7 * GUN;
+  return (
+    <span class={eski ? 'son-yedek durum-zayif' : 'son-yedek'}>
+      {yedek ? `Son yedek: ${goreceZaman(yedek.zaman)}${yedek.drive ? ' · doğrulandı' : ''}` : 'Henüz yedek yok'}
+      {eski && yedekVar && <> · <a href={`#/e/${evren}/yedek`}>Şimdi yedekle</a></>}
+    </span>
+  );
+}
+
+export function SonYedekSatiri({ istemci, evren }: { istemci: Istemci; evren: string }) {
+  const yedek = useSonYedek(istemci, evren, []);
+  if (yedek === undefined) return null;
+  return <p class="kucuk soluk">Bu evren: <SonYedekYazisi evren={evren} yedek={yedek} yedekVar /></p>;
+}
+
+export function DurumOzeti({ istemci, evren, yedekVar }: { istemci: Istemci; evren: string; yedekVar: boolean }) {
+  const e = useEsitleme();
+  const d = e.durum;
+  const [acik, setAcik] = useState(false);
+  const sonYedekZamani = d?.evrenler.map((x) => x.sonEsitleme ?? 0).join();
+  const yedek = useSonYedek(istemci, evren, [acik, sonYedekZamani]);
   if (!d || yedek === undefined) return null;
 
   const v = d.evrenler.find((x) => x.kod === evren) ?? d.evrenler.find((x) => x.denemeler.some((y) => y.kod === evren));
@@ -172,7 +204,7 @@ export function DurumOzeti({ istemci, evren, yedekVar }: { istemci: Istemci; evr
 
   return (
     <details class="durum-ozeti" open={acik} onToggle={(x) => setAcik((x.target as HTMLDetailsElement).open)}>
-      <summary class={eskiYedek && driveYok ? 'durum-zayif' : undefined}>{baslik}</summary>
+      <summary class={eskiYedek && driveYok ? 'durum-zayif' : undefined}>{baslik}{!acik && <><br /><SonYedekYazisi evren={evren} yedek={yedek} yedekVar={yedekVar} /></>}</summary>
       <ul class="durum-satirlari">
         <li>Bu cihazda kaydedildi.</li>
         <li>{drive}</li>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { KurguSecici } from './ortak';
+import { SonYedekSatiri } from './Esitleme';
 import { KURGU_TURLERI } from '../alan/turler';
 import type { Istemci } from '../veri/istemci';
 import type { EvrenBilgisi, GunlukSatiri } from '../veri/api';
@@ -50,6 +51,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           <>
             {bilgi.bag ? <div class="baslik-satiri"><h1>{bilgi.ad}</h1><SayfaYardimi sayfa="masa" /></div> : <AdBasligi istemci={istemci} bilgi={bilgi} />}
             <p class="soluk kucuk">Oluşturulma: {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik</p>
+            {!bilgi.bag && <SonYedekSatiri istemci={istemci} evren={kod} />}
             {!bilgi.bag && <KurguAyari istemci={istemci} bilgi={bilgi} />}
           </>
         )}
