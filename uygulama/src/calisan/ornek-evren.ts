@@ -142,6 +142,13 @@ function base64Coz(s: string) {
 /** Örnek evreni yeni bir evren olarak kurar ve kodunu döndürür. */
 export async function ornekEvreniKur(h: Hizmet): Promise<{ kod: string }> {
   const { kod: evren } = await h.iceAktar({ dosyalar: ornekDosyalari(), evrenAdi: ORNEK_EVREN_ADI });
+  // Kalan yaklaşık 200 yazı tek veritabanı işleminde diske gider; her birini ayrı yazmak kurulumu uzatıyordu.
+  await h.topluYaz(evren, () => icerigiYaz(h, evren));
+  return { kod: evren };
+}
+
+/** İçe aktarmanın taşımadığı her şey: takvim, tarihler, seri düzeni, sahneler, ilişkiler, sorular, harita. */
+async function icerigiYaz(h: Hizmet, evren: string) {
   h.kurguTuruYaz({ evren, kurgu: 'fantastik' });
   h.takvimYaz({ evren, takvim: DIVAN_TAKVIMI });
 
@@ -275,5 +282,4 @@ export async function ornekEvreniKur(h: Hizmet): Promise<{ kod: string }> {
     h.rotaYaz({ evren, kod: kod(ad), rota: { a: kod(a), b: kod(b), mesafe: null, sureler: [], duraklar: [] } });
     h.cizimEkle({ evren, harita, kayit: kod(ad), bicim: 'yol', noktalar });
   }
-  return { kod: evren };
 }
