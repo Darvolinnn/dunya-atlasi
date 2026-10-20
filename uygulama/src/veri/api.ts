@@ -222,13 +222,25 @@ export interface KarakterYollari {
 }
 export interface KitapSonuAciklar {
   eser: KisaKayit; seride: boolean;
+  /** Bu kitabın geçtiği okuma yolları; `yol` seçilense "sonra" o yola göre hesaplanır, değilse önerilen okuma sırasına. */
+  yollar: { kod: string; ad: string }[]; yol: string | null;
   sorular: { iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null }; ipucu: number; yaniltmaca: number; destekler: number;
     sonra: { eser: KisaKayit; sahne: KisaKayit; sira: number } | null }[];
 }
+/** Serinin okuma yolu (K27): okurun kitapları izleyebileceği adlandırılmış sıra. */
+export interface OkumaYolu { kod: string; ad: string; eserler: KisaKayit[] }
+/** Seri sayfasının planı (K27). `bag` seriye bağlayan ilişkinin kodudur (çıkarmak için). */
+export interface SeriPlani {
+  seri: KisaKayit; kitaplar: KisaKayit[];
+  ekUyeler: (KisaKayit & { bag: string; anaSeri: KisaKayit | null })[];
+  finaller: (KisaKayit & { bag: string; karar: string })[];
+  okumaYollari: OkumaYolu[];
+}
 /** Olay örgüsü masası (K27, P6): sütunlar eserin okuma sırasıdır; hücreler sütunlarla aynı sıradadır. */
 export interface OlayOrgusu {
-  eser: KisaKayit;
-  sutunlar: { kod: string; ad: string; sira: number; ust: string; bolum: string | null; calisma: string | null; metinVar: boolean; donum: boolean; olaylar: KisaKayit[] }[];
+  /** Masanın kapsamı: bir eser ya da bir seri (seride sütunlar bütün kitapların sahneleri). */
+  kapsam: KisaKayit;
+  sutunlar: { kod: string; ad: string; sira: number; eser: KisaKayit; ust: string; bolum: string | null; calisma: string | null; metinVar: boolean; donum: boolean; olaylar: KisaKayit[] }[];
   /** Hücre: hatta bağlı değilse null; bağlıysa rolün adı (rolsüz bağ için boş). */
   hatlar: { hat: KisaKayit; hucreler: (string | null)[] }[];
   sorular: { iddia: { kod: string; soru: string }; hucreler: ('ipucu' | 'yaniltmaca' | 'destekler' | 'zayiflatir' | 'aciklama' | null)[]; acikKaliyor: boolean }[];
@@ -1162,7 +1174,7 @@ export interface Istekler {
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
   ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
   alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
-  kitapSonuAciklar(a: { evren: string; eser: string }): KitapSonuAciklar;
+  kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;
   etkinCalisma(a: { evren: string }): KisaKayit | null;
   etkinCalismaYaz(a: { evren: string; kod: string | null }): void;
   simdi(a: { evren: string }): SimdiOnerisi[];
@@ -1265,6 +1277,7 @@ export interface Istekler {
   kayitAlanYaz(a: { evren: string; kod: string; alan: string; deger: unknown }): void;
   soruCevapla(a: { evren: string; kod: string; soru: string; durum: SoruDurumu | null; cevap?: string }): void;
   soruKayitla(a: { evren: string; kod: string; soru: string; ad: string; tur: string }): { kod: string };
+  soruBagla(a: { evren: string; kod: string; soru: string; hedef: string | null }): void;
   kayitSoruSeti(a: { evren: string; kod: string; set: string; ekle: boolean }): void;
   evrenSorulari(a: { evren: string }): EvrenSorulari;
   meseleler(a: { evren: string; kod?: string }): MeseleListesi;
@@ -1414,7 +1427,11 @@ export interface Istekler {
   sahneNiyetleriYaz(a: { evren: string; sahne: string; niyetler: SahneNiyeti[] }): void;
   montajHedefiYaz(a: { evren: string; eser: string; iddia: string; hedef: MontajHedefi | null }): void;
   montajTasi(a: { evren: string; sahne: string; yon: -1 | 1 }): { etki: AnlatiEtkisi[] };
-  olayOrgusu(a: { evren: string; eser: string }): OlayOrgusu;
+  olayOrgusu(a: { evren: string; kapsam: string }): OlayOrgusu;
+  seriPlani(a: { evren: string; seri: string }): SeriPlani;
+  olasiFinalEkle(a: { evren: string; seri: string; ad: string }): { kod: string };
+  olasiFinalBagla(a: { evren: string; seri: string; olay: string }): void;
+  okumaYollariYaz(a: { evren: string; seri: string; yollar: { kod?: string | null; ad: string; eserler: string[] }[] }): void;
   kalitimOzellikleri(a: { evren: string }): KalitimOzelligi[];
   kalitimOzelligiYaz(a: { evren: string; kod: string | null; tanim: Omit<KalitimOzelligi, 'kod'> | null }): { kod: string };
   kalitim(a: { evren: string; kod: string }): KalitimBilgisi;

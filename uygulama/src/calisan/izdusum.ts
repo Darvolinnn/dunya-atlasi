@@ -1134,6 +1134,11 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   evren_etkin_calisma(db, i) {
     evrenAlani(db, 'etkin_calisma', typeof i.veri.kod === 'string' ? i.veri.kod : '');
   },
+  // Serinin okuma yolları (K27) bütünüyle yazılır; aynı anda iki cihazda değişirse günlük sırasında sonra gelen geçerlidir.
+  seri_okuma_yollari(db, i) {
+    if (typeof i.veri.seri !== 'string' || !Array.isArray(i.veri.yollar)) return;
+    evrenAlani(db, `okuma_yollari:${i.veri.seri}`, JSON.stringify(i.veri.yollar));
+  },
 
   kayit_olustur(db, i) {
     const v = i.veri;

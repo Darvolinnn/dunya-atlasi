@@ -32,12 +32,18 @@ export const VARSAYILAN_EKSENLERI: { kod: VarsayilanEkseni; ad: string; ornek: s
   { kod: 'kultur', ad: 'Kültürel aidiyetten', ornek: 'dil, hitap, gelenek, mimari' },
   { kod: 'tur', ad: 'Tür tanımından', ornek: 'yaşam süresi, beden, doğal yetenekler' },
 ];
-export interface Soru { kod: string; metin: string; ipucu?: string }
+export interface Soru {
+  kod: string; metin: string; ipucu?: string;
+  /** Cevabın yanına bağlanabilecek kayıt türleri (K27: karakterin yolundaki karar ve bedel sahnesi). */
+  bagla?: string[];
+}
 export interface Sablon { alanlar: SablonAlani[]; sorular: Soru[] }
 export interface SoruSeti { kod: string; ad: string; sorular: Soru[] }
 
-const set = (kod: string, ad: string, sorular: (string | [string, string])[]): SoruSeti => ({
-  kod, ad, sorular: sorular.map((s, i) => (typeof s === 'string' ? { kod: `${kod}.${i + 1}`, metin: s } : { kod: `${kod}.${i + 1}`, metin: s[0], ipucu: s[1] })),
+type SoruGirdisi = string | [string, string] | Omit<Soru, 'kod'>;
+const set = (kod: string, ad: string, sorular: SoruGirdisi[]): SoruSeti => ({
+  kod, ad, sorular: sorular.map((s, i) => (typeof s === 'string' ? { kod: `${kod}.${i + 1}`, metin: s }
+    : Array.isArray(s) ? { kod: `${kod}.${i + 1}`, metin: s[0], ipucu: s[1] } : { kod: `${kod}.${i + 1}`, ...s })),
 });
 
 /** Ek A: başlangıç seti. Kodlar değişmez; cevaplar bu kodlarla saklanır. */
@@ -120,8 +126,8 @@ export const SORU_SETLERI: SoruSeti[] = [
     'Kitabın sonunda ne istiyor?',
     ['Başlangıçtaki inancı ya da yanlış varsayımı ne?', 'Ör. "Devlet kayıtları yalan söylemez."'],
     'Bu kitapta inancı nasıl sınanıyor?',
-    'Aldığı en zor karar ve vazgeçtiği seçenek ne?',
-    'Aştığı sınır, ödediği bedel ne?',
+    { metin: 'Aldığı en zor karar ve vazgeçtiği seçenek ne?', bagla: ['sahne', 'olay'] },
+    { metin: 'Aştığı sınır, ödediği bedel ne?', bagla: ['sahne', 'olay'] },
     'İlişkilerinde ne değişiyor?',
     'Sonraki kitaba hangi iç çatışmayı taşıyor?',
   ]),

@@ -44,6 +44,7 @@ import { BakimBolumu, BakimUzmanligiBolumu } from './Bakim';
 import { BirlesmeBilgisi, BirlestirDugmesi } from './Birlesme';
 import { KarakterYollariBolumu, KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
 import { BilinenlerBolumu, GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
+import { SeriPlaniBolumleri } from './SeriPlani';
 import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, KitapSonuBolumu, SeriBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
 import { UyarlamaBolumu } from './Uyarlama';
 import { KimlikBolumu } from './Kimlik';
@@ -83,6 +84,11 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   useEffect(() => setImlecParcasi(null), [kod]);
   const parcaBaglami = useSahneBaglami(istemci, evren, kayit?.tur === 'sahne' && imlecParcasi ? kod : null, imlecParcasi);
   const ks = useKayitSablonu(istemci, evren, kod);
+  // Boş alan ve bölümler (K26 Aşama C, taslak A): gizli durur, "+ …" düğmesiyle açılır; sayfa yeniden açılana dek açık kalır.
+  const [acilan, setAcilan] = useState<Set<string>>(new Set());
+  const [iliskiSayisi, setIliskiSayisi] = useState<number | null>(null);
+  useEffect(() => { setAcilan(new Set()); setIliskiSayisi(null); }, [kod]);
+  const ac = (k: string) => setAcilan((s) => new Set(s).add(k));
 
   if (hata) return <main class="sayfa"><p class="hata">{hata}</p><a href={`#/e/${evren}`}>Kayıtlara dön</a></main>;
   if (!kayit) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
@@ -99,6 +105,16 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
       for (const x of acik) await istemci.iste('kayitDegistir', { evren, kod: x.kod, alan: 'karar', deger: 'vazgecildi' });
   };
   const tur = turBul(kayit.tur);
+  // Zamanı asıl bilgisi olan türlerde evren tarihi her zaman görünür.
+  const tarihGorunur = !!kayit.tarih || ['sahne', 'olay'].includes(kayit.tur) || acilan.has('tarih');
+  const adlarDolu = !!kayit.okunus || kayit.lakaplar.length > 0 || kayit.etiketler.length > 0 || !!kayit.gorunurluk || kayit.oncekiAdlar.length > 0;
+  const adlarGorunur = adlarDolu || acilan.has('adlar');
+  const gorselGorunur = kayit.gorseller.length > 0 || acilan.has('gorsel');
+  const iliskiGorunur = iliskiSayisi !== 0 || acilan.has('iliski');
+  const bosCipleri = [
+    ...(tarihGorunur ? [] : [{ kod: 'tarih', ad: 'Evren tarihi' }]),
+    ...(adlarGorunur ? [] : [{ kod: 'adlar', ad: 'Okunuş, başka adlar, etiketler' }]),
+  ];
 
   return (
     <EvrenKabugu istemci={istemci} evren={evren} etkin={YAZMA_TURLERI.includes(kayit.tur) ? 'yaz' : 'kayitlar'} acik={kod}>
@@ -151,15 +167,15 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
               {KARARLAR.map((k) => <option value={k.kod}>{k.ad}</option>)}
             </select>
           </label>
-          <TarihAlani istemci={istemci} evren={evren} kayit={kayit} />
+          {tarihGorunur && <TarihAlani istemci={istemci} evren={evren} kayit={kayit} />}
           {kayit.tur === 'sahne' && <SahneAlanlari istemci={istemci} evren={evren} kayit={kayit} baglam={sahneBaglami} />}
-          <SablonAlanlari istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
+          <SablonAlanlari istemci={istemci} evren={evren} kayit={kayit} ks={ks} acilan={acilan} ac={ac} ekCipler={bosCipleri} />
           <div class="alan genis">
             <span class="alan-adi satir">Kısa özet <KararSecici etiket="Kısa özet" karar={kayit.alanKararlari.ozet ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod, alan: 'ozet', karar: k })} /></span>
             <AlanGirdisi etiket="Kısa özet" deger={kayit.ozet} kaydet={(v) => degistir('ozet', v)} ipucu="Kim ya da ne olduğu, tek satırda" />
           </div>
         </div>
-        <details class="katlanir">
+        {adlarGorunur && <details class="katlanir" open={!adlarDolu || undefined}>
           <summary>Okunuş, başka adlar ve etiketler{kayit.lakaplar.length + kayit.etiketler.length ? ` (${kayit.lakaplar.length + kayit.etiketler.length})` : ''}</summary>
           <div class="alanlar">
           <div class="alan">
@@ -181,9 +197,9 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
             <p class="soluk kucuk genis">Önceki adları (aramada bunlarla da bulunur): {kayit.oncekiAdlar.join(', ')}</p>
           )}
           </div>
-        </details>
+        </details>}
 
-        <Gorseller istemci={istemci} evren={evren} kayit={kayit} />
+        {gorselGorunur && <Gorseller istemci={istemci} evren={evren} kayit={kayit} />}
         <KayitHaritaBolumu istemci={istemci} evren={evren} kayit={kayit} />
         {kayit.tur === 'rota' && <RotaBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         {ROTA_ARACI_TURLERI.includes(kayit.tur) && <RotaAraci istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} />}
@@ -197,10 +213,17 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         {kayit.tur === 'eser' && <KitapSonuBolumu istemci={istemci} evren={evren} eser={kod} />}
         {(kayit.tur === 'eser' || kayit.tur === 'seri') && <KarakterYollariBolumu istemci={istemci} evren={evren} kayit={kayit} />}
-        {kayit.tur === 'seri' && <><SeriBolumu istemci={istemci} evren={evren} kayit={kayit} /><SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} acik /></>}
+        {kayit.tur === 'seri' && <><SeriBolumu istemci={istemci} evren={evren} kayit={kayit} /><SeriPlaniBolumleri istemci={istemci} evren={evren} kayit={kayit} /><SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} acik /></>}
         {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={imlecParcasi && parcaBaglami ? parcaBaglami : sahneBaglami} parca={!!(imlecParcasi && parcaBaglami)} />}
         {kayit.tur === 'sahne' && <SahneBolumu istemci={istemci} evren={evren} kayit={kayit} surum={surum} />}
-        <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />
+        <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} gizli={!iliskiGorunur} sayiBildir={setIliskiSayisi} formAcik={acilan.has('iliski') && iliskiSayisi === 0} />
+        {(!gorselGorunur || !iliskiGorunur) && (
+          <div class="bos-cipler henuz-eklenmedi">
+            <span class="soluk kucuk">Henüz eklenmedi:</span>
+            {!gorselGorunur && <button type="button" class="cip" onClick={() => ac('gorsel')}>+ Görsel</button>}
+            {!iliskiGorunur && <button type="button" class="cip" onClick={() => ac('iliski')}>+ İlişki</button>}
+          </div>
+        )}
 
         <details class="diger-bolumler" open={digerAcik} onToggle={(e) => digerAc((e.target as HTMLDetailsElement).open)}>
           <summary>Diğer bölümler</summary>

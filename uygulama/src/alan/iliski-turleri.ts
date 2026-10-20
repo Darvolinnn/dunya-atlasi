@@ -124,6 +124,10 @@ export const ILISKI_TURLERI: IliskiTuru[] = [
   { kod: 'alternatif', aIcin: 'Alternatifi', bIcin: 'Alternatifi', karsilikli: true, grup: 'Yazarlık' },
   // K27: karakterin bir eserdeki planlanan yolu; soruları ilişkinin kendisine bağlıdır. Sahne için olan `odak`tan ayrıdır.
   { kod: 'eser_odagi', aIcin: 'Odak karakteri olduğu eser', bIcin: 'Odak karakteri', karsilikli: false, grup: 'Yazarlık' },
+  // K27: serinin olası finali (A olay, B seri); finaller birbirine `alternatif` ile bağlanır.
+  { kod: 'olasi_final', aIcin: 'Olası finali olduğu seri', bIcin: 'Olası final', karsilikli: false, grup: 'Yazarlık' },
+  // K27: eserin ana serisi dışında katıldığı seri (A seri, B eser); ana seri ağaçtaki yeridir.
+  { kod: 'seri_eseri', aIcin: 'Ek kitabı', bIcin: 'Ayrıca yer aldığı seri', karsilikli: false, grup: 'Yazarlık' },
   { kod: 'nottan', aIcin: 'Dönüştüğü kayıt', bIcin: 'Doğduğu not', karsilikli: false, grup: 'Genel' },
   { kod: 'ilgili', aIcin: 'İlgili', bIcin: 'İlgili', karsilikli: true, grup: 'Genel' },
 ];

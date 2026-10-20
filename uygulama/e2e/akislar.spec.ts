@@ -341,3 +341,48 @@ test('olay örgüsü masası: boş sahne eklenir, dönüm noktası işaretlenir,
   await p.getByRole('button', { name: 'Taşımayı geri al' }).click();
   await expect(tablo.locator('thead tr').nth(1).getByRole('button')).toHaveText(['Kuşatma', 'Liman']);
 });
+
+test('seri planı: olası finaller birbirinin alternatifi; okuma yolu kurulur ve kitaplar sıralanır', async ({ page: p }) => {
+  await sahneAc(p);
+  await p.getByRole('button', { name: '+ Yeni seri' }).click();
+  await p.getByPlaceholder('Serinin adı').fill('Hatıra İmparatorluğu');
+  await p.getByPlaceholder('Serinin adı').press('Enter');
+  await p.getByLabel('Seriye kitap ekle').selectOption({ label: 'Kuzey Yolu' });
+  await p.locator('.seri-finaller > summary').click();
+  for (const ad of ['Anı vergisi kaldırılır', 'Vergi halka devredilir']) {
+    await p.getByLabel('Olası finalin adı').fill(ad);
+    await p.getByRole('button', { name: '+ Olası final' }).click();
+    await expect(p.locator('.seri-finaller li', { hasText: ad })).toBeVisible();
+  }
+  await expect(p.locator('.seri-finaller summary')).toContainText('Olası finaller (2 · seçilmedi)');
+  await expect(p.locator('.seri-finaller li').first()).toContainText('Fikir');
+  await p.locator('.seri-yollar > summary').click();
+  await p.getByRole('button', { name: '+ Okuma yolu' }).click();
+  const yol = p.locator('.okuma-yolu');
+  await expect(yol.getByRole('link', { name: 'Kuzey Yolu' })).toBeVisible();
+  await yol.getByLabel('Okuma yolunun adı').fill('Yayın sırası');
+  await yol.getByLabel('Okuma yolunun adı').press('Enter');
+  await expect(p.locator('.seri-yollar summary')).toContainText('Okuma yolları (1)');
+  await p.reload();
+  await expect(p.getByLabel('Okuma yolunun adı')).toHaveValue('Yayın sırası');
+});
+
+test('kayıt sayfasında boş alanlar gizli; "+" düğmesiyle açılır', async ({ page: p }) => {
+  await sahneAc(p);
+  await p.keyboard.press('Control+k');
+  await p.getByLabel('Kayıt ya da komut ara').fill('Lale');
+  await p.getByText('Yeni kayıt: “Lale”').click();
+  await p.getByRole('option', { name: /^Karakter/ }).first().click();
+  await expect(p.getByRole('textbox', { name: 'Ad' })).toHaveValue('Lale');
+  const main = p.locator('main');
+  await expect(main.locator('.alan-adi', { hasText: 'Ölüm tarihi' })).toHaveCount(0);
+  await expect(main.getByRole('heading', { name: 'İlişkiler' })).toHaveCount(0);
+  await main.getByRole('button', { name: '+ Ölüm tarihi' }).click();
+  await expect(main.locator('.alan-adi', { hasText: 'Ölüm tarihi' })).toBeVisible();
+  await expect(main.getByRole('button', { name: '+ Ölüm tarihi' })).toHaveCount(0);
+  await main.getByRole('button', { name: '+ Okunuş, başka adlar, etiketler' }).click();
+  await expect(main.getByRole('textbox', { name: 'Okunuş' })).toBeVisible();
+  await main.getByRole('button', { name: '+ İlişki' }).click();
+  await expect(main.getByRole('heading', { name: 'İlişkiler' })).toBeVisible();
+  await expect(main.getByRole('button', { name: '+ Görsel' })).toBeVisible();
+});

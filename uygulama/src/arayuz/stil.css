@@ -521,6 +521,7 @@ label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; 
 /* Olay örgüsü masası (K27) */
 .orgu-tablosu th, .orgu-tablosu td { font-size: 0.85rem; }
 .orgu-tablosu .bolum-siniri { border-left: 2px solid var(--metin-2); }
+.orgu-tablosu .eser-siniri { border-left: 4px double var(--metin); }
 .orgu-tablosu .secili { background: var(--vurgu-zemin); }
 .orgu-tablosu thead th[draggable] { cursor: grab; }
 .orgu-tablosu thead th.birakilabilir { outline: 2px dashed var(--vurgu); outline-offset: -3px; }
@@ -917,3 +918,17 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .karakter-tablosu { border-collapse: collapse; min-width: 100%; }
 .karakter-tablosu th, .karakter-tablosu td { border: 1px solid var(--cizgi); padding: 6px 8px; vertical-align: top; text-align: left; }
 .karakter-tablosu thead th { background: var(--yuzey-2); font-weight: 600; }
+/* Seri planı (K27) */
+.seri-finaller, .seri-yollar, .seri-ek { margin-top: 16px; }
+.seri-finaller > summary h3, .seri-yollar > summary h3 { display: inline; font-size: 1rem; }
+.seri-finaller > summary, .seri-yollar > summary { cursor: pointer; }
+.okuma-yolu { margin: 8px 0 12px; padding: 8px 12px; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey); }
+/* Soru örneği (K27) */
+.baglanti-dugme { background: none; border: 0; padding: 0; color: var(--vurgu); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.soru-ornek-dugme { margin-left: 8px; }
+.soru-ornegi { margin: 2px 0 6px; padding: 6px 10px; border-left: 3px solid var(--cizgi); background: var(--yuzey-2); border-radius: 4px; }
+/* Boş alanlar (K26 Aşama C) */
+.bos-cipler { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0; }
+.bos-cipler .cip { border: 1px dashed var(--cizgi); border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 0.85rem; color: var(--vurgu); background: var(--yuzey); cursor: pointer; }
+.bos-cipler .cip:hover { border-color: var(--vurgu); }
+.henuz-eklenmedi { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--cizgi); }
