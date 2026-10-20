@@ -15,7 +15,7 @@ test('yazma, ağ, zaman çizelgesi ve harita yeni düzenleriyle açılır', asyn
   await expect(p.getByRole('button', { name: 'Hatırlayanlar: aç' })).toHaveAttribute('aria-expanded', 'false');
   await expect(p.getByRole('button', { name: 'Çöp kutusuna taşı' })).toBeHidden();
   await p.locator('.islem-menusu summary').click();
-  await expect(p.getByRole('link', { name: 'Bütün alanlar' })).toBeVisible();
+  await expect(p.getByRole('link', { name: 'Bütün alanlar', exact: true })).toBeVisible();
   await expect(p.getByRole('button', { name: 'Çöp kutusuna taşı' })).toBeVisible();
   await p.keyboard.press('Escape');
   await expect(p.getByRole('button', { name: 'Çöp kutusuna taşı' })).toBeHidden();
