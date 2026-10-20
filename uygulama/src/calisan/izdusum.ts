@@ -1131,6 +1131,13 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (i.veri.kurgu === null) db.exec({ sql: "DELETE FROM evren WHERE k='kurgu_turu'" });
     else if (kurguTuruGecerli(i.veri.kurgu)) evrenAlani(db, 'kurgu_turu', i.veri.kurgu);
   },
+  // Bağlantısız ad önerisinde "hiç önerme" ve "bu sefer değil" (K29). Günlükte sonra gelen geçerlidir.
+  bagsiz_ad_ayari(db, i) {
+    const anahtar = String(i.veri.anahtar);
+    if (!/^(hic|atla):[a-z0-9]{1,40}$/.test(anahtar)) return;
+    if (i.veri.deger) evrenAlani(db, `bagsiz:${anahtar}`, '1');
+    else db.exec({ sql: 'DELETE FROM evren WHERE k=?', bind: [`bagsiz:${anahtar}`] });
+  },
   evren_adlandir(db, i) {
     evrenAlani(db, 'ad', i.veri.ad);
     alanYaz(db, i, 'evren', 'ad', i.veri.ad);

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AnlatiEtkisi, IddiaOzeti, KurguMontaji, MontajHedefi, SahneNiyeti } from '../veri/api';
 import { EtkiOzeti } from './Anlati';
-import { onayla } from './onay';
+import { geriAlinabilir } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const OLAY_ADLARI: Record<KurguMontaji['sorular'][number]['olaylar'][number]['tur'], string> = {
@@ -110,7 +110,7 @@ export function SahneNiyetleriBolumu({ istemci, evren, kod, surum }: { istemci: 
       {l.length > 0 && <ul class="toplanan-listesi">{l.map((n, i) => {
         const q = iddia(n.iddia);
         return <li key={i}>{q?.soru ?? 'Silinmiş soru'}: <strong>{NIYETLER.find((x) => x.kod === n.tur)!.ad.toLocaleLowerCase('tr-TR')}</strong>{n.secenek && ` “${q?.secenekler.find((s) => s.kod === n.secenek)?.metin ?? ''}”`}{' '}
-          <button class="dugme sade kucuk" onClick={() => onayla('Bu niyet kaldırılsın mı?') && yaz(l.filter((_, j) => j !== i))}>Kaldır</button></li>;
+          <button class="dugme sade kucuk" onClick={() => void geriAlinabilir('Niyet kaldırıldı.', () => yaz(l.filter((_, j) => j !== i)), () => yaz(l))}>Kaldır</button></li>;
       })}</ul>}
       <form class="satir" onSubmit={(e) => { e.preventDefault(); void yaz([...l, { iddia: yeni.iddia, secenek: yeni.secenek || null, tur: yeni.tur }]).then((ok) => ok && setYeni({ ...yeni, secenek: '' })); }}>
         <select class="girdi kucuk-secim" aria-label="Soru" value={yeni.iddia} onChange={(e) => setYeni({ ...yeni, iddia: (e.target as HTMLSelectElement).value, secenek: '' })}>

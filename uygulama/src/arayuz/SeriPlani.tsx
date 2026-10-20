@@ -7,7 +7,7 @@ import type { Kayit, KisaKayit, SeriPlani } from '../veri/api';
 import { KararRozeti } from './ortak';
 import { KayitSec } from './KayitBolumleri';
 import { useYukle, type SeriListesi } from './Anlati';
-import { onayla } from './onay';
+import { geriAlinabilir } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -69,7 +69,7 @@ function OlasiFinaller({ istemci, evren, p }: { istemci: Istemci; evren: string;
         <li key={f.kod} class="satir">
           <a href={`#/e/${evren}/k/${f.kod}`}>{f.ad}</a> <KararRozeti karar={f.karar} />
           <button class="dugme sade kucuk" aria-label={`${f.ad}: olası finallerden çıkar`} title="Olası finallerden çıkar (olay silinmez)"
-            onClick={async () => { if (await onayla(`“${f.ad}” olası finaller listesinden çıkarılsın mı? Olay kaydı silinmez.`)) yap(istemci.iste('iliskiSil', { evren, kod: f.bag })); }}>×</button>
+            onClick={() => yap(geriAlinabilir(`“${f.ad}” olası finaller listesinden çıkarıldı.`, () => istemci.iste('iliskiSil', { evren, kod: f.bag }), () => istemci.iste('iliskiGeriYukle', { evren, kod: f.bag })))}>×</button>
         </li>
       ))}</ul>}
       <div class="satir">
@@ -115,7 +115,7 @@ function OkumaYollari({ istemci, evren, p }: { istemci: Istemci; evren: string; 
         <div key={y.kod ?? i} class="okuma-yolu">
           <div class="satir">
             <YolAdi ad={y.ad} kaydet={(v) => degistir(i, { ...y, ad: v })} />
-            <button class="dugme sade kucuk" onClick={async () => { if (await onayla(`“${y.ad}” okuma yolu silinsin mi? Kitaplar silinmez.`)) degistir(i, null); }}>Yolu sil</button>
+            <button class="dugme sade kucuk" onClick={() => void geriAlinabilir(`“${y.ad}” okuma yolu silindi.`, () => degistir(i, null), () => yaz(yollar))}>Yolu sil</button>
           </div>
           <ol class="yapi-sahneler">
             {y.eserler.map((k, j) => (

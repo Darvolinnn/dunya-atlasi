@@ -14,7 +14,7 @@ import { AlanGirdisi } from './KayitEkrani';
 import { CatismaListesi } from './Catismalar';
 import { YAZMA_TURLERI, useCalisma } from './Calisma';
 import { git } from './Uygulama';
-import { onayla } from './onay';
+import { geriAlinabilir } from './onay';
 import { SayfaYardimi } from './SayfaYardimi';
 import { IlkAdimlar } from './IlkAdimlar';
 import { gitVeYap, YENI_SAHNE_OLAYI } from './yonlendirme';
@@ -125,9 +125,9 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
           <a class="dugme sade kucuk" href={`#/e/${evren}/k/${kod}`}>Bütün alanlar</a>
           <SayfaYardimi sayfa="yaz" />
           {!kayit.silindi && !saltOkunur && (
-            <button class="dugme sade kucuk tehlikeli" title="Çöp kutusundan geri getirilebilir" onClick={async () => { if (!(onayla(`“${kayit.ad}” çöp kutusuna taşınsın mı? Çöp kutusundan geri getirebilirsiniz.`))) return;
+            <button class="dugme sade kucuk tehlikeli" title="Çöp kutusundan geri getirilebilir" onClick={async () => {
               await denetim.current?.kaydet();
-              await istemci.iste('kayitSil', { evren, kod });
+              await geriAlinabilir(`“${kayit.ad}” çöp kutusuna taşındı.`, () => istemci.iste('kayitSil', { evren, kod }), () => istemci.iste('kayitGeriYukle', { evren, kod }).then(() => git(`/e/${evren}/yaz/${kod}`)));
               git(`/e/${evren}/yaz`);
             }}>Çöp kutusuna taşı</button>
           )}

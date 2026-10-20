@@ -3,7 +3,7 @@ import type { Istemci } from '../veri/istemci';
 import type { EserSozlesmesi, KisaKayit, SozlesmeHatirlatmasi, SozlesmeMaddesi, SozlesmeTanimi } from '../veri/api';
 import { KARARLAR } from '../alan/turler';
 import { turkceKarsilastir } from '../alan/turkce';
-import { onayla } from './onay';
+import { geriAlinabilir } from './onay';
 
 const TURLER = { aciklanmayacak: 'Açıklanmayacak', acik_birakildi: 'Bilinçli açık bırakıldı', anlati_kurali: 'Anlatı kuralı' };
 const bos = (eser?: string): SozlesmeTanimi => ({ metin: '', tur: 'anlati_kurali', karar: 'fikir', kapsam: eser ? { tur: 'eserler', eserler: [eser] } : { tur: 'evren' }, bagliKayitlar: [] });
@@ -76,7 +76,7 @@ export function AnlatiSozlesmesiSekmesi({ istemci, evren, surum, saltOkunur = fa
     {!liste.length && <p>Henüz sözleşme maddesi yok. Madde eklemek isteğe bağlıdır.</p>}
     <ul>{liste.map((m) => <li key={m.kod}><MaddeMetni m={m} evren={evren} />
       <button class="dugme" disabled={mesgul || saltOkunur || m.catismali} onClick={() => { setSecili(m); setForm((v) => v + 1); }}>Düzenle</button>{' '}
-      <button class="dugme" disabled={mesgul || saltOkunur} onClick={() => onayla('Bu madde kaldırılsın mı? Daha sonra “Kaldırılan maddeler” bölümünden geri getirebilirsiniz.') && is(async () => { await istemci.iste('sozlesmeMaddeSil', { evren, kod: m.kod }); if (secili?.kod === m.kod) { setSecili(undefined); setForm((v) => v + 1); } })}>Kaldır</button>
+      <button class="dugme" disabled={mesgul || saltOkunur} onClick={() => is(async () => { await geriAlinabilir('Madde kaldırıldı.', () => istemci.iste('sozlesmeMaddeSil', { evren, kod: m.kod }), () => istemci.iste('sozlesmeMaddeGeriYukle', { evren, kod: m.kod })); if (secili?.kod === m.kod) { setSecili(undefined); setForm((v) => v + 1); } })}>Kaldır</button>
     </li>)}</ul>
     {cop.length > 0 && <details><summary>Kaldırılan maddeler</summary><ul>{cop.map((m) => <li key={m.kod}><MaddeMetni m={m} evren={evren} /><button class="dugme" disabled={mesgul || saltOkunur} onClick={() => is(() => istemci.iste('sozlesmeMaddeGeriYukle', { evren, kod: m.kod }))}>Geri getir</button></li>)}</ul></details>}
     {!saltOkunur && <MaddeFormu key={`${evren}:${form}`} istemci={istemci} evren={evren} madde={secili} saltOkunur={mesgul || !!liste.find((m) => m.kod === secili?.kod)?.catismali} bitir={() => { setSecili(undefined); setForm((v) => v + 1); }} />}

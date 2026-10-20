@@ -4,7 +4,7 @@ import type { Istemci } from '../veri/istemci';
 import type { GundelikKart, KarsilastirmaliOkuma, KisaKayit, SiradanGun } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
 import type { Secim } from './BaglantiSecici';
-import { onayla } from './onay';
+import { geriAlinabilir } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: KisaKayit) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
@@ -37,7 +37,7 @@ export function GundelikBolumu({ istemci, evren, kod, surum }: { istemci: Istemc
               {kartlar.filter((k) => k.konu === x.kod).map((k) => (
                 <li key={k.kod}>{k.metin}
                   {(k.donem || k.statu) && <span class="soluk kucuk"> · {[k.donem?.ad, k.statu?.ad].filter(Boolean).join(', ')}</span>}
-                  {' '}<button class="dugme sade kucuk" aria-label={`${k.metin} kartını sil`} onClick={() => onayla(`“${k.metin}” kartı silinsin mi?`) && yaz(kartlar.filter((y) => y.kod !== k.kod).map(disari)).catch(() => {})}>Sil</button>
+                  {' '}<button class="dugme sade kucuk" aria-label={`${k.metin} kartını sil`} onClick={() => void geriAlinabilir(`“${k.metin}” kartı silindi.`, () => yaz(kartlar.filter((y) => y.kod !== k.kod).map(disari)), () => yaz(kartlar.map(disari))).catch(() => {})}>Sil</button>
                 </li>
               ))}
             </ul>

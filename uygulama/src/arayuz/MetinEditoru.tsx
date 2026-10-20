@@ -22,6 +22,7 @@ import { useCalisma } from './Calisma';
 import { TurSecici } from './ortak';
 import { BaglamParcasiFormu, parcaYazisi } from './BaglamParcasi';
 import { KullanimSeridi, MetinAlFormu } from './MetinKullanim';
+import { BagsizAdlar } from './BagsizAdlar';
 import { acilistaTaslak, kurtarmaAnahtari, taslakAnahtari, taslakSil, taslakYaz, type Taslak, type TaslakDeposu } from './taslak';
 
 const sema = metinSemasi.schema;
@@ -88,6 +89,9 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   const kelimeRef = useRef(kelimeDegisti); kelimeRef.current = kelimeDegisti;
   useEffect(() => { if (kelime !== null) kelimeRef.current?.(kelime); }, [kelime]);
   useEffect(() => () => { if (kelimeZamani.current) clearTimeout(kelimeZamani.current); }, []);
+  // Bağlantısız ad önerisi (K29) yalnız kaydedilmiş metne bakar; yazarken liste değişmez.
+  const [kayitliBelge, setKayitliBelge] = useState<PmNode | null>(null);
+  useEffect(() => { if (hazir && durum.tur === 'kayitli' && gorunum.current) setKayitliBelge(gorunum.current.state.doc); }, [hazir, durum]);
   const [aracDurumu, setAracDurumu] = useState(0);
   const gorunum = useRef<EditorView | null>(null);
   type AcikSecici = SeciciIstegi & { konum: { left: number; top: number }; canli?: boolean };
@@ -628,6 +632,14 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         <div ref={kap} />
         {bosYardim && hazir && kelime === 0 && !saltOkunur && <div class="bos-yardim">{bosYardim}</div>}
       </div>
+      {alan === 'govde' && !saltOkunur && hazir && (
+        <BagsizAdlar istemci={istemci} evren={evren} kayit={kayit} belge={kayitliBelge} bagla={(from, to, ifade, kod) => {
+          const v = gorunum.current;
+          if (!v || to > v.state.doc.content.size || v.state.doc.textBetween(from, to, '\ufffc', '\ufffc') !== ifade) return false;
+          v.dispatch(v.state.tr.addMark(from, to, bagTuru.create({ hedef: kod })).removeStoredMark(bagTuru));
+          return true;
+        }} />
+      )}
       {secici && <BaglantiSecici key={`${secici.from}-${secici.canli ? '' : secici.sorgu}`} istemci={istemci} evren={evren} sorgu={secici.sorgu} konum={secici.konum}
         satirIci={secici.satirIci} tutamak={tutamak} kendiligindenTek={secici.kendiligindenBagla}
         sec={(s) => baglantiKur(seciciRef.current ?? secici, s)} kapat={seciciKapat} />}

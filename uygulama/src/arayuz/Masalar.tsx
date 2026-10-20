@@ -10,7 +10,7 @@ import { KayitSec } from './KayitBolumleri';
 import type { Secim } from './BaglantiSecici';
 import { DenetimBolumu } from './Inceleme';
 import { git } from './Uygulama';
-import { onayla } from './onay';
+import { geriAlinabilir, onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -192,7 +192,7 @@ function MasaEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
 
       <DenetimBolumu istemci={istemci} evren={evren} surum={surum} paket={m.paket?.kod ?? null} />
 
-      <p style="margin-top:24px"><button class="dugme sade kucuk" onClick={async () => { if (!(onayla('Bu konu dosyası kaldırılsın mı?'))) return; await istemci.iste('masaSil', { evren, kod }); git(`/e/${evren}/masalar`); }}>Masayı kaldır</button>
+      <p style="margin-top:24px"><button class="dugme sade kucuk" onClick={async () => { await geriAlinabilir('Konu dosyası kaldırıldı.', () => istemci.iste('masaSil', { evren, kod }), () => istemci.iste('masaSil', { evren, kod, geriYukle: true })); git(`/e/${evren}/masalar`); }}>Masayı kaldır</button>
         <span class="soluk kucuk"> Bağlı kayıtlar silinmez.</span></p>
     </div>
   );
@@ -232,7 +232,7 @@ function PaketEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: 
         <VarsayimFormu istemci={istemci} evren={evren} paket={kod} />
       </section>
       <DenetimBolumu istemci={istemci} evren={evren} surum={surum} paket={kod} />
-      <p style="margin-top:24px"><button class="dugme sade kucuk" onClick={async () => { if (!(onayla('Bu paket kaldırılsın mı?'))) return; await istemci.iste('paketSil', { evren, kod }); git(`/e/${evren}/masalar`); }}>Paketi kaldır</button></p>
+      <p style="margin-top:24px"><button class="dugme sade kucuk" onClick={async () => { await geriAlinabilir('Paket kaldırıldı.', () => istemci.iste('paketSil', { evren, kod }), () => istemci.iste('paketSil', { evren, kod, geriYukle: true })); git(`/e/${evren}/masalar`); }}>Paketi kaldır</button></p>
     </div>
   );
 }

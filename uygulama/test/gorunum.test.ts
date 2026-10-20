@@ -32,6 +32,13 @@ describe('soy ağacı', () => {
     expect(t.dugumler.map((d) => d.ad).sort()).toEqual(['Ata Varn', 'Darel', 'Elin', 'Kaelen', 'Mira', 'Sem']);
     expect(t.kenarlar.find((x) => x.b === evlatlik)!.rolAdi).toBe('Evlatlık');
     expect(t.soyIci).toEqual([{ kenar: evlilik, ortakAtalar: [{ kod: ata, ad: 'Ata Varn' }] }]);
+    // Kişiler arası bağlar (K29) ağacı genişletmez: Uzak ağaçta değil, bağ yalnız adıyla yazılır.
+    expect(t.disaridakiler.map((x) => [x.kenar.tur, x.ic, x.dis.ad])).toEqual([['dusman', torun1, 'Uzak']]);
+    expect(t.kisilerArasi).toEqual([]);
+    h.iliskiEkle({ evren, tur: 'guvenir', a: torun1, b: ata });
+    const tk = h.soyAgaci({ evren, odak: torun1 });
+    expect(tk.kisilerArasi.map((x) => [x.tur, x.a, x.b])).toEqual([['guvenir', torun1, ata]]);
+    expect(tk.dugumler).toHaveLength(6);
     // 435'te evlilik bitmiş: eş bağı düşer, ama Kaelen yine kuzen olarak ağaçtadır.
     const t2 = h.soyAgaci({ evren, odak: torun1, an: '435' });
     expect(t2.kenarlar.some((x) => x.tur === 'es')).toBe(false);

@@ -1,7 +1,7 @@
 // Evreni inceleme görünümleri (§7): soy ağacı, filtreli ağ ve durum geçmişi. Hepsi salt okunurdur ve aynı
 // ilişki ve durum kayıtlarından gelir (§2.1 tek kaynak). Çizim arayüzdedir; burada yalnızca veri toplanır.
 import { gecerlilik, type Gecerlilik } from '../alan/durum';
-import { iliskiTuruBul, rolAdi } from '../alan/iliski-turleri';
+import { ILISKI_TURLERI, iliskiTuruBul, rolAdi } from '../alan/iliski-turleri';
 import { kodGecerliMi } from '../alan/kod';
 import { karsilastir, siraAnahtari, tarihCoz, type EvrenTarihi } from '../alan/tarih';
 import { turkceKarsilastir } from '../alan/turkce';
@@ -134,7 +134,34 @@ export function soyAgaci(e: EvrenVt, odak: string, anIfade?: string | null, baki
     const yakin = ortak.filter((a) => !ortak.some((b) => b !== a && atalar(b).has(a)));
     if (yakin.length) soyIci.push({ kenar: k.kod, ortakAtalar: yakin.map((a) => ({ kod: a, ad: d.get(a)?.ad ?? '' })) });
   }
-  return { odak, an, bakis: bk.kisa, dugumler: [...d.values()], kenarlar: ks, soyIci, kesildi };
+  // Kişiler arası bağlar (K29): ağaçtakiler arasında olanlar çizilir; ağaç dışındakine olanlar yalnız yazılır.
+  // Ağaç bunlarla genişlemez.
+  const kisiTurleri = ILISKI_TURLERI.filter((t) => t.grup === 'Kişiler arası' && t.kod !== 'kimligi').map((t) => t.kod);
+  const kisilerArasi: AgKenari[] = [];
+  const disaridakiler: SoyAgaci['disaridakiler'] = [];
+  const disKodlar = new Set<string>();
+  const ham: Record<string, unknown>[] = [];
+  const agac = [...gorulen];
+  for (let i = 0; i < agac.length; i += 400) {
+    const p = agac.slice(i, i + 400), y = p.map(() => '?').join(',');
+    ham.push(...e.db.selectObjects(
+      `SELECT i.*, x.gorunurluk xg, y.gorunurluk yg FROM iliskiler i JOIN kayitlar x ON x.kod=i.a JOIN kayitlar y ON y.kod=i.b
+       WHERE i.tur IN (${kisiTurleri.map(() => '?').join(',')}) AND (i.a IN (${y}) OR i.b IN (${y})) AND i.silindi IS NULL AND i.karar!='vazgecildi'
+       AND x.silindi IS NULL AND y.silindi IS NULL`, [...kisiTurleri, ...p, ...p]));
+  }
+  const goruldu = new Set<string>();
+  for (const r of ham) {
+    if (goruldu.has(r.kod as string)) continue;
+    goruldu.add(r.kod as string);
+    if (!bk.gorur(r.gorunurluk) || !bk.gorur(r.xg) || !bk.gorur(r.yg) || iliskiGecerliligi(r, an) === 'hayir') continue;
+    const k = kenar(r, an, bk);
+    const aIc = gorulen.has(k.a), bIc = gorulen.has(k.b);
+    if (aIc && bIc) kisilerArasi.push(k);
+    else { disaridakiler.push({ kenar: k, ic: aIc ? k.a : k.b, dis: { kod: aIc ? k.b : k.a, ad: '', tur: '' } }); disKodlar.add(aIc ? k.b : k.a); }
+  }
+  const disD = dugumler(e, disKodlar, bk);
+  for (const x of disaridakiler) { const n = disD.get(x.dis.kod); x.dis = { kod: x.dis.kod, ad: n?.ad ?? '', tur: n?.tur ?? '' }; }
+  return { odak, an, bakis: bk.kisa, dugumler: [...d.values()], kenarlar: ks, soyIci, kisilerArasi, disaridakiler, kesildi };
 }
 
 // ---------- Filtreli ağ ----------

@@ -15,7 +15,7 @@ import { EtkiRaporuPaneli } from './Gorunumler';
 import { DegisiklikMasasiPaneli } from './DegisiklikMasasi';
 import { GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
 import { SureklilikDefteri } from './Sureklilik';
-import { onayla } from './onay';
+import { geriAlinabilir, onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -285,7 +285,7 @@ function IliskiSatir({ istemci, evren, i }: { istemci: Istemci; evren: string; i
           <label class="alan"><span class="alan-adi">Karar durumu</span>
             <KararSecici etiket="İlişki" karar={i.karar} onDegis={(k) => istemci.iste('iliskiDegistir', { evren, kod: i.kod, alan: 'karar', deger: k })} /></label>
           <GorunurlukAlani istemci={istemci} evren={evren} kod={i.kod} nesne="iliski" deger={i.gorunurluk} />
-          <button class="dugme tehlikeli kucuk" onClick={() => onayla('Bu ilişki kaldırılsın mı?') && istemci.iste('iliskiSil', { evren, kod: i.kod })}>İlişkiyi kaldır</button>
+          <button class="dugme tehlikeli kucuk" onClick={() => void geriAlinabilir('İlişki kaldırıldı.', () => istemci.iste('iliskiSil', { evren, kod: i.kod }), () => istemci.iste('iliskiGeriYukle', { evren, kod: i.kod }))}>İlişkiyi kaldır</button>
         </div>
       )}
     </li>
