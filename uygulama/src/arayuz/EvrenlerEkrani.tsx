@@ -6,10 +6,13 @@ import { git } from './Uygulama';
 import { SayfaYardimi } from './SayfaYardimi';
 import { IceAktar, YedektenGeriYukle } from './Tasima';
 import { onayla } from './onay';
+import { BosSayfa, KurguSecici, YeniKarti } from './ortak';
+import { ORNEK_EVREN_ADI } from '../calisan/ornek-evren';
 
 export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
   const [evrenler, setEvrenler] = useState<EvrenOzeti[] | null>(null);
   const [yeniAd, setYeniAd] = useState('');
+  const [kurgu, setKurgu] = useState<string | null>(null);
   const [aciliyor, setAciliyor] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const [panel, setPanel] = useState<'yok' | 'yedek' | 'ice'>('yok');
@@ -42,12 +45,20 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
     } catch (x) { setHata((x as Error).message); }
   };
 
+  const [ornekKuruluyor, setOrnekKuruluyor] = useState(false);
+  /** Programla gelen uydurma örnek evren (K28): ayrı bir evren olarak kurulur, öbürleri gibi kaldırılır. */
+  const ornekAc = async () => {
+    setHata(null); setOrnekKuruluyor(true);
+    try { const { kod } = await istemci.iste('ornekEvrenKur'); git(`/e/${kod}`); }
+    catch (x) { setHata((x as Error).message); setOrnekKuruluyor(false); }
+  };
+
   const olustur = async (e: Event) => {
     e.preventDefault();
     setHata(null);
     try {
-      const { kod } = await istemci.iste('evrenOlustur', { ad: yeniAd });
-      setYeniAd(''); setAciliyor(false);
+      const { kod } = await istemci.iste('evrenOlustur', { ad: yeniAd, kurgu });
+      setYeniAd(''); setKurgu(null); setAciliyor(false);
       git(`/e/${kod}`);
     } catch (err) { setHata((err as Error).message); }
   };
@@ -73,17 +84,28 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
             <div class="satir">
               <input id="yeni-evren-adi" class="girdi" style="flex:1;min-width:200px" value={yeniAd} autoFocus
                 onInput={(e) => setYeniAd((e.target as HTMLInputElement).value)} />
+            </div>
+            <h3 style="margin-top:16px">Ne yazıyorsunuz? <span class="soluk kucuk">(isteğe bağlı)</span></h3>
+            <p class="soluk kucuk">Kurgunuza uzak bölümleri menüde “Diğer” altına alırız. Gizlenen bölümlerin kayıtları silinmez, yalnızca menüden kalkar. Seçimi sonra Genel bakış sayfasından değiştirebilirsiniz.</p>
+            <KurguSecici deger={kurgu} degis={setKurgu} />
+            <div class="satir" style="margin-top:12px">
               <button class="dugme ana" type="submit" disabled={!yeniAd.trim()}>Oluştur</button>
-              <button class="dugme" type="button" onClick={() => { setAciliyor(false); setYeniAd(''); }}>Vazgeç</button>
+              <button class="dugme" type="button" onClick={() => { setAciliyor(false); setYeniAd(''); setKurgu(null); }}>Vazgeç</button>
             </div>
           </form>
         )}
         {hata && <p class="hata" role="alert">{hata}</p>}
         {evrenler && evrenler.length === 0 && !aciliyor && panel === 'yok' && (
-          <div class="bos">
-            <p>Henüz bir evren yok.</p>
-            <button class="dugme ana" onClick={() => setAciliyor(true)}>İlk evreni oluştur</button>
-          </div>
+          <BosSayfa baslik="İlk evreninizi oluşturun" eylem={{ ad: 'Evren oluştur', yap: () => setAciliyor(true) }} konu={1}>
+            Evren, bir kurgunun bütün kayıtlarını, metinlerini ve haritalarını bir arada tutar. Her kurgu için ayrı bir evren açabilirsiniz.
+          </BosSayfa>
+        )}
+        {evrenler && !aciliyor && panel === 'yok' && !evrenler.some((e) => e.ad === ORNEK_EVREN_ADI) && (
+          <p class="ornek-evren soluk kucuk">
+            Dolu bir evrenin nasıl göründüğüne bakmak isterseniz{' '}
+            <button class="dugme kucuk" onClick={() => void ornekAc()} disabled={ornekKuruluyor}>{ornekKuruluyor ? 'Örnek evren kuruluyor, birkaç saniye sürebilir…' : 'Örnek evreni aç'}</button>
+            {' '}Uydurma “Hatıra İmparatorluğu” serisi ayrı bir evren olarak açılır; sizin evrenlerinize karışmaz, istediğinizde kaldırırsınız.
+          </p>
         )}
         {evrenler && evrenler.length > 0 && (
           <div class="kartlar">
@@ -96,6 +118,7 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
                 <button class="dugme sade kucuk tehlikeli evren-kaldir" aria-label={`“${e.ad}” evrenini bu cihazdan kaldır`} title="Bu cihazdan kaldır" onClick={() => void kaldir(e)}>Kaldır</button>
               </div>
             ))}
+            {!aciliyor && <YeniKarti ad="Yeni evren" yap={() => setAciliyor(true)} />}
           </div>
         )}
       </main>

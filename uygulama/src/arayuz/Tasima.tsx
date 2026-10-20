@@ -48,9 +48,9 @@ export function YedekSekmesi({ istemci, evren, surum }: { istemci: Istemci; evre
       <p class="soluk kucuk">Yedeği “Evrenler” sayfasındaki “Yedekten geri yükle” ile hiçbir şey kaybetmeden geri yükleyebilirsiniz. Evren bu cihazda hâlâ duruyorsa ona dokunulmaz, yedek ayrı bir evren olarak açılır.</p>
       <div class="satir" style="margin-top:8px">
         <button class="dugme ana" onClick={al} disabled={durum === 'aliniyor'}>{durum === 'aliniyor' ? 'Yedek hazırlanıyor…' : 'Yedek al'}</button>
-        <span class="soluk kucuk">{son ? `Son yedek: ${zamanYaz(son)}` : 'Bu evrenin bu cihazdan alınmış yedeği yok.'}</span>
+        <span class="soluk kucuk">{son ? `Son hazırlanan yedek dosyası: ${zamanYaz(son)}` : 'Bu evrenin bu cihazdan alınmış yedeği yok.'}</span>
       </div>
-      {durum === 'alindi' && <p class="kucuk" role="status">Yedek dosyası indirildi. Tarayıcının indirilenler klasörüne bakın.</p>}
+      {durum === 'alindi' && <p class="kucuk" role="status">Yedek dosyası hazırlandı ve indirme başlatıldı. Dosyanın kaydedildiğini tarayıcının indirilenler klasöründen denetleyin; program bunu göremez.</p>}
       {hata && <p class="hata" role="alert">{hata}</p>}
     </div>
   );

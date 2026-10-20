@@ -1,5 +1,5 @@
 // İşlemlerin kullanıcıya gösterilen açıklaması. Programlama terimi kullanılmaz (§10.7).
-import { KARARLAR, turBul } from './turler';
+import { KARARLAR, KURGU_TURLERI, turBul } from './turler';
 import { iliskiTuruBul } from './iliski-turleri';
 
 type Aciklayici = (veri: Record<string, unknown>, ad: (kod: unknown) => string) => string;
@@ -12,6 +12,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   evren_olustur: (v) => `Evren oluşturuldu: “${v.ad}”`,
   evren_adlandir: (v) => `Evrenin adı “${v.ad}” oldu`,
   seri_okuma_yollari: (v, ad) => `${ad(v.seri)}: okuma yolları değişti`,
+  evren_kurgu_turu: (v) => v.kurgu ? `Ne yazdığınız: ${KURGU_TURLERI.find((k) => k.kod === v.kurgu)?.ad ?? v.kurgu}` : 'Ne yazdığınız seçimi kaldırıldı',
   evren_etkin_calisma: (v, ad) => v.kod ? `Şu an çalışılan: “${ad(v.kod)}”` : 'Şu an çalışılan iş temizlendi',
   kayit_olustur: (v) => `${turBul(String(v.tur)).ad} oluşturuldu: “${v.ad}”`,
   kayit_degistir: (v, ad) => {

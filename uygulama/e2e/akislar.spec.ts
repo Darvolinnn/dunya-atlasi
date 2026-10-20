@@ -121,8 +121,11 @@ test('boş sahnede bağlam paneli kapalı; "Bağlam ekle" açar, seçim yeniden 
 test('durum özeti açılınca cihaz, Drive ve yedek ayrı satırlarda görünür', async ({ page: p }) => {
   await sahneAc(p);
   const ozet = p.locator('details.durum-ozeti');
-  await expect(ozet.locator('summary')).toHaveText('Yalnız bu cihazda kayıtlı');
-  await ozet.locator('summary').click();
+  await expect(ozet.locator('.durum-basligi')).toHaveText('Yalnız bu cihazda kayıtlı');
+  // Son yedek kapalı başlıkta da görünür; yedek yoksa "Şimdi yedekle" çıkar (K28).
+  await expect(ozet.locator('summary .son-yedek')).toHaveText('Henüz yedek yok · Şimdi yedekle');
+  await ozet.locator('.durum-basligi').click();
+  await expect(ozet.locator('summary .son-yedek')).toHaveCount(0);
   await expect(ozet.getByText('Bu cihazda kaydedildi.')).toBeVisible();
   await expect(ozet.getByText(/Drive'a bağlı değil/)).toBeVisible();
   await expect(ozet.getByText('Henüz yedek yok.')).toBeVisible();
@@ -171,7 +174,7 @@ test('komut paletinden takvim günü hesabı ve yolculuk süresi açılır', asy
 test('evren bu cihazdan kaldırılır; onaydan vazgeçilirse yerinde kalır', async ({ page: p }) => {
   await p.goto('/');
   for (const ad of ['Kalacak Evren', 'Gidecek Evren']) {
-    await p.getByRole('button', { name: 'Yeni evren' }).click();
+    await p.getByRole('button', { name: 'Yeni evren', exact: true }).click();
     await p.locator('#yeni-evren-adi').fill(ad);
     await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
     await expect(p).toHaveURL(/#\/e\//);
@@ -200,7 +203,7 @@ test('evren bu cihazdan kaldırılır; onaydan vazgeçilirse yerinde kalır', as
 
 test('yeni evrende "İlk adımlar" yapıldıkça ilerler; gizlenince gizli kalır', async ({ page: p }) => {
   await p.goto('/');
-  await p.getByRole('button', { name: 'Yeni evren' }).click();
+  await p.getByRole('button', { name: 'Yeni evren', exact: true }).click();
   await p.locator('#yeni-evren-adi').fill('Adım Evreni');
   await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
   const liste = p.getByRole('region', { name: 'İlk adımlar' });
@@ -265,7 +268,7 @@ test('sahne planı bağlam panelinde katlı; cevap kaydedilir ve yeniden açınc
 
 test('İlk adımlarda yol seçilir; "Geç" adımı yapılmış saymaz; seçim yeniden açılışta korunur', async ({ page: p }) => {
   await p.goto('/');
-  await p.getByRole('button', { name: 'Yeni evren' }).click();
+  await p.getByRole('button', { name: 'Yeni evren', exact: true }).click();
   await p.locator('#yeni-evren-adi').fill('Yol Evreni');
   await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
   const liste = p.getByRole('region', { name: 'İlk adımlar' });
@@ -412,7 +415,7 @@ test('İlk adımlarda "Yap" işin yerine götürür: sıradaki adım satırında
 
 test('İlk adımlar karakter yolu: "Yap" komut paletini açar, sonra karakterin sorusuna götürür', async ({ page: p }) => {
   await p.goto('/');
-  await p.getByRole('button', { name: 'Yeni evren' }).click();
+  await p.getByRole('button', { name: 'Yeni evren', exact: true }).click();
   await p.locator('#yeni-evren-adi').fill('Adım Evreni');
   await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
   const liste = p.getByRole('region', { name: 'İlk adımlar' });

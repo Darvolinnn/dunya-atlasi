@@ -1,14 +1,15 @@
 // Bir evrenin kayıtları: yeni kayıt, süzme, sıralama ve çöp kutusu.
 import { useEffect, useMemo, useState } from 'preact/hooks';
+import { NotPanosu } from './NotPanosu';
 import type { Istemci } from '../veri/istemci';
 import type { AramaSonucu, GeciselEksen, GeciselSonuc, KayitOzeti } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
-import { turBul } from '../alan/turler';
+import { turBul, grupSinifi } from '../alan/turler';
 import { turkceKarsilastir } from '../alan/turkce';
 import { siraAnahtari } from '../alan/tarih';
 import { Gorsel } from './gorsel';
 import { zamanYaz } from '../alan/islem-metni';
-import { KararRozeti, TurSecici } from './ortak';
+import { BosSayfa, KararRozeti, TurSecici, odakla } from './ortak';
 import { git } from './Uygulama';
 
 export function YeniKayit({ istemci, evren }: { istemci: Istemci; evren: string }) {
@@ -90,10 +91,9 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
     <>
       <YeniKayit istemci={istemci} evren={evren} />
       {kayitlar.length === 0 ? (
-        <div class="bos">
-          <p>Bu evrende henüz kayıt yok.</p>
-          <p class="kucuk">Yukarıya bir ad yazıp türünü seçin. Karakter, yer, olay, not… her şey bir kayıttır.</p>
-        </div>
+        <BosSayfa baslik="İlk kaydınızı ekleyin" eylem={{ ad: 'Kayıt ekle', yap: () => odakla('input[aria-label="Yeni kaydın adı"]') }} konu={5}>
+          Karakter, yer, olay, not… her şey bir kayıttır. Yukarıya bir ad yazıp türünü seçin; metinde [[ ile ona bağlanırsınız.
+        </BosSayfa>
       ) : (
         <>
           <div class="suzgec satir">
@@ -120,7 +120,7 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
             {kok && <span class="soluk">Alt birimler ve onlara bağlı kayıtlar listelenir; seçilen kaydın kendisi listede yer almaz.</span>}
           </div>
           <p class="soluk kucuk">{gorunen.length === kayitlar.length ? `${kayitlar.length} kayıt` : `${kayitlar.length} kayıttan ${gorunen.length} tanesi`}</p>
-          {gorunen.length === 0 ? <div class="bos"><p>Aramaya ya da seçimlere uyan kayıt yok.</p></div> : (
+          {tur === 'not' && !bulunan && !kok ? <NotPanosu istemci={istemci} evren={evren} surum={surum} /> : gorunen.length === 0 ? <div class="bos"><p>Aramaya ya da seçimlere uyan kayıt yok.</p></div> : (
             <ul class="kayit-listesi">
               {gorunen.map(({ k, nereden, parca }) => <KayitSatiri key={k.kod} k={k} evren={evren} nereden={nereden} parca={parca} istemci={istemci} />)}
             </ul>
@@ -136,7 +136,7 @@ function KayitSatiri({ k, evren, nereden, parca, istemci }: { k: KayitOzeti; evr
   return (
     <li>
       <a class="kayit-satiri" href={`#/e/${evren}/k/${k.kod}`}>
-        {k.gorsel && istemci ? <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} sinif="satir-gorseli" /> : <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>}
+        {k.gorsel && istemci ? <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} sinif="satir-gorseli" /> : <span class={`tur-rozeti ${grupSinifi(tur)}`} title={tur.ad} aria-hidden="true">{tur.kisa}</span>}
         <span class="govde">
           <span class="satir-ad">{k.ad} <KararRozeti karar={k.karar} /></span>
           <span class="soluk kucuk">{tur.ad}{k.tarih ? ` · ${k.tarih.ifade}` : ''}{k.ozet ? ` · ${k.ozet}` : ''}{nereden ? ` · ${nereden}` : ''}</span>
@@ -161,7 +161,7 @@ export function CopKutusu({ istemci, evren, surum }: { istemci: Istemci; evren: 
             const tur = turBul(k.tur);
             return (
               <li key={k.kod} class="kayit-satiri">
-                <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>
+                <span class={`tur-rozeti ${grupSinifi(tur)}`} title={tur.ad} aria-hidden="true">{tur.kisa}</span>
                 <span class="govde">
                   <a class="satir-ad" href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>
                   <span class="soluk kucuk">{tur.ad} · {zamanYaz(k.silindi!)} tarihinde silindi</span>

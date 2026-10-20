@@ -11,7 +11,7 @@ import { turBul } from '../alan/turler';
 import { BaglantiSecici } from './BaglantiSecici';
 import { KayitSec } from './KayitBolumleri';
 import { Gorsel } from './gorsel';
-import { KararRozeti } from './ortak';
+import { BosSayfa, KararRozeti, YeniKarti, odakla } from './ortak';
 import { git } from './Uygulama';
 import { BakisAciklamasi, BakisSecici } from './Bilgiler';
 import type { Secim } from './BaglantiSecici';
@@ -50,7 +50,9 @@ function HaritaListesi({ istemci, evren }: { istemci: Istemci; evren: string }) 
     <div class="haritalar">
       <p class="soluk kucuk">Bir harita görseli yükleyin, üstüne işaretler koyun ve her işareti bir kayda bağlayın. Bir yerin haritadaki yeri bilinmiyorsa bunu da belirtebilirsiniz; efsanevi bir şehir için nokta koymanız gerekmez.</p>
       <HaritaYukle istemci={istemci} evren={evren} />
-      {liste.length === 0 && <p class="soluk">Henüz harita yok.</p>}
+      {liste.length === 0 && <BosSayfa baslik="İlk haritanızı ekleyin" eylem={{ ad: 'Harita ekle', yap: () => odakla('.haritalar > button.dugme', true) }} konu={19}>
+        Harita, mekânlarınızı bir görselin üstünde işaretler; yolculuk süreleri ve kimin nerede olduğu buradan hesaplanır.
+      </BosSayfa>}
       <ul class="harita-izgara">
         {liste.map((h) => (
           <li key={h.kod}>
@@ -61,6 +63,7 @@ function HaritaListesi({ istemci, evren }: { istemci: Istemci; evren: string }) 
             </a>
           </li>
         ))}
+        {liste.length > 0 && <li><YeniKarti ad="Yeni harita" yap={() => odakla('.haritalar > button.dugme', true)} /></li>}
       </ul>
       {kaldirilan.length > 0 && (
         <details class="kaldirilan-haritalar">

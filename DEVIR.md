@@ -1,12 +1,20 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 20 Ekim 2026 (öğleden sonra). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 97 dosya, 491 sınama; tarayıcıda 23 akış sınaması, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
+*Son güncelleme: 20 Ekim 2026, 14:30 UTC (yeni ajana devir öncesi). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 102 dosya, 503 sınama; tarayıcıda 30 akış sınaması, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
 **Her işin sonunda bu dosyayı güncelle:** durum tablosu, kalan işler ve son kayıt. Bir sonraki ajan buradan başlayacak.
 
 ---
+
+## 0. Devralan ajan için kısa başlangıç (20 Ekim 2026)
+
+- **Durum:** tasarımdaki bütün "Tasarım" maddeleri ve K28 kullanım kolaylığı paketi (örnek evren dahil) kodlandı ve `main`'de. Bekleyen kod işi yok; açık PR yalnız #1 (Windows uygulaması).
+- **Kullanıcıdan bekleyenler:** Windows kurulum dosyasını denemek ve Google izinli adreslerine `http://localhost:41730` eklemek (§3.3-4); K16 gerçek kullanım; birleşik karar listesinde kararı bekleyen maddeler (B3, B13, C3, C5, C8, C9, C10, E1).
+- **İlk iş:** `main`'i Windows dalına (`claude/project-thread-hdk5g6`, PR #1) al (#10–#14 alınmadı), denetimin yeşil olduğunu gör.
+- **Ajanın kendiliğinden yapabileceği küçük işler:** `metinBelleginiTemizle`'deki bellek sızıntısı (A.free yok); örnek evren kurulumunu hızlandırma (~12 sn, §3.3-0); §3.3-6 ve 7.
+- **Yeni iş gelirse:** §2'deki kurallar (arayüzde önce taslak, birleştirme, kullanıcının bilgisayarını güncelleme), §4 tarif, §5 denetim. İş bitince bu dosyayı güncelle.
 
 ## 1. Önce oku (sırayla)
 
@@ -20,9 +28,10 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 - Her adım bitince DEVIR.md'de yapılan ve yapılacak adımlar güncellenir ve gönderilir (kullanıcı isteği, 19 Ekim 2026).
 - **Yapılanları daima anlat** (kullanıcı isteği, 20 Ekim 2026): her işin sonunda kullanıcıya neyin yapıldığını, neyin denendiğini ve neyin onayını beklediğini sade Türkçe ile yaz; DEVIR'i güncellemeyi unutma.
 - Kullanıcının açık tercihi: **bir aşama ya da madde bitince onay beklemeden sıradakine geç.** Yalnızca geri alınamaz işlerde (zorla gönderme, toplu silme, dışarıya mesaj) ya da kullanıcının vermesi gereken bir kararda dur ve sor.
-- **PR'ları ajan birleştirir (kullanıcı kararı, 19 Ekim 2026):** otomatik denetim (Ubuntu, Windows, tarayıcı) yeşil ve çakışma yoksa PR'ı ajan kendisi `main`'e birleştirir; kırmızıysa önce düzeltir. Görünüşü değiştiren işlerde birleştirmeden önce ekran görüntüsü gösterilip onay alınır (aşağıdaki taslak kuralı). Kullanıcı yazılımcı değil; kod incelemesi beklenmez.
+- **PR'ları ajan birleştirir (kullanıcı kararı, 19 Ekim 2026; 20 Ekim'de "İzin veriyorum" ile yeniden):** otomatik denetim (Ubuntu, Windows, tarayıcı) yeşil ve çakışma yoksa PR'ı ajan kendisi `main`'e birleştirir; kırmızıysa önce düzeltir. Görünüşü değiştiren işlerde birleştirmeden önce ekran görüntüsü gösterilip onay alınır (aşağıdaki taslak kuralı). Kullanıcı yazılımcı değil; kod incelemesi beklenmez.
 - **Arayüz değişikliklerinde önce taslak:** görünüşü ya da düzeni değiştiren bir işe kodlayarak başlama; önce seçenekli bir taslak göster, kullanıcı seçince kodla (kullanıcı isteği, 19 Ekim 2026).
-- **Tamamen bulut (kullanıcı kararı, 19 Ekim 2026, öncekinin yerine):** bütün iş bulut oturumunda yapılır; kullanıcının bilgisayarındaki proje klasörüne, masaüstüne ve oradaki programa dokunulmaz, zip oraya konmaz. Kullanıcı programı denemek isterse klasörü kendisi günceller. Windows denetimini GitHub'daki Windows işi yapar.
+- **İş bulutta yapılır (kullanıcı kararı, 19 Ekim 2026):** kodlama bulut oturumunda yapılır; masaüstüne ve oradaki programa dokunulmaz, zip oraya konmaz. Windows denetimini GitHub'daki Windows işi yapar.
+- **`main`'e giren her değişiklik kullanıcının bilgisayarına da gelir (kullanıcı kuralı, 20 Ekim 2026):** bir PR birleşince bilgisayardaki `C:\Users\Kaan\Documents\Writing` klasöründe (Uzaktan Denetim oturumuyla) `main` dalında olduğu denetlenir, `git pull origin main` yapılır (izlenen dosyada yerel değişiklik varsa dokunulmaz, bildirilir), `package.json` değiştiyse `uygulama`'da `npm install`, geliştirme sunucusu (`npm run dev`, 5173) çalışmıyorsa başlatılır. Bunu Remote Control oturumu yapar (`start_rc_session`). Klasördeki izlenmeyen dosyalara (raporlar, `dunya-atlasi-*` klasörleri, `analiz/` kopyaları) dokunulmaz. O bilgisayarda `gh` kurulu değil.
 - Tablet ve iPhone denemeleri süresiz ertelendi; yalnız Windows (19 Ekim 2026).
 - Kullanıcı bazen başka ajanları (GPT/Codex, Argon) ayrı dallarda paralel çalıştırır. Onlara verilecek promptları sen yazarsın; dalları sen birleştirir, sürümü sen artırır, denetimi sen yaparsın (bkz. §6).
 
@@ -85,13 +94,15 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 | §10.1 | Metnin toplu uygulanması ve bellekte en çok 32 metin belgesi; 21.800 gerçekçi işlemde yeni cihazda kurma 154 sn → 9,3 sn (ayrıntı §3.3-2) | `99ba813` |
 | Bellek | Automerge geçici kopyaları bırakılmıyordu (uzun yazma oturumunda bellek sınırsız büyüyor, 4 GB'da çöküyordu); kapatıldı | `2253aa4` |
 | F19 | İnceleme: ayırt etme satırı var, sahne hatırlatıcısını sahne paneli karşılıyor; okur tanıtımı ve "sır yayına girmez" yayına (§11) bağlı, K20 gereği kapsam dışı | — |
+| İnceleme (#5) | Codex'in iki bulgusu: baştan kurma hatayla yarıda kalınca hazırlanma şeridi ekranda asılı kalıyordu (`EvrenVt.ilerlemeyiKapat`); evren kaldırılıp yeniden indirilince deneme kopyasında bu cihazın yalnız parça olarak gönderdikleri geri gelmiyor, sıra numaraları yeniden kullanılabiliyordu (kendi parçaları yerelde yoksa alınır; kopyaların ayarları da silinir) | #5 |
+| K28 | Kullanım kolaylığı paketi (birleşik karar listesinden B1, B2, B4–B12, C1, C2, C4, C6, C7): tür grubu renkleri, kelime sayacı ve odak kipi, boş sahne yardımı, palette rozet ve `?` kısayol listesi, andıkları/ananlar, önce üç soru, not panosu, "Ne yazıyorsunuz?" kurgu türü, son yedek satırı, araç tanıtımı, boş sayfalar; iki yedek hatası (bozuk yedek açılmaz, dosya yedeği "hazırlandı" der); **koyu tema varsayılan** (`arayuz/tema.ts`), renkli kurgu türü kartları, Genel bakışta son çalışmanın özeti (`calisan/son-calisma.ts`). Kullanıcı ekran görüntülerini onayladı (20 Ekim 13:55). Ayrıntı: aşağıda §3.3-0 | #13, `26169ad` |
 ### 3.2 Açık PR'lar ve dallar
 
 | PR | Dal | Ne | Durum |
 |---|---|---|---|
-| [#1](https://github.com/Darvolinnn/dunya-atlasi/pull/1) | `claude/project-thread-hdk5g6` | Windows uygulaması (TK6, Tauri 2). Kurulum dosyası: [windows ön sürümü](https://github.com/Darvolinnn/dunya-atlasi/releases/tag/windows) (`Dunya-Atlasi-kurulum.exe`); dala her gönderimde yeniden derlenir. Dalın kendi DEVIR'inde iş listesi §3.2b | Açık kalır. `main` her birleştirmeden sonra bu dala alınır (son: #9, 20 Ekim). Kullanıcı 19 Ekim sürümünü kurup denedi, sorun görmedi; Google izinli adresi bekliyor. Bulut çalışma ağacı `/home/user/windows-dali` (oturuma özgü) |
+| [#1](https://github.com/Darvolinnn/dunya-atlasi/pull/1) | `claude/project-thread-hdk5g6` | Windows uygulaması (TK6, Tauri 2). Kurulum dosyası: [windows ön sürümü](https://github.com/Darvolinnn/dunya-atlasi/releases/tag/windows) (`Dunya-Atlasi-kurulum.exe`); dala her gönderimde yeniden derlenir. Dalın kendi DEVIR'inde iş listesi §3.2b | Açık kalır. `main` her birleştirmeden sonra bu dala alınır (son: #14, 20 Ekim). Kullanıcı 19 Ekim sürümünü kurup denedi, sorun görmedi; Google izinli adresi bekliyor. Bulut çalışma ağacı `/home/user/windows-dali` (oturuma özgü) |
 
-Birleşenler: #2 (19 Ekim akşam oturumu), #5 (ilerleme şeridi, evren kaldırma, anlık görüntü), #6 (K27 rehberli yazarlık: menü adları, rehber, sorular, seri, alternatifler, olay örgüsü masası, karakter yolu, Şimdi; #5 inceleme bulguları), #7 (K27 sonraya bırakılanlar, boş alanları gizleme, yeni evren hızı).
+Birleşenler: #2 (19 Ekim akşam oturumu), #5 (ilerleme şeridi, evren kaldırma, anlık görüntü), #6 (K27 rehberli yazarlık: menü adları, rehber, sorular, seri, alternatifler, olay örgüsü masası, karakter yolu, Şimdi; #5 inceleme bulguları), #7 (K27 sonraya bırakılanlar, boş alanları gizleme, yeni evren hızı), #8 (DEVIR), #9 (İlk adımlarda "Yap", eser oluşunca sahne kutusu, sıradaki adım satırı), #10 (DEVIR), #11 ve #12 (kullanım kolaylığı araştırması, yazar.io karşılaştırması, birleşik karar listesi; yalnız belge), #13 (K28 kullanım kolaylığı paketi, koyu tema, son çalışma özeti, iki yedek hatası), #14 (örnek evren D1 ve bu devir notu).
 
 Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok. Promptlar kullanıcının proje klasöründe `paket-promptlari/` altındadır, depoda değildir.
 
@@ -112,7 +123,9 @@ Kullanıcı 19 Ekim 2026'da programın site gibi durduğunu söyledi; Windows i�
 ### 3.3 Açık işler (önerilen sıra)
 
 **Kullanıcının kararı ya da işi gereken:**
-1. **Windows uygulamasını dene** (#7 ile yeniden derlendi): kurup aç, yeni evren, seri sayfası, olay örgüsü masası, boş alanları gizleme.
+0. **K28 kullanım kolaylığı paketi (kullanıcı 20 Ekim'de "Al" önerilenlerin hepsini seçti: B1, B2, B4–B12, C1, C2, C4, C6, C7, D1).** Dal `claude/project-thread-xspzg2`. Taslak seçimi (20 Ekim 12:33): T1 B (yol ve sayaç üst şeritte), T2 A (rozet renkli), T4 A (andıkları/ananlar yan yana), T5 B (durum sütunları, A'daki gibi renkli durum çipleri), T6 A+B (evren oluşturma kutusunda açıklamalı kartlar); T3, T7, T8 tek seçenekti. **Kodlandı:** tür grubu renkleri (`grupSinifi`, `--tg-*`), kelime sayacı ve odak kipi (`YazEkrani`, `kisayollar.ts`'te `ODAK_OLAYI`), boş sahne yardımı (`sonParagraf` isteği), yol satırında seri, palette nereden/rozet/kısayol ve `?` ile Kısayollar listesi, andıkları/ananlar, önce üç soru (`ONDE_SORU`), not panosu (`NotPanosu.tsx`, istek `notPanosu`, `MeseleListesi.celiskiNotlari`), "Ne yazıyorsunuz?" (işlem `evren_kurgu_turu`, istek `kurguTuruYaz`, `KURGU_TURLERI`, `KurguBaglami`), son yedek satırı (`SonYedekSatiri`; "doğrulandı" yalnız Drive yedeğinde), araç tanıtımı (`AracTanitimi`, istek `aracTanitimlari`, cihazda `dunya-atlasi:arac-tanitimlari`), boş sayfalar (`BosSayfa`, `YeniKarti`). Testler: `test/kolaylik.test.ts`, `e2e/kolaylik.spec.ts`. Aynı dalda Codex raporunun iki yedek hatası da düzeltildi (kullanıcı 20 Ekim'de listeye ekledi): eksik/tekrarlı satırlı ya da sayısı tutmayan yedek açılmaz ve yarım evren silinir (`yedektenYukle`, `test/tasima.test.ts`); dosya yedeği "indirildi" yerine "hazırlandı, indirme başlatıldı" der. Kullanıcının 20 Ekim 13:32 istekleri de kodlandı: program **koyu temayla açılır** (`arayuz/tema.ts`, cihazda `dunya-atlasi:tema`; "Eşitleme ve cihazlar" sayfasında Görünüm: Koyu / Açık / Cihazın ayarı), kurgu türü kartları tür grubu renklerini alır (`KURGU_TURLERI[].renk`), Genel bakışta "Kaldığınız yer" kartında **son çalışmanın özeti** (`calisan/son-calisma.ts`, istek `sonCalisma`; oturum = aralarında 2 saatten uzun boşluk olmayan son işlemler). `metinBelleginiTemizle`'deki küçük bellek sızıntısı (A.free yok) açık kaldı. K28 PR #13 ile main'e girdi (20 Ekim, kullanıcı onayıyla). **Örnek evren (D1)** kullanıcı içeriği onaylayınca kodlandı: `calisan/ornek-evren.ts` (`ornekEvreniKur`, istek `ornekEvrenKur`; kayıtlar `iceAktar` ile, kalanı olağan isteklerle), harita görseli `calisan/ornek-harita.ts` (programla gelen düz renkli PNG), Evrenler sayfasında "Örnek evreni aç"; sınama `test/ornek-evren.test.ts` ve `e2e/kolaylik.spec.ts`. Kurulum tarayıcıda ~12 sn sürüyor (yaklaşık 200 ayrı kayıt işlemi; her biri diske ayrı yazılır); hızlandırmak için işlemleri toplu yazmak gerekir, yapılmadı. Örnek evren PR #14 ile main'e girdi (20 Ekim). **K28 bitti.** Kararı bekleyen maddeler (B3, B13, C3, C5, C8–C10, E1) ve sonraya bırakılanlar (D2, D3) kullanıcı seçmeden kodlanmaz. Bulut oturumunun güvenlik denetimi PR birleştirmeyi o oturumda kullanıcının açık onayı olmadan engelleyebilir; engellerse kullanıcıdan tek cümlelik onay iste.
+
+1. **Windows uygulamasını dene** (#9 ile yeniden derlendi): kurup aç, yeni evren ve İlk adımlardaki "Yap", seri sayfası, olay örgüsü masası, boş alanları gizleme.
 2. **Büyük evrende hız ve bellek.** Kullanıcı kararı (19 Ekim): seri büyüklüğünde (Red Rising gibi, ~1 milyon kelime; taslak ve düzeltmelerle 300.000–1.500.000 işlem) evren dakikalar içinde kurulmalı; bellek bilgisayarda 16 GB'a kadar kabul, **tablette 4 GB altı şart**. Tanım §10.1 "Tablolar günlükten baştan kurulabilir".
    - [x] **Adım 1: metni toplu uygula, bellekte yalnız son kullanılanlar** (`99ba813`). Ölçüm (gerçekçi karışım: 400 sahne, sahne başına 2.500 kelimeye kadar cümle cümle yazma, sonra düzeltme turları, işlemlerin %80'i metin):
 
@@ -145,7 +158,6 @@ Kullanıcı 19 Ekim 2026'da programın site gibi durduğunu söyledi; Windows i�
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
 
-| İnceleme (#5) | Codex'in iki bulgusu: baştan kurma hatayla yarıda kalınca hazırlanma şeridi ekranda asılı kalıyordu (`EvrenVt.ilerlemeyiKapat`); evren kaldırılıp yeniden indirilince deneme kopyasında bu cihazın yalnız parça olarak gönderdikleri geri gelmiyor, sıra numaraları yeniden kullanılabiliyordu (kendi parçaları yerelde yoksa alınır; kopyaların ayarları da silinir) | bu PR |
 ### 3.4 Biten işlerden kalan dersler
 
 - **Sayfa rehberi (K25, §12.4):** yeni sayfa eklerken `rehber-metinleri.ts`'e rehberini ekle, başlığa `<SayfaYardimi sayfa="…" />` koy. Metinler "siz" hitabıyla; düğmeler kısa. Kaydedilen değerler (seçenek adları, şablon alan adları, gerekçe ve sonuç sabitleri) Türkçe düzeltmelerinde bilerek değiştirilmez.
@@ -193,6 +205,14 @@ Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda
 - Yeni evren dosyası tek veritabanı işleminde kurulur (`EvrenVt` kurucusu); tarayıcıda evren oluşturma ~4 sn → ~0,4 sn. `e2e` "İlk adımlar" sınamasının ara sıra kırılması buydu.
 - [x] P1: yazarlık rehberi programın içinde (§12.4): `arayuz/YazarlikRehberi.tsx`, metinler `arayuz/yazarlik-rehberi.ts` (analiz belgesinden üretildi; belge değişirse yeniden üretilmeli: başlıklar `### Konu N — …`, alanlar `**Ne:**` biçiminde). Soru başına "Örnek" #7 ile geldi. #6 ile birleşti.
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
+
+**Kullanım kolaylığı araştırması ve yazar.io karşılaştırması (20 Ekim 2026; araştırma bitti, karar bekliyor).** Kullanıcı UX araştırması ve benzer bir Türkçe site (yazar.io, dünya kurma wikisi; roman metni dışarıda yazılıyor) ile karşılaştırma istedi. yazar.io girişli olduğu için içeriden incelemeyi kullanıcının kendi Chrome eklentisi yaptı; promptları önceki ajan yazdı (güvenlik sınırları: ödeme yok, ayar değiştirme yok, yayımlama yok, yalnız "Deneme" projesi, uydurma içerik, kişisel bilgi yazılmaz), kullanıcı raporları sohbete yapıştırdı. Ajan kendi web araştırmasını kullanıcının isteğiyle bıraktı. Belgeler `analiz/` altında, bağlayıcı değil:
+- `kullanici-deneyimi-arastirmasi.md`: benzer programlarda (Scrivener, Dabble, Campfire, World Anvil, Plottr…) övülen ve şikâyet edilenler, ilkeler, 15 öneri (KD-1…KD-15).
+- `yazar-io-karsilastirma.md`: §1–7 açık sayfalar; §8 ve §9 içeriden gezme; §10 arayüz incelemesi; §11 ek inceleme (adla bağlama, ad değişikliği, silme, geri alma, not durumları, alan türleri, wiki, arama, dışa aktarma, kısayollar; Dünya Atlası ile yan yana tablo). §10'daki "Türkçe ekleri tanımıyor" bulgusu §11'de düzeltildi.
+- **`birlesik-karar-listesi.md`: dört kaynağın tek listesi ve iş planı.** §0 devralan için iş akışı ve sınırlar; A zaten var (denetlendi) · B küçük (B1–B13) · C orta (C1–C10) · D büyük (D1–D3) · E tasarımla çelişebilir (E1, K1) · F alınmayacaklar. Her maddede ne, nasıl, dokunulacak dosyalar, tasarımdaki yeri, kabul ölçütü.
+- Önemli bulgular: (1) yazar.io'nun güçlü göründüğü bağlama ve aramada tasarımımız zaten ileride (ayırt etme satırı, ad düzeltme önizlemesi, metin içinde ve ekli arama, çöp kutusu, sürüm geçmişi). (2) Bazı maddeler yeni fikir değil, tasarımda olup kodda eksik: tür renkleri ve karşıtlık (§12.1, B10–B11), yedeğin görünmesi (§10.8, B5). (3) Palet aramanın döndürdüğü metin parçasını göstermiyor (B8, yalnız arayüz). (4) Not kaydında tür ve durum yok (C1). (5) §12.1 "yazar.io'nun kimliği kopyalanmaz": görsel kimlik alınmaz.
+- Kullanıcının yazar.io hesabında eklentinin bıraktığı deneme kayıtları var ("Test Lale", "Test Lale Yeni", "Emir", "Test Kuzey Arşivi", "Test Olay"); kalıcı silme onayı gerektirdiği için eklenti silmedi, kullanıcıya söylendi. Depoyla ilgisi yok.
+- İsteğe bağlı, yalnız kullanıcı isterse: LegendKeeper, Kanka, Notebook.ai, Fantasia Archive karşılaştırması; programımızın kendi kullanım incelemesi (yarıda kalan ajan işi).
 
 ## 4. Kod yapısı ve yeni bir özellik ekleme tarifi
 

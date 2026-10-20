@@ -3,7 +3,7 @@
 // açık ya da küçük olması cihaza özeldir.
 import { createContext } from 'preact';
 import { PALET_OLAYI } from './yonlendirme';
-import { useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AramaSonucu, DurumSatiri, IliskiSatiri, Kayit, KayitOzeti, Spans } from '../veri/api';
 import type { EvrenTarihi } from '../alan/tarih';
@@ -12,7 +12,7 @@ import { aralikYazi } from './Anlati';
 import { degerMetni, useKayitSablonu } from './Sablon';
 import { yasHesapla } from '../alan/yas';
 import { useTakvim } from './Takvim';
-import { TURLER, turBul } from '../alan/turler';
+import { TURLER, turBul, grupSinifi } from '../alan/turler';
 import { katla } from '../alan/turkce';
 import { KararRozeti } from './ortak';
 import { Gorsel } from './gorsel';
@@ -23,6 +23,7 @@ import { yazarlikRehberiAc } from './YazarlikRehberi';
 import { YAZARLIK_KONULARI } from './yazarlik-rehberi';
 import { HesapPenceresi, type HesapTuru } from './Hesaplar';
 import type { YasananSure } from '../veri/api';
+import { KISAYOLLAR, KISAYOL_OLAYI, ODAK_OLAYI, kisayolTusu } from './kisayollar';
 
 export interface PaletBaglami { bagla?: () => void; hesap?: (h: HesapTuru) => void }
 
@@ -60,6 +61,7 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
   const [aktif, setAktif] = useState<string | null>(null);
   const [kart, setKart] = useState<{ kod: string; yer: DOMRect } | null>(null);
   const [palet, setPalet] = useState<PaletBaglami | null>(null);
+  const [kisayolAcik, setKisayolAcik] = useState(false);
   const [hesap, setHesap] = useState<HesapTuru | null>(null);
   const [kucuk, setKucuk] = useState(() => { try { return localStorage.getItem(panelAnahtari) === '1'; } catch { return false; } });
   const kucult = (v: boolean) => { setKucuk(v); try { localStorage.setItem(panelAnahtari, v ? '1' : '0'); } catch { /* yok */ } };
@@ -167,12 +169,15 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
     const tus = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
       if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); dRef.current.paletAc(); return; }
-      if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !yaziAlaniMi(e.target)) { e.preventDefault(); dRef.current.paletAc(); }
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !yaziAlaniMi(e.target)) { e.preventDefault(); dRef.current.paletAc(); return; }
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey && !yaziAlaniMi(e.target)) { e.preventDefault(); setPalet(null); setKisayolAcik(true); }
     };
     const palet = () => dRef.current.paletAc();
+    const kisayol = () => { setPalet(null); setKisayolAcik(true); };
     addEventListener('keydown', tus);
     addEventListener(PALET_OLAYI, palet);
-    return () => { removeEventListener('keydown', tus); removeEventListener(PALET_OLAYI, palet); };
+    addEventListener(KISAYOL_OLAYI, kisayol);
+    return () => { removeEventListener('keydown', tus); removeEventListener(PALET_OLAYI, palet); removeEventListener(KISAYOL_OLAYI, kisayol); };
   }, []);
 
   // Bağlantının üzerine gelince özet kartı (§5.3); dokunmatikte basılı tutunca.
@@ -215,6 +220,7 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
       )}
       {evren && kart && <OzetKarti istemci={istemci} evren={evren} kod={kart.kod} yer={kart.yer} kapat={() => setKart(null)}
         yanPanelde={() => denetim.yanPanelAc(kart.kod)} />}
+      {kisayolAcik && <KisayolListesi kapat={() => setKisayolAcik(false)} />}
       {palet && <KomutPaleti istemci={istemci} evren={evren} baglam={{ ...palet, hesap: setHesap }} kapat={() => setPalet(null)} />}
       {evren && hesap && <HesapPenceresi istemci={istemci} evren={evren} tur={hesap} kapat={() => setHesap(null)} />}
     </Baglam.Provider>
@@ -256,7 +262,7 @@ function OzetKarti({ istemci, evren, kod, yer, kapat, yanPanelde }: {
       {yok ? <p class="soluk kucuk">Bu kayıt bulunamadı.</p> : !k ? <p class="soluk kucuk">Açılıyor…</p> : (
         <>
           <div class="satir" style="flex-wrap:nowrap;align-items:flex-start">
-            {k.gorsel ? <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} sinif="ozet-gorseli" /> : <span class="tur-rozeti" aria-hidden="true">{tur!.kisa}</span>}
+            {k.gorsel ? <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} sinif="ozet-gorseli" /> : <span class={`tur-rozeti ${grupSinifi(tur!)}`} aria-hidden="true">{tur!.kisa}</span>}
             <div style="min-width:0">
               <strong>{k.ad}</strong> <KararRozeti karar={k.karar} />
               <div class="soluk kucuk">{ayirtEtme(k)}</div>
@@ -352,7 +358,7 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
   return (
     <div class="yan-panel-ic">
       <div class="satir" style="flex-wrap:nowrap;align-items:flex-start">
-        {k.gorsel ? <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} sinif="ozet-gorseli" /> : <span class="tur-rozeti" aria-hidden="true">{turBul(k.tur).kisa}</span>}
+        {k.gorsel ? <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} sinif="ozet-gorseli" /> : <span class={`tur-rozeti ${grupSinifi(turBul(k.tur))}`} aria-hidden="true">{turBul(k.tur).kisa}</span>}
         <div style="min-width:0">
           <h2 style="font-size:1.1rem">{k.ad} <KararRozeti karar={k.karar} /></h2>
           <div class="soluk kucuk">{ayirtEtme(k)}</div>
@@ -397,7 +403,37 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
 }
 
 // ---------- Komut paleti ----------
-interface Oge { anahtar: string; baslik: string; aciklama?: string; yap: (yanPanel: boolean) => void | Promise<void>; kayit?: boolean }
+interface Oge { anahtar: string; baslik: string; aciklama?: string; yap: (yanPanel: boolean) => void | Promise<void>; kayit?: boolean; tur?: string; alt?: preact.ComponentChildren; kisayol?: string }
+
+const NEREDEN_ADI: Record<string, string> = { lakap: 'lakabı', onceki: 'önceki adı', okunus: 'okunuşu', kok: 'çekimli biçiminden', ozet: 'özetinde' };
+/** Palet sonucunun nereden bulunduğu (K28): metindeyse aranan sözcük kalın, çevresiyle. */
+function NeredenSatiri({ s, sorgu }: { s: AramaSonucu; sorgu: string }) {
+  if (s.nereden.tur === 'metin' || s.parca) {
+    const p = s.parca ?? s.nereden.metin;
+    const k = katla(p), aranan = katla(sorgu.trim()).split(/\s+/).filter(Boolean)[0] ?? '';
+    const i = aranan && k.length === p.length ? k.indexOf(aranan) : -1;
+    return <span class="palet-nereden">metinde: “{i < 0 ? p : <>{p.slice(0, i)}<b>{p.slice(i, i + aranan.length)}</b>{p.slice(i + aranan.length)}</>}”</span>;
+  }
+  if (s.nereden.tur === 'ad' || !NEREDEN_ADI[s.nereden.tur]) return null;
+  return <span class="palet-nereden">{NEREDEN_ADI[s.nereden.tur]}{s.nereden.tur !== 'kok' && s.nereden.tur !== 'ozet' ? `: ${s.nereden.metin}` : ''}</span>;
+}
+
+/** "Kısayollar" listesi (§12.2, K28). */
+export function KisayolListesi({ kapat }: { kapat: () => void }) {
+  useLayoutEffect(() => {
+    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); kapat(); } };
+    addEventListener('keydown', tus); return () => removeEventListener('keydown', tus);
+  }, []);
+  return (
+    <div class="perde palet-perdesi" onClick={(e) => { if (e.target === e.currentTarget) kapat(); }}>
+      <div class="palet kart kisayol-listesi" role="dialog" aria-label="Kısayollar">
+        <div class="satir"><strong>Kısayollar</strong><span class="bosluk" /><button class="dugme sade kucuk" onClick={kapat}>Kapat</button></div>
+        <ul>{KISAYOLLAR.map((k) => <li key={k.anahtar}><span>{k.ad}{k.not && <span class="soluk kucuk"> · {k.not}</span>}</span><kbd class="tus">{k.tus}</kbd></li>)}</ul>
+        <p class="soluk kucuk">Mac'te Ctrl yerine Cmd kullanılır.</p>
+      </div>
+    </div>
+  );
+}
 
 function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evren: string | null; baglam: PaletBaglami; kapat: () => void }) {
   const d = useCalisma()!;
@@ -435,7 +471,9 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
   } else {
     const komutlar: Oge[] = [];
     if (baglam.bagla) komutlar.push({ anahtar: 'bagla', baslik: 'Bağla', aciklama: 'Seçili metni ya da imleçteki yeri bir kayda bağla', yap: () => baglam.bagla!() });
-    komutlar.push({ anahtar: 'not', baslik: 'Hızlı not', aciklama: 'Aklınıza geleni yazın', yap: () => { document.dispatchEvent(new Event('hizli-not-ac')); } });
+    komutlar.push({ anahtar: 'not', baslik: 'Hızlı not', aciklama: 'Aklınıza geleni yazın', kisayol: kisayolTusu('not'), yap: () => { document.dispatchEvent(new Event('hizli-not-ac')); } });
+    if (document.querySelector('.yaz-kagidi')) komutlar.push({ anahtar: 'odak', baslik: 'Odak kipi', aciklama: 'Yalnız metin kalır', kisayol: kisayolTusu('odak'), yap: () => { window.dispatchEvent(new CustomEvent(ODAK_OLAYI, { detail: null })); } });
+    komutlar.push({ anahtar: 'kisayollar', baslik: 'Kısayollar', aciklama: 'Bütün klavye kısayolları', kisayol: kisayolTusu('kisayollar'), yap: () => { window.dispatchEvent(new Event(KISAYOL_OLAYI)); } });
     if (evren) {
       if (sorgu.trim()) komutlar.push({ anahtar: 'yeni', baslik: `Yeni kayıt: “${sorgu.trim()}”`, aciklama: 'Ardından türünü seçersiniz', yap: () => { setTurSec(sorgu.trim().replace(/\s+/g, ' ')); setSorgu(''); } });
       // Gezinti çubuğundaki bütün sayfalar ve görünümler paletten de açılır.
@@ -456,7 +494,8 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
     komutlar.push({ anahtar: 'evrenler', baslik: 'Evrenler', yap: () => git('/') });
     komutlar.push({ anahtar: 'esitleme', baslik: 'Eşitleme ve cihazlar', yap: () => git('/esitleme') });
     const kayitlar: Oge[] = (sorgu.trim() ? bulunan : son).map((k) => ({
-      anahtar: 'k-' + k.kod, baslik: k.ad, aciklama: ayirtEtme(k), kayit: true, yap: (yan) => kayitAc(k.kod, yan),
+      anahtar: 'k-' + k.kod, baslik: k.ad, aciklama: ayirtEtme(k), kayit: true, tur: k.tur, yap: (yan) => kayitAc(k.kod, yan),
+      alt: sorgu.trim() && 'nereden' in k ? <NeredenSatiri s={k as AramaSonucu} sorgu={sorgu} /> : undefined,
     }));
     // "Yeni kayıt" komutu sayfa ve görünüm eşleşmelerinin ardından gelir; "çöp" yazıp Enter'a basan çöp kutusunu açar.
     const uyan = [...komutlar.filter((k) => k.anahtar !== 'yeni' && uyar(k.baslik)), ...komutlar.filter((k) => k.anahtar === 'yeni')];
@@ -489,8 +528,12 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
           {ogeler.map((o, i) => (
             <li key={o.anahtar} role="option" aria-selected={i === secili} class={i === secili ? 'secili' : ''}
               onMouseMove={() => setSecili(i)} onClick={() => calistir(o, false)}>
-              <span class="palet-baslik">{o.baslik}</span>
-              {o.aciklama && <span class="soluk kucuk"> {o.aciklama}</span>}
+              {o.tur && <span class={`tur-rozeti kucuk-rozet ${grupSinifi(o.tur)}`} aria-hidden="true">{turBul(o.tur).kisa}</span>}
+              <span class="palet-govde">
+                <span><span class="palet-baslik">{o.baslik}</span>{o.aciklama && <span class="soluk kucuk"> {o.aciklama}</span>}</span>
+                {o.alt}
+              </span>
+              {o.kisayol && <kbd class="tus palet-tus">{o.kisayol}</kbd>}
               {o.kayit && <button class="dugme sade kucuk palet-yan" onClick={(e) => { e.stopPropagation(); void calistir(o, true); }}>Yan panel</button>}
             </li>
           ))}

@@ -167,6 +167,18 @@ export const SAHNE_CALISMA: Secenek[] = [
   { kod: 'planlandi', ad: 'Planlandı' }, { kod: 'ilk_taslak', ad: 'İlk taslak' }, { kod: 'duzenleniyor', ad: 'Düzenleniyor' }, { kod: 'gozden_gecirildi', ad: 'Gözden geçirildi' },
 ];
 
+/** Notun türü ve durumu (K28, §4.6). Notun durumu kaydın karar durumundan ayrıdır. */
+export const NOT_TURLERI: Secenek[] = [
+  { kod: 'sahne_fikri', ad: 'Sahne fikri' }, { kod: 'diyalog', ad: 'Diyalog' }, { kod: 'dunya_kurali', ad: 'Dünya kuralı' },
+  { kod: 'karakter_fikri', ad: 'Karakter fikri' }, { kod: 'arastirma', ad: 'Araştırma' }, { kod: 'celiski', ad: 'Çelişki / kontrol' }, { kod: 'diger', ad: 'Diğer' },
+];
+export const NOT_DURUMLARI: Secenek[] = [
+  { kod: 'fikir', ad: 'Fikir' }, { kod: 'gelisiyor', ad: 'Geliştiriliyor' }, { kod: 'kontrol', ad: 'Kontrol edilecek' },
+  { kod: 'kullanildi', ad: 'Kullanıldı' }, { kod: 'arsiv', ad: 'Arşivlendi' },
+];
+/** Karar bekleyenler sayfasında da listelenen not türü (K28). */
+export const CELISKI_NOTU = 'celiski';
+
 /** Türlerin varsayılan şablonları. Yazar değiştirince evrene kaydedilir; değiştirmediği tür bunları kullanır. */
 const VARSAYILANLAR: Record<string, Sablon> = {
   karakter: {
@@ -188,6 +200,13 @@ const VARSAYILANLAR: Record<string, Sablon> = {
   sahne: { alanlar: [{ kod: 'calisma', ad: 'Çalışma durumu', tur: 'secim', secenekler: SAHNE_CALISMA, ipucu: 'Aynı eserde sahnelerin farklı durumda olması olağandır' }], sorular: sorular('sahne_plani') },
   kurgu_hatti: { alanlar: [], sorular: sorular('hat') },
   seri: { alanlar: [], sorular: sorular('seri') },
+  not: {
+    alanlar: [
+      { kod: 'not_turu', ad: 'Notun türü', tur: 'secim', secenekler: NOT_TURLERI, sabit: true },
+      { kod: 'not_durumu', ad: 'Notun durumu', tur: 'secim', secenekler: NOT_DURUMLARI, sabit: true, ipucu: 'Fikir mi, kullanıldı mı? Kaydın karar durumundan ayrıdır' },
+    ],
+    sorular: [],
+  },
   acik_mesele: {
     alanlar: [
       { kod: 'durum', ad: 'Durum', tur: 'secim', secenekler: MESELE_DURUMLARI, sabit: true },

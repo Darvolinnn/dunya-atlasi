@@ -1,5 +1,6 @@
 // Gezinti ve görsel pano (§7). Yazarın derlediği listeler; kayıtlar kopyalanmaz, liste onlara bağlanır.
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { BosSayfa, odakla } from './ortak';
 import type { Istemci } from '../veri/istemci';
 import type { Derleme, DerlemeOzeti, Kayit, PanoOgesi } from '../veri/api';
 import { turBul } from '../alan/turler';
@@ -34,7 +35,9 @@ export function DerlemeSekmesi({ istemci, evren, tur, secili, surum }: { istemci
         </form>
       </div>
       {hata && <p class="hata kucuk">{hata}</p>}
-      {!liste.length && <p class="soluk kucuk">{ADLAR[tur].bos}</p>}
+      {!liste.length && <BosSayfa baslik={tur === 'gezinti' ? 'İlk gezintinizi ekleyin' : 'İlk panonuzu ekleyin'} eylem={{ ad: ADLAR[tur].yeni, yap: () => odakla(`input[aria-label="${ADLAR[tur].yeni} adı"]`) }} konu={tur === 'gezinti' ? 23 : 19}>
+        {ADLAR[tur].bos.replace(/^Henüz [^.]*\. /, '')}
+      </BosSayfa>}
       {secili && liste.some((d) => d.kod === secili) && (tur === 'gezinti'
         ? <Gezinti key={secili} istemci={istemci} evren={evren} kod={secili} surum={surum} />
         : <Pano key={secili} istemci={istemci} evren={evren} kod={secili} surum={surum} />)}

@@ -12,6 +12,8 @@ export interface KurulumBilgisi { kod: string; ad: string; sqlite: string }
 export interface EvrenOzeti { kod: string; ad: string; olusturma: number; sonAcilis: number | null }
 export interface EvrenBilgisi extends EvrenOzeti {
   islemSayisi: number; kayitSayisi: number; copSayisi: number; catismaSayisi: number; sorunSayisi: number;
+  /** "Ne yazıyorsunuz?" seçimi (K28); seçilmediyse null. */
+  kurguTuru: string | null;
   /** Adlandırılmış sürüm (salt okunur) ya da deneme kopyasıysa bağlı olduğu evren (§9.7). */
   bag?: { tur: 'surum' | 'dal'; evren: string; evrenAdi: string; ad: string } | null;
 }
@@ -846,6 +848,8 @@ export interface YapiSahnesi { kod: string; ad: string; tur: string; karar: stri
 export interface YapiBolumu { kod: string; ad: string; karar: string; sira: number; sahneler: YapiSahnesi[] }
 export interface EserYapisi { eser: { kod: string; ad: string }; bolumler: YapiBolumu[]; dogrudan: YapiSahnesi[] }
 export interface AnlatiYeri {
+  /** Eserin serisi (K28 yol satırı). */
+  seri: { kod: string; ad: string } | null;
   eser: { kod: string; ad: string } | null;
   bolum: { kod: string; ad: string; sira: number } | null;
   /** Sahnenin eserin okuma sırasındaki yeri (1'den). */
@@ -939,6 +943,8 @@ export interface SoruSatiri extends Soru {
   eski: boolean;
 }
 /** İlk adımların dayanakları (K26, K27): her adım kayıtlı veriden anlaşılır. */
+/** İleri araçların bir kez tanıtılması (§5.10, K28): kayıtlı veriden sayılar. */
+export interface AracTanitimDayanaklari { enCokSahne: { eser: string; sayi: number } | null; karakter: number; tarihli: boolean; mekan: number; eser: number }
 export interface IlkAdimDayanaklari {
   eser: boolean; sahne: boolean; baglanti: boolean; baglam: boolean;
   not: boolean; nottanEser: boolean; cekirdek: boolean; karakter: boolean; istek: boolean; karsit: boolean; karakterSahnede: boolean;
@@ -956,7 +962,14 @@ export interface KayitSablonu {
 export type EvrenSorulari = { kod: string; ad: string; sorular: SoruSatiri[] }[];
 export interface MeseleSatiri { kod: string; ad: string; karar: string; duzenleme: number; durum: string; onemli: boolean; bagli: KisaKayit[] }
 export interface GerekceSatiri { kod: string; ad: string; karar: string; duzenleme: number; soru: string; cozum: string; gerekce: string; etkilenen: KisaKayit[] }
-export interface MeseleListesi { meseleler: MeseleSatiri[]; gerekceler: GerekceSatiri[] }
+/** Son çalışma oturumunun özeti (Genel bakış, K28). Listelerde yalnızca silinmemiş kayıtlar vardır; metni yazılan yeni kayıt yalnızca "yazılan"da görünür. */
+export interface SonCalisma {
+  bas: number; son: number; degisiklikSayisi: number;
+  olusturulan: KisaKayit[]; yazilan: KisaKayit[]; degistirilen: KisaKayit[]; silinen: number;
+}
+/** Not panosunun satırı (§4.6, K28). Durum yazılmamışsa "fikir" sayılır. */
+export interface NotSatiri { kod: string; ad: string; ozet: string; notTuru: string | null; notDurumu: string; duzenleme: number }
+export interface MeseleListesi { meseleler: MeseleSatiri[]; gerekceler: GerekceSatiri[]; /** Kullanılmamış ve arşivlenmemiş çelişki/kontrol notları (K28). */ celiskiNotlari: NotSatiri[] }
 
 /** Takvim değişikliğinin önizlemesi (§3.4). */
 export interface TakvimEtkisi {
@@ -1171,10 +1184,12 @@ export interface Istekler {
   sonrakiSoru(a: { evren: string; kod: string; hesap: SonrakiSoru['hesap']; nereden?: string | null; tarih?: string | null }): SonrakiSoru;
   baslat(): KurulumBilgisi;
   evrenler(): EvrenOzeti[];
-  evrenOlustur(a: { ad: string }): { kod: string };
+  evrenOlustur(a: { ad: string; kurgu?: string | null }): { kod: string };
+  kurguTuruYaz(a: { evren: string; kurgu: string | null }): void;
   evrenKaldir(a: { evren: string }): void;
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
   ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
+  aracTanitimlari(a: { evren: string }): AracTanitimDayanaklari;
   alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
   kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;
   etkinCalisma(a: { evren: string }): KisaKayit | null;
@@ -1220,6 +1235,7 @@ export interface Istekler {
   gorsel(a: { evren: string; ad: string; onizleme?: boolean }): Promise<GorselSonucu>;
 
   iceAktarIncele(a: { dosyalar: { yol: string; metin?: string; veri?: Uint8Array; tur?: string }[] }): IceAktarimRaporu;
+  ornekEvrenKur(): Promise<{ kod: string }>;
   iceAktar(a: { dosyalar: { yol: string; metin?: string; veri?: Uint8Array; tur?: string }[]; evrenAdi: string }): Promise<{ kod: string; rapor: IceAktarimRaporu; gorselHatalari: string[] }>;
   yedekAl(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
   yedekIncele(a: { veri: Uint8Array }): Promise<YedekBilgisi>;
@@ -1282,6 +1298,8 @@ export interface Istekler {
   soruBagla(a: { evren: string; kod: string; soru: string; hedef: string | null }): void;
   kayitSoruSeti(a: { evren: string; kod: string; set: string; ekle: boolean }): void;
   evrenSorulari(a: { evren: string }): EvrenSorulari;
+  notPanosu(a: { evren: string }): NotSatiri[];
+  sonCalisma(a: { evren: string }): SonCalisma | null;
   meseleler(a: { evren: string; kod?: string }): MeseleListesi;
   yazarKaydiEkle(a: { evren: string; tur: 'acik_mesele' | 'gerekce'; ad: string; bagla?: string | null; onemli?: boolean }): { kod: string };
   takvim(a: { evren: string }): Takvim;
@@ -1488,6 +1506,8 @@ export interface Istekler {
   denetimler(a: { evren: string; paket?: string | null }): Denetimler;
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];
+  andiklari(a: { evren: string; kod: string }): BaglananKayit[];
+  sonParagraf(a: { evren: string; kod: string }): string;
   bahsedilenler(a: { evren: string }): (KayitOzeti & { anilma: number })[];
   adDuzeltmeOnizle(a: { evren: string; kod: string; eskiAd: string; yeniAd: string; eskiOkunus?: string }): AdDuzeltmesi[];
   adDuzeltmeUygula(a: { evren: string; kod: string; eskiAd: string; yeniAd: string; eskiOkunus?: string; secilenler: string[] }): { degisen: number };

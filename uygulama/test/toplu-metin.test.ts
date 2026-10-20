@@ -97,5 +97,5 @@ describe('metnin toplu uygulanması (§10.1)', () => {
     yaz(y, evren, sahneler[3], ['Eski sahneye dönüldü.']);
     const duz = (k: string) => vt(y, evren).db.selectValue('SELECT duz FROM metinler WHERE kayit=?', [k]);
     expect([duz(sahneler[39]), duz(sahneler[3])]).toEqual(['Yeni cihazda yazıldı.', 'Eski sahneye dönüldü.']);
-  });
+  }, 60_000); // yüzlerce metin kaydı; Windows sınama makinesinde 5 sn'yi aşabiliyor
 });

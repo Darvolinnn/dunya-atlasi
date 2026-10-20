@@ -7,6 +7,7 @@ import { baglantilar, duzMetin, isaretYerleri } from '../alan/metin-sema';
 import { katla } from '../alan/turkce';
 import { siraGecerli } from '../alan/sira';
 import { sablonGecerli } from '../alan/sablon';
+import { kurguTuruGecerli } from '../alan/turler';
 import { etkiAc } from './etki';
 import { gorunurlukGecerli, sadeGercekMi } from '../alan/gorunurluk';
 import { BILGI_ALANLARI, IDDIA_ALANLARI, bilgiDegeri, iddiaDegeri } from '../alan/bilgi';
@@ -1124,6 +1125,11 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     else db.exec({ sql: 'DELETE FROM evren WHERE k=?', bind: [`akis:${kod}`] });
     tarihleriYenidenHesapla(db);
     alanYaz(db, i, 'evren', `akis:${kod}`, akis ?? null);
+  },
+  // "Ne yazıyorsunuz?" (K28): günlük sırasında sonra gelen geçerlidir.
+  evren_kurgu_turu(db, i) {
+    if (i.veri.kurgu === null) db.exec({ sql: "DELETE FROM evren WHERE k='kurgu_turu'" });
+    else if (kurguTuruGecerli(i.veri.kurgu)) evrenAlani(db, 'kurgu_turu', i.veri.kurgu);
   },
   evren_adlandir(db, i) {
     evrenAlani(db, 'ad', i.veri.ad);
