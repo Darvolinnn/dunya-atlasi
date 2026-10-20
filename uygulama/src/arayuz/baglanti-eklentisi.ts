@@ -1,4 +1,4 @@
-// Editörde bağlantı yazma (§5.1): "[[" seçim kutusunu açar, "]]" kısayol sözdizimini çözer,
+// Editörde bağlantı yazma (§5.1): "[[" ya da kelime başındaki "@" (K29) seçim kutusunu açar, "]]" kısayol sözdizimini çözer,
 // bağlantının hemen ardına yazılan ek ("'dan") bağlantının görünümüne katılır.
 import { Plugin, type EditorState, type Transaction } from 'prosemirror-state';
 import type { EditorView } from 'prosemirror-view';
@@ -21,8 +21,10 @@ export interface SeciciIstegi {
   isaretle: boolean;
   /** Kısayolda tek güçlü eşleşme varsa sormadan bağlansın mı ("]]" ile kapatılan). */
   kendiligindenBagla?: boolean;
-  /** Arama metni editörde yazılıyor ("[[" sonrası ya da "]]" ile kapatılmış kısayol). */
+  /** Arama metni editörde yazılıyor ("[[" ya da "@" sonrası, ya da "]]" ile kapatılmış kısayol). */
   satirIci?: boolean;
+  /** Satır içi yazımı başlatan işaret: "[[" ya da "@". */
+  onEk?: string;
 }
 
 /** İmlecin içinde bulunduğu bağlantının aralığı ve hedefi. */
@@ -48,12 +50,15 @@ export function bagAraligi(state: EditorState): { from: number; to: number; hede
   return aralik ? { ...(aralik as { from: number; to: number }), hedef } : null;
 }
 
-/** Satır içi bağlantı yazımı: "[[" ile başlar; kutu açıkken klavye ona iletilir. */
+/** Satır içi bağlantı yazımı: "[[" ya da "@" ile başlar; kutu açıkken klavye ona iletilir. */
 export interface SatirIci { bas: number }
+
+/** "@" yalnız kelime başında kutu açar (K29): "ad@örnek" gibi kelime içindeki işaret düz kalır. */
+export const kelimeBasiMi = (once: string) => once === '' || /[\s(\[{"'“‘«—–-]$/u.test(once);
 
 export function baglantiEklentisi(o: {
   ac: (i: SeciciIstegi) => void;
-  satirIciBasla: (bas: number) => void;
+  satirIciBasla: (bas: number, onEk: string) => void;
   /** Boş satırın başında "/" komut paletini açar (§5.8); cümle içinde açmaz. */
   paletAc?: () => void;
   yeniKayit: (ad: string, tur: string, ozet: string) => Promise<string>;
@@ -68,7 +73,12 @@ export function baglantiEklentisi(o: {
         if (text === '[' && once.endsWith('[') && from === to) {
           // "[[": metin yazılmaya devam eder, seçim kutusu yazılanı arar.
           view.dispatch(state.tr.insertText('[', from));
-          o.satirIciBasla(from - 1);
+          o.satirIciBasla(from - 1, '[[');
+          return true;
+        }
+        if (text === '@' && from === to && kelimeBasiMi(once)) {
+          view.dispatch(state.tr.insertText('@', from));
+          o.satirIciBasla(from, '@');
           return true;
         }
         if (text === ']' && once.endsWith(']') && from === to) {

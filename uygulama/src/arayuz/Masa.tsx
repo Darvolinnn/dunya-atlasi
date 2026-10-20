@@ -66,8 +66,8 @@ export function Masa({ istemci, evren, surum, ekler }: { istemci: Istemci; evren
       </section>
 
       {bahsedilen.length > 0 && (
-        <section class="masa-bolum" aria-label="Eksik kayıtlar">
-          <h2>Eksik kayıtlar</h2>
+        <section class="masa-bolum" aria-label="Henüz yazılmayanlar">
+          <h2>Henüz yazılmayanlar</h2>
           <p class="kucuk">
             {bahsedilen.slice(0, 12).map((k, i) => <>{i > 0 && ', '}<a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a></>)}
             {bahsedilen.length > 12 && <> · <a href={`#/e/${evren}/bahsedilen`}>hepsi</a></>}

@@ -38,7 +38,7 @@ const YOLLAR: { kod: Yol; ad: string; konu: number; adimlar: Adim[] }[] = [
     { kod: 'eser', tamam: (d) => d.eser, kisa: 'Bir eser oluşturun', yap: eserYap, metin: <>Bir eser oluşturun: aşağıya romanınızın ya da öykünüzün adını yazın.</> },
     { kod: 'sahne', tamam: (d) => d.sahne, kisa: 'İlk sahnenizi ekleyin', yap: sahneYap, metin: <>İlk sahnenizi ekleyin: soldaki listede eserin altındaki kutuya sahnenin adını yazın (“Yap” ya da “+ Sahne” açar) ve yazmaya başlayın.</> },
     { kod: 'baglanti', tamam: (d) => d.baglanti, kisa: 'Metinde bir adı [[ ile bağlayın', yap: (ev, h) => h.sahne ? void gitVeYap(`/e/${ev}/yaz/${h.sahne}`, [{ odak: '.ProseMirror[aria-label="Metin"]' }]) : sahneYap(ev, h),
-      metin: <>Metinde bir karakterin ya da yerin adını <strong>[[</strong> ile başlayarak yazın; kaydı yoksa oluşturulur ve metne bağlanır.</> },
+      metin: <>Metinde bir karakterin ya da yerin adını <strong>[[</strong> ya da <strong>@</strong> ile başlayarak yazın; kaydı yoksa oluşturulur ve metne bağlanır.</> },
     { kod: 'baglam', tamam: (d) => d.baglam, kisa: 'Sahneye bir tarih ya da mekân verin', yap: baglamYap, metin: <>Sahneye bir tarih ya da mekân verin: başlıktaki “Bağlam ekle”ye basın. Bağlam paneli o andaki durumu göstermeye başlar.</> },
   ] },
   { kod: 'fikir', ad: 'Bir hikâye fikriyle', konu: 1, adimlar: [
