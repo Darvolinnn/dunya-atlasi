@@ -148,3 +148,21 @@ export const rolAdi = (tur: string, rol: string | null) => iliskiTuruBul(tur).ro
 export const ILISKI_SECENEKLERI = ILISKI_TURLERI.flatMap((t) => t.karsilikli
   ? [{ deger: `${t.kod}:a`, etiket: t.aIcin, grup: t.grup }]
   : [{ deger: `${t.kod}:a`, etiket: t.aIcin, grup: t.grup }, { deger: `${t.kod}:b`, etiket: t.bIcin, grup: t.grup }]);
+
+/** Çizimlerde bağın görünen türü (taslak 2A): renk, çizgi biçimi ve yazıyla birlikte ayrılır; renk tek başına anlam
+ *  taşımaz. Yalnızca ilişkinin türüne bakar. */
+export type BagTuru = 'aile' | 'dusmanlik' | 'dostluk' | 'sahne' | 'baglanti' | 'diger';
+export const BAG_TURLERI: { kod: BagTuru; ad: string }[] = [
+  { kod: 'aile', ad: 'Aile' }, { kod: 'dostluk', ad: 'Dostluk ve bağlılık' }, { kod: 'dusmanlik', ad: 'Düşmanlık' },
+  { kod: 'sahne', ad: 'Sahneler ve olaylar' }, { kod: 'diger', ad: 'Diğer bağlar' }, { kod: 'baglanti', ad: 'Metindeki bağlantılar' },
+];
+const DUSMANLIK = new Set(['dusman', 'rakip', 'nefret']);
+export function bagTuru(tur: string, baglanti = false): BagTuru {
+  if (baglanti) return 'baglanti';
+  if (DUSMANLIK.has(tur)) return 'dusmanlik';
+  const grup = ILISKI_TURLERI.find((t) => t.kod === tur)?.grup;
+  if (grup === 'Aile') return 'aile';
+  if (grup === 'Kişiler arası') return 'dostluk';
+  if (grup === 'Sahne ve olay') return 'sahne';
+  return 'diger';
+}

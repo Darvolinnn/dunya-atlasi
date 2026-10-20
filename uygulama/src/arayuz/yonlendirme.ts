@@ -47,7 +47,7 @@ export async function gitVeYap(adres: string | null, eylemler: Eylem[]) {
       if (!x) return;
       ac(x); x.click();
     } else if ('dugme' in e) {
-      const x = await bul(() => [...document.querySelectorAll<HTMLElement>('main button')].find((b) => e.dugme.includes(b.textContent?.trim() ?? '')) ?? null, e.yoksaGec ? 1200 : BEKLEME);
+      const x = await bul(() => [...document.querySelectorAll<HTMLElement>('main button, .yaz-baglami button')].find((b) => e.dugme.includes(b.textContent?.trim() ?? '')) ?? null, e.yoksaGec ? 1200 : BEKLEME);
       if (!x) { if (e.yoksaGec) continue; return; }
       ac(x); x.click();
     } else {

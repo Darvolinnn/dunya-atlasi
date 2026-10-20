@@ -124,7 +124,27 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
     if (saltOkunur) return;
     setYeni({ ust: y.bolumler.length ? y.bolumler[y.bolumler.length - 1].kod : sahneIstegi, tur: 'sahne' }); setHata(null);
   }, [sahneIstegi, yapilar, saltOkunur]);
+  // Bir parça açıkken yalnız onun eseri ve bölümü açık gelir; öbürleri katlıdır ve tek tıkla açılır (§5.10). Hiçbir
+  // parça açık değilken (Yaz sayfası) ağacın tamamı açıktır.
+  const [acilan, setAcilan] = useState<Set<string>>(new Set());
+  const [kapanan, setKapanan] = useState<Set<string>>(new Set());
+  useEffect(() => { setAcilan(new Set()); setKapanan(new Set()); }, [acik]);
   if (!eserler) return null;
+  const yolda = new Set<string>();
+  for (const [ek, y] of Object.entries(yapilar)) {
+    if (ek === acik || y.dogrudan.some((x) => x.kod === acik)) yolda.add(ek);
+    for (const b of y.bolumler) if (b.kod === acik || b.sahneler.some((x) => x.kod === acik)) { yolda.add(ek); yolda.add(b.kod); }
+  }
+  if (yeni?.ust) { yolda.add(yeni.ust); for (const [ek, y] of Object.entries(yapilar)) if (y.bolumler.some((b) => b.kod === yeni.ust)) yolda.add(ek); }
+  const acikMi = (k: string) => !kapanan.has(k) && (acik === null || yolda.has(k) || acilan.has(k));
+  const cevir = (k: string) => {
+    const a = acikMi(k);
+    setAcilan((s) => { const n = new Set(s); if (a) n.delete(k); else n.add(k); return n; });
+    setKapanan((s) => { const n = new Set(s); if (a) n.add(k); else n.delete(k); return n; });
+  };
+  const ok = (k: string, ad: string) => (
+    <button class="agac-ok" aria-expanded={acikMi(k)} aria-label={`${ad}: ${acikMi(k) ? 'kapat' : 'aç'}`} onClick={() => cevir(k)}>{acikMi(k) ? '▾' : '▸'}</button>
+  );
 
   const ekle = async (ad: string) => {
     if (!yeni) return;
@@ -161,17 +181,17 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
         const y = yapilar[e.kod];
         return (
           <div key={e.kod} class="agac-eser">
-            {dal(e, 'agac-eser-ad')}
-            {y && (
+            <div class="agac-satir">{ok(e.kod, e.ad)}{dal(e, 'agac-eser-ad')}</div>
+            {y && acikMi(e.kod) && (
               <ul class="agac-liste">
                 {sahneler(y.dogrudan)}
                 {y.bolumler.map((b) => (
                   <li key={b.kod}>
-                    {dal({ kod: b.kod, ad: `${b.sira}. ${b.ad}` }, 'agac-bolum')}
-                    <ul class="agac-liste">
+                    <div class="agac-satir">{ok(b.kod, b.ad)}{dal({ kod: b.kod, ad: `${b.sira}. ${b.ad}` }, 'agac-bolum')}</div>
+                    {acikMi(b.kod) && <ul class="agac-liste">
                       {sahneler(b.sahneler)}
                       <li>{yeniSatir(b.kod, 'sahne', '+ Sahne')}</li>
-                    </ul>
+                    </ul>}
                   </li>
                 ))}
                 {!y.bolumler.length && <li>{yeniSatir(e.kod, 'sahne', '+ Sahne')}</li>}

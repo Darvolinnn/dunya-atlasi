@@ -25,7 +25,7 @@ const sahneYap: Yapici = (ev, h) => h.eser
   ? void gitVeYap(`/e/${ev}/yaz/${h.eser}`, [{ bekle: `.eser-agaci a[href$="/yaz/${h.eser}"]`, olay: YENI_SAHNE_OLAYI, detay: h.eser }])
   : eserYap(ev, h);
 const baglamYap: Yapici = (ev, h) => h.sahne
-  ? void gitVeYap(`/e/${ev}/yaz/${h.sahne}`, [{ dugme: ['Bağlam ekle', 'Bağlamı göster'], yoksaGec: true }, { odak: '.yaz-baglami input' }])
+  ? void gitVeYap(`/e/${ev}/yaz/${h.sahne}`, [{ dugme: ['Bağlam ekle', 'Bağlamı göster'], yoksaGec: true }, { dugme: ['Bağlam'], yoksaGec: true }, { dugme: ['Düzenle'], yoksaGec: true }, { odak: '.yaz-baglami input' }])
   : sahneYap(ev, h);
 const paletYap: Yapici = () => { dispatchEvent(new Event(PALET_OLAYI)); };
 const notYap: Yapici = () => { document.dispatchEvent(new Event('hizli-not-ac')); };

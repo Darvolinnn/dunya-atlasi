@@ -155,3 +155,91 @@ export function kuvvetYerlesimi(kodlar: string[], kenarlar: { a: string; b: stri
   kodlar.forEach((x, i) => konum.set(x, yer[i]));
   return konum;
 }
+
+/**
+ * Odak halkası (taslak 2A): merkez ortada, doğrudan bağlılar ilk halkada, onların bağlıları dışarıdaki halkalarda.
+ * İlk halkadakiler `sira` anahtarına göre (bağ türü, sonra ad) dizilir; dış halkadakiler bağlı oldukları kaydın
+ * dilimine yerleşir. Rastgelelik yoktur; aynı veri her açılışta aynı yerde durur. Merkeze bağlanamayanlar en dış
+ * halkaya gider.
+ */
+export function halkaYerlesimi(kodlar: string[], kenarlar: { a: string; b: string }[], merkez: string, sira: (kod: string) => string = (k) => k): { konum: Map<string, Nokta>; halkalar: number[] } {
+  const konum = new Map<string, Nokta>();
+  const halkalar: number[] = [];
+  if (!kodlar.includes(merkez)) return { konum, halkalar };
+  konum.set(merkez, { x: 0, y: 0 });
+  const komsu = new Map<string, string[]>();
+  for (const e of kenarlar) {
+    if (e.a === e.b) continue;
+    komsu.set(e.a, [...(komsu.get(e.a) ?? []), e.b]); komsu.set(e.b, [...(komsu.get(e.b) ?? []), e.a]);
+  }
+  const varMi = new Set(kodlar);
+  const ust = new Map<string, string>();
+  const derinlik = new Map<string, number>([[merkez, 0]]);
+  const q = [merkez];
+  while (q.length) {
+    const x = q.shift()!;
+    const l = [...new Set(komsu.get(x) ?? [])].filter((o) => varMi.has(o) && !derinlik.has(o)).sort((p, r) => sira(p).localeCompare(sira(r), 'tr'));
+    for (const o of l) { derinlik.set(o, derinlik.get(x)! + 1); ust.set(o, x); q.push(o); }
+  }
+  const enDerin = Math.max(0, ...derinlik.values());
+  for (const k of kodlar) if (!derinlik.has(k)) derinlik.set(k, enDerin + 1);
+  // Halkalar dolaşma (BFS) sırasıyla dolar; böylece aynı türden bağlar yan yana kalır.
+  const sira2 = [...derinlik.keys()];
+  const katlar: string[][] = [];
+  for (const k of sira2) { const d = derinlik.get(k)!; if (d) (katlar[d - 1] ??= []).push(k); }
+  // Her kaydın açısal dilimi: [bas, son). İlk halka çemberi eşit böler.
+  const dilim = new Map<string, [number, number]>([[merkez, [-Math.PI / 2, 1.5 * Math.PI]]]);
+  let yaricap = 0;
+  katlar.forEach((kat, i) => {
+    // Bir halkadaki kayıtlar arasında en az ~110 birim yay kalsın.
+    const gerekli = (kat.length * 110) / (2 * Math.PI);
+    yaricap = Math.max(yaricap + (i ? 160 : 220), gerekli);
+    halkalar.push(yaricap);
+    const gruplar = new Map<string, string[]>();
+    for (const k of kat) { const u = ust.get(k) ?? ''; gruplar.set(u, [...(gruplar.get(u) ?? []), k]); }
+    const sirali = [...gruplar.entries()].sort(([a], [b]) => (dilim.get(a)?.[0] ?? 99) - (dilim.get(b)?.[0] ?? 99));
+    const toplam = kat.length;
+    let imlec = -Math.PI / 2;
+    for (const [u, uyeler] of sirali) {
+      const d = u ? dilim.get(u) : undefined;
+      // Üstünün dilimi biliniyorsa onun ortasına, değilse sıradaki boşluğa yerleşir.
+      const pay = (2 * Math.PI * uyeler.length) / toplam;
+      let bas = imlec;
+      if (d && i > 0) bas = Math.max(imlec, (d[0] + d[1]) / 2 - pay / 2);
+      uyeler.forEach((k, j) => {
+        const a0 = bas + (pay * j) / uyeler.length, a1 = bas + (pay * (j + 1)) / uyeler.length;
+        dilim.set(k, [a0, a1]);
+        const aci = (a0 + a1) / 2;
+        konum.set(k, { x: Math.cos(aci) * yaricap, y: Math.sin(aci) * yaricap });
+      });
+      imlec = bas + pay;
+    }
+  });
+  return { konum, halkalar };
+}
+
+/**
+ * Bir bağın çizgisi: iki kayıt arasında birden çok bağ varsa her biri ayrı bir yayla çizilir; aynı halkadaki iki
+ * kayıt arasındaki bağ merkezden geçmesin diye dışarı doğru bükülür. Uçlar düğüm yarıçapı kadar içeride biter.
+ * Dönen `etiket`, yazının duracağı nokta (`t` oranında, a'dan b'ye).
+ */
+export function bagYayi(a: Nokta, b: Nokta, ra: number, rb: number, sira = 0, adet = 1, merkezdenUzak = false, t = 0.5): { d: string; etiket: Nokta } {
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  const dx = b.x - a.x, dy = b.y - a.y, uz = Math.hypot(dx, dy) || 1;
+  const px = -dy / uz, py = dx / uz;
+  let kx = mx + px * (sira - (adet - 1) / 2) * 60, ky = my + py * (sira - (adet - 1) / 2) * 60;
+  if (merkezdenUzak) {
+    // Orta nokta merkeze yakınsa çizgi merkezin üstünden geçer: dışarı it.
+    const mu = Math.hypot(mx, my);
+    const r = Math.max(Math.hypot(a.x, a.y), Math.hypot(b.x, b.y));
+    if (mu < r * 0.75) {
+      const yon = mu > 1 ? { x: mx / mu, y: my / mu } : { x: px, y: py };
+      kx += yon.x * (r * 1.15 - mu); ky += yon.y * (r * 1.15 - mu);
+    }
+  }
+  const nokta = (u: number) => ({ x: (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * kx + u * u * b.x, y: (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * ky + u * u * b.y });
+  // Uçları düğümün kenarına çek: kontrol noktasına doğru yarıçap kadar.
+  const kenar = (p: Nokta, r: number) => { const ux = kx - p.x, uy = ky - p.y, u = Math.hypot(ux, uy) || 1; return { x: p.x + (ux / u) * r, y: p.y + (uy / u) * r }; };
+  const p0 = kenar(a, ra), p1 = kenar(b, rb);
+  return { d: `M${p0.x.toFixed(1)},${p0.y.toFixed(1)} Q${kx.toFixed(1)},${ky.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`, etiket: nokta(t) };
+}

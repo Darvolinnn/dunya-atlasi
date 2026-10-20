@@ -3209,6 +3209,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
 
   /** Programla gelen uydurma örnek evreni ayrı bir evren olarak kurar (§5.10, K28). */
   ornekEvrenKur() { return ornekEvreniKur(this); }
+  /** Bir evrene çok sayıda yazıyı tek veritabanı işleminde yapar (§10.1; örnek evren kurulumu). */
+  topluYaz<T>(evren: string, yap: () => Promise<T> | T): Promise<T> { return this.evren(evren).topluYaz(yap); }
 
   /** Dosyaları yeni bir evrene aktarır (ayrı alan); mevcut evrenlere dokunmaz. */
   async iceAktar({ dosyalar, evrenAdi }: { dosyalar: IceDosya[]; evrenAdi: string }) {
