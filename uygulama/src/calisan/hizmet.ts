@@ -44,6 +44,7 @@ import * as dilMod from './dil';
 import * as tekMod from './teknoloji';
 import * as soyMod from './soy';
 import * as montaj from './montaj';
+import * as seriPlan from './seri';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
 import type { IlerlemeBildirimi, SimdiOnerisi } from '../veri/api';
@@ -1782,6 +1783,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const t = iliskiTuruBul(tur);
     if (tur === 'eser_odagi' && (e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [a]) !== 'karakter' || e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [b]) !== 'eser'))
       throw new Error('Odak karakter bağı bir karakterden bir esere kurulur.');
+    const turOf = (k: string) => e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [k]);
+    if (tur === 'olasi_final' && (turOf(a) !== 'olay' || turOf(b) !== 'seri')) throw new Error('Olası final bir olaydan bir seriye bağlanır.');
+    if (tur === 'seri_eseri') {
+      if (turOf(a) !== 'seri' || turOf(b) !== 'eser') throw new Error('Ek kitap bağı bir seriden bir esere kurulur.');
+      if (e.db.selectValue('SELECT ust FROM anlati WHERE kod=?', [b]) === a) throw new Error('Bu kitap zaten bu serinin içinde.');
+    }
     if (tur === 'alternatif' && e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [a]) !== e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [b]))
       throw new Error('Alternatifler aynı türden olmalı: iki olay, iki sahne ya da iki kurgu hattı gibi.');
     if (!rol && t.rolIstegeBagli) rol = null;
@@ -2624,11 +2631,18 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   tahtSirasi({ evren, kod, tarih }: { evren: string; kod: string; tarih: string }) { return soyMod.tahtSirasi(this.evren(evren), kod, tarih); }
   private soyBaglami(evren: string): soyMod.SoyBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
   kurguMontaji({ evren, eser }: { evren: string; eser: string }) { return montaj.kurguMontaji(this.evren(evren), eser); }
-  kitapSonuAciklar({ evren, eser }: { evren: string; eser: string }) { return montaj.kitapSonuAciklar(this.evren(evren), eser); }
+  kitapSonuAciklar({ evren, eser, yol = null }: { evren: string; eser: string; yol?: string | null }) { return montaj.kitapSonuAciklar(this.evren(evren), eser, yol); }
   sahneNiyetleri({ evren, sahne }: { evren: string; sahne: string }) { this.kayitVarMi(this.evren(evren), sahne); return montaj.niyetlerOku(this.evren(evren), sahne); }
   sahneNiyetleriYaz({ evren, sahne, niyetler }: { evren: string; sahne: string; niyetler: SahneNiyeti[] }) { montaj.sahneNiyetleriYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, sahne, niyetler); }
   montajHedefiYaz({ evren, eser, iddia, hedef }: { evren: string; eser: string; iddia: string; hedef: MontajHedefi | null }) { montaj.montajHedefiYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, eser, iddia, hedef); }
   olayOrgusu({ evren, eser }: { evren: string; eser: string }) { return montaj.olayOrgusu(this.evren(evren), eser); }
+  seriPlani({ evren, seri }: { evren: string; seri: string }) { return seriPlan.seriPlani(this.evren(evren), seri); }
+  olasiFinalEkle({ evren, seri, ad }: { evren: string; seri: string; ad: string }) { return seriPlan.olasiFinalEkle(this.anlatiBaglami(evren), seri, temizle(ad)); }
+  olasiFinalBagla({ evren, seri, olay }: { evren: string; seri: string; olay: string }) { seriPlan.olasiFinalBagla(this.anlatiBaglami(evren), seri, olay); }
+  okumaYollariYaz({ evren, seri, yollar }: { evren: string; seri: string; yollar: { kod?: string | null; ad: string; eserler: string[] }[] }) {
+    if (!Array.isArray(yollar) || yollar.length > 20) throw new Error('Geçersiz okuma yolları.');
+    seriPlan.okumaYollariYaz(this.anlatiBaglami(evren), seri, yollar);
+  }
   montajTasi({ evren, sahne, yon }: { evren: string; sahne: string; yon: -1 | 1 }) {
     this.kayitVarMi(this.evren(evren), sahne);
     if (yon !== -1 && yon !== 1) throw new Error('Geçersiz yön.');

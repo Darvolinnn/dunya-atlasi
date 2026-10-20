@@ -917,3 +917,8 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .karakter-tablosu { border-collapse: collapse; min-width: 100%; }
 .karakter-tablosu th, .karakter-tablosu td { border: 1px solid var(--cizgi); padding: 6px 8px; vertical-align: top; text-align: left; }
 .karakter-tablosu thead th { background: var(--yuzey-2); font-weight: 600; }
+/* Seri planı (K27) */
+.seri-finaller, .seri-yollar, .seri-ek { margin-top: 16px; }
+.seri-finaller > summary h3, .seri-yollar > summary h3 { display: inline; font-size: 1rem; }
+.seri-finaller > summary, .seri-yollar > summary { cursor: pointer; }
+.okuma-yolu { margin: 8px 0 12px; padding: 8px 12px; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey); }

@@ -11,6 +11,7 @@ import type { EvrenVt } from './evren-vt';
 import { yonlendir } from './izdusum';
 import { rolAdi } from '../alan/iliski-turleri';
 import { DONUM_ETIKETI } from '../alan/sablon';
+import { okumaYollari } from './seri';
 
 export interface MontajBaglami {
   e: EvrenVt;
@@ -188,11 +189,16 @@ export function montajTasi(b: AnlatiBaglami, sahne: string, yon: -1 | 1) {
  *  "açıklar" niyeti taşıyan sahnesi olmayan okur soruları. Konuma dayanır: sonraki kitaplar yazılınca bu eserin
  *  sütunu değişmez; yalnız "sonra" sütunu, serinin önerilen okuma sırasında bu eserden sonraki eserlere bakar.
  *  Serbest metinden "çözüldü" çıkarılmaz. */
-export function kitapSonuAciklar(e: EvrenVt, eser: string): KitapSonuAciklar {
+export function kitapSonuAciklar(e: EvrenVt, eser: string, yolKod: string | null = null): KitapSonuAciklar {
   const m = kurguMontaji(e, eser);
   const seri = e.db.selectValue(`SELECT a.ust FROM anlati a JOIN kayitlar s ON s.kod=a.ust WHERE a.kod=? AND s.tur='seri' AND s.silindi IS NULL`, [eser]) as string | undefined;
+  // Bu kitabın geçtiği okuma yolları: ana serisinde ve ek olarak katıldığı serilerde (K27).
+  const seriKodlari = [...new Set([...(seri ? [seri] : []), ...(e.db.selectObjects(`SELECT i.a FROM iliskiler i JOIN kayitlar s ON s.kod=i.a WHERE i.tur='seri_eseri' AND i.b=? AND i.silindi IS NULL AND s.silindi IS NULL`, [eser]) as { a: string }[]).map((r) => r.a)])];
+  const yollar = seriKodlari.flatMap((s) => okumaYollari(e, s)).filter((y) => y.eserler.some((x) => x.kod === eser));
+  const yol = yolKod ? yollar.find((y) => y.kod === yolKod) ?? null : null;
   const sonrakiler: { kod: string; ad: string }[] = [];
-  if (seri) {
+  if (yol) sonrakiler.push(...yol.eserler.slice(yol.eserler.findIndex((x) => x.kod === eser) + 1));
+  else if (seri) {
     const l = e.db.selectObjects(`SELECT k.kod, k.ad FROM anlati a JOIN kayitlar k ON k.kod=a.kod WHERE a.ust=? AND k.tur='eser' AND k.silindi IS NULL ORDER BY a.konum, a.kod`, [seri]) as { kod: string; ad: string }[];
     sonrakiler.push(...l.slice(l.findIndex((x) => x.kod === eser) + 1));
   }
@@ -212,7 +218,7 @@ export function kitapSonuAciklar(e: EvrenVt, eser: string): KitapSonuAciklar {
       sonra,
     };
   });
-  return { eser: m.eser, seride: !!seri, sorular };
+  return { eser: m.eser, seride: !!seri || !!yol, sorular, yollar: yollar.map((y) => ({ kod: y.kod, ad: y.ad })), yol: yol?.kod ?? null };
 }
 
 /** Olay örgüsü masası (K27, P6): bir eserin okuma sırası sütunlarda; satırlar var olan verilerden gelir (dönüm

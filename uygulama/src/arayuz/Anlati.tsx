@@ -111,7 +111,7 @@ export function EtkiOzeti({ evren, etki, kapat }: { evren: string; etki: AnlatiE
 }
 
 // ---------- Eserin yapısı: eser ve bölüm sayfası ----------
-type SeriListesi = { seriler: { kod: string; ad: string; eserler: { kod: string; ad: string }[] }[]; serisiz: { kod: string; ad: string }[] };
+export type SeriListesi = { seriler: { kod: string; ad: string; eserler: { kod: string; ad: string }[] }[]; serisiz: { kod: string; ad: string }[] };
 
 /** Seri sayfasında kitaplar (K27): önerilen okuma sırası; sıra evren kronolojisini değiştirmez. Seriden çıkarmak
  *  eseri silmez. */
@@ -154,20 +154,28 @@ export function SeriBolumu({ istemci, evren, kayit }: { istemci: Istemci; evren:
 /** Eser sayfasında "Kitap sonunda açık kalanlar" (K27): okura sorulup bu eserde açıklanmayan sorular; montajdaki
  *  sahne niyetlerinden hesaplanır. Uyarı değildir, renkle gösterilmez. Soru yoksa görünmez. */
 export function KitapSonuBolumu({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string }) {
-  const [k] = useYukle<KitapSonuAciklar>(istemci, evren, () => istemci.iste('kitapSonuAciklar', { evren, eser }), [eser]);
+  const [yol, setYol] = useState<string | null>(null);
+  const [k] = useYukle<KitapSonuAciklar>(istemci, evren, () => istemci.iste('kitapSonuAciklar', { evren, eser, yol }), [eser, yol]);
   if (!k || !k.sorular.length) return null;
   return (
     <section class="kitap-sonu" aria-label="Kitap sonunda açık kalanlar">
       <h2>Kitap sonunda açık kalanlar</h2>
       <p class="soluk kucuk">Okura sorduğunuz ama bu kitapta açıklayan sahnesini işaretlemediğiniz sorular. Bir sırrı bilerek açık bırakmak da bir seçimdir.
         {' '}Sahne sahne ayrıntı aşağıda “Diğer bölümler” içindeki kurgu montajındadır.</p>
+      {k.yollar.length > 0 && (
+        <label class="satir kucuk"><span class="soluk">Sonraki kitaplar:</span>
+          <select class="girdi kucuk-secim" aria-label="Okuma yolu" value={k.yol ?? ''} onChange={(e) => setYol((e.target as HTMLSelectElement).value || null)}>
+            <option value="">Önerilen okuma sırası</option>
+            {k.yollar.map((y) => <option value={y.kod}>{y.ad}</option>)}
+          </select></label>
+      )}
       <ul>
         {k.sorular.map((q) => (
           <li key={q.iddia.kod}>
             <strong>{q.iddia.soru}</strong>
             <span class="soluk kucuk"> · {[q.ipucu && `${q.ipucu} ipucu`, q.yaniltmaca && `${q.yaniltmaca} yanıltmaca`, q.destekler && `${q.destekler} başka işaret`].filter(Boolean).join(', ') || 'işaret yok'}</span>
             {q.sonra ? <span class="kucuk"> · Sonra: <a href={`#/e/${evren}/k/${q.sonra.eser.kod}`}>{q.sonra.eser.ad}</a>, {q.sonra.sira}. sahnede (<a href={`#/e/${evren}/yaz/${q.sonra.sahne.kod}`}>{q.sonra.sahne.ad}</a>) açıklanıyor</span>
-              : k.seride ? <span class="soluk kucuk"> · Serinin sonraki kitaplarında da açıklanmıyor</span> : null}
+              : k.seride ? <span class="soluk kucuk"> · {k.yol ? 'Bu okuma yolunun' : 'Serinin'} sonraki kitaplarında da açıklanmıyor</span> : null}
           </li>
         ))}
       </ul>

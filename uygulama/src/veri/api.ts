@@ -222,8 +222,19 @@ export interface KarakterYollari {
 }
 export interface KitapSonuAciklar {
   eser: KisaKayit; seride: boolean;
+  /** Bu kitabın geçtiği okuma yolları; `yol` seçilense "sonra" o yola göre hesaplanır, değilse önerilen okuma sırasına. */
+  yollar: { kod: string; ad: string }[]; yol: string | null;
   sorular: { iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null }; ipucu: number; yaniltmaca: number; destekler: number;
     sonra: { eser: KisaKayit; sahne: KisaKayit; sira: number } | null }[];
+}
+/** Serinin okuma yolu (K27): okurun kitapları izleyebileceği adlandırılmış sıra. */
+export interface OkumaYolu { kod: string; ad: string; eserler: KisaKayit[] }
+/** Seri sayfasının planı (K27). `bag` seriye bağlayan ilişkinin kodudur (çıkarmak için). */
+export interface SeriPlani {
+  seri: KisaKayit; kitaplar: KisaKayit[];
+  ekUyeler: (KisaKayit & { bag: string; anaSeri: KisaKayit | null })[];
+  finaller: (KisaKayit & { bag: string; karar: string })[];
+  okumaYollari: OkumaYolu[];
 }
 /** Olay örgüsü masası (K27, P6): sütunlar eserin okuma sırasıdır; hücreler sütunlarla aynı sıradadır. */
 export interface OlayOrgusu {
@@ -1162,7 +1173,7 @@ export interface Istekler {
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
   ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
   alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
-  kitapSonuAciklar(a: { evren: string; eser: string }): KitapSonuAciklar;
+  kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;
   etkinCalisma(a: { evren: string }): KisaKayit | null;
   etkinCalismaYaz(a: { evren: string; kod: string | null }): void;
   simdi(a: { evren: string }): SimdiOnerisi[];
@@ -1415,6 +1426,10 @@ export interface Istekler {
   montajHedefiYaz(a: { evren: string; eser: string; iddia: string; hedef: MontajHedefi | null }): void;
   montajTasi(a: { evren: string; sahne: string; yon: -1 | 1 }): { etki: AnlatiEtkisi[] };
   olayOrgusu(a: { evren: string; eser: string }): OlayOrgusu;
+  seriPlani(a: { evren: string; seri: string }): SeriPlani;
+  olasiFinalEkle(a: { evren: string; seri: string; ad: string }): { kod: string };
+  olasiFinalBagla(a: { evren: string; seri: string; olay: string }): void;
+  okumaYollariYaz(a: { evren: string; seri: string; yollar: { kod?: string | null; ad: string; eserler: string[] }[] }): void;
   kalitimOzellikleri(a: { evren: string }): KalitimOzelligi[];
   kalitimOzelligiYaz(a: { evren: string; kod: string | null; tanim: Omit<KalitimOzelligi, 'kod'> | null }): { kod: string };
   kalitim(a: { evren: string; kod: string }): KalitimBilgisi;
