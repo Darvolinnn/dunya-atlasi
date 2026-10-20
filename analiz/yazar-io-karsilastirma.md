@@ -270,4 +270,31 @@ Eklenti "Deneme" projesinde uydurma bir karakter oluşturup bir kez düzenledi; 
 - **Dil:** kısa, eylem bildiren düğmeler; kaygı gideren açıklamalar ("Kapattığın bölümün kayıtları silinmez, yalnızca gizlenir."). Ama "sen" ve "siz" karışık; "Wiki" menüsü ayarlara, "Alıntılar" görsel üretme aracına gidiyor.
 - **Erişilebilirlik:** Tab ile geziliyor, odak çerçevesi silik; "içeriğe atla" yok. Soluk metin (2,7:1) ve altın düğme üstündeki yazı (2,9:1) okunurluk sınırının (4,5:1) altında; 9–12 piksellik italik yazılar zor okunuyor.
 
+**Düzeltme (dördüncü rapor):** "Türkçe ekleri tanımıyor" bulgusu yanlıştı; o metin yazıldığında hedef kayıt yoktu. Doğrusu §11'dedir.
+
 Bu raporun önerileri ve önceki bütün öneriler `analiz/birlesik-karar-listesi.md` belgesinde tek listede toplandı.
+
+## 11. Ek inceleme, dördüncü rapor (20 Ekim 2026)
+
+Eklenti "Deneme" projesinde adı "Test" ile başlayan beş öğe oluşturdu ve on iki soruyu tek tek denedi. Kalıcı silmeyi kullanıcı adına onaylamadı. **Kullanıcının kendi hesabında silmesi gerekenler** (depoyla ilgisi yok): "Test Lale", "Test Lale Yeni", "Emir" (karakter), "Test Kuzey Arşivi" (mekân: Düzenle › ⚙ › Sil), "Test Olay" (Olay Akışı'nda kartın ×'i). "Test Not" Silinen Notlar'da; 30 günde kendiliğinden gider.
+
+| Soru | yazar.io'da ne oluyor | Dünya Atlası'nda (kod ve tasarımla denetlendi) |
+|---|---|---|
+| Adla kendiliğinden bağlama | Kaydederken çalışıyor. Ekli adlar bağlanıyor ("Test Lale'nin": ad bağlantı, ek düz yazı). **Büyük-küçük harfe duyarlı** ("test lale", "TEST LALE" bağlanmadı). Kapatma ayarı yok. | Kendiliğinden bağlama yok; bağlantıyı yazar kurar (`[[`, §5.1). Türkçe ek modülü (`alan/turkce-ek.ts`) ve çekimli biçimden kök bulma var. Bkz. karar listesi E1. |
+| Aynı adlı iki kayıt | Uyarı yok; adres "-2" alıyor; bağlantı sessizce en yeni kayda gidiyor; seçim menüsünde iki satır ayırt edilemiyor ("Test Lale · KARAKTER" iki kez). | Seçimde ayırt etme satırı var (tür · özet; `ayirtEtme`, F19). |
+| Bağlantıyı kaldırma | Bağlantı tek parça; ardından Backspace onu siler ve `@` listesi açılır. Adı yeniden düz yazıp kaydedince yine bağlanıyor. | Bağlantı yazarın; kendiliğinden yeniden bağlanma yok. |
+| Ad değiştirme | Adres değişmiyor; bağlı kayıt listesi yeni adı gösteriyor; **metindeki bağlantı eski adı göstermeye devam ediyor** (doğru kayda gidiyor). | Yazar düzeltmesinde bütün görünen ifadeler ek uyumuyla önizlenip onayla değişiyor (§5.1, `hizmet.ts` `adDegistir`). |
+| Kayıt silme | Karakter, mekân, olay **kalıcı** siliniyor ("geri alınamaz"); yalnız notlar 30 gün çöp kutusunda. | Her kayıt çöp kutusuna gider; değişiklik geçmişi ve kayıtlı anlar var. |
+| Geri alma | Ctrl+Z yalnız editörde. Değişiklik geçmişi ya da eski sürüm yok; yalnız "oluşturuldu / son güncelleme" tarihleri. | Editörde geri alma, kaydın sürüm geçmişi, Değişiklik geçmişi, Kayıtlı anlar. |
+| Not durumu | Durum yalnız Düzenle → liste → Kaydet ile değişiyor; karttaki durum yazısına tıklamak bir şey yapmıyor. Durumlar: Fikir, Geliştiriliyor, Kullanıldı, Kontrol Edilecek, Arşivlendi. Türe göre süzme (sayılarıyla), Arşiv, Silinen Notlar; **duruma göre süzme ve sıralama yok**. Kartta Sabitle, Arşivle, Sil. | Not kaydının türü ve durumu yok; durum yalnız açık meselede (Karar bekleyenler). Bkz. C1. |
+| Alan şablonu | Türler: kısa metin, uzun metin, sayı, onay kutusu, tarih, açılır liste, ilişki. Şablon değişikliği yalnız yeni kayıtları etkiliyor (doğrulanmadı). Kayıt içinden eklenen alanda tür sorulmuyor. Alan adı değişince değer korunuyor; **alan × ile onaysız siliniyor ve değeri gidiyor**. | Alan türleri: metin, uzun, tarih, seçim, onay, sayı (`alan/sablon.ts` `ALAN_TURLERI`); ilişkiler ayrı bölümde. |
+| Wiki | Önizleme yok; görünürlük: özel / listelenmemiş / herkese açık. **Kayıt ya da alan gizleme (spoiler) yok.** | Okur sitesi yok; çıktılar EPUB/PDF/Markdown. Bkz. D2. |
+| ⌘K arama | Yalnız ad ve kısa tanımda arıyor. Gövde metni, notlar, ekli biçim ("Test Lale'nin") ve Türkçe harfsiz yazım ("kuzey arsivi") bulunmuyor; büyük harfli Türkçe ("KUZEY ARŞİVİ") bulunuyor. Aynı adlı iki sonuç ayırt edilemiyor. | `ara` istemi ad, kök (çekimli biçim), lakap, önceki ad, okunuş, özet ve metinde arar; metinde bulunanda çevresini (`parca`) döndürür ama **palet bu parçayı göstermiyor** (B8). Harfsiz yazım `katla` ile. |
+| Ortak dünya | Her kitap ayrı dünya; kaydı başka kitaba kopyalama ya da taşıma yok. | Bir evrende çok eser ve seri aynı dünyayı paylaşır. Evrenler arası kayıt kopyalama denetlenmedi. |
+| Olay–karakter | Karakter sayfasında "Katıldığı olaylar", mekân sayfasında "Burada yaşanan olaylar". | İlişkilerle kurulur; karakter sayfasında "Bu kayda bağlananlar"da ve zaman çizelgesinde görünür (ayrı "katıldığı olaylar" başlığı denetlenmedi). |
+| Dışa aktarma | Pencere içerik özeti ve tahmini boyut gösteriyor. Markdown (.zip) ve JSON. İçe aktarma yok. | Markdown klasörü, eserin EPUB'u ve yazdırılabilir sayfası (`arayuz/Cikti.tsx`), dosyaya yedek; Markdown/JSON içe aktarma var (`calisan/ice-aktarim.ts`, önce rapor, ayrı evrene yazar). Word içe aktarma yok (D3). |
+| Yazar Kartı | Herkese açık yazar profili (kapak, ad, kullanıcı adı, unvan, 280 karakter biyografi, sıralanabilir bölümler, taslak anahtarı, canlı önizleme). | Gerek yok (tek kişilik, sunucusuz program). |
+| Sayaçlar | Genel Bakış'ta toplam kayıt / karakter / mekân; "Diyarın dengesi"nde bölüm bölüm sayılar, bölüm renginde. Tıklanınca bir yere gidip gitmediği belirsiz. | Bkz. C5 ve B10. |
+| Kısayollar | Liste yok; "?" bir şey açmıyor. Bilinenler: ⌘K, Ctrl+Z, `@`. | Bkz. B6. |
+
+**Sonuç:** dördüncü rapor, yazar.io'nun güçlü göründüğü bağlantı ve arama konularında Dünya Atlası'nın tasarımının zaten daha ileride olduğunu gösterdi (ayırt etme satırı, ad değişikliği önizlemesi, çöp kutusu, sürüm geçmişi, metin içinde ve ekli arama). Yeni çıkan işler: palet sonucunda bulunan parçanın gösterilmesi (B8), notlara tür ve durum ile duruma göre süzme (C1), kendiliğinden bağlama yerine "bağlanmamış ad" önerisi kararının netleşmesi (E1). Alan silerken değerin onaysız gitmesi ve aynı adlı kayıtların ayırt edilememesi kaçınılacaklar listesine eklendi.

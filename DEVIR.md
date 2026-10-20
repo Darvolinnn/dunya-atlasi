@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 20 Ekim 2026 (öğleden sonra). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 97 dosya, 491 sınama; tarayıcıda 23 akış sınaması, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
+*Son güncelleme: 20 Ekim 2026 (akşam; ajan değişimi öncesi). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 97 dosya, 491 sınama; tarayıcıda 23 akış sınaması, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -91,13 +91,14 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 |---|---|---|---|
 | [#1](https://github.com/Darvolinnn/dunya-atlasi/pull/1) | `claude/project-thread-hdk5g6` | Windows uygulaması (TK6, Tauri 2). Kurulum dosyası: [windows ön sürümü](https://github.com/Darvolinnn/dunya-atlasi/releases/tag/windows) (`Dunya-Atlasi-kurulum.exe`); dala her gönderimde yeniden derlenir. Dalın kendi DEVIR'inde iş listesi §3.2b | Açık kalır. `main` her birleştirmeden sonra bu dala alınır (son: #9, 20 Ekim). Kullanıcı 19 Ekim sürümünü kurup denedi, sorun görmedi; Google izinli adresi bekliyor. Bulut çalışma ağacı `/home/user/windows-dali` (oturuma özgü) |
 
-Birleşenler: #2 (19 Ekim akşam oturumu), #5 (ilerleme şeridi, evren kaldırma, anlık görüntü), #6 (K27 rehberli yazarlık: menü adları, rehber, sorular, seri, alternatifler, olay örgüsü masası, karakter yolu, Şimdi; #5 inceleme bulguları), #7 (K27 sonraya bırakılanlar, boş alanları gizleme, yeni evren hızı), #8 (DEVIR), #9 (İlk adımlarda "Yap", eser oluşunca sahne kutusu, sıradaki adım satırı).
+Birleşenler: #2 (19 Ekim akşam oturumu), #5 (ilerleme şeridi, evren kaldırma, anlık görüntü), #6 (K27 rehberli yazarlık: menü adları, rehber, sorular, seri, alternatifler, olay örgüsü masası, karakter yolu, Şimdi; #5 inceleme bulguları), #7 (K27 sonraya bırakılanlar, boş alanları gizleme, yeni evren hızı), #8 (DEVIR), #9 (İlk adımlarda "Yap", eser oluşunca sahne kutusu, sıradaki adım satırı), #10 (DEVIR), #11 ve #12 (kullanım kolaylığı araştırması, yazar.io karşılaştırması, birleşik karar listesi; yalnız belge).
 
 Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok. Promptlar kullanıcının proje klasöründe `paket-promptlari/` altındadır, depoda değildir.
 
 ### 3.3 Açık işler (önerilen sıra)
 
 **Kullanıcının kararı ya da işi gereken:**
+0. **ŞU AN BEKLENEN: birleşik karar listesinden seçim** (`analiz/birlesik-karar-listesi.md`). Kullanıcıya B1–B13, C1–C10, D1–D3 ve E1 sunuldu; seçimini numaralarla ("B1, B2, C1…") yazacak. Seçilenler için o belgenin **§0.3 iş akışı** uygulanır: tasarıma işle → ekranı değiştiriyorsa önce taslak → kodla → sına → PR → birleştir → DEVIR → kullanıcıya anlat. Her maddenin altında ne yapılacağı, dokunulacak dosyalar, tasarımda hangi bölüme yazılacağı ve kabul ölçütü yazılı. Seçilmeyen madde kodlanmaz (K11). Kullanıcı bir maddeyi sorarsa belgedeki "Ne" ve "Neden"i sade dille anlat; "Benim önerim" sütunu önceki ajanın görüşüdür.
 1. **Windows uygulamasını dene** (#9 ile yeniden derlendi): kurup aç, yeni evren ve İlk adımlardaki "Yap", seri sayfası, olay örgüsü masası, boş alanları gizleme.
 2. **Büyük evrende hız ve bellek.** Kullanıcı kararı (19 Ekim): seri büyüklüğünde (Red Rising gibi, ~1 milyon kelime; taslak ve düzeltmelerle 300.000–1.500.000 işlem) evren dakikalar içinde kurulmalı; bellek bilgisayarda 16 GB'a kadar kabul, **tablette 4 GB altı şart**. Tanım §10.1 "Tablolar günlükten baştan kurulabilir".
    - [x] **Adım 1: metni toplu uygula, bellekte yalnız son kullanılanlar** (`99ba813`). Ölçüm (gerçekçi karışım: 400 sahne, sahne başına 2.500 kelimeye kadar cümle cümle yazma, sonra düzeltme turları, işlemlerin %80'i metin):
@@ -180,11 +181,13 @@ Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda
 - [x] P1: yazarlık rehberi programın içinde (§12.4): `arayuz/YazarlikRehberi.tsx`, metinler `arayuz/yazarlik-rehberi.ts` (analiz belgesinden üretildi; belge değişirse yeniden üretilmeli: başlıklar `### Konu N — …`, alanlar `**Ne:**` biçiminde). Soru başına "Örnek" #7 ile geldi. #6 ile birleşti.
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
 
-**Kullanım kolaylığı araştırması ve yazar.io karşılaştırması (20 Ekim 2026; karar bekliyor).** Belgeler `analiz/` altında, bağlayıcı değil:
-- `kullanici-deneyimi-arastirmasi.md`: benzer programlarda övülen ve şikâyet edilenler, ilkeler, 15 öneri.
-- `yazar-io-karsilastirma.md`: yazar.io (Türkçe dünya kurma wikisi). §1–7 açık sayfalardan; §8–§10 kullanıcının tarayıcı eklentisinin içeriden üç raporu (özellikler, yeni proje, arayüz). Eklenti kullanıcının "Deneme" projesinde uydurma bir "Emir" karakteri bıraktı; depoya giren bir şey değil.
-- `birlesik-karar-listesi.md`: dört kaynağın tek listesi: A zaten var · B küçük (B1–B13) · C orta (C1–C10) · D büyük (D1–D3) · E tasarımla çelişebilir (E1, K1) · F alınmayacaklar. Her maddede "Benim önerim".
-- Sıradaki adım: kullanıcı maddeleri seçer; seçilenler önce tasarıma girer (K11), ekranı değiştirenler için önce taslak. Eklentiye verilecek dördüncü bir soru listesi (adla bağlama ve ekler, ad değişince bağlantılar, geri alma, not durumları, alan türleri, wiki spoiler, arama, dışa aktarma…) kullanıcıya verildi; raporu gelirse `yazar-io-karsilastirma.md` §11 olur.
+**Kullanım kolaylığı araştırması ve yazar.io karşılaştırması (20 Ekim 2026; araştırma bitti, karar bekliyor).** Kullanıcı UX araştırması ve benzer bir Türkçe site (yazar.io, dünya kurma wikisi; roman metni dışarıda yazılıyor) ile karşılaştırma istedi. yazar.io girişli olduğu için içeriden incelemeyi kullanıcının kendi Chrome eklentisi yaptı; promptları önceki ajan yazdı (güvenlik sınırları: ödeme yok, ayar değiştirme yok, yayımlama yok, yalnız "Deneme" projesi, uydurma içerik, kişisel bilgi yazılmaz), kullanıcı raporları sohbete yapıştırdı. Ajan kendi web araştırmasını kullanıcının isteğiyle bıraktı. Belgeler `analiz/` altında, bağlayıcı değil:
+- `kullanici-deneyimi-arastirmasi.md`: benzer programlarda (Scrivener, Dabble, Campfire, World Anvil, Plottr…) övülen ve şikâyet edilenler, ilkeler, 15 öneri (KD-1…KD-15).
+- `yazar-io-karsilastirma.md`: §1–7 açık sayfalar; §8 ve §9 içeriden gezme; §10 arayüz incelemesi; §11 ek inceleme (adla bağlama, ad değişikliği, silme, geri alma, not durumları, alan türleri, wiki, arama, dışa aktarma, kısayollar; Dünya Atlası ile yan yana tablo). §10'daki "Türkçe ekleri tanımıyor" bulgusu §11'de düzeltildi.
+- **`birlesik-karar-listesi.md`: dört kaynağın tek listesi ve iş planı.** §0 devralan için iş akışı ve sınırlar; A zaten var (denetlendi) · B küçük (B1–B13) · C orta (C1–C10) · D büyük (D1–D3) · E tasarımla çelişebilir (E1, K1) · F alınmayacaklar. Her maddede ne, nasıl, dokunulacak dosyalar, tasarımdaki yeri, kabul ölçütü.
+- Önemli bulgular: (1) yazar.io'nun güçlü göründüğü bağlama ve aramada tasarımımız zaten ileride (ayırt etme satırı, ad düzeltme önizlemesi, metin içinde ve ekli arama, çöp kutusu, sürüm geçmişi). (2) Bazı maddeler yeni fikir değil, tasarımda olup kodda eksik: tür renkleri ve karşıtlık (§12.1, B10–B11), yedeğin görünmesi (§10.8, B5). (3) Palet aramanın döndürdüğü metin parçasını göstermiyor (B8, yalnız arayüz). (4) Not kaydında tür ve durum yok (C1). (5) §12.1 "yazar.io'nun kimliği kopyalanmaz": görsel kimlik alınmaz.
+- Kullanıcının yazar.io hesabında eklentinin bıraktığı deneme kayıtları var ("Test Lale", "Test Lale Yeni", "Emir", "Test Kuzey Arşivi", "Test Olay"); kalıcı silme onayı gerektirdiği için eklenti silmedi, kullanıcıya söylendi. Depoyla ilgisi yok.
+- İsteğe bağlı, yalnız kullanıcı isterse: LegendKeeper, Kanka, Notebook.ai, Fantasia Archive karşılaştırması; programımızın kendi kullanım incelemesi (yarıda kalan ajan işi).
 
 ## 4. Kod yapısı ve yeni bir özellik ekleme tarifi
 
