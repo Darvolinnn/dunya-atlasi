@@ -1678,6 +1678,25 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return [...harita.values()];
   }
 
+  /** Bu kaydın kendi metinlerinde bağlantı verdiği kayıtlar ("andıkları", §3.2, K28); birleşmiş hedef son kayda çevrilir. */
+  andiklari({ evren, kod }: { evren: string; kod: string }): BaglananKayit[] {
+    const e = this.evren(evren);
+    const k = yonlendirKod(e, kod);
+    const harita = new Map<string, BaglananKayit>();
+    for (const r of e.db.selectObjects('SELECT hedef, metin FROM baglantilar WHERE kaynak=? ORDER BY alan, sira', [k])) {
+      const hedef = yonlendirKod(e, r.hedef as string);
+      if (hedef === k) continue;
+      let x = harita.get(hedef);
+      if (!x) {
+        const kayit = e.db.selectObject('SELECT ad, tur FROM kayitlar WHERE kod=? AND silindi IS NULL', [hedef]);
+        if (!kayit) continue;
+        x = { kod: hedef, ad: kayit.ad as string, tur: kayit.tur as string, ifadeler: [] }; harita.set(hedef, x);
+      }
+      if (!x.ifadeler.includes(r.metin as string)) x.ifadeler.push(r.metin as string);
+    }
+    return [...harita.values()];
+  }
+
   /** "Bahsedilen ama yazılmamış": bağlantı verilmiş ama metni boş kayıtlar (§5.1). */
   bahsedilenler({ evren }: { evren: string }): (KayitOzeti & { anilma: number })[] {
     const e = this.evren(evren);
