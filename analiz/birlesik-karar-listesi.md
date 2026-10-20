@@ -9,8 +9,11 @@ Dört kaynağın birleşimi ve seçilen her madde için **ne yapılacağının**
 - **KD**: `analiz/kullanici-deneyimi-arastirmasi.md` §3 (benzer programlar ve ilkeler; numarasıyla, ör. KD-3).
 - **Y**: `analiz/yazar-io-karsilastirma.md`. §1–7 açık sayfalardan; §8 ve §9 içeriden gezme; §10 arayüz incelemesi; §11 ek inceleme (bağlama, arama, notlar, alanlar, silme). Kullanıcı yazar.io'ya kendi Google hesabıyla girdi; incelemeyi kullanıcının Chrome eklentisi yaptı, raporları kullanıcı sohbete yapıştırdı.
 
-### 0.2 Kullanıcı henüz seçim yapmadı
-Kullanıcıya liste (B1–B13, C1–C10, D1–D3, E1) sunuldu; seçim bekleniyor. **Seçilmeyen hiçbir madde kodlanmaz.** Kullanıcı "B1, C1…" gibi numaralarla seçecek. "Benim önerim" sütunu önceki ajanın görüşüdür, karar değildir.
+### 0.2 Kullanıcının seçimi (20 Ekim 2026)
+- **K28** (kodlandı): B1, B2, B4–B12, C1, C2, C4, C6, C7, D1.
+- **K29** (kodlanıyor): B3, B13, C8, C9, C10, E1 ve "Eksik kayıtlar" → "Henüz yazılmayanlar". Tasarımdaki tanımları K29 satırından izlenir.
+- **Alınmadı:** C3 (yazma hedefi), C5 (haftalık denge satırı). F bölümüne taşındı.
+- **Sonraya:** D2, D3.
 
 ### 0.3 Seçilen bir madde için iş akışı (sırayla)
 1. **Tasarıma işle.** Maddenin "Tasarımda nereye" satırındaki bölüme davranışı yaz. §0'daki güncelleme kurallarına uy; konu dizinini (§0.4) ve `tasarim/tasarim-gecmisi.md`'ye gerekçe satırını ekle. Yeni kural numarası gerekiyorsa (K28…) §1'e yaz.
@@ -155,9 +158,7 @@ Kodda ve tasarımda denetlendi:
 |---|---|---|---|
 | C1 | Notlara tür ve durum, duruma göre süzme | Y §8, §11 | Al |
 | C2 | Yeni evrende tür seçimi, ilgisiz bölümler gizli | Y §8, §9 | Al |
-| C3 | İsteğe bağlı, suçlatmayan yazma hedefi | KD-8 | Sizin kararınız |
 | C4 | Boş sahnede başlama yardımı | KD-9 | Al |
-| C5 | Haftalık yazı / dünya kurma dengesi satırı | KD-10 | Sizin kararınız |
 | C6 | İleri araçların zamanı gelince bir kez tanıtılması | KD-11, Y §9–10 | Al |
 | C7 | Kayıt sayfasında önce 3 soru | KD-12 | Al |
 | C8 | Alıntılar kayıt türü | Y §5-4 | Sizin kararınız |
@@ -179,22 +180,12 @@ Kodda ve tasarımda denetlendi:
 - **Tasarımda nereye:** §4 giriş ve §5.10 (gezinti).
 - **Kabul:** Gerçekçi seçilince büyü türleri yeni kayıt listesinde "Diğer türler" altında; ayardan açılınca geri gelir; iki cihazda aynı.
 
-### C3. İsteğe bağlı yazma hedefi (kullanıcı kararı gerekir)
-- **Ne:** Eser sayfasında isteğe bağlı hedef: kelime, sahne sayısı ya da süre; isterseniz son tarih ve yazmayacağınız günler. Günlük pay kendiliğinden hesaplanır, kaçan gün ertesine yayılır. Seri sayacı ve kırmızı uyarı yok; hedef açılmadıkça hiçbir şey görünmez.
-- **Gerekir:** B1'in sayımı; günlük yazılanın eşitlenmesi istenirse yeni bir işlem türü (cihazlar arası toplam).
-- **Tasarımda nereye:** §5.10 ve eser kaydı (§4.6).
-
 ### C4. Boş sahnede başlama yardımı
 - **Ne:** Yeni ve boş bir sahne açılınca metin alanında soluk, yazınca kaybolan yardım: önceki sahnenin son paragrafı ("Önceki sahne şöyle bitti: …") ve sahne planının ilk üç sorusu (tek tıkla planı açar). Hiçbiri metne yazılmaz.
 - **Nasıl:** Önceki sahne, eser yapısındaki sıradan bulunur (`yapilar`/`anlati` sırası). Son paragraf metin belgesinden okunur.
 - **Dokunulacak yerler:** `arayuz/YazEkrani.tsx`, `arayuz/MetinEditoru.tsx` (yer tutucu), `arayuz/Sablon.tsx` `SahnePlani`.
 - **Tasarımda nereye:** §5.10 ve §5.5.
 - **Kabul:** İlk sahnede yalnız plan soruları; ikinci sahnede önceki sahnenin sonu; bir harf yazınca kaybolur.
-
-### C5. Yazı ve dünya kurma dengesi (kullanıcı kararı gerekir)
-- **Ne:** Genel bakışta haftalık satır: "Bu hafta: 4 sahnede 2.300 kelime · 11 kayıt düzenlendi". İki haftadır sahne yazılmadıysa bir kez, kapatılabilir not ve rehberde ilgili konu. Yalnız sayım (K1 ile uyumlu).
-- **Nasıl:** İşlem günlüğünden haftalık sayım (metin işlemleri ile kayıt işlemleri ayrı).
-- **Tasarımda nereye:** §5.9 (Genel bakış / Şimdi).
 
 ### C6. İleri araçların zamanı gelince tanıtılması
 - **Ne:** İlk adımlar bittikten sonra, bir araç ilk kez anlamlı olduğunda tek satır, bir kez: "Eserinizde 10 sahne oldu. Olay örgüsü masasında hepsini bir arada görebilirsiniz · Göster · Bir daha gösterme". Örnekler: 10 sahne → Olay örgüsü; ikinci karakter → İlişki ağı; ilk tarih → Zaman çizelgesi; ilk mekân → Haritalar; ikinci eser → Seri.
@@ -255,6 +246,7 @@ Kodda ve tasarımda denetlendi:
 
 ## F. Alınmayacaklar
 
+- C3 yazma hedefi ve C5 haftalık yazı/dünya kurma dengesi satırı (kullanıcı kararı, 20 Ekim).
 - Elle kaydetme, kaydetmeden çıkış uyarısı, uzun formda ekrandan kaybolan Kaydet düğmesi.
 - Adla **kendiliğinden** bağlama ve yazar sildikten sonra yeniden bağlama (Y §11); aynı adlı kayıtta sessizce birini seçme.
 - Ad değişince metindeki bağlantının eski adla kalması (bizde önizlemeli düzeltme var).

@@ -20,7 +20,7 @@ export const gorunumMu = (s: string) => GORUNUMLER.some(([g]) => g === s);
 
 /** Ana sayfalar ve "Diğer" altındakiler; komut paleti de bu listeyi kullanır. */
 export const ANA_SAYFALAR = [['yaz', 'Yaz'], ['masa', 'Genel bakış'], ['kayitlar', 'Kayıtlar'], ['haritalar', 'Haritalar'], ['takvim', 'Takvim'], ['gorunumler', 'Grafikler'], ['inceleme', 'Uyarılar']] as const;
-export const DIGER_SAYFALAR = [['masalar', 'Konu dosyaları'], ['meseleler', 'Karar bekleyenler'], ['sablonlar', 'Şablonlar'], ['bahsedilen', 'Eksik kayıtlar'],
+export const DIGER_SAYFALAR = [['masalar', 'Konu dosyaları'], ['meseleler', 'Karar bekleyenler'], ['sablonlar', 'Şablonlar'], ['bahsedilen', 'Henüz yazılmayanlar'],
   ['cop', 'Çöp kutusu'], ['gecmis', 'Değişiklik geçmişi'], ['surumler', 'Kayıtlı anlar'], ['yedek', 'Yedek']] as const;
 
 let sonGorunum = 'cizelge';

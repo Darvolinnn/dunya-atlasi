@@ -13,7 +13,7 @@ import { BakisBilgileri } from './Bilgiler';
 import { useTakvim } from './Takvim';
 import { git } from './Uygulama';
 import type { AnBilgisi, SahneOkurSirasi } from '../veri/api';
-import { onayla } from './onay';
+import { geriAlinabilir } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: { kod: string; ad: string }) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
@@ -485,7 +485,7 @@ function DurumSatir({ istemci, evren, d }: { istemci: Istemci; evren: string; d:
           {d.kip === 'aralik' && <SinirAlani istemci={istemci} evren={evren} etiket="Bitiş" deger={d.bitis} kaydet={(v) => degistir('bitis', v)} />}
           <label class="alan"><span class="alan-adi">Karar durumu</span>
             <KararSecici etiket="Durum" karar={d.karar} onDegis={(k) => degistir('karar', k)} /></label>
-          <button class="dugme tehlikeli kucuk" onClick={() => onayla('Bu durum kaldırılsın mı?') && istemci.iste('durumSil', { evren, kod: d.kod })}>Kaldır</button>
+          <button class="dugme tehlikeli kucuk" onClick={() => void geriAlinabilir('Durum kaldırıldı.', () => istemci.iste('durumSil', { evren, kod: d.kod }), () => istemci.iste('durumSil', { evren, kod: d.kod, geriYukle: true }))}>Kaldır</button>
           {hata && <p class="hata kucuk">{hata}</p>}
         </div>
       )}

@@ -22,6 +22,7 @@ import { useCalisma } from './Calisma';
 import { TurSecici } from './ortak';
 import { BaglamParcasiFormu, parcaYazisi } from './BaglamParcasi';
 import { KullanimSeridi, MetinAlFormu } from './MetinKullanim';
+import { BagsizAdlar } from './BagsizAdlar';
 import { acilistaTaslak, kurtarmaAnahtari, taslakAnahtari, taslakSil, taslakYaz, type Taslak, type TaslakDeposu } from './taslak';
 
 const sema = metinSemasi.schema;
@@ -88,6 +89,9 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   const kelimeRef = useRef(kelimeDegisti); kelimeRef.current = kelimeDegisti;
   useEffect(() => { if (kelime !== null) kelimeRef.current?.(kelime); }, [kelime]);
   useEffect(() => () => { if (kelimeZamani.current) clearTimeout(kelimeZamani.current); }, []);
+  // Bağlantısız ad önerisi (K29) yalnız kaydedilmiş metne bakar; yazarken liste değişmez.
+  const [kayitliBelge, setKayitliBelge] = useState<PmNode | null>(null);
+  useEffect(() => { if (hazir && durum.tur === 'kayitli' && gorunum.current) setKayitliBelge(gorunum.current.state.doc); }, [hazir, durum]);
   const [aracDurumu, setAracDurumu] = useState(0);
   const gorunum = useRef<EditorView | null>(null);
   type AcikSecici = SeciciIstegi & { konum: { left: number; top: number }; canli?: boolean };
@@ -134,10 +138,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     return { left: k.left, top: k.bottom + 6 };
   };
   const seciciAc = (i: SeciciIstegi) => { if (gorunum.current) setSecici({ ...i, konum: konumu(i.from) }); };
-  /** "[[" yazıldı: kutu açılır, arama metni editörde yazıldıkça güncellenir. */
-  const satirIciBasla = (bas: number) => {
+  /** "[[" ya da "@" yazıldı: kutu açılır, arama metni editörde yazıldıkça güncellenir. */
+  const satirIciBasla = (bas: number, onEk: string) => {
     if (!gorunum.current) return;
-    setSecici({ from: bas, to: bas + 2, sorgu: '', gorunen: null, isaretle: false, satirIci: true, canli: true, konum: konumu(bas) });
+    setSecici({ from: bas, to: bas + onEk.length, sorgu: '', gorunen: null, isaretle: false, satirIci: true, canli: true, onEk, konum: konumu(bas) });
   };
   /** Her değişiklikte satır içi kutunun aralığını ve arama metnini günceller; imleç dışarı çıkınca kapatır. */
   const seciciIzle = (tr: Transaction, state: EditorState) => {
@@ -147,9 +151,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     const bas = tr.mapping.map(s.from, -1);
     const { from, empty } = state.selection;
     const $b = state.doc.resolve(Math.min(bas, state.doc.content.size));
-    if (!empty || from < bas + 2 || from > $b.end() || state.doc.textBetween(bas, Math.min(bas + 2, $b.end())) !== '[[') { setSecici(null); return; }
-    const sorgu = state.doc.textBetween(bas + 2, from);
-    if (/[[\]]/.test(sorgu) || sorgu.length > 80) { setSecici(null); return; }
+    const onEk = s.onEk ?? '[[';
+    if (!empty || from < bas + onEk.length || from > $b.end() || state.doc.textBetween(bas, Math.min(bas + onEk.length, $b.end())) !== onEk) { setSecici(null); return; }
+    const sorgu = state.doc.textBetween(bas + onEk.length, from);
+    if (/[[\]@]/.test(sorgu) || sorgu.length > 80) { setSecici(null); return; }
     if (sorgu !== s.sorgu || bas !== s.from || from !== s.to) setSecici({ ...s, from: bas, to: from, sorgu });
   };
 
@@ -289,7 +294,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         plugins: [
           baglantiEklentisi({
             ac: (i) => seciciAc({ ...i, satirIci: true }),
-            satirIciBasla: (b) => satirIciBasla(b),
+            satirIciBasla: (b, onEk) => satirIciBasla(b, onEk),
             paletAc: () => { calismaRef.current?.paletAc({ bagla }); },
             yeniKayit: async (ad, tur, ozet) => (await istemci.iste('kayitOlustur', { evren, ad, tur, ozet, karar: 'fikir' })).kod,
           }),
@@ -527,7 +532,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         <button type="button" class="arac" aria-pressed={baslikMi(3)} onMouseDown={(e) => e.preventDefault()} onClick={() => uygula(baslikMi(3) ? setBlockType(sema.nodes.paragraph) : setBlockType(sema.nodes.heading, { level: 3 }))}>Alt başlık</button>
         <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => uygula((s, d) => wrapIn(sema.nodes.blockquote)(s, d) || lift(s, d))}>Alıntı</button>
         <span class="ayrac" />
-        <button type="button" class="arac bagla" title="Bir kayda bağla (Ctrl+K ya da [[ )" onMouseDown={(e) => e.preventDefault()} onClick={bagla}>Bağla</button>
+        <button type="button" class="arac bagla" title="Bir kayda bağla (Ctrl+K, [[ ya da @)" onMouseDown={(e) => e.preventDefault()} onClick={bagla}>Bağla</button>
         {bag && v && <>
           <a class="arac" href={`#/e/${evren}/k/${bag.hedef}`}>“{v.state.doc.textBetween(bag.from, bag.to)}” kaydını aç</a>
           {calisma && <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => {
@@ -627,6 +632,14 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         <div ref={kap} />
         {bosYardim && hazir && kelime === 0 && !saltOkunur && <div class="bos-yardim">{bosYardim}</div>}
       </div>
+      {alan === 'govde' && !saltOkunur && hazir && (
+        <BagsizAdlar istemci={istemci} evren={evren} kayit={kayit} belge={kayitliBelge} bagla={(from, to, ifade, kod) => {
+          const v = gorunum.current;
+          if (!v || to > v.state.doc.content.size || v.state.doc.textBetween(from, to, '\ufffc', '\ufffc') !== ifade) return false;
+          v.dispatch(v.state.tr.addMark(from, to, bagTuru.create({ hedef: kod })).removeStoredMark(bagTuru));
+          return true;
+        }} />
+      )}
       {secici && <BaglantiSecici key={`${secici.from}-${secici.canli ? '' : secici.sorgu}`} istemci={istemci} evren={evren} sorgu={secici.sorgu} konum={secici.konum}
         satirIci={secici.satirIci} tutamak={tutamak} kendiligindenTek={secici.kendiligindenBagla}
         sec={(s) => baglantiKur(seciciRef.current ?? secici, s)} kapat={seciciKapat} />}

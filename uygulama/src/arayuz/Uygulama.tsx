@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { GeriAlSeridi } from './GeriAlSeridi';
 import type { Istemci } from '../veri/istemci';
 import type { KurulumBilgisi } from '../veri/api';
 import { EvrenlerEkrani } from './EvrenlerEkrani';
@@ -74,6 +75,7 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
         : yol.ekran === 'yaz' ? <YazEkrani key={`${yol.evren}/${yol.kod}`} istemci={istemci} evren={yol.evren} kod={yol.kod} />
         : <EvrenEkrani istemci={istemci} kod={yol.kod} sekme={yol.sekme} alt={yol.alt} />}
       <HizliNot istemci={istemci} evren={evren} />
+      <GeriAlSeridi />
       {!evren && <footer class="alt" aria-label="Durum">
         <span>Bu cihaza kaydediliyor</span>
         <span>{kalici === null ? '' : kalici ? 'Tarayıcı verileri kalıcı tutuyor' : 'Tarayıcı kalıcı depolama izni vermedi'}</span>

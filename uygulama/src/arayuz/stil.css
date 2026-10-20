@@ -474,6 +474,12 @@ label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; 
 .soy-cizgi.kardes { stroke-width: 1; stroke-dasharray: 1 3; }
 .soy-cizgi.belirsiz, .soy-cizgi.karar-fikir { opacity: 0.45; }
 .soy-cizgi.ters { stroke: var(--tehlike); }
+.soy-kisiler path { fill: none; stroke: var(--tg-anlati-y); stroke-width: 1.6; stroke-dasharray: 5 4; }
+.soy-kisiler text { fill: var(--metin-2); font-size: 11px; font-weight: 600; }
+.soy-kisiler.belirsiz { opacity: 0.45; }
+.soy-kisiler.inanc path { stroke: var(--inanc); }
+.soy-ok { fill: var(--tg-anlati-y); }
+.soy-katman { flex-wrap: wrap; gap: 6px 12px; }
 .soy-aciklama { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .soy-aciklama svg { vertical-align: middle; }
 .ag-dugum circle { fill: var(--tg, var(--vurgu)); stroke: var(--yuzey); stroke-width: 2; }
@@ -1024,3 +1030,25 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .son-calisma ul { margin: 0 0 8px; padding-left: 18px; display: grid; gap: 3px; }
 .son-calisma p { margin: 0; }
 .ornek-evren { text-align: center; margin: 12px auto; max-width: 70ch; }
+
+/* Bağlantısız geçen adlar (K29, §5.1): metnin altında katlı satır. */
+.bagsiz-adlar { margin: 18px 0 0; border-top: 1px solid var(--cizgi); padding-top: 10px; color: var(--metin-2); font-size: 0.95rem; }
+.bagsiz-adlar summary { cursor: pointer; }
+.bagsiz-ac { color: var(--vurgu); }
+.bagsiz-ad { display: grid; grid-template-columns: minmax(70px, auto) 1fr auto; gap: 6px 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--cizgi); }
+.bagsiz-cumle { font-family: var(--metin-yazi); font-size: 0.9rem; }
+.bagsiz-cumle mark { background: none; color: var(--metin); border-bottom: 2px dotted var(--vurgu); }
+.bagsiz-eylem { gap: 4px; flex-wrap: wrap; }
+.bagsiz-secim { grid-column: 1 / -1; list-style: none; margin: 0; padding: 0 0 0 12px; }
+@media (max-width: 700px) { .bagsiz-ad { grid-template-columns: 1fr; } }
+
+/* "Geri al" şeridi (K29, §10.8, taslak A). */
+.geri-al-seridi { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 60; display: flex; gap: 12px; align-items: center; max-width: min(92vw, 640px);
+  background: var(--metin); color: var(--zemin); padding: 10px 10px 10px 18px; border-radius: 12px; box-shadow: 0 4px 18px rgb(0 0 0 / 0.3); overflow: hidden; }
+.geri-al-dugmesi { background: none; border: 0; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 4px 6px; min-height: 24px; }
+.geri-al-kapat { background: none; border: 0; color: inherit; font-size: 1.1rem; opacity: 0.75; cursor: pointer; min-width: 24px; min-height: 24px; }
+.geri-al-dugmesi:focus-visible, .geri-al-kapat:focus-visible { outline: 2px solid var(--zemin); outline-offset: 2px; }
+.geri-al-sure { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--vurgu); transform-origin: left; animation: geri-al-azal linear forwards; }
+.geri-al-seridi:hover .geri-al-sure { animation-play-state: paused; }
+@keyframes geri-al-azal { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .geri-al-sure { animation: none; display: none; } }

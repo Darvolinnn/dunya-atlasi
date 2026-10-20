@@ -68,6 +68,9 @@ export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; e
   const [kapali, setKapali] = useState<Set<string>>(new Set());
   const [secili, setSecili] = useState<string | null>(null);
   const [olcek, setOlcek] = useState(1);
+  // Kişiler arası bağlar katmanı (K29): açılıp kapanır; hangi bağ türlerinin görüneceği seçilir.
+  const [kisiGoster, setKisiGoster] = useState(true);
+  const [gizliBaglar, setGizliBaglar] = useState<Set<string>>(new Set());
   useEffect(() => { setKapali(new Set()); setSecili(null); }, [odak]);
   useEffect(() => {
     if (!odak) { setT(null); return; }
@@ -83,6 +86,20 @@ export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; e
       {odak && <AnGirdisi an={an} setAn={setAn} />}
       {odak && <BakisSecici istemci={istemci} evren={evren} bakis={bakis} sec={setBakis} />}
       {y && <Yakinlastir olcek={olcek} setOlcek={setOlcek} />}
+    </div>
+  );
+  const kisiTurleri = t ? [...new Map([...t.kisilerArasi, ...t.disaridakiler.map((x) => x.kenar)].map((k) => [k.tur, k])).values()] : [];
+  const katman = kisiTurleri.length > 0 && (
+    <div class="satir soy-katman">
+      <label class="kucuk"><input type="checkbox" checked={kisiGoster} onChange={(e) => setKisiGoster((e.target as HTMLInputElement).checked)} /> Kişiler arası bağları göster</label>
+      {kisiGoster && kisiTurleri.length > 1 && <>
+        <span class="soluk kucuk">Hangileri:</span>
+        {kisiTurleri.map((k) => (
+          <label key={k.tur} class="kucuk"><input type="checkbox" checked={!gizliBaglar.has(k.tur)} onChange={(e) => {
+            const x = new Set(gizliBaglar); if ((e.target as HTMLInputElement).checked) x.delete(k.tur); else x.add(k.tur); setGizliBaglar(x);
+          }} /> {k.karsilikli ? k.aIcin : `${k.aIcin} / ${k.bIcin.toLocaleLowerCase('tr-TR')}`}</label>
+        ))}
+      </>}
     </div>
   );
   if (!odak) return <div class="gorunum">{secim}<p class="soluk">Soy ağacı ebeveyn, eş ve kardeş ilişkilerinden çizilir. Bir kayıt seçin.</p></div>;
@@ -136,15 +153,33 @@ export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; e
       cizgiler.push(<path key={e.kod} class={sinif} d={`M${sol.x},${sol.y - SOY_BOY / 2} Q${(sol.x + sag.x) / 2},${ust - 40} ${sag.x},${sag.y - SOY_BOY / 2}`}><title>{baslik}</title></path>);
     }
   }
+  // Kişiler arası bağlar: kutunun sol kenarından öbür kutunun sol kenarına, ağacın soluna doğru kıvrılan kesik çizgi.
+  const gorunenKisi = kisiGoster ? t.kisilerArasi.filter((e) => !gizliBaglar.has(e.tur) && y.konum.has(e.a) && y.konum.has(e.b)) : [];
+  const SOL = gorunenKisi.length ? 110 : 0;
+  gorunenKisi.forEach((e, i) => {
+    const a = k(e.a), b = k(e.b);
+    const x1 = a.x - SOY_EN / 2, x2 = b.x - SOY_EN / 2;
+    const cx = Math.min(x1, x2) - 50 - (i % 3) * 18, cy = (a.y + b.y) / 2 + (a.y === b.y ? SOY_BOY : 0);
+    const ox = 0.25 * x1 + 0.5 * cx + 0.25 * x2, oy = 0.25 * a.y + 0.5 * cy + 0.25 * b.y;
+    const yazi = e.aIcin.toLocaleLowerCase('tr-TR');
+    cizgiler.push(<g key={'k' + e.kod} class={`soy-kisiler ${e.gecerlilik === 'belirsiz' ? 'belirsiz' : ''} ${e.inanc ? 'inanc' : ''}`}>
+      <path d={`M${x1},${a.y} Q${cx},${cy} ${x2},${b.y}`} marker-end={e.karsilikli ? undefined : 'url(#soy-ok)'} />
+      <text x={ox - 4} y={oy + 4} text-anchor="end">{yazi}</text>
+      <title>{e.karsilikli ? `${ad.get(e.a)?.ad} – ${ad.get(e.b)?.ad}: ${e.aIcin.toLocaleLowerCase('tr-TR')}` : `${ad.get(e.a)?.ad} → ${e.aIcin.toLocaleLowerCase('tr-TR')} → ${ad.get(e.b)?.ad}`}</title>
+    </g>);
+  });
+  const disarida = kisiGoster ? t.disaridakiler.filter((x) => !gizliBaglar.has(x.kenar.tur)) : [];
   const s = secili ? ad.get(secili) : null;
   return (
     <div class="gorunum">
       {secim}
+      {katman}
       <p class="soluk kucuk">Odaktaki kayıt vurgulanır. Bir kayda tıklayarak onu seçebilirsiniz. Seçili kaydı odağa alabilir ya da dalını kapatabilirsiniz. Çizgiler yer yer kesişebilir.</p>
       <BakisAciklamasi bakis={t.bakis} />
       {t.kesildi && <p class="uyari kucuk">Aile çok büyük; yalnızca odağa en yakın {t.dugumler.length} kayıt çizildi.</p>}
       <div class="cizim-alani" role="region" aria-label="Soy ağacı çizimi">
-        <svg class="soy-agaci" width={y.genislik * olcek} height={y.yukseklik * olcek} viewBox={`${y.solUst.x} ${y.solUst.y} ${y.genislik} ${y.yukseklik}`}>
+        <svg class="soy-agaci" width={(y.genislik + SOL) * olcek} height={y.yukseklik * olcek} viewBox={`${y.solUst.x - SOL} ${y.solUst.y} ${y.genislik + SOL} ${y.yukseklik}`}>
+          <defs><marker id="soy-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="soy-ok" /></marker></defs>
           {cizgiler}
           {[...y.konum].map(([kod, p]) => {
             const d = ad.get(kod)!;
@@ -162,6 +197,13 @@ export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; e
           })}
         </svg>
       </div>
+      {disarida.length > 0 && (
+        <p class="soluk kucuk">Ağaçta olmayan kişilerle bağlar çizilmez: {disarida.map((x, i) => {
+          const ic = ad.get(x.ic)?.ad ?? '';
+          const metin = x.kenar.karsilikli ? x.kenar.aIcin : x.ic === x.kenar.a ? x.kenar.aIcin : x.kenar.bIcin;
+          return <span key={x.kenar.kod}>{i > 0 && ' · '}{ic} – {metin.toLocaleLowerCase('tr-TR')} – <a href={`#/e/${evren}/k/${x.dis.kod}`}>{x.dis.ad}</a></span>;
+        })}</p>
+      )}
       {s && (
         <div class="kart satir secili-kayit" role="status">
           <strong>{s.ad}</strong> <span class="soluk kucuk">{turBul(s.tur).ad}</span> <KararRozeti karar={s.karar} />
@@ -173,7 +215,7 @@ export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; e
             : <button class="dugme kucuk" onClick={() => setKapali(new Set(kapali).add(s.kod))}>Dalı kapat</button>)}
         </div>
       )}
-      <SoyAciklamasi />
+      <SoyAciklamasi kisiler={gorunenKisi.length > 0} />
       <details>
         <summary>Bağların listesi ({y.kenarlar.length})</summary>
         <ul class="kucuk">
@@ -187,7 +229,7 @@ export function SoyAgaciGorunumu({ istemci, evren, odak }: { istemci: Istemci; e
   );
 }
 
-function SoyAciklamasi() {
+function SoyAciklamasi({ kisiler }: { kisiler: boolean }) {
   return (
     <ul class="soy-aciklama kucuk soluk" aria-label="Çizgilerin anlamı">
       <li><svg width="36" height="10"><line class="soy-cizgi" x1="0" y1="5" x2="36" y2="5" /></svg> Ebeveyn (kan bağı ya da belirtilmemiş)</li>
@@ -197,6 +239,7 @@ function SoyAciklamasi() {
       <li><svg width="36" height="10"><line class="soy-cizgi es rol-siyasi" x1="0" y1="5" x2="36" y2="5" /></svg> Siyasi evlilik</li>
       <li><svg width="36" height="10"><line class="soy-cizgi es soy-ici" x1="0" y1="5" x2="36" y2="5" /></svg> Soy içi evlilik</li>
       <li><svg width="36" height="10"><line class="soy-cizgi kardes" x1="0" y1="5" x2="36" y2="5" /></svg> Kardeş (ayrıca yazılmış)</li>
+      {kisiler && <li><svg width="36" height="10" class="soy-kisiler"><path d="M0,5 H36" /></svg> Kişiler arası bağ (adıyla; ok yönü kimin gözünden)</li>}
     </ul>
   );
 }
