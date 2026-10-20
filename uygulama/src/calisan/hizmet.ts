@@ -49,7 +49,7 @@ import * as montaj from './montaj';
 import * as seriPlan from './seri';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
-import type { AracTanitimDayanaklari, IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi } from '../veri/api';
+import type { AdDizini, AracTanitimDayanaklari, IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi } from '../veri/api';
 import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
 import * as bakim from './bakim';
@@ -292,6 +292,28 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   kurguTuruYaz({ evren, kurgu }: { evren: string; kurgu: string | null }) {
     if (kurgu !== null && !kurguTuruGecerli(kurgu)) throw new Error('Geçersiz seçim.');
     this.yaz(evren, [{ tur: 'evren_kurgu_turu', veri: { kurgu } }]);
+  }
+
+  /** Bağlantısız ad önerisi (K29): yapı kayıtları (sahne, bölüm, not…) aranmaz; adın kendisi, lakapları ve önceki adları. */
+  adDizini({ evren }: { evren: string }): AdDizini {
+    const e = this.evren(evren);
+    const adlar = e.db.selectObjects(
+      `SELECT kod, ad, tur, ozet, lakaplar, onceki_adlar FROM kayitlar WHERE silindi IS NULL AND tur NOT IN ('sahne','bolum','not','acik_mesele','gerekce')`)
+      .map((r) => ({
+        kod: r.kod as string, ad: r.ad as string, tur: r.tur as string, ozet: (r.ozet as string) ?? '',
+        ifadeler: [...new Set([r.ad as string, ...JSON.parse(r.lakaplar as string), ...JSON.parse(r.onceki_adlar as string)].filter((x) => typeof x === 'string' && x.trim()))],
+      }));
+    const hic: string[] = [], atla: string[] = [];
+    for (const r of e.db.selectObjects("SELECT k FROM evren WHERE k LIKE 'bagsiz:%'")) {
+      const k = (r.k as string).slice('bagsiz:'.length);
+      if (k.startsWith('hic:')) hic.push(k.slice(4)); else if (k.startsWith('atla:')) atla.push(k.slice(5));
+    }
+    return { adlar, hic, atla };
+  }
+
+  bagsizAdAyari({ evren, anahtar, deger }: { evren: string; anahtar: string; deger: boolean }) {
+    if (typeof anahtar !== 'string' || !/^(hic|atla):[a-z0-9]{1,40}$/.test(anahtar)) throw new Error('Geçersiz ayar.');
+    this.yaz(evren, [{ tur: 'bagsiz_ad_ayari', veri: { anahtar, deger: !!deger } }]);
   }
 
   evrenAdlandir({ evren, ad }: { evren: string; ad: string }) {

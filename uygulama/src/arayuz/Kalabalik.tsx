@@ -7,7 +7,7 @@ import type { Istemci } from '../veri/istemci';
 import { useYukle } from './Anlati';
 import { KayitSec } from './KayitBolumleri';
 import { CatismaListesi } from './Catismalar';
-import { onayla } from './onay';
+import { geriAlinabilir } from './onay';
 
 type Bicim = 'gozlem' | 'olay';
 type Secim = { kod: string; ad: string };
@@ -31,7 +31,7 @@ export function KalabalikBolumu({ istemci, evren, kod, tur, surum, saltOkunur }:
     {s.catismali && (saltOkunur ? <p>Bu sayım iki cihazda farklı yazılmış; incelenmesi gerekiyor.</p> : <CatismaListesi istemci={istemci} evren={evren} kod={s.kod} surum={surum} />)}
     {!saltOkunur && !s.catismali && <div class="satir">
       {!s.silindi && <button type="button" class="dugme kucuk" onClick={() => setForm({ bicim, kod: s.kod, tanim: s.tanim })}>Düzenle</button>}
-      <button type="button" class="dugme sade kucuk" onClick={() => (s.silindi || onayla(bicim === 'gozlem' ? 'Bu gözlem kaldırılsın mı?' : 'Bu sayım olayı kaldırılsın mı?')) && kaldir(bicim, s.kod, s.silindi)}>{s.silindi ? 'Geri getir' : 'Kaldır'}</button>
+      <button type="button" class="dugme sade kucuk" onClick={() => s.silindi ? kaldir(bicim, s.kod, true) : void geriAlinabilir(bicim === 'gozlem' ? 'Gözlem kaldırıldı.' : 'Sayım olayı kaldırıldı.', () => kaldir(bicim, s.kod, false), () => kaldir(bicim, s.kod, true))}>{s.silindi ? 'Geri getir' : 'Kaldır'}</button>
     </div>}
   </>;
   return <section class="surecler kalabalik-bolumu" aria-label="Kalabalık ve toplu sayım">

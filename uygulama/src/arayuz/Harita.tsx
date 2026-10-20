@@ -17,7 +17,7 @@ import { BakisAciklamasi, BakisSecici } from './Bilgiler';
 import type { Secim } from './BaglantiSecici';
 import { HaritaKunyeBolumu } from './HaritaKunye';
 import { OlcekliHaritaBolumu } from './OlcekliHarita';
-import { onayla } from './onay';
+import { geriAlinabilir } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const KESINLIKLER: { kod: IsaretGirdisi['kesinlik']; ad: string }[] = [
@@ -394,7 +394,7 @@ function KatmanPaneli({ istemci, evren, h, gizli, setGizli, saydamlik, setSaydam
                 <label class="dugme sade kucuk">Görseli değiştir
                   <input type="file" class="gizli-dosya" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" aria-label={`${k.ad}: yeni görsel`}
                     onChange={async (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) await iste(istemci.iste('katmanGorseli', { evren, harita: h.kod, katman: k.kod, ...(await dosyaOku(f)) })); }} /></label>
-                {acik.length > 1 && <button class="dugme sade kucuk tehlikeli" onClick={() => onayla(`“${k.ad}” katmanı kaldırılsın mı?`) && iste(istemci.iste('katmanDegistir', { evren, harita: h.kod, katman: k.kod, alan: 'silindi', deger: true }))}>Kaldır</button>}
+                {acik.length > 1 && <button class="dugme sade kucuk tehlikeli" onClick={() => void geriAlinabilir(`“${k.ad}” katmanı kaldırıldı.`, () => iste(istemci.iste('katmanDegistir', { evren, harita: h.kod, katman: k.kod, alan: 'silindi', deger: true })), () => istemci.iste('katmanDegistir', { evren, harita: h.kod, katman: k.kod, alan: 'silindi', deger: false }))}>Kaldır</button>}
               </div>
             )}
             {k.gozdenGecir.length > 0 && (
@@ -527,7 +527,7 @@ function CizimPaneli({ istemci, evren, c, kapat, hata, yenidenCiz }: {
       <div class="satir">
         <button class="dugme kucuk" onClick={() => yenidenCiz(c)}>Sınırı yeniden çiz</button>
         <KayitSec istemci={istemci} evren={evren} secili={null} etiket="Başka kayda bağla" sec={(s) => { if (s) void degistir('kayit', s.kod).catch(() => {}); }} />
-        <button class="dugme sade kucuk tehlikeli" onClick={() => { if (!(onayla('Bu çizim kaldırılsın mı?'))) return; void iste(istemci.iste('cizimSil', { evren, kod: c.kod })).then(kapat, () => {}); }}>Kaldır</button>
+        <button class="dugme sade kucuk tehlikeli" onClick={() => { void geriAlinabilir('Çizim kaldırıldı.', () => iste(istemci.iste('cizimSil', { evren, kod: c.kod })), () => istemci.iste('cizimSil', { evren, kod: c.kod, geriYukle: true })).then(kapat, () => {}); }}>Kaldır</button>
       </div>
     </div>
   );
@@ -547,7 +547,7 @@ function HaritaBasligi({ istemci, evren, h }: { istemci: Istemci; evren: string;
       {h.yer && <a href={`#/e/${evren}/k/${h.yer.kod}`}>{h.yer.ad}</a>}
       <KayitSec istemci={istemci} evren={evren} secili={null} sec={(s) => { if (s) void yaz('yer', s.kod); }} etiket={h.yer ? 'Değiştir' : 'Yer seç'} />
       {h.yer && <button class="dugme sade kucuk" onClick={() => void yaz('yer', null)}>Bağı kaldır</button>}
-      {!h.silindi && <button class="dugme sade kucuk tehlikeli" onClick={() => onayla(`“${h.ad}” haritası kaldırılsın mı? “Kaldırılan haritalar” listesinden geri getirebilirsiniz.`) && istemci.iste('haritaSil', { evren, kod: h.kod })}>Haritayı kaldır</button>}
+      {!h.silindi && <button class="dugme sade kucuk tehlikeli" onClick={() => void geriAlinabilir(`“${h.ad}” haritası kaldırıldı.`, () => istemci.iste('haritaSil', { evren, kod: h.kod }), () => istemci.iste('haritaSil', { evren, kod: h.kod, geriYukle: true }))}>Haritayı kaldır</button>}
       {hata && <span class="hata kucuk">{hata}</span>}
     </div>
   );
@@ -602,7 +602,7 @@ function IsaretPaneli({ istemci, evren, i, enBuyuk, kapat, tasi, hata }: {
         <button class="dugme kucuk" onClick={() => tasi(i.konum.kesinlik === 'yaklasik' ? 'yaklasik' : 'kesin')}>{i.konum.kesinlik === 'bilinmiyor' ? 'Haritada yerini göster' : 'Taşı'}</button>
         <KayitSec istemci={istemci} evren={evren} secili={null} etiket="Başka kayda bağla"
           sec={(s) => { if (s) void iste(istemci.iste('isaretDegistir', { evren, kod: i.kod, alan: 'kayit', deger: s.kod })); }} />
-        <button class="dugme sade kucuk tehlikeli" onClick={() => { if (!(onayla('Bu işaret kaldırılsın mı?'))) return; void iste(istemci.iste('isaretSil', { evren, kod: i.kod })); kapat(); }}>İşareti kaldır</button>
+        <button class="dugme sade kucuk tehlikeli" onClick={() => { void geriAlinabilir('İşaret kaldırıldı.', () => iste(istemci.iste('isaretSil', { evren, kod: i.kod })), () => istemci.iste('isaretSil', { evren, kod: i.kod, geriYukle: true })).catch(() => {}); kapat(); }}>İşareti kaldır</button>
       </div>
     </div>
   );

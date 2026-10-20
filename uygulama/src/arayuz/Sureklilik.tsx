@@ -6,7 +6,7 @@ import type { IzGecmisi, IzModeli, IzTanimi, SahneIzi, SahneOlayBilgisi, SahneSu
 import { KayitSec } from './KayitBolumleri';
 import type { Secim } from './BaglantiSecici';
 import { KararRozeti } from './ortak';
-import { onayla } from './onay';
+import { geriAlinabilir, onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const MODEL_ADI: Record<IzModeli, string> = { durum: 'Serbest durum', sayi: 'Sayılabilir', iyilesme: 'İyileşme süresiyle' };
@@ -215,7 +215,7 @@ function IzGecmisiKarti({ istemci, evren, g }: { istemci: Istemci; evren: string
         <span class="soluk kucuk">({modelAciklamasi(iz)})</span>
         <span class="bosluk" />
         {!duzenle && <button class="dugme sade kucuk" onClick={() => setDuzenle(true)}>Düzenle</button>}
-        <button class="dugme sade kucuk" aria-label={`“${iz.ad}” izlemesini kaldır`} onClick={() => onayla(`“${iz.ad}” izlemesi kaldırılsın mı?`) && istemci.iste('izSil', { evren, kod: iz.kod })}>Kaldır</button>
+        <button class="dugme sade kucuk" aria-label={`“${iz.ad}” izlemesini kaldır`} onClick={() => void geriAlinabilir(`“${iz.ad}” izlemesi kaldırıldı.`, () => istemci.iste('izSil', { evren, kod: iz.kod }), () => istemci.iste('izSil', { evren, kod: iz.kod, geriYukle: true }))}>Kaldır</button>
       </div>
       {duzenle && (
         <form class="satir" onSubmit={async (e) => {

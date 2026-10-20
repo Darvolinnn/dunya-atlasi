@@ -4,7 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { IsaretAlani, IsaretIncelemeleri, IsaretIncelemesi, MetinIsareti } from '../veri/api';
 import { zamanYaz } from '../alan/islem-metni';
 import type { Istemci } from '../veri/istemci';
-import { onayla } from './onay';
+import { geriAlinabilir } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const DURUM: Record<MetinIsareti['durum'], string> = {
@@ -40,7 +40,7 @@ function Satir({ istemci, evren, x, kaynakGoster, saltOkunur, yenile }: { istemc
           <input class="girdi" lang="tr" maxLength={300} aria-label="İddia" placeholder="Cümle kısaca ne söylüyor?" value={iddia} onInput={(e) => setIddia((e.target as HTMLInputElement).value)}
             onBlur={() => { if (iddia.trim() !== x.iddia) yaz('iddia', iddia); }} />
           <label class="kucuk"><input type="checkbox" checked={x.kritik} onChange={(e) => yaz('kritik', (e.target as HTMLInputElement).checked)} /> Kritik</label>
-          <button class="dugme sade kucuk" onClick={() => onayla('Bu işaret kaldırılsın mı?') && istemci.iste('metinIsaretiSil', { evren, kod: x.kod }).then(yenile, (e) => setHata(hataYaz(e)))}>İşareti kaldır</button>
+          <button class="dugme sade kucuk" onClick={() => void geriAlinabilir('İşaret kaldırıldı.', () => istemci.iste('metinIsaretiSil', { evren, kod: x.kod }), () => istemci.iste('metinIsaretiSil', { evren, kod: x.kod, geriYukle: true }).then(yenile)).then(yenile, (e) => setHata(hataYaz(e)))}>İşareti kaldır</button>
         </div>
       )}
       {hata && <p class="hata kucuk">{hata}</p>}
@@ -78,7 +78,7 @@ type Niyet = typeof NIYETLER[number]['kod'];
 type Karar = (anahtar: string, durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null, gerekce?: string, niyet?: Niyet | null) => Promise<unknown>;
 
 /** Bir işaret incelemesi: bağlı bilgi değişti ya da kritik cümle değişti. Her sorunun "şimdilik geç" karşılığı vardır (§6.1). */
-export function IsaretIncelemeSatiri({ evren, x, karar, kaldir }: { evren: string; x: IsaretIncelemesi; karar: Karar; kaldir: (kod: string) => Promise<unknown> }) {
+export function IsaretIncelemeSatiri({ evren, x, karar, kaldir }: { evren: string; x: IsaretIncelemesi; karar: Karar; kaldir: (kod: string, geriYukle?: boolean) => Promise<unknown> }) {
   const [kabulYaz, setKabulYaz] = useState(false);
   const [gerekce, setGerekce] = useState('');
   const i = x.isaret;
@@ -116,7 +116,7 @@ export function IsaretIncelemeSatiri({ evren, x, karar, kaldir }: { evren: strin
           <button class="dugme kucuk" onClick={() => karar(x.anahtar, 'duzeltildi', 'Metin düzeltildi')}>Metni düzelttim</button>
           <button class="dugme kucuk" onClick={() => karar(x.anahtar, 'duzeltildi', 'Evrendeki kayıt düzeltildi')}>Evrendeki kaydı düzelttim</button>
           <button class="dugme kucuk" onClick={() => setKabulYaz(true)}>Bu hâliyle kabul et…</button>
-          <button class="dugme sade kucuk" onClick={() => onayla('Bu işaret kaldırılsın mı?') && kaldir(i.kod)}>Bağlantı yanlış, işareti kaldır</button>
+          <button class="dugme sade kucuk" onClick={() => void geriAlinabilir('İşaret kaldırıldı.', () => kaldir(i.kod), () => kaldir(i.kod, true))}>Bağlantı yanlış, işareti kaldır</button>
           <button class="dugme sade kucuk" onClick={() => karar(x.anahtar, 'ertelendi')}>Ertele</button>
         </div>
       )}
@@ -133,7 +133,7 @@ export function IsaretIncelemeBolumu({ istemci, evren, surum, kayit = null, basl
   const yenile = () => setN((v) => v + 1);
   const karar: Karar = (anahtar, durum, gerekce = '', niyet = null) =>
     istemci.iste('isaretKarari', { evren, anahtar, durum, gerekce, niyet }).then(() => { setHata(null); yenile(); }, (e) => { setHata(hataYaz(e)); throw e; });
-  const kaldir = (kod: string) => istemci.iste('metinIsaretiSil', { evren, kod }).then(yenile, (e) => setHata(hataYaz(e)));
+  const kaldir = (kod: string, geriYukle = false) => istemci.iste('metinIsaretiSil', { evren, kod, geriYukle }).then(yenile, (e) => setHata(hataYaz(e)));
   if (!x) return null;
   if (!baslikGoster && !x.acik.length) return null;
   return (

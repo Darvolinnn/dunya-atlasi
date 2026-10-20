@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { KisaKayit, Sozluk, SozlukDenetimi, SozlukTanimi } from '../veri/api';
 import { TURLER } from '../alan/turler';
-import { onayla } from './onay';
+import { geriAlinabilir } from './onay';
 
 const bos = (): SozlukTanimi => ({ ad: '', tur: 'yasak', kapsam: { tur: 'evren' }, girdiler: [{ ifade: '', aciklama: '', teknoloji: null }] });
 const TUR = { yasak: 'Yasak ifadeler', hitap: 'İzinli hitaplar', teknoloji: 'Teknoloji adları' };
@@ -45,7 +45,7 @@ export function SozlukSekmesi({ istemci, evren, surum }: { istemci: Istemci; evr
     {hata && <p role="alert" class="hata">{hata}</p>}
     <ul>{liste.map((s) => <li key={s.kod}>{s.ad} · {TUR[s.tur]}{s.catismali && ' · İki cihazda farklı değerler var, birini seçin'}{' '}
       <button class="dugme" disabled={mesgul} onClick={() => { setKod(s.kod); setT({ ad: s.ad, tur: s.tur, kapsam: s.kapsam, girdiler: s.girdiler }); }}>Düzenle</button>{' '}
-      <button class="dugme" disabled={mesgul} onClick={() => onayla('Bu sözlük silinsin mi? Kaldırılan sözlüklerden geri getirebilirsiniz.') && is(async () => { await istemci.iste('sozlukSil', { evren, kod: s.kod }); if (kod === s.kod) { setKod(null); setT(bos()); } })}>Sil</button>
+      <button class="dugme" disabled={mesgul} onClick={() => is(async () => { await geriAlinabilir('Sözlük kaldırıldı.', () => istemci.iste('sozlukSil', { evren, kod: s.kod }), () => istemci.iste('sozlukGeriYukle', { evren, kod: s.kod })); if (kod === s.kod) { setKod(null); setT(bos()); } })}>Sil</button>
     </li>)}</ul>
     {cop.length > 0 && <details><summary>Kaldırılan sözlükler</summary><ul>{cop.map((s) => <li key={s.kod}>{s.ad}{' '}
       <button class="dugme" disabled={mesgul} onClick={() => is(() => istemci.iste('sozlukGeriYukle', { evren, kod: s.kod }))}>Geri getir</button>

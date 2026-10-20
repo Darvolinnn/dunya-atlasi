@@ -5,7 +5,7 @@ import type { Istemci } from '../veri/istemci';
 import type { HukukKurali, HukukTanimGirdisi, UygulananKurallar } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
 import { KuralOrnekleriBolumu } from './KuralAtolyesi';
-import { onayla } from './onay';
+import { geriAlinabilir } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 export const HUKUK_SAHIPLERI = ['siyasi', 'kultur', 'inanc', 'topluluk', 'sehir', 'mekan', 'makam'];
@@ -103,7 +103,7 @@ function HukukKuraliDuzenleyici({ istemci, evren, k, surum }: { istemci: Istemci
         <button class="dugme ana kucuk" disabled={!degisti} onClick={() => istemci.iste('hukukKuraliYaz', { evren, kod: k.kod, tanim: t }).then(() => setHata(null), (x) => setHata(hataYaz(x)))}>Kaydet</button>
         <button class="dugme kucuk" disabled={!degisti} onClick={() => setT(taslakYap(k))}>Vazgeç</button>
         <button class="dugme sade kucuk" onClick={() => istemci.iste('hukukKuraliKopyala', { evren, kod: k.kod }).then(() => setHata(null), (x) => setHata(hataYaz(x)))}>Kopyala</button>
-        <button class="dugme sade kucuk" onClick={() => onayla('Bu kural kaldırılsın mı?') && istemci.iste('hukukKuraliSil', { evren, kod: k.kod })}>Kuralı kaldır</button>
+        <button class="dugme sade kucuk" onClick={() => void geriAlinabilir('Kural kaldırıldı.', () => istemci.iste('hukukKuraliSil', { evren, kod: k.kod }), () => istemci.iste('hukukKuraliSil', { evren, kod: k.kod, geriYukle: true }))}>Kuralı kaldır</button>
       </div>
       {hata && <p class="hata kucuk">{hata}</p>}
       <KuralOrnekleriBolumu istemci={istemci} evren={evren} kural={k.kod} surum={surum} />

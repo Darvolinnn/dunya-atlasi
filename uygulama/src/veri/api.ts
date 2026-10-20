@@ -1089,11 +1089,22 @@ export interface AgKenari {
   /** Bakış açısı süzgecinde: yalnızca o bilenin inancında var. */
   inanc?: boolean;
 }
+export interface AdDizini {
+  adlar: { kod: string; ad: string; tur: string; ozet: string; ifadeler: string[] }[];
+  /** Hiç önerilmeyecek kayıtlar. */
+  hic: string[];
+  /** "Bu sefer değil" denen yerler. */
+  atla: string[];
+}
 export interface SoyAgaci {
   odak: string; an: EvrenTarihi | null; bakis: KisaKayit | null;
   dugumler: AgDugumu[]; kenarlar: AgKenari[];
   /** Eşleri ortak bir atası olan evlilikler ve en yakın ortak ataları. */
   soyIci: { kenar: string; ortakAtalar: { kod: string; ad: string }[] }[];
+  /** Ağaçtaki kişiler arasındaki kişiler arası bağlar (K29: sevgili, düşman, rakip…); yerleşimi etkilemez. */
+  kisilerArasi: AgKenari[];
+  /** Ağaçtaki biriyle ağaçta olmayan biri arasındaki kişiler arası bağlar; çizilmez, adıyla yazılır. */
+  disaridakiler: { kenar: AgKenari; ic: string; dis: KisaKayit }[];
   kesildi: boolean;
 }
 export interface AgSonucu {
@@ -1186,6 +1197,10 @@ export interface Istekler {
   evrenler(): EvrenOzeti[];
   evrenOlustur(a: { ad: string; kurgu?: string | null }): { kod: string };
   kurguTuruYaz(a: { evren: string; kurgu: string | null }): void;
+  /** Bağlantısız ad önerisi için aranacak adlar ve "önerme" ayarları (K29, §5.1). */
+  adDizini(a: { evren: string }): AdDizini;
+  /** "Bu adı hiç önerme" (anahtar `hic:<kod>`) ya da "Bu sefer değil" (anahtar `atla:<yer>`); deger false geri alır. */
+  bagsizAdAyari(a: { evren: string; anahtar: string; deger: boolean }): void;
   evrenKaldir(a: { evren: string }): void;
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
   ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;

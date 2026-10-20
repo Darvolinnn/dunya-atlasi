@@ -3,7 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { KisaKayit, MotifBilgisi, TeknolojiAsamasi, TeknolojiDurumu, TeknolojiTanimi } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
-import { onayla } from './onay';
+import { geriAlinabilir } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: KisaKayit) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
@@ -29,7 +29,7 @@ export function TeknolojiBolumu({ istemci, evren, kod, surum }: { istemci: Istem
       <h2>Düzeyi ve yayılması</h2>
       <h3>Alanlara göre düzey</h3>
       {t.duzeyler.length > 0 && <ul class="toplanan-listesi">{t.duzeyler.map((d, i) => (
-        <li key={i}><span class="soluk">{d.alan}:</span> {d.duzey} <button class="dugme sade kucuk" onClick={() => onayla('Bu düzey kaldırılsın mı?') && yaz(girdi({ duzeyler: t.duzeyler.filter((_, j) => j !== i) }))}>Kaldır</button></li>
+        <li key={i}><span class="soluk">{d.alan}:</span> {d.duzey} <button class="dugme sade kucuk" onClick={() => void geriAlinabilir('Düzey kaldırıldı.', () => yaz(girdi({ duzeyler: t.duzeyler.filter((_, j) => j !== i) })), () => yaz(girdi({ duzeyler: t.duzeyler })))}>Kaldır</button></li>
       ))}</ul>}
       <form class="satir" onSubmit={(e) => { e.preventDefault(); void yaz(girdi({ duzeyler: [...t.duzeyler, duzey] })).then((ok) => ok && setDuzey({ alan: '', duzey: '' })); }}>
         <input class="girdi" style="width:140px" lang="tr" aria-label="Alan" placeholder="savaş, tarım…" value={duzey.alan} onInput={(e) => setDuzey({ ...duzey, alan: (e.target as HTMLInputElement).value })} />
@@ -40,7 +40,7 @@ export function TeknolojiBolumu({ istemci, evren, kod, surum }: { istemci: Istem
       <p class="soluk kucuk">Her birinin tarihi ayrıdır. Yer seçilmezse evrenin geneli için geçerli sayılır.</p>
       {t.asamalar.length > 0 && <ul class="toplanan-listesi">{t.asamalar.map((a, i) => (
         <li key={i}><strong>{asamaAdi(a.asama)}</strong>: {a.yer ? bag(evren, a.yer) : 'genel'}, {a.tarih?.ifade ?? <span class="soluk">tarihsiz</span>}{a.not && <span class="soluk kucuk"> · {a.not}</span>}{' '}
-          <button class="dugme sade kucuk" onClick={() => onayla('Bu aşama kaldırılsın mı?') && yaz(girdi({ asamalar: t.asamalar.filter((_, j) => j !== i) }))}>Kaldır</button></li>
+          <button class="dugme sade kucuk" onClick={() => void geriAlinabilir('Aşama kaldırıldı.', () => yaz(girdi({ asamalar: t.asamalar.filter((_, j) => j !== i) })), () => yaz(girdi({ asamalar: t.asamalar })))}>Kaldır</button></li>
       ))}</ul>}
       <form class="satir" onSubmit={(e) => {
         e.preventDefault();
@@ -107,7 +107,7 @@ export function MotifBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; 
       <p class="soluk kucuk">Aynı motif kültüre ve döneme göre farklı yorumlanabilir. Yorumlar yan yana gösterilir.</p>
       {m.yorumlar.length > 0 && <ul class="toplanan-listesi">{m.yorumlar.map((y, i) => (
         <li key={i}><span class="soluk">{y.yorumlayan ? y.yorumlayan.ad : 'Genel'}{y.donem ? ` (${y.donem.ad})` : ''}:</span> {y.anlam}{' '}
-          <button class="dugme sade kucuk" onClick={() => onayla('Bu yorum kaldırılsın mı?') && yaz(kodlar(m.yorumlar.filter((_, j) => j !== i)))}>Kaldır</button></li>
+          <button class="dugme sade kucuk" onClick={() => void geriAlinabilir('Yorum kaldırıldı.', () => yaz(kodlar(m.yorumlar.filter((_, j) => j !== i))), () => yaz(kodlar(m.yorumlar)))}>Kaldır</button></li>
       ))}</ul>}
       <form class="satir" onSubmit={(e) => {
         e.preventDefault();

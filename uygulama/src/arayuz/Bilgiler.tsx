@@ -11,7 +11,7 @@ import { KayitSec, SatirGirdisi } from './KayitBolumleri';
 import { SinirAlani, SinirGirdi, sinirYazi, useYukle } from './Anlati';
 import type { Secim } from './BaglantiSecici';
 import { IddiaDosyasiBolumu } from './IddiaDosyasi';
-import { onayla } from './onay';
+import { geriAlinabilir, onayla } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: { kod: string; ad: string }) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
@@ -131,7 +131,7 @@ function IddiaKarti({ istemci, evren, iddia }: { istemci: Istemci; evren: string
             </select></label>
           <label class="alan"><span class="alan-adi">Karar durumu</span>
             <KararSecici etiket="Soru" karar={iddia.karar} onDegis={(k) => degistir('karar', k).catch(() => {})} /></label>
-          <button class="dugme tehlikeli kucuk" onClick={() => onayla('Bu soru kaldırılsın mı?') && istemci.iste('iddiaSil', { evren, kod: iddia.kod })}>Soruyu kaldır</button>
+          <button class="dugme tehlikeli kucuk" onClick={() => void geriAlinabilir('Soru kaldırıldı.', () => istemci.iste('iddiaSil', { evren, kod: iddia.kod }), () => istemci.iste('iddiaSil', { evren, kod: iddia.kod, geriYukle: true }))}>Soruyu kaldır</button>
           {hata && <p class="hata kucuk">{hata}</p>}
         </div>
       )}
@@ -290,7 +290,7 @@ function BilgiOgesi({ istemci, evren, b, soruGoster }: { istemci: Istemci; evren
           <SatirGirdisi etiket="Açıklama" deger={b.aciklama} kaydet={(v) => degistir('aciklama', v)} />
           <label class="alan"><span class="alan-adi">Karar durumu</span>
             <KararSecici etiket="Bilgi" karar={b.karar} onDegis={(k) => degistir('karar', k).catch(() => {})} /></label>
-          <button class="dugme tehlikeli kucuk" onClick={() => onayla('Bu bilgi kaldırılsın mı?') && istemci.iste('bilgiSil', { evren, kod: b.kod })}>Kaldır</button>
+          <button class="dugme tehlikeli kucuk" onClick={() => void geriAlinabilir('Bilgi kaldırıldı.', () => istemci.iste('bilgiSil', { evren, kod: b.kod }), () => istemci.iste('bilgiSil', { evren, kod: b.kod, geriYukle: true }))}>Kaldır</button>
           {hata && <p class="hata kucuk">{hata}</p>}
         </div>
       )}
