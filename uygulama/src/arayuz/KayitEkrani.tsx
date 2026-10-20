@@ -274,7 +274,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           <KayitDegisimleri istemci={istemci} evren={evren} kod={kod} surum={surum} />
           <KayitMasalari istemci={istemci} evren={evren} kod={kod} surum={surum} />
           {!['sahne', 'not', 'eser', 'bolum'].includes(kayit.tur) && <KayitIzleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-          <Baglananlar istemci={istemci} evren={evren} kod={kod} surum={surum} />
+          <Baglananlar istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} surum={surum} />
         </details>
 
         {gecmisAcik && (
@@ -430,7 +430,7 @@ function AdDuzeltmePaneli({ duzeltme, okunusVar, uygula, kapat }: {
 }
 
 /** Andıkları ve ananlar (§3.2, K28): iki yön yan yana; ikisi de boşsa bölüm görünmez. */
-function Baglananlar({ istemci, evren, kod, surum }: { istemci: Istemci; evren: string; kod: string; surum: number }) {
+function Baglananlar({ istemci, evren, kod, ad, surum }: { istemci: Istemci; evren: string; kod: string; ad: string; surum: number }) {
   const [ananlar, setAnanlar] = useState<BaglananKayit[] | null>(null);
   const [andiklari, setAndiklari] = useState<BaglananKayit[] | null>(null);
   useEffect(() => {
@@ -438,7 +438,7 @@ function Baglananlar({ istemci, evren, kod, surum }: { istemci: Istemci; evren: 
     istemci.iste('andiklari', { evren, kod }).then(setAndiklari);
   }, [kod, surum]);
   if (!ananlar || !andiklari || (!ananlar.length && !andiklari.length)) return null;
-  const sutun = (baslik: string, bos: string, liste: BaglananKayit[]) => (
+  const sutun = (baslik: string, bos: string, liste: BaglananKayit[], kimin: (b: BaglananKayit) => string) => (
     <div class="baglanti-sutunu">
       <h2>{baslik} ({liste.length})</h2>
       {liste.length ? <ul class="kayit-listesi">
@@ -450,7 +450,8 @@ function Baglananlar({ istemci, evren, kod, surum }: { istemci: Istemci; evren: 
                 <span class={`tur-rozeti ${grupSinifi(tur)}`} aria-hidden="true" title={tur.ad}>{tur.kisa}</span>
                 <span class="govde">
                   <span class="satir-ad">{b.ad}</span>
-                  {b.ifadeler.length > 0 && <span class="soluk kucuk">{b.ifadeler.map((i) => `“${i}”`).join(', ')}</span>}
+                  {/* Kaydın adıyla aynı olan ifade tekrar yazılmaz. */}
+                  {b.ifadeler.some((i) => i !== kimin(b)) && <span class="soluk kucuk">{b.ifadeler.map((i) => `“${i}”`).join(', ')}</span>}
                 </span>
               </a>
             </li>
@@ -461,8 +462,8 @@ function Baglananlar({ istemci, evren, kod, surum }: { istemci: Istemci; evren: 
   );
   return (
     <section class="baglananlar" aria-label="Bağlantılar">
-      {sutun('Bu kaydın andıkları', 'Bu kaydın metninde henüz bağlantı yok.', andiklari)}
-      {sutun('Bu kaydı ananlar', 'Başka bir metin bu kayda henüz bağlanmadı.', ananlar)}
+      {sutun('Bu kaydın andıkları', 'Bu kaydın metninde henüz bağlantı yok.', andiklari, (b) => b.ad)}
+      {sutun('Bu kaydı ananlar', 'Başka bir metin bu kayda henüz bağlanmadı.', ananlar, () => ad)}
     </section>
   );
 }

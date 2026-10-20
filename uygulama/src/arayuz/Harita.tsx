@@ -50,7 +50,7 @@ function HaritaListesi({ istemci, evren }: { istemci: Istemci; evren: string }) 
     <div class="haritalar">
       <p class="soluk kucuk">Bir harita görseli yükleyin, üstüne işaretler koyun ve her işareti bir kayda bağlayın. Bir yerin haritadaki yeri bilinmiyorsa bunu da belirtebilirsiniz; efsanevi bir şehir için nokta koymanız gerekmez.</p>
       <HaritaYukle istemci={istemci} evren={evren} />
-      {liste.length === 0 && <BosSayfa baslik="İlk haritanızı ekleyin" eylem={{ ad: 'Harita ekle', yap: () => odakla('input[aria-label="Harita görseli"]', true) }} konu={19}>
+      {liste.length === 0 && <BosSayfa baslik="İlk haritanızı ekleyin" eylem={{ ad: 'Harita ekle', yap: () => odakla('.haritalar > button.dugme', true) }} konu={19}>
         Harita, mekânlarınızı bir görselin üstünde işaretler; yolculuk süreleri ve kimin nerede olduğu buradan hesaplanır.
       </BosSayfa>}
       <ul class="harita-izgara">
@@ -63,7 +63,7 @@ function HaritaListesi({ istemci, evren }: { istemci: Istemci; evren: string }) 
             </a>
           </li>
         ))}
-        {liste.length > 0 && <li><YeniKarti ad="Yeni harita" yap={() => odakla('input[aria-label="Harita görseli"]', true)} /></li>}
+        {liste.length > 0 && <li><YeniKarti ad="Yeni harita" yap={() => odakla('.haritalar > button.dugme', true)} /></li>}
       </ul>
       {kaldirilan.length > 0 && (
         <details class="kaldirilan-haritalar">
