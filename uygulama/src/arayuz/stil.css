@@ -932,3 +932,5 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .bos-cipler .cip { border: 1px dashed var(--cizgi); border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 0.85rem; color: var(--vurgu); background: var(--yuzey); cursor: pointer; }
 .bos-cipler .cip:hover { border-color: var(--vurgu); }
 .henuz-eklenmedi { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--cizgi); }
+/* İlk adımlarda sıradaki adım (K26): Yaz sayfası dışında tek satır */
+.siradaki-adim { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 12px; padding: 8px 14px; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey); }

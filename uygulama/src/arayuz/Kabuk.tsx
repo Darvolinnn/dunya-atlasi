@@ -2,6 +2,8 @@
 // (eser › bölüm › sahne) çubukta görünür; görünümlerden biri açıkken görünümlerin listesi açılır. Az kullanılan
 // sayfalar "Diğer" altında katlanır.
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { gitVeYap, YENI_SAHNE_OLAYI } from './yonlendirme';
+import { SiradakiAdim } from './IlkAdimlar';
 import type { Istemci } from '../veri/istemci';
 import type { EserYapisi, EvrenBilgisi, KisaKayit, YapiSahnesi } from '../veri/api';
 import { git } from './Uygulama';
@@ -73,7 +75,7 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
           <span>Komutlar: Ctrl+K</span>
         </div>
       </nav>
-      <div class="kabuk-ic">{children}</div>
+      <div class="kabuk-ic">{!bagli && !(etkin === 'yaz' && !acik) && <SiradakiAdim istemci={istemci} evren={evren} />}{children}</div>
     </div>
   );
 }
@@ -97,6 +99,22 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
     istemci.iste('yerlesmemisler', { evren }).then((l) => setDisarida(l.filter((x) => x.tur === 'sahne')), () => {});
     istemci.iste('seriler', { evren }).then((r) => setSeriler(r.seriler), () => setSeriler([]));
   }, [evren, surum]);
+  // "Yeni sahne" isteği (eser oluşturulunca ya da İlk adımlardaki "Yap"): eserin son bölümünün, bölümü yoksa
+  // eserin altındaki sahne adı kutusu açılır.
+  // İstek, ağaç yeni eseri okumadan gelebilir; eserin yapısı okununca uygulanır.
+  const [sahneIstegi, setSahneIstegi] = useState<string | null>(null);
+  useEffect(() => {
+    const ac = (e: Event) => setSahneIstegi((e as CustomEvent<string>).detail);
+    addEventListener(YENI_SAHNE_OLAYI, ac);
+    return () => removeEventListener(YENI_SAHNE_OLAYI, ac);
+  }, []);
+  useEffect(() => {
+    const y = sahneIstegi ? yapilar[sahneIstegi] : undefined;
+    if (!sahneIstegi || !y) return;
+    setSahneIstegi(null);
+    if (saltOkunur) return;
+    setYeni({ ust: y.bolumler.length ? y.bolumler[y.bolumler.length - 1].kod : sahneIstegi, tur: 'sahne' }); setHata(null);
+  }, [sahneIstegi, yapilar, saltOkunur]);
   if (!eserler) return null;
 
   const ekle = async (ad: string) => {
@@ -114,6 +132,8 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
       if (yeni.tur === 'eser' && yeni.ust) await istemci.iste('anlatiYerlestir', { evren, kod, ust: yeni.ust });
       setYeni(null); setHata(null);
       git(`/e/${evren}/yaz/${kod}`);
+      // Yeni eserin ardından ilk sahnenin adı sorulur (K26).
+      if (yeni.tur === 'eser') void gitVeYap(null, [{ bekle: `.eser-agaci a[href$="/yaz/${kod}"]`, olay: YENI_SAHNE_OLAYI, detay: kod }]);
     } catch (e) { setHata(hataYaz(e)); }
   };
   const yeniSatir = (ust: string | null, tur: 'eser' | 'bolum' | 'sahne' | 'seri', etiket: string) =>
