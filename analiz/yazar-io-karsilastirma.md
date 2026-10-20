@@ -191,3 +191,50 @@ Not: AGENTS.md ve tasarım belgesi §0 gereği, aşağıdakiler yalnızca kullan
 18. Gizlilik politikası ve kullanım şartlarının tam metni (verinin hangi ülkede tutulduğu, KVKK).
 19. Yazar Kartı'nın neleri gösterdiği.
 20. Ayarlar sayfasında başka beklenmedik özellik (hedefler, kelime sayacı, bildirim) olup olmadığı.
+
+---
+
+## 8. İçeriden gezme (kullanıcının tarayıcı eklentisi raporu, 20 Ekim 2026)
+
+Kullanıcı kendi hesabıyla girişliyken salt okunur "Örnek Kitap"ı gezdirdi; hiçbir şey oluşturulmadı. Önceki bölümleri düzelten ve tamamlayan bulgular:
+
+- **Metin editörü yok.** Roman Word'de yazılır; yazar.io "dünya kurma wikisi"dir. Taslak bağlantısı Genel Bakış'ta "Kaldığın yerden" kutusunda durur. Odak kipi, kelime hedefi yok.
+- **Bağlantı için ismi yazmak yeter** (ayrıca @ ile seçme); her sayfada "kim benden bahsediyor" paneli.
+- **Notlar:** 10 not türü (Sahne Fikri, Dünya Kuralı, **Çelişki/Kontrol**, Diyalog Fikri…) ve durum: Fikir → Geliştiriliyor → Kontrol Edilecek → Kullanıldı; altlarında bağlı kayıt etiketleri; arşiv ve silinen notlar.
+- **Olay Akışı:** numaralı dikey kartlar, serbest dönem etiketi, sürükleyerek sıralama; gerçek tarih ekseni, paralel hat yok.
+- **Soyağacı** sürükle-bağla; Düşman, Sevgili, Vasi gibi özel bağlar. Genel ilişki ağı yok. **Harita yok** (emin değil). **Seri yapısı yok**; seri için tek çalışma alanı öneriliyor.
+- **Yeni başlayan için:** her hesapta dolu, salt okunur örnek kitap (79 kayıt); Genel Bakış'ta 0/6 başlangıç listesi ("iki girişi birbirine bağla" adımı dahil); dönen ipuçları; türe göre bölümlerin önceden açık gelmesi; 6 rehber yazısı.
+- **Güvence:** 30 günlük çöp kutusu; Pro bitince içerik silinmez, salt okunur kalır. Kullanıcının başlattığı ayrı yedek yok; içerik sunucuda.
+- **Fiyat:** ücretsiz plan (2 kitap, tür başına 15 kayıt) ve Pro (aylık ₺249,99 / yıllık ₺1.999,99).
+- Yapay zekâ yok (bilerek), Dünya Atlası'yla aynı ilke.
+
+### 8.1 Yan yana (içeriden gezmeyle düzeltilmiş özet)
+
+| Alan | yazar.io | Dünya Atlası |
+|---|---|---|
+| Romanı içinde yazma | Yok (Word'de) | Var: sahne sahne, sürümler, bağlam paneli |
+| Seri › eser › bölüm › sahne | Yok | Var |
+| Kayıtlar ve özel alanlar | Var (13 bölüm, alan şablonları) | Var (çok sayıda tür, şablon ve soru setleri) |
+| Bağlantı | İsim yazınca kendiliğinden + @ | `[[` ile; geri-atıf paneli var |
+| Notlar ve durumları | 10 tür, 4 durum, arşiv | Not kaydı ve "Karar bekleyenler" (3 durum); tür/durum ayrımı daha az |
+| Zaman | Sıralı olay kartları | Gerçek takvimler, belirsiz tarih, paralel takvim, zaman çizelgesi |
+| Olay örgüsü, kurgu hattı, okurun bilgisi | Yok | Var |
+| Harita | Yok (emin değil) | Var |
+| İlişki ağı / soyağacı | Soyağacı (özel bağlarla) | Ağ, soy ağacı, ilişki türleri |
+| İlk kez gelen | Dolu örnek kitap, 0/6 listesi, ipuçları, türe göre bölümler | İlk adımlar (4 yol, "Yap"), yazarlık rehberi, soru örnekleri |
+| Paylaşma | Parolalı salt okunur wiki | EPUB/PDF/Markdown çıktı; okur sitesi yok |
+| Çevrimdışı ve veri | İnternet gerekir; veri sunucuda | Çevrimdışı; veri cihazda, Drive eşitleme, yedek |
+| Mobil | iOS/Android uygulaması | Yok (tablet ertelendi) |
+| Fiyat | Ücretsiz sınırlı / Pro | Kişisel program |
+
+### 8.2 İçeriden gezmeyle güçlenen öneriler (öncelik sırasıyla; hepsi öneri, K11)
+
+1. **Dolu, salt okunur örnek evren** (uydurma *Hatıra İmparatorluğu*): iki araştırmada da öne çıktı. Orta.
+2. **Notlara tür ve durum** (fikir → geliştiriliyor → kontrol edilecek → kullanıldı) ve **"Çelişki/Kontrol"** notu: kullanılmamış fikir kaybolmaz; seri tutarlılığına iyi gelir. Var olan "Karar bekleyenler" ile birleştirilmeli, ikinci bir liste açılmamalı. Küçük–orta.
+3. **Bağlanmamış adları gösterme:** metinde var olan bir kaydın adı `[[` olmadan geçiyorsa yanında "bağla?" önerisi. **Tasarımla çelişebilir (K1: serbest metinden anlam çıkarılmaz)**; yalnız birebir ad eşleşmesi ve yazarın onayıyla düşünülmeli, kullanıcı karar vermeli. Orta.
+4. **Türe göre başlangıç:** yeni evrende "fantastik / gerçekçi / polisiye…" seçimine göre bazı kayıt türlerinin ve bölümlerin önceden gizli gelmesi (kalabalığı azaltır). Orta.
+5. **Genel Bakış'ta "Kaldığın yerden" ve son değişiklikler** zaten kısmen var (Şimdi kartı, kaldığın yer); rastgele bir alıntı gibi süsler gereksiz.
+6. **Okur için salt okunur çıktı:** "şu kitaba kadar olanlar" süzgeciyle tek dosyalık viki; Dünya Atlası'nın okurun bilgisini izlemesi sayesinde yazar.io'dan güçlü olabilir. Büyük.
+7. **Soyağacında özel bağlar:** Dünya Atlası'nda ilişki türleri zaten var; soy ağacında da görünmeleri küçük bir iş olabilir. Küçük.
+
+Dünya Atlası'nın belirgin üstünlükleri: roman programın içinde yazılıyor; seri yapısı; olay örgüsü, kurgu hatları ve okurun bilgisi; gerçek takvim ve harita; veri yazarın cihazında ve çevrimdışı. yazar.io'nun üstünlükleri: ilk açılışın sadeliği ve dolu örnek, mobil uygulama, paylaşılabilir wiki.
