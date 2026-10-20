@@ -104,6 +104,9 @@ export const ILISKI_TURLERI: IliskiTuru[] = [
   { kod: 'teknoloji_bilir', aIcin: 'Bildiği teknoloji', bIcin: 'Bu teknolojiyi bilen', karsilikli: false, grup: 'Üretim ve ekoloji' },
   { kod: 'teknoloji_uretir', aIcin: 'Üretebildiği teknoloji', bIcin: 'Bu teknolojiyi üretebilen', karsilikli: false, grup: 'Üretim ve ekoloji' },
   { kod: 'teknoloji_kullanir', aIcin: 'Kullanabildiği teknoloji', bIcin: 'Bu teknolojiyi kullanabilen', karsilikli: false, grup: 'Üretim ve ekoloji' },
+  // K29: alıntıyı söyleyen ya da yazan (A kişi, topluluk, inanç…; B alıntı) ve alıntının geçtiği sahne (A sahne, B alıntı).
+  { kod: 'soyler', aIcin: 'Söylediği söz', bIcin: 'Söyleyen ya da yazan', karsilikli: false, grup: 'Kültür ve dil' },
+  { kod: 'alinti_gecer', aIcin: 'Geçen alıntı', bIcin: 'Geçtiği sahne', karsilikli: false, grup: 'Sahne ve olay' },
   { kod: 'motif_gecer', aIcin: 'Geçen motif', bIcin: 'Geçtiği sahne', karsilikli: false, grup: 'Sahne ve olay' },
   { kod: 'anlatir', aIcin: 'Anlattığı olay', bIcin: 'Anlatıldığı sahne', karsilikli: false, grup: 'Sahne ve olay' },
   { kod: 'sahnede', aIcin: 'Yer aldığı sahne', bIcin: 'Sahnedekiler', karsilikli: false, grup: 'Sahne ve olay', roller: SAHNE_ROLLERI },

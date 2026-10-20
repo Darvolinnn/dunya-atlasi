@@ -3,7 +3,7 @@ export interface Kisayol { anahtar: string; ad: string; tus: string; not?: strin
 
 export const KISAYOLLAR: Kisayol[] = [
   { anahtar: 'palet', ad: 'Komut paleti', tus: 'Ctrl+K', not: 'Metin dışındayken / tuşu da açar' },
-  { anahtar: 'bagla', ad: 'Bağlantı aç', tus: '[[', not: 'Türkçe klavyede [ işareti AltGr+8 ile yazılır. Metindeyken Ctrl+K de açar' },
+  { anahtar: 'bagla', ad: 'Bağlantı aç', tus: '[[ ya da @', not: 'Türkçe klavyede [ işareti AltGr+8, @ işareti AltGr+Q ile yazılır. @ yalnız kelime başında açar. Metindeyken Ctrl+K de açar' },
   { anahtar: 'not', ad: 'Hızlı not', tus: 'Alt+N' },
   { anahtar: 'odak', ad: 'Odak kipi', tus: 'Ctrl+Shift+F', not: 'Yazma ekranında; Esc ile çıkılır' },
   { anahtar: 'kisayollar', ad: 'Kısayollar', tus: '?', not: 'Metin dışındayken' },

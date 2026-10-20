@@ -40,6 +40,7 @@ export const TURLER: Tur[] = [
   { kod: 'sahne', ad: 'Sahne', grup: 'Anlatı ve yazarlık', kisa: 'Sa' },
   { kod: 'kurgu_hatti', ad: 'Kurgu hattı', grup: 'Anlatı ve yazarlık', kisa: 'Kh' },
   { kod: 'motif', ad: 'Motif / simge', grup: 'Anlatı ve yazarlık', kisa: 'Mo' },
+  { kod: 'alinti', ad: 'Alıntı', grup: 'Anlatı ve yazarlık', kisa: 'Al' },
   { kod: 'not', ad: 'Not', grup: 'Anlatı ve yazarlık', kisa: 'No' },
   { kod: 'acik_mesele', ad: 'Açık mesele', grup: 'Anlatı ve yazarlık', kisa: 'Am' },
   { kod: 'gerekce', ad: 'Gerekçe kaydı', grup: 'Anlatı ve yazarlık', kisa: 'Ge' },
@@ -97,7 +98,7 @@ const INGILIZCE: Record<string, string> = {
   culture: 'kultur', religion: 'inanc', faith: 'inanc', ritual: 'rituel', language: 'dil',
   magic: 'buyu_sistemi', spell: 'buyu_uygulamasi', technology: 'teknoloji', creature: 'canli', species: 'canli', plant: 'canli',
   currency: 'para', event: 'olay', era: 'donem', age: 'donem', period: 'donem', treaty: 'antlasma', rumor: 'haber', rumour: 'haber',
-  document: 'belge', scene: 'sahne', plot: 'kurgu_hatti', note: 'not', source: 'kaynak',
+  document: 'belge', scene: 'sahne', plot: 'kurgu_hatti', note: 'not', quote: 'alinti', source: 'kaynak',
 };
 
 export function turBulYazidan(yazilan: string): string | null {

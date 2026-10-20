@@ -65,7 +65,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       'Henüz eseriniz yoksa romanınızın ya da öykünüzün adını yazıp “Eser oluştur”a basın.',
       'Soldaki ağaçta “+ Bölüm” ile bölüm, “+ Sahne” ile sahne ekleyin.',
       'Bir sahneye basıp yazmaya başlayın. Yazdıklarınız kendiliğinden kaydedilir.',
-      'Metinde bir karakterin ya da yerin adını [[ ile yazarsanız ona bağlantı kurulur; kayıt yoksa “fikir” olarak oluşturulur.',
+      'Metinde bir karakterin ya da yerin adını [[ ya da @ ile yazarsanız ona bağlantı kurulur; kayıt yoksa “fikir” olarak oluşturulur.',
       'Sağdaki bağlam panelini başlıktaki düğmeyle açıp × ile kapatabilirsiniz. Sahnenin bütün ayrıntıları için “Bütün alanlar”a basın.',
     ],
     ipuclari: [
@@ -245,10 +245,10 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
   },
   bahsedilen: {
-    baslik: 'Eksik kayıtlar',
+    baslik: 'Henüz yazılmayanlar',
     ne: [
       'Metinlerinizde adını bağlantıyla andığınız ama kendi sayfasına henüz bir şey yazmadığınız kayıtlar. En çok anılan en üsttedir.',
-      'Adı “eksik” olsa da bu bir görev listesi değil, bir hatırlatmadır: belki bu kayıtların bir kısmı hiç yazılmayacak, o da olur.',
+      'Bu bir görev listesi değil, bir hatırlatmadır: belki bu kayıtların bir kısmı hiç yazılmayacak, o da olur.',
     ],
     neZaman: 'Evreninizde neyi derinleştirebileceğinize bakmak istediğinizde.',
     adimlar: [

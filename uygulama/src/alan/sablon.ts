@@ -137,6 +137,50 @@ export const SORU_SETLERI: SoruSeti[] = [
     'Olası karşılığı ne?',
     ['Bilerek açık mı kalacak?', 'Bazı hatlar bilinçli olarak belirsiz kalır'],
   ]),
+  // Hazır türlerin soruları (K29, Ek A).
+  set('esya', 'Eşya', [
+    'Kim yaptı, neden?',
+    'Şimdi kimde ve ona nasıl geçti?',
+    ['Ne işe yarıyor; bedeli ya da kusuru ne?', 'Her güçlü eşyanın bir eksiği olursa hikâyede daha iyi çalışır'],
+    'İnsanlar onun hakkında ne anlatıyor?',
+    'Kaybolursa ne olur?',
+  ]),
+  set('inanc', 'İnanç', [
+    'Evreni nasıl açıklıyor?',
+    'İyi insan kimdir?',
+    'Ölümden sonra ne olur?',
+    'İbadeti kim yönetiyor, kurum nasıl geçiniyor?',
+    ['Resmî öğreti ile halkın inandığı nerede ayrılıyor?', 'Kitaptaki kural ile gündelik uygulama çoğu zaman farklıdır'],
+    'Kimlerle çatışıyor?',
+  ]),
+  set('canli', 'Canlı türü', [
+    'Nerede yaşıyor?',
+    'Ne yiyor, onu ne yiyor?',
+    'İnsanlar onu nasıl kullanıyor ya da ondan nasıl korunuyor?',
+    'Onu tehlikeli ya da değerli kılan ne?',
+    'Hakkında hangi yanlış inanç var?',
+  ]),
+  set('teknoloji', 'Teknoloji', [
+    'Ne işe yarıyor?',
+    'Kim buldu, kim kullanabiliyor?',
+    ['Neye mal oluyor?', 'Malzeme, bilgi, izin, zaman…'],
+    'Gündelik hayatı nasıl değiştirdi?',
+    'Bozulunca ya da kötüye kullanılınca ne olur?',
+  ]),
+  set('rituel', 'Ritüel', [
+    'Ne zaman ve neden yapılıyor?',
+    'Kim yönetiyor, kim katılıyor?',
+    'Aşamaları neler?',
+    'Yapılmazsa ne olur?',
+    'Dışarıdan biri neyi tuhaf bulur?',
+  ]),
+  set('donem', 'Dönem', [
+    'Nasıl başladı, nasıl bitti?',
+    'O zaman kim güçlüydü?',
+    'İnsanlar bu dönemi bugün nasıl anıyor?',
+    'Bu dönemden kalan izler neler?',
+    ['O dönemde neyi bilmiyorlardı?', 'Sonradan öğrenilen ya da hâlâ bilinmeyen'],
+  ]),
   set('rehber', 'Evren kurma rehberi', [
     ['Kim hüküm sürüyor?', 'Bir topluluk kaydıyla da cevaplayabilirsiniz'], 'Büyünün bedeli ne?', ['İnsanlar neye inanıyor?', 'Bir inanç kaydıyla da cevaplayabilirsiniz'],
   ]),
@@ -178,6 +222,11 @@ export const NOT_DURUMLARI: Secenek[] = [
 ];
 /** Karar bekleyenler sayfasında da listelenen not türü (K28). */
 export const CELISKI_NOTU = 'celiski';
+/** Alıntının türü (K29, §4.6). */
+export const ALINTI_TURLERI: Secenek[] = [
+  { kod: 'soz', ad: 'Söz' }, { kod: 'sarki', ad: 'Şarkı' }, { kod: 'kehanet', ad: 'Kehanet' },
+  { kod: 'yazit', ad: 'Yazıt' }, { kod: 'atasozu', ad: 'Atasözü' }, { kod: 'diger', ad: 'Diğer' },
+];
 
 /** Türlerin varsayılan şablonları. Yazar değiştirince evrene kaydedilir; değiştirmediği tür bunları kullanır. */
 const VARSAYILANLAR: Record<string, Sablon> = {
@@ -238,12 +287,24 @@ VARSAYILANLAR.mekan.alanlar.push(IKLIM, PARA, HUKUK, DIL, MIMARI);
 VARSAYILANLAR.sehir.alanlar.push(IKLIM, PARA, HUKUK, DIL, MIMARI);
 VARSAYILANLAR.siyasi.alanlar.push(PARA, HUKUK);
 VARSAYILANLAR.kultur.alanlar.push({ ...DIL, varsayilan: undefined }, { ...MIMARI, varsayilan: undefined });
-VARSAYILANLAR.canli = { alanlar: [{ ...YASAM, varsayilan: undefined }], sorular: [] };
+VARSAYILANLAR.canli = { alanlar: [{ ...YASAM, varsayilan: undefined }], sorular: sorular('canli') };
 // Eşyanın ve motifin gerçek geçmişi ile anlatılan efsanesi ayrıdır (§4.6).
 const GERCEK: SablonAlani = { kod: 'gercek_gecmis', ad: 'Gerçek geçmişi', tur: 'uzun' };
 const EFSANE: SablonAlani = { kod: 'efsane', ad: 'Anlatılan efsanesi', tur: 'uzun' };
 VARSAYILANLAR.motif = { alanlar: [{ kod: 'gorunus', ad: 'Görünüşü', tur: 'uzun' }, GERCEK, EFSANE], sorular: [] };
-VARSAYILANLAR.esya = { alanlar: [GERCEK, EFSANE], sorular: [] };
+VARSAYILANLAR.esya = { alanlar: [GERCEK, EFSANE], sorular: sorular('esya') };
+// Alıntının sözü kaydın metnindedir; kimin söylediği ve geçtiği sahne ilişkilerle (soyler, alinti_gecer) tutulur.
+VARSAYILANLAR.alinti = {
+  alanlar: [
+    { kod: 'alinti_turu', ad: 'Türü', tur: 'secim', secenekler: ALINTI_TURLERI },
+    { kod: 'baglam', ad: 'Bağlamı', tur: 'uzun', ipucu: 'Ne zaman, kime, neden söylendi?' },
+  ],
+  sorular: [],
+};
+VARSAYILANLAR.inanc = { alanlar: [], sorular: sorular('inanc') };
+VARSAYILANLAR.teknoloji = { alanlar: [], sorular: sorular('teknoloji') };
+VARSAYILANLAR.rituel = { alanlar: [], sorular: sorular('rituel') };
+VARSAYILANLAR.donem = { alanlar: [], sorular: sorular('donem') };
 export const varsayilanSablon = (tur: string): Sablon => structuredClone(VARSAYILANLAR[tur] ?? BOS);
 
 const KOD = /^[a-z0-9_.-]{1,40}$/;

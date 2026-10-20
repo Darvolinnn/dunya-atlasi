@@ -134,10 +134,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     return { left: k.left, top: k.bottom + 6 };
   };
   const seciciAc = (i: SeciciIstegi) => { if (gorunum.current) setSecici({ ...i, konum: konumu(i.from) }); };
-  /** "[[" yazıldı: kutu açılır, arama metni editörde yazıldıkça güncellenir. */
-  const satirIciBasla = (bas: number) => {
+  /** "[[" ya da "@" yazıldı: kutu açılır, arama metni editörde yazıldıkça güncellenir. */
+  const satirIciBasla = (bas: number, onEk: string) => {
     if (!gorunum.current) return;
-    setSecici({ from: bas, to: bas + 2, sorgu: '', gorunen: null, isaretle: false, satirIci: true, canli: true, konum: konumu(bas) });
+    setSecici({ from: bas, to: bas + onEk.length, sorgu: '', gorunen: null, isaretle: false, satirIci: true, canli: true, onEk, konum: konumu(bas) });
   };
   /** Her değişiklikte satır içi kutunun aralığını ve arama metnini günceller; imleç dışarı çıkınca kapatır. */
   const seciciIzle = (tr: Transaction, state: EditorState) => {
@@ -147,9 +147,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     const bas = tr.mapping.map(s.from, -1);
     const { from, empty } = state.selection;
     const $b = state.doc.resolve(Math.min(bas, state.doc.content.size));
-    if (!empty || from < bas + 2 || from > $b.end() || state.doc.textBetween(bas, Math.min(bas + 2, $b.end())) !== '[[') { setSecici(null); return; }
-    const sorgu = state.doc.textBetween(bas + 2, from);
-    if (/[[\]]/.test(sorgu) || sorgu.length > 80) { setSecici(null); return; }
+    const onEk = s.onEk ?? '[[';
+    if (!empty || from < bas + onEk.length || from > $b.end() || state.doc.textBetween(bas, Math.min(bas + onEk.length, $b.end())) !== onEk) { setSecici(null); return; }
+    const sorgu = state.doc.textBetween(bas + onEk.length, from);
+    if (/[[\]@]/.test(sorgu) || sorgu.length > 80) { setSecici(null); return; }
     if (sorgu !== s.sorgu || bas !== s.from || from !== s.to) setSecici({ ...s, from: bas, to: from, sorgu });
   };
 
@@ -289,7 +290,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         plugins: [
           baglantiEklentisi({
             ac: (i) => seciciAc({ ...i, satirIci: true }),
-            satirIciBasla: (b) => satirIciBasla(b),
+            satirIciBasla: (b, onEk) => satirIciBasla(b, onEk),
             paletAc: () => { calismaRef.current?.paletAc({ bagla }); },
             yeniKayit: async (ad, tur, ozet) => (await istemci.iste('kayitOlustur', { evren, ad, tur, ozet, karar: 'fikir' })).kod,
           }),
@@ -527,7 +528,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         <button type="button" class="arac" aria-pressed={baslikMi(3)} onMouseDown={(e) => e.preventDefault()} onClick={() => uygula(baslikMi(3) ? setBlockType(sema.nodes.paragraph) : setBlockType(sema.nodes.heading, { level: 3 }))}>Alt başlık</button>
         <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => uygula((s, d) => wrapIn(sema.nodes.blockquote)(s, d) || lift(s, d))}>Alıntı</button>
         <span class="ayrac" />
-        <button type="button" class="arac bagla" title="Bir kayda bağla (Ctrl+K ya da [[ )" onMouseDown={(e) => e.preventDefault()} onClick={bagla}>Bağla</button>
+        <button type="button" class="arac bagla" title="Bir kayda bağla (Ctrl+K, [[ ya da @)" onMouseDown={(e) => e.preventDefault()} onClick={bagla}>Bağla</button>
         {bag && v && <>
           <a class="arac" href={`#/e/${evren}/k/${bag.hedef}`}>“{v.state.doc.textBetween(bag.from, bag.to)}” kaydını aç</a>
           {calisma && <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => {
