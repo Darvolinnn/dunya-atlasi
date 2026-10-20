@@ -11,6 +11,7 @@ const deger = (alan: string, v: unknown) => alan === 'tur' ? turBul(String(v)).a
 const ACIKLAMALAR: Record<string, Aciklayici> = {
   evren_olustur: (v) => `Evren oluşturuldu: “${v.ad}”`,
   evren_adlandir: (v) => `Evrenin adı “${v.ad}” oldu`,
+  evren_etkin_calisma: (v, ad) => v.kod ? `Şu an çalışılan: “${ad(v.kod)}”` : 'Şu an çalışılan iş temizlendi',
   kayit_olustur: (v) => `${turBul(String(v.tur)).ad} oluşturuldu: “${v.ad}”`,
   kayit_degistir: (v, ad) => {
     const alan = String(v.alan);
@@ -84,10 +85,10 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   derleme_yaz: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'}: ${v.alan === 'ad' ? (v.derlemeAd === v.deger ? 'oluşturuldu' : `adı “${v.deger}” oldu`) : v.derlemeTuru === 'pano' ? 'görseller değişti' : 'adımlar değişti'}`,
   derleme_sil: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'} kaldırıldı`,
   derleme_geri_yukle: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'} geri getirildi`,
-  masa_olustur: (v) => `Çalışma masası kuruldu: “${v.ad}”`,
-  masa_yaz: (v) => `“${v.masaAd}” masası: ${({ ad: 'adı', amac: 'çözmeye çalışılan soru', notlar: 'notlar', bas: 'tarih aralığının başı', bit: 'tarih aralığının sonu', paket: 'seçili varsayım paketi', uyeler: 'bağlı kayıtlar' } as Record<string, string>)[String(v.alan)] ?? 'bir alanı'} değişti`,
-  masa_sil: (v) => `“${v.masaAd}” masası kaldırıldı`,
-  masa_geri_yukle: (v) => `“${v.masaAd}” masası geri getirildi`,
+  masa_olustur: (v) => `Konu dosyası kuruldu: “${v.ad}”`,
+  masa_yaz: (v) => `“${v.masaAd}” konu dosyası: ${({ ad: 'adı', amac: 'çözmeye çalışılan soru', notlar: 'notlar', bas: 'tarih aralığının başı', bit: 'tarih aralığının sonu', paket: 'seçili varsayım paketi', uyeler: 'bağlı kayıtlar' } as Record<string, string>)[String(v.alan)] ?? 'bir alanı'} değişti`,
+  masa_sil: (v) => `“${v.masaAd}” konu dosyası kaldırıldı`,
+  masa_geri_yukle: (v) => `“${v.masaAd}” konu dosyası geri getirildi`,
   paket_olustur: (v) => `Varsayım paketi oluşturuldu: “${v.ad}”`,
   paket_yaz: (v) => `“${v.paketAd}” paketi: ${({ ad: 'adı', aciklama: 'açıklaması', varsayimlar: 'varsayımları' } as Record<string, string>)[String(v.alan)] ?? 'bir alanı'} değişti`,
   paket_sil: (v) => `“${v.paketAd}” varsayım paketi kaldırıldı`,

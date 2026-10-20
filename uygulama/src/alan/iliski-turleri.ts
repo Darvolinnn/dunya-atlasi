@@ -120,6 +120,10 @@ export const ILISKI_TURLERI: IliskiTuru[] = [
   { kod: 'kurgu_hattinda', aIcin: 'Bağlı olduğu kurgu hattı', bIcin: 'Hattın sahnesi', karsilikli: false, grup: 'Yazarlık', roller: HAT_ROLLERI },
   { kod: 'mesele_konusu', aIcin: 'İlgili olduğu kayıt', bIcin: 'Açık meselesi', karsilikli: false, grup: 'Yazarlık' },
   { kod: 'gerekce_konusu', aIcin: 'Etkilediği kayıt', bIcin: 'Gerekçe kaydı', karsilikli: false, grup: 'Yazarlık' },
+  // K27: aynı soruya iki olası cevap (iki final, iki sahne sırası). Biri kesinleşince öbürü kendiliğinden değişmez.
+  { kod: 'alternatif', aIcin: 'Alternatifi', bIcin: 'Alternatifi', karsilikli: true, grup: 'Yazarlık' },
+  // K27: karakterin bir eserdeki planlanan yolu; soruları ilişkinin kendisine bağlıdır. Sahne için olan `odak`tan ayrıdır.
+  { kod: 'eser_odagi', aIcin: 'Odak karakteri olduğu eser', bIcin: 'Odak karakteri', karsilikli: false, grup: 'Yazarlık' },
   { kod: 'nottan', aIcin: 'Dönüştüğü kayıt', bIcin: 'Doğduğu not', karsilikli: false, grup: 'Genel' },
   { kod: 'ilgili', aIcin: 'İlgili', bIcin: 'İlgili', karsilikli: true, grup: 'Genel' },
 ];

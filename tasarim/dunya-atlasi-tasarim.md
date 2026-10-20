@@ -137,6 +137,7 @@ Aşağıdaki sözcükler belgede yalnızca bu anlamlarda kullanılır. Kodu yaza
 | K24 | **Arayüzde yazı merkezdedir.** Evren açılınca yazma düzeni gelir; ekran sadeleşir, az kullanılan araçlar katlanır ve görünüş yenilenir. Ayrıntı §5.10, §12.1. | 19 Ekim |
 | K25 | **Her sayfanın rehberi ve tek hitap.** Her sayfanın başlığında bir "?" düğmesi vardır; sayfanın ne işe yaradığını ve nasıl kullanıldığını anlatan rehberi sağdan açılan yan panelde gösterir. Program kullanıcıya "siz" diye hitap eder. Ayrıntı §12.4. | 19 Ekim |
 | K26 | **Yeni evrende ilk adımlar.** Yaz sayfasının üstünde dört adımlık bir liste durur: eser oluşturmak, ilk sahneyi eklemek, metinde bir kayda bağlanmak, sahneye tarih ya da mekân vermek. Yapılanlar evrenden anlaşılır ve işaretlenir; hepsi bitince ya da gizlenince görünmez. Zorunlu sihirbaz yoktur. Ayrıntı §5.10. | 19 Ekim |
+| K27 | **Rehberli yazarlık ve roman serisi.** Program yazarlık yöntemini öğretir ama dayatmaz: programla gelen bir yazarlık rehberi, eser, sahne ve kurgu hattı için soru setleri, İlk adımlarda başlangıç yolu, seri kaydı, olası finallerin birbirine alternatif olarak bağlanması, karakterin kitaptaki yolu, eser ve sahne çalışma durumu, "şu an çalıştığım" seçimi ve olay örgüsü masası. Evrenin kuralı, serinin büyük sorusu ve hikâyenin çekirdeği ayrı tutulur. Kullanıcı önerilen varsayılanların hepsini seçti (D1–D13). Kavram modeli `analiz/roman-serisi-veri-ve-kavram-modeli.md`'dedir ve bu belgeye paket paket işlenir; işlenen: anlatı soru setleri (Ek A, §4.6), yazarlık rehberi (§12.4), başlangıç yolları ve sahne planı (§5.10), seri (§3.3), olay örgüsü masası (§7). Görünüşü değiştiren her paketten önce resimli taslak gösterilir. | 19 Ekim |
 
 ### 1.2 Açık kararlar
 
@@ -259,6 +260,7 @@ Hüküm ile güncellik ayrı eksenlerdir: "önceki sonuç, olası uyuşmazlık" 
 
 | Kavram | Anlamı | Örnek |
 |---|---|---|
+| **Seri** | Birden çok eseri önerilen okuma sırasıyla toplayan, isteğe bağlı kayıt (K27) | *Kuzey Seferleri* üçlemesi |
 | **Eser** | Aynı evrende geçen roman, öykü ya da taslak | *Kuzey Seferi* |
 | **Bölüm** | Sahnelerin eser içindeki sırası (sunum bilgisi) | 8. bölüm |
 | **Sahne** | Anlatı parçası; varsayılan evren tarihi, mekânı ve bakış açısı vardır | Kuşatmanın bir askerin gözünden anlatılması |
@@ -266,6 +268,7 @@ Hüküm ile güncellik ayrı eksenlerdir: "önceki sonuç, olası uyuşmazlık" 
 | **Düzenleme geçmişi** | Yazarın yaptığı değişiklikler | Sahnenin bugün 5. bölüme taşınması |
 
 - Bir evrende birden çok eser olabilir. Evren kayıtları ortaktır; her eserin kendi bölümleri, sahneleri ve açık meseleleri vardır.
+- **Seri (K27):** eserler isteğe bağlı olarak bir serinin altına yerleşir (anlatı ağacında seri › eser › bölüm › sahne). Seri içindeki sıra **önerilen okuma sırasıdır**; evren kronolojisi ya da yayın sırası değildir ve onları değiştirmez. Bir eserin en çok bir serisi vardır; bir eserin ikinci bir seriye de ait olması ileride ilişkiyle eklenebilir. Eseri seriye koymak, taşımak ya da seriden çıkarmak eserin içindekileri, okur modelini ve tarihleri değiştirmez. **Seriyi silmek** eserlerin yerine dokunmaz: serisi silinmiş eser serisiz görünür; seri çöp kutusundan geri gelince eserler yeniden altına döner, arada başka yere taşınmış eser yeni yerinde kalır. Serinin soruları büyük soruyu, merkez çatışmayı ve büyük planı sorar (Ek A).
 - Bağlantılar bölüm numarasına değil, sahne ve olay kodlarına dayanır.
 - **Sahne olayı (K14):** Her sahne, ilk ihtiyaç anında kendiliğinden oluşan bir **sahne olayı** taşır: yazar süreklilik defterine (§5.6) bir değişim yazdığında ya da bir katılımcıya olay etkisi verdiğinde. Sahne olayı görünürdür; sahnenin panelinde adıyla ("Sahne: Kuşatmanın ilk gecesi") listelenir, tarihi, yeri ve zaman akışı sahneden gelir. Aynı olay ikinci bir sahnede de anlatılırsa (Z10) yazar iki sahneyi tek olaya bağlar; değişimler o zaman bir kez uygulanır. Yazar sahne olayını istediği an adlandırılmış bir evren olayına dönüştürebilir ya da başka bir olayla birleştirebilir. Sahne olayı gizli bir zaman çapası değildir (§3.5); dayanağı her zaman görünür.
 - **Sahne başka bölüme taşınınca:** evren tarihi değişmez. Değişebilecek olanlar okura sunulan sıraya bağlı şeylerdir: okurun bir bilgiyi öğrenme sırası, adların ve kavramların ilk tanıtıldığı yer, önceki tanıtıma dayanan göndermeler ve yazarın işaretlediği hazırlık–karşılık bağları. Taşımadan sonra bunları listeleyen kısa bir **anlatı etki özeti** çıkar; özet yalnızca açık işaretlere dayanır.
@@ -323,6 +326,8 @@ Sahibi (Kuzey Kalesi): [ Aldren Krallığı (… – 430), Varos (430 – …) ]
 ### 3.6 Karar durumu ve bilgi katmanları
 
 **Yazarın karar durumu:** *fikir · kesinleşmiş · vazgeçilmiş*. Vazgeçilen fikirler silinmez; normal aramada istenirse gizlenir. Durum alan düzeyinde de tutulur: karakterin adı kesinleşmiş, doğum yılı hâlâ fikir olabilir. Kayıt düzeyindeki etiket yalnızca genel iş düzeni içindir. "Yazar karar verdi", "evrende doğru sanılıyor", "okura açıklandı" ve "hesaptan çıktı" aynı onay değildir.
+
+**Alternatifler (K27):** Aynı soruya iki olası cevap (iki final, iki sahne sırası) aynı türden iki kayıt olarak yazılır ve **alternatif** ilişkisiyle bağlanır. Olası bir olay *fikir* durumundadır; olayın olacağı kesin ama ayrıntısı belli değilse kayıt kesinleşmiş, ilgili alan *fikir* olur. Biri kesinleştirilince program öbürünü kendiliğinden değiştirmez; kesinleştiren yazara öbürlerini de vazgeçilmiş yapmak isteyip istemediğini sorar. Vazgeçilen alternatif ve ona bağlı ipuçları silinmez. İki alternatifin ikisi de kesinse Uyarılar'da olası uyuşmazlık olarak görünür (§9.1).
 
 **Varsayılan yorum (K13):** Bir alana düz girilen değer *kesinleşmiş* karar durumunda ve *evrenin gerçeği* katmanında doğar; yazar tek dokunuşla onu fikre, bir grubun inancına ya da bir karakterin bilgisine çevirebilir. `[[` ile doğan yeni kayıt *fikir* durumundadır (§5.1). Tutarlılık denetimleri (§9.1) fikir durumundaki değerleri de denetler, ama bu uyarılar ayrı ve sessiz bir grupta durur ve inceleme kuyruğunu doldurmaz; vazgeçilmiş değerler denetlenmez.
 
@@ -418,7 +423,7 @@ Taç giyme, kuşatma, ritüel, antlaşma, yolculuk ve büyü uygulaması gibi s�
 
 (F37, K23.) Bir varsayım paketi, birlikte geçerli sayılan varsayımların adlandırılmış listesidir: "köprü açık", "haberci yola çıkmadı", "Kaelen yemini duydu". Bütün evreni kopyalamadan küçük düşünce deneyleri için kullanılır; büyük değişiklikler için deneme kopyası vardır (§9.7).
 
-- Bir çalışma masasında (§5.9) ya da bir hesapta bir paket seçilir; rota, haber, hukuk ve sahne bağlamı aynı paketi kullanır. Farklı araçların sonuçları ancak aynı paketle hesaplandıysa birlikte geçerlidir (§2.2 kural 14).
+- Bir konu dosyasında (§5.9) ya da bir hesapta bir paket seçilir; rota, haber, hukuk ve sahne bağlamı aynı paketi kullanır. Farklı araçların sonuçları ancak aynı paketle hesaplandıysa birlikte geçerlidir (§2.2 kural 14).
 - Her sonuç hangi paketle hesaplandığını taşır (§2.3). Başka paketle çıkan sonuç yan yana karşılaştırılabilir.
 - Varsayım, kullanıcı istemeden kanona yazılmaz. Paketteki bir varsayımı evrene yazmak ayrı bir kullanıcı işlemidir (§2.2 kural 1).
 - "Henüz karar vermedim" ile "iki seçenekten biri doğru" ayrıdır: ikincisi iki ayrı paket olarak tutulur ve sonuç iki koşul altında gösterilir.
@@ -497,10 +502,11 @@ Her tür bir **varsayılan bileşen listesi** ve bir **soru kütüphanesi** ile 
 
 | Tür | Öne çıkan alanlar |
 |---|---|
-| **Eser** | Bölümler, sahneler, okuma sırası, açık meseleler, sabit başvuru sürümü (§9.7), anlatı sözleşmesi (F15) |
+| **Seri** | Kitapları (önerilen okuma sırasıyla), soruları: serinin büyük planı (Ek A), açık meseleleri · **karakterlerin yolu**: karakter × kitap tablosu (eserlerdeki odak karakter sorularından) |
+| **Eser** | Bölümler, sahneler, okuma sırası, açık meseleler, sabit başvuru sürümü (§9.7), anlatı sözleşmesi (F15) · **odak karakterler** (K27): karakter ile eser arasında *eserin odak karakteri* bağı ve bu bağın kendi soruları (Ek A, "Karakterin bu kitaptaki yolu"); bir eserin birden çok odak karakteri olabilir, sahnedeki *odak karakter* (§3.3) ayrı bir bağdır. Cevaplar o kitabın planıdır: karakterin evren kaydını, durum geçmişini ya da başka kitabın cevaplarını değiştirmez · **kitap sonunda açık kalanlar**: okura sorulup (§3.6 okur sorusu, sahne niyetleri) bu eserde açıklayan sahnesi işaretlenmemiş sorular, bu eserin okuma sırasına göre; eser bir serideyse serinin sonraki kitaplarında nerede açıklandığı. Sonraki kitaplar yazılınca bu eserin listesi değişmez; serbest metinden "çözüldü" çıkarılmaz (K27) · sorular: hikâye çekirdeği ve bu kitabın görevi (Ek A, K27) · çalışma durumu: *fikir · plan · ilk taslak · düzeltme · bitti · yayımlandı* (karar durumundan ayrı; K27) |
 | **Bölüm** | Sıra, sahneler |
-| **Sahne** | Evren tarihi, mekân, bakış açısı, anlatıcı ve odak karakter, bağlam parçaları (§3.3), katılımcılar ve rolleri · süreklilik defteri (§5.6) · geçici sahne yerleşimi |
-| **Kurgu hattı** | Gizem, siyasi mücadele, ilişki ya da hedef · bağlı sahneler · ipuçları (*planlandı · metne yerleştirildi · karşılığı verildi · vazgeçildi*; okurun bunlardan ne öğrendiği §3.6 okur modelindedir) · "son bağlantılı sahne sekiz sahne önceydi" gibi somut bilgiler. Tempo yargısı verilmez. |
+| **Sahne** | Evren tarihi, mekân, bakış açısı, anlatıcı ve odak karakter, bağlam parçaları (§3.3), katılımcılar ve rolleri · süreklilik defteri (§5.6) · geçici sahne yerleşimi · sorular: sahne planı (Ek A, K27) · çalışma durumu: *planlandı · ilk taslak · düzenleniyor · gözden geçirildi* (aynı eserde farklı olabilir; evren tarihini ve denetimleri etkilemez) |
+| **Kurgu hattı** | Gizem, siyasi mücadele, ilişki ya da hedef · bağlı sahneler · ipuçları (*planlandı · metne yerleştirildi · karşılığı verildi · vazgeçildi*; okurun bunlardan ne öğrendiği §3.6 okur modelindedir) · "son bağlantılı sahne sekiz sahne önceydi" gibi somut bilgiler. Tempo yargısı verilmez. · sorular: kurgu hattı (Ek A, K27) |
 | **Motif / simge** | Görünüşü, anlamı, kimin nasıl yorumladığı (kültüre ve döneme göre), geçtiği sahneler · eşyanın gerçek geçmişi ile anlatılan efsanesi ayrı |
 | **Not** | Şablon (sahne fikri, karakter notu, evren notu, araştırma) · iliştirildiği kayıtlar · her zaman özel · tek dokunuşla kayda dönüşür ve bağ korunur |
 | **Açık mesele** | Soru, bağlı kayıt ya da sahne · *düşünülecek · kararlaştırıldı · şu an gerekmiyor* · önemli olarak işaretlenebilir |
@@ -586,9 +592,10 @@ Bir cümle seçilip bir iddiaya, evren durumuna ya da olaya bağlanabilir ("Sarn
 - `Ctrl+K` ile ya da boş bir satırın başında veya metin dışındayken `/` ile açılan komut paleti (cümle içinde "ve/veya" ya da "12/3" yazarken açılmaz): kayıt aç, yan panele al, hızlı not, iki mekân arası yolculuk süresi, takvim günü hesabı, yeni kayıt.
 - **Hızlı not** her ekrandan erişilir. Telefonda tek dokunuşla açılır, uzun form göstermez ve kaydedildiğini açıkça söyler.
 
-### 5.9 Çalışma masaları ve kaldığın yere dönme
+### 5.9 Konu dosyaları ve kaldığın yere dönme
 
-- **Çalışma masası:** bir konu için oluşturulan alan ("Velkar isyanı": şehir planı, karakterler, tarih aralığı, kaynaklar, açık sorular, sahneler). Kayıtlar kopyalanmaz, masa onlara bağlanır. Masanın düzeni, notları, seçili varsayım paketi (§3.11) ve "bugün burada neyi çözmeye çalışıyorum?" satırı korunur.
+- **Konu dosyası** (kodda ve eski metinlerde "çalışma masası"): bir konu için oluşturulan alan ("Velkar isyanı": şehir planı, karakterler, tarih aralığı, kaynaklar, açık sorular, sahneler). Kayıtlar kopyalanmaz, dosya onlara bağlanır. Dosyanın düzeni, notları, seçili varsayım paketi (§3.11) ve "bugün burada neyi çözmeye çalışıyorum?" satırı korunur.
+- **Şimdi (K27):** Genel bakış sayfasında kaldığın yerin altında durur. Başında **"Çalışıyorum:"** seçimi vardır: yazarın şu an üzerinde çalıştığı eser ya da seri ("Bütün evren" de olabilir). Bu seçim evrene yazılır ve cihazlar arasında eşitlenir; yalnız yazar değiştirince değişir; başka bir kitaba yazmak ya da son düzenlenen kayıt onu değiştirmez. Kart en çok üç öneri gösterir ve her birinin gerekçesini yazar: önemli işaretlenmiş, düşünülecek bir açık mesele ("Bu meseleyi önemli olarak işaretlemiştiniz."); eser, seri, sahne ya da kurgu hattında sonraya bırakılmış bir soru (başlangıç ve evren soruları hariç); en son çalışılan sahne. Seçili çalışma varsa ona bağlı olanlar önce gelir. Devam notu kaldığın yerde durduğu için burada tekrarlanmaz. Öneriler serbest metinden çıkarılmaz; "eserde sahne yok" gibi yokluktan iş üretilmez.
 - **Kaldığın yere dönme:** son açık sahne, imleç, yan paneldeki kayıtlar, seçili tarih ve kısa bir "buradan devam" notu saklanır ve **cihazlar arasında eşitlenir**. Panel yerleşimi, yakınlaştırma ve pencere ölçüsü **cihaza özeldir** ve eşitlenmez. Bir cihazın açılması öbür cihazın çalışma alanını zorla değiştirmez. Daha geniş bir çalışma devri kartı F47'de öneridir.
 
 ### 5.10 Çalışma düzenleri
@@ -602,9 +609,9 @@ Aynı verinin farklı görünümleridir; veri kopyalanmaz.
 | Tutarlılık inceleme | İnceleme kuyruğu, zaman çizelgesi, etkilenen kayıtlar |
 
 Yazı merkezdedir (K24):
-- **Evren açılınca yazma düzeni gelir.** Solda sabit bir gezinti çubuğu bulunur: Yaz, Masa, Kayıtlar, Haritalar, Takvim, Görünümler ve İnceleme; az kullanılan sayfalar (çalışma masaları, açık meseleler, şablonlar, bahsedilenler, çöp kutusu, geçmiş, sürümler, yedek) "Diğer" altında katlanır.
-- **Yaz** seçiliyken gezinti çubuğunda eserlerin ağacı (eser › bölüm › sahne) görünür; yeni eser, bölüm ve sahne buradan eklenir. Seçili sahnenin metni ortada geniş ve okunaklı durur; sağda dar ve kapatılabilir bir bağlam paneli sahnenin tarihini, mekânını, bakış açısını, sahnedekileri ve o anki bağlamı (§5.5) gösterir. Gezinti çubuğunun altında kayıt, eşitleme ve yedek özeti durur (§10.8). Sahnenin bütün alanları kayıt sayfasındadır; yazma ekranından bir bağlantıyla açılır.
-- **İlk adımlar (K26):** yeni bir evrende Yaz sayfasının üstünde dört adım sırayla gösterilir; sıradaki adım vurgulanır, yapılanlar üstü çizili işaretlenir. Program adımın yapıldığını kaydedilmiş veriden anlar (eser, sahne, sahne metninde bağlantı, sahnenin tarihi ya da mekânı); ayrıca bir şey saklanmaz. "Gizle" seçimi o cihazda evren başına hatırlanır.
+- **Evren açılınca yazma düzeni gelir.** Solda sabit bir gezinti çubuğu bulunur: Yaz, Genel bakış, Kayıtlar, Haritalar, Takvim, Grafikler ve Uyarılar; az kullanılan sayfalar (konu dosyaları, karar bekleyenler, şablonlar, eksik kayıtlar, çöp kutusu, değişiklik geçmişi, kayıtlı anlar, yedek) "Diğer" altında katlanır. Bu adlar kullanıcı seçimidir (19 Ekim); bu belgenin geri kalanında aynı sayfalar eski adlarıyla anılabilir: Masa = Genel bakış, Görünümler = Grafikler, inceleme kuyruğu = Uyarılar sayfası, açık meseleler sayfası = Karar bekleyenler, bahsedilen ama yazılmamış = Eksik kayıtlar, geçmiş = Değişiklik geçmişi, sürümler sayfası = Kayıtlı anlar.
+- **Yaz** seçiliyken gezinti çubuğunda eserlerin ağacı (eser › bölüm › sahne) görünür; seriler bir başlık olarak kendi eserlerinin üstünde durur, serisiz eserler en altta. Yeni seri, eser, bölüm ve sahne buradan eklenir. Seçili sahnenin metni ortada geniş ve okunaklı durur; sağda dar ve kapatılabilir bir bağlam paneli sahnenin tarihini, mekânını, bakış açısını, sahnedekileri ve o anki bağlamı (§5.5) gösterir. Bağlam panelinin en üstünde katlı **Sahne planı** durur: sahnenin plan soruları (kim ne istiyor, ne engel oluyor, ne değişiyor, okur ne öğreniyor; Ek A) yerinde cevaplanır, kapalıyken ilk cevap başlıkta görünür. Plan cevapları sahneyi "dolu" saymaz (§5.5). Gezinti çubuğunun altında kayıt, eşitleme ve yedek özeti durur (§10.8). Sahnenin bütün alanları kayıt sayfasındadır; yazma ekranından bir bağlantıyla açılır.
+- **İlk adımlar (K26, K27):** yeni bir evrende Yaz sayfasının üstünde dört adım sırayla gösterilir; sıradaki adım vurgulanır. Listenin başında **"Nasıl başlamak istersiniz?"** seçimi vardır: *bir sahneyle* (varsayılan: eser, sahne, metinde bağlantı, sahnenin tarihi ya da mekânı), *bir hikâye fikriyle* (fikri not almak, nottan eser oluşturmak, eserin çekirdek sorusu, ilk sahne), *bir karakterle* (karakter, isteği, karşıt güç: bir rakip/düşman ilişkisi ya da karşıt karakterin ilk sorusu, karakterin bulunduğu sahne) ve *bir dünyayla* (Dünya Pusulası'nda kuralı ya da bir evren kuralı kaydı, güç ve bedeli, bir mekân/şehir/ülke, o yerde geçen bir sahne ya da o yere bağlanan bir not). Program adımın yapıldığını kaydedilmiş veriden anlar; boş bir soru seti ya da sonraya bırakılmış soru adımı yapmış saymaz. Her adımın yanında **"Geç"** vardır: geçilen adım onay işareti almaz, "Geçildi" yazar; Dünya Pusulası sorusuna bağlı adımda geçmek soruyu sonraya bırakır, ilgisiz sayılan soru listeden çıkar. Liste her adım yapıldığında ya da ilgisiz sayıldığında kapanır. Seçilen yol, geçilen adımlar ve "Gizle" o cihazda evren başına hatırlanır ve eşitlenmez; adımların yapılmış olması veriden okunduğu için her cihazda aynıdır. "Bu adımlar neden?" yazarlık rehberini açar (§12.4). Seri planıyla başlama yolu seri kaydıyla birlikte gelir.
 - **Kayıt sayfasında** ad, tür, karar durumu, tarih, şablon alanları, kısa özet, metin ve ilişkiler açık durur; öbür bölümler türüne göre "Diğer bölümler" altında katlanır ve bir dokunuşla açılır.
 
 Yazma ekranında bütün evrenin panelleri ve uyarıları bulunmaz.
@@ -615,7 +622,7 @@ Yazma ekranında bütün evrenin panelleri ve uyarıları bulunmaz.
 
 - **Soru kütüphanesi:** Her türün soru seti vardır (başlangıç seti: Ek A). Her soru **cevaplanabilir**, **sonraya bırakılabilir** ya da **ilgisiz** işaretlenebilir. Bir soru yeni bir kayıtla da cevaplanabilir ("İnsanlar neye inanıyor?" → inanç kaydı).
 - **Yeni evren başlangıcı** isteğe bağlıdır ve atlanabilir: temel fikir, çatışma, karakter. Kullanıcı bunun yerine bir dinle, coğrafyayla ya da tarihle başlayabilir.
-- **Dünya Pusulası:** beş temel soru (merkez çatışma, gündelik hayat, güç ve bedeli, kırılırsa her şeyi değiştiren kural, evrenin karakteri nasıl dönüştürdüğü) bir panelde durur. **Doluluk göstergesi yoktur.** Masada yalnızca kullanıcının *önemli* işaretlediği açık sorular öne çıkar.
+- **Dünya Pusulası:** beş temel soru (merkez çatışma, gündelik hayat, güç ve bedeli, kırılırsa her şeyi değiştiren kural, evrenin karakteri nasıl dönüştürdüğü) bir panelde durur. **Doluluk göstergesi yoktur.** Genel bakış sayfasında yalnızca kullanıcının *önemli* işaretlediği açık sorular öne çıkar.
 - **Açık meseleler** ve **gerekçe defteri** (§4.6) boş alanları eksik saymadan anlamlı bir çalışma listesi verir. "Önce ihtiyacın olanı kur" ilkesi bunun gerekçesidir (K5).
 
 ### 6.1 Programın yazara sorduğu sorular
@@ -634,13 +641,14 @@ Bu, programın yazara ne zaman ve nasıl soru sorduğunun tek tanımıdır. Soru
 
 | Görünüm | Ne gösterir | Not |
 |---|---|---|
-| **Masa** | Son düzenlenenler, önemli açık meseleler, bahsedilen ama yazılmamış sayfalar, hızlı not, kaldığın yer | "Bahsedilen ama yazılmamış" bir hatırlatmadır, eksik listesi değildir; sayı ya da uyarı rengiyle gösterilmez |
+| **Genel bakış** (eski adı Masa) | Kaldığın yer ve devam notu, **Şimdi** kartı (K27), son düzenlenenler, önemli açık meseleler, eksik kayıtlar, hızlı not, Dünya Pusulası | "Eksik kayıtlar" (metinde anılıp henüz yazılmamış kayıtlar) bir hatırlatmadır, görev listesi değildir; sayı ya da uyarı rengiyle gösterilmez |
 | **Kayıt sayfası** | Başlık, görsel, bileşenler, metin, ilişkiler (zamana göre), geri-atıflar, notlar, açık meseleler | Görseli olmayan kayıtta baş harf rozeti |
 | **Ağ** | Seçili kaydın yakın bağlantıları | Bütün evren isteğe bağlı açılır; ilişki türü, dönem, kayıt türü ve bakış açısıyla filtrelenir |
 | **Soy ağacı** | Ebeveyn, eş, kardeş; çoklu evlilik, evlatlık, gayrimeşru çocuk, siyasi evlilik, soy içi evlilik farklı çizgilerle | Çakışmasız çizim vaat edilmez; odaklanma, dal kapatma ve filtre sunulur |
 | **Zaman çizelgesi** | Kesin tarihler noktayla, belirsizler bantla, göreli sıralar okla | Çağlar, paralel takvimler, eser ya da kurgu hattına göre filtre |
 | **Neden–sonuç ağı** | Olaylar arasındaki *neden oldu / engelledi…* bağları | Maden kapandı → vergi düştü → maaş ödenemedi → garnizon dağıldı |
 | **Takvim çarkı** | Mevsimler, bayramlar, mevsime bağlı olaylar | |
+| **Olay örgüsü masası** (K27) | Bir eserin okuma sırası sütunlarda (bölümlere göre gruplu); satırlar yazarın seçtiği izler: dönüm noktaları (sahneye verilen "dönüm noktası" etiketi ve sahnenin anlattığı olay), kurgu hatları (rolüyle), okur soruları (montajdaki ipucu, yanıltmaca, açıklama; açıklanmayan soru "açık kalıyor"), sahnede bulunan karakterler (en çok görünen altısı, istenirse hepsi), sahnenin çalışma durumu | Yeni veri tutulmaz. Sahne sürüklenip başka bir sahnenin önüne bırakılır ya da bir öne/sonraya taşınır; bu §3.3 yerleştirmesidir, evren tarihini değiştirmez. Taşımadan sonra taşınan sahnenin götürdükleri (sırası, bölümü, taşıdığı soru işaretleri, hat yeri, ilk tanıtımı değişen adlar) yazılır ve taşıma geri alınabilir; iyi/kötü yargısı verilmez. Metni olmayan sahne "plan sahnesi"dir; masadan boş sahne eklenir, yerleşmemiş sahneler esere alınır. Grafikler altında ve eser sayfasındaki "Bölümler ve sahneler" bölümünden açılır. İlk sürümde yalnız eser; seri düzeyi yok |
 | **Bölüm × kayıt matrisi** | Bölümler × karakterler, eşyalar, sırlar | Katmanlar: fiziksel katılım, anılma, bakış açısı, bilgi edinme, olay etkisi, okura açıklanma. "Kaç sahnede görünüyor" ile "kaç sahnede konu oluyor" ayrı sayılır |
 | **Yoğunluk ve boşluk** | Zaman çizelgesi ve haritada isteğe bağlı katman | Olay, sahne, kelime ve kayıt sayısı ayrı yoğunluklardır; altı sahnede anlatılan tek suikast altı olay sayılmaz. "Bu kapsamda güneyde kayıtlı olay yok" denir; denge önerisi üretilmez |
 | **Bağlam karşılaştırma** | Aynı kaydın iki bağlamda yan yana görünümü (§5.2) | Farkın evren zamanından mı, bilgi katmanından mı, taslaktan mı geldiği gösterilir |
@@ -719,6 +727,7 @@ Her denetim sonucu sonuç zarfıyla anlatılır (§2.3): hüküm (*açık çeli�
 | Eşya | Tek sahipli ya da tekil bir eşyanın aynı anda iki kişide bulunması, yok edildikten sonra kullanılması |
 | Bilgi | Karakterin bir bilgiyi öğrenmeden önce ona göre davranması (yalnızca kullanıcının kurduğu bilgi kayıtları üzerinden) |
 | Süreç | Bir olayın, bağlı süreç kuralının önkoşuluyla çelişmesi (§3.10) |
+| Alternatifler | Birbirinin alternatifi diye bağlanmış iki kaydın ikisinin de kesinleşmiş olması (olası uyuşmazlık; K27, §3.6) |
 
 - **Gerekçeli istisna:** İstisna bütün kaydı susturmaz; belirli kurala, tarih aralığına, olaya ya da varoluş biçimine (hayalet, ceset) bağlanır ve gerekçesi yazılır. "Bu çelişkiyi bilerek kabul ediyorum" (yazar tercihi) ile "bu kural burada uygulanamaz" (kapsam düzeltmesi) ayrıdır.
 - **Kapsamlı kurallar:** Bir kural bir bölgeye, boyuta, türe, kültüre ya da kuruma bağlanır ve o kapsamdaki kayıtlara tek tek istisna girmeden uygulanır. Örnek: bir kültürde evliliğin çokluğu (§3.2). Zamanın farklı aktığı kapsamlar kural değil, zaman akışıdır (§3.4).
@@ -961,6 +970,8 @@ Ortak olan sahne, bağlam ve çalışma niyetidir; pencere genişliği, kaydırm
 
 - Her sayfanın (evrenler, eşitleme, yazma, masa, kayıtlar, kayıt sayfası, haritalar, takvim, inceleme, "Diğer" altındakiler ve her görünüm) başlığının yanında küçük bir **"?" düğmesi** bulunur. Düğme, o sayfanın rehberini sağdan açılan bir yan panelde gösterir; sayfa panelin yanında görünür kalır. Panel Esc, "Kapat" ya da yeniden "?" ile kapanır.
 - Rehber dört kısımdır: sayfa ne işe yarar, ne zaman kullanılır, adım adım nasıl kullanılır, bilmeniz gerekenler. Rehberde programlama terimi geçmez; örnekler uydurmadır.
+- **Yazarlık rehberi (K27):** sayfa rehberi düğmelerin nasıl kullanıldığını anlatır; yazarlık rehberi bir yazarlık işinin ne olduğunu, neden işe yaradığını ve ne zaman gerekmediğini. Programla gelen 24 konu aynı biçimde yan panelde açılır: nedir, neden işe yarar, ne zaman gerekmez, küçük bir adım; katlı olarak sorular, işe yarayan ve yanıltıcı örnek, takılırsanız, sınır; sonda başka konulara bağlantı. Üç yerden açılır: sayfa rehberinin "Bu işi neden yapıyorum?" kısmı (sayfaya uygun konular ve bütün konular), soru gruplarındaki "Bu sorular neden?" ve komut paleti. Rehber kullanıcının verisine bakmaz, veri yazmaz; yazarken kendiliğinden açılmaz. Metinlerin kaynağı `analiz/yazarlik-ve-roman-serisi-calisma-rehberi.md`'dir; örnekler uydurma bir seriden gelir.
+- Kayıt sayfasında şablondaki sorular birden çok setten geliyorsa (eserde "Hikâye çekirdeği" ve "Bu kitabın görevi") ayrı başlıklarla gösterilir.
 - **Hitap "siz"dir.** Açıklama, uyarı, boş durum ve hata metinleri ikinci çoğul kişiyle yazılır ("seçin, yazın"); düğme ve menü etiketleri kısa emir ya da ad olarak kalır ("Kaydet", "Yeni takvim"). Metinler doğal, kısa cümlelerle yazılır; terimler §0.5'teki anlamlarıyla kullanılır.
 ---
 
@@ -1413,3 +1424,15 @@ Bunlar türlerin ilk soru setleridir. Hepsi isteğe bağlıdır; kullanıcı sor
 **Haritasız evren büyütme:** Uzak yerlerden söz ettir · ticaret izleri bırak · farklı diller duyur · eski olayları an · söylentiler kullan.
 
 **Evren kurma rehberi:** Kim hüküm sürüyor? (topluluk) · Büyünün bedeli ne? · İnsanlar neye inanıyor? (inanç)
+
+**Hikâye çekirdeği** (eser; K27): Kim, ne istiyor? · Ona ne engel oluyor? · Başaramazsa ne kaybeder? · Okur hangi sorunun cevabını merak edecek? · Bu hikâye hangi soruyu soruyor? Yeni evren başlangıcındaki "Temel fikir" evrenin kuralını sorar; hikâyenin çekirdeği ondan ayrıdır.
+
+**Bu kitabın görevi** (eser): Merkez sorusu ne? · Dengeyi bozan olay ne? · Doruk noktası ne? · Bu kitapta ne çözülüyor? · Ne açık kalıyor?
+
+**Sahne planı** (sahne): Kim ne istiyor? · Ne engel oluyor? · Sahne sonunda ne değişiyor? · Okur ne öğreniyor? Sahnenin tarihi, mekânı, bakış açısı ve katılımcıları sahne alanlarıdır, burada sorulmaz.
+
+**Kurgu hattı** (kurgu hattı): Bu hattın sorusu ne? · Şu anki durumu ne? · Olası karşılığı ne? · Bilerek açık mı kalacak?
+
+**Karakterin bu kitaptaki yolu** (karakter ile eser arasındaki *eserin odak karakteri* bağı): Kitabın başında ne istiyor? · Kitabın sonunda ne istiyor? · Başlangıçtaki inancı ya da yanlış varsayımı ne? · Bu kitapta inancı nasıl sınanıyor? · Aldığı en zor karar ve vazgeçtiği seçenek ne? · Aştığı sınır, ödediği bedel ne? · İlişkilerinde ne değişiyor? · Sonraki kitaba hangi iç çatışmayı taşıyor? Bu sorular yeni bir kayıtla cevaplanmaz.
+
+**Serinin büyük planı** (seri): Serinin büyük sorusu ne? · Merkez çatışma ne? · Başlangıç dengesi ne? · İlk büyük kırılma ne? · Orta evrede ne değişiyor? · Bilerek cevapsız kalacaklar neler? Olası finaller bir soru değil, ayrı olay kayıtlarıdır.

@@ -42,9 +42,9 @@ import { KullanimMasasiBolumu } from './KullanimMasasi';
 import { KULLANIM_SAHIPLERI } from '../alan/kullanim-masasi';
 import { BakimBolumu, BakimUzmanligiBolumu } from './Bakim';
 import { BirlesmeBilgisi, BirlestirDugmesi } from './Birlesme';
-import { KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
+import { KarakterYollariBolumu, KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
 import { BilinenlerBolumu, GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
-import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
+import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, KitapSonuBolumu, SeriBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
 import { UyarlamaBolumu } from './Uyarlama';
 import { KimlikBolumu } from './Kimlik';
 import { KullanildigiYerler } from './MetinKullanim';
@@ -88,6 +88,16 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   if (!kayit) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
 
   const degistir = (alan: DegisebilirAlan, deger: string) => istemci.iste('kayitDegistir', { evren, kod, alan, deger });
+  // K27: kesinleşen kaydın vazgeçilmemiş alternatifleri varsa, onları da vazgeçilmiş yapmak yalnız sorularak yapılır.
+  const kararDegistir = async (k: string) => {
+    await degistir('karar', k);
+    if (k !== 'kesin') return;
+    const acik = (await istemci.iste('alternatifler', { evren, kod })).filter((x) => x.karar !== 'vazgecildi');
+    if (!acik.length) return;
+    const adlar = acik.map((x) => `“${x.ad}”`).join(', ');
+    if (onayla(`“${kayit.ad}” kesinleşti. Bunun ${acik.length === 1 ? 'alternatifi' : `${acik.length} alternatifi`} var: ${adlar}. ${acik.length === 1 ? 'O' : 'Onlar'} da vazgeçilmiş olarak işaretlensin mi? Silinmez, istediğiniz zaman geri alabilirsiniz.`))
+      for (const x of acik) await istemci.iste('kayitDegistir', { evren, kod: x.kod, alan: 'karar', deger: 'vazgecildi' });
+  };
   const tur = turBul(kayit.tur);
 
   return (
@@ -137,7 +147,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           </label>
           <label class="alan">
             <span class="alan-adi">Karar durumu</span>
-            <select class="girdi" value={kayit.karar} onChange={(e) => degistir('karar', (e.target as HTMLSelectElement).value)}>
+            <select class="girdi" value={kayit.karar} onChange={(e) => kararDegistir((e.target as HTMLSelectElement).value)}>
               {KARARLAR.map((k) => <option value={k.kod}>{k.ad}</option>)}
             </select>
           </label>
@@ -185,6 +195,9 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           baglamParcalari={kayit.tur === 'sahne'} parcaDegisti={setImlecParcasi} />
 
         {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}
+        {kayit.tur === 'eser' && <KitapSonuBolumu istemci={istemci} evren={evren} eser={kod} />}
+        {(kayit.tur === 'eser' || kayit.tur === 'seri') && <KarakterYollariBolumu istemci={istemci} evren={evren} kayit={kayit} />}
+        {kayit.tur === 'seri' && <><SeriBolumu istemci={istemci} evren={evren} kayit={kayit} /><SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} acik /></>}
         {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={imlecParcasi && parcaBaglami ? parcaBaglami : sahneBaglami} parca={!!(imlecParcasi && parcaBaglami)} />}
         {kayit.tur === 'sahne' && <SahneBolumu istemci={istemci} evren={evren} kayit={kayit} surum={surum} />}
         <Iliskiler istemci={istemci} evren={evren} kayit={kayit} surum={surum} />
@@ -227,7 +240,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           <KaliciIzBolumu istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} surum={surum} saltOkunur={bag?.tur === 'surum'} />
           {!DURUMSUZ.has(kayit.tur) && <DurumGecmisi istemci={istemci} evren={evren} kayit={kayit} />}
           {kayit.tur !== 'not' && <BilinenlerBolumu istemci={istemci} evren={evren} kayit={kayit} />}
-          <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />
+          {kayit.tur !== 'seri' && <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />}
           <KayitMeseleleri istemci={istemci} evren={evren} kayit={kayit} />
           {!bag && <SonrakiSoruBolumu istemci={istemci} evren={evren} kod={kod} tur={kayit.tur} />}
           {!bag && <BaglamKarsilastirmaBolumu istemci={istemci} evren={evren} kod={kod} />}

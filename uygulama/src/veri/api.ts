@@ -214,6 +214,26 @@ export interface TahtSirasi {
 /** Sahnenin yazarca işaretlenen niyeti (F13): bir açıklamayı destekler, zayıflatır ya da açıklar. */
 export interface SahneNiyeti { iddia: string; secenek: string | null; tur: 'destekler' | 'zayiflatir' | 'aciklar' }
 export type MontajHedefi = 'surpriz' | 'gerilim';
+/** Kitap sonunda açık olanlar (K27): okura sorulup bu eserde açıklanmayan sorular; sonraki kitapta açıklanıyorsa nerede. */
+/** Karakterlerin kitaplardaki yolu (K27): karakter × eser; her hücre bir `eser_odagi` ilişkisi ve onun soruları. */
+export interface KarakterYollari {
+  eserler: { kod: string; ad: string }[];
+  karakterler: (KisaKayit & { hucreler: Record<string, { iliski: string; sorular: SoruSatiri[] }> })[];
+}
+export interface KitapSonuAciklar {
+  eser: KisaKayit; seride: boolean;
+  sorular: { iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null }; ipucu: number; yaniltmaca: number; destekler: number;
+    sonra: { eser: KisaKayit; sahne: KisaKayit; sira: number } | null }[];
+}
+/** Olay örgüsü masası (K27, P6): sütunlar eserin okuma sırasıdır; hücreler sütunlarla aynı sıradadır. */
+export interface OlayOrgusu {
+  eser: KisaKayit;
+  sutunlar: { kod: string; ad: string; sira: number; ust: string; bolum: string | null; calisma: string | null; metinVar: boolean; donum: boolean; olaylar: KisaKayit[] }[];
+  /** Hücre: hatta bağlı değilse null; bağlıysa rolün adı (rolsüz bağ için boş). */
+  hatlar: { hat: KisaKayit; hucreler: (string | null)[] }[];
+  sorular: { iddia: { kod: string; soru: string }; hucreler: ('ipucu' | 'yaniltmaca' | 'destekler' | 'zayiflatir' | 'aciklama' | null)[]; acikKaliyor: boolean }[];
+  karakterler: { kisi: KisaKayit; hucreler: boolean[]; sayi: number }[];
+}
 export interface KurguMontaji {
   eser: KisaKayit; sahneler: { kod: string; ad: string; sira: number; bolum: string | null }[];
   sorular: {
@@ -798,6 +818,8 @@ export interface EvrenEsitlemeDurumu {
   denemeler: { kod: string; ad: string; yalnizBuCihazda: number; bekleyen: number }[];
 }
 /** Kaldığın yer (§5.9): cihazlar arasında eşitlenir; panel yerleşimi gibi cihaza özel şeyler burada yok. */
+/** "Şimdi" önerisi (K27): kayıtlı veriye dayanır ve gerekçesini söyler. */
+export interface SimdiOnerisi { tur: 'mesele' | 'soru' | 'sahne'; kayit: KisaKayit; baslik: string; gerekce: string }
 export interface KaldigiYer { kayit: string | null; konum: number | null; yanPanel: string[]; not: string; zaman: number }
 export interface KaldigiYerBilgisi extends KaldigiYer {
   /** Başka bir cihazda bırakıldıysa o cihazın adı. */
@@ -904,6 +926,13 @@ export interface SoruSatiri extends Soru {
   /** Şablondan çıkarılmış ama cevabı olan soru. */
   eski: boolean;
 }
+/** İlk adımların dayanakları (K26, K27): her adım kayıtlı veriden anlaşılır. */
+export interface IlkAdimDayanaklari {
+  eser: boolean; sahne: boolean; baglanti: boolean; baglam: boolean;
+  not: boolean; nottanEser: boolean; cekirdek: boolean; karakter: boolean; istek: boolean; karsit: boolean; karakterSahnede: boolean;
+  kural: boolean; guc: boolean; yer: boolean; yerdeIs: boolean;
+  sorular: Record<string, string>;
+}
 export interface KayitSablonu {
   tur: string; sablon: Sablon; degerler: Record<string, unknown>;
   /** Şablonda olmayan (tür değişmiş ya da alan kaldırılmış) değerler; silinmez. */
@@ -989,7 +1018,7 @@ export interface IncelemeKarari {
   istisna?: 'tercih' | 'kapsam' | null;
 }
 /** Kural tabanlı denetimler (§9.1). Hüküm ve kapsam ayrı gösterilir; "sorun yok" yalnızca sayılan kurallar için geçerlidir. */
-export type DenetimKurali = 'yasam' | 'dongu' | 'konum' | 'esya' | 'bilgi' | 'surec';
+export type DenetimKurali = 'yasam' | 'dongu' | 'konum' | 'esya' | 'bilgi' | 'surec' | 'alternatif';
 export interface DenetimBulgusu {
   anahtar: string; kural: DenetimKurali; hukum: 'celiski' | 'olasi'; baslik: string;
   /** Uyarının dayanağı: hangi değerlerden çıktığı, okunur cümleyle. */
@@ -1131,7 +1160,14 @@ export interface Istekler {
   evrenOlustur(a: { ad: string }): { kod: string };
   evrenKaldir(a: { evren: string }): void;
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
-  ilkAdimlar(a: { evren: string }): { eser: boolean; sahne: boolean; baglanti: boolean; baglam: boolean };
+  ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
+  alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
+  kitapSonuAciklar(a: { evren: string; eser: string }): KitapSonuAciklar;
+  etkinCalisma(a: { evren: string }): KisaKayit | null;
+  etkinCalismaYaz(a: { evren: string; kod: string | null }): void;
+  simdi(a: { evren: string }): SimdiOnerisi[];
+  karakterYollari(a: { evren: string; kapsam: string }): KarakterYollari;
+  seriler(a: { evren: string }): { seriler: { kod: string; ad: string; eserler: { kod: string; ad: string }[] }[]; serisiz: { kod: string; ad: string }[] };
   evrenAdlandir(a: { evren: string; ad: string }): void;
   evrenBilgisi(a: { evren: string }): EvrenBilgisi;
   islemGunlugu(a: { evren: string; sinir: number }): GunlukSatiri[];
@@ -1378,6 +1414,7 @@ export interface Istekler {
   sahneNiyetleriYaz(a: { evren: string; sahne: string; niyetler: SahneNiyeti[] }): void;
   montajHedefiYaz(a: { evren: string; eser: string; iddia: string; hedef: MontajHedefi | null }): void;
   montajTasi(a: { evren: string; sahne: string; yon: -1 | 1 }): { etki: AnlatiEtkisi[] };
+  olayOrgusu(a: { evren: string; eser: string }): OlayOrgusu;
   kalitimOzellikleri(a: { evren: string }): KalitimOzelligi[];
   kalitimOzelligiYaz(a: { evren: string; kod: string | null; tanim: Omit<KalitimOzelligi, 'kod'> | null }): { kod: string };
   kalitim(a: { evren: string; kod: string }): KalitimBilgisi;

@@ -9,6 +9,7 @@ import { HizliNot } from './HizliNot';
 import { CalismaSaglayici } from './Calisma';
 import { EsitlemeEkrani, EsitlemeOzeti, EsitlemeSaglayici, EsitlemeSeridi } from './Esitleme';
 import { HazirlanmaSeridi } from './Hazirlanma';
+import { YazarlikRehberiPaneli } from './YazarlikRehberi';
 
 export type Yol = { ekran: 'evrenler' } | { ekran: 'esitleme' } | { ekran: 'evren'; kod: string; sekme: string; alt: string | null } | { ekran: 'kayit'; evren: string; kod: string }
   | { ekran: 'yaz'; evren: string; kod: string | null };
@@ -66,6 +67,7 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
       <CalismaSaglayici istemci={istemci} evren={evren} kayit={acikKayit}>
       <EsitlemeSeridi />
       <HazirlanmaSeridi istemci={istemci} />
+      <YazarlikRehberiPaneli />
       {yol.ekran === 'evrenler' ? <EvrenlerEkrani istemci={istemci} />
         : yol.ekran === 'esitleme' ? <EsitlemeEkrani istemci={istemci} />
         : yol.ekran === 'kayit' ? <KayitEkrani key={yol.kod} istemci={istemci} evren={yol.evren} kod={yol.kod} />

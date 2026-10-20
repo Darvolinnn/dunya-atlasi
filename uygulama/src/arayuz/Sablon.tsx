@@ -2,9 +2,10 @@
 // Dünya Pusulası. Doluluk göstergesi yoktur: cevapsız soru eksik sayılmaz.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { AlanVarsayilani, BoslukTuru, Kayit, KayitSablonu, MeseleListesi, SablonBilgisi, SoruSatiri } from '../veri/api';
+import type { AlanVarsayilani, BoslukTuru, KarakterYollari, Kayit, KayitOzeti, KayitSablonu, MeseleListesi, SablonBilgisi, SoruSatiri } from '../veri/api';
 import { EN_COK_HASSASIYET, NICELIK_TURLERI, sayiDegeriMi, sayiMetni } from '../alan/nicelik';
-import { ALAN_TURLERI, VARSAYILAN_EKSENLERI, EVREN_SETLERI, MESELE_DURUMLARI, SORU_SETLERI, soruSetiBul, yeniAlanKodu, type Sablon, type SablonAlani, type Secenek } from '../alan/sablon';
+import { SET_KONULARI, yazarlikRehberiAc } from './YazarlikRehberi';
+import { ALAN_TURLERI, VARSAYILAN_EKSENLERI, EVREN_SETLERI, ILISKI_SETLERI, MESELE_DURUMLARI, SORU_SETLERI, soruSetiBul, yeniAlanKodu, type Sablon, type SablonAlani, type Secenek } from '../alan/sablon';
 import { tarihAciklamasi, tarihCoz, type EvrenTarihi, type TakvimYa } from '../alan/tarih';
 import { TURLER, turBul } from '../alan/turler';
 import { KararRozeti, KararSecici, TurSecici } from './ortak';
@@ -207,24 +208,35 @@ function AlanGirdisi({ a, takvim, deger, yaz }: { a: SablonAlani; takvim: Takvim
 }
 
 // ---------- Sorular ----------
-export function SoruBolumu({ istemci, evren, kayit, ks }: { istemci: Istemci; evren: string; kayit: Kayit; ks: KayitSablonu | null }) {
+export function SoruBolumu({ istemci, evren, kayit, ks, acik = false }: { istemci: Istemci; evren: string; kayit: Kayit; ks: KayitSablonu | null; acik?: boolean }) {
   const [hata, setHata] = useState<string | null>(null);
   if (!ks) return null;
   const sablondakiler = new Set(ks.sablon.sorular.map((q) => q.kod));
-  const eklenebilir = SORU_SETLERI.filter((s) => !EVREN_SETLERI.includes(s.kod) && !ks.setler.includes(s.kod) && !s.sorular.every((q) => sablondakiler.has(q.kod)));
-  const gruplar: [string, string | null, SoruSatiri[]][] = [['', null, ks.sorular.filter((q) => !q.set && !q.eski)],
+  const eklenebilir = SORU_SETLERI.filter((s) => !EVREN_SETLERI.includes(s.kod) && !ILISKI_SETLERI.includes(s.kod) && !ks.setler.includes(s.kod) && !s.sorular.every((q) => sablondakiler.has(q.kod)));
+  // Şablondaki sorular birden çok programla gelen setten geliyorsa (eserde "Hikâye çekirdeği" ve "Bu kitabın görevi") ayrı başlıklarla durur.
+  const sablonSorulari = ks.sorular.filter((q) => !q.set && !q.eski);
+  const onek = (q: SoruSatiri) => soruSetiBul(q.kod.split('.')[0]) ? q.kod.split('.')[0] : '';
+  const parcalar: [string, SoruSatiri[]][] = [];
+  for (const q of sablonSorulari) { const o = onek(q); if (parcalar.length && parcalar[parcalar.length - 1][0] === o) parcalar[parcalar.length - 1][1].push(q); else parcalar.push([o, [q]]); }
+  const cokParca = parcalar.length > 1;
+  const gruplar: [string, string | null, SoruSatiri[]][] = [...(cokParca ? parcalar.map(([o, l]) => [o ? soruSetiBul(o)!.ad : '', null, l] as [string, string | null, SoruSatiri[]]) : [['', null, sablonSorulari] as [string, string | null, SoruSatiri[]]]),
     ...ks.setler.map((s) => [soruSetiBul(s)!.ad, s, ks.sorular.filter((q) => q.set === s)] as [string, string, SoruSatiri[]]),
     ['Şablondan çıkarılmış sorular', null, ks.sorular.filter((q) => q.eski)]];
   return (
     <section class="sorular" aria-label="Sorular">
-      <details open={ks.sorular.some((q) => q.cevap)}>
+      <details open={acik || ks.sorular.some((q) => q.cevap)}>
         <summary><h2 style="display:inline">Sorular</h2></summary>
         <p class="soluk kucuk">Hepsi isteğe bağlı. Cevaplayabilir, sonraya bırakabilir, bu kayıtla ilgisiz sayabilir ya da yeni bir kayıt oluşturarak cevaplayabilirsiniz.
           {' '}<a href={`#/e/${evren}/sablonlar/${kayit.tur}`}>{turBul(kayit.tur).ad} şablonunu düzenle</a></p>
         {gruplar.filter(([, , l]) => l.length).map(([ad, set, liste]) => (
-          <div key={ad || 'sablon'} class="soru-grubu">
-            {ad && <div class="satir"><strong class="kucuk">{ad}</strong><span class="bosluk" />
-              {set && <button class="dugme sade kucuk" onClick={() => istemci.iste('kayitSoruSeti', { evren, kod: kayit.kod, set, ekle: false })}>Bu soru setini çıkar</button>}</div>}
+          <div key={(ad || 'sablon') + liste[0].kod} class="soru-grubu">
+            {(() => {
+              // Programla gelen setin rehber konusu; şablondaki sorular için soru kodunun önekinden bulunur.
+              const konu = SET_KONULARI[set ?? liste[0].kod.split('.')[0]];
+              const neden = konu ? <button class="dugme sade kucuk" onClick={() => yazarlikRehberiAc(konu)}>Bu sorular neden?</button> : null;
+              return (ad || neden) && <div class="satir">{ad && <strong class="kucuk">{ad}</strong>}<span class="bosluk" />{neden}
+                {set && <button class="dugme sade kucuk" onClick={() => istemci.iste('kayitSoruSeti', { evren, kod: kayit.kod, set, ekle: false })}>Bu soru setini çıkar</button>}</div>;
+            })()}
             <ul class="soru-listesi">{liste.map((q) => <SoruSatir key={q.kod} istemci={istemci} evren={evren} kod={kayit.kod} q={q} hata={setHata} />)}</ul>
           </div>
         ))}
@@ -244,7 +256,7 @@ export function SoruBolumu({ istemci, evren, kayit, ks }: { istemci: Istemci; ev
   );
 }
 
-export function SoruSatir({ istemci, evren, kod, q, hata }: { istemci: Istemci; evren: string; kod: string; q: SoruSatiri; hata: (h: string | null) => void }) {
+export function SoruSatir({ istemci, evren, kod, q, hata, kayitlaYok = false }: { istemci: Istemci; evren: string; kod: string; q: SoruSatiri; hata: (h: string | null) => void; kayitlaYok?: boolean }) {
   const [yerel, setYerel] = useState(q.cevap?.cevap ?? '');
   const [kayitla, setKayitla] = useState(false);
   useEffect(() => setYerel(q.cevap?.cevap ?? ''), [q.cevap?.cevap]);
@@ -266,7 +278,7 @@ export function SoruSatir({ istemci, evren, kod, q, hata }: { istemci: Istemci; 
             <div class="satir soru-dugmeleri">
               <button class="dugme sade kucuk" onClick={() => cevapla('sonra')}>Sonraya bırak</button>
               {kod !== 'evren' && <button class="dugme sade kucuk" onClick={() => cevapla('ilgisiz')}>İlgisiz</button>}
-              <button class="dugme sade kucuk" onClick={() => setKayitla(true)}>Yeni kayıtla cevapla</button>
+              {!kayitlaYok && <button class="dugme sade kucuk" onClick={() => setKayitla(true)}>Yeni kayıtla cevapla</button>}
             </div>
           )}
           {kayitla && <KayitlaCevapla istemci={istemci} evren={evren} kod={kod} q={q} kapat={() => setKayitla(false)} hata={hata} />}
@@ -314,7 +326,7 @@ function SablonEditoru({ istemci, evren, tur }: { istemci: Istemci; evren: strin
   const tasi = <T,>(l: T[], i: number, j: number) => { if (j < 0 || j >= l.length) return; [l[i], l[j]] = [l[j], l[i]]; };
   const kaydet = (s: Sablon | null) => istemci.iste('sablonYaz', { evren, tur, sablon: s }).then(() => { setHata(null); setTaslak(structuredClone(s ?? bilgi.varsayilanSablon)); setKaydedildi(true); }, (e) => setHata(hataYaz(e)));
   const kullanilan = (a: SablonAlani) => bilgi.kullanim[a.kod] ?? 0;
-  const eklenebilir = SORU_SETLERI.filter((s) => !EVREN_SETLERI.includes(s.kod) && !s.sorular.every((q) => taslak.sorular.some((x) => x.kod === q.kod)));
+  const eklenebilir = SORU_SETLERI.filter((s) => !EVREN_SETLERI.includes(s.kod) && !ILISKI_SETLERI.includes(s.kod) && !s.sorular.every((q) => taslak.sorular.some((x) => x.kod === q.kod)));
 
   return (
     <div class="sablon-editoru">
@@ -443,8 +455,8 @@ export function MeseleSekmesi({ istemci, evren }: { istemci: Istemci; evren: str
   if (!l) return null;
   return (
     <div class="meseleler">
-      <section aria-label="Açık meseleler">
-        <h2>Açık meseleler</h2>
+      <section aria-label="Karar bekleyenler">
+        <h2>Karar bekleyenler</h2>
         <p class="soluk kucuk">Henüz karara bağlamadığınız sorular. Boş alanlar burada listelenmez, yalnızca sizin yazdıklarınız yer alır.</p>
         <YazarKaydiFormu istemci={istemci} evren={evren} tur="acik_mesele" />
         {MESELE_DURUMLARI.map((d) => {
@@ -580,5 +592,96 @@ export function MasaPusulasi({ istemci, evren, kayitSayisi }: { istemci: Istemci
         {hata && <p class="hata kucuk">{hata}</p>}
       </section>
     </>
+  );
+}
+
+/** Yaz ekranında bağlam panelinin üstünde katlı "Sahne planı" (K27): sahnenin `sahne_plani` soruları yerinde
+ *  cevaplanır. Sahnenin tarihi, mekânı ve katılımcıları burada sorulmaz; onlar sahne alanlarıdır. Şablonunda bu
+ *  sorular olmayan sahnede görünmez. */
+export function SahnePlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
+  const ks = useKayitSablonu(istemci, evren, kod);
+  const [hata, setHata] = useState<string | null>(null);
+  const sorular = ks?.sorular.filter((q) => q.kod.startsWith('sahne_plani.') && !q.eski) ?? [];
+  if (!sorular.length) return null;
+  const ilk = sorular.find((q) => q.cevap?.durum === 'cevaplandi' && q.cevap.cevap);
+  return (
+    <details class="sahne-plani">
+      <summary><strong>Sahne planı</strong>{ilk && <span class="soluk kucuk"> · {ilk.cevap!.cevap.slice(0, 60)}</span>}</summary>
+      <ul class="soru-listesi">{sorular.map((q) => <SoruSatir key={q.kod} istemci={istemci} evren={evren} kod={kod} q={q} hata={setHata} />)}</ul>
+      <button class="dugme sade kucuk" onClick={() => yazarlikRehberiAc(SET_KONULARI.sahne_plani)}>Bu sorular neden?</button>
+      {hata && <p class="hata kucuk">{hata}</p>}
+    </details>
+  );
+}
+
+/** Karakterlerin bu eserdeki ya da serideki yolu (K27, Model §8). Eserde: odak karakterler ve her birinin bu kitaptaki
+ *  soruları. Seride: karakter × kitap tablosu; hücreler birbirini değiştirmez. Karakterin evren kaydı tektir. */
+export function KarakterYollariBolumu({ istemci, evren, kayit }: { istemci: Istemci; evren: string; kayit: Kayit }) {
+  const y = useOku<KarakterYollari>(istemci, evren, () => istemci.iste('karakterYollari', { evren, kapsam: kayit.kod }), [kayit.kod]);
+  const karakterler = useOku<KayitOzeti[]>(istemci, evren, () => istemci.iste('kayitlar', { evren }).then((l) => l.filter((x) => x.tur === 'karakter')), [kayit.kod]);
+  const [hata, setHata] = useState<string | null>(null);
+  if (!y) return null;
+  const seri = kayit.tur === 'seri';
+  const isle = (p: Promise<unknown>) => p.then(() => setHata(null), (e) => setHata(hataYaz(e)));
+  if (seri) {
+    if (!y.karakterler.length) return null;
+    const ozet = (s: SoruSatiri[]) => [['başta', s[0]], ['sonda', s[1]], ['inancı', s[2]]]
+      .filter(([, q]) => (q as SoruSatiri).cevap?.durum === 'cevaplandi').map(([ad, q]) => `${ad}: ${(q as SoruSatiri).cevap!.cevap}`);
+    return (
+      <section class="karakter-yollari" aria-label="Karakterlerin yolu">
+        <h2>Karakterlerin yolu</h2>
+        <p class="soluk kucuk">Her kitabın sayfasındaki “Odak karakterler” bölümünden doldurulur. Bir kitabın sütunu ötekileri değiştirmez.</p>
+        <div class="tablo-kaydir">
+          <table class="karakter-tablosu">
+            <thead><tr><th scope="col">Karakter</th>{y.eserler.map((x) => <th key={x.kod} scope="col"><a href={`#/e/${evren}/k/${x.kod}`}>{x.ad}</a></th>)}</tr></thead>
+            <tbody>
+              {y.karakterler.map((c) => (
+                <tr key={c.kod}>
+                  <th scope="row"><a href={`#/e/${evren}/k/${c.kod}`}>{c.ad}</a></th>
+                  {y.eserler.map((x) => {
+                    const h = c.hucreler[x.kod];
+                    const l = h ? ozet(h.sorular) : [];
+                    return <td key={x.kod}>{!h ? <span class="soluk kucuk">odak değil</span> : l.length ? l.map((t, i) => <div key={i} class="kucuk">{t}</div>) : <span class="soluk kucuk">henüz yazılmadı</span>}</td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    );
+  }
+  const odakta = new Set(y.karakterler.map((c) => c.kod));
+  const eklenebilir = (karakterler ?? []).filter((c) => !odakta.has(c.kod));
+  return (
+    <section class="karakter-yollari" aria-label="Odak karakterler">
+      <h2>Odak karakterler</h2>
+      <p class="soluk kucuk">Bu kitabın odağındaki karakterler ve bu kitaptaki yolları. Karakterin evrendeki kaydı değişmez; burası bu kitap için planınızdır. Bir kitabın birden çok odak karakteri olabilir.</p>
+      {y.karakterler.map((c) => {
+        const h = c.hucreler[kayit.kod];
+        return (
+          <details key={c.kod} class="karakter-yolu">
+            <summary><strong>{c.ad}</strong>{h.sorular[0].cevap?.cevap && <span class="soluk kucuk"> · {h.sorular[0].cevap.cevap.slice(0, 60)}</span>}</summary>
+            <ul class="soru-listesi">{h.sorular.map((q) => <SoruSatir key={q.kod} istemci={istemci} evren={evren} kod={h.iliski} q={q} hata={setHata} kayitlaYok />)}</ul>
+            <div class="satir">
+              <a class="kucuk" href={`#/e/${evren}/k/${c.kod}`}>Karakterin sayfası</a><span class="bosluk" />
+              <button class="dugme sade kucuk" onClick={() => yazarlikRehberiAc(SET_KONULARI.karakter)}>Bu sorular neden?</button>
+              <button class="dugme sade kucuk" onClick={() => isle(istemci.iste('iliskiSil', { evren, kod: h.iliski }))}>Odaktan çıkar</button>
+            </div>
+          </details>
+        );
+      })}
+      {eklenebilir.length > 0 && (
+        <select class="girdi kucuk-secim" aria-label="Odak karakter ekle" value="" onChange={(e) => {
+          const v = (e.target as HTMLSelectElement).value;
+          if (v) isle(istemci.iste('iliskiEkle', { evren, tur: 'eser_odagi', a: v, b: kayit.kod }));
+        }}>
+          <option value="">Odak karakter ekle…</option>
+          {eklenebilir.map((c) => <option value={c.kod}>{c.ad}</option>)}
+        </select>
+      )}
+      {!eklenebilir.length && !y.karakterler.length && <p class="soluk kucuk">Önce bir karakter kaydı oluşturun.</p>}
+      {hata && <p class="hata kucuk">{hata}</p>}
+    </section>
   );
 }

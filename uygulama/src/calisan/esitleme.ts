@@ -193,7 +193,11 @@ export class Esitleme {
     // 1. Al.
     let guncellemeGerekli = false;
     try {
-      const gelen = await this.uzakIslemler(dosyalar.filter((d) => d.ozellikler.kurulum !== ben || d.ozellikler.tur === 'goruntu'), e.gorulenler());
+      // Bu kurulumun kendi parçaları yalnızca burada yoksa alınır (ör. evren kaldırılıp yeniden indirildiyse deneme
+      // kopyasında bu cihazın yaptıkları yalnızca Drive'dadır; alınmazsa sıra numaraları yeniden kullanılırdı).
+      const yerel = e.gorulenler();
+      const gelen = await this.uzakIslemler(dosyalar.filter((d) => d.ozellikler.kurulum !== ben || d.ozellikler.tur === 'goruntu'
+        || Number(d.ozellikler.son) > (yerel[ben] ?? 0)), yerel);
       if (gelen.length) this.x.islemleriAl(evren, gelen);
     } catch (err) {
       if (!(err instanceof GuncellemeGerekli)) throw err;

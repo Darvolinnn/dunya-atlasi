@@ -2,7 +2,7 @@
 import { KayitDurumSeritleri } from './Gorunumler';
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { AnlatiEtkisi, AnlatiYeri, DurumAlani, DurumSatiri, EserYapisi, Kayit, KisaKayit, SahneAlani, SahneBaglami, SinirBilgisi, SinirGirdisi, YapiSahnesi } from '../veri/api';
+import type { AnlatiEtkisi, AnlatiYeri, KitapSonuAciklar, DurumAlani, DurumSatiri, EserYapisi, Kayit, KisaKayit, SahneAlani, SahneBaglami, SinirBilgisi, SinirGirdisi, YapiSahnesi } from '../veri/api';
 import { DURUM_KIPLERI } from '../alan/durum';
 import { farkYazisi, tarihAciklamasi } from '../alan/tarih';
 import { turBul } from '../alan/turler';
@@ -111,12 +111,101 @@ export function EtkiOzeti({ evren, etki, kapat }: { evren: string; etki: AnlatiE
 }
 
 // ---------- Eserin yapısı: eser ve bölüm sayfası ----------
+type SeriListesi = { seriler: { kod: string; ad: string; eserler: { kod: string; ad: string }[] }[]; serisiz: { kod: string; ad: string }[] };
+
+/** Seri sayfasında kitaplar (K27): önerilen okuma sırası; sıra evren kronolojisini değiştirmez. Seriden çıkarmak
+ *  eseri silmez. */
+export function SeriBolumu({ istemci, evren, kayit }: { istemci: Istemci; evren: string; kayit: Kayit }) {
+  const [l] = useYukle<SeriListesi>(istemci, evren, () => istemci.iste('seriler', { evren }), [kayit.kod]);
+  const [hata, setHata] = useState<string | null>(null);
+  if (!l) return null;
+  const s = l.seriler.find((x) => x.kod === kayit.kod);
+  const kitaplar = s?.eserler ?? [];
+  const tasi = (kod: string, ust: string | null, sira?: number) =>
+    istemci.iste('anlatiYerlestir', { evren, kod, ust, sira: sira ?? null }).then(() => setHata(null), (e) => setHata(hataYaz(e)));
+  return (
+    <section class="seri-kitaplari" aria-label="Serinin kitapları">
+      <h2>Kitaplar</h2>
+      <p class="soluk kucuk">Buradaki sıra serinin önerilen okuma sırasıdır. Kitapları taşımak evren tarihini ya da okurun bir kitaptaki bilgisini değiştirmez; seriden çıkarmak kitabı silmez.</p>
+      {hata && <p class="hata kucuk">{hata}</p>}
+      {kitaplar.length === 0 && <p class="soluk">Bu seride henüz kitap yok.</p>}
+      <ol class="yapi-sahneler">
+        {kitaplar.map((k, i) => (
+          <li key={k.kod} class="satir">
+            <span class="soluk kucuk yapi-no">{i + 1}.</span>
+            <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>
+            <span class="bosluk" />
+            <button class="dugme sade kucuk" disabled={i === 0} aria-label={`${k.ad}: yukarı`} onClick={() => tasi(k.kod, kayit.kod, i - 1)}>↑</button>
+            <button class="dugme sade kucuk" disabled={i === kitaplar.length - 1} aria-label={`${k.ad}: aşağı`} onClick={() => tasi(k.kod, kayit.kod, i + 1)}>↓</button>
+            <button class="dugme sade kucuk" aria-label={`${k.ad}: seriden çıkar`} title="Seriden çıkar (kitap silinmez)" onClick={() => tasi(k.kod, null)}>×</button>
+          </li>
+        ))}
+      </ol>
+      {l.serisiz.length > 0 && (
+        <select class="girdi kucuk-secim" aria-label="Seriye kitap ekle" value="" onChange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v) tasi(v, kayit.kod); }}>
+          <option value="">Seriye kitap ekle…</option>
+          {l.serisiz.map((x) => <option value={x.kod}>{x.ad}</option>)}
+        </select>
+      )}
+    </section>
+  );
+}
+
+/** Eser sayfasında "Kitap sonunda açık kalanlar" (K27): okura sorulup bu eserde açıklanmayan sorular; montajdaki
+ *  sahne niyetlerinden hesaplanır. Uyarı değildir, renkle gösterilmez. Soru yoksa görünmez. */
+export function KitapSonuBolumu({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string }) {
+  const [k] = useYukle<KitapSonuAciklar>(istemci, evren, () => istemci.iste('kitapSonuAciklar', { evren, eser }), [eser]);
+  if (!k || !k.sorular.length) return null;
+  return (
+    <section class="kitap-sonu" aria-label="Kitap sonunda açık kalanlar">
+      <h2>Kitap sonunda açık kalanlar</h2>
+      <p class="soluk kucuk">Okura sorduğunuz ama bu kitapta açıklayan sahnesini işaretlemediğiniz sorular. Bir sırrı bilerek açık bırakmak da bir seçimdir.
+        {' '}Sahne sahne ayrıntı aşağıda “Diğer bölümler” içindeki kurgu montajındadır.</p>
+      <ul>
+        {k.sorular.map((q) => (
+          <li key={q.iddia.kod}>
+            <strong>{q.iddia.soru}</strong>
+            <span class="soluk kucuk"> · {[q.ipucu && `${q.ipucu} ipucu`, q.yaniltmaca && `${q.yaniltmaca} yanıltmaca`, q.destekler && `${q.destekler} başka işaret`].filter(Boolean).join(', ') || 'işaret yok'}</span>
+            {q.sonra ? <span class="kucuk"> · Sonra: <a href={`#/e/${evren}/k/${q.sonra.eser.kod}`}>{q.sonra.eser.ad}</a>, {q.sonra.sira}. sahnede (<a href={`#/e/${evren}/yaz/${q.sonra.sahne.kod}`}>{q.sonra.sahne.ad}</a>) açıklanıyor</span>
+              : k.seride ? <span class="soluk kucuk"> · Serinin sonraki kitaplarında da açıklanmıyor</span> : null}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Eser sayfasında serisi (K27): bir seriye koymak, başka seriye taşımak ya da seriden çıkarmak. */
+function EserinSerisi({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string }) {
+  const [l] = useYukle<SeriListesi>(istemci, evren, () => istemci.iste('seriler', { evren }), [eser]);
+  const [hata, setHata] = useState<string | null>(null);
+  if (!l || !l.seriler.length) return null;
+  const simdiki = l.seriler.find((s) => s.eserler.some((x) => x.kod === eser));
+  return (
+    <p class="satir eserin-serisi">
+      <span class="soluk kucuk">Serisi:</span>
+      {simdiki && <a href={`#/e/${evren}/k/${simdiki.kod}`}>{simdiki.ad}</a>}
+      <select class="girdi kucuk-secim" aria-label="Eserin serisi" value={simdiki?.kod ?? ''} onChange={(e) => {
+        const v = (e.target as HTMLSelectElement).value;
+        istemci.iste('anlatiYerlestir', { evren, kod: eser, ust: v || null, sira: null }).then(() => setHata(null), (x) => setHata(hataYaz(x)));
+      }}>
+        <option value="">Serisiz</option>
+        {l.seriler.map((s) => <option value={s.kod}>{s.ad}</option>)}
+      </select>
+      {hata && <span class="hata kucuk">{hata}</span>}
+    </p>
+  );
+}
+
 export function EserYapisiBolumu({ istemci, evren, kayit }: { istemci: Istemci; evren: string; kayit: Kayit }) {
   const [yer] = useYukle<AnlatiYeri | null>(istemci, evren,
     () => (kayit.tur === 'eser' ? Promise.resolve(null) : istemci.iste('anlatiYeri', { evren, kod: kayit.kod })), [kayit.kod, kayit.tur]);
   const eser = kayit.tur === 'eser' ? kayit.kod : yer?.eser?.kod;
   if (!eser) return null;
-  return <EserAnahatti istemci={istemci} evren={evren} eser={eser} vurgu={kayit.tur === 'bolum' ? kayit.kod : null} />;
+  return <>
+    {kayit.tur === 'eser' && <EserinSerisi istemci={istemci} evren={evren} eser={eser} />}
+    <EserAnahatti istemci={istemci} evren={evren} eser={eser} vurgu={kayit.tur === 'bolum' ? kayit.kod : null} />
+  </>;
 }
 
 function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren: string; eser: string; vurgu: string | null }) {
@@ -154,7 +243,8 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
   return (
     <section class="eser-yapisi" aria-label="Eserin yapısı">
       <h2>Bölümler ve sahneler</h2>
-      <p class="soluk kucuk">Buradaki sıra okuma sırasıdır ve bölüm numaraları buna göre verilir. Bir sahneyi taşımak evren tarihini değiştirmez.</p>
+      <p class="soluk kucuk">Buradaki sıra okuma sırasıdır ve bölüm numaraları buna göre verilir. Bir sahneyi taşımak evren tarihini değiştirmez.
+        {' '}<a href={`#/e/${evren}/orgu/${y.eser.kod}`}>Olay örgüsü masasında aç</a></p>
       {hata && <p class="hata kucuk">{hata}</p>}
       {etki && <EtkiOzeti evren={evren} etki={etki} kapat={() => setEtki(null)} />}
       {y.dogrudan.length > 0 && sahneListesi(y.eser.kod, y.dogrudan)}

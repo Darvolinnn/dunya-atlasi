@@ -223,3 +223,121 @@ test('yeni evrende "İlk adımlar" yapıldıkça ilerler; gizlenince gizli kalı
   await expect(p.getByRole('heading', { name: 'Yaz' })).toBeVisible();
   await expect(liste).toBeHidden();
 });
+
+test('yazarlık rehberi sayfa rehberinden ve komut paletinden açılır, Esc ile kapanır', async ({ page: p }) => {
+  await p.addInitScript(() => { window.requestAnimationFrame = () => 0; });
+  await sahneAc(p);
+  await p.getByRole('button', { name: 'Bu sayfa ne işe yarar?' }).click();
+  await p.getByRole('link', { name: 'Yazarlık rehberinin bütün konuları' }).click();
+  const rehber = p.getByRole('complementary', { name: 'Yazarlık rehberi' });
+  await expect(rehber).toBeVisible();
+  await rehber.getByRole('link', { name: 'Sahnede amaç, engel, sonuç' }).click();
+  await expect(rehber.getByRole('heading', { name: 'Sahnede amaç, engel, sonuç' })).toBeVisible();
+  await rehber.getByText('Ayrıntı ve örnekler').click();
+  await expect(rehber.getByRole('heading', { name: 'Yanıltıcı örnek' })).toBeVisible();
+  await p.keyboard.press('Escape');
+  await expect(rehber).toBeHidden();
+  await p.keyboard.press('Control+k');
+  await p.getByLabel('Kayıt ya da komut ara').fill('hikâyenin çekirdeği');
+  await p.keyboard.press('Enter');
+  await expect(rehber.getByRole('heading', { name: 'Hikâyenin çekirdeği (tek cümlelik özet)' })).toBeVisible();
+});
+
+test('sahne planı bağlam panelinde katlı; cevap kaydedilir ve yeniden açınca yerinde', async ({ page: p }) => {
+  const adres = await sahneAc(p);
+  await p.getByRole('button', { name: 'Bağlam ekle' }).click();
+  const plan = p.locator('.sahne-plani');
+  await expect(plan.getByLabel('Kim ne istiyor?')).toBeHidden();
+  await plan.locator('summary').click();
+  const alan = plan.locator('textarea').first();
+  await alan.fill('Lale dosyayı arıyor.');
+  await alan.blur();
+  await expect(plan.locator('summary')).toContainText('Lale dosyayı arıyor.');
+  await p.goto('/');
+  await p.goto(adres);
+  await p.locator('.sahne-plani summary').click();
+  await expect(p.locator('.sahne-plani textarea').first()).toHaveValue('Lale dosyayı arıyor.');
+});
+
+test('İlk adımlarda yol seçilir; "Geç" adımı yapılmış saymaz; seçim yeniden açılışta korunur', async ({ page: p }) => {
+  await p.goto('/');
+  await p.getByRole('button', { name: 'Yeni evren' }).click();
+  await p.locator('#yeni-evren-adi').fill('Yol Evreni');
+  await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
+  const liste = p.getByRole('region', { name: 'İlk adımlar' });
+  await liste.getByLabel('Bir dünyayla').check();
+  await expect(liste).toContainText('Dünyanızın kuralını yazın');
+  await liste.locator('li').nth(1).getByRole('button', { name: 'Geç' }).click();
+  await expect(liste.locator('li').nth(1)).toContainText('Geçildi');
+  await expect(liste).toContainText('0 / 4 tamam');
+  await p.reload();
+  await expect(liste.getByLabel('Bir dünyayla')).toBeChecked();
+  await expect(liste.locator('li').nth(1)).toContainText('Geçildi');
+  await liste.getByLabel('Bir sahneyle').check();
+  await expect(liste).toContainText('Bir eser oluşturun');
+});
+
+test('seri: yazma ağacında serinin altında kitaplar; seriden çıkarılan kitap silinmez', async ({ page: p }) => {
+  await sahneAc(p);
+  await p.getByRole('button', { name: '+ Yeni seri' }).click();
+  await p.getByPlaceholder('Serinin adı').fill('Hatıra İmparatorluğu');
+  await p.getByPlaceholder('Serinin adı').press('Enter');
+  await expect(p.getByRole('heading', { name: 'Kitaplar' })).toBeVisible();
+  await expect(p.getByText('Serinin büyük sorusu ne?')).toBeVisible();
+  await p.getByLabel('Seriye kitap ekle').selectOption({ label: 'Kuzey Yolu' });
+  const kitaplar = p.getByRole('region', { name: 'Serinin kitapları' });
+  await expect(kitaplar.getByRole('link', { name: 'Kuzey Yolu' })).toBeVisible();
+  await p.getByRole('link', { name: 'Yaz', exact: true }).click();
+  await expect(p.locator('.agac-seri .agac-eser-ad', { hasText: 'Kuzey Yolu' })).toBeVisible();
+  await p.locator('.agac-seri-ad').click();
+  await kitaplar.getByRole('button', { name: 'Kuzey Yolu: seriden çıkar' }).click();
+  await expect(kitaplar).toContainText('Bu seride henüz kitap yok.');
+  await p.getByRole('link', { name: 'Yaz', exact: true }).click();
+  await expect(p.locator('.eser-agaci > .agac-eser .agac-eser-ad', { hasText: 'Kuzey Yolu' })).toBeVisible();
+});
+
+test('eser sayfasında odak karakter eklenir, bu kitaptaki yolu yazılır; seri tablosunda görünür', async ({ page: p }) => {
+  await sahneAc(p);
+  await p.keyboard.press('Control+k');
+  await p.getByLabel('Kayıt ya da komut ara').fill('Lale');
+  await p.getByText('Yeni kayıt: “Lale”').click();
+  await p.getByRole('option', { name: /^Karakter/ }).first().click();
+  await expect(p.getByRole('textbox', { name: 'Ad' })).toHaveValue('Lale');
+  await p.getByRole('link', { name: 'Yaz', exact: true }).click();
+  await p.getByRole('button', { name: '+ Yeni seri' }).click();
+  await p.getByPlaceholder('Serinin adı').fill('Hatıra İmparatorluğu');
+  await p.getByPlaceholder('Serinin adı').press('Enter');
+  await p.getByLabel('Seriye kitap ekle').selectOption({ label: 'Kuzey Yolu' });
+  await p.getByRole('region', { name: 'Serinin kitapları' }).getByRole('link', { name: 'Kuzey Yolu' }).click();
+  const odak = p.getByRole('region', { name: 'Odak karakterler' });
+  await odak.getByLabel('Odak karakter ekle').selectOption({ label: 'Lale' });
+  await odak.locator('summary', { hasText: 'Lale' }).click();
+  await odak.getByLabel('Kitabın başında ne istiyor?').fill('Kardeşini bulmak.');
+  await odak.getByLabel('Kitabın başında ne istiyor?').blur();
+  await expect(odak.locator('summary')).toContainText('Kardeşini bulmak.');
+  await expect(odak.getByRole('button', { name: 'Yeni kayıtla cevapla' })).toHaveCount(0);
+  await p.getByRole('link', { name: 'Hatıra İmparatorluğu' }).first().click();
+  await expect(p.getByRole('region', { name: 'Karakterlerin yolu' })).toContainText('başta: Kardeşini bulmak.');
+});
+
+test('olay örgüsü masası: boş sahne eklenir, dönüm noktası işaretlenir, taşınır ve taşıma geri alınır', async ({ page: p }) => {
+  const adres = await sahneAc(p);
+  const evren = adres.match(/#\/e\/([^/]+)/)![1];
+  await p.goto(`/#/e/${evren}/orgu`);
+  const tablo = p.locator('.orgu-tablosu');
+  await expect(tablo.getByRole('button', { name: 'Kuşatma' })).toBeVisible();
+  await p.getByLabel('Yeni sahnenin adı').fill('Liman');
+  await p.getByRole('button', { name: '+ Sona boş sahne' }).click();
+  await expect(tablo.locator('thead tr').nth(1).getByRole('button')).toHaveText(['Kuşatma', 'Liman']);
+  // Yeni sahne seçili gelir.
+  await expect(tablo.getByRole('button', { name: 'Liman' })).toHaveAttribute('aria-pressed', 'true');
+  const secili = p.locator('.orgu-secili');
+  await expect(secili).toContainText('metni yok (plan sahnesi)');
+  await secili.getByRole('button', { name: 'Dönüm noktası olarak işaretle' }).click();
+  await expect(tablo.locator('tr', { hasText: 'Dönüm noktaları' }).locator('td').nth(1)).toContainText('dönüm');
+  await secili.getByRole('button', { name: '← Bir öne' }).click();
+  await expect(tablo.locator('thead tr').nth(1).getByRole('button')).toHaveText(['Liman', 'Kuşatma']);
+  await expect(p.locator('.orgu-ozet')).toContainText('“Liman” 2. sahneden 1. sahneye geçti.');
+  await p.getByRole('button', { name: 'Taşımayı geri al' }).click();
+  await expect(tablo.locator('thead tr').nth(1).getByRole('button')).toHaveText(['Kuşatma', 'Liman']);
+});

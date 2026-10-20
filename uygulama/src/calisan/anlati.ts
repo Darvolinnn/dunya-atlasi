@@ -33,6 +33,17 @@ export function eserYapisi(e: EvrenVt, eser: string): EserYapisi {
   return { eser: { kod: eser, ad }, bolumler, dogrudan };
 }
 
+/** Seriler ve altlarındaki eserler (K27), önerilen okuma sırasıyla. Üstü silinmiş ya da serisi olmayan eser
+ *  "serisiz" listesinde durur; seri silinince eserlerin yerine dokunulmadığı için seri geri gelince altına döner. */
+export function seriler(e: EvrenVt): { seriler: { kod: string; ad: string; eserler: { kod: string; ad: string }[] }[]; serisiz: { kod: string; ad: string }[] } {
+  const l = (e.db.selectObjects("SELECT kod, ad FROM kayitlar WHERE tur='seri' AND silindi IS NULL ORDER BY olusturma, rowid") as { kod: string; ad: string }[])
+    .map((s) => ({ ...s, eserler: cocuklar(e, s.kod).filter((r) => r.tur === 'eser').map((r) => ({ kod: r.kod, ad: r.ad })) }));
+  const seride = new Set(l.flatMap((s) => s.eserler.map((x) => x.kod)));
+  const serisiz = (e.db.selectObjects("SELECT kod, ad FROM kayitlar WHERE tur='eser' AND silindi IS NULL ORDER BY olusturma, rowid") as { kod: string; ad: string }[])
+    .filter((x) => !seride.has(x.kod));
+  return { seriler: l, serisiz };
+}
+
 /** Okuma sırası: eserin bütün sahneleri. */
 const okumaSirasi = (y: EserYapisi) => [...y.dogrudan, ...y.bolumler.flatMap((b) => b.sahneler)];
 
@@ -93,10 +104,12 @@ function ilkTanitimlar(e: EvrenVt, sira: { kod: string; ad: string }[]) {
 export function yerlestir(b: AnlatiBaglami, kod: string, ust: string | null, sira: number | null): { etki: AnlatiEtkisi[] } {
   const { e } = b;
   const tur = turu(e, kod);
-  if (tur !== 'sahne' && tur !== 'bolum') throw new Error('Yalnızca sahneler ve bölümler yerleştirilebilir.');
+  if (tur !== 'sahne' && tur !== 'bolum' && tur !== 'eser') throw new Error('Yalnızca sahneler, bölümler ve eserler yerleştirilebilir.');
   if (ust !== null) {
     const ustTur = turu(e, ust);
     if (ustTur === undefined) throw new Error('Kayıt bulunamadı.');
+    // Eser bir serinin altına girer (K27); sıra serinin önerilen okuma sırasıdır, evren kronolojisi değildir.
+    if (tur === 'eser' && ustTur !== 'seri') throw new Error('Eser yalnızca bir serinin içine yerleştirilebilir.');
     if (tur === 'bolum' && ustTur !== 'eser') throw new Error('Bölüm yalnızca bir eserin içine yerleştirilebilir.');
     if (tur === 'sahne' && ustTur !== 'eser' && ustTur !== 'bolum') throw new Error('Sahne yalnızca bir eserin ya da bölümün içine yerleştirilebilir.');
   }

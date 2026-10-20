@@ -46,7 +46,7 @@ import * as soyMod from './soy';
 import * as montaj from './montaj';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
-import type { IlerlemeBildirimi } from '../veri/api';
+import type { IlerlemeBildirimi, SimdiOnerisi } from '../veri/api';
 import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
 import * as bakim from './bakim';
@@ -76,7 +76,7 @@ import * as bilgi from './bilgi';
 import { BILGI_KAYNAKLARI, INANCLAR } from '../alan/bilgi';
 import { gorunurlukGecerli, gorunurlukOku, sadeGercekMi, type Gorunurluk } from '../alan/gorunurluk';
 import { yasHesapla } from '../alan/yas';
-import { MESELE_DURUMLARI, type Sablon, type SoruDurumu } from '../alan/sablon';
+import { MESELE_DURUMLARI, type Sablon, type SoruDurumu, SORU_SETLERI } from '../alan/sablon';
 import { gecerlilik, DURUM_KIPLERI } from '../alan/durum';
 import { kisiYasananSure } from './yasanan-sure';
 import { sahneOkurBilgileri } from './sahne-okur';
@@ -204,6 +204,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const db = this.evren(evren).db;
     const var_ = (sql: string) => db.selectValue(sql) !== undefined;
     const sahneler = "SELECT kod, tarih, sahne_olayi FROM kayitlar WHERE tur='sahne' AND silindi IS NULL";
+    const cevapli = (soru: string, kayitlar: string) => var_(`SELECT 1 FROM soru_cevaplari WHERE soru='${soru}' AND durum='cevaplandi' AND kayit IN (${kayitlar}) LIMIT 1`);
+    const YER_TURLERI = "'mekan','sehir','siyasi'";
     return {
       eser: var_("SELECT 1 FROM kayitlar WHERE tur='eser' AND silindi IS NULL LIMIT 1"),
       sahne: var_(`${sahneler} LIMIT 1`),
@@ -212,6 +214,24 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       baglam: var_(`SELECT 1 FROM (${sahneler}) s LEFT JOIN kayitlar o ON o.kod=s.sahne_olayi
         WHERE s.tarih IS NOT NULL OR o.tarih IS NOT NULL
           OR EXISTS (SELECT 1 FROM iliskiler i WHERE i.tur='sahne_yeri' AND i.silindi IS NULL AND (i.a=s.kod OR i.b=s.kod OR i.a=s.sahne_olayi OR i.b=s.sahne_olayi)) LIMIT 1`),
+      // Başlangıç yollarının dayanakları (K27). Hepsi varlık sorgusudur; evren büyüklüğünden bağımsızdır.
+      not: var_("SELECT 1 FROM kayitlar WHERE tur='not' AND silindi IS NULL LIMIT 1"),
+      nottanEser: var_(`SELECT 1 FROM iliskiler i JOIN kayitlar k ON k.kod=i.b WHERE i.tur='nottan' AND i.silindi IS NULL AND k.tur='eser' AND k.silindi IS NULL LIMIT 1`),
+      cekirdek: cevapli('cekirdek.1', "SELECT kod FROM kayitlar WHERE tur='eser' AND silindi IS NULL"),
+      karakter: var_("SELECT 1 FROM kayitlar WHERE tur='karakter' AND silindi IS NULL LIMIT 1"),
+      istek: cevapli('karakter.1', "SELECT kod FROM kayitlar WHERE tur='karakter' AND silindi IS NULL"),
+      karsit: cevapli('karsit.1', "SELECT kod FROM kayitlar WHERE tur='karakter' AND silindi IS NULL")
+        || var_(`SELECT 1 FROM iliskiler i JOIN kayitlar k ON k.kod IN (i.a, i.b) WHERE i.tur IN ('dusman','rakip','nefret') AND i.silindi IS NULL AND k.tur='karakter' AND k.silindi IS NULL LIMIT 1`),
+      karakterSahnede: var_(`SELECT 1 FROM iliskiler i JOIN kayitlar k ON k.kod=i.a JOIN kayitlar s ON s.kod=i.b
+        WHERE i.tur='sahnede' AND i.rol='bulunuyor' AND i.silindi IS NULL AND k.tur='karakter' AND k.silindi IS NULL AND s.tur='sahne' AND s.silindi IS NULL LIMIT 1`),
+      kural: cevapli('pusula.4', "SELECT 'evren'") || var_("SELECT 1 FROM kayitlar WHERE tur IN ('evren_kurali','buyu_sistemi') AND silindi IS NULL LIMIT 1"),
+      guc: cevapli('pusula.3', "SELECT 'evren'"),
+      yer: var_(`SELECT 1 FROM kayitlar WHERE tur IN (${YER_TURLERI}) AND silindi IS NULL LIMIT 1`),
+      yerdeIs: var_(`SELECT 1 FROM iliskiler i WHERE i.tur='sahne_yeri' AND i.silindi IS NULL LIMIT 1`)
+        || var_(`SELECT 1 FROM baglantilar b JOIN kayitlar n ON n.kod=b.kaynak JOIN kayitlar y ON y.kod=b.hedef
+          WHERE n.tur='not' AND n.silindi IS NULL AND y.tur IN (${YER_TURLERI}) AND y.silindi IS NULL LIMIT 1`),
+      /** Evren sorularının durumu (yalnız başlangıç yollarında geçen sorular). */
+      sorular: Object.fromEntries((db.selectObjects("SELECT soru, durum FROM soru_cevaplari WHERE kayit='evren' AND soru IN ('pusula.3','pusula.4')") as { soru: string; durum: string }[]).map((r) => [r.soru, r.durum])),
     };
   }
 
@@ -233,7 +253,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     e.db.close();
     this.acik.delete(evren);
-    this.kurulum.evrenSil(evren);
+    // Deneme kopyalarının ayarları da (ör. gönderilenlerin sırası) gider; yeniden indirilince Drive'dan kurulur.
+    for (const kod of [evren, ...dallar]) this.kurulum.evrenSil(kod);
     for (const kod of [evren, ...dallar]) for (const ek of ['', '-journal']) this.dosyaSil(`/evren-${kod}.db${ek}`);
   }
 
@@ -473,6 +494,57 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     };
   }
 
+  // ---------- Şu an çalışılan ve "Şimdi" (K27, Model §5) ----------
+  /** Yalnız kullanıcı seçince değişir; son düzenlenen kayıt etkin çalışma sayılmaz. */
+  etkinCalisma({ evren }: { evren: string }): KisaKayit | null {
+    const e = this.evren(evren);
+    const kod = e.db.selectValue("SELECT v FROM evren WHERE k='etkin_calisma'") as string | undefined;
+    if (!kod) return null;
+    return (e.db.selectObject("SELECT kod, ad, tur FROM kayitlar WHERE kod=? AND silindi IS NULL AND tur IN ('eser','seri')", [kod]) as unknown as KisaKayit | undefined) ?? null;
+  }
+  etkinCalismaYaz({ evren, kod }: { evren: string; kod: string | null }) {
+    const e = this.evren(evren);
+    if (kod !== null) {
+      this.kayitVarMi(e, kod);
+      if (!['eser', 'seri'].includes(e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [kod]) as string)) throw new Error('Yalnız bir eser ya da seri seçilebilir.');
+    }
+    this.yaz(evren, [{ tur: 'evren_etkin_calisma', veri: { kod } }]);
+  }
+
+  /**
+   * Genel bakıştaki "Şimdi" önerileri (Model §5.3): yalnız kayıtlı veriye dayanır, her biri gerekçesini söyler.
+   * Sıra: önemli açık mesele (etkin çalışmaya bağlı olan önce) · sonraya bırakılmış anlatı sorusu (başlangıç ve evren
+   * soruları hariç) · son düzenlenen sahne. Devam notu "Kaldığınız yer" kartında durur, burada tekrarlanmaz.
+   */
+  simdi({ evren }: { evren: string }): SimdiOnerisi[] {
+    const e = this.evren(evren);
+    const etkin = this.etkinCalisma({ evren });
+    // Etkin çalışmanın kapsamı: seri, eserleri, bölümleri ve sahneleri.
+    const kapsam = new Set<string>();
+    if (etkin) {
+      const ekle = (k: string) => { kapsam.add(k); for (const r of e.db.selectObjects('SELECT kod FROM anlati WHERE ust=?', [k])) ekle(r.kod as string); };
+      ekle(etkin.kod);
+      const seri = e.db.selectValue("SELECT a.ust FROM anlati a JOIN kayitlar s ON s.kod=a.ust WHERE a.kod=? AND s.tur='seri'", [etkin.kod]) as string | undefined;
+      if (seri) kapsam.add(seri);
+    }
+    const kapsamda = (kodlar: string[]) => !etkin || kodlar.some((k) => kapsam.has(k));
+    const l: SimdiOnerisi[] = [];
+    const meseleler = sablonlar.meseleler(e).meseleler.filter((m) => m.onemli && m.durum === 'dusunulecek');
+    const mesele = meseleler.find((m) => etkin && kapsamda(m.bagli.map((b) => b.kod))) ?? meseleler[0];
+    if (mesele) l.push({ tur: 'mesele', kayit: { kod: mesele.kod, ad: mesele.ad, tur: 'acik_mesele' }, baslik: mesele.ad, gerekce: 'Bu meseleyi önemli olarak işaretlemiştiniz.' });
+    const sonra = e.db.selectObjects(`SELECT c.kayit, c.soru, k.ad, k.tur FROM soru_cevaplari c JOIN kayitlar k ON k.kod=c.kayit
+      WHERE c.durum='sonra' AND k.silindi IS NULL AND k.tur IN ('eser','seri','sahne','kurgu_hatti') ORDER BY c.duzenleme DESC LIMIT 200`) as { kayit: string; soru: string; ad: string; tur: string }[];
+    const s = sonra.find((r) => kapsamda([r.kayit]));
+    if (s) {
+      const q = SORU_SETLERI.flatMap((x) => x.sorular).find((x) => x.kod === s.soru);
+      l.push({ tur: 'soru', kayit: { kod: s.kayit, ad: s.ad, tur: s.tur }, baslik: `${s.ad}: ${q?.metin ?? 'bir soru'}`, gerekce: 'Bu soruyu sonraya bırakmıştınız.' });
+    }
+    const sahneler = e.db.selectObjects("SELECT kod, ad FROM kayitlar WHERE tur='sahne' AND silindi IS NULL ORDER BY duzenleme DESC LIMIT 50") as { kod: string; ad: string }[];
+    const sahne = sahneler.find((r) => kapsamda([r.kod]));
+    if (sahne) l.push({ tur: 'sahne', kayit: { kod: sahne.kod, ad: sahne.ad, tur: 'sahne' }, baslik: sahne.ad, gerekce: 'En son bu sahne üzerinde çalıştınız.' });
+    return l;
+  }
+
   // ---------- Metin kurtarma taslağı (§10.7) ----------
   private taslakAnahtari(anahtar: unknown): string {
     if (typeof anahtar !== 'string' || !anahtar || anahtar.length > 200) throw new Error('Geçersiz taslak.');
@@ -588,7 +660,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         const etiket = msr ? ({ ad: 'Adı', amac: 'Çözmeye çalışılan soru', notlar: 'Notlar', bas: 'Aralığın başı', bit: 'Aralığın sonu', paket: 'Seçili varsayım paketi', uyeler: 'Bağlı kayıtlar' } as Record<string, string>)[alan]
           : ({ ad: 'Adı', aciklama: 'Açıklaması', varsayimlar: 'Varsayımları' } as Record<string, string>)[alan];
         const yazi = (d: unknown) => (Array.isArray(d) ? `${d.length} öge` : d && typeof d === 'object' ? (d as { ifade?: string }).ifade ?? '' : d === null ? '(boş)' : alan === 'paket' ? ((e.db.selectValue('SELECT ad FROM paketler WHERE kod=?', [String(d)]) as string | undefined) ?? 'silinmiş paket') : String(d));
-        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: msr ? `“${msr.ad}” çalışma masası` : `“${pkr!.ad}” varsayım paketi`,
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: msr ? `“${msr.ad}” konu dosyası` : `“${pkr!.ad}” varsayım paketi`,
           alanEtiketi: etiket ?? alan, degerler: degerler.map((d) => ({ ...d, yazi: yazi(d.deger) })) });
         continue;
       }
@@ -1708,6 +1780,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (!iliskiTuruGecerli(tur)) throw new Error('Bilinmeyen ilişki türü.');
     if (!kararGecerli(karar)) throw new Error('Geçersiz karar durumu.');
     const t = iliskiTuruBul(tur);
+    if (tur === 'eser_odagi' && (e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [a]) !== 'karakter' || e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [b]) !== 'eser'))
+      throw new Error('Odak karakter bağı bir karakterden bir esere kurulur.');
+    if (tur === 'alternatif' && e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [a]) !== e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [b]))
+      throw new Error('Alternatifler aynı türden olmalı: iki olay, iki sahne ya da iki kurgu hattı gibi.');
     if (!rol && t.rolIstegeBagli) rol = null;
     if (rol !== null && !t.roller?.some((r) => r.kod === rol)) throw new Error('Bu ilişki için geçersiz rol.');
     const kod = yeniKod();
@@ -1850,6 +1926,14 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return anlati.anlatiYeri(e, kod);
   }
   yerlesmemisler({ evren }: { evren: string }) { return anlati.yerlesmemisler(this.evren(evren)); }
+  seriler({ evren }: { evren: string }) { return anlati.seriler(this.evren(evren)); }
+  /** Bir kaydın alternatifleri (K27), karar durumlarıyla. */
+  alternatifler({ evren, kod }: { evren: string; kod: string }): (KisaKayit & { karar: string })[] {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kod);
+    return e.db.selectObjects(`SELECT k.kod, k.ad, k.tur, k.karar FROM iliskiler i JOIN kayitlar k ON k.kod = CASE WHEN i.a=? THEN i.b ELSE i.a END
+      WHERE i.tur='alternatif' AND i.silindi IS NULL AND (i.a=? OR i.b=?) AND k.silindi IS NULL ORDER BY k.ad`, [kod, kod, kod]) as unknown as (KisaKayit & { karar: string })[];
+  }
   eserler({ evren }: { evren: string }): KisaKayit[] {
     return this.evren(evren).db.selectObjects("SELECT kod, ad, tur FROM kayitlar WHERE tur='eser' AND silindi IS NULL ORDER BY olusturma") as unknown as KisaKayit[];
   }
@@ -2020,6 +2104,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     sablonlar.kayitSoruSeti(this.sablonBaglami(evren), kod, set, ekle);
   }
   evrenSorulari({ evren }: { evren: string }) { return sablonlar.evrenSorulari(this.evren(evren)); }
+  karakterYollari({ evren, kapsam }: { evren: string; kapsam: string }) { return sablonlar.karakterYollari(this.evren(evren), kapsam); }
   meseleler({ evren, kod }: { evren: string; kod?: string }) {
     const e = this.evren(evren);
     if (kod) this.kayitVarMi(e, kod);
@@ -2218,7 +2303,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const bk = gorunum.bakisHazirla(e, bakis);
     const eserOf = new Map<string, string>();
     for (const r of e.db.selectObjects(`SELECT a.kod, CASE WHEN u.tur='bolum' THEN (SELECT ust FROM anlati WHERE kod=u.kod) ELSE a.ust END eser
-        FROM anlati a JOIN kayitlar u ON u.kod=a.ust`)) if (r.eser) eserOf.set(r.kod as string, r.eser as string);
+        FROM anlati a JOIN kayitlar u ON u.kod=a.ust WHERE u.tur IN ('eser','bolum')`)) if (r.eser) eserOf.set(r.kod as string, r.eser as string);
     return e.db.selectObjects(`SELECT kod, ad, tur, karar, tarih, gorunurluk FROM kayitlar WHERE tarih IS NOT NULL AND silindi IS NULL`)
       .filter((r) => bk.gorur(r.gorunurluk))
       .map((r) => ({ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string, karar: r.karar as string, tarih: this.tarihGoster(e, r.tarih)!, eser: eserOf.get(r.kod as string) ?? null,
@@ -2539,9 +2624,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   tahtSirasi({ evren, kod, tarih }: { evren: string; kod: string; tarih: string }) { return soyMod.tahtSirasi(this.evren(evren), kod, tarih); }
   private soyBaglami(evren: string): soyMod.SoyBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
   kurguMontaji({ evren, eser }: { evren: string; eser: string }) { return montaj.kurguMontaji(this.evren(evren), eser); }
+  kitapSonuAciklar({ evren, eser }: { evren: string; eser: string }) { return montaj.kitapSonuAciklar(this.evren(evren), eser); }
   sahneNiyetleri({ evren, sahne }: { evren: string; sahne: string }) { this.kayitVarMi(this.evren(evren), sahne); return montaj.niyetlerOku(this.evren(evren), sahne); }
   sahneNiyetleriYaz({ evren, sahne, niyetler }: { evren: string; sahne: string; niyetler: SahneNiyeti[] }) { montaj.sahneNiyetleriYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, sahne, niyetler); }
   montajHedefiYaz({ evren, eser, iddia, hedef }: { evren: string; eser: string; iddia: string; hedef: MontajHedefi | null }) { montaj.montajHedefiYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, eser, iddia, hedef); }
+  olayOrgusu({ evren, eser }: { evren: string; eser: string }) { return montaj.olayOrgusu(this.evren(evren), eser); }
   montajTasi({ evren, sahne, yon }: { evren: string; sahne: string; yon: -1 | 1 }) {
     this.kayitVarMi(this.evren(evren), sahne);
     if (yon !== -1 && yon !== 1) throw new Error('Geçersiz yön.');

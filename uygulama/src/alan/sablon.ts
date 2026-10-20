@@ -86,6 +86,51 @@ export const SORU_SETLERI: SoruSeti[] = [
     ['Ses paleti ne?', 'Tekrar eden heceler; sert ↔ akıcı; kısa ↔ uzun. Aynı kültürün karakter, şehir ve ülke adları bu seslerden türetilir.'],
   ]),
   set('haritasiz', 'Haritasız evren büyütme', ['Uzak yerlerden nasıl söz ettiriliyor?', 'Hangi ticaret izleri var?', 'Hangi farklı diller duyuluyor?', 'Hangi eski olaylar anılıyor?', 'Hangi söylentiler dolaşıyor?']),
+  // Anlatı soruları (K27): eser, sahne ve kurgu hattı için. Evrenin kuralı (`baslangic.1`) ile hikâyenin çekirdeği ayrıdır.
+  set('cekirdek', 'Hikâye çekirdeği', [
+    ['Kim, ne istiyor?', 'Somut bir hedef: "kardeşinin dosyasını bulmak", "mutlu olmak" değil'],
+    ['Ona ne engel oluyor?', 'Bir kişi, bir kurum, bir kural ya da kendi inancı olabilir'],
+    'Başaramazsa ne kaybeder?',
+    'Okur hangi sorunun cevabını merak edecek?',
+    ['Bu hikâye hangi soruyu soruyor?', 'Cevap vermeden, soru biçiminde yazın'],
+  ]),
+  set('eser', 'Bu kitabın görevi', [
+    'Bu kitabın merkez sorusu ne?',
+    ['Dengeyi bozan olay ne?', 'Karakterin artık eskisi gibi yaşayamadığı an'],
+    'Doruk noktası ne?',
+    'Bu kitapta ne çözülüyor?',
+    ['Ne açık kalıyor?', 'Sonraki kitaba ya da bilerek cevapsız bırakılanlar'],
+  ]),
+  set('sahne_plani', 'Sahne planı', [
+    'Kim ne istiyor?',
+    'Ne engel oluyor?',
+    ['Sahne sonunda ne değişiyor?', 'Bir karar, yeni bir bilgi, bir ilişki ya da dış bir olay. Atmosfer sahnesinde "İlgisiz" diyebilirsiniz'],
+    'Okur ne öğreniyor?',
+  ]),
+  set('seri', 'Serinin büyük planı', [
+    ['Serinin büyük sorusu ne?', 'Birden çok kitap boyunca okurun taşıyacağı soru'],
+    'Merkez çatışma ne?',
+    ['Başlangıç dengesi ne?', 'Seri başladığında dünya nasıl işliyor?'],
+    ['İlk büyük kırılma ne?', 'Dengeyi geri dönülmez biçimde bozan olay'],
+    ['Orta evrede ne değişiyor?', 'Karakterlerin istediği şey nasıl dönüşüyor?'],
+    ['Bilerek cevapsız kalacaklar neler?', 'Olası finaller ayrı olay kayıtları olarak tutulur'],
+  ]),
+  set('karakter_kitapta', 'Karakterin bu kitaptaki yolu', [
+    'Kitabın başında ne istiyor?',
+    'Kitabın sonunda ne istiyor?',
+    ['Başlangıçtaki inancı ya da yanlış varsayımı ne?', 'Ör. "Devlet kayıtları yalan söylemez."'],
+    'Bu kitapta inancı nasıl sınanıyor?',
+    'Aldığı en zor karar ve vazgeçtiği seçenek ne?',
+    'Aştığı sınır, ödediği bedel ne?',
+    'İlişkilerinde ne değişiyor?',
+    'Sonraki kitaba hangi iç çatışmayı taşıyor?',
+  ]),
+  set('hat', 'Kurgu hattı', [
+    ['Bu hattın sorusu ne?', 'Ör. "Deniz\'e ne oldu?"'],
+    'Şu anki durumu ne?',
+    'Olası karşılığı ne?',
+    ['Bilerek açık mı kalacak?', 'Bazı hatlar bilinçli olarak belirsiz kalır'],
+  ]),
   set('rehber', 'Evren kurma rehberi', [
     ['Kim hüküm sürüyor?', 'Bir topluluk kaydıyla da cevaplayabilirsiniz'], 'Büyünün bedeli ne?', ['İnsanlar neye inanıyor?', 'Bir inanç kaydıyla da cevaplayabilirsiniz'],
   ]),
@@ -94,6 +139,8 @@ const setler = new Map(SORU_SETLERI.map((s) => [s.kod, s]));
 export const soruSetiBul = (kod: string) => setler.get(kod);
 /** Kaydın değil evrenin soruları (Masa'da durur). */
 export const EVREN_SETLERI = ['pusula', 'baslangic', 'rehber', 'haritasiz'];
+/** Bir kaydın değil bir ilişkinin soruları (K27: karakterin bir eserdeki yolu); kayıtlara eklenemez. */
+export const ILISKI_SETLERI = ['karakter_kitapta'];
 
 export const MESELE_DURUMLARI: Secenek[] = [
   { kod: 'dusunulecek', ad: 'Düşünülecek' },
@@ -102,6 +149,17 @@ export const MESELE_DURUMLARI: Secenek[] = [
 ];
 
 const sorular = (...kodlar: string[]) => kodlar.flatMap((k) => soruSetiBul(k)!.sorular);
+
+/** Sahneyi dönüm noktası yapan etiket (K27); olay örgüsü masasında ayrı satırda görünür. */
+export const DONUM_ETIKETI = 'dönüm noktası';
+
+export const ESER_CALISMA: Secenek[] = [
+  { kod: 'fikir', ad: 'Fikir' }, { kod: 'plan', ad: 'Plan' }, { kod: 'ilk_taslak', ad: 'İlk taslak' },
+  { kod: 'duzeltme', ad: 'Düzeltme' }, { kod: 'bitti', ad: 'Bitti' }, { kod: 'yayimlandi', ad: 'Yayımlandı' },
+];
+export const SAHNE_CALISMA: Secenek[] = [
+  { kod: 'planlandi', ad: 'Planlandı' }, { kod: 'ilk_taslak', ad: 'İlk taslak' }, { kod: 'duzenleniyor', ad: 'Düzenleniyor' }, { kod: 'gozden_gecirildi', ad: 'Gözden geçirildi' },
+];
 
 /** Türlerin varsayılan şablonları. Yazar değiştirince evrene kaydedilir; değiştirmediği tür bunları kullanır. */
 const VARSAYILANLAR: Record<string, Sablon> = {
@@ -119,10 +177,15 @@ const VARSAYILANLAR: Record<string, Sablon> = {
   buyu_sistemi: { alanlar: [], sorular: sorular('buyu') },
   kultur: { alanlar: [], sorular: sorular('kultur') },
   dil: { alanlar: [], sorular: sorular('dil') },
+  // Çalışma durumu (K27) karar durumundan ayrıdır: kesinleşmiş bir eser hâlâ ilk taslak olabilir. Evren tarihini etkilemez.
+  eser: { alanlar: [{ kod: 'calisma', ad: 'Çalışma durumu', tur: 'secim', secenekler: ESER_CALISMA, ipucu: 'Yazım aşaması; karar durumundan ayrıdır' }], sorular: sorular('cekirdek', 'eser') },
+  sahne: { alanlar: [{ kod: 'calisma', ad: 'Çalışma durumu', tur: 'secim', secenekler: SAHNE_CALISMA, ipucu: 'Aynı eserde sahnelerin farklı durumda olması olağandır' }], sorular: sorular('sahne_plani') },
+  kurgu_hatti: { alanlar: [], sorular: sorular('hat') },
+  seri: { alanlar: [], sorular: sorular('seri') },
   acik_mesele: {
     alanlar: [
       { kod: 'durum', ad: 'Durum', tur: 'secim', secenekler: MESELE_DURUMLARI, sabit: true },
-      { kod: 'onemli', ad: 'Önemli', tur: 'onay', sabit: true, ipucu: 'Önemli olarak işaretlenen meseleler Masa\'da öne çıkar' },
+      { kod: 'onemli', ad: 'Önemli', tur: 'onay', sabit: true, ipucu: 'Önemli olarak işaretlenen meseleler Genel bakış sayfasında öne çıkar' },
     ],
     sorular: [],
   },
