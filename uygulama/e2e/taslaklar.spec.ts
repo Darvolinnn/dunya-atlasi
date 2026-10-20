@@ -77,3 +77,24 @@ test('yazma, ağ, zaman çizelgesi ve harita yeni düzenleriyle açılır', asyn
   await expect(p.getByRole('button', { name: 'Haritayı kaldır' })).toBeVisible();
   await expect(p.getByLabel('Lejant')).toContainText('Kesin yer');
 });
+
+test('gezinti çubuğu ölçekli 2K ekrana sığar; kendisi kaymaz, uzun ağaç kendi alanında kayar', async ({ page: p }) => {
+  // Windows'ta %175 ölçekli 2K ekranın sayfaya düşen alanı.
+  await p.setViewportSize({ width: 1463, height: 765 });
+  await p.goto('/');
+  await p.getByRole('button', { name: 'Örnek evreni aç' }).click();
+  await expect(p.getByRole('heading', { name: 'Unutulanlar' })).toBeVisible({ timeout: 40_000 });
+  for (const ad of ['Bir daha gösterme', 'Gizle']) { const d = p.getByRole('button', { name: ad }); if (await d.count()) await d.first().click(); }
+  await p.locator('nav a', { hasText: /^Arşiv$/ }).first().click();
+  await p.getByRole('button', { name: 'Hatırlayanlar: aç' }).click();
+  await p.locator('details.gezinti-diger > summary').click();
+  const olc = () => p.evaluate(() => {
+    const n = document.querySelector('nav.gezinti')!;
+    return { tasma: n.scrollHeight - n.clientHeight, ust: n.getBoundingClientRect().top, alt: document.querySelector('.gezinti-alti')!.getBoundingClientRect().bottom <= innerHeight + 1 };
+  });
+  expect(await olc()).toEqual({ tasma: 0, ust: 0, alt: true });
+  await p.mouse.move(700, 400);
+  await p.mouse.wheel(0, 800);
+  await expect.poll(() => p.evaluate(() => scrollY)).toBeGreaterThanOrEqual(0);
+  expect((await olc()).ust).toBe(0);
+});
