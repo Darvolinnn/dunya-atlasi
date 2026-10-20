@@ -1,7 +1,7 @@
 // Seri sayfasının plan bölümleri (K27): olası finaller, başka serilerden kitaplar ve okuma yolları. Olası final bir
 // soru değil ayrı bir olay kaydıdır; birbirinin alternatifidir ve biri seçilince öbürleri silinmez. Okuma yolu
 // okurun kitapları izleyebileceği adlandırılmış bir sıradır; önerilen okuma sırası ağaçtaki sıradır.
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { Kayit, KisaKayit, SeriPlani } from '../veri/api';
 import { KararRozeti } from './ortak';
@@ -84,6 +84,18 @@ function OlasiFinaller({ istemci, evren, p }: { istemci: Istemci; evren: string;
   );
 }
 
+/** Yazarken gelen yenileme yazılanı silmesin diye ad yerelde tutulur; Enter ya da odaktan çıkınca kaydedilir. */
+function YolAdi({ ad, kaydet }: { ad: string; kaydet: (v: string) => void }) {
+  const [yerel, setYerel] = useState(ad);
+  useEffect(() => setYerel(ad), [ad]);
+  return (
+    <input class="girdi kucuk-girdi" lang="tr" aria-label="Okuma yolunun adı" value={yerel}
+      onInput={(e) => setYerel((e.target as HTMLInputElement).value)}
+      onBlur={() => { if (yerel !== ad) kaydet(yerel); }}
+      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+  );
+}
+
 type YolTaslagi = { kod: string | null; ad: string; eserler: string[] };
 
 function OkumaYollari({ istemci, evren, p }: { istemci: Istemci; evren: string; p: SeriPlani }) {
@@ -102,9 +114,7 @@ function OkumaYollari({ istemci, evren, p }: { istemci: Istemci; evren: string; 
       {yollar.map((y, i) => (
         <div key={y.kod ?? i} class="okuma-yolu">
           <div class="satir">
-            <input class="girdi kucuk-girdi" lang="tr" aria-label="Okuma yolunun adı" value={y.ad}
-              onBlur={(e) => { const v = (e.target as HTMLInputElement).value; if (v !== y.ad) degistir(i, { ...y, ad: v }); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+            <YolAdi ad={y.ad} kaydet={(v) => degistir(i, { ...y, ad: v })} />
             <button class="dugme sade kucuk" onClick={async () => { if (await onayla(`“${y.ad}” okuma yolu silinsin mi? Kitaplar silinmez.`)) degistir(i, null); }}>Yolu sil</button>
           </div>
           <ol class="yapi-sahneler">

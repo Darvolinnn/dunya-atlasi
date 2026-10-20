@@ -61,6 +61,20 @@ export class EvrenVt {
 
   constructor(readonly db: Database, readonly kurulum: string, private readonly bildirim: Ilerleme = () => {}) {
     db.exec('PRAGMA foreign_keys=ON;');
+    // Yeni dosyada bütün tablolar tek veritabanı işleminde kurulur: tablo tablo ayrı kaydetmek tarayıcının dosya
+    // deposunda yeni evren oluşturmayı saniyelerce uzatıyordu. Günlük boş olduğu için baştan kurmaya gerek yoktur.
+    if (db.selectValue("SELECT 1 FROM sqlite_master WHERE type='table' AND name='meta'") === undefined) {
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        db.exec(GUNLUK_SEMA);
+        db.exec(IZDUSUM_SEMA);
+        goruntuSemasi(db);
+        db.exec('CREATE INDEX IF NOT EXISTS islemler_sira ON islemler(saat, kurulum, sira)');
+        db.exec({ sql: "INSERT INTO meta VALUES('veri_bicimi', ?), ('izdusum_surumu', ?)", bind: [String(VERI_BICIMI), String(IZDUSUM_SURUMU)] });
+        db.exec('COMMIT');
+      } catch (e) { db.exec('ROLLBACK'); throw e; }
+      return;
+    }
     db.exec(GUNLUK_SEMA);
     const bicim = db.selectValue("SELECT v FROM meta WHERE k='veri_bicimi'") as string | undefined;
     if (bicim === undefined) db.exec({ sql: "INSERT INTO meta VALUES('veri_bicimi', ?)", bind: [String(VERI_BICIMI)] });
