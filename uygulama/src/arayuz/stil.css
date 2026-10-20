@@ -521,6 +521,7 @@ label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; 
 /* Olay örgüsü masası (K27) */
 .orgu-tablosu th, .orgu-tablosu td { font-size: 0.85rem; }
 .orgu-tablosu .bolum-siniri { border-left: 2px solid var(--metin-2); }
+.orgu-tablosu .eser-siniri { border-left: 4px double var(--metin); }
 .orgu-tablosu .secili { background: var(--vurgu-zemin); }
 .orgu-tablosu thead th[draggable] { cursor: grab; }
 .orgu-tablosu thead th.birakilabilir { outline: 2px dashed var(--vurgu); outline-offset: -3px; }

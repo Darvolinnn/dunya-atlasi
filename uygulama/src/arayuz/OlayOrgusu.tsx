@@ -5,7 +5,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AnlatiEtkisi, KisaKayit, OlayOrgusu, YapiSahnesi } from '../veri/api';
 import { DONUM_ETIKETI, SAHNE_CALISMA } from '../alan/sablon';
-import { useYukle } from './Anlati';
+import { useYukle, type SeriListesi } from './Anlati';
 import { git } from './Uygulama';
 
 const hataYaz = (e: unknown) => (e as Error).message;
@@ -34,7 +34,8 @@ function etkiOzeti(once: OlayOrgusu, sonra: OlayOrgusu, sahne: string, etki: Anl
   const l: string[] = [];
   if (i !== j) l.push(`“${a.ad}” ${i + 1}. sahneden ${j + 1}. sahneye geçti.`);
   const yer = (x: string | null) => (x ? `“${x}” içinde` : 'bölümsüz');
-  if (a.ust !== b.ust) l.push(`“${a.ad}” artık ${yer(b.bolum)} (önce ${yer(a.bolum)})${i === j ? `; okuma sırasında yine ${j + 1}. sahne` : ''}.`);
+  if (a.eser.kod !== b.eser.kod) l.push(`“${a.ad}” artık “${b.eser.ad}” kitabında (önce “${a.eser.ad}”). Okurun her kitaptaki bilgisi ayrı hesaplanır.`);
+  else if (a.ust !== b.ust) l.push(`“${a.ad}” artık ${yer(b.bolum)} (önce ${yer(a.bolum)})${i === j ? `; okuma sırasında yine ${j + 1}. sahne` : ''}.`);
   if (i === j) return l.length ? l : ['Sahnenin yeri değişmedi.'];
   for (const q of once.sorular) {
     const t = q.hucreler[i];
@@ -49,8 +50,10 @@ function etkiOzeti(once: OlayOrgusu, sonra: OlayOrgusu, sahne: string, etki: Anl
 
 export function OlayOrgusuGorunumu({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string | null }) {
   const [eserler] = useYukle<KisaKayit[]>(istemci, evren, () => istemci.iste('eserler', { evren }), []);
+  const [seriler] = useYukle<SeriListesi>(istemci, evren, () => istemci.iste('seriler', { evren }), []);
   const secili = eser ?? (eserler?.length === 1 ? eserler[0].kod : null);
-  const [o, yenile] = useYukle<OlayOrgusu | null>(istemci, evren, () => (secili ? istemci.iste('olayOrgusu', { evren, eser: secili }) : Promise.resolve(null)), [secili]);
+  const [o, yenile] = useYukle<OlayOrgusu | null>(istemci, evren, () => (secili ? istemci.iste('olayOrgusu', { evren, kapsam: secili }) : Promise.resolve(null)), [secili]);
+  const seride = o?.kapsam.tur === 'seri';
   const [yerlesmemis] = useYukle<YapiSahnesi[]>(istemci, evren, () => istemci.iste('yerlesmemisler', { evren }).then((l) => l.filter((x) => x.tur === 'sahne')), []);
   const [izler, setIzler] = useState<Iz[]>(izleriOku);
   const [butunKarakterler, setButunKarakterler] = useState(false);
@@ -74,7 +77,7 @@ export function OlayOrgusuGorunumu({ istemci, evren, eser }: { istemci: Istemci;
     const eski = once.sutunlar.find((x) => x.kod === kod);
     try {
       const { etki } = await is;
-      const sonra = await istemci.iste('olayOrgusu', { evren, eser: secili! });
+      const sonra = await istemci.iste('olayOrgusu', { evren, kapsam: secili! });
       setOzet(etkiOzeti(once, sonra, kod, etki));
       setGeri(eski && !geriAliniyor ? { kod, ust: eski.ust, sira: once.sutunlar.filter((x) => x.ust === eski.ust && x.sira < eski.sira).length } : null);
       setHata(null);
@@ -94,7 +97,8 @@ export function OlayOrgusuGorunumu({ istemci, evren, eser }: { istemci: Istemci;
   const bosSahne = async (ardina: OlayOrgusu['sutunlar'][number] | null) => {
     const ad = yeniAd.trim() || 'Adsız sahne';
     try {
-      const ust = ardina?.ust ?? secili!;
+      const ust = ardina?.ust ?? (seride ? o?.sutunlar.at(-1)?.ust : secili);
+      if (!ust) throw new Error('Seride boş sahne eklemek için önce bir kitabın sahnesini seçin.');
       const { kod } = await istemci.iste('anlatiOlustur', { evren, ust, ad, tur: 'sahne' });
       if (ardina && o) {
         const kardes = o.sutunlar.filter((s) => s.ust === ust);
@@ -105,7 +109,9 @@ export function OlayOrgusuGorunumu({ istemci, evren, eser }: { istemci: Istemci;
   };
   const ekle = (kod: string) => {
     const son = o?.sutunlar[o.sutunlar.length - 1];
-    tasindi(kod, istemci.iste('anlatiYerlestir', { evren, kod, ust: son?.ust ?? secili!, sira: null }));
+    const ust = son?.ust ?? (seride ? null : secili);
+    if (!ust) { setHata('Seride sahne almak için önce bir kitabın sahnesi olmalı.'); return; }
+    tasindi(kod, istemci.iste('anlatiYerlestir', { evren, kod, ust, sira: null }));
   };
 
   const sutunlar = o?.sutunlar ?? [];
@@ -114,21 +120,23 @@ export function OlayOrgusuGorunumu({ istemci, evren, eser }: { istemci: Istemci;
   const bolumler: { ad: string; sayi: number }[] = [];
   sutunlar.forEach((s, i) => {
     if (i > 0 && sutunlar[i - 1].ust === s.ust) bolumler[bolumler.length - 1].sayi++;
-    else bolumler.push({ ad: s.bolum ?? 'Bölümsüz', sayi: 1 });
+    else bolumler.push({ ad: seride ? `${s.eser.ad}${s.bolum ? ` · ${s.bolum}` : ''}` : s.bolum ?? 'Bölümsüz', sayi: 1 });
   });
-  const sinir = (i: number) => (i > 0 && sutunlar[i - 1].ust !== sutunlar[i].ust ? 'bolum-siniri' : '');
+  const sinir = (i: number) => (i > 0 && sutunlar[i - 1].eser.kod !== sutunlar[i].eser.kod ? 'eser-siniri' : i > 0 && sutunlar[i - 1].ust !== sutunlar[i].ust ? 'bolum-siniri' : '');
   const sec = (i: number) => (sutunlar[i].kod === sahne ? ' secili' : '');
   const hucre = (i: number, ic: preact.ComponentChildren, sinif = '') => <td key={i} class={`${sinir(i)}${sec(i)} ${sinif}`.trim()}>{ic}</td>;
   const s = sahne ? sutunlar.find((x) => x.kod === sahne) ?? null : null;
+  const baslikSinifi = (i: number) => sinir(bolumler.slice(0, i).reduce((t, b) => t + b.sayi, 0));
   const si = s ? sutunlar.indexOf(s) : -1;
 
   return (
     <div class="gorunum olay-orgusu">
       <div class="satir">
-        <label class="satir"><span>Eser</span>
+        <label class="satir"><span>Eser ya da seri</span>
           <select class="girdi kucuk-girdi" value={secili ?? ''} onChange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v) git(`/e/${evren}/orgu/${v}`); }}>
             <option value="">Seçin…</option>
-            {eserler.map((x) => <option value={x.kod}>{x.ad}</option>)}
+            <optgroup label="Eserler">{eserler.map((x) => <option value={x.kod}>{x.ad}</option>)}</optgroup>
+            {!!seriler?.seriler.length && <optgroup label="Seriler (bütün kitaplar)">{seriler.seriler.map((x) => <option value={x.kod}>{x.ad}</option>)}</optgroup>}
           </select></label>
         <span class="soluk kucuk">Satırlar:</span>
         {IZLER.map(([k, ad]) => (
@@ -143,7 +151,7 @@ export function OlayOrgusuGorunumu({ istemci, evren, eser }: { istemci: Istemci;
         <div class="tablo-kap">
           <table class="matris orgu-tablosu">
             <thead>
-              <tr><th scope="col"></th>{bolumler.map((b, i) => <th key={i} colSpan={b.sayi} class={i > 0 ? 'bolum-siniri' : ''}>{b.ad}</th>)}</tr>
+              <tr><th scope="col"></th>{bolumler.map((b, i) => <th key={i} colSpan={b.sayi} class={baslikSinifi(i)}>{b.ad}</th>)}</tr>
               <tr><th scope="col">Sahne</th>{sutunlar.map((x, i) => (
                 <th key={x.kod} scope="col" class={`${sinir(i)}${sec(i)}${surukle && surukle !== x.kod ? ' birakilabilir' : ''}`} draggable
                   onDragStart={(e) => { setSurukle(x.kod); e.dataTransfer?.setData('text/plain', x.kod); }} onDragEnd={() => setSurukle(null)}
@@ -187,7 +195,7 @@ export function OlayOrgusuGorunumu({ istemci, evren, eser }: { istemci: Istemci;
       )}
       {o && s && (
         <div class="orgu-secili">
-          <p><strong>{s.ad}</strong> · {si + 1}. sahne{s.bolum ? ` · ${s.bolum}` : ''}{!s.metinVar && <span class="soluk"> · metni yok (plan sahnesi)</span>}</p>
+          <p><strong>{s.ad}</strong> · {si + 1}. sahne{seride ? ` · ${s.eser.ad}` : ''}{s.bolum ? ` · ${s.bolum}` : ''}{!s.metinVar && <span class="soluk"> · metni yok (plan sahnesi)</span>}</p>
           {s.olaylar.length > 0 && <p class="kucuk">Anlattığı olay: {s.olaylar.map((x, i) => <>{i > 0 && ', '}<a href={`#/e/${evren}/k/${x.kod}`}>{x.ad}</a></>)}</p>}
           {o.sorular.filter((q) => q.hucreler[si]).map((q) => <p key={q.iddia.kod} class="kucuk">“{q.iddia.soru}” sorusunda {NIYET_ADI[q.hucreler[si]!]} taşıyor.</p>)}
           <div class="satir">

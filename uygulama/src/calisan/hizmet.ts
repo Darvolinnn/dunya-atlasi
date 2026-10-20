@@ -2638,7 +2638,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   sahneNiyetleri({ evren, sahne }: { evren: string; sahne: string }) { this.kayitVarMi(this.evren(evren), sahne); return montaj.niyetlerOku(this.evren(evren), sahne); }
   sahneNiyetleriYaz({ evren, sahne, niyetler }: { evren: string; sahne: string; niyetler: SahneNiyeti[] }) { montaj.sahneNiyetleriYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, sahne, niyetler); }
   montajHedefiYaz({ evren, eser, iddia, hedef }: { evren: string; eser: string; iddia: string; hedef: MontajHedefi | null }) { montaj.montajHedefiYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, eser, iddia, hedef); }
-  olayOrgusu({ evren, eser }: { evren: string; eser: string }) { return montaj.olayOrgusu(this.evren(evren), eser); }
+  olayOrgusu({ evren, kapsam }: { evren: string; kapsam: string }) { return montaj.olayOrgusu(this.evren(evren), kapsam); }
   seriPlani({ evren, seri }: { evren: string; seri: string }) { return seriPlan.seriPlani(this.evren(evren), seri); }
   olasiFinalEkle({ evren, seri, ad }: { evren: string; seri: string; ad: string }) { return seriPlan.olasiFinalEkle(this.anlatiBaglami(evren), seri, temizle(ad)); }
   olasiFinalBagla({ evren, seri, olay }: { evren: string; seri: string; olay: string }) { seriPlan.olasiFinalBagla(this.anlatiBaglami(evren), seri, olay); }
