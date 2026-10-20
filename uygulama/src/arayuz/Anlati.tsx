@@ -243,7 +243,8 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
   return (
     <section class="eser-yapisi" aria-label="Eserin yapısı">
       <h2>Bölümler ve sahneler</h2>
-      <p class="soluk kucuk">Buradaki sıra okuma sırasıdır ve bölüm numaraları buna göre verilir. Bir sahneyi taşımak evren tarihini değiştirmez.</p>
+      <p class="soluk kucuk">Buradaki sıra okuma sırasıdır ve bölüm numaraları buna göre verilir. Bir sahneyi taşımak evren tarihini değiştirmez.
+        {' '}<a href={`#/e/${evren}/orgu/${y.eser.kod}`}>Olay örgüsü masasında aç</a></p>
       {hata && <p class="hata kucuk">{hata}</p>}
       {etki && <EtkiOzeti evren={evren} etki={etki} kapat={() => setEtki(null)} />}
       {y.dogrudan.length > 0 && sahneListesi(y.eser.kod, y.dogrudan)}

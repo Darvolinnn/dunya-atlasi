@@ -23,6 +23,7 @@ import { MarkdownCiktisi } from './Cikti';
 import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
 
 import { SayfaYardimi } from './SayfaYardimi';
+import { OlayOrgusuGorunumu } from './OlayOrgusu';
 import { ANA_SAYFALAR, DIGER_SAYFALAR, EvrenKabugu, GORUNUMLER, gorunumMu } from './Kabuk';
 
 const SAYFA_ADLARI = new Map<string, string>([...ANA_SAYFALAR, ...DIGER_SAYFALAR, ...GORUNUMLER]);
@@ -66,6 +67,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           : sekme === 'durumlar' ? <DurumGecmisiSekmesi istemci={istemci} evren={kod} ozellik={alt} />
           : sekme === 'neden' ? <NedenSonucGorunumu istemci={istemci} evren={kod} merkez={alt} />
           : sekme === 'hatlar' ? <KurguHatlariGorunumu istemci={istemci} evren={kod} />
+          : sekme === 'orgu' ? <OlayOrgusuGorunumu istemci={istemci} evren={kod} eser={alt} />
           : sekme === 'matris' ? <BolumMatrisiGorunumu istemci={istemci} evren={kod} eser={alt} />
           : sekme === 'gun' ? <SiradanGunSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'gokyuzu' ? <GokyuzuSekmesi key={kod} istemci={istemci} evren={kod} surum={surum} />

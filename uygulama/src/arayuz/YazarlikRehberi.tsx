@@ -13,7 +13,7 @@ export function yazarlikRehberiAc(konu?: number) {
 /** Sayfa rehberinde gösterilen ilgili konular (§12.4 sayfa adlarıyla). */
 export const SAYFA_KONULARI: Record<string, number[]> = {
   yaz: [14, 20, 23], masa: [23, 1], kayitlar: [5, 9, 19], inceleme: [21],
-  masalar: [19], meseleler: [24, 10], sablonlar: [5, 19], bahsedilen: [19], surumler: [21, 24], cizelge: [18], neden: [13], hatlar: [15, 17], matris: [16, 15],
+  masalar: [19], meseleler: [24, 10], sablonlar: [5, 19], bahsedilen: [19], surumler: [21, 24], cizelge: [18], neden: [13], hatlar: [15, 17], orgu: [12, 15, 14], matris: [16, 15],
 };
 
 /** Programla gelen soru setlerinin rehber konusu ("Neden?" bağlantısı). */

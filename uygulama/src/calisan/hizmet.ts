@@ -2628,6 +2628,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   sahneNiyetleri({ evren, sahne }: { evren: string; sahne: string }) { this.kayitVarMi(this.evren(evren), sahne); return montaj.niyetlerOku(this.evren(evren), sahne); }
   sahneNiyetleriYaz({ evren, sahne, niyetler }: { evren: string; sahne: string; niyetler: SahneNiyeti[] }) { montaj.sahneNiyetleriYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, sahne, niyetler); }
   montajHedefiYaz({ evren, eser, iddia, hedef }: { evren: string; eser: string; iddia: string; hedef: MontajHedefi | null }) { montaj.montajHedefiYaz({ e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }, eser, iddia, hedef); }
+  olayOrgusu({ evren, eser }: { evren: string; eser: string }) { return montaj.olayOrgusu(this.evren(evren), eser); }
   montajTasi({ evren, sahne, yon }: { evren: string; sahne: string; yon: -1 | 1 }) {
     this.kayitVarMi(this.evren(evren), sahne);
     if (yon !== -1 && yon !== 1) throw new Error('Geçersiz yön.');

@@ -5,10 +5,12 @@
 // ölçmez, edebî kalite puanı vermez.
 import type { IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi } from '../alan/kod';
-import type { KisaKayit, KitapSonuAciklar, KurguMontaji, MontajHedefi, SahneNiyeti } from '../veri/api';
+import type { KisaKayit, KitapSonuAciklar, KurguMontaji, MontajHedefi, OlayOrgusu, SahneNiyeti } from '../veri/api';
 import { eserYapisi, yerlestir, type AnlatiBaglami } from './anlati';
 import type { EvrenVt } from './evren-vt';
 import { yonlendir } from './izdusum';
+import { rolAdi } from '../alan/iliski-turleri';
+import { DONUM_ETIKETI } from '../alan/sablon';
 
 export interface MontajBaglami {
   e: EvrenVt;
@@ -211,4 +213,63 @@ export function kitapSonuAciklar(e: EvrenVt, eser: string): KitapSonuAciklar {
     };
   });
   return { eser: m.eser, seride: !!seri, sorular };
+}
+
+/** Olay örgüsü masası (K27, P6): bir eserin okuma sırası sütunlarda; satırlar var olan verilerden gelir (dönüm
+ *  noktası etiketi ve anlatılan olay, kurgu hatları, montajdaki okur soruları, sahnedeki karakterler, çalışma
+ *  durumu). Yeni veri tutulmaz; taşıma bugünkü yerleştirmeyle yapılır. */
+export function olayOrgusu(e: EvrenVt, eser: string): OlayOrgusu {
+  if (kayitTuru(e, eser) !== 'eser') throw new Error('Bu bir eser kaydı değil.');
+  const sahneler = sira(e, eser);
+  const kodlar = sahneler.map((s) => s.kod);
+  const sutun = new Map(kodlar.map((k, i) => [k, i]));
+  const yer = kodlar.map(() => '?').join(',');
+  const bos = <T>(d: T) => kodlar.map(() => d);
+  const sec = (sql: string) => (kodlar.length ? e.db.selectObjects(sql, kodlar) : []);
+
+  const etiket = new Map(sec(`SELECT kod, etiketler FROM kayitlar WHERE kod IN (${yer})`).map((r) => [r.kod as string, JSON.parse(r.etiketler as string) as string[]]));
+  const calisma = new Map(sec(`SELECT kayit, deger FROM alan_degerleri WHERE alan='calisma' AND kayit IN (${yer})`).map((r) => [r.kayit as string, JSON.parse(r.deger as string) as string]));
+  const metinli = new Set(sec(`SELECT DISTINCT kayit FROM metinler WHERE alan='govde' AND length(trim(duz))>0 AND kayit IN (${yer})`).map((r) => r.kayit as string));
+  const olaylar = new Map<string, KisaKayit[]>();
+  for (const r of sec(`SELECT i.a, i.b FROM iliskiler i JOIN kayitlar k ON k.kod=i.a WHERE i.tur='anlatir' AND i.b IN (${yer}) AND ${ETKIN} AND k.silindi IS NULL ORDER BY k.ad`)) {
+    olaylar.set(r.b as string, [...(olaylar.get(r.b as string) ?? []), kisa(e, r.a as string)]);
+  }
+  const donumMu = (k: string) => (etiket.get(k) ?? []).some((t) => t.toLocaleLowerCase('tr') === DONUM_ETIKETI);
+
+  // Kurgu hatları: hatta bağlı sahnelerin rolü (ipucu, kırılma…) ya da yalnız bağ.
+  const hat = new Map<string, (string | null)[]>();
+  for (const r of sec(`SELECT i.a, i.b, i.rol FROM iliskiler i JOIN kayitlar k ON k.kod=i.b WHERE i.tur='kurgu_hattinda' AND i.a IN (${yer}) AND ${ETKIN} AND k.silindi IS NULL`)) {
+    const h = hat.get(r.b as string) ?? bos<string | null>(null);
+    h[sutun.get(r.a as string)!] = r.rol ? rolAdi('kurgu_hattinda', r.rol as string) : '';
+    hat.set(r.b as string, h);
+  }
+  const hatlar = [...hat].map(([k, hucreler]) => ({ hat: kisa(e, k), hucreler })).sort((a, b) => a.hat.ad.localeCompare(b.hat.ad, 'tr'));
+
+  // Okur soruları: yazarın sahnelere koyduğu niyetler (ipucu, yanıltmaca, açıklama…).
+  const m = kurguMontaji(e, eser);
+  const sorular = m.sorular.filter((s) => s.olaylar.some((o) => o.tur !== 'okur')).map((s) => {
+    const hucreler = bos<OlayOrgusu['sorular'][number]['hucreler'][number]>(null);
+    for (const o of s.olaylar) if (o.tur !== 'okur') hucreler[o.sira - 1] = o.tur;
+    return { iddia: { kod: s.iddia.kod, soru: s.iddia.soru }, hucreler, acikKaliyor: !s.olaylar.some((o) => o.tur === 'aciklama') };
+  });
+
+  // Karakterler: sahnede bulunanlar, en çok görünenden aza.
+  const kisi = new Map<string, boolean[]>();
+  for (const r of sec(`SELECT i.a, i.b FROM iliskiler i JOIN kayitlar k ON k.kod=i.a WHERE i.tur='sahnede' AND (i.rol IS NULL OR i.rol='bulunuyor') AND i.b IN (${yer})
+      AND ${ETKIN} AND k.silindi IS NULL AND k.tur='karakter'`)) {
+    const h = kisi.get(r.a as string) ?? bos(false);
+    h[sutun.get(r.b as string)!] = true;
+    kisi.set(r.a as string, h);
+  }
+  const karakterler = [...kisi].map(([k, hucreler]) => ({ kisi: kisa(e, k), hucreler, sayi: hucreler.filter(Boolean).length }))
+    .sort((a, b) => b.sayi - a.sayi || a.kisi.ad.localeCompare(b.kisi.ad, 'tr'));
+
+  return {
+    eser: kisa(e, eser),
+    sutunlar: sahneler.map((s) => ({
+      kod: s.kod, ad: s.ad, sira: s.sira, ust: s.ust, bolum: s.bolum, calisma: calisma.get(s.kod) ?? null, metinVar: metinli.has(s.kod),
+      donum: donumMu(s.kod), olaylar: olaylar.get(s.kod) ?? [],
+    })),
+    hatlar, sorular, karakterler,
+  };
 }

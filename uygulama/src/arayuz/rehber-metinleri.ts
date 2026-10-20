@@ -476,6 +476,19 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       'Bu görünümde her hattın sahnelerini sırasıyla görün.',
     ],
   },
+  orgu: {
+    baslik: 'Olay örgüsü',
+    ne: [
+      'Bir eserin sahnelerini okuma sırasıyla yan yana dizer; altında seçtiğiniz izleri gösterir: dönüm noktaları, kurgu hatları, okur soruları (ipucu, yanıltmaca, açıklama), karakterler ve sahnelerin çalışma durumu.',
+      'Yeni bir şey kaydetmez; bunların hepsi sahnelerin sayfalarında verdiğiniz bilgilerdir. Bir sahneyi sürükleyip başka yere bırakmak yalnızca okuma sırasını değiştirir, evrenin tarihini değiştirmez.',
+    ],
+    neZaman: 'Bir dönüm noktasını öne almak, iki hattın nerede kesiştiğini ya da bir sırrın hangi sahnede açıldığını aynı anda görmek istediğinizde.',
+    adimlar: [
+      'Bir eser seçin; sütunlar o eserin sahneleridir.',
+      'Bir sahnenin adına tıklayın; altta ayrıntısı ve taşıma düğmeleri açılır. Sahneyi dönüm noktası olarak da buradan işaretleyebilirsiniz.',
+      'Taşıdıktan sonra hangi ipucunun ya da açıklamanın yer değiştirdiği altta yazılır. Beğenmezseniz geri alabilirsiniz.',
+    ],
+  },
   matris: {
     baslik: 'Bölüm × kayıt',
     ne: [

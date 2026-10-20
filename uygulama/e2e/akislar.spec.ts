@@ -319,3 +319,25 @@ test('eser sayfasında odak karakter eklenir, bu kitaptaki yolu yazılır; seri 
   await p.getByRole('link', { name: 'Hatıra İmparatorluğu' }).first().click();
   await expect(p.getByRole('region', { name: 'Karakterlerin yolu' })).toContainText('başta: Kardeşini bulmak.');
 });
+
+test('olay örgüsü masası: boş sahne eklenir, dönüm noktası işaretlenir, taşınır ve taşıma geri alınır', async ({ page: p }) => {
+  const adres = await sahneAc(p);
+  const evren = adres.match(/#\/e\/([^/]+)/)![1];
+  await p.goto(`/#/e/${evren}/orgu`);
+  const tablo = p.locator('.orgu-tablosu');
+  await expect(tablo.getByRole('button', { name: 'Kuşatma' })).toBeVisible();
+  await p.getByLabel('Yeni sahnenin adı').fill('Liman');
+  await p.getByRole('button', { name: '+ Sona boş sahne' }).click();
+  await expect(tablo.locator('thead tr').nth(1).getByRole('button')).toHaveText(['Kuşatma', 'Liman']);
+  // Yeni sahne seçili gelir.
+  await expect(tablo.getByRole('button', { name: 'Liman' })).toHaveAttribute('aria-pressed', 'true');
+  const secili = p.locator('.orgu-secili');
+  await expect(secili).toContainText('metni yok (plan sahnesi)');
+  await secili.getByRole('button', { name: 'Dönüm noktası olarak işaretle' }).click();
+  await expect(tablo.locator('tr', { hasText: 'Dönüm noktaları' }).locator('td').nth(1)).toContainText('dönüm');
+  await secili.getByRole('button', { name: '← Bir öne' }).click();
+  await expect(tablo.locator('thead tr').nth(1).getByRole('button')).toHaveText(['Liman', 'Kuşatma']);
+  await expect(p.locator('.orgu-ozet')).toContainText('“Liman” 2. sahneden 1. sahneye geçti.');
+  await p.getByRole('button', { name: 'Taşımayı geri al' }).click();
+  await expect(tablo.locator('thead tr').nth(1).getByRole('button')).toHaveText(['Kuşatma', 'Liman']);
+});

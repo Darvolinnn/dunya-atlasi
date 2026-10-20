@@ -10,7 +10,7 @@ import { DurumOzeti } from './Esitleme';
 /** İnceleme görünümleri (§7): aynı verinin farklı çizimleri. */
 export const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy', 'Soy ağacı'], ['neden', 'Neden–sonuç'], ['durumlar', 'Durum geçmişi'],
   ['yogunluk', 'Yoğunluk ve boşluk'], ['gokyuzu', 'Gökyüzü'], ['sozluk', 'Sözlük denetimi'], ['sozlesme', 'Anlatı sözleşmesi'],
-  ['kosullar', 'Sonuçtan koşullara'], ['kesif', 'Keşif soruları'], ['hatlar', 'Kurgu hatları'], ['matris', 'Bölüm × kayıt'],
+  ['kosullar', 'Sonuçtan koşullara'], ['kesif', 'Keşif soruları'], ['hatlar', 'Kurgu hatları'], ['orgu', 'Olay örgüsü'], ['matris', 'Bölüm × kayıt'],
   ['gun', 'Sıradan bir gün'], ['karsilastir', 'Karşılaştırmalı okuma'], ['gezinti', 'Gezintiler'], ['pano', 'Görsel panolar']] as const;
 export const gorunumMu = (s: string) => GORUNUMLER.some(([g]) => g === s);
 

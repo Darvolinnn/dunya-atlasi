@@ -150,6 +150,9 @@ export const MESELE_DURUMLARI: Secenek[] = [
 
 const sorular = (...kodlar: string[]) => kodlar.flatMap((k) => soruSetiBul(k)!.sorular);
 
+/** Sahneyi dönüm noktası yapan etiket (K27); olay örgüsü masasında ayrı satırda görünür. */
+export const DONUM_ETIKETI = 'dönüm noktası';
+
 export const ESER_CALISMA: Secenek[] = [
   { kod: 'fikir', ad: 'Fikir' }, { kod: 'plan', ad: 'Plan' }, { kod: 'ilk_taslak', ad: 'İlk taslak' },
   { kod: 'duzeltme', ad: 'Düzeltme' }, { kod: 'bitti', ad: 'Bitti' }, { kod: 'yayimlandi', ad: 'Yayımlandı' },

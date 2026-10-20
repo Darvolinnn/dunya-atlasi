@@ -518,6 +518,22 @@ label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; 
 .matris tbody th { text-align: left; position: sticky; left: 0; background: var(--yuzey); }
 .matris thead th { position: sticky; top: 0; background: var(--yuzey-2); }
 .matris td.dolu { background: var(--vurgu-zemin); }
+/* Olay örgüsü masası (K27) */
+.orgu-tablosu th, .orgu-tablosu td { font-size: 0.85rem; }
+.orgu-tablosu .bolum-siniri { border-left: 2px solid var(--metin-2); }
+.orgu-tablosu .secili { background: var(--vurgu-zemin); }
+.orgu-tablosu thead th[draggable] { cursor: grab; }
+.orgu-tablosu thead th.birakilabilir { outline: 2px dashed var(--vurgu); outline-offset: -3px; }
+.orgu-tablosu .baglanti-dugme { background: none; border: 0; padding: 0; color: var(--vurgu); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.orgu-nokta { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--vurgu); }
+.orgu-hat { display: inline-block; min-width: 18px; padding: 0 4px; border-radius: 4px; background: var(--yuzey-2); border: 1px solid var(--cizgi); }
+.olay-orgusu .niyet-ipucu { color: var(--basari); font-weight: 600; }
+.olay-orgusu .niyet-yaniltmaca { color: var(--inanc); font-weight: 600; }
+.olay-orgusu .niyet-aciklama { color: var(--vurgu); font-weight: 700; }
+.orgu-secili, .orgu-ozet { margin-top: 12px; padding: 10px 14px; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey); }
+.orgu-secili p, .orgu-ozet ul { margin: 0 0 6px; }
+.orgu-ekle { margin-top: 12px; }
+.orgu-yerlesmemis { margin-top: 12px; }
 
 /* Bilgi katmanları ve bakış açısı (§3.6) */
 .rozet.inanc { border-color: var(--inanc); color: var(--inanc); border-style: dashed; }

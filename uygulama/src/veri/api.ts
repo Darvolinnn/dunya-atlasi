@@ -225,6 +225,15 @@ export interface KitapSonuAciklar {
   sorular: { iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null }; ipucu: number; yaniltmaca: number; destekler: number;
     sonra: { eser: KisaKayit; sahne: KisaKayit; sira: number } | null }[];
 }
+/** Olay örgüsü masası (K27, P6): sütunlar eserin okuma sırasıdır; hücreler sütunlarla aynı sıradadır. */
+export interface OlayOrgusu {
+  eser: KisaKayit;
+  sutunlar: { kod: string; ad: string; sira: number; ust: string; bolum: string | null; calisma: string | null; metinVar: boolean; donum: boolean; olaylar: KisaKayit[] }[];
+  /** Hücre: hatta bağlı değilse null; bağlıysa rolün adı (rolsüz bağ için boş). */
+  hatlar: { hat: KisaKayit; hucreler: (string | null)[] }[];
+  sorular: { iddia: { kod: string; soru: string }; hucreler: ('ipucu' | 'yaniltmaca' | 'destekler' | 'zayiflatir' | 'aciklama' | null)[]; acikKaliyor: boolean }[];
+  karakterler: { kisi: KisaKayit; hucreler: boolean[]; sayi: number }[];
+}
 export interface KurguMontaji {
   eser: KisaKayit; sahneler: { kod: string; ad: string; sira: number; bolum: string | null }[];
   sorular: {
@@ -1405,6 +1414,7 @@ export interface Istekler {
   sahneNiyetleriYaz(a: { evren: string; sahne: string; niyetler: SahneNiyeti[] }): void;
   montajHedefiYaz(a: { evren: string; eser: string; iddia: string; hedef: MontajHedefi | null }): void;
   montajTasi(a: { evren: string; sahne: string; yon: -1 | 1 }): { etki: AnlatiEtkisi[] };
+  olayOrgusu(a: { evren: string; eser: string }): OlayOrgusu;
   kalitimOzellikleri(a: { evren: string }): KalitimOzelligi[];
   kalitimOzelligiYaz(a: { evren: string; kod: string | null; tanim: Omit<KalitimOzelligi, 'kod'> | null }): { kod: string };
   kalitim(a: { evren: string; kod: string }): KalitimBilgisi;
