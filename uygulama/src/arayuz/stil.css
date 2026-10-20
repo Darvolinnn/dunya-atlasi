@@ -922,3 +922,7 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .seri-finaller > summary h3, .seri-yollar > summary h3 { display: inline; font-size: 1rem; }
 .seri-finaller > summary, .seri-yollar > summary { cursor: pointer; }
 .okuma-yolu { margin: 8px 0 12px; padding: 8px 12px; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey); }
+/* Soru örneği (K27) */
+.baglanti-dugme { background: none; border: 0; padding: 0; color: var(--vurgu); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.soru-ornek-dugme { margin-left: 8px; }
+.soru-ornegi { margin: 2px 0 6px; padding: 6px 10px; border-left: 3px solid var(--cizgi); background: var(--yuzey-2); border-radius: 4px; }

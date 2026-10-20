@@ -10,6 +10,7 @@ import { tarihAciklamasi, tarihCoz, type EvrenTarihi, type TakvimYa } from '../a
 import { TURLER, turBul } from '../alan/turler';
 import { KararRozeti, KararSecici, TurSecici } from './ortak';
 import { KayitSec } from './KayitBolumleri';
+import { soruOrnegi } from '../alan/soru-ornekleri';
 import { git } from './Uygulama';
 import { takvimOrnegi, useTakvim } from './Takvim';
 
@@ -260,13 +261,17 @@ export function SoruBolumu({ istemci, evren, kayit, ks, acik = false }: { istemc
 export function SoruSatir({ istemci, evren, kod, q, hata, kayitlaYok = false }: { istemci: Istemci; evren: string; kod: string; q: SoruSatiri; hata: (h: string | null) => void; kayitlaYok?: boolean }) {
   const [yerel, setYerel] = useState(q.cevap?.cevap ?? '');
   const [kayitla, setKayitla] = useState(false);
+  const [ornekAcik, setOrnekAcik] = useState(false);
+  const ornek = soruOrnegi(q);
   useEffect(() => setYerel(q.cevap?.cevap ?? ''), [q.cevap?.cevap]);
   const isle = (p: Promise<unknown>) => p.then(() => hata(null), (e) => hata(hataYaz(e)));
   const cevapla = (durum: 'cevaplandi' | 'sonra' | 'ilgisiz' | null, cevap = '') => isle(istemci.iste('soruCevapla', { evren, kod, soru: q.kod, durum, cevap }));
   const d = q.cevap?.durum;
   return (
     <li class={d === 'ilgisiz' || d === 'sonra' ? 'soru soluk-soru' : 'soru'}>
-      <div class="soru-metni">{q.metin}{q.ipucu && <span class="soluk kucuk"> · {q.ipucu}</span>}</div>
+      <div class="soru-metni">{q.metin}{q.ipucu && <span class="soluk kucuk"> · {q.ipucu}</span>}
+        {ornek && <button type="button" class="baglanti-dugme kucuk soru-ornek-dugme" aria-expanded={ornekAcik} onClick={() => setOrnekAcik(!ornekAcik)}>Örnek</button>}</div>
+      {ornek && ornekAcik && <p class="soru-ornegi kucuk"><span class="soluk">Uydurma bir seriden örnek:</span> {ornek}</p>}
       {d === 'sonra' || d === 'ilgisiz' ? (
         <div class="satir"><span class="rozet">{d === 'sonra' ? 'Sonraya bırakıldı' : 'İlgisiz'}</span><button class="dugme sade kucuk" onClick={() => cevapla(null)}>Geri al</button></div>
       ) : q.cevap?.kayitla && !q.bagla ? (
