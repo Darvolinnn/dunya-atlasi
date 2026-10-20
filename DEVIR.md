@@ -180,6 +180,12 @@ Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda
 - [x] P1: yazarlık rehberi programın içinde (§12.4): `arayuz/YazarlikRehberi.tsx`, metinler `arayuz/yazarlik-rehberi.ts` (analiz belgesinden üretildi; belge değişirse yeniden üretilmeli: başlıklar `### Konu N — …`, alanlar `**Ne:**` biçiminde). Soru başına "Örnek" #7 ile geldi. #6 ile birleşti.
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
 
+**Kullanım kolaylığı araştırması ve yazar.io karşılaştırması (20 Ekim 2026; karar bekliyor).** Belgeler `analiz/` altında, bağlayıcı değil:
+- `kullanici-deneyimi-arastirmasi.md`: benzer programlarda övülen ve şikâyet edilenler, ilkeler, 15 öneri.
+- `yazar-io-karsilastirma.md`: yazar.io (Türkçe dünya kurma wikisi). §1–7 açık sayfalardan; §8–§10 kullanıcının tarayıcı eklentisinin içeriden üç raporu (özellikler, yeni proje, arayüz). Eklenti kullanıcının "Deneme" projesinde uydurma bir "Emir" karakteri bıraktı; depoya giren bir şey değil.
+- `birlesik-karar-listesi.md`: dört kaynağın tek listesi: A zaten var · B küçük (B1–B13) · C orta (C1–C10) · D büyük (D1–D3) · E tasarımla çelişebilir (E1, K1) · F alınmayacaklar. Her maddede "Benim önerim".
+- Sıradaki adım: kullanıcı maddeleri seçer; seçilenler önce tasarıma girer (K11), ekranı değiştirenler için önce taslak. Eklentiye verilecek dördüncü bir soru listesi (adla bağlama ve ekler, ad değişince bağlantılar, geri alma, not durumları, alan türleri, wiki spoiler, arama, dışa aktarma…) kullanıcıya verildi; raporu gelirse `yazar-io-karsilastirma.md` §11 olur.
+
 ## 4. Kod yapısı ve yeni bir özellik ekleme tarifi
 
 `uygulama/src/`:
