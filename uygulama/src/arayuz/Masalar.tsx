@@ -1,6 +1,7 @@
 // Çalışma masaları (§5.9) ve varsayım paketleri (§3.11). Masa kayıtları kopyalamaz, onlara bağlanır; paket kanona
 // yazılmaz. Paketle yapılan hesap, hangi paketle yapıldığını söyler.
 import { useEffect, useState } from 'preact/hooks';
+import { BosSayfa, odakla } from './ortak';
 import type { Istemci } from '../veri/istemci';
 import type { HaritaOzeti, IddiaOzeti, Masa, MasaOzeti, MasaUyesi, Paket, PaketOzeti, VarsayimGirdisi } from '../veri/api';
 import { turBul } from '../alan/turler';
@@ -42,7 +43,9 @@ function MasaListesi({ istemci, evren, surum }: { istemci: Istemci; evren: strin
         <h2>Konu dosyaları</h2>
         <p class="soluk kucuk">Bir konu üzerinde çalışmak için kurduğunuz alan: şehir planı, karakterler, tarih aralığı, kaynaklar, açık sorular ve sahneler bir arada durur. Kayıtlar kopyalanmaz; masa yalnızca onlara bağlanır.</p>
         <YeniForm etiket="Yeni konu dosyasının adı" yerTutucu="Yeni konu dosyası (ör. Velkar isyanı)" olustur={async (ad) => { const { kod } = await istemci.iste('masaOlustur', { evren, ad }); git(`/e/${evren}/masalar/${kod}`); }} />
-        {masalar.length === 0 && <p class="soluk">Henüz konu dosyası yok.</p>}
+        {masalar.length === 0 && <BosSayfa baslik="İlk konu dosyanızı açın" eylem={{ ad: 'Konu dosyası aç', yap: () => odakla('input[aria-label="Yeni konu dosyasının adı"]') }} konu={19}>
+          Bir isyan, bir şehir ya da bir aile üzerinde çalışırken ilgili kayıtları, soruları ve sahneleri tek yerde toplar.
+        </BosSayfa>}
         <ul class="masa-listesi">
           {masalar.map((m) => (
             <li key={m.kod}>

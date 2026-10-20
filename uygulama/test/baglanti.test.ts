@@ -52,6 +52,24 @@ describe('bağlantılar', () => {
     expect(h.baglananlar({ evren, kod: kale })).toEqual([]);
   });
 
+  it('andıkları: kaydın kendi metninde bağlantı verdikleri; birleşen hedef son kayda, çöpteki hedef görünmez (K28)', () => {
+    const { h, evren } = kur();
+    const lale = h.kayitOlustur({ evren, ad: 'Lale', tur: 'karakter' }).kod;
+    const deniz = h.kayitOlustur({ evren, ad: 'Deniz', tur: 'karakter' }).kod;
+    const arsiv = h.kayitOlustur({ evren, ad: 'Hafıza Arşivi', tur: 'mekan' }).kod;
+    const kopya = h.kayitOlustur({ evren, ad: 'Arşiv', tur: 'mekan' }).kod;
+    yaz(h, evren, lale, p(["Deniz'le", deniz], ' ', ['arşive', kopya], ' indi. ', ['Deniz', deniz], ' sustu. ', ['Lale', lale], ' bekledi.'));
+    expect(h.andiklari({ evren, kod: lale })).toEqual([
+      { kod: deniz, ad: 'Deniz', tur: 'karakter', ifadeler: ["Deniz'le", 'Deniz'] },
+      { kod: kopya, ad: 'Arşiv', tur: 'mekan', ifadeler: ['arşive'] },
+    ]);
+    expect(h.baglananlar({ evren, kod: deniz }).map((x) => x.kod)).toEqual([lale]);
+    h.birlestir({ evren, kaynak: kopya, hedef: arsiv });
+    expect(h.andiklari({ evren, kod: lale }).map((x) => x.ad)).toEqual(['Deniz', 'Hafıza Arşivi']);
+    h.kayitSil({ evren, kod: deniz });
+    expect(h.andiklari({ evren, kod: lale }).map((x) => x.ad)).toEqual(['Hafıza Arşivi']);
+  });
+
   it('yazar düzeltmesi: bağlantılı ifadeler yeni adla ve uyumlu ekle değişir', () => {
     const { h, evren } = kur();
     const velkar = h.kayitOlustur({ evren, ad: 'Velkar', tur: 'karakter' }).kod;

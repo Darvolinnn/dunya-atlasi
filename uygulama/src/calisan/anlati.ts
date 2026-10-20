@@ -54,7 +54,7 @@ const turu = (e: EvrenVt, kod: string) => e.db.selectValue('SELECT tur FROM kayi
 
 /** Bir kaydın (sahne ya da bölüm) eserdeki yeri. */
 export function anlatiYeri(e: EvrenVt, kod: string): AnlatiYeri {
-  const bos: AnlatiYeri = { eser: null, bolum: null, sira: null, onceki: null, sonraki: null };
+  const bos: AnlatiYeri = { seri: null, eser: null, bolum: null, sira: null, onceki: null, sonraki: null };
   const ust = ustBul(e, kod);
   if (!ust) return bos;
   const ustTur = turu(e, ust);
@@ -62,15 +62,18 @@ export function anlatiYeri(e: EvrenVt, kod: string): AnlatiYeri {
   if (!eserKod || turu(e, eserKod) !== 'eser') return bos;
   const y = eserYapisi(e, eserKod);
   const eser = y.eser;
+  const seriKod = ustBul(e, eserKod);
+  const seri = seriKod && turu(e, seriKod) === 'seri'
+    ? { kod: seriKod, ad: e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [seriKod]) as string } : null;
   if (turu(e, kod) === 'bolum') {
     const b = y.bolumler.find((x) => x.kod === kod);
-    return { ...bos, eser, bolum: b ? { kod: b.kod, ad: b.ad, sira: b.sira } : null };
+    return { ...bos, seri, eser, bolum: b ? { kod: b.kod, ad: b.ad, sira: b.sira } : null };
   }
   const sira = okumaSirasi(y);
   const i = sira.findIndex((s) => s.kod === kod);
   const b = y.bolumler.find((x) => x.sahneler.some((s) => s.kod === kod));
   return {
-    eser, bolum: b ? { kod: b.kod, ad: b.ad, sira: b.sira } : null, sira: i >= 0 ? i + 1 : null,
+    seri, eser, bolum: b ? { kod: b.kod, ad: b.ad, sira: b.sira } : null, sira: i >= 0 ? i + 1 : null,
     onceki: i > 0 ? { kod: sira[i - 1].kod, ad: sira[i - 1].ad } : null,
     sonraki: i >= 0 && i < sira.length - 1 ? { kod: sira[i + 1].kod, ad: sira[i + 1].ad } : null,
   };

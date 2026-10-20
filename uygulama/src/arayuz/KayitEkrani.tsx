@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AdDuzeltmesi, EvrenBilgisi, BaglananKayit, DegisebilirAlan, GunlukSatiri, Kayit, Spans } from '../veri/api';
 import { sesBilgisi } from '../alan/turkce-ek';
-import { KARARLAR, turBul } from '../alan/turler';
+import { KARARLAR, turBul, grupSinifi } from '../alan/turler';
 import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
 import { MetinEditoru, MetinGorunumu, type EditorDenetimi } from './MetinEditoru';
 import { KararSecici, TurSecici } from './ortak';
@@ -137,7 +137,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         <CatismaListesi istemci={istemci} evren={evren} kod={kod} surum={surum} />
         {(kayit.tur === 'sahne' || kayit.tur === 'bolum') && <AnlatiYolu istemci={istemci} evren={evren} kayit={kayit} />}
         <div class="kayit-basi">
-          <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>
+          <span class={`tur-rozeti ${grupSinifi(tur)}`} title={tur.ad} aria-hidden="true">{tur.kisa}</span>
           <GorunurlukRozeti g={kayit.gorunurluk} />
           <AlanGirdisi etiket="Ad" deger={kayit.ad} buyuk zorunlu kaydet={async (v) => {
             const eskiAd = kayit.ad, eskiOkunus = kayit.okunus;
@@ -274,7 +274,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           <KayitDegisimleri istemci={istemci} evren={evren} kod={kod} surum={surum} />
           <KayitMasalari istemci={istemci} evren={evren} kod={kod} surum={surum} />
           {!['sahne', 'not', 'eser', 'bolum'].includes(kayit.tur) && <KayitIzleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-          <Baglananlar istemci={istemci} evren={evren} kod={kod} surum={surum} />
+          <Baglananlar istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} surum={surum} />
         </details>
 
         {gecmisAcik && (
@@ -429,29 +429,41 @@ function AdDuzeltmePaneli({ duzeltme, okunusVar, uygula, kapat }: {
   );
 }
 
-function Baglananlar({ istemci, evren, kod, surum }: { istemci: Istemci; evren: string; kod: string; surum: number }) {
-  const [liste, setListe] = useState<BaglananKayit[] | null>(null);
-  useEffect(() => { istemci.iste('baglananlar', { evren, kod }).then(setListe); }, [kod, surum]);
-  if (!liste || !liste.length) return null;
-  return (
-    <section class="baglananlar" aria-label="Bu kayda bağlananlar">
-      <h2>Bu kayda bağlananlar ({liste.length})</h2>
-      <ul class="kayit-listesi">
+/** Andıkları ve ananlar (§3.2, K28): iki yön yan yana; ikisi de boşsa bölüm görünmez. */
+function Baglananlar({ istemci, evren, kod, ad, surum }: { istemci: Istemci; evren: string; kod: string; ad: string; surum: number }) {
+  const [ananlar, setAnanlar] = useState<BaglananKayit[] | null>(null);
+  const [andiklari, setAndiklari] = useState<BaglananKayit[] | null>(null);
+  useEffect(() => {
+    istemci.iste('baglananlar', { evren, kod }).then(setAnanlar);
+    istemci.iste('andiklari', { evren, kod }).then(setAndiklari);
+  }, [kod, surum]);
+  if (!ananlar || !andiklari || (!ananlar.length && !andiklari.length)) return null;
+  const sutun = (baslik: string, bos: string, liste: BaglananKayit[], kimin: (b: BaglananKayit) => string) => (
+    <div class="baglanti-sutunu">
+      <h2>{baslik} ({liste.length})</h2>
+      {liste.length ? <ul class="kayit-listesi">
         {liste.map((b) => {
           const tur = turBul(b.tur);
           return (
             <li key={b.kod}>
               <a class="kayit-satiri" href={`#/e/${evren}/k/${b.kod}`}>
-                <span class="tur-rozeti" aria-hidden="true" title={tur.ad}>{tur.kisa}</span>
+                <span class={`tur-rozeti ${grupSinifi(tur)}`} aria-hidden="true" title={tur.ad}>{tur.kisa}</span>
                 <span class="govde">
                   <span class="satir-ad">{b.ad}</span>
-                  <span class="soluk kucuk">{b.ifadeler.map((i) => `“${i}”`).join(', ')}</span>
+                  {/* Kaydın adıyla aynı olan ifade tekrar yazılmaz. */}
+                  {b.ifadeler.some((i) => i !== kimin(b)) && <span class="soluk kucuk">{b.ifadeler.map((i) => `“${i}”`).join(', ')}</span>}
                 </span>
               </a>
             </li>
           );
         })}
-      </ul>
+      </ul> : <p class="soluk kucuk">{bos}</p>}
+    </div>
+  );
+  return (
+    <section class="baglananlar" aria-label="Bağlantılar">
+      {sutun('Bu kaydın andıkları', 'Bu kaydın metninde henüz bağlantı yok.', andiklari, (b) => b.ad)}
+      {sutun('Bu kaydı ananlar', 'Başka bir metin bu kayda henüz bağlanmadı.', ananlar, () => ad)}
     </section>
   );
 }

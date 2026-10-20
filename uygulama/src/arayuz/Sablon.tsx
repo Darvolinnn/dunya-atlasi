@@ -5,7 +5,7 @@ import type { Istemci } from '../veri/istemci';
 import type { AlanVarsayilani, BoslukTuru, KarakterYollari, Kayit, KayitOzeti, KayitSablonu, MeseleListesi, SablonBilgisi, SoruSatiri } from '../veri/api';
 import { EN_COK_HASSASIYET, NICELIK_TURLERI, sayiDegeriMi, sayiMetni } from '../alan/nicelik';
 import { SET_KONULARI, yazarlikRehberiAc } from './YazarlikRehberi';
-import { ALAN_TURLERI, VARSAYILAN_EKSENLERI, EVREN_SETLERI, ILISKI_SETLERI, MESELE_DURUMLARI, SORU_SETLERI, soruSetiBul, yeniAlanKodu, type Sablon, type SablonAlani, type Secenek } from '../alan/sablon';
+import { ALAN_TURLERI, VARSAYILAN_EKSENLERI, EVREN_SETLERI, ILISKI_SETLERI, MESELE_DURUMLARI, NOT_DURUMLARI, SORU_SETLERI, soruSetiBul, yeniAlanKodu, type Sablon, type SablonAlani, type Secenek } from '../alan/sablon';
 import { tarihAciklamasi, tarihCoz, type EvrenTarihi, type TakvimYa } from '../alan/tarih';
 import { TURLER, turBul } from '../alan/turler';
 import { KararRozeti, KararSecici, TurSecici } from './ortak';
@@ -224,6 +224,9 @@ function AlanGirdisi({ a, takvim, deger, yaz }: { a: SablonAlani; takvim: Takvim
 }
 
 // ---------- Sorular ----------
+/** Bir soru setinde açık duran soru sayısı (§6, K28). */
+const ONDE_SORU = 3;
+
 export function SoruBolumu({ istemci, evren, kayit, ks, acik = false }: { istemci: Istemci; evren: string; kayit: Kayit; ks: KayitSablonu | null; acik?: boolean }) {
   const [hata, setHata] = useState<string | null>(null);
   if (!ks) return null;
@@ -253,7 +256,19 @@ export function SoruBolumu({ istemci, evren, kayit, ks, acik = false }: { istemc
               return (ad || neden) && <div class="satir">{ad && <strong class="kucuk">{ad}</strong>}<span class="bosluk" />{neden}
                 {set && <button class="dugme sade kucuk" onClick={() => istemci.iste('kayitSoruSeti', { evren, kod: kayit.kod, set, ekle: false })}>Bu soru setini çıkar</button>}</div>;
             })()}
-            <ul class="soru-listesi">{liste.map((q) => <SoruSatir key={q.kod} istemci={istemci} evren={evren} kod={kayit.kod} q={q} hata={setHata} />)}</ul>
+            {(() => {
+              // Önce üç soru (§6, K28): ilk üçü ve cevabı olanlar açık; öbürleri katlı.
+              const one = liste.filter((q, i) => i < ONDE_SORU || q.cevap);
+              const kalan = liste.filter((q, i) => i >= ONDE_SORU && !q.cevap);
+              const satir = (q: SoruSatiri) => <SoruSatir key={q.kod} istemci={istemci} evren={evren} kod={kayit.kod} q={q} hata={setHata} />;
+              return <>
+                <ul class="soru-listesi">{one.map(satir)}</ul>
+                {kalan.length > 0 && <details class="daha-fazla-soru">
+                  <summary class="kucuk">Daha fazla soru ({kalan.length})</summary>
+                  <ul class="soru-listesi">{kalan.map(satir)}</ul>
+                </details>}
+              </>;
+            })()}
           </div>
         ))}
         {!ks.sorular.length && <p class="soluk kucuk">Bu türün şablonunda soru yok.</p>}
@@ -498,6 +513,15 @@ export function MeseleSekmesi({ istemci, evren }: { istemci: Istemci; evren: str
             </details>
           );
         })}
+        {l.celiskiNotlari.length > 0 && (
+          <details open class="mesele-grubu">
+            <summary class="kucuk"><strong>Çelişki ve kontrol notları</strong> · {l.celiskiNotlari.length}</summary>
+            <ul class="mesele-listesi">
+              {l.celiskiNotlari.map((n) => <li key={n.kod} class="satir"><a href={`#/e/${evren}/k/${n.kod}`}>{n.ad}</a>
+                <span class={`not-durumu etiket nd-${n.notDurumu}`}>{NOT_DURUMLARI.find((d) => d.kod === n.notDurumu)?.ad}</span></li>)}
+            </ul>
+          </details>
+        )}
       </section>
       <section aria-label="Gerekçe defteri" style="margin-top:24px">
         <h2>Gerekçe defteri</h2>

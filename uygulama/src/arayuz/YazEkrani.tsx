@@ -1,6 +1,7 @@
 // Yazma düzeni (§5.10, K24): solda gezinti çubuğu ve eser ağacı, ortada metin, sağda dar ve kapatılabilir bağlam
 // paneli. Sahnenin bütün alanları kayıt sayfasındadır; buradan bir bağlantıyla açılır.
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { BosSayfa, odakla } from './ortak';
 import type { Istemci } from '../veri/istemci';
 import type { EserYapisi, EvrenBilgisi, Kayit, KaldigiYerBilgisi, KisaKayit } from '../veri/api';
 import { zamanYaz } from '../alan/islem-metni';
@@ -17,10 +18,44 @@ import { onayla } from './onay';
 import { SayfaYardimi } from './SayfaYardimi';
 import { IlkAdimlar } from './IlkAdimlar';
 import { gitVeYap, YENI_SAHNE_OLAYI } from './yonlendirme';
+import { soruSetiBul } from '../alan/sablon';
+import { ODAK_OLAYI } from './kisayollar';
+
+const PLAN_SORULARI = (soruSetiBul('sahne_plani')?.sorular ?? []).slice(0, 3).map((q) => q.metin);
 
 // Bağlam panelinin tercihi üç değerlidir: '1' kapalı, '0' açık, yoksa kullanıcı seçmemiştir. Seçmediyse panel boş
 // sahnede kapalı, dolu sahnede açık durur.
 const baglamAnahtari = 'dunya-atlasi:yazma-baglami-kapali';
+const odakAnahtari = 'dunya-atlasi:odak-kipi';
+/** Odak kipi (K28, §5.10): gezinti, eser ağacı, bağlam paneli ve sıradaki adım gizlenir; tercih cihazda. */
+function useOdakKipi(): [boolean, (v: boolean) => void] {
+  const [acik, setAcik] = useState(() => okuYerel(odakAnahtari) === '1');
+  const ayarla = (v: boolean) => { setAcik(v); yazYerel(odakAnahtari, v ? '1' : '0'); };
+  const ref = useRef(acik); ref.current = acik;
+  useEffect(() => {
+    const olay = (e: Event) => { const d = (e as CustomEvent<boolean | null>).detail; ayarla(d ?? !ref.current); };
+    const tus = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); ayarla(!ref.current); }
+      else if (e.key === 'Escape' && ref.current && !document.querySelector('.perde, [role="dialog"], .secici')) ayarla(false);
+    };
+    addEventListener(ODAK_OLAYI, olay); addEventListener('keydown', tus);
+    return () => { removeEventListener(ODAK_OLAYI, olay); removeEventListener('keydown', tus); };
+  }, []);
+  useEffect(() => { document.documentElement.classList.toggle('odak-kipi', acik); return () => document.documentElement.classList.remove('odak-kipi'); }, [acik]);
+  return [acik, ayarla];
+}
+
+/** Sessiz kelime sayacı (K28): "bugün" bu cihazda, gün başındaki sayıya göre; eşitlenmez. */
+function bugunEklenen(evren: string, kod: string, n: number): number {
+  const g = new Date(); const gun = `${g.getFullYear()}-${g.getMonth() + 1}-${g.getDate()}`;
+  const a = `dunya-atlasi:gunluk-kelime:${evren}:${kod}`;
+  let kayit: { gun: string; ilk: number } | null = null;
+  try { kayit = JSON.parse(okuYerel(a) ?? 'null'); } catch { kayit = null; }
+  if (!kayit || kayit.gun !== gun) { kayit = { gun, ilk: n }; yazYerel(a, JSON.stringify(kayit)); }
+  return n - kayit.ilk;
+}
+const sayiYaz = (n: number) => n.toLocaleString('tr-TR');
+
 const okuYerel = (a: string) => { try { return localStorage.getItem(a); } catch { return null; } };
 const yazYerel = (a: string, v: string) => { try { localStorage.setItem(a, v); } catch { /* yok */ } };
 
@@ -42,12 +77,21 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const calisma = useCalisma();
   const [baslangic] = useState(() => calisma?.konumAl(kod) ?? null);
   const [imlecParcasi, setImlecParcasi] = useState<string | null>(null);
+  const [kelime, setKelime] = useState<number | null>(null);
+  const [odak, setOdak] = useOdakKipi();
+  const [onceki, setOnceki] = useState<string>('');
+  useEffect(() => { setKelime(null); }, [kod]);
 
   useEffect(() => { istemci.iste('kayit', { evren, kod }).then((k) => { setKayit(k); setHata(null); }, (e) => setHata(e.message)); }, [evren, kod, surum]);
   useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then((b) => setBag(b.bag ?? null), () => {}); }, [evren]);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren && (d.kayitlar.includes(kod) || !d.kayitlar.length)) setSurum((s) => s + 1); }), [evren, kod]);
   useEffect(() => { if (kayit) document.title = `${kayit.ad} · Dünya Atlası`; return () => { document.title = 'Dünya Atlası'; }; }, [kayit?.ad]);
   const sahne = kayit?.tur === 'sahne';
+  useEffect(() => {
+    setOnceki('');
+    if (!sahne) return;
+    istemci.iste('anlatiYeri', { evren, kod }).then((y) => y.onceki ? istemci.iste('sonParagraf', { evren, kod: y.onceki.kod }) : '').then(setOnceki, () => {});
+  }, [evren, kod, sahne]);
   const sahneBaglami = useSahneBaglami(istemci, evren, sahne ? kod : null);
   const parcaBaglami = useSahneBaglami(istemci, evren, sahne && imlecParcasi ? kod : null, imlecParcasi);
 
@@ -57,7 +101,16 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const bos = sahneBaglamiBos(sahneBaglami);
   // Seçilmemişken bağlam okunana kadar panel açılmaz; dolu sahnede okununca açılır.
   const baglamKapali = baglamTercihi ?? (!sahneBaglami || bos);
-  const baglamGorunur = sahne && !baglamKapali;
+  const baglamGorunur = sahne && !baglamKapali && !odak;
+  const bugun = kelime !== null ? bugunEklenen(evren, kod, kelime) : 0;
+  const planAc = () => { baglamAc(true); setOdak(false); void gitVeYap(null, [{ odak: '.sahne-plani summary' }]); };
+  const bosYardim = sahne ? (
+    <>
+      {onceki && <p class="bos-yardim-onceki">Önceki sahne şöyle bitti: “{onceki}”</p>}
+      <ul class="bos-yardim-sorular">{PLAN_SORULARI.map((q) => <li key={q}><a href="#" onMouseDown={(e) => e.preventDefault()} onClick={(e) => { e.preventDefault(); planAc(); }}>{q}</a></li>)}</ul>
+      <p class="kucuk">Sorulara tıklayınca sahne planı açılır. Yazmaya başlayınca bu yazı kaybolur.</p>
+    </>
+  ) : undefined;
   const saltOkunur = bag?.tur === 'surum';
 
   return (
@@ -66,7 +119,9 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
         <div class="yaz-ust">
           {YAZMA_TURLERI.includes(kayit.tur) && kayit.tur !== 'eser' ? <AnlatiYolu istemci={istemci} evren={evren} kayit={kayit} yazma /> : <span />}
           <span class="bosluk" />
-          {sahne && baglamKapali && <button class="dugme sade kucuk" onClick={() => baglamAc(true)}>{bos ? 'Bağlam ekle' : 'Bağlamı göster'}</button>}
+          {kelime !== null && <span class="kelime-sayaci" aria-live="off">{sahne ? 'Bu sahne ' : ''}{sayiYaz(kelime)} kelime{bugun ? ` · bugün ${bugun > 0 ? '+' : '−'}${sayiYaz(Math.abs(bugun))}` : ''}</span>}
+          <button class={odak ? 'dugme kucuk odak-dugmesi secili' : 'dugme sade kucuk odak-dugmesi'} aria-pressed={odak} title="Odak kipi (Ctrl+Shift+F); çıkmak için Esc" onClick={() => setOdak(!odak)}>{odak ? 'Odaktan çık' : 'Odak'}</button>
+          {sahne && baglamKapali && !odak && <button class="dugme sade kucuk" onClick={() => baglamAc(true)}>{bos ? 'Bağlam ekle' : 'Bağlamı göster'}</button>}
           <a class="dugme sade kucuk" href={`#/e/${evren}/k/${kod}`}>Bütün alanlar</a>
           <SayfaYardimi sayfa="yaz" />
           {!kayit.silindi && !saltOkunur && (
@@ -84,7 +139,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
             <AlanGirdisi etiket="Başlık" deger={kayit.ad} buyuk zorunlu kaydet={(v) => istemci.iste('kayitDegistir', { evren, kod, alan: 'ad', deger: v })} />
           </div>
           <MetinEditoru saltOkunur={saltOkunur} key={kod} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} baslangic={baslangic}
-            baglamParcalari={sahne} parcaDegisti={setImlecParcasi} />
+            baglamParcalari={sahne} parcaDegisti={setImlecParcasi} kelimeDegisti={setKelime} bosYardim={bosYardim} />
           {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         </article>
       </main>
@@ -148,7 +203,9 @@ function YaziMasasi({ istemci, evren }: { istemci: Istemci; evren: string }) {
         </section>
       )}
       <h2 class="ara-baslik">Eserler</h2>
-      {!eserler.length && <p class="soluk">Henüz bir eseriniz yok. Romanınızın ya da öykünüzün adını yazarak başlayın. Bölümleri ve sahneleri soldaki listeden eklersiniz.</p>}
+      {!eserler.length && <BosSayfa baslik="İlk eserinizi ekleyin" eylem={{ ad: 'Eser ekle', yap: () => odakla('input[aria-label="Yeni eserin adı"]') }} konu={23}>
+        Romanınızın ya da öykünüzün adını aşağıya yazarak başlayın. Bölümleri ve sahneleri soldaki listeden eklersiniz.
+      </BosSayfa>}
       <div class="kartlar">
         {eserler.map((e) => (
           <a class="kart eser-karti" key={e.kod} href={`#/e/${evren}/yaz/${e.kod}`}>

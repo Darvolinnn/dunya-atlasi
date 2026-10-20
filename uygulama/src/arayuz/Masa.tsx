@@ -2,8 +2,9 @@
 // "Bahsedilen ama yazılmamış" bir hatırlatmadır; sayı ya da uyarı rengiyle gösterilmez.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { KaldigiYerBilgisi, KayitOzeti, KisaKayit, SimdiOnerisi } from '../veri/api';
-import { turBul } from '../alan/turler';
+import type { KaldigiYerBilgisi, KayitOzeti, KisaKayit, SimdiOnerisi, SonCalisma } from '../veri/api';
+import { goreceZaman } from './Esitleme';
+import { turBul, grupSinifi } from '../alan/turler';
 import { zamanYaz } from '../alan/islem-metni';
 import { useCalisma } from './Calisma';
 import { KararRozeti } from './ortak';
@@ -35,6 +36,7 @@ export function Masa({ istemci, evren, surum, ekler }: { istemci: Istemci; evren
             )}
           </>
         ) : <p class="soluk kucuk">Bir kaydı açıp yazmaya başladığınızda burada görünür. Başka bir cihazda kaldığınız yer de eşitlemeyle buraya gelir.</p>}
+        <SonCalismaOzeti istemci={istemci} evren={evren} surum={surum} />
         <label class="alan">
           <span class="alan-adi">Devam notu</span>
           <textarea class="girdi" rows={2} lang="tr" value={not} placeholder="Örn. Kuşatma sahnesinde Elin'in kararı kaldı"
@@ -83,7 +85,7 @@ export function KisaListe({ evren, kayitlar, zamanli }: { evren: string; kayitla
         const tur = turBul(k.tur);
         return (
           <li key={k.kod}>
-            <a href={`#/e/${evren}/k/${k.kod}`}><span class="tur-rozeti kucuk-rozet" aria-hidden="true" title={tur.ad}>{tur.kisa}</span> {k.ad}</a>
+            <a href={`#/e/${evren}/k/${k.kod}`}><span class={`tur-rozeti kucuk-rozet ${grupSinifi(tur)}`} aria-hidden="true" title={tur.ad}>{tur.kisa}</span> {k.ad}</a>
             {' '}<KararRozeti karar={k.karar} />
             <span class="soluk kucuk"> {tur.ad}{zamanli ? ` · ${zamanYaz(k.duzenleme)}` : ''}</span>
           </li>
@@ -128,6 +130,41 @@ function SimdiKarti({ istemci, evren, surum }: { istemci: Istemci; evren: string
           {l.map((o) => <li key={o.tur + o.kayit.kod}><a href={adres(o)}>{o.baslik}</a><span class="soluk kucuk"> · {o.gerekce}</span></li>)}
         </ul>
       ) : <p class="soluk kucuk">Önerilecek bir şey yok: önemli işaretli bir mesele, sonraya bırakılmış bir soru ya da bir sahne olunca burada görünür.</p>}
+    </section>
+  );
+}
+
+const YAZMA_TURLERI = new Set(['eser', 'bolum', 'sahne']);
+const saatYazisi = (t: number) => { const d = new Date(t); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+function sureYazisi(ms: number) {
+  const dk = Math.round(ms / 60000);
+  if (dk < 1) return null;
+  const s = Math.floor(dk / 60), d = dk % 60;
+  return s ? `${s} saat${d ? ` ${d} dakika` : ''}` : `${d} dakika`;
+}
+
+/** Son çalışmanın özeti (K28 T7): evreni yeniden açınca nerede kalındığını hatırlatır; "Kaldığınız yer" kartında durur. Yalnızca işlem günlüğünden derlenir. */
+function SonCalismaOzeti({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
+  const [o, setO] = useState<SonCalisma | null>(null);
+  useEffect(() => { istemci.iste('sonCalisma', { evren }).then(setO, () => setO(null)); }, [evren, surum]);
+  if (!o || !(o.yazilan.length || o.olusturulan.length || o.degistirilen.length || o.silinen)) return null;
+  const adres = (k: KisaKayit) => `#/e/${evren}/${YAZMA_TURLERI.has(k.tur) ? 'yaz' : 'k'}/${k.kod}`;
+  const liste = (l: KisaKayit[]) => {
+    const ilk = l.slice(0, 6);
+    return <>{ilk.map((k, n) => <span key={k.kod}>{n ? ', ' : ''}<a href={adres(k)}>{k.ad}</a></span>)}{l.length > ilk.length && ` ve ${l.length - ilk.length} kayıt daha`}</>;
+  };
+  const sure = sureYazisi(o.son - o.bas);
+  const ayniGun = new Date(o.bas).toDateString() === new Date(o.son).toDateString();
+  return (
+    <section class="son-calisma" aria-label="Son çalışmanız">
+      <h3>Son çalışmanızda: {goreceZaman(o.bas)}{ayniGun && o.son - o.bas >= 60000 ? `–${saatYazisi(o.son)}` : ''}{sure && <span class="soluk kucuk"> ({sure})</span>}</h3>
+      <ul>
+        {o.yazilan.length > 0 && <li>Metnini yazdığınız: {liste(o.yazilan)}</li>}
+        {o.olusturulan.length > 0 && <li>Yeni kayıtlar: {liste(o.olusturulan)}</li>}
+        {o.degistirilen.length > 0 && <li>Bilgilerini değiştirdiğiniz: {liste(o.degistirilen)}</li>}
+        {o.silinen > 0 && <li>Çöp kutusuna taşınan: {o.silinen} kayıt</li>}
+        <li class="soluk kucuk">Toplam {o.degisiklikSayisi} değişiklik · <a href={`#/e/${evren}/gecmis`}>Değişiklik geçmişi</a></li>
+      </ul>
     </section>
   );
 }

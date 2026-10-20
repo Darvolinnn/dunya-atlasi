@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
+import { KurguSecici } from './ortak';
+import { SonYedekSatiri } from './Esitleme';
+import { KURGU_TURLERI } from '../alan/turler';
 import type { Istemci } from '../veri/istemci';
 import type { EvrenBilgisi, GunlukSatiri } from '../veri/api';
 import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
@@ -48,6 +51,8 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           <>
             {bilgi.bag ? <div class="baslik-satiri"><h1>{bilgi.ad}</h1><SayfaYardimi sayfa="masa" /></div> : <AdBasligi istemci={istemci} bilgi={bilgi} />}
             <p class="soluk kucuk">Oluşturulma: {zamanYaz(bilgi.olusturma)} · {bilgi.islemSayisi} değişiklik</p>
+            {!bilgi.bag && <SonYedekSatiri istemci={istemci} evren={kod} />}
+            {!bilgi.bag && <KurguAyari istemci={istemci} bilgi={bilgi} />}
           </>
         )}
         {baslik && <div class="baslik-satiri sayfa-basligi"><h1>{gorunumMu(sekme) ? <><span class="soluk">Grafikler · </span>{baslik}</> : baslik}</h1><SayfaYardimi sayfa={sekme} /></div>}
@@ -137,5 +142,19 @@ function Gecmis({ istemci, kod, surum }: { istemci: Istemci; kod: string; surum:
         ))}
       </ul>
     </>
+  );
+}
+
+/** "Ne yazıyorsunuz?" seçimi sonradan buradan değişir (§4, K28). */
+function KurguAyari({ istemci, bilgi }: { istemci: Istemci; bilgi: EvrenBilgisi }) {
+  const [hata, setHata] = useState<string | null>(null);
+  const k = KURGU_TURLERI.find((x) => x.kod === bilgi.kurguTuru);
+  return (
+    <details class="kurgu-ayari">
+      <summary class="kucuk soluk">Ne yazıyorsunuz? {k ? k.ad : 'Seçilmedi'}</summary>
+      <p class="soluk kucuk">Kurgunuza uzak bölümler menüde “Diğer” altına alınır. Gizlenen bölümlerin kayıtları silinmez, yalnızca menüden kalkar.</p>
+      <KurguSecici deger={bilgi.kurguTuru} degis={(kurgu) => istemci.iste('kurguTuruYaz', { evren: bilgi.kod, kurgu }).then(() => setHata(null), (e) => setHata((e as Error).message))} />
+      {hata && <p class="hata kucuk">{hata}</p>}
+    </details>
   );
 }

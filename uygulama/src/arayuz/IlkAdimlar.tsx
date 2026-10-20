@@ -5,7 +5,8 @@
 // satır olarak görünür.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { IlkAdimDayanaklari } from '../veri/api';
+import type { AracTanitimDayanaklari, IlkAdimDayanaklari } from '../veri/api';
+import { git } from './Uygulama';
 import { yazarlikRehberiAc } from './YazarlikRehberi';
 import { gitVeYap, PALET_OLAYI, YENI_SAHNE_OLAYI } from './yonlendirme';
 
@@ -136,9 +137,9 @@ export function IlkAdimlar({ istemci, evren }: { istemci: Istemci; evren: string
 }
 
 /** Yaz sayfasının dışında sıradaki adım: tek satır. */
-export function SiradakiAdim({ istemci, evren }: { istemci: Istemci; evren: string }) {
+export function SiradakiAdim({ istemci, evren, yazda = false }: { istemci: Istemci; evren: string; yazda?: boolean }) {
   const s = useIlkAdimlar(istemci, evren);
-  if (!s || s.sira < 0) return null;
+  if (!s || s.sira < 0) return yazda ? null : <AracTanitimi istemci={istemci} evren={evren} />;
   const a = s.adimlar[s.sira].a;
   return (
     <div class="siradaki-adim" role="status" aria-label="Sıradaki adım">
@@ -149,6 +150,40 @@ export function SiradakiAdim({ istemci, evren }: { istemci: Istemci; evren: stri
       <span class="bosluk" />
       <a class="kucuk" href={`#/e/${evren}/yaz`}>Bütün adımlar</a>
       <button class="dugme sade kucuk" aria-label="İlk adımları gizle" onClick={s.gizle}>Gizle</button>
+    </div>
+  );
+}
+
+// ---------- İleri araçların bir kez tanıtılması (§5.10, K28) ----------
+const tanitimAnahtari = 'dunya-atlasi:arac-tanitimlari';
+interface Tanitim { kod: string; uygun: (d: AracTanitimDayanaklari) => boolean; metin: (d: AracTanitimDayanaklari) => string; yol: (d: AracTanitimDayanaklari) => string }
+const TANITIMLAR: Tanitim[] = [
+  { kod: 'orgu', uygun: (d) => (d.enCokSahne?.sayi ?? 0) >= 10, yol: (d) => `orgu/${d.enCokSahne!.eser}`,
+    metin: (d) => `Eserinizde ${d.enCokSahne!.sayi} sahne oldu. Olay örgüsü masasında hepsini bir arada görebilirsiniz.` },
+  { kod: 'ag', uygun: (d) => d.karakter >= 2, yol: () => 'ag', metin: () => 'İkinci karakteriniz oldu. Ağ, karakterlerin arasındaki ilişkileri bir arada gösterir.' },
+  { kod: 'cizelge', uygun: (d) => d.tarihli, yol: () => 'cizelge', metin: () => 'İlk tarihli sahneniz ya da olayınız oldu. Zaman çizelgesi olayları sırasıyla gösterir.' },
+  { kod: 'haritalar', uygun: (d) => d.mekan >= 1, yol: () => 'haritalar', metin: () => 'İlk mekânınız oldu. Haritalarda mekânlarınızı bir görselin üstünde işaretleyebilirsiniz.' },
+  { kod: 'seri', uygun: (d) => d.eser >= 2, yol: () => 'yaz', metin: () => 'İkinci eseriniz oldu. Eserleri bir seride toplarsanız serinin büyük sorusunu ve okuma sırasını tutabilirsiniz.' },
+];
+const gorulenTanitimlar = (): string[] => { try { return JSON.parse(okuYerel(tanitimAnahtari) ?? '[]'); } catch { return []; } };
+
+/** Aynı anda en çok bir tanıtım; gösterilen ya da kapatılan bu cihazda bir daha çıkmaz. */
+export function AracTanitimi({ istemci, evren }: { istemci: Istemci; evren: string }) {
+  const [d, setD] = useState<AracTanitimDayanaklari | null>(null);
+  const [gorulen, setGorulen] = useState(gorulenTanitimlar);
+  const [n, setN] = useState(0);
+  useEffect(() => istemci.dinle((x) => { if (x.evren === evren) setN((k) => k + 1); }), [evren]);
+  useEffect(() => { if (TANITIMLAR.some((t) => !gorulen.includes(t.kod))) istemci.iste('aracTanitimlari', { evren }).then(setD, () => {}); }, [evren, n]);
+  if (!d) return null;
+  const t = TANITIMLAR.find((x) => !gorulen.includes(x.kod) && x.uygun(d));
+  if (!t) return null;
+  const kapat = () => { const l = [...gorulenTanitimlar(), t.kod]; yazYerel(tanitimAnahtari, JSON.stringify(l)); setGorulen(l); };
+  return (
+    <div class="siradaki-adim arac-tanitimi" role="status" aria-label="Yeni bir araç">
+      <span>{t.metin(d)}</span>
+      <span class="bosluk" />
+      <button class="dugme ana kucuk" onClick={() => { kapat(); git(`/e/${evren}/${t.yol(d)}`); }}>Göster</button>
+      <button class="dugme sade kucuk" onClick={kapat}>Bir daha gösterme</button>
     </div>
   );
 }

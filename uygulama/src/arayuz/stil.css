@@ -15,6 +15,9 @@
   --basari: #2f6b3f;
   --inanc: #6e4a9e;          /* bir bilenin inancı (gerçek değil) */
   --odak: #2a5db0;
+  /* Tür grubu renkleri (§12.1, K28): z zemin, y yazı; ikisi en az 4,5:1. */
+  --tg-insan-z: #f3e3d8; --tg-insan-y: #7a3e1d; --tg-yer-z: #dfeadb; --tg-yer-y: #2f5a2a; --tg-kultur-z: #ebe0f0; --tg-kultur-y: #5b3a73;
+  --tg-isleyis-z: #dde6f0; --tg-isleyis-y: #2d4c6e; --tg-zaman-z: #f1e8cf; --tg-zaman-y: #6a5214; --tg-anlati-z: #f2dde0; --tg-anlati-y: #7c2e3a; --tg-diger-z: #e8e4dc; --tg-diger-y: #4f4a40;
   --golge: 0 1px 2px rgb(60 45 20 / 0.05), 0 2px 10px rgb(60 45 20 / 0.05);
   --yaricap: 12px;
   --yazi: "Source Sans 3 Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -26,6 +29,8 @@
     --zemin: #1d1b18; --yuzey: #26231f; --yuzey-2: #2f2b26; --kenar: #221f1b; --cizgi: #423c34;
     --metin: #ece6da; --metin-2: #b8ae9e; --vurgu: #9dbcd6; --vurgu-zemin: #2b3540; --vurgu-metin: #14191e;
     --tehlike: #f19a9a; --basari: #8fd19e; --odak: #9cc0ff; --inanc: #c5a6ee;
+    --tg-insan-z: #3b2a20; --tg-insan-y: #f0c3a3; --tg-yer-z: #24321f; --tg-yer-y: #b9d9ae; --tg-kultur-z: #33283b; --tg-kultur-y: #d5bde6;
+    --tg-isleyis-z: #222e3b; --tg-isleyis-y: #b2c9e3; --tg-zaman-z: #3a3220; --tg-zaman-y: #e6d39b; --tg-anlati-z: #3c2629; --tg-anlati-y: #efb9c1; --tg-diger-z: #2f2b26; --tg-diger-y: #cfc7b8;
     --golge: 0 1px 2px rgb(0 0 0 / 0.3);
     color-scheme: dark;
   }
@@ -34,6 +39,8 @@
   --zemin: #1d1b18; --yuzey: #26231f; --yuzey-2: #2f2b26; --kenar: #221f1b; --cizgi: #423c34;
   --metin: #ece6da; --metin-2: #b8ae9e; --vurgu: #9dbcd6; --vurgu-zemin: #2b3540; --vurgu-metin: #14191e;
   --tehlike: #f19a9a; --basari: #8fd19e; --odak: #9cc0ff; --inanc: #c5a6ee;
+  --tg-insan-z: #3b2a20; --tg-insan-y: #f0c3a3; --tg-yer-z: #24321f; --tg-yer-y: #b9d9ae; --tg-kultur-z: #33283b; --tg-kultur-y: #d5bde6;
+  --tg-isleyis-z: #222e3b; --tg-isleyis-y: #b2c9e3; --tg-zaman-z: #3a3220; --tg-zaman-y: #e6d39b; --tg-anlati-z: #3c2629; --tg-anlati-y: #efb9c1; --tg-diger-z: #2f2b26; --tg-diger-y: #cfc7b8;
   --golge: 0 1px 2px rgb(0 0 0 / 0.3);
   color-scheme: dark;
 }
@@ -92,6 +99,9 @@ a.kayit-satiri:hover { background: var(--yuzey-2); }
 .kayit-satiri .govde > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .satir-ad { font-weight: 600; color: inherit; }
 .kayit-satiri .zaman { white-space: nowrap; }
+/* Tür grubu (K28): rozet zemini ve yazısı; grafikte düğüm rengi. */
+.tg-insan { --tg: var(--tg-insan-y); --tgz: var(--tg-insan-z); } .tg-yer { --tg: var(--tg-yer-y); --tgz: var(--tg-yer-z); } .tg-kultur { --tg: var(--tg-kultur-y); --tgz: var(--tg-kultur-z); } .tg-isleyis { --tg: var(--tg-isleyis-y); --tgz: var(--tg-isleyis-z); } .tg-zaman { --tg: var(--tg-zaman-y); --tgz: var(--tg-zaman-z); } .tg-anlati { --tg: var(--tg-anlati-y); --tgz: var(--tg-anlati-z); } .tg-diger { --tg: var(--tg-diger-y); --tgz: var(--tg-diger-z); }
+.tur-rozeti[class*="tg-"] { background: var(--tgz); color: var(--tg); }
 .tur-rozeti { flex: none; display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--vurgu-zemin); color: var(--metin); font-size: 0.8rem; font-weight: 600; }
 .rozet { display: inline-block; font-size: 0.75rem; font-weight: 500; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--cizgi); color: var(--metin-2); vertical-align: middle; }
 .karar-fikir { border-style: dashed; }
@@ -156,7 +166,7 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .secici-not { margin: 6px 4px 0; }
 .secici-yeni { display: flex; flex-direction: column; gap: 8px; }
 .kucuk-rozet { width: 26px; height: 26px; font-size: 0.75rem; }
-.baglananlar { margin-top: 24px; }
+.baglananlar { margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px 24px; align-items: start; }
 .baglananlar h2 { margin-bottom: 8px; font-size: 1rem; }
 .ad-duzeltme { margin: 12px 0; }
 .ad-duzeltme h2 { font-size: 1rem; margin-bottom: 4px; }
@@ -445,7 +455,7 @@ label.dugme:focus-within { outline: 2px solid var(--odak); outline-offset: 2px; 
 .secili-kayit { margin: 8px 0; flex-wrap: wrap; }
 .secili-kayit ul { margin: 6px 0 0; padding-left: 20px; }
 /* Tür grubu renkleri: düğüm kenarı ve dolgusu, metin rengi değil. */
-.tg-0 { --tg: #3d5f8f; } .tg-1 { --tg: #2f6b3f; } .tg-2 { --tg: #8a5a12; } .tg-3 { --tg: #6b3f8f; } .tg-4 { --tg: #9b2c2c; } .tg-5 { --tg: #2c6f7b; } .tg-6 { --tg: #5c574e; }
+
 .soy-kutu rect { fill: var(--yuzey); stroke: var(--tg, var(--cizgi)); stroke-width: 1.5; }
 .soy-kutu.odak rect { stroke-width: 3; fill: var(--vurgu-zemin); }
 .soy-kutu.secili rect { stroke: var(--odak); stroke-width: 3; }
@@ -934,3 +944,82 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .henuz-eklenmedi { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--cizgi); }
 /* İlk adımlarda sıradaki adım (K26): Yaz sayfası dışında tek satır */
 .siradaki-adim { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 12px; padding: 8px 14px; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey); }
+
+/* ---------- Kullanım kolaylığı (K28) ---------- */
+/* Yazma ekranı: üst şeritte sessiz kelime sayacı ve odak düğmesi (taslak T1 B). */
+.kelime-sayaci { color: var(--metin-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.odak-dugmesi.secili { background: var(--vurgu-zemin); color: var(--vurgu); border-color: var(--vurgu); }
+/* Odak kipi: yalnız metin kalır. */
+.odak-kipi .kabuk { background: none; }
+.odak-kipi .gezinti, .odak-kipi .siradaki-adim, .odak-kipi .yaz-baglami, .odak-kipi .hizli-not-dugmesi { display: none !important; }
+.odak-kipi .yaz-ust .anlati-yolu .dugme, .odak-kipi .yaz-ust > a.dugme, .odak-kipi .yaz-ust .tehlikeli, .odak-kipi .yaz-ust .yardim-dugmesi { display: none; }
+/* Boş metinde soluk, yazınca kaybolan yardım. */
+.editor-govdesi { position: relative; }
+.bos-yardim { position: absolute; inset: 24px 0 auto; pointer-events: none; color: var(--metin-2); font-family: var(--metin-yazi); display: grid; gap: 10px; padding: 0 20px; }
+.yaz-kagidi .bos-yardim { padding: 0; font-size: 1.05rem; }
+.bos-yardim a { pointer-events: auto; color: var(--metin-2); text-decoration-style: dotted; }
+.bos-yardim a:hover { color: var(--vurgu); }
+.bos-yardim p { margin: 0; }
+.bos-yardim-onceki { font-style: italic; }
+.bos-yardim-sorular { margin: 0; padding-left: 1.2em; font-family: var(--yazi); font-size: 1rem; display: grid; gap: 2px; }
+.bos-yardim .kucuk { font-family: var(--yazi); }
+.palet-govde { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.palet-nereden { font-size: 0.8rem; color: var(--metin-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.palet-nereden b { color: var(--metin); font-weight: 600; }
+.tus { font: inherit; font-size: 0.78rem; padding: 1px 6px; border: 1px solid var(--cizgi); border-bottom-width: 2px; border-radius: 5px; background: var(--yuzey-2); color: var(--metin-2); white-space: nowrap; }
+.palet-tus { margin-left: auto; align-self: center; }
+.kisayol-listesi ul { list-style: none; margin: 8px 0; padding: 0; max-height: 60vh; overflow-y: auto; }
+.kisayol-listesi li { display: flex; align-items: baseline; gap: 12px; padding: 6px 4px; border-bottom: 1px solid var(--cizgi); }
+.kisayol-listesi li > span { flex: 1; }
+.daha-fazla-soru { margin: 4px 0 0; } .daha-fazla-soru summary { color: var(--vurgu); cursor: pointer; padding: 4px 0; }
+/* Not panosu (§4.6, K28): durum renkleri tür grubu renklerinden gelir; hepsi 4,5:1'i geçer. */
+.suzgec-cipi { font: inherit; font-size: 0.85rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--cizgi); background: var(--yuzey); color: var(--metin-2); cursor: pointer; }
+.suzgec-cipi.secili { background: var(--vurgu); border-color: var(--vurgu); color: var(--vurgu-metin); }
+.not-suzgeci { flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.not-sutunlari { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: start; }
+.not-sutunu { background: var(--yuzey-2); border-radius: var(--yaricap); padding: 8px; }
+.not-sutunu h3 { margin: 2px 2px 8px; font-weight: 500; }
+.not-sutunu ul, .not-arsivi ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.not-karti { background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+.not-adi { font-weight: 500; color: var(--metin); text-decoration: none; }
+.not-adi:hover { text-decoration: underline; }
+.not-durumu { font: inherit; font-size: 0.8rem; font-weight: 500; border: none; border-radius: 999px; padding: 2px 8px; cursor: pointer; }
+.not-durumu.etiket { cursor: default; }
+.nd-fikir { background: var(--tg-zaman-z); color: var(--tg-zaman-y); }
+.nd-gelisiyor { background: var(--tg-isleyis-z); color: var(--tg-isleyis-y); }
+.nd-kontrol { background: var(--tg-anlati-z); color: var(--tg-anlati-y); }
+.nd-kullanildi { background: var(--tg-yer-z); color: var(--tg-yer-y); }
+.nd-arsiv { background: var(--tg-diger-z); color: var(--tg-diger-y); }
+.not-arsivi { margin-top: 12px; }
+.not-arsivi summary { cursor: pointer; color: var(--metin-2); padding: 4px 0; }
+/* "Ne yazıyorsunuz?" (§4, K28) */
+.kurgu-secici { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+/* Her kurgu türü bir tür grubunun rengini alır (T6); renk yalnızca süstür, ad yazılıdır. */
+.kurgu-karti { --kz: var(--tg-diger-z); --ky: var(--tg-diger-y); font: inherit; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 10px 14px; border-radius: 10px; border: 1px solid var(--cizgi); border-left: 4px solid var(--ky); background: var(--kz); color: var(--metin); cursor: pointer; }
+.kurgu-karti.tg-kultur { --kz: var(--tg-kultur-z); --ky: var(--tg-kultur-y); }
+.kurgu-karti.tg-isleyis { --kz: var(--tg-isleyis-z); --ky: var(--tg-isleyis-y); }
+.kurgu-karti.tg-zaman { --kz: var(--tg-zaman-z); --ky: var(--tg-zaman-y); }
+.kurgu-karti.tg-yer { --kz: var(--tg-yer-z); --ky: var(--tg-yer-y); }
+.kurgu-karti.tg-anlati { --kz: var(--tg-anlati-z); --ky: var(--tg-anlati-y); }
+.kurgu-karti strong { color: var(--ky); }
+.kurgu-karti .kucuk { color: var(--ky); }
+.kurgu-karti:hover { border-color: var(--ky); }
+.kurgu-karti.secili { border: 2px solid var(--ky); border-left-width: 6px; padding: 9px 11px 9px 12px; box-shadow: 0 0 0 2px var(--yuzey), 0 0 0 4px var(--ky); }
+.kurgu-karti.secili strong::after { content: " ✓"; }
+.kurgu-ayari { margin: 4px 0 12px; }
+.kurgu-ayari summary { cursor: pointer; }
+.kurgu-ayari .kurgu-secici { margin-top: 6px; }
+.gezinti-uzak summary { cursor: pointer; list-style: none; }
+.gezinti-uzak p { margin: 4px 8px; }
+.son-yedek { font-size: 0.8rem; font-weight: 400; } .durum-ozeti summary .son-yedek { color: var(--metin-2); }
+/* Boş sayfa ve "+ Yeni" kartı (§12.4, K28) */
+.bos-sayfa h3 { margin: 0 0 6px; font-size: 1.1rem; color: var(--metin); }
+.bos-sayfa p { max-width: 52ch; margin: 0 auto 12px; }
+.yeni-karti { font: inherit; color: var(--vurgu); border: 1.5px dashed var(--cizgi); background: transparent; box-shadow: none; display: grid; place-items: center; min-height: 72px; cursor: pointer; }
+.yeni-karti:hover { border-color: var(--vurgu); background: var(--vurgu-zemin); }
+
+/* Son çalışmanın özeti (Genel bakış, K28 T7). */
+.son-calisma { margin: 8px 0 10px; padding: 8px 12px; border-left: 3px solid var(--vurgu); background: var(--yuzey-2); border-radius: 8px; }
+.son-calisma h3 { margin: 0 0 4px; font-size: 1em; }
+.son-calisma ul { margin: 0 0 8px; padding-left: 18px; display: grid; gap: 3px; }
+.son-calisma p { margin: 0; }

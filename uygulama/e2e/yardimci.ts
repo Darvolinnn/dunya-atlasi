@@ -3,7 +3,7 @@ import { expect, type Page } from '@playwright/test';
 /** Boş profilde evren, eser ve sahne oluşturup sahnenin yazma ekranında bırakır; sahnenin adresini döndürür. */
 export async function sahneAc(p: Page, sahne = 'Kuşatma'): Promise<string> {
   await p.goto('/');
-  await p.getByRole('button', { name: 'Yeni evren' }).click();
+  await p.getByRole('button', { name: 'Yeni evren', exact: true }).click();
   await p.locator('#yeni-evren-adi').fill('Deneme Evreni');
   await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
   await p.getByPlaceholder('Yeni eserin adı').fill('Kuzey Yolu');

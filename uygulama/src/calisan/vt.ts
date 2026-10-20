@@ -13,7 +13,7 @@ let havuz: { getFileCount(): number; getCapacity(): number; addCapacity(n: numbe
 let hazirlik: Promise<Hizmet> | null = null;
 
 // Arayüzün çağırabildiği istekler; başka hiçbir yöntem dışarıdan çağrılamaz.
-const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', 'evrenOlustur', 'evrenKaldir', 'ilkAdimlar', 'seriler', 'alternatifler', 'kitapSonuAciklar', 'etkinCalisma', 'etkinCalismaYaz', 'simdi', 'karakterYollari', 'evrenAdlandir', 'evrenBilgisi', 'islemGunlugu',
+const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', 'evrenOlustur', 'evrenKaldir', 'ilkAdimlar', 'aracTanitimlari', 'seriler', 'alternatifler', 'kitapSonuAciklar', 'etkinCalisma', 'etkinCalismaYaz', 'simdi', 'karakterYollari', 'evrenAdlandir', 'kurguTuruYaz', 'evrenBilgisi', 'islemGunlugu',
   'yogunluk',
   'sozlesmeMaddeleri', 'sozlesmeMaddeYaz', 'sozlesmeMaddeSil', 'sozlesmeMaddeGeriYukle', 'sozlesmeDisaridaYaz', 'eserSozlesmesi', 'sozlesmeHatirlatmalari',
   'haklar', 'hakEkle', 'hakDegistir', 'hakSil', 'hakGeriYukle', 'hakTanimaYaz',
@@ -23,7 +23,7 @@ const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', '
   'yerlesim', 'yerlesimPlanlari', 'yerlesimYaz',
   'kayitlar', 'kayit', 'kayitOlustur', 'kayitDegistir', 'kayitListe', 'kayitSil', 'kayitGeriYukle', 'kayitGecmisi',
   'metinAc', 'metinKaydet', 'metinSurumu', 'metinGeriYukle',
-  'ara', 'baglananlar', 'bahsedilenler', 'adDuzeltmeOnizle', 'adDuzeltmeUygula',
+  'ara', 'baglananlar', 'andiklari', 'sonParagraf', 'bahsedilenler', 'adDuzeltmeOnizle', 'adDuzeltmeUygula',
   'kayitTarih', 'alanKarari', 'hizliNot', 'nottanKayit', 'iliskiler', 'iliskiEkle', 'iliskiDegistir', 'iliskiSil', 'iliskiGeriYukle',
   'sahneOlaylari', 'degisimEkle', 'degisimSil', 'kayitDegisimleri', 'gorselEkle', 'kayitGorselCikar', 'gorsel',
   'haritalar', 'harita', 'haritaYukle', 'gorseldenHarita', 'haritaDegistir', 'haritaSil', 'isaretKoy', 'isaretDegistir', 'isaretSil', 'kayitHaritalari',
@@ -36,7 +36,7 @@ const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', '
   'kaldigiYer', 'kaldigiYerYaz', 'taslakOku', 'taslakYaz', 'taslakSil', 'donemselYedekDurumu', 'driveYedekleri', 'drivedaYedekAl', 'drivedanGeriYukle', 'yedekAyarlari',
   'eserYapisi', 'anlatiYeri', 'yerlesmemisler', 'eserler', 'anlatiYerlestir', 'anlatiOlustur',
   'durumlar', 'durumEkle', 'durumDegistir', 'durumSil', 'ozellikAdlari', 'sahneAlaniAyarla', 'sahneBaglami',
-  'sablon', 'sablonYaz', 'kayitSablonu', 'kayitAlanYaz', 'soruCevapla', 'soruKayitla', 'soruBagla', 'kayitSoruSeti', 'evrenSorulari', 'meseleler', 'yazarKaydiEkle',
+  'sablon', 'sablonYaz', 'kayitSablonu', 'kayitAlanYaz', 'soruCevapla', 'soruKayitla', 'soruBagla', 'kayitSoruSeti', 'evrenSorulari', 'meseleler', 'notPanosu', 'sonCalisma', 'yazarKaydiEkle',
   'takvim', 'takvimEtkisi', 'takvimYaz', 'zamanCizelgesi', 'zamanSeti', 'paralelTakvimYaz', 'akisYaz', 'akisEtkisi', 'yasananSure',
   'uyarlamaListesi', 'uyarlamaAdaylari', 'uyarlamaYaz', 'uyarlamaSil', 'uyarlamaGozdenGecir',
   'dairInanclar', 'dairInancYaz', 'dairInancSil',
