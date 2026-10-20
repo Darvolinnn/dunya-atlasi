@@ -7,8 +7,10 @@ export async function sahneAc(p: Page, sahne = 'Kuşatma'): Promise<string> {
   await p.locator('#yeni-evren-adi').fill('Deneme Evreni');
   await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
   await p.getByPlaceholder('Yeni eserin adı').fill('Kuzey Yolu');
-  await p.getByRole('button', { name: 'Eser oluştur' }).click();
-  await p.getByRole('button', { name: '+ Sahne' }).click();
+  await p.getByRole('button', { name: 'Eser oluştur', exact: true }).click();
+  // Eser oluşturulunca eserin sayfası açılır ve ilk sahnenin adı hemen sorulur (K26).
+  await expect(p).toHaveURL(/\/yaz\/./);
+  await expect(p.getByPlaceholder('Sahnenin adı', { exact: true })).toBeFocused();
   const eserAdresi = p.url();
   await p.getByPlaceholder('Sahnenin adı', { exact: true }).fill(sahne);
   await p.getByPlaceholder('Sahnenin adı', { exact: true }).press('Enter');

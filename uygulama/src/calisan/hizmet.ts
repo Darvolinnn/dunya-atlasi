@@ -47,7 +47,7 @@ import * as montaj from './montaj';
 import * as seriPlan from './seri';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
-import type { IlerlemeBildirimi, SimdiOnerisi } from '../veri/api';
+import type { IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi } from '../veri/api';
 import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
 import * as bakim from './bakim';
@@ -233,6 +233,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
           WHERE n.tur='not' AND n.silindi IS NULL AND y.tur IN (${YER_TURLERI}) AND y.silindi IS NULL LIMIT 1`),
       /** Evren sorularının durumu (yalnız başlangıç yollarında geçen sorular). */
       sorular: Object.fromEntries((db.selectObjects("SELECT soru, durum FROM soru_cevaplari WHERE kayit='evren' AND soru IN ('pusula.3','pusula.4')") as { soru: string; durum: string }[]).map((r) => [r.soru, r.durum])),
+      hedefler: Object.fromEntries((['eser', 'sahne', 'not', 'karakter'] as const).map((t) => [t,
+        (db.selectValue("SELECT kod FROM kayitlar WHERE tur=? AND silindi IS NULL ORDER BY olusturma, rowid LIMIT 1", [t]) as string | undefined) ?? null])) as IlkAdimDayanaklari['hedefler'],
     };
   }
 
