@@ -117,7 +117,7 @@ function DallarBolumu({ istemci, evren, surum }: { istemci: Istemci; evren: stri
   return (
     <>
       <h2>Deneme kopyaları</h2>
-      <p class="soluk kucuk">Köklü bir değişikliği denemek için evrenin bir deneme kopyasını açın (“Kral yaşasaydı”). Deneme kopyasında ne yaparsanız yapın ana evren değişmez. Beğendiğiniz değişiklikleri kayıt kayıt seçip ana evrene taşıyabilirsiniz. Küçük düşünce deneyleri için çalışma masalarındaki varsayım paketleri yeterlidir. Deneme kopyasındaki değişiklikler yalnızca bu cihazda tutulur, Drive ile eşitlenmez.</p>
+      <p class="soluk kucuk">Köklü bir değişikliği denemek için evrenin bir deneme kopyasını açın (“Kral yaşasaydı”). Deneme kopyasında ne yaparsanız yapın ana evren değişmez. Beğendiğiniz değişiklikleri kayıt kayıt seçip ana evrene taşıyabilirsiniz. Küçük düşünce deneyleri için konu dosyalarındaki varsayım paketleri yeterlidir. Deneme kopyasındaki değişiklikler yalnızca bu cihazda tutulur, Drive ile eşitlenmez.</p>
       <form class="satir" onSubmit={(e) => {
         e.preventDefault();
         istemci.iste('dalOlustur', { evren, ad }).then((x) => { setAd(''); setHata(null); git(`/e/${x.kod}/masa`); }, (x) => setHata(hataYaz(x)));

@@ -29,4 +29,19 @@ describe('baştan kurmanın ilerlemesi (§10.7)', () => {
     expect(yeni.length).toBeGreaterThan(2);
     expect(yeni.slice(0, -1).every((d) => d.yapilan < d.toplam)).toBe(true);
   }, 60_000); // 5.200 gerçek işlem yazılır; yük altındaki makinede 5 sn'yi aşıyor
+
+  it('kurma hatayla yarıda kalırsa şerit kapanır', () => {
+    const h = cihaz();
+    const { kod: evren } = h.evrenOlustur({ ad: 'Kuzey' });
+    const kod = h.kayitOlustur({ evren, ad: 'Elin', tur: 'karakter' }).kod;
+    for (let i = 0; i < 5200; i++) h.kayitDegistir({ evren, kod, alan: 'ozet', deger: `Özet ${i}` });
+    const islemler = h.islemleriVer({ evren, gorulen: {} });
+    // Sondaki bir işlemin sıra bilgisi bozuk: alma yarıda hatayla biter.
+    const son = islemler.at(-1)!;
+    islemler[islemler.length - 1] = { ...son, saat: (son.saat ?? 0) + 99 };
+    const b: IlerlemeBildirimi[] = [];
+    expect(() => cihaz(b).evreniDisaridanKur({ kod: evren, islemler })).toThrow();
+    expect(b[0]).toMatchObject({ yapilan: 0 });
+    expect(b.at(-1)).toMatchObject({ yapilan: b[0].toplam, toplam: b[0].toplam });
+  }, 60_000);
 });

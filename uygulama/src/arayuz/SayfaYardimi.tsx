@@ -2,6 +2,8 @@
 // Panel sayfayı örtmez; sağdan gelir, Esc ya da yeniden "?" ile kapanır.
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { REHBERLER } from './rehber-metinleri';
+import { SAYFA_KONULARI, yazarlikRehberiAc } from './YazarlikRehberi';
+import { YAZARLIK_KONULARI } from './yazarlik-rehberi';
 
 export function SayfaYardimi({ sayfa }: { sayfa: string }) {
   const rehber = REHBERLER[sayfa];
@@ -35,6 +37,11 @@ export function SayfaYardimi({ sayfa }: { sayfa: string }) {
           <h3>Adım adım</h3>
           <ol>{rehber.adimlar.map((a, i) => <li key={i}>{a}</li>)}</ol>
           {rehber.ipuclari?.length ? <><h3>Bilmeniz gerekenler</h3><ul>{rehber.ipuclari.map((a, i) => <li key={i}>{a}</li>)}</ul></> : null}
+          <h3>Bu işi neden yapıyorum?</h3>
+          <ul>
+            {(SAYFA_KONULARI[sayfa] ?? []).map((n) => <li key={n}><a href="#" onClick={(e) => { e.preventDefault(); setAcik(false); yazarlikRehberiAc(n); }}>{YAZARLIK_KONULARI.find((k) => k.no === n)?.baslik}</a></li>)}
+            <li><a href="#" onClick={(e) => { e.preventDefault(); setAcik(false); yazarlikRehberiAc(); }}>Yazarlık rehberinin bütün konuları</a></li>
+          </ul>
         </aside>
       )}
     </>

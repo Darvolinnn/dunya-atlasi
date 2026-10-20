@@ -143,6 +143,7 @@ Kullanıcı 19 Ekim 2026'da programın site gibi durduğunu söyledi; Windows i�
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
 
+| İnceleme (#5) | Codex'in iki bulgusu: baştan kurma hatayla yarıda kalınca hazırlanma şeridi ekranda asılı kalıyordu (`EvrenVt.ilerlemeyiKapat`); evren kaldırılıp yeniden indirilince deneme kopyasında bu cihazın yalnız parça olarak gönderdikleri geri gelmiyor, sıra numaraları yeniden kullanılabiliyordu (kendi parçaları yerelde yoksa alınır; kopyaların ayarları da silinir) | bu PR |
 ### 3.4 Biten işlerden kalan dersler
 
 - **Sayfa rehberi (K25, §12.4):** yeni sayfa eklerken `rehber-metinleri.ts`'e rehberini ekle, başlığa `<SayfaYardimi sayfa="…" />` koy. Metinler "siz" hitabıyla; düğmeler kısa. Kaydedilen değerler (seçenek adları, şablon alan adları, gerekçe ve sonuç sabitleri) Türkçe düzeltmelerinde bilerek değiştirilmez.
@@ -162,7 +163,7 @@ Kullanıcı 19 Ekim 2026'da programın site gibi durduğunu söyledi; Windows i�
 Kullanıcı etkileşimli bir taslak ve gerekçe belgesi gönderdi (ekler depoda değil): program kullanıcıyı küçük, atlanabilir adımlarla yönlendirsin, yalnız o anda gereken alanları göstersin, sonraki adımı anlaşılır kılsın. Öneri proje klasöründe `analiz/rehberli-arayuz-uyarlama.md`. Özeti: boş evrende "Nereden başlamak istersiniz?" ve üç kısa akış (sahne, kayıt, not) + sonuç kartında tek sonraki adım (Aşama A); gezinti Yaz / Evren / İncele / Masa / Yönetim, seyrek işler "⋯" menüsünde (Aşama B, önce resimli taslak); kayıt sayfasında boş bölümlerin gizlenmesi (Aşama C). Yeni veri yok; onaylanırsa tasarıma K26 olarak girer. Boş bağlam panelinin kapalı olması ve durum özeti artık kodda (PR #2), öneri bunlarla uyumlu.
 
 - [x] Kullanıcı kararları (19 Ekim): başlangıç akışı taslak B ("İlk adımlar"), menü yapısı K24 gibi kalır
-- [x] Menü adları: kullanıcı önerilen tabloyu seçti (aşağıda); kodlanacak
+- [x] Menü adları: kullanıcı önerilen tabloyu seçti ve kodlandı (§5.10). Kayıt türü "Açık mesele" ve değişiklik/kullanım/koşul masası araç adları değişmedi; kod içi adlar (`masa`, `masalar`) aynı kaldı.
 
 **Rehberli yazarlık ve roman serisi (kullanıcı isteği, 19 Ekim 2026; öneri, karar bekliyor, kodlanmadı).** Kullanıcı roman yazma yöntemini bilmediğini, programın bu konuda yol göstermesini istediğini yazdı ve iki brif gönderdi (depoda değil): önce istek, sonra ilk sürümün eleştirisi. İkinci brif üzerine ilk sürümün tasarım, akış ve farklar belgeleri kaldırıldı (git geçmişinde, `6fa89ac`). Şimdiki belgeler `analiz/` altında; hiçbiri bağlayıcı değil:
 - `yazarlik-ve-roman-serisi-calisma-rehberi.md`: 24 konuluk yazarlık rehberi, yöntem haritası (A.6), uydurma örnek seri *Hatıra İmparatorluğu*. Kod beklemeden okunabilir.
@@ -173,7 +174,19 @@ Kullanıcı etkileşimli bir taslak ve gerekçe belgesi gönderdi (ekler depoda 
 
 Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda açık olanlar" montajdaki okur soruları ve sahne niyetleri üzerinden hesaplanmalı. (2) Plan için ayrı katman gerekmez; kayıt ve alan düzeyi karar durumu var, eksik olan `alternatif` ilişkisi. (3) Olay örgüsü masası yeni veri istemez; var olan dört görünümü birleştirir. Onaylanırsa K11 gereği önce §16'ya *Öneri* olarak girer. Sıradaki adım: kullanıcı D1–D13'ü seçer; ilk kodlanacak P1 (rehber) ve P2 (soru setleri).
 - [x] Kullanıcı kararları (19 Ekim, gece): D1–D13'ün hepsi önerildiği gibi; sıra önce rehber ve sorular (P1, P2). Menü adları önerilen tablo (Masa → Genel bakış, İnceleme → Uyarılar, Görünümler → Grafikler, Çalışma masaları → Konu dosyaları, Açık meseleler → Karar bekleyenler, Bahsedilen ama yazılmamış → Eksik kayıtlar, Geçmiş → Değişiklik geçmişi, Sürümler → Kayıtlı anlar). #5'in üç görünüşü onaylandı; şerit sarısı deve tüyü oldu.
-- [ ] Kararları tasarıma işlemek (§0.2: ilgili bölümler, §1.1 K27, §16) ve P1+P2'yi kodlamak; menü adlarını kodlamak.
+- [x] K27 tasarıma girdi (§1.1); kavram modeli paket paket işlenecek.
+- [x] P2 (ilk kısım): eser (`cekirdek`, `eser`), sahne (`sahne_plani`) ve kurgu hattı (`hat`) soru setleri varsayılan; Ek A, §4.6; `test/anlati-sorulari.test.ts`. Şablonu değiştirilmiş evrende kendiliğinden eklenmez.
+- [x] P2 (kalan): Yaz ekranında bağlam panelinin üstünde katlı "Sahne planı" (`Sablon.tsx` `SahnePlani`, §5.10). `seri` seti P4 ile. Ekran görüntüsü onayı bekliyor (PR #6).
+- [x] P3: İlk adımlarda başlangıç yolları (§5.10; `YazEkrani.tsx` `YOLLAR`, istek `ilkAdimlar` dayanakları; sınamalar). Ekran görüntüsü onayı bekliyor (PR #6).
+- [x] P4 seri (ilk kısım): `seri` türü, `anlati.yerlestir` eseri seri altına kabul eder, istek `seriler`, yazma ağacında seri başlığı, seri sayfasında "Kitaplar" ve sorular, eser sayfasında "Serisi" seçimi; `test/seri.test.ts` (silme/geri getirme, iki cihaz). Zaman çizelgesinde eserin serisi eser sanılmasın diye `zamanCizelgesi` yalnız eser/bölüm üstlerini sayar. Ekran görüntüsü onayı bekliyor (PR #6).
+- [x] P5 alternatifler: `alternatif` ilişkisi (aynı tür), istek `alternatifler`, kayıt sayfasında kesinleştirince öbürlerini vazgeçirme sorusu, Uyarılar'da "Alternatifler" denetimi; `test/alternatif.test.ts`. Seri sayfasında "Olası finaller" listesi henüz yok (finallerin seriye bağlanma yolu kararlaştırılmalı).
+- [x] P8 çalışma durumları: eser ve sahne şablonunda "Çalışma durumu" seçim alanı (`ESER_CALISMA`, `SAHNE_CALISMA`); bölüm dağılımı ve olay örgüsü masasındaki durum satırı P6 ile.
+- [x] P9 kitap sonunda açık kalanlar: `montaj.kitapSonuAciklar`, eser sayfasında bölüm; `test/kitap-sonu.test.ts`.
+- [x] P10 Şimdi kartı: `Masa.tsx` `SimdiKarti`, istekler `etkinCalisma`, `etkinCalismaYaz`, `simdi`; işlem `evren_etkin_calisma`; `test/simdi.test.ts`. İlk adımların sıradaki adımı karta katılmadı (liste zaten Yaz sayfasında).
+- [x] P7 karakterin kitaptaki yolu: `eser_odagi` ilişkisi, `karakter_kitapta` soruları (`ILISKI_SETLERI`; `sablon.ts` `odakIliskisiMi` ilişki kodunu soru sahibi kabul eder), istek `karakterYollari`, eser sayfasında "Odak karakterler", seri sayfasında tablo; `test/karakter-yolu.test.ts`. Karar/sahne bağlantısı (5. ve 6. soru) ilk sürümde yalnız metin.
+- [x] P6 olay örgüsü masası: kullanıcı taslak A'yı seçti (20 Ekim). `arayuz/OlayOrgusu.tsx` (Grafikler › Olay örgüsü, `#/e/<evren>/orgu/<eser>`), `montaj.olayOrgusu`; dönüm noktası = sahneye `DONUM_ETIKETI` etiketi (`alan/sablon.ts`). Taşıma özeti ve geri alma arayüzde. Seri düzeyi yok.
+- [ ] Sonraya: ek seri üyeliği, seri okuma yolları, seri sayfasında "Olası finaller" listesi, karakter yolunda sahne bağlantısı, soru başına "Örnek".
+- [x] P1: yazarlık rehberi programın içinde (§12.4): `arayuz/YazarlikRehberi.tsx`, metinler `arayuz/yazarlik-rehberi.ts` (analiz belgesinden üretildi; belge değişirse yeniden üretilmeli: başlıklar `### Konu N — …`, alanlar `**Ne:**` biçiminde). Soru başına "Örnek" henüz yok. Ekran görüntüleri kullanıcı onayı bekliyor (PR #6).
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
 
 ## 4. Kod yapısı ve yeni bir özellik ekleme tarifi

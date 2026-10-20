@@ -38,11 +38,11 @@ function MasaListesi({ istemci, evren, surum }: { istemci: Istemci; evren: strin
   if (!masalar) return null;
   return (
     <div class="masalar">
-      <section aria-label="Çalışma masaları">
-        <h2>Çalışma masaları</h2>
+      <section aria-label="Konu dosyaları">
+        <h2>Konu dosyaları</h2>
         <p class="soluk kucuk">Bir konu üzerinde çalışmak için kurduğunuz alan: şehir planı, karakterler, tarih aralığı, kaynaklar, açık sorular ve sahneler bir arada durur. Kayıtlar kopyalanmaz; masa yalnızca onlara bağlanır.</p>
-        <YeniForm etiket="Yeni masanın adı" yerTutucu="Yeni masa (ör. Velkar isyanı)" olustur={async (ad) => { const { kod } = await istemci.iste('masaOlustur', { evren, ad }); git(`/e/${evren}/masalar/${kod}`); }} />
-        {masalar.length === 0 && <p class="soluk">Henüz masa yok.</p>}
+        <YeniForm etiket="Yeni konu dosyasının adı" yerTutucu="Yeni konu dosyası (ör. Velkar isyanı)" olustur={async (ad) => { const { kod } = await istemci.iste('masaOlustur', { evren, ad }); git(`/e/${evren}/masalar/${kod}`); }} />
+        {masalar.length === 0 && <p class="soluk">Henüz konu dosyası yok.</p>}
         <ul class="masa-listesi">
           {masalar.map((m) => (
             <li key={m.kod}>
@@ -99,7 +99,7 @@ function MasaEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
     istemci.iste('paketler', { evren }).then(setPaketler);
     istemci.iste('haritalar', { evren }).then(setHaritalar, () => setHaritalar([]));
   }, [evren, kod, surum]);
-  if (hata) return <p class="hata">{hata} <a href={`#/e/${evren}/masalar`}>Masalara dön</a></p>;
+  if (hata) return <p class="hata">{hata} <a href={`#/e/${evren}/masalar`}>Konu dosyalarına dön</a></p>;
   if (!m) return null;
   const yaz = (alan: 'ad' | 'amac' | 'notlar' | 'bas' | 'bit' | 'paket') => (v: string) => istemci.iste('masaYaz', { evren, kod, alan, deger: v || null });
   const uye = (u: MasaUyesi) => ({ tur: u.tur, kod: u.kod });
@@ -109,28 +109,28 @@ function MasaEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
   };
   return (
     <div class="masa">
-      <p><a href={`#/e/${evren}/masalar`}>← Masalar</a></p>
-      <h1 class="masa-adi"><KayanAlan deger={m.ad} kaydet={yaz('ad')} etiket="Masanın adı" /></h1>
+      <p><a href={`#/e/${evren}/masalar`}>← Konu dosyaları</a></p>
+      <h1 class="masa-adi"><KayanAlan deger={m.ad} kaydet={yaz('ad')} etiket="Konu dosyasının adı" /></h1>
       <label class="masa-amac">
-        <span class="soluk kucuk">Bu masada neyi çözmeye çalışıyorsunuz?</span>
-        <KayanAlan deger={m.amac} kaydet={yaz('amac')} etiket="Bu masada neyi çözmeye çalışıyorsunuz?" yerTutucu="Örn. Kuşatmanın hangi gün kırıldığını bulmak" />
+        <span class="soluk kucuk">Bu dosyada neyi çözmeye çalışıyorsunuz?</span>
+        <KayanAlan deger={m.amac} kaydet={yaz('amac')} etiket="Bu dosyada neyi çözmeye çalışıyorsunuz?" yerTutucu="Örn. Kuşatmanın hangi gün kırıldığını bulmak" />
       </label>
       <div class="masa-ust">
         <label><span class="soluk kucuk">Tarih aralığının başı</span><KayanAlan deger={m.bas?.ifade ?? ''} kaydet={yaz('bas')} etiket="Tarih aralığının başı" yerTutucu="412" /></label>
         <label><span class="soluk kucuk">Sonu</span><KayanAlan deger={m.bit?.ifade ?? ''} kaydet={yaz('bit')} etiket="Tarih aralığının sonu" yerTutucu="415" /></label>
         <label>
           <span class="soluk kucuk">Varsayım paketi</span>
-          <select class="girdi" aria-label="Masanın varsayım paketi" value={m.paket?.kod ?? ''} onChange={(e) => yaz('paket')((e.target as HTMLSelectElement).value)}>
+          <select class="girdi" aria-label="Konu dosyasının varsayım paketi" value={m.paket?.kod ?? ''} onChange={(e) => yaz('paket')((e.target as HTMLSelectElement).value)}>
             <option value="">Yok (yalnızca evrende kayıtlı olanlar)</option>
             {paketler.map((p) => <option value={p.kod}>{p.ad}</option>)}
           </select>
         </label>
       </div>
-      {m.paketSilinmis && <p class="uyari kucuk">Bu masa için seçilen varsayım paketi kaldırılmış; hesaplar artık varsayım olmadan yapılıyor.</p>}
+      {m.paketSilinmis && <p class="uyari kucuk">Bu konu dosyası için seçilen varsayım paketi kaldırılmış; hesaplar artık varsayım olmadan yapılıyor.</p>}
       {m.paket && <p class="soluk kucuk">Seçili paket: <a href={`#/e/${evren}/masalar/p:${m.paket.kod}`}>{m.paket.ad}</a> ({m.paket.varsayimSayisi} varsayım). Bu masadaki hesaplar bu paketle yapılır.</p>}
 
-      <section aria-label="Masadaki kayıtlar">
-        <h2>Masadaki kayıtlar</h2>
+      <section aria-label="Dosyadaki kayıtlar">
+        <h2>Dosyadaki kayıtlar</h2>
         <div class="satir">
           <KayitSec istemci={istemci} evren={evren} secili={secim} sec={(s) => { if (s) ekle({ tur: 'kayit', kod: s.kod }); }} etiket="Kayıt bağla" />
           {haritalar.length > 0 && (
@@ -155,21 +155,21 @@ function MasaEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
                     <span class="bosluk" />
                     <button class="dugme sade kucuk" aria-label={`${u.ad}: yukarı`} disabled={i === 0} onClick={() => istemci.iste('masaUyeleri', { evren, kod, tasi: { uye: uye(u), sira: i - 1 } })}>↑</button>
                     <button class="dugme sade kucuk" aria-label={`${u.ad}: aşağı`} disabled={i === m.uyeler.length - 1} onClick={() => istemci.iste('masaUyeleri', { evren, kod, tasi: { uye: uye(u), sira: i + 1 } })}>↓</button>
-                    <button class="dugme sade kucuk" aria-label={`${u.ad}: masadan çıkar`} onClick={() => istemci.iste('masaUyeleri', { evren, kod, cikar: uye(u) })}>Çıkar</button>
+                    <button class="dugme sade kucuk" aria-label={`${u.ad}: dosyadan çıkar`} onClick={() => istemci.iste('masaUyeleri', { evren, kod, cikar: uye(u) })}>Çıkar</button>
                   </li>
                 );
               })}
             </ul>
           </div>
         ))}
-        <p class="soluk kucuk">Masadan çıkarmak kaydı silmez.</p>
+        <p class="soluk kucuk">Dosyadan çıkarmak kaydı silmez.</p>
       </section>
 
       {(m.bas || m.bit) && (
         <section aria-label="Aralıktaki olaylar">
           <h2>Bu aralıktaki olaylar</h2>
-          <p class="soluk kucuk">Masadaki kayıtlara bağlı ve tarihi {m.bas?.ifade ?? '…'} – {m.bit?.ifade ?? '…'} aralığına düşen olaylar.</p>
-          {m.olaylar.length === 0 && <p class="soluk">Bu aralıkta masadaki kayıtlara bağlı tarihli olay yok.</p>}
+          <p class="soluk kucuk">Dosyadaki kayıtlara bağlı ve tarihi {m.bas?.ifade ?? '…'} – {m.bit?.ifade ?? '…'} aralığına düşen olaylar.</p>
+          {m.olaylar.length === 0 && <p class="soluk">Bu aralıkta dosyadaki kayıtlara bağlı tarihli olay yok.</p>}
           <ul class="masa-uyeleri">
             {m.olaylar.map((o) => (
               <li key={o.kod} class="satir">
@@ -184,12 +184,12 @@ function MasaEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
 
       <section aria-label="Notlar">
         <h2>Notlar</h2>
-        <KayanAlan deger={m.notlar} kaydet={yaz('notlar')} etiket="Masanın notları" yerTutucu="Bu konuyla ilgili notlar" cok />
+        <KayanAlan deger={m.notlar} kaydet={yaz('notlar')} etiket="Konu dosyasının notları" yerTutucu="Bu konuyla ilgili notlar" cok />
       </section>
 
       <DenetimBolumu istemci={istemci} evren={evren} surum={surum} paket={m.paket?.kod ?? null} />
 
-      <p style="margin-top:24px"><button class="dugme sade kucuk" onClick={async () => { if (!(onayla('Bu masa kaldırılsın mı?'))) return; await istemci.iste('masaSil', { evren, kod }); git(`/e/${evren}/masalar`); }}>Masayı kaldır</button>
+      <p style="margin-top:24px"><button class="dugme sade kucuk" onClick={async () => { if (!(onayla('Bu konu dosyası kaldırılsın mı?'))) return; await istemci.iste('masaSil', { evren, kod }); git(`/e/${evren}/masalar`); }}>Masayı kaldır</button>
         <span class="soluk kucuk"> Bağlı kayıtlar silinmez.</span></p>
     </div>
   );
@@ -199,15 +199,15 @@ function PaketEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: 
   const [p, setP] = useState<Paket | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   useEffect(() => { istemci.iste('paket', { evren, kod }).then((x) => { setP(x); setHata(null); }, (e) => setHata(hataYaz(e))); }, [evren, kod, surum]);
-  if (hata && !p) return <p class="hata">{hata} <a href={`#/e/${evren}/masalar`}>Masalara dön</a></p>;
+  if (hata && !p) return <p class="hata">{hata} <a href={`#/e/${evren}/masalar`}>Konu dosyalarına dön</a></p>;
   if (!p) return null;
   const yaz = (alan: 'ad' | 'aciklama') => (v: string) => istemci.iste('paketAlanYaz', { evren, kod, alan, deger: v });
   return (
     <div class="masa">
-      <p><a href={`#/e/${evren}/masalar`}>← Masalar ve paketler</a></p>
+      <p><a href={`#/e/${evren}/masalar`}>← Konu dosyaları ve paketler</a></p>
       <h1 class="masa-adi"><KayanAlan deger={p.ad} kaydet={yaz('ad')} etiket="Paketin adı" /></h1>
       <label class="masa-amac"><span class="soluk kucuk">Açıklama</span><KayanAlan deger={p.aciklama} kaydet={yaz('aciklama')} etiket="Paketin açıklaması" yerTutucu="Bu paket hangi düşünce deneyi için?" /></label>
-      <p class="soluk kucuk">Varsayımlar evrene kaydedilmez; yalnızca bu paketin seçildiği masalarda ve hesaplarda geçerlidir.{p.masalar.length > 0 && <> Bu paketi seçen masalar: {p.masalar.map((m, i) => <>{i > 0 && ', '}<a href={`#/e/${evren}/masalar/${m.kod}`}>{m.ad}</a></>)}.</>}</p>
+      <p class="soluk kucuk">Varsayımlar evrene kaydedilmez; yalnızca bu paketin seçildiği konu dosyalarında ve hesaplarda geçerlidir.{p.masalar.length > 0 && <> Bu paketi seçen masalar: {p.masalar.map((m, i) => <>{i > 0 && ', '}<a href={`#/e/${evren}/masalar/${m.kod}`}>{m.ad}</a></>)}.</>}</p>
       <section aria-label="Varsayımlar">
         <h2>Varsayımlar</h2>
         {p.varsayimlar.length === 0 && <p class="soluk">Henüz varsayım yok.</p>}
@@ -291,5 +291,5 @@ export function KayitMasalari({ istemci, evren, kod, surum }: { istemci: Istemci
   const [l, setL] = useState<{ kod: string; ad: string }[]>([]);
   useEffect(() => { istemci.iste('kayitMasalari', { evren, kod }).then(setL); }, [kod, surum]);
   if (!l.length) return null;
-  return <p class="soluk kucuk">Çalışma masaları: {l.map((m, i) => <>{i > 0 && ', '}<a href={`#/e/${evren}/masalar/${m.kod}`}>{m.ad}</a></>)}</p>;
+  return <p class="soluk kucuk">Konu dosyaları: {l.map((m, i) => <>{i > 0 && ', '}<a href={`#/e/${evren}/masalar/${m.kod}`}>{m.ad}</a></>)}</p>;
 }

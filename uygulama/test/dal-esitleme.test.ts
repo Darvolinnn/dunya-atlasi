@@ -11,7 +11,7 @@ beforeAll(async () => { sqlite3 = await sqlite3InitModule(); });
 /** Bir cihaz: dosyaları verilirse aynı dosyalarla yeniden açılır (programın yeniden başlaması). */
 function cihaz(ad: string, drive: BellekTasiyici, dosyalar = new Map<string, Database>()) {
   const ac = (d: string) => { let x = dosyalar.get(d); if (!x) { x = new sqlite3.oo1.DB(':memory:'); dosyalar.set(d, x); } return x; };
-  const h = new Hizmet(ac, ad, 'x', () => {});
+  const h = new Hizmet(ac, ad, 'x', () => {}, null, null, undefined, undefined, (d) => { dosyalar.delete(d); });
   h.tasiyiciAyarla(drive);
   return { h, dosyalar };
 }
@@ -109,5 +109,26 @@ describe('deneme kopyalarının eşitlenmesi (§9.7, §10)', () => {
     await t.h.evreniIndir({ kod: evren });
     expect(t.h.kayit({ evren: dal, kod: kale }).ozet).toBe('Yıkılmış');
     expect(t.h.dalFarki({ evren, dal }).dalda.kayitlar.map((k) => k.ad).sort()).toEqual(['Kara Kale', 'Kuşatan Ordu']);
+  });
+  it('evren kaldırılıp yeniden indirilince deneme kopyasında bu cihazın yaptıkları geri gelir; sıra yeniden kullanılmaz', async () => {
+    const drive = new BellekTasiyici();
+    const m = cihaz('Masaüstü', drive), t = cihaz('Tablet', drive);
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    m.h.kayitOlustur({ evren, ad: 'Kral Aldren', tur: 'karakter' });
+    const { kod: dal } = m.h.dalOlustur({ evren, ad: 'Kral yaşasaydı' });
+    m.h.kayitOlustur({ evren: dal, ad: 'Varis Elin', tur: 'karakter' });
+    await m.h.esitle(); // ilk eşitlemede kopyanın anlık görüntüsü de gider
+    m.h.kayitOlustur({ evren: dal, ad: 'Kâhya Nesa', tur: 'karakter' });
+    await m.h.esitle(); // bu yalnızca bir parça olarak gider; görüntüde yok
+
+    m.h.evrenKaldir({ evren });
+    await m.h.evreniIndir({ kod: evren });
+    expect(m.h.kayitlar({ evren: dal }).map((k) => k.ad).sort()).toEqual(['Kral Aldren', 'Kâhya Nesa', 'Varis Elin']);
+
+    // Kaldırıp indirdikten sonra dalda yazılan da öbür cihaza ulaşır.
+    m.h.kayitOlustur({ evren: dal, ad: 'Danışman Orin', tur: 'karakter' });
+    await m.h.esitle();
+    await t.h.evreniIndir({ kod: evren });
+    expect(t.h.kayitlar({ evren: dal }).map((k) => k.ad).sort()).toEqual(['Danışman Orin', 'Kral Aldren', 'Kâhya Nesa', 'Varis Elin']);
   });
 });

@@ -164,7 +164,7 @@ export function paketEtkisi(e: EvrenVt, kod: string | null | undefined): PaketEt
 // ---------- Çalışma masaları ----------
 function masaBul(e: EvrenVt, kod: unknown) {
   const r = typeof kod === 'string' && kodGecerliMi(kod) ? e.db.selectObject('SELECT * FROM masalar WHERE kod=? AND silindi IS NULL', [kod]) : undefined;
-  if (!r) throw new Error('Çalışma masası bulunamadı.');
+  if (!r) throw new Error('Konu dosyası bulunamadı.');
   return r;
 }
 type UyeRef = { tur: 'kayit' | 'harita'; kod: string };
@@ -270,7 +270,7 @@ export function masaUyeleri(b: MasaBaglami, kod: string, islem: { ekle?: UyeRef;
     if (u.tur === 'kayit') kayitVar(e, u.kod);
     else if (u.tur !== 'harita' || e.db.selectValue('SELECT 1 FROM haritalar WHERE kod=? AND silindi IS NULL', [u.kod]) === undefined) throw new Error('Harita bulunamadı.');
     if (l.some((x) => ayni(x, u))) return;
-    if (l.length >= 500) throw new Error('Bir masada en çok 500 kayıt olur.');
+    if (l.length >= 500) throw new Error('Bir konu dosyasında en çok 500 kayıt olur.');
     yeni = [...l, { tur: u.tur, kod: u.kod }];
   } else if (islem.cikar) {
     yeni = l.filter((x) => !ayni(x, islem.cikar!));
@@ -287,7 +287,7 @@ export function masaUyeleri(b: MasaBaglami, kod: string, islem: { ekle?: UyeRef;
 
 export function masaSil(b: MasaBaglami, kod: string, geriYukle: boolean) {
   const r = kodGecerliMi(kod) ? b.e.db.selectObject('SELECT * FROM masalar WHERE kod=?', [kod]) : undefined;
-  if (!r || (r.silindi === null) === geriYukle) throw new Error('Çalışma masası bulunamadı.');
+  if (!r || (r.silindi === null) === geriYukle) throw new Error('Konu dosyası bulunamadı.');
   b.yaz([{ tur: geriYukle ? 'masa_geri_yukle' : 'masa_sil', veri: { kod, masaAd: r.ad } }], []);
 }
 
