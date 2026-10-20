@@ -366,3 +366,23 @@ test('seri planı: olası finaller birbirinin alternatifi; okuma yolu kurulur ve
   await p.reload();
   await expect(p.getByLabel('Okuma yolunun adı')).toHaveValue('Yayın sırası');
 });
+
+test('kayıt sayfasında boş alanlar gizli; "+" düğmesiyle açılır', async ({ page: p }) => {
+  await sahneAc(p);
+  await p.keyboard.press('Control+k');
+  await p.getByLabel('Kayıt ya da komut ara').fill('Lale');
+  await p.getByText('Yeni kayıt: “Lale”').click();
+  await p.getByRole('option', { name: /^Karakter/ }).first().click();
+  await expect(p.getByRole('textbox', { name: 'Ad' })).toHaveValue('Lale');
+  const main = p.locator('main');
+  await expect(main.locator('.alan-adi', { hasText: 'Ölüm tarihi' })).toHaveCount(0);
+  await expect(main.getByRole('heading', { name: 'İlişkiler' })).toHaveCount(0);
+  await main.getByRole('button', { name: '+ Ölüm tarihi' }).click();
+  await expect(main.locator('.alan-adi', { hasText: 'Ölüm tarihi' })).toBeVisible();
+  await expect(main.getByRole('button', { name: '+ Ölüm tarihi' })).toHaveCount(0);
+  await main.getByRole('button', { name: '+ Okunuş, başka adlar, etiketler' }).click();
+  await expect(main.getByRole('textbox', { name: 'Okunuş' })).toBeVisible();
+  await main.getByRole('button', { name: '+ İlişki' }).click();
+  await expect(main.getByRole('heading', { name: 'İlişkiler' })).toBeVisible();
+  await expect(main.getByRole('button', { name: '+ Görsel' })).toBeVisible();
+});

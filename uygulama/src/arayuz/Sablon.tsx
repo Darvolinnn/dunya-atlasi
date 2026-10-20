@@ -39,15 +39,23 @@ export function degerMetni(a: SablonAlani | undefined, d: unknown): string {
 }
 
 // ---------- Kayıt sayfasında şablon alanları ----------
-export function SablonAlanlari({ istemci, evren, kayit, ks }: { istemci: Istemci; evren: string; kayit: Kayit; ks: KayitSablonu | null }) {
+/** Boş alanlar (K26 Aşama C): değeri ve başka kayıttan gelen varsayılanı olmayan alan gizli durur, "+ ad" düğmesiyle
+ *  açılır. `ekCipler` sayfanın öbür boş alanlarıdır (evren tarihi, okunuş…); düğmeler tek satırda toplanır. */
+export function SablonAlanlari({ istemci, evren, kayit, ks, acilan, ac, ekCipler = [] }: {
+  istemci: Istemci; evren: string; kayit: Kayit; ks: KayitSablonu | null;
+  acilan?: Set<string>; ac?: (k: string) => void; ekCipler?: { kod: string; ad: string }[];
+}) {
   const [hata, setHata] = useState<string | null>(null);
   const takvim = useTakvim(istemci, evren);
   const vs = useOku<Record<string, AlanVarsayilani>>(istemci, evren, () => istemci.iste('kayitVarsayilanlari', { evren, kod: kayit.kod }), [kayit.kod]);
   if (!ks) return null;
   const yaz = (alan: string, deger: unknown) => istemci.iste('kayitAlanYaz', { evren, kod: kayit.kod, alan, deger }).then(() => setHata(null), (e) => setHata(hataYaz(e)));
+  const dolu = (a: SablonAlani) => { const d = ks.degerler[a.kod]; return (d !== undefined && d !== null && d !== '' && d !== false) || (!!vs?.[a.kod] && vs[a.kod].durum !== 'yok') || !!kayit.alanKararlari[`f:${a.kod}`]; };
+  const gorunen = acilan ? ks.sablon.alanlar.filter((a) => dolu(a) || acilan.has(`f:${a.kod}`)) : ks.sablon.alanlar;
+  const cipler = acilan && ac ? [...ekCipler, ...ks.sablon.alanlar.filter((a) => !gorunen.includes(a)).map((a) => ({ kod: `f:${a.kod}`, ad: a.ad }))] : [];
   return (
     <>
-      {ks.sablon.alanlar.map((a) => (
+      {gorunen.map((a) => (
         <div class={a.tur === 'uzun' || ((vs?.[a.kod]?.kaynaklar.length ?? 0) > 1 || vs?.[a.kod]?.fetih) ? 'alan genis' : 'alan'} key={a.kod}>
           <span class="alan-adi satir">{a.ad}
             <KararSecici etiket={a.ad} karar={kayit.alanKararlari[`f:${a.kod}`] ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod: kayit.kod, alan: `f:${a.kod}`, karar: k })} />
@@ -66,6 +74,12 @@ export function SablonAlanlari({ istemci, evren, kayit, ks }: { istemci: Istemci
                 <button class="dugme sade kucuk" onClick={() => yaz(x.kod, null)}>Boşalt</button></li>
             ))}
           </ul>
+        </div>
+      )}
+      {cipler.length > 0 && (
+        <div class="genis bos-cipler">
+          <span class="soluk kucuk">Boş alanlar gizli:</span>
+          {cipler.map((c) => <button key={c.kod} type="button" class="cip" onClick={() => ac!(c.kod)}>+ {c.ad}</button>)}
         </div>
       )}
       {hata && <p class="hata kucuk genis">{hata}</p>}
