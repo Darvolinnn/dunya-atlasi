@@ -1,5 +1,5 @@
 // Kullanım kolaylığı paketi (K28): not panosu, "Ne yazıyorsunuz?", araç tanıtımları, yol satırında seri, önceki sahnenin son paragrafı.
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { pmNodeToSpans } from '@automerge/prosemirror';
@@ -92,5 +92,44 @@ describe('araç tanıtımları ve yazma ekranı (§5.10, K28)', () => {
     expect(yer.onceki?.kod).toBe(bir);
     expect(h.sonParagraf({ evren, kod: bir })).toBe('Deniz’in sesi yukarıdan geldi.');
     expect(h.sonParagraf({ evren, kod: iki })).toBe('');
+  });
+});
+
+describe('son çalışmanın özeti (Genel bakış, K28)', () => {
+  it('yalnızca son oturum; yazılan, oluşturulan, değiştirilen ve silinen', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const t0 = new Date(2026, 9, 18, 20, 0).getTime();
+      const saat = 3600_000;
+      vi.setSystemTime(t0);
+      const h = cihaz();
+      const { kod: evren } = h.evrenOlustur({ ad: 'Uydurma' });
+      const orhun = h.kayitOlustur({ evren, ad: 'Orhun', tur: 'karakter' }).kod;
+      const deniz = h.kayitOlustur({ evren, ad: 'Deniz', tur: 'karakter' }).kod;
+      const cop = h.kayitOlustur({ evren, ad: 'Taslak kişi', tur: 'karakter' }).kod;
+      expect(h.sonCalisma({ evren })!.olusturulan.map((k) => k.ad)).toEqual(['Taslak kişi', 'Deniz', 'Orhun']);
+      // Ertesi gün yeni oturum: önceki gün sayılmaz.
+      vi.setSystemTime(t0 + 24 * saat);
+      const lale = h.kayitOlustur({ evren, ad: 'Lale', tur: 'karakter' }).kod;
+      vi.setSystemTime(t0 + 25 * saat);
+      h.kayitDegistir({ evren, kod: orhun, alan: 'ozet', deger: 'Sürgündeki kâtip.' });
+      h.kayitSil({ evren, kod: cop });
+      vi.setSystemTime(t0 + 26 * saat);
+      yaz(h, evren, deniz, 'Kız kardeşi onu hâlâ arıyor.');
+      const o = h.sonCalisma({ evren })!;
+      expect(o.bas).toBe(t0 + 24 * saat);
+      expect(o.son).toBe(t0 + 26 * saat);
+      expect(o.olusturulan.map((k) => k.kod)).toEqual([lale]);
+      expect(o.yazilan.map((k) => k.kod)).toEqual([deniz]);
+      expect(o.degistirilen.map((k) => k.kod)).toEqual([orhun]);
+      expect(o.silinen).toBe(1);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('yeni evrende özet boştur', () => {
+    const h = cihaz();
+    const { kod: evren } = h.evrenOlustur({ ad: 'Uydurma' });
+    const o = h.sonCalisma({ evren })!;
+    expect([o.olusturulan, o.yazilan, o.degistirilen, o.silinen]).toEqual([[], [], [], 0]);
   });
 });

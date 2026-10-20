@@ -55,3 +55,27 @@ test('yeni evrende "Ne yazıyorsunuz?" seçilir; uzak türler en sona katlanır'
   const uzak = p.locator('optgroup[label="Diğer türler (kurgunuza uzak)"]').first();
   await expect(uzak.locator('option', { hasText: 'Büyü sistemi' })).toHaveCount(1);
 });
+
+test('program koyu temayla açılır; Görünüm ayarı açık temaya geçirir ve hatırlar', async ({ page: p }) => {
+  await p.goto('/');
+  await expect(p.locator('html')).toHaveAttribute('data-tema', 'koyu');
+  await p.getByRole('link', { name: 'Eşitleme ve cihazlar' }).click();
+  await p.getByRole('radio', { name: 'Açık' }).check();
+  await expect(p.locator('html')).toHaveAttribute('data-tema', 'acik');
+  await p.reload();
+  await expect(p.locator('html')).toHaveAttribute('data-tema', 'acik');
+  await p.getByRole('radio', { name: 'Cihazın ayarı' }).check();
+  await expect(p.locator('html')).not.toHaveAttribute('data-tema', /./);
+});
+
+test('Genel bakışta kaldığınız yerin altında son çalışmanın özeti', async ({ page: p }) => {
+  await sahneAc(p, 'Arşiv');
+  await yaz(p, 'Lale arşivin kapısını itti.');
+  await kaydedildi(p);
+  await p.locator('nav.gezinti a[href$="/masa"]').first().click();
+  const ozet = p.getByRole('region', { name: 'Son çalışmanız' });
+  await expect(ozet).toContainText('Metnini yazdığınız: Arşiv');
+  await expect(p.getByRole('region', { name: 'Kaldığınız yer' }).getByRole('region', { name: 'Son çalışmanız' })).toHaveCount(1);
+  await ozet.getByRole('link', { name: 'Arşiv' }).click();
+  await expect(p).toHaveURL(/\/yaz\//);
+});

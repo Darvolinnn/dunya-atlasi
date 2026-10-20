@@ -45,7 +45,7 @@ export function KurguSecici({ deger, degis }: { deger: string | null; degis: (k:
   return (
     <div class="kurgu-secici" role="radiogroup" aria-label="Ne yazıyorsunuz?">
       {KURGU_TURLERI.map((k) => (
-        <button type="button" key={k.kod} role="radio" aria-checked={deger === k.kod} class={deger === k.kod ? 'kurgu-karti secili' : 'kurgu-karti'}
+        <button type="button" key={k.kod} role="radio" aria-checked={deger === k.kod} class={`kurgu-karti tg-${k.renk}${deger === k.kod ? ' secili' : ''}`}
           onClick={() => degis(deger === k.kod ? null : k.kod)}>
           <strong>{k.ad}</strong><span class="kucuk">{k.aciklama}</span>
         </button>

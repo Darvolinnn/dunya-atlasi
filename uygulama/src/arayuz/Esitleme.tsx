@@ -8,6 +8,7 @@ import type { EsitlemeDurumu } from '../veri/api';
 import { zamanYaz, saatYaz } from '../alan/islem-metni';
 import { epostaKaydet, googleHazirla, izinAl, izniGeriAl, kayitliEposta } from './google';
 import { SayfaYardimi } from './SayfaYardimi';
+import { TEMALAR, temaOku, temaYaz, type Tema } from './tema';
 import { git } from './Uygulama';
 
 const YOKLAMA = 3 * 60_000;
@@ -269,6 +270,8 @@ export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
           <p class="soluk kucuk">Öbür cihazlarda bu adla görünür (ör. “Ofis bilgisayarı, Edge”). Aynı bilgisayardaki iki tarayıcı ayrı cihaz sayılır.</p>
         </div>
 
+        <GorunumAyari />
+
         <h2 style="margin-top:20px">Evrenler</h2>
         {d.evrenler.map((v) => (
           <div class="kart" style="margin-top:10px" key={v.kod}>
@@ -317,5 +320,21 @@ export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
         {hata && <p class="hata" role="alert">{hata}</p>}
       </main>
     </>
+  );
+}
+
+/** Görünüm: koyu (varsayılan), açık ya da cihazın ayarı. Bu cihazda tutulur. */
+function GorunumAyari() {
+  const [tema, setTema] = useState<Tema>(temaOku);
+  return (
+    <div class="kart" style="margin-top:12px">
+      <h3>Görünüm</h3>
+      <div class="satir" role="radiogroup" aria-label="Görünüm">
+        {TEMALAR.map((t) => (
+          <label key={t.kod}><input type="radio" name="tema" checked={tema === t.kod} onChange={() => { setTema(t.kod); temaYaz(t.kod); }} /> {t.ad}</label>
+        ))}
+      </div>
+      <p class="soluk kucuk">Yalnızca bu cihazda geçerlidir. “Cihazın ayarı”, Windows'ta seçili açık ya da koyu görünümü izler.</p>
+    </div>
   );
 }

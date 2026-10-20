@@ -58,16 +58,17 @@ export const turBul = (kod: string): Tur => harita.get(kod) ?? { kod, ad: 'Diğe
 export const turGecerli = (kod: unknown): kod is string => typeof kod === 'string' && harita.has(kod);
 
 /** "Ne yazıyorsunuz?" (§4, K28): seçime göre kurguya uzak türler ve grafikler "Diğer" altına katlanır; hiçbir şey silinmez. */
-export interface KurguTuru { kod: string; ad: string; aciklama: string; uzakTurler: string[]; uzakGorunumler: string[] }
+/** renk: kartın aldığı tür grubu rengi (stil.css --tg-*). */
+export interface KurguTuru { kod: string; renk: string; ad: string; aciklama: string; uzakTurler: string[]; uzakGorunumler: string[] }
 const BUYU = ['buyu_sistemi', 'buyu_uygulamasi'];
 const GERCEK_DISI = [...BUYU, 'canli', 'evren_kurali', 'dil', 'para'];
 export const KURGU_TURLERI: KurguTuru[] = [
-  { kod: 'fantastik', ad: 'Fantastik', aciklama: 'büyü, canlılar, kehanet', uzakTurler: [], uzakGorunumler: [] },
-  { kod: 'bilimkurgu', ad: 'Bilimkurgu', aciklama: 'teknoloji, gezegenler', uzakTurler: BUYU, uzakGorunumler: [] },
-  { kod: 'tarihi', ad: 'Tarihî', aciklama: 'gerçek dönem, takvim', uzakTurler: BUYU, uzakGorunumler: ['gokyuzu', 'sozluk'] },
-  { kod: 'gercekci', ad: 'Gerçekçi / çağdaş', aciklama: 'bugünün dünyası', uzakTurler: GERCEK_DISI, uzakGorunumler: ['gokyuzu', 'sozluk'] },
-  { kod: 'polisiye', ad: 'Polisiye / gizem', aciklama: 'delil, soruşturma', uzakTurler: GERCEK_DISI, uzakGorunumler: ['gokyuzu', 'sozluk'] },
-  { kod: 'diger', ad: 'Diğer', aciklama: 'hepsi açık kalır', uzakTurler: [], uzakGorunumler: [] },
+  { kod: 'fantastik', renk: 'kultur', ad: 'Fantastik', aciklama: 'büyü, canlılar, kehanet', uzakTurler: [], uzakGorunumler: [] },
+  { kod: 'bilimkurgu', renk: 'isleyis', ad: 'Bilimkurgu', aciklama: 'teknoloji, gezegenler', uzakTurler: BUYU, uzakGorunumler: [] },
+  { kod: 'tarihi', renk: 'zaman', ad: 'Tarihî', aciklama: 'gerçek dönem, takvim', uzakTurler: BUYU, uzakGorunumler: ['gokyuzu', 'sozluk'] },
+  { kod: 'gercekci', renk: 'yer', ad: 'Gerçekçi / çağdaş', aciklama: 'bugünün dünyası', uzakTurler: GERCEK_DISI, uzakGorunumler: ['gokyuzu', 'sozluk'] },
+  { kod: 'polisiye', renk: 'anlati', ad: 'Polisiye / gizem', aciklama: 'delil, soruşturma', uzakTurler: GERCEK_DISI, uzakGorunumler: ['gokyuzu', 'sozluk'] },
+  { kod: 'diger', renk: 'diger', ad: 'Diğer', aciklama: 'hepsi açık kalır', uzakTurler: [], uzakGorunumler: [] },
 ];
 export const kurguTuruGecerli = (k: unknown): k is string => typeof k === 'string' && KURGU_TURLERI.some((x) => x.kod === k);
 export const uzakTurMu = (kurgu: string | null | undefined, tur: string) => !!kurgu && !!KURGU_TURLERI.find((x) => x.kod === kurgu)?.uzakTurler.includes(tur);

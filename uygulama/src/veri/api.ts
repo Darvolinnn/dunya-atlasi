@@ -963,6 +963,11 @@ export type EvrenSorulari = { kod: string; ad: string; sorular: SoruSatiri[] }[]
 export interface MeseleSatiri { kod: string; ad: string; karar: string; duzenleme: number; durum: string; onemli: boolean; bagli: KisaKayit[] }
 export interface GerekceSatiri { kod: string; ad: string; karar: string; duzenleme: number; soru: string; cozum: string; gerekce: string; etkilenen: KisaKayit[] }
 /** Not panosunun satırı (§4.6, K28). Durum yazılmamışsa "fikir" sayılır. */
+/** Son çalışma oturumunun özeti (Genel bakış, K28). Listelerde yalnızca silinmemiş kayıtlar vardır; metni yazılan yeni kayıt yalnızca "yazılan"da görünür. */
+export interface SonCalisma {
+  bas: number; son: number; degisiklikSayisi: number;
+  olusturulan: KisaKayit[]; yazilan: KisaKayit[]; degistirilen: KisaKayit[]; silinen: number;
+}
 export interface NotSatiri { kod: string; ad: string; ozet: string; notTuru: string | null; notDurumu: string; duzenleme: number }
 export interface MeseleListesi { meseleler: MeseleSatiri[]; gerekceler: GerekceSatiri[]; /** Kullanılmamış ve arşivlenmemiş çelişki/kontrol notları (K28). */ celiskiNotlari: NotSatiri[] }
 
@@ -1293,6 +1298,7 @@ export interface Istekler {
   kayitSoruSeti(a: { evren: string; kod: string; set: string; ekle: boolean }): void;
   evrenSorulari(a: { evren: string }): EvrenSorulari;
   notPanosu(a: { evren: string }): NotSatiri[];
+  sonCalisma(a: { evren: string }): SonCalisma | null;
   meseleler(a: { evren: string; kod?: string }): MeseleListesi;
   yazarKaydiEkle(a: { evren: string; tur: 'acik_mesele' | 'gerekce'; ad: string; bagla?: string | null; onemli?: boolean }): { kod: string };
   takvim(a: { evren: string }): Takvim;

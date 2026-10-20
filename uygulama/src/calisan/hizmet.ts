@@ -25,6 +25,7 @@ import { metinBelgesi, takvimOku, yonlendir, zamanSetiOku } from './izdusum';
 const yonlendirKod = (e: EvrenVt, k: string) => yonlendir(e.db, k);
 import * as anlati from './anlati';
 import * as durum from './durum';
+import { sonCalisma as sonCalismaOzeti } from './son-calisma';
 import * as sablonlar from './sablon';
 import * as harita from './harita';
 import * as birlesme from './birlesme';
@@ -2167,6 +2168,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   evrenSorulari({ evren }: { evren: string }) { return sablonlar.evrenSorulari(this.evren(evren)); }
   karakterYollari({ evren, kapsam }: { evren: string; kapsam: string }) { return sablonlar.karakterYollari(this.evren(evren), kapsam); }
   notPanosu({ evren }: { evren: string }) { return sablonlar.notPanosu(this.evren(evren)); }
+  sonCalisma({ evren }: { evren: string }) { return sonCalismaOzeti(this.evren(evren)); }
   meseleler({ evren, kod }: { evren: string; kod?: string }) {
     const e = this.evren(evren);
     if (kod) this.kayitVarMi(e, kod);

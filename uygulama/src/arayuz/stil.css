@@ -994,10 +994,18 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .not-arsivi summary { cursor: pointer; color: var(--metin-2); padding: 4px 0; }
 /* "Ne yazıyorsunuz?" (§4, K28) */
 .kurgu-secici { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-.kurgu-karti { font: inherit; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--cizgi); background: var(--yuzey); color: var(--metin); cursor: pointer; }
-.kurgu-karti .kucuk { color: var(--metin-2); }
-.kurgu-karti:hover { border-color: var(--vurgu); }
-.kurgu-karti.secili { border: 2px solid var(--vurgu); background: var(--vurgu-zemin); padding: 9px 11px; }
+/* Her kurgu türü bir tür grubunun rengini alır (T6); renk yalnızca süstür, ad yazılıdır. */
+.kurgu-karti { --kz: var(--tg-diger-z); --ky: var(--tg-diger-y); font: inherit; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 10px 14px; border-radius: 10px; border: 1px solid var(--cizgi); border-left: 4px solid var(--ky); background: var(--kz); color: var(--metin); cursor: pointer; }
+.kurgu-karti.tg-kultur { --kz: var(--tg-kultur-z); --ky: var(--tg-kultur-y); }
+.kurgu-karti.tg-isleyis { --kz: var(--tg-isleyis-z); --ky: var(--tg-isleyis-y); }
+.kurgu-karti.tg-zaman { --kz: var(--tg-zaman-z); --ky: var(--tg-zaman-y); }
+.kurgu-karti.tg-yer { --kz: var(--tg-yer-z); --ky: var(--tg-yer-y); }
+.kurgu-karti.tg-anlati { --kz: var(--tg-anlati-z); --ky: var(--tg-anlati-y); }
+.kurgu-karti strong { color: var(--ky); }
+.kurgu-karti .kucuk { color: var(--ky); }
+.kurgu-karti:hover { border-color: var(--ky); }
+.kurgu-karti.secili { border: 2px solid var(--ky); border-left-width: 6px; padding: 9px 11px 9px 12px; box-shadow: 0 0 0 2px var(--yuzey), 0 0 0 4px var(--ky); }
+.kurgu-karti.secili strong::after { content: " ✓"; }
 .kurgu-ayari { margin: 4px 0 12px; }
 .kurgu-ayari summary { cursor: pointer; }
 .kurgu-ayari .kurgu-secici { margin-top: 6px; }
@@ -1009,3 +1017,9 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .bos-sayfa p { max-width: 52ch; margin: 0 auto 12px; }
 .yeni-karti { font: inherit; color: var(--vurgu); border: 1.5px dashed var(--cizgi); background: transparent; box-shadow: none; display: grid; place-items: center; min-height: 72px; cursor: pointer; }
 .yeni-karti:hover { border-color: var(--vurgu); background: var(--vurgu-zemin); }
+
+/* Son çalışmanın özeti (Genel bakış, K28 T7). */
+.son-calisma { margin: 8px 0 10px; padding: 8px 12px; border-left: 3px solid var(--vurgu); background: var(--yuzey-2); border-radius: 8px; }
+.son-calisma h3 { margin: 0 0 4px; font-size: 1em; }
+.son-calisma ul { margin: 0 0 8px; padding-left: 18px; display: grid; gap: 3px; }
+.son-calisma p { margin: 0; }
