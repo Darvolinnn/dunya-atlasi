@@ -26,6 +26,7 @@ const yonlendirKod = (e: EvrenVt, k: string) => yonlendir(e.db, k);
 import * as anlati from './anlati';
 import * as durum from './durum';
 import { sonCalisma as sonCalismaOzeti } from './son-calisma';
+import { ornekEvreniKur } from './ornek-evren';
 import * as sablonlar from './sablon';
 import * as harita from './harita';
 import * as birlesme from './birlesme';
@@ -3183,6 +3184,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   iceAktarIncele({ dosyalar }: { dosyalar: IceDosya[] }): IceAktarimRaporu {
     return iceAktarimPlani(this.iceDosyalar(dosyalar)).rapor;
   }
+
+  /** Programla gelen uydurma örnek evreni ayrı bir evren olarak kurar (§5.10, K28). */
+  ornekEvrenKur() { return ornekEvreniKur(this); }
 
   /** Dosyaları yeni bir evrene aktarır (ayrı alan); mevcut evrenlere dokunmaz. */
   async iceAktar({ dosyalar, evrenAdi }: { dosyalar: IceDosya[]; evrenAdi: string }) {

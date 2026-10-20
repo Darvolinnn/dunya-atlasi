@@ -7,6 +7,7 @@ import { SayfaYardimi } from './SayfaYardimi';
 import { IceAktar, YedektenGeriYukle } from './Tasima';
 import { onayla } from './onay';
 import { BosSayfa, KurguSecici, YeniKarti } from './ortak';
+import { ORNEK_EVREN_ADI } from '../calisan/ornek-evren';
 
 export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
   const [evrenler, setEvrenler] = useState<EvrenOzeti[] | null>(null);
@@ -42,6 +43,14 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
       await istemci.iste('evrenKaldir', { evren: e.kod });
       yukle();
     } catch (x) { setHata((x as Error).message); }
+  };
+
+  const [ornekKuruluyor, setOrnekKuruluyor] = useState(false);
+  /** Programla gelen uydurma örnek evren (K28): ayrı bir evren olarak kurulur, öbürleri gibi kaldırılır. */
+  const ornekAc = async () => {
+    setHata(null); setOrnekKuruluyor(true);
+    try { const { kod } = await istemci.iste('ornekEvrenKur'); git(`/e/${kod}`); }
+    catch (x) { setHata((x as Error).message); setOrnekKuruluyor(false); }
   };
 
   const olustur = async (e: Event) => {
@@ -90,6 +99,13 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
           <BosSayfa baslik="İlk evreninizi oluşturun" eylem={{ ad: 'Evren oluştur', yap: () => setAciliyor(true) }} konu={1}>
             Evren, bir kurgunun bütün kayıtlarını, metinlerini ve haritalarını bir arada tutar. Her kurgu için ayrı bir evren açabilirsiniz.
           </BosSayfa>
+        )}
+        {evrenler && !aciliyor && panel === 'yok' && !evrenler.some((e) => e.ad === ORNEK_EVREN_ADI) && (
+          <p class="ornek-evren soluk kucuk">
+            Dolu bir evrenin nasıl göründüğüne bakmak isterseniz{' '}
+            <button class="dugme kucuk" onClick={() => void ornekAc()} disabled={ornekKuruluyor}>{ornekKuruluyor ? 'Örnek evren kuruluyor, birkaç saniye sürebilir…' : 'Örnek evreni aç'}</button>
+            {' '}Uydurma “Hatıra İmparatorluğu” serisi ayrı bir evren olarak açılır; sizin evrenlerinize karışmaz, istediğinizde kaldırırsınız.
+          </p>
         )}
         {evrenler && evrenler.length > 0 && (
           <div class="kartlar">

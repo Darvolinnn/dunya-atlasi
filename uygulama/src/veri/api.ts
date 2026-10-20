@@ -962,12 +962,12 @@ export interface KayitSablonu {
 export type EvrenSorulari = { kod: string; ad: string; sorular: SoruSatiri[] }[];
 export interface MeseleSatiri { kod: string; ad: string; karar: string; duzenleme: number; durum: string; onemli: boolean; bagli: KisaKayit[] }
 export interface GerekceSatiri { kod: string; ad: string; karar: string; duzenleme: number; soru: string; cozum: string; gerekce: string; etkilenen: KisaKayit[] }
-/** Not panosunun satırı (§4.6, K28). Durum yazılmamışsa "fikir" sayılır. */
 /** Son çalışma oturumunun özeti (Genel bakış, K28). Listelerde yalnızca silinmemiş kayıtlar vardır; metni yazılan yeni kayıt yalnızca "yazılan"da görünür. */
 export interface SonCalisma {
   bas: number; son: number; degisiklikSayisi: number;
   olusturulan: KisaKayit[]; yazilan: KisaKayit[]; degistirilen: KisaKayit[]; silinen: number;
 }
+/** Not panosunun satırı (§4.6, K28). Durum yazılmamışsa "fikir" sayılır. */
 export interface NotSatiri { kod: string; ad: string; ozet: string; notTuru: string | null; notDurumu: string; duzenleme: number }
 export interface MeseleListesi { meseleler: MeseleSatiri[]; gerekceler: GerekceSatiri[]; /** Kullanılmamış ve arşivlenmemiş çelişki/kontrol notları (K28). */ celiskiNotlari: NotSatiri[] }
 
@@ -1235,6 +1235,7 @@ export interface Istekler {
   gorsel(a: { evren: string; ad: string; onizleme?: boolean }): Promise<GorselSonucu>;
 
   iceAktarIncele(a: { dosyalar: { yol: string; metin?: string; veri?: Uint8Array; tur?: string }[] }): IceAktarimRaporu;
+  ornekEvrenKur(): Promise<{ kod: string }>;
   iceAktar(a: { dosyalar: { yol: string; metin?: string; veri?: Uint8Array; tur?: string }[]; evrenAdi: string }): Promise<{ kod: string; rapor: IceAktarimRaporu; gorselHatalari: string[] }>;
   yedekAl(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
   yedekIncele(a: { veri: Uint8Array }): Promise<YedekBilgisi>;

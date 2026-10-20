@@ -79,3 +79,15 @@ test('Genel bakışta kaldığınız yerin altında son çalışmanın özeti', 
   await ozet.getByRole('link', { name: 'Arşiv' }).click();
   await expect(p).toHaveURL(/\/yaz\//);
 });
+
+test('örnek evren ayrı bir evren olarak açılır; kitaplar, sahneler ve harita dolu', async ({ page: p }) => {
+  await p.goto('/');
+  await p.getByRole('button', { name: 'Örnek evreni aç' }).click();
+  await expect(p).toHaveURL(/#\/e\//, { timeout: 20_000 });
+  await expect(p.getByRole('heading', { name: 'Unutulanlar' })).toBeVisible();
+  await p.locator('nav.gezinti a[href$="/haritalar"]').click();
+  await expect(p.getByText('Başkent planı').first()).toBeVisible();
+  await p.goto('/');
+  await expect(p.getByRole('button', { name: 'Örnek evreni aç' })).toHaveCount(0);
+  await expect(p.getByRole('heading', { name: 'Hatıra İmparatorluğu (örnek)' })).toBeVisible();
+});
