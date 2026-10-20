@@ -89,17 +89,16 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 
 | PR | Dal | Ne | Durum |
 |---|---|---|---|
-| [#7](https://github.com/Darvolinnn/dunya-atlasi/pull/7) | `claude/modest-lovelace-ozltpf` | K27 sonraya bırakılanlar (ek kitap, okuma yolları, olası finaller, karakter yolunda sahne, soru örnekleri, seri düzeyinde masa), K26 Aşama C (boş alanları gizleme, taslak A), yeni evren hızı | Denetim yeşil; ekran görüntüsü onayı bekliyor. Onaydan sonra birleştir ve Windows dalına `main`'i al |
-| [#1](https://github.com/Darvolinnn/dunya-atlasi/pull/1) | `claude/project-thread-hdk5g6` | Windows uygulaması (TK6, Tauri 2). Kurulum dosyası: [windows ön sürümü](https://github.com/Darvolinnn/dunya-atlasi/releases/tag/windows) (`Dunya-Atlasi-kurulum.exe`); dala her gönderimde yeniden derlenir. Dalın kendi DEVIR'inde iş listesi §3.2b | Açık kalır. `main` her birleştirmeden sonra bu dala alınır (son: #6, `44c9811`, derleme başarılı). Bulut çalışma ağacı `/home/user/windows-dali` (oturuma özgü) |
+| [#1](https://github.com/Darvolinnn/dunya-atlasi/pull/1) | `claude/project-thread-hdk5g6` | Windows uygulaması (TK6, Tauri 2). Kurulum dosyası: [windows ön sürümü](https://github.com/Darvolinnn/dunya-atlasi/releases/tag/windows) (`Dunya-Atlasi-kurulum.exe`); dala her gönderimde yeniden derlenir. Dalın kendi DEVIR'inde iş listesi §3.2b | Açık kalır. `main` her birleştirmeden sonra bu dala alınır (son: #7, 20 Ekim). Kullanıcı 19 Ekim sürümünü kurup denedi, sorun görmedi; Google izinli adresi bekliyor. Bulut çalışma ağacı `/home/user/windows-dali` (oturuma özgü) |
 
-Birleşenler: #2 (19 Ekim akşam oturumu), #5 (ilerleme şeridi, evren kaldırma, anlık görüntü), #6 (K27 rehberli yazarlık: menü adları, rehber, sorular, seri, alternatifler, olay örgüsü masası, karakter yolu, Şimdi; #5 inceleme bulguları).
+Birleşenler: #2 (19 Ekim akşam oturumu), #5 (ilerleme şeridi, evren kaldırma, anlık görüntü), #6 (K27 rehberli yazarlık: menü adları, rehber, sorular, seri, alternatifler, olay örgüsü masası, karakter yolu, Şimdi; #5 inceleme bulguları), #7 (K27 sonraya bırakılanlar, boş alanları gizleme, yeni evren hızı).
 
 Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok. Promptlar kullanıcının proje klasöründe `paket-promptlari/` altındadır, depoda değildir.
 
 ### 3.3 Açık işler (önerilen sıra)
 
 **Kullanıcının kararı ya da işi gereken:**
-1. **PR #7'nin ekran görüntülerini onayla** (seri sayfası, seri düzeyinde masa, karakter yolu ve örnek, boş alanları gizleme). Sonra ajan birleştirir, Windows dalına alır.
+1. **Windows uygulamasını dene** (#7 ile yeniden derlendi): kurup aç, yeni evren, seri sayfası, olay örgüsü masası, boş alanları gizleme.
 2. **Büyük evrende hız ve bellek.** Kullanıcı kararı (19 Ekim): seri büyüklüğünde (Red Rising gibi, ~1 milyon kelime; taslak ve düzeltmelerle 300.000–1.500.000 işlem) evren dakikalar içinde kurulmalı; bellek bilgisayarda 16 GB'a kadar kabul, **tablette 4 GB altı şart**. Tanım §10.1 "Tablolar günlükten baştan kurulabilir".
    - [x] **Adım 1: metni toplu uygula, bellekte yalnız son kullanılanlar** (`99ba813`). Ölçüm (gerçekçi karışım: 400 sahne, sahne başına 2.500 kelimeye kadar cümle cümle yazma, sonra düzeltme turları, işlemlerin %80'i metin):
 
@@ -168,16 +167,16 @@ Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda
 - [x] P2 (kalan): Yaz ekranında bağlam panelinin üstünde katlı "Sahne planı" (`Sablon.tsx` `SahnePlani`, §5.10). `seri` seti P4 ile. #6 ile birleşti.
 - [x] P3: İlk adımlarda başlangıç yolları (§5.10; `YazEkrani.tsx` `YOLLAR`, istek `ilkAdimlar` dayanakları; sınamalar). #6 ile birleşti.
 - [x] P4 seri (ilk kısım): `seri` türü, `anlati.yerlestir` eseri seri altına kabul eder, istek `seriler`, yazma ağacında seri başlığı, seri sayfasında "Kitaplar" ve sorular, eser sayfasında "Serisi" seçimi; `test/seri.test.ts` (silme/geri getirme, iki cihaz). Zaman çizelgesinde eserin serisi eser sanılmasın diye `zamanCizelgesi` yalnız eser/bölüm üstlerini sayar. #6 ile birleşti.
-- [x] P5 alternatifler: `alternatif` ilişkisi (aynı tür), istek `alternatifler`, kayıt sayfasında kesinleştirince öbürlerini vazgeçirme sorusu, Uyarılar'da "Alternatifler" denetimi; `test/alternatif.test.ts`. Seri sayfasındaki "Olası finaller" #7'de (`olasi_final`).
+- [x] P5 alternatifler: `alternatif` ilişkisi (aynı tür), istek `alternatifler`, kayıt sayfasında kesinleştirince öbürlerini vazgeçirme sorusu, Uyarılar'da "Alternatifler" denetimi; `test/alternatif.test.ts`. Seri sayfasındaki "Olası finaller" #7 ile geldi (`olasi_final`).
 - [x] P8 çalışma durumları: eser ve sahne şablonunda "Çalışma durumu" seçim alanı (`ESER_CALISMA`, `SAHNE_CALISMA`); bölüm dağılımı ve olay örgüsü masasındaki durum satırı P6 ile.
 - [x] P9 kitap sonunda açık kalanlar: `montaj.kitapSonuAciklar`, eser sayfasında bölüm; `test/kitap-sonu.test.ts`.
 - [x] P10 Şimdi kartı: `Masa.tsx` `SimdiKarti`, istekler `etkinCalisma`, `etkinCalismaYaz`, `simdi`; işlem `evren_etkin_calisma`; `test/simdi.test.ts`. İlk adımların sıradaki adımı karta katılmadı (liste zaten Yaz sayfasında).
-- [x] P7 karakterin kitaptaki yolu: `eser_odagi` ilişkisi, `karakter_kitapta` soruları (`ILISKI_SETLERI`; `sablon.ts` `odakIliskisiMi` ilişki kodunu soru sahibi kabul eder), istek `karakterYollari`, eser sayfasında "Odak karakterler", seri sayfasında tablo; `test/karakter-yolu.test.ts`. 5. ve 6. soruya sahne/olay bağı #7'de.
-- [x] P6 olay örgüsü masası: kullanıcı taslak A'yı seçti (20 Ekim). `arayuz/OlayOrgusu.tsx` (Grafikler › Olay örgüsü, `#/e/<evren>/orgu/<eser>`), `montaj.olayOrgusu`; dönüm noktası = sahneye `DONUM_ETIKETI` etiketi (`alan/sablon.ts`). Taşıma özeti ve geri alma arayüzde. Seri düzeyi #7'de.
+- [x] P7 karakterin kitaptaki yolu: `eser_odagi` ilişkisi, `karakter_kitapta` soruları (`ILISKI_SETLERI`; `sablon.ts` `odakIliskisiMi` ilişki kodunu soru sahibi kabul eder), istek `karakterYollari`, eser sayfasında "Odak karakterler", seri sayfasında tablo; `test/karakter-yolu.test.ts`. 5. ve 6. soruya sahne/olay bağı #7 ile geldi.
+- [x] P6 olay örgüsü masası: kullanıcı taslak A'yı seçti (20 Ekim). `arayuz/OlayOrgusu.tsx` (Grafikler › Olay örgüsü, `#/e/<evren>/orgu/<eser>`), `montaj.olayOrgusu`; dönüm noktası = sahneye `DONUM_ETIKETI` etiketi (`alan/sablon.ts`). Taşıma özeti ve geri alma arayüzde. Seri düzeyi #7 ile geldi.
 - [x] Sonraya bırakılanlar (20 Ekim): ek kitap (`seri_eseri`), okuma yolları (`seri_okuma_yollari`, evren anahtarı `okuma_yollari:<seri>`), olası finaller (`olasi_final` + `alternatif`), karakter yolunda sahne bağı (`soruBagla`, soru tanımında `bagla`), soru örnekleri (`alan/soru-ornekleri.ts`), seri düzeyinde olay örgüsü masası. `calisan/seri.ts`, `arayuz/SeriPlani.tsx`.
 - [x] Aşama C (taslak A, 20 Ekim): kayıt sayfasında boş alanlar "+ ad" düğmeleri (`SablonAlanlari` `acilan`/`ac`/`ekCipler`, `KayitEkrani` `acilan`), boş görsel ve ilişki "Henüz eklenmedi" satırında (`Iliskiler` `gizli`/`sayiBildir`/`formAcik`).
 - Yeni evren dosyası tek veritabanı işleminde kurulur (`EvrenVt` kurucusu); tarayıcıda evren oluşturma ~4 sn → ~0,4 sn. `e2e` "İlk adımlar" sınamasının ara sıra kırılması buydu.
-- [x] P1: yazarlık rehberi programın içinde (§12.4): `arayuz/YazarlikRehberi.tsx`, metinler `arayuz/yazarlik-rehberi.ts` (analiz belgesinden üretildi; belge değişirse yeniden üretilmeli: başlıklar `### Konu N — …`, alanlar `**Ne:**` biçiminde). Soru başına "Örnek" #7'de. #6 ile birleşti.
+- [x] P1: yazarlık rehberi programın içinde (§12.4): `arayuz/YazarlikRehberi.tsx`, metinler `arayuz/yazarlik-rehberi.ts` (analiz belgesinden üretildi; belge değişirse yeniden üretilmeli: başlıklar `### Konu N — …`, alanlar `**Ne:**` biçiminde). Soru başına "Örnek" #7 ile geldi. #6 ile birleşti.
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
 
 ## 4. Kod yapısı ve yeni bir özellik ekleme tarifi
