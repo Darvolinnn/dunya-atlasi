@@ -1,5 +1,8 @@
 // Ekranlarda ortak kullanılan küçük parçalar.
 import { TURLER, KARARLAR, KURGU_TURLERI, uzakTurMu } from '../alan/turler';
+import type { ComponentChildren } from 'preact';
+import { YAZARLIK_KONULARI } from './yazarlik-rehberi';
+import { yazarlikRehberiAc } from './YazarlikRehberi';
 import { useKurgu } from './kurgu';
 
 const GRUPLAR = [...new Set(TURLER.map((t) => t.grup))];
@@ -49,4 +52,32 @@ export function KurguSecici({ deger, degis }: { deger: string | null; degis: (k:
       ))}
     </div>
   );
+}
+
+/** Boş sayfa (§12.4, K28): ne işe yaradığını söyleyen bir cümle, işi yapan tek düğme ve rehberde ilgili konu. */
+export function BosSayfa({ baslik, children, eylem, konu }: { baslik: string; children: ComponentChildren; eylem?: { ad: string; yap: () => void }; konu?: number }) {
+  const k = konu ? YAZARLIK_KONULARI.find((x) => x.no === konu) : null;
+  return (
+    <div class="bos bos-sayfa">
+      <h3>{baslik}</h3>
+      <p>{children}</p>
+      <div class="satir" style="justify-content:center">
+        {eylem && <button class="dugme ana" onClick={eylem.yap}>{eylem.ad}</button>}
+        {k && <button class="dugme sade kucuk" onClick={() => yazarlikRehberiAc(k.no)}>Yazarlık rehberi: {k.baslik}</button>}
+      </div>
+    </div>
+  );
+}
+
+/** Boş sayfadaki düğmenin sayfanın kendi girdisine götürmesi için. */
+export function odakla(secici: string, tikla = false) {
+  const el = document.querySelector<HTMLElement>(secici);
+  if (!el) return;
+  el.scrollIntoView?.({ block: 'center' });
+  if (tikla) el.click(); else el.focus();
+}
+
+/** Kart listelerinin sonundaki "+ Yeni …" kartı (§12.4, K28). */
+export function YeniKarti({ ad, yap }: { ad: string; yap: () => void }) {
+  return <button type="button" class="kart yeni-karti" onClick={yap}>+ {ad}</button>;
 }

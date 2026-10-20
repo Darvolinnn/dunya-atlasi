@@ -6,7 +6,7 @@ import { git } from './Uygulama';
 import { SayfaYardimi } from './SayfaYardimi';
 import { IceAktar, YedektenGeriYukle } from './Tasima';
 import { onayla } from './onay';
-import { KurguSecici } from './ortak';
+import { BosSayfa, KurguSecici, YeniKarti } from './ortak';
 
 export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
   const [evrenler, setEvrenler] = useState<EvrenOzeti[] | null>(null);
@@ -87,10 +87,9 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
         )}
         {hata && <p class="hata" role="alert">{hata}</p>}
         {evrenler && evrenler.length === 0 && !aciliyor && panel === 'yok' && (
-          <div class="bos">
-            <p>Henüz bir evren yok.</p>
-            <button class="dugme ana" onClick={() => setAciliyor(true)}>İlk evreni oluştur</button>
-          </div>
+          <BosSayfa baslik="İlk evreninizi oluşturun" eylem={{ ad: 'Evren oluştur', yap: () => setAciliyor(true) }} konu={1}>
+            Evren, bir kurgunun bütün kayıtlarını, metinlerini ve haritalarını bir arada tutar. Her kurgu için ayrı bir evren açabilirsiniz.
+          </BosSayfa>
         )}
         {evrenler && evrenler.length > 0 && (
           <div class="kartlar">
@@ -103,6 +102,7 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
                 <button class="dugme sade kucuk tehlikeli evren-kaldir" aria-label={`“${e.ad}” evrenini bu cihazdan kaldır`} title="Bu cihazdan kaldır" onClick={() => void kaldir(e)}>Kaldır</button>
               </div>
             ))}
+            {!aciliyor && <YeniKarti ad="Yeni evren" yap={() => setAciliyor(true)} />}
           </div>
         )}
       </main>

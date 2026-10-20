@@ -9,7 +9,7 @@ import { turkceKarsilastir } from '../alan/turkce';
 import { siraAnahtari } from '../alan/tarih';
 import { Gorsel } from './gorsel';
 import { zamanYaz } from '../alan/islem-metni';
-import { KararRozeti, TurSecici } from './ortak';
+import { BosSayfa, KararRozeti, TurSecici, odakla } from './ortak';
 import { git } from './Uygulama';
 
 export function YeniKayit({ istemci, evren }: { istemci: Istemci; evren: string }) {
@@ -91,10 +91,9 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
     <>
       <YeniKayit istemci={istemci} evren={evren} />
       {kayitlar.length === 0 ? (
-        <div class="bos">
-          <p>Bu evrende henüz kayıt yok.</p>
-          <p class="kucuk">Yukarıya bir ad yazıp türünü seçin. Karakter, yer, olay, not… her şey bir kayıttır.</p>
-        </div>
+        <BosSayfa baslik="İlk kaydınızı ekleyin" eylem={{ ad: 'Kayıt ekle', yap: () => odakla('input[aria-label="Yeni kaydın adı"]') }} konu={5}>
+          Karakter, yer, olay, not… her şey bir kayıttır. Yukarıya bir ad yazıp türünü seçin; metinde [[ ile ona bağlanırsınız.
+        </BosSayfa>
       ) : (
         <>
           <div class="suzgec satir">

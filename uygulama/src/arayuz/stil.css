@@ -1004,3 +1004,8 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .gezinti-uzak summary { cursor: pointer; list-style: none; }
 .gezinti-uzak p { margin: 4px 8px; }
 .son-yedek { font-size: 0.8rem; font-weight: 400; } .durum-ozeti summary .son-yedek { color: var(--metin-2); }
+/* Boş sayfa ve "+ Yeni" kartı (§12.4, K28) */
+.bos-sayfa h3 { margin: 0 0 6px; font-size: 1.1rem; color: var(--metin); }
+.bos-sayfa p { max-width: 52ch; margin: 0 auto 12px; }
+.yeni-karti { font: inherit; color: var(--vurgu); border: 1.5px dashed var(--cizgi); background: transparent; box-shadow: none; display: grid; place-items: center; min-height: 72px; cursor: pointer; }
+.yeni-karti:hover { border-color: var(--vurgu); background: var(--vurgu-zemin); }

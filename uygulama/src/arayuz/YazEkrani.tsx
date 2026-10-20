@@ -1,6 +1,7 @@
 // Yazma düzeni (§5.10, K24): solda gezinti çubuğu ve eser ağacı, ortada metin, sağda dar ve kapatılabilir bağlam
 // paneli. Sahnenin bütün alanları kayıt sayfasındadır; buradan bir bağlantıyla açılır.
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { BosSayfa, odakla } from './ortak';
 import type { Istemci } from '../veri/istemci';
 import type { EserYapisi, EvrenBilgisi, Kayit, KaldigiYerBilgisi, KisaKayit } from '../veri/api';
 import { zamanYaz } from '../alan/islem-metni';
@@ -35,7 +36,7 @@ function useOdakKipi(): [boolean, (v: boolean) => void] {
     const olay = (e: Event) => { const d = (e as CustomEvent<boolean | null>).detail; ayarla(d ?? !ref.current); };
     const tus = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); ayarla(!ref.current); }
-      else if (e.key === 'Escape' && ref.current && !e.defaultPrevented && !document.querySelector('.perde, [role="dialog"], .secici')) ayarla(false);
+      else if (e.key === 'Escape' && ref.current && !document.querySelector('.perde, [role="dialog"], .secici')) ayarla(false);
     };
     addEventListener(ODAK_OLAYI, olay); addEventListener('keydown', tus);
     return () => { removeEventListener(ODAK_OLAYI, olay); removeEventListener('keydown', tus); };
@@ -202,7 +203,9 @@ function YaziMasasi({ istemci, evren }: { istemci: Istemci; evren: string }) {
         </section>
       )}
       <h2 class="ara-baslik">Eserler</h2>
-      {!eserler.length && <p class="soluk">Henüz bir eseriniz yok. Romanınızın ya da öykünüzün adını yazarak başlayın. Bölümleri ve sahneleri soldaki listeden eklersiniz.</p>}
+      {!eserler.length && <BosSayfa baslik="İlk eserinizi ekleyin" eylem={{ ad: 'Eser ekle', yap: () => odakla('input[aria-label="Yeni eserin adı"]') }} konu={23}>
+        Romanınızın ya da öykünüzün adını aşağıya yazarak başlayın. Bölümleri ve sahneleri soldaki listeden eklersiniz.
+      </BosSayfa>}
       <div class="kartlar">
         {eserler.map((e) => (
           <a class="kart eser-karti" key={e.kod} href={`#/e/${evren}/yaz/${e.kod}`}>

@@ -204,7 +204,7 @@ export function DurumOzeti({ istemci, evren, yedekVar }: { istemci: Istemci; evr
 
   return (
     <details class="durum-ozeti" open={acik} onToggle={(x) => setAcik((x.target as HTMLDetailsElement).open)}>
-      <summary class={eskiYedek && driveYok ? 'durum-zayif' : undefined}>{baslik}{!acik && <><br /><SonYedekYazisi evren={evren} yedek={yedek} yedekVar={yedekVar} /></>}</summary>
+      <summary class={eskiYedek && driveYok ? 'durum-zayif' : undefined}><span class="durum-basligi">{baslik}</span>{!acik && <><br /><SonYedekYazisi evren={evren} yedek={yedek} yedekVar={yedekVar} /></>}</summary>
       <ul class="durum-satirlari">
         <li>Bu cihazda kaydedildi.</li>
         <li>{drive}</li>
