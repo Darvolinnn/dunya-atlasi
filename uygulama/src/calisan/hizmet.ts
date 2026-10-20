@@ -2144,6 +2144,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   }
   evrenSorulari({ evren }: { evren: string }) { return sablonlar.evrenSorulari(this.evren(evren)); }
   karakterYollari({ evren, kapsam }: { evren: string; kapsam: string }) { return sablonlar.karakterYollari(this.evren(evren), kapsam); }
+  notPanosu({ evren }: { evren: string }) { return sablonlar.notPanosu(this.evren(evren)); }
   meseleler({ evren, kod }: { evren: string; kod?: string }) {
     const e = this.evren(evren);
     if (kod) this.kayitVarMi(e, kod);

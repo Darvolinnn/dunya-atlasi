@@ -166,7 +166,7 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .secici-not { margin: 6px 4px 0; }
 .secici-yeni { display: flex; flex-direction: column; gap: 8px; }
 .kucuk-rozet { width: 26px; height: 26px; font-size: 0.75rem; }
-.baglananlar { margin-top: 24px; }
+.baglananlar { margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px 24px; align-items: start; }
 .baglananlar h2 { margin-bottom: 8px; font-size: 1rem; }
 .ad-duzeltme { margin: 12px 0; }
 .ad-duzeltme h2 { font-size: 1rem; margin-bottom: 4px; }
@@ -971,3 +971,24 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .kisayol-listesi ul { list-style: none; margin: 8px 0; padding: 0; max-height: 60vh; overflow-y: auto; }
 .kisayol-listesi li { display: flex; align-items: baseline; gap: 12px; padding: 6px 4px; border-bottom: 1px solid var(--cizgi); }
 .kisayol-listesi li > span { flex: 1; }
+.daha-fazla-soru { margin: 4px 0 0; } .daha-fazla-soru summary { color: var(--vurgu); cursor: pointer; padding: 4px 0; }
+/* Not panosu (§4.6, K28): durum renkleri tür grubu renklerinden gelir; hepsi 4,5:1'i geçer. */
+.suzgec-cipi { font: inherit; font-size: 0.85rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--cizgi); background: var(--yuzey); color: var(--metin-2); cursor: pointer; }
+.suzgec-cipi.secili { background: var(--vurgu); border-color: var(--vurgu); color: var(--vurgu-metin); }
+.not-suzgeci { flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.not-sutunlari { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: start; }
+.not-sutunu { background: var(--yuzey-2); border-radius: var(--yaricap); padding: 8px; }
+.not-sutunu h3 { margin: 2px 2px 8px; font-weight: 500; }
+.not-sutunu ul, .not-arsivi ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.not-karti { background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+.not-adi { font-weight: 500; color: var(--metin); text-decoration: none; }
+.not-adi:hover { text-decoration: underline; }
+.not-durumu { font: inherit; font-size: 0.8rem; font-weight: 500; border: none; border-radius: 999px; padding: 2px 8px; cursor: pointer; }
+.not-durumu.etiket { cursor: default; }
+.nd-fikir { background: var(--tg-zaman-z); color: var(--tg-zaman-y); }
+.nd-gelisiyor { background: var(--tg-isleyis-z); color: var(--tg-isleyis-y); }
+.nd-kontrol { background: var(--tg-anlati-z); color: var(--tg-anlati-y); }
+.nd-kullanildi { background: var(--tg-yer-z); color: var(--tg-yer-y); }
+.nd-arsiv { background: var(--tg-diger-z); color: var(--tg-diger-y); }
+.not-arsivi { margin-top: 12px; }
+.not-arsivi summary { cursor: pointer; color: var(--metin-2); padding: 4px 0; }

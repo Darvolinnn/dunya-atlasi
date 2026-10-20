@@ -5,10 +5,10 @@ import { tarihCoz, type EvrenTarihi } from '../alan/tarih';
 import { turGecerli } from '../alan/turler';
 import { birimAdi, sayiCoz } from '../alan/nicelik';
 import {
-  EVREN_SETLERI, MESELE_DURUMLARI, sablonGecerli, soruDurumuGecerli, soruSetiBul, varsayilanSablon,
+  CELISKI_NOTU, EVREN_SETLERI, MESELE_DURUMLARI, sablonGecerli, soruDurumuGecerli, soruSetiBul, varsayilanSablon,
   type Sablon, type SablonAlani, type Soru,
 } from '../alan/sablon';
-import type { EvrenSorulari, KayitSablonu, KisaKayit, MeseleListesi, SablonBilgisi, SoruSatiri, KarakterYollari } from '../veri/api';
+import type { EvrenSorulari, KayitSablonu, KisaKayit, MeseleListesi, NotSatiri, SablonBilgisi, SoruSatiri, KarakterYollari } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
 import { zamanSetiOku } from './izdusum';
 
@@ -262,7 +262,16 @@ export function meseleler(e: EvrenVt, kod?: string): MeseleListesi {
     gerekce: alanDegeri<string>(e, r.kod as string, 'gerekce') ?? '',
     etkilenen: bagli(r.kod as string, 'gerekce_konusu'),
   }));
-  return { meseleler: ml, gerekceler: gl };
+  const celiskiNotlari = kod ? [] : notPanosu(e).filter((n) => n.notTuru === CELISKI_NOTU && n.notDurumu !== 'kullanildi' && n.notDurumu !== 'arsiv');
+  return { meseleler: ml, gerekceler: gl, celiskiNotlari };
+}
+
+/** Notlar, türü ve durumuyla (§4.6, K28); son değişen önce. */
+export function notPanosu(e: EvrenVt): NotSatiri[] {
+  return e.db.selectObjects(`SELECT kod, ad, ozet, duzenleme FROM kayitlar WHERE tur='not' AND silindi IS NULL ORDER BY duzenleme DESC`).map((r) => ({
+    kod: r.kod as string, ad: r.ad as string, ozet: r.ozet as string, duzenleme: Number(r.duzenleme),
+    notTuru: alanDegeri<string>(e, r.kod as string, 'not_turu'), notDurumu: alanDegeri<string>(e, r.kod as string, 'not_durumu') ?? 'fikir',
+  }));
 }
 
 /** Yeni açık mesele ya da gerekçe kaydı; bir kayda bağlanacaksa ilişki aynı işlem grubunda kurulur. */
