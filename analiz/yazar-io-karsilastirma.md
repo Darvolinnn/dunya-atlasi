@@ -238,3 +238,17 @@ Kullanıcı kendi hesabıyla girişliyken salt okunur "Örnek Kitap"ı gezdirdi;
 7. **Soyağacında özel bağlar:** Dünya Atlası'nda ilişki türleri zaten var; soy ağacında da görünmeleri küçük bir iş olabilir. Küçük.
 
 Dünya Atlası'nın belirgin üstünlükleri: roman programın içinde yazılıyor; seri yapısı; olay örgüsü, kurgu hatları ve okurun bilgisi; gerçek takvim ve harita; veri yazarın cihazında ve çevrimdışı. yazar.io'nun üstünlükleri: ilk açılışın sadeliği ve dolu örnek, mobil uygulama, paylaşılabilir wiki.
+
+## 9. İçeriden gezme, ikinci rapor (20 Ekim 2026)
+
+Kullanıcının hesabındaki "Deneme" projesi üzerinden gezildi; hiçbir şey oluşturulmadı. Yeni ya da daha kesin olanlar:
+
+- **Yeni kitap formu tek sayfa:** zorunlu yalnız başlık ve tür (15 tür). Tür seçimi bölümleri açıp kapatır (Polisiye'de Irklar, Büyüler, Yaratıklar kapanır); renk türe göre değişir; sonradan Kitap Ayarları'ndan değiştirilebilir. Kaydetmeden çıkışta uyarı var.
+- **Kayıt formu:** ad, kısa tanım, serbest metin, görsel; yanında "Künye" (alanlar) ve "İlişkiler" (topluluk, ırk, inanç, doğum/ölüm yeri, anne, baba, eş, kardeş) sekmeleri. Kaydetme elle; otomatik kaydetme göstergesi görülmedi.
+- **Soyağacı aile ilişkilerinden kendiliğinden oluşuyor.**
+- **Olay Akışı tarihi serbest metin;** sıra elle sürüklenerek kuruluyor (kafa karıştıranlar arasında).
+- **Yol gösterme yalnız programın kullanımıyla ilgili;** yazarlık eğitimi yok.
+- **Kafa karıştıranlar:** roman metni dışarıda; menüdeki "Wiki"nin ayarlara gitmesi; ücretsiz plan sınırı ve istisnaları; serbest metin tarihler; sürekli değişen ipucu satırı ve başlangıç kutusunun dikkat dağıtması.
+- Raporun sonucu: asıl fırsat, bağlantılı dünya kurmayı yazma ekranıyla birleştirmek; Dünya Atlası bunu zaten yapıyor.
+
+Ek öneri adayları (K11, karar bekliyor): kaydetmeden çıkışta uyarı gerekmez (Dünya Atlası her şeyi kendiliğinden kaydediyor); türe göre bölüm açma (8.2-4) güçlendi; ipucu satırı gibi sürekli değişen öğelerden kaçınılmalı.
