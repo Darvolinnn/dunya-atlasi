@@ -943,6 +943,8 @@ export interface SoruSatiri extends Soru {
   eski: boolean;
 }
 /** İlk adımların dayanakları (K26, K27): her adım kayıtlı veriden anlaşılır. */
+/** İleri araçların bir kez tanıtılması (§5.10, K28): kayıtlı veriden sayılar. */
+export interface AracTanitimDayanaklari { enCokSahne: { eser: string; sayi: number } | null; karakter: number; tarihli: boolean; mekan: number; eser: number }
 export interface IlkAdimDayanaklari {
   eser: boolean; sahne: boolean; baglanti: boolean; baglam: boolean;
   not: boolean; nottanEser: boolean; cekirdek: boolean; karakter: boolean; istek: boolean; karsit: boolean; karakterSahnede: boolean;
@@ -1182,6 +1184,7 @@ export interface Istekler {
   evrenKaldir(a: { evren: string }): void;
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
   ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
+  aracTanitimlari(a: { evren: string }): AracTanitimDayanaklari;
   alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
   kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;
   etkinCalisma(a: { evren: string }): KisaKayit | null;

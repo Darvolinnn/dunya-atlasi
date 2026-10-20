@@ -47,7 +47,7 @@ import * as montaj from './montaj';
 import * as seriPlan from './seri';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
-import type { IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi } from '../veri/api';
+import type { AracTanitimDayanaklari, IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi } from '../veri/api';
 import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
 import * as bakim from './bakim';
@@ -201,6 +201,21 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   evrenler() { return this.kurulum.evrenler(); }
 
   /** "İlk adımlar" (K26): yapılıp yapılmadığı evrene bakılarak anlaşılır; ayrıca bir şey kaydedilmez. */
+  aracTanitimlari({ evren }: { evren: string }): AracTanitimDayanaklari {
+    const db = this.evren(evren).db;
+    const say = (tur: string) => Number(db.selectValue(`SELECT count(*) FROM kayitlar WHERE tur IN (${tur}) AND silindi IS NULL`));
+    // Sahne eserin altında ya doğrudan ya da bir bölümün içinde durur.
+    const en = db.selectObject(`SELECT eser, count(*) AS n FROM (
+        SELECT CASE WHEN u.tur='bolum' THEN b.ust ELSE a.ust END AS eser FROM anlati a
+        JOIN kayitlar s ON s.kod=a.kod AND s.tur='sahne' AND s.silindi IS NULL
+        LEFT JOIN kayitlar u ON u.kod=a.ust LEFT JOIN anlati b ON b.kod=a.ust)
+      WHERE eser IN (SELECT kod FROM kayitlar WHERE tur='eser' AND silindi IS NULL) GROUP BY eser ORDER BY n DESC LIMIT 1`);
+    return {
+      enCokSahne: en ? { eser: en.eser as string, sayi: Number(en.n) } : null,
+      karakter: say("'karakter'"), mekan: say("'mekan','sehir'"), eser: say("'eser'"),
+      tarihli: db.selectValue("SELECT 1 FROM kayitlar WHERE tur IN ('sahne','olay') AND tarih IS NOT NULL AND silindi IS NULL LIMIT 1") !== undefined,
+    };
+  }
   ilkAdimlar({ evren }: { evren: string }) {
     const db = this.evren(evren).db;
     const var_ = (sql: string) => db.selectValue(sql) !== undefined;

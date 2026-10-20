@@ -84,7 +84,7 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
           <span>Komutlar: Ctrl+K</span>
         </div>
       </nav>
-      <div class="kabuk-ic">{!bagli && !(etkin === 'yaz' && !acik) && <SiradakiAdim istemci={istemci} evren={evren} />}<KurguBaglami.Provider value={kurgu}>{children}</KurguBaglami.Provider></div>
+      <div class="kabuk-ic">{!bagli && !(etkin === 'yaz' && !acik) && <SiradakiAdim istemci={istemci} evren={evren} yazda={etkin === 'yaz'} />}<KurguBaglami.Provider value={kurgu}>{children}</KurguBaglami.Provider></div>
     </div>
   );
 }
