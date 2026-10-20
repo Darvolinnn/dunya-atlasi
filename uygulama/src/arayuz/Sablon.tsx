@@ -9,6 +9,7 @@ import { ALAN_TURLERI, VARSAYILAN_EKSENLERI, EVREN_SETLERI, ILISKI_SETLERI, MESE
 import { tarihAciklamasi, tarihCoz, type EvrenTarihi, type TakvimYa } from '../alan/tarih';
 import { TURLER, turBul } from '../alan/turler';
 import { KararRozeti, KararSecici, TurSecici } from './ortak';
+import { KayitSec } from './KayitBolumleri';
 import { git } from './Uygulama';
 import { takvimOrnegi, useTakvim } from './Takvim';
 
@@ -268,7 +269,7 @@ export function SoruSatir({ istemci, evren, kod, q, hata, kayitlaYok = false }: 
       <div class="soru-metni">{q.metin}{q.ipucu && <span class="soluk kucuk"> · {q.ipucu}</span>}</div>
       {d === 'sonra' || d === 'ilgisiz' ? (
         <div class="satir"><span class="rozet">{d === 'sonra' ? 'Sonraya bırakıldı' : 'İlgisiz'}</span><button class="dugme sade kucuk" onClick={() => cevapla(null)}>Geri al</button></div>
-      ) : q.cevap?.kayitla ? (
+      ) : q.cevap?.kayitla && !q.bagla ? (
         <div class="satir"><span class="kucuk">Cevabı: <a href={`#/e/${evren}/k/${q.cevap.kayitla.kod}`}>{q.cevap.kayitla.ad}</a></span><button class="dugme sade kucuk" onClick={() => cevapla(null)}>Bağı kaldır</button></div>
       ) : (
         <>
@@ -282,6 +283,15 @@ export function SoruSatir({ istemci, evren, kod, q, hata, kayitlaYok = false }: 
             </div>
           )}
           {kayitla && <KayitlaCevapla istemci={istemci} evren={evren} kod={kod} q={q} kapat={() => setKayitla(false)} hata={hata} />}
+          {q.bagla && (
+            <div class="satir soru-bagi">
+              {q.cevap?.kayitla ? <>
+                <span class="kucuk">{turBul(q.cevap.kayitla.tur).ad}: <a href={`#/e/${evren}/k/${q.cevap.kayitla.kod}`}>{q.cevap.kayitla.ad}</a></span>
+                <button class="dugme sade kucuk" aria-label="Bağlı sahneyi kaldır" onClick={() => isle(istemci.iste('soruBagla', { evren, kod, soru: q.kod, hedef: null }))}>×</button>
+              </> : <KayitSec istemci={istemci} evren={evren} secili={null} etiket="Sahneye ya da olaya bağla"
+                sec={(s) => { if (s) isle(istemci.iste('soruBagla', { evren, kod, soru: q.kod, hedef: s.kod })); }} />}
+            </div>
+          )}
         </>
       )}
     </li>
@@ -641,7 +651,12 @@ export function KarakterYollariBolumu({ istemci, evren, kayit }: { istemci: Iste
                   {y.eserler.map((x) => {
                     const h = c.hucreler[x.kod];
                     const l = h ? ozet(h.sorular) : [];
-                    return <td key={x.kod}>{!h ? <span class="soluk kucuk">odak değil</span> : l.length ? l.map((t, i) => <div key={i} class="kucuk">{t}</div>) : <span class="soluk kucuk">henüz yazılmadı</span>}</td>;
+                    // Karar ve bedel sorularına bağlanan sahne ya da olay hücreden açılır.
+                    const baglar = h ? ([['en zor karar', h.sorular[4]], ['bedel', h.sorular[5]]] as const).filter(([, q]) => q?.cevap?.kayitla) : [];
+                    return <td key={x.kod}>{!h ? <span class="soluk kucuk">odak değil</span> : l.length || baglar.length ? <>
+                      {l.map((t, i) => <div key={i} class="kucuk">{t}</div>)}
+                      {baglar.map(([ad, q]) => <div key={ad} class="kucuk">{ad}: <a href={`#/e/${evren}/${q.cevap!.kayitla!.tur === 'sahne' ? 'yaz' : 'k'}/${q.cevap!.kayitla!.kod}`}>{q.cevap!.kayitla!.ad}</a></div>)}
+                    </> : <span class="soluk kucuk">henüz yazılmadı</span>}</td>;
                   })}
                 </tr>
               ))}

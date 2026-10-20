@@ -1276,6 +1276,7 @@ export interface Istekler {
   kayitAlanYaz(a: { evren: string; kod: string; alan: string; deger: unknown }): void;
   soruCevapla(a: { evren: string; kod: string; soru: string; durum: SoruDurumu | null; cevap?: string }): void;
   soruKayitla(a: { evren: string; kod: string; soru: string; ad: string; tur: string }): { kod: string };
+  soruBagla(a: { evren: string; kod: string; soru: string; hedef: string | null }): void;
   kayitSoruSeti(a: { evren: string; kod: string; set: string; ekle: boolean }): void;
   evrenSorulari(a: { evren: string }): EvrenSorulari;
   meseleler(a: { evren: string; kod?: string }): MeseleListesi;

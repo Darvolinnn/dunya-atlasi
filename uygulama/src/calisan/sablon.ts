@@ -6,7 +6,7 @@ import { turGecerli } from '../alan/turler';
 import { birimAdi, sayiCoz } from '../alan/nicelik';
 import {
   EVREN_SETLERI, MESELE_DURUMLARI, sablonGecerli, soruDurumuGecerli, soruSetiBul, varsayilanSablon,
-  type Sablon, type SablonAlani,
+  type Sablon, type SablonAlani, type Soru,
 } from '../alan/sablon';
 import type { EvrenSorulari, KayitSablonu, KisaKayit, MeseleListesi, SablonBilgisi, SoruSatiri, KarakterYollari } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
@@ -175,19 +175,25 @@ export const tarihDegeri = (e: EvrenVt, kod: string, alan: string) => alanDegeri
 const odakIliskisiMi = (e: EvrenVt, kod: string) => kodGecerliMi(kod)
   && e.db.selectValue("SELECT 1 FROM iliskiler WHERE kod=? AND tur='eser_odagi' AND silindi IS NULL", [kod]) !== undefined;
 
-function soruMetni(e: EvrenVt, kod: string, soru: string): string {
-  if (odakIliskisiMi(e, kod)) {
-    const q = soruSetiBul('karakter_kitapta')!.sorular.find((x) => x.kod === soru);
-    if (!q) throw new Error('Bilinmeyen soru.');
-    return q.metin;
-  }
-  if (kod === 'evren') {
-    for (const s of EVREN_SETLERI) { const q = soruSetiBul(s)!.sorular.find((x) => x.kod === soru); if (q) return q.metin; }
-    throw new Error('Bilinmeyen soru.');
-  }
-  const q = kayitSablonu(e, kod).sorular.find((x) => x.kod === soru);
+function soruTanimi(e: EvrenVt, kod: string, soru: string): Soru {
+  let q: Soru | undefined;
+  if (odakIliskisiMi(e, kod)) q = soruSetiBul('karakter_kitapta')!.sorular.find((x) => x.kod === soru);
+  else if (kod === 'evren') for (const s of EVREN_SETLERI) { q ??= soruSetiBul(s)!.sorular.find((x) => x.kod === soru); }
+  else q = kayitSablonu(e, kod).sorular.find((x) => x.kod === soru);
   if (!q) throw new Error('Bilinmeyen soru.');
-  return q.metin;
+  return q;
+}
+const soruMetni = (e: EvrenVt, kod: string, soru: string) => soruTanimi(e, kod, soru).metin;
+
+/** Cevabın yanına bir sahne ya da olay bağlar (yalnız buna izin veren sorularda); yazılı cevap korunur. */
+export function soruBagla(b: SablonBaglami, kod: string, soru: string, hedef: string | null) {
+  const q = soruTanimi(b.e, kod, soru);
+  if (!q.bagla) throw new Error('Bu soruya kayıt bağlanmaz.');
+  if (hedef !== null && !q.bagla.includes(kayitTuru(b.e, hedef))) throw new Error('Bu soruya yalnız bir sahne ya da olay bağlanabilir.');
+  const r = b.e.db.selectObject('SELECT durum, cevap FROM soru_cevaplari WHERE kayit=? AND soru=?', [kod, soru]);
+  const cevap = (r?.durum === 'cevaplandi' ? r.cevap as string : '') ?? '';
+  const durum = hedef || cevap ? 'cevaplandi' : null;
+  b.yaz([{ tur: 'soru_cevapla', veri: { kod, soru, durum, cevap: durum ? cevap : '', metin: q.metin, ...(hedef ? { kayitla: hedef } : {}) } }], [kod]);
 }
 
 export function soruCevapla(b: SablonBaglami, kod: string, soru: string, durum: string | null, cevap = '', kayitla: string | null = null) {
@@ -196,6 +202,10 @@ export function soruCevapla(b: SablonBaglami, kod: string, soru: string, durum: 
   const metin = soruMetni(b.e, kod, soru);
   const temiz = String(cevap ?? '').replace(/[ \t]+/g, ' ').trim();
   if (temiz.length > 5000) throw new Error('Cevap çok uzun.');
+  // Bağ alan sorularda yazılı cevabı değiştirmek bağlı sahneyi düşürmez.
+  if (!kayitla && durum === 'cevaplandi' && soruTanimi(b.e, kod, soru).bagla) {
+    kayitla = (b.e.db.selectValue('SELECT kayitla FROM soru_cevaplari WHERE kayit=? AND soru=?', [kod, soru]) as string | null | undefined) ?? null;
+  }
   if (durum === 'cevaplandi' && !temiz && !kayitla) durum = null;
   b.yaz([{ tur: 'soru_cevapla', veri: { kod, soru, durum, cevap: durum ? temiz : '', metin, ...(kayitla ? { kayitla } : {}) } }], kod === 'evren' ? [] : [kod]);
 }

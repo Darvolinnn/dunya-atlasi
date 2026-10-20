@@ -2107,6 +2107,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   soruKayitla({ evren, kod, soru, ad, tur }: { evren: string; kod: string; soru: string; ad: string; tur: string }) {
     return sablonlar.soruKayitla(this.sablonBaglami(evren), kod, soru, ad, tur);
   }
+  soruBagla({ evren, kod, soru, hedef }: { evren: string; kod: string; soru: string; hedef: string | null }) {
+    sablonlar.soruBagla(this.sablonBaglami(evren), kod, soru, hedef);
+  }
   kayitSoruSeti({ evren, kod, set, ekle }: { evren: string; kod: string; set: string; ekle: boolean }) {
     sablonlar.kayitSoruSeti(this.sablonBaglami(evren), kod, set, ekle);
   }

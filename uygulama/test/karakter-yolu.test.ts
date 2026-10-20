@@ -39,4 +39,28 @@ describe('karakterin kitaplardaki yolu (K27)', () => {
     y = h.karakterYollari({ evren, kapsam: i });
     expect(y.karakterler.map((x) => x.ad)).toEqual(['Lale']);
   });
+
+  it('karar ve bedel sorularına sahne ya da olay bağlanır; yazılı cevap ile bağ birbirini silmez', () => {
+    const h = cihaz();
+    const { kod: evren } = h.evrenOlustur({ ad: 'Hatıra' });
+    const k = (ad: string, tur: string) => h.kayitOlustur({ evren, ad, tur }).kod;
+    const eser = k('Unutulanlar', 'eser'), lale = k('Lale', 'karakter');
+    const sahne = h.anlatiOlustur({ evren, ust: eser, ad: 'Şişeyi çalar', tur: 'sahne' }).kod;
+    h.iliskiEkle({ evren, a: lale, b: eser, tur: 'eser_odagi' });
+    const kod = h.karakterYollari({ evren, kapsam: eser }).karakterler[0].hucreler[eser].iliski;
+    const q = (n: number) => h.karakterYollari({ evren, kapsam: eser }).karakterler[0].hucreler[eser].sorular[n - 1];
+    expect(q(5).bagla).toEqual(['sahne', 'olay']);
+    h.soruBagla({ evren, kod, soru: 'karakter_kitapta.5', hedef: sahne });
+    expect(q(5).cevap).toMatchObject({ durum: 'cevaplandi', cevap: '', kayitla: { kod: sahne, ad: 'Şişeyi çalar' } });
+    h.soruCevapla({ evren, kod, soru: 'karakter_kitapta.5', durum: 'cevaplandi', cevap: 'Annesinin şişesini çalmak; Orhun’a güvenmekten vazgeçer.' });
+    expect(q(5).cevap).toMatchObject({ cevap: 'Annesinin şişesini çalmak; Orhun’a güvenmekten vazgeçer.', kayitla: { kod: sahne } });
+    h.soruBagla({ evren, kod, soru: 'karakter_kitapta.5', hedef: null });
+    expect(q(5).cevap).toMatchObject({ cevap: 'Annesinin şişesini çalmak; Orhun’a güvenmekten vazgeçer.', kayitla: null });
+    expect(() => h.soruBagla({ evren, kod, soru: 'karakter_kitapta.5', hedef: lale })).toThrow(/sahne ya da olay/);
+    expect(() => h.soruBagla({ evren, kod, soru: 'karakter_kitapta.1', hedef: sahne })).toThrow(/bağlanmaz/);
+    // Yalnız bağ varken bağ kaldırılınca cevap boşalır.
+    h.soruBagla({ evren, kod, soru: 'karakter_kitapta.6', hedef: sahne });
+    h.soruBagla({ evren, kod, soru: 'karakter_kitapta.6', hedef: null });
+    expect(q(6).cevap).toBeNull();
+  });
 });
