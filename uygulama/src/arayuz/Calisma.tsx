@@ -2,6 +2,7 @@
 // Yan paneldeki kayıtlar ve imleç "kaldığın yer" olarak saklanır ve eşitlemeyle öbür cihazlara gider; panelin
 // açık ya da küçük olması cihaza özeldir.
 import { createContext } from 'preact';
+import { PALET_OLAYI } from './yonlendirme';
 import { useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AramaSonucu, DurumSatiri, IliskiSatiri, Kayit, KayitOzeti, Spans } from '../veri/api';
@@ -168,8 +169,10 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
       if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); dRef.current.paletAc(); return; }
       if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !yaziAlaniMi(e.target)) { e.preventDefault(); dRef.current.paletAc(); }
     };
+    const palet = () => dRef.current.paletAc();
     addEventListener('keydown', tus);
-    return () => removeEventListener('keydown', tus);
+    addEventListener(PALET_OLAYI, palet);
+    return () => { removeEventListener('keydown', tus); removeEventListener(PALET_OLAYI, palet); };
   }, []);
 
   // Bağlantının üzerine gelince özet kartı (§5.3); dokunmatikte basılı tutunca.

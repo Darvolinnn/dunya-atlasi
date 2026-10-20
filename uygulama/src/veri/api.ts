@@ -944,6 +944,8 @@ export interface IlkAdimDayanaklari {
   not: boolean; nottanEser: boolean; cekirdek: boolean; karakter: boolean; istek: boolean; karsit: boolean; karakterSahnede: boolean;
   kural: boolean; guc: boolean; yer: boolean; yerdeIs: boolean;
   sorular: Record<string, string>;
+  /** "Yap" düğmelerinin açacağı ilk kayıtlar (ilk oluşturulan); yoksa null. */
+  hedefler: { eser: string | null; sahne: string | null; not: string | null; karakter: string | null };
 }
 export interface KayitSablonu {
   tur: string; sablon: Sablon; degerler: Record<string, unknown>;

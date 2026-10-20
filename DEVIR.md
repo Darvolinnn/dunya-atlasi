@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 20 Ekim 2026 (sabah). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 97 dosya, 491 sınama; tarayıcıda 21 akış sınaması, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
+*Son güncelleme: 20 Ekim 2026 (öğleden sonra). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 97 dosya, 491 sınama; tarayıcıda 23 akış sınaması, hepsi geçiyor. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows).*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -175,6 +175,7 @@ Ana bulgular: (1) Kurgu hattı ipucu rolleri yalnız sayılıyor; "kitap sonunda
 - [x] P6 olay örgüsü masası: kullanıcı taslak A'yı seçti (20 Ekim). `arayuz/OlayOrgusu.tsx` (Grafikler › Olay örgüsü, `#/e/<evren>/orgu/<eser>`), `montaj.olayOrgusu`; dönüm noktası = sahneye `DONUM_ETIKETI` etiketi (`alan/sablon.ts`). Taşıma özeti ve geri alma arayüzde. Seri düzeyi #7 ile geldi.
 - [x] Sonraya bırakılanlar (20 Ekim): ek kitap (`seri_eseri`), okuma yolları (`seri_okuma_yollari`, evren anahtarı `okuma_yollari:<seri>`), olası finaller (`olasi_final` + `alternatif`), karakter yolunda sahne bağı (`soruBagla`, soru tanımında `bagla`), soru örnekleri (`alan/soru-ornekleri.ts`), seri düzeyinde olay örgüsü masası. `calisan/seri.ts`, `arayuz/SeriPlani.tsx`.
 - [x] Aşama C (taslak A, 20 Ekim): kayıt sayfasında boş alanlar "+ ad" düğmeleri (`SablonAlanlari` `acilan`/`ac`/`ekCipler`, `KayitEkrani` `acilan`), boş görsel ve ilişki "Henüz eklenmedi" satırında (`Iliskiler` `gizli`/`sayiBildir`/`formAcik`).
+- [x] İlk adımlarda "Yap" (kullanıcı isteği, 20 Ekim): `arayuz/IlkAdimlar.tsx` (liste ve Yaz dışındaki `SiradakiAdim` satırı ortak `useIlkAdimlar` ile; tercihler değişince `dunya-atlasi:ilk-adimlar-degisti` olayı), `arayuz/yonlendirme.ts` `gitVeYap` (adrese git, öğe çizilince odakla/tıkla/olay gönder), istek `ilkAdimlar` `hedefler` (ilk eser/sahne/not/karakter). Eser oluşunca ağaçta yeni sahne kutusu açılır (`YENI_SAHNE_OLAYI`; istek eserin yapısı okunana dek bekletilir). Komut paleti `PALET_OLAYI` ile açılır. Sınamalarda "Eser oluştur" düğmesi `exact: true` aranır ("Yap: Bir eser oluşturun" ile karışmasın); `sahneAc` artık "+ Sahne"ye basmaz.
 - Yeni evren dosyası tek veritabanı işleminde kurulur (`EvrenVt` kurucusu); tarayıcıda evren oluşturma ~4 sn → ~0,4 sn. `e2e` "İlk adımlar" sınamasının ara sıra kırılması buydu.
 - [x] P1: yazarlık rehberi programın içinde (§12.4): `arayuz/YazarlikRehberi.tsx`, metinler `arayuz/yazarlik-rehberi.ts` (analiz belgesinden üretildi; belge değişirse yeniden üretilmeli: başlıklar `### Konu N — …`, alanlar `**Ne:**` biçiminde). Soru başına "Örnek" #7 ile geldi. #6 ile birleşti.
 - [x] Tasarım K26, §5.10; kod ve sınamalar (`test/ilk-adimlar.test.ts`, tarayıcı akışı)
