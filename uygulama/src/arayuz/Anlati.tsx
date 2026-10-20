@@ -53,8 +53,8 @@ export function AnlatiYolu({ istemci, evren, kayit, yazma = false }: { istemci: 
       {yer.bolum && <><span class="soluk">›</span>{kayit.tur === 'bolum' ? <span>{yer.bolum.sira}. bölüm</span> : <a href={`#/e/${evren}/${yol}/${yer.bolum.kod}`}>{yer.bolum.sira}. bölüm: {yer.bolum.ad}</a>}</>}
       {yer.sira !== null && <><span class="soluk">›</span><span>{yer.sira}. sahne</span></>}
       <span class="bosluk" />
-      {yer.onceki && <a class="dugme sade kucuk" href={`#/e/${evren}/${yol}/${yer.onceki.kod}`} title={yer.onceki.ad}>← Önceki sahne</a>}
-      {yer.sonraki && <a class="dugme sade kucuk" href={`#/e/${evren}/${yol}/${yer.sonraki.kod}`} title={yer.sonraki.ad}>Sonraki sahne →</a>}
+      {yer.onceki && <a class="dugme sade kucuk" href={`#/e/${evren}/${yol}/${yer.onceki.kod}`} title={yer.onceki.ad} aria-label={yazma ? `Önceki sahne: ${yer.onceki.ad}` : undefined}>{yazma ? '←' : '← Önceki sahne'}</a>}
+      {yer.sonraki && <a class="dugme sade kucuk" href={`#/e/${evren}/${yol}/${yer.sonraki.kod}`} title={yer.sonraki.ad} aria-label={yazma ? `Sonraki sahne: ${yer.sonraki.ad}` : undefined}>{yazma ? '→' : 'Sonraki sahne →'}</a>}
     </nav>
   );
 }
@@ -348,7 +348,8 @@ export function useSahneBaglami(istemci: Istemci, evren: string, sahne: string |
 export const sahneBaglamiBos = (b: SahneBaglami | null) =>
   !!b && !b.tarih && !b.yer && !b.bakis && !b.anlatici && !b.odak && !b.katilimcilar.length;
 
-export function SahneBaglamPaneli({ evren, baglam, parca = false, bos = false }: { evren: string; baglam: SahneBaglami | null; parca?: boolean; bos?: boolean }) {
+/** `bilgisiz`: bakış açısının ve okurun bilgisi gösterilmez; yazma ekranında onlar "Bilgi" sekmesindedir. */
+export function SahneBaglamPaneli({ evren, baglam, parca = false, bos = false, bilgisiz = false }: { evren: string; baglam: SahneBaglami | null; parca?: boolean; bos?: boolean; bilgisiz?: boolean }) {
   if (!baglam) return null;
   const { tarih, yer, katilimcilar } = baglam;
   return (
@@ -366,8 +367,7 @@ export function SahneBaglamPaneli({ evren, baglam, parca = false, bos = false }:
         </div>
       )}
       {!bos && katilimcilar.length === 0 && !yer && <p class="soluk kucuk">Mekânı, bakış açısını ya da sahnedekileri girdiğinizde o andaki durumları burada toplanır.</p>}
-      {baglam.bakis && <BakisBilgileri evren={evren} bakis={baglam.bakis} liste={baglam.bakisBilgileri} tarihVar={!!tarih} />}
-      <SahneOkurPaneli evren={evren} baglam={baglam} />
+      {!bilgisiz && <SahneBilgileri evren={evren} baglam={baglam} />}
       {katilimcilar.map((k) => (
         <div class="baglam-kaydi" key={k.kod}>
           <div class="satir">{bag(evren, k)} <span class="soluk kucuk">{k.roller.join(', ')}</span>{k.yas && !k.yasananSure?.takvimBelirsiz && <span class="kucuk">· {k.yas}</span>}</div>
@@ -392,6 +392,14 @@ export function SahneBaglamPaneli({ evren, baglam, parca = false, bos = false }:
       ))}
     </section>
   );
+}
+
+/** Bakış açısı karakterinin o anda bildikleri ve okurun bilgisi (§5.5). */
+export function SahneBilgileri({ evren, baglam }: { evren: string; baglam: SahneBaglami }) {
+  return <>
+    {baglam.bakis && <BakisBilgileri evren={evren} bakis={baglam.bakis} liste={baglam.bakisBilgileri} tarihVar={!!baglam.tarih} />}
+    <SahneOkurPaneli evren={evren} baglam={baglam} />
+  </>;
 }
 
 function DurumOzeti({ durumlar, evren }: { durumlar: DurumSatiri[]; evren: string }) {

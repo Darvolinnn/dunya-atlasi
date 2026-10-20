@@ -941,7 +941,12 @@ function isaretinMetniniUygula(db: Database, kod: string) {
   const r = db.selectObject('SELECT kayit, alan FROM metin_isaretleri WHERE kod=?', [kod]);
   if (r) bekleyeniUygula(db, `${r.kayit}\u0000${r.alan}`);
 }
-export function metinBelleginiTemizle(db: Database) { belgeler.delete(db); toplu.delete(db); }
+/** Bellekteki belgeleri bırakır (Automerge belleği çöp toplayıcıya görünmez; bırakılmazsa birikir). */
+export function metinBelleginiTemizle(db: Database) {
+  const m = belgeler.get(db);
+  if (m) for (const d of m.values()) A.free(d);
+  belgeler.delete(db); toplu.delete(db);
+}
 
 // Toplu uygulama (§10.1): baştan kurmada ve dışarıdan gelen işlemlerde bir metin alanının değişiklikleri biriktirilir
 // ve alan başına bir kez uygulanır; okunuş, bağlantılar, işaret yerleri ve çatışma kayıtları bir kez üretilir.

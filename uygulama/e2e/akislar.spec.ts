@@ -107,7 +107,10 @@ test('boş sahnede bağlam paneli kapalı; "Bağlam ekle" açar, seçim yeniden 
   await p.getByRole('button', { name: 'Bağlam ekle' }).click();
   await expect(panel).toBeVisible();
   await expect(panel.getByText('Tarih ve mekân eklediğinizde sahnenin o andaki bağlamı burada görünür.')).toBeVisible();
+  // Bakış açısının ve okurun bilgisi "Bilgi" sekmesindedir.
+  await panel.getByRole('tab', { name: 'Bilgi' }).click();
   await expect(panel.getByText('· bu sahneye kadar kayıt yok')).toBeVisible();
+  await panel.getByRole('tab', { name: 'Bağlam' }).click();
   await p.reload();
   await p.goto(adres);
   await expect(panel).toBeVisible();
@@ -250,19 +253,20 @@ test('yazarlık rehberi sayfa rehberinden ve komut paletinden açılır, Esc ile
   await expect(rehber.getByRole('heading', { name: 'Hikâyenin çekirdeği (tek cümlelik özet)' })).toBeVisible();
 });
 
-test('sahne planı bağlam panelinde katlı; cevap kaydedilir ve yeniden açınca yerinde', async ({ page: p }) => {
+test('sahne planı bağlam panelinin "Plan" sekmesinde; cevap kaydedilir, sekme ve cevap yeniden açınca yerinde', async ({ page: p }) => {
   const adres = await sahneAc(p);
   await p.getByRole('button', { name: 'Bağlam ekle' }).click();
+  const panel = p.getByRole('complementary', { name: 'Sahnenin bağlamı' });
+  await panel.getByRole('tab', { name: 'Plan' }).click();
   const plan = p.locator('.sahne-plani');
-  await expect(plan.getByLabel('Kim ne istiyor?')).toBeHidden();
-  await plan.locator('summary').click();
   const alan = plan.locator('textarea').first();
+  await expect(alan).toBeVisible();
   await alan.fill('Lale dosyayı arıyor.');
   await alan.blur();
   await expect(plan.locator('summary')).toContainText('Lale dosyayı arıyor.');
   await p.goto('/');
   await p.goto(adres);
-  await p.locator('.sahne-plani summary').click();
+  await expect(panel.getByRole('tab', { name: 'Plan' })).toHaveAttribute('aria-selected', 'true');
   await expect(p.locator('.sahne-plani textarea').first()).toHaveValue('Lale dosyayı arıyor.');
 });
 

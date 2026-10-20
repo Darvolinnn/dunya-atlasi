@@ -42,10 +42,12 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
   if (hata) return <main class="sayfa"><p class="hata">{hata}</p><a href="#/">Evrenlere dön</a></main>;
   if (!bilgi) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
   const baslik = sekme === 'masa' ? null : SAYFA_ADLARI.get(sekme) ?? null;
+  // Açık harita bütün genişliği kullanır; başlığı haritanın kendi satırındadır (taslak 4A).
+  const haritaAcik = sekme === 'haritalar' && !!alt;
 
   return (
     <EvrenKabugu istemci={istemci} evren={kod} etkin={sekme}>
-      <main class="sayfa">
+      <main class={haritaAcik ? 'sayfa genis' : 'sayfa'}>
         <BagSeridi bag={bilgi.bag} />
         {sekme === 'masa' && (
           <>
@@ -55,7 +57,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
             {!bilgi.bag && <KurguAyari istemci={istemci} bilgi={bilgi} />}
           </>
         )}
-        {baslik && <div class="baslik-satiri sayfa-basligi"><h1>{gorunumMu(sekme) ? <><span class="soluk">Grafikler · </span>{baslik}</> : baslik}</h1><SayfaYardimi sayfa={sekme} /></div>}
+        {baslik && !haritaAcik && <div class="baslik-satiri sayfa-basligi"><h1>{gorunumMu(sekme) ? <><span class="soluk">Grafikler · </span>{baslik}</> : baslik}</h1><SayfaYardimi sayfa={sekme} /></div>}
         {sekme === 'inceleme' ? <IncelemeKuyrugu istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><MarkdownCiktisi istemci={istemci} evren={kod} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
           : sekme === 'surumler' && !bilgi.bag ? <SurumlerSekmesi istemci={istemci} evren={kod} surum={surum} />
