@@ -12,7 +12,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 
 - **Durum:** tasarımdaki bütün "Tasarım" maddeleri, K28 kullanım kolaylığı paketi (örnek evren dahil) ve K29 (ikinci kısım) kodlandı ve `main`'de. Bekleyen kod işi yok; açık PR yalnız #1 (Windows uygulaması).
 - **Kullanıcıdan bekleyenler:** Windows kurulum dosyasını denemek ve Google izinli adreslerine `http://localhost:41730` eklemek (§3.3-4); K16 gerçek kullanım. Birleşik karar listesinde kararı bekleyen madde kalmadı (K29: B3, B13, C8, C9, C10, E1 ve "Henüz yazılmayanlar" alındı; C3, C5 alınmadı; D2, D3 sonraya).
-- **Windows dalı:** `main` (#10–#14) Windows dalına alındı (20 Ekim, `bec8c03`). **#15–#17 henüz alınmadı**; sıradaki ajanın ilk işi (çakışma çıkarsa DEVIR'de `main`'in tablosu, tasarımda iki tarafın birleşimi).
+- **Windows dalı güncel:** `main` (#17'ye kadar) Windows dalına alındı (20 Ekim, `668333d`); kurulum dosyası yeniden derlenir. Çakışma çıkarsa DEVIR'de `main`'in tablosu, tasarımda iki tarafın birleşimi alınır.
 - **Ajanın kendiliğinden yapabileceği küçük işler:** `metinBelleginiTemizle`'deki bellek sızıntısı (A.free yok); örnek evren kurulumunu hızlandırma (~12 sn, §3.3-0); §3.3-6 ve 7.
 - **Yeni iş gelirse:** §2'deki kurallar (arayüzde önce taslak, birleştirme, kullanıcının bilgisayarını güncelleme), §4 tarif, §5 denetim. İş bitince bu dosyayı güncelle.
 
@@ -100,7 +100,7 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 
 | PR | Dal | Ne | Durum |
 |---|---|---|---|
-| [#1](https://github.com/Darvolinnn/dunya-atlasi/pull/1) | `claude/project-thread-hdk5g6` | Windows uygulaması (TK6, Tauri 2). Kurulum dosyası: [windows ön sürümü](https://github.com/Darvolinnn/dunya-atlasi/releases/tag/windows) (`Dunya-Atlasi-kurulum.exe`); dala her gönderimde yeniden derlenir. Dalın kendi DEVIR'inde iş listesi §3.2b | Açık kalır. `main` her birleştirmeden sonra bu dala alınır (son: #14, 20 Ekim, `bec8c03`). Kullanıcı 19 Ekim sürümünü kurup denedi, sorun görmedi; Google izinli adresi bekliyor. Bulut çalışma ağacı `/home/user/windows-dali` (oturuma özgü) |
+| [#1](https://github.com/Darvolinnn/dunya-atlasi/pull/1) | `claude/project-thread-hdk5g6` | Windows uygulaması (TK6, Tauri 2). Kurulum dosyası: [windows ön sürümü](https://github.com/Darvolinnn/dunya-atlasi/releases/tag/windows) (`Dunya-Atlasi-kurulum.exe`); dala her gönderimde yeniden derlenir. Dalın kendi DEVIR'inde iş listesi §3.2b | Açık kalır. `main` her birleştirmeden sonra bu dala alınır (son: #17, 20 Ekim, `668333d`). Kullanıcı 19 Ekim sürümünü kurup denedi, sorun görmedi; Google izinli adresi bekliyor. Bulut çalışma ağacı `/home/user/windows-dali` (oturuma özgü) |
 
 Birleşenler: #2 (19 Ekim akşam oturumu), #5 (ilerleme şeridi, evren kaldırma, anlık görüntü), #6 (K27 rehberli yazarlık: menü adları, rehber, sorular, seri, alternatifler, olay örgüsü masası, karakter yolu, Şimdi; #5 inceleme bulguları), #7 (K27 sonraya bırakılanlar, boş alanları gizleme, yeni evren hızı), #8 (DEVIR), #9 (İlk adımlarda "Yap", eser oluşunca sahne kutusu, sıradaki adım satırı), #10 (DEVIR), #11 ve #12 (kullanım kolaylığı araştırması, yazar.io karşılaştırması, birleşik karar listesi; yalnız belge), #13 (K28 kullanım kolaylığı paketi, koyu tema, son çalışma özeti, iki yedek hatası), #14 (örnek evren D1 ve bu devir notu), #15 (DEVIR), #16 (K29: `@`, alıntı, soru setleri, Henüz yazılmayanlar), #17 (K29: geri al şeridi, soy ağacında kişiler arası bağlar, bağlantısız adlar).
 
