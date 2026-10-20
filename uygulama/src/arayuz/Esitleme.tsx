@@ -209,7 +209,7 @@ export function DurumOzeti({ istemci, evren, yedekVar }: { istemci: Istemci; evr
         <li>Bu cihazda kaydedildi.</li>
         <li>{drive}</li>
         <li class={eskiYedek ? 'durum-zayif' : undefined}>
-          {yedek ? `Son yedek: ${zamanYaz(yedek.zaman)}${yedek.drive ? ' (Drive, doğrulandı)' : ' (dosya)'}` : 'Henüz yedek yok.'}
+          {yedek ? `Son yedek: ${zamanYaz(yedek.zaman)}${yedek.drive ? ' (Drive, doğrulandı)' : ' (dosya hazırlandı, kaydedildiği denetlenemez)'}` : 'Henüz yedek yok.'}
           {yedekVar && <>{' '}<a class="dugme sade kucuk" href={`#/e/${evren}/yedek`}>Yedek al</a></>}
         </li>
       </ul>

@@ -16,7 +16,7 @@ import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ayrilmaYazisi, kokAdaylari } from '../alan/turkce-ek';
 import { kararGecerli, kurguTuruGecerli, turBul, turGecerli } from '../alan/turler';
 import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
-import { EvrenVt } from './evren-vt';
+import { EvrenVt, type AlmaSonucu } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import type { DriveSecenekleri, YuklemeIlerlemesi } from './drive';
 import { KurulumVt } from './kurulum-vt';
@@ -3322,7 +3322,15 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     }
     const e = this.evrenVt(kod);
     if (e.islemSayisi() > 0) throw new Error('Bu evren bu cihazda zaten var.');
-    e.disaridanAl(islemler);
+    // Eksik ya da tekrarlanan satırlı yedek yarım bir evren kurar; açılmaz, kurulan yarım evren silinir.
+    const yarimiSil = () => { e.db.close(); for (const ek of ['', '-journal']) this.dosyaSil(`/evren-${kod}.db${ek}`); };
+    let r: AlmaSonucu;
+    try { r = e.disaridanAl(islemler); } catch (x) { yarimiSil(); throw x; }
+    const beklenen = Number.isInteger(paket.islemSayisi) ? paket.islemSayisi : islemler.length;
+    if (r.bekleyen > 0 || r.alinan !== islemler.length || r.alinan !== beklenen) {
+      yarimiSil();
+      throw new Error(`Bu yedek eksik ya da bozuk: ${beklenen} değişiklikten ${r.alinan} tanesi eksiksiz okunabildi. Yedek açılmadı; başka bir yedek deneyin.`);
+    }
     const adi = (e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined) ?? String(paket.evren.ad);
     const gosterilen = ayri ? `${adi} (yedekten, ${new Date(Number(paket.olusturma)).toLocaleDateString('tr-TR')})` : adi;
     if (ayri) e.islemYap([{ tur: 'evren_adlandir', veri: { ad: gosterilen } }]);

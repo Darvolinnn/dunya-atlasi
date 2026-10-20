@@ -18,7 +18,7 @@ function kur(kurulum = 'Deneme') {
   const dosyalar = new Map<string, Database>();
   const ac = (ad: string) => { let d = dosyalar.get(ad); if (!d) { d = new sqlite3.oo1.DB(':memory:'); dosyalar.set(ad, d); } return d; };
   const depo = new BellekDeposu();
-  const h = new Hizmet(ac, kurulum, 'x', () => {}, depo, sahteIsleyici);
+  const h = new Hizmet(ac, kurulum, 'x', () => {}, depo, sahteIsleyici, undefined, undefined, (ad) => { dosyalar.delete(ad); });
   return { h, depo };
 }
 const yazisi = (spans: unknown) => {
@@ -170,5 +170,30 @@ describe('yedek ve geri yükleme', () => {
     const bozuk = await zipYaz([...o].map(([ad, veri]) => ({ ad, veri })));
     const yeni = kur('Dizüstü');
     await expect(yeni.h.yedektenYukle({ veri: bozuk })).rejects.toThrow(/görsel bozuk/);
+  });
+
+  it('eksik, tekrarlanan satırlı ya da sayısı tutmayan yedek açılmaz; yarım evren kalmaz', async () => {
+    const { h, evren } = await dolu();
+    const { veri } = await h.yedekAl({ evren });
+    const o = await zipOku(veri);
+    const satirlar = new TextDecoder().decode(o.get('islemler.jsonl')!).split('\n').filter(Boolean);
+    const paket = JSON.parse(new TextDecoder().decode(o.get('paket.json')!));
+    const yap = (l: string[], p = paket) => {
+      const m = new Map(o); m.set('islemler.jsonl', yazi(l.join('\n'))); m.set('paket.json', yazi(JSON.stringify(p)));
+      return zipYaz([...m].map(([ad, v]) => ({ ad, veri: v })));
+    };
+    const n = satirlar.length;
+    const durumlar = [
+      satirlar.slice(1), // baştan eksik
+      [...satirlar.slice(0, 2), ...satirlar.slice(3)], // ortadan eksik
+      satirlar.slice(0, -1), // sondan eksik
+      [...satirlar, satirlar[1]], // tekrarlanan satır
+    ];
+    const yeni = kur('Dizüstü');
+    for (const l of durumlar) await expect(yeni.h.yedektenYukle({ veri: await yap(l) })).rejects.toThrow(/eksik ya da bozuk/);
+    await expect(yeni.h.yedektenYukle({ veri: await yap(satirlar, { ...paket, islemSayisi: n + 1 }) })).rejects.toThrow(/eksik ya da bozuk/);
+    expect(yeni.h.evrenler().length).toBe(0);
+    // Sağlam yedek aynı cihazda sonra yine açılır.
+    expect((await yeni.h.yedektenYukle({ veri })).ayri).toBe(false);
   });
 });
