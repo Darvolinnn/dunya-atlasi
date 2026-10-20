@@ -11,6 +11,7 @@ import { Slice, type Node as PmNode } from 'prosemirror-model';
 import { pmDocFromSpans, pmNodeToSpans } from '@automerge/prosemirror';
 import { metinSemasi, isaretKodlari, isaretKodu } from '../alan/metin-sema';
 import { saatYaz } from '../alan/islem-metni';
+import { kelimeSay } from '../alan/kelime';
 import type { Istemci } from '../veri/istemci';
 import type { BaglamParcasi, BaglamParcasiTanimi, IsaretAlani, KisaKayit, KullanimBicimi, MetinKullanimi, Spans } from '../veri/api';
 import { BaglantiSecici, type Secim, type SeciciTutamagi } from './BaglantiSecici';
@@ -57,7 +58,7 @@ type Durum = { tur: 'kayitli'; zaman: number | null } | { tur: 'bekliyor' } | { 
 
 export interface EditorDenetimi { kaydet(): Promise<void> }
 
-export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, baslangic, saltOkunur = false, baglamParcalari = false, parcaDegisti }: {
+export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, baslangic, saltOkunur = false, baglamParcalari = false, parcaDegisti, kelimeDegisti, bosYardim }: {
   istemci: Istemci; evren: string; kayit: string; alan?: string; denetim?: { current: EditorDenetimi | null };
   /** Sahne metni: seçili parçaya ayrı bağlam verilebilir (F29). */
   baglamParcalari?: boolean;
@@ -67,6 +68,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   saltOkunur?: boolean;
   /** Kaldığın yere dönülüyorsa imlecin konumu. */
   baslangic?: number | null;
+  /** Kelime sayısı değişince (K28 sessiz sayaç). */
+  kelimeDegisti?: (n: number) => void;
+  /** Metin boşken metin alanında soluk duran, yazınca kaybolan yardım (K28). */
+  bosYardim?: preact.ComponentChildren;
 }) {
   const calisma = useCalisma();
   const calismaRef = useRef(calisma);
@@ -74,6 +79,15 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   const kap = useRef<HTMLDivElement>(null);
   const [durum, setDurum] = useState<Durum>({ tur: 'kayitli', zaman: null });
   const [hazir, setHazir] = useState(false);
+  const [kelime, setKelime] = useState<number | null>(null);
+  const kelimeZamani = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const kelimeSay_ = (doc: PmNode) => {
+    if (kelimeZamani.current) clearTimeout(kelimeZamani.current);
+    kelimeZamani.current = setTimeout(() => setKelime(kelimeSay(doc.textBetween(0, doc.content.size, ' ', ' '))), 250);
+  };
+  const kelimeRef = useRef(kelimeDegisti); kelimeRef.current = kelimeDegisti;
+  useEffect(() => { if (kelime !== null) kelimeRef.current?.(kelime); }, [kelime]);
+  useEffect(() => () => { if (kelimeZamani.current) clearTimeout(kelimeZamani.current); }, []);
   const [aracDurumu, setAracDurumu] = useState(0);
   const gorunum = useRef<EditorView | null>(null);
   type AcikSecici = SeciciIstegi & { konum: { left: number; top: number }; canli?: boolean };
@@ -306,6 +320,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           seciciIzle(tr, v.state);
           setAracDurumu((n) => n + 1);
           if (tr.docChanged && !tr.getMeta('disaridan')) planla();
+          if (tr.docChanged) kelimeSay_(v.state.doc);
           if ((tr.selectionSet || tr.docChanged) && !tr.getMeta('disaridan') && alan === 'govde') calismaRef.current?.konumBildir(kayit, v.state.selection.head);
         },
       });
@@ -316,6 +331,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           v.focus();
         } catch { /* metin değişmiş: başta kalır */ }
       }
+      setKelime(kelimeSay(gorunum.current.state.doc.textBetween(0, gorunum.current.state.doc.content.size, ' ', ' ')));
       setHazir(true);
     }, (e) => setDurum({ tur: 'hata', mesaj: (e as Error).message }));
 
@@ -607,7 +623,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         </div>
       )}
       <p class="soluk" style={{ padding: '0 20px', display: hazir || durum.tur === 'hata' ? 'none' : '' }}>Metin açılıyor…</p>
-      <div ref={kap} />
+      <div class="editor-govdesi">
+        <div ref={kap} />
+        {bosYardim && hazir && kelime === 0 && !saltOkunur && <div class="bos-yardim">{bosYardim}</div>}
+      </div>
       {secici && <BaglantiSecici key={`${secici.from}-${secici.canli ? '' : secici.sorgu}`} istemci={istemci} evren={evren} sorgu={secici.sorgu} konum={secici.konum}
         satirIci={secici.satirIci} tutamak={tutamak} kendiligindenTek={secici.kendiligindenBagla}
         sec={(s) => baglantiKur(seciciRef.current ?? secici, s)} kapat={seciciKapat} />}

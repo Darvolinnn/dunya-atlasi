@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AramaSonucu, GeciselEksen, GeciselSonuc, KayitOzeti } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
-import { turBul } from '../alan/turler';
+import { turBul, grupSinifi } from '../alan/turler';
 import { turkceKarsilastir } from '../alan/turkce';
 import { siraAnahtari } from '../alan/tarih';
 import { Gorsel } from './gorsel';
@@ -136,7 +136,7 @@ function KayitSatiri({ k, evren, nereden, parca, istemci }: { k: KayitOzeti; evr
   return (
     <li>
       <a class="kayit-satiri" href={`#/e/${evren}/k/${k.kod}`}>
-        {k.gorsel && istemci ? <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} sinif="satir-gorseli" /> : <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>}
+        {k.gorsel && istemci ? <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} sinif="satir-gorseli" /> : <span class={`tur-rozeti ${grupSinifi(tur)}`} title={tur.ad} aria-hidden="true">{tur.kisa}</span>}
         <span class="govde">
           <span class="satir-ad">{k.ad} <KararRozeti karar={k.karar} /></span>
           <span class="soluk kucuk">{tur.ad}{k.tarih ? ` · ${k.tarih.ifade}` : ''}{k.ozet ? ` · ${k.ozet}` : ''}{nereden ? ` · ${nereden}` : ''}</span>
@@ -161,7 +161,7 @@ export function CopKutusu({ istemci, evren, surum }: { istemci: Istemci; evren: 
             const tur = turBul(k.tur);
             return (
               <li key={k.kod} class="kayit-satiri">
-                <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>
+                <span class={`tur-rozeti ${grupSinifi(tur)}`} title={tur.ad} aria-hidden="true">{tur.kisa}</span>
                 <span class="govde">
                   <a class="satir-ad" href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>
                   <span class="soluk kucuk">{tur.ad} · {zamanYaz(k.silindi!)} tarihinde silindi</span>

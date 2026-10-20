@@ -48,6 +48,7 @@ export function AnlatiYolu({ istemci, evren, kayit, yazma = false }: { istemci: 
   }
   return (
     <nav class="anlati-yolu" aria-label="Eserdeki yeri">
+      {yer.seri && <><a href={`#/e/${evren}/k/${yer.seri.kod}`}>{yer.seri.ad}</a><span class="soluk">›</span></>}
       {yazma ? <a href={`#/e/${evren}/yaz/${yer.eser.kod}`}>{yer.eser.ad}</a> : bag(evren, yer.eser)}
       {yer.bolum && <><span class="soluk">›</span>{kayit.tur === 'bolum' ? <span>{yer.bolum.sira}. bölüm</span> : <a href={`#/e/${evren}/${yol}/${yer.bolum.kod}`}>{yer.bolum.sira}. bölüm: {yer.bolum.ad}</a>}</>}
       {yer.sira !== null && <><span class="soluk">›</span><span>{yer.sira}. sahne</span></>}

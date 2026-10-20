@@ -846,6 +846,8 @@ export interface YapiSahnesi { kod: string; ad: string; tur: string; karar: stri
 export interface YapiBolumu { kod: string; ad: string; karar: string; sira: number; sahneler: YapiSahnesi[] }
 export interface EserYapisi { eser: { kod: string; ad: string }; bolumler: YapiBolumu[]; dogrudan: YapiSahnesi[] }
 export interface AnlatiYeri {
+  /** Eserin serisi (K28 yol satırı). */
+  seri: { kod: string; ad: string } | null;
   eser: { kod: string; ad: string } | null;
   bolum: { kod: string; ad: string; sira: number } | null;
   /** Sahnenin eserin okuma sırasındaki yeri (1'den). */
@@ -1489,6 +1491,7 @@ export interface Istekler {
   ara(a: { evren: string; metin: string; sinir?: number; metinde?: boolean }): AramaSonucu[];
   baglananlar(a: { evren: string; kod: string }): BaglananKayit[];
   andiklari(a: { evren: string; kod: string }): BaglananKayit[];
+  sonParagraf(a: { evren: string; kod: string }): string;
   bahsedilenler(a: { evren: string }): (KayitOzeti & { anilma: number })[];
   adDuzeltmeOnizle(a: { evren: string; kod: string; eskiAd: string; yeniAd: string; eskiOkunus?: string }): AdDuzeltmesi[];
   adDuzeltmeUygula(a: { evren: string; kod: string; eskiAd: string; yeniAd: string; eskiOkunus?: string; secilenler: string[] }): { degisen: number };

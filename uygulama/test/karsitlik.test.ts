@@ -29,6 +29,8 @@ const CIFTLER: [string, string][] = [
   ...['zemin', 'yuzey', 'yuzey-2', 'kenar', 'vurgu-zemin'].flatMap((z) => [['metin', z], ['metin-2', z]] as [string, string][]),
   ...['zemin', 'yuzey', 'yuzey-2', 'kenar'].flatMap((z) => ['vurgu', 'tehlike', 'basari', 'inanc'].map((y) => [y, z] as [string, string])),
   ['vurgu', 'vurgu-zemin'], ['vurgu-metin', 'vurgu'],
+  // Tür grubu rozetleri (K28).
+  ...['insan', 'yer', 'kultur', 'isleyis', 'zaman', 'anlati', 'diger'].map((g) => [`tg-${g}-y`, `tg-${g}-z`] as [string, string]),
 ];
 
 describe('renk karşıtlığı', () => {

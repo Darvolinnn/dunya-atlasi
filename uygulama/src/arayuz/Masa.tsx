@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { KaldigiYerBilgisi, KayitOzeti, KisaKayit, SimdiOnerisi } from '../veri/api';
-import { turBul } from '../alan/turler';
+import { turBul, grupSinifi } from '../alan/turler';
 import { zamanYaz } from '../alan/islem-metni';
 import { useCalisma } from './Calisma';
 import { KararRozeti } from './ortak';
@@ -83,7 +83,7 @@ export function KisaListe({ evren, kayitlar, zamanli }: { evren: string; kayitla
         const tur = turBul(k.tur);
         return (
           <li key={k.kod}>
-            <a href={`#/e/${evren}/k/${k.kod}`}><span class="tur-rozeti kucuk-rozet" aria-hidden="true" title={tur.ad}>{tur.kisa}</span> {k.ad}</a>
+            <a href={`#/e/${evren}/k/${k.kod}`}><span class={`tur-rozeti kucuk-rozet ${grupSinifi(tur)}`} aria-hidden="true" title={tur.ad}>{tur.kisa}</span> {k.ad}</a>
             {' '}<KararRozeti karar={k.karar} />
             <span class="soluk kucuk"> {tur.ad}{zamanli ? ` · ${zamanYaz(k.duzenleme)}` : ''}</span>
           </li>

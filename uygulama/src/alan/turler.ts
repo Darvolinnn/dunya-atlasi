@@ -48,6 +48,12 @@ export const TURLER: Tur[] = [
 ];
 
 const harita = new Map(TURLER.map((t) => [t.kod, t]));
+/** Tür grubunun renk sınıfı (§12.1, K28): rozet, ağ düğümü, liste ve palet aynı rengi kullanır. */
+const GRUP_SINIFI: Record<string, string> = {
+  'İnsanlar ve gruplar': 'tg-insan', 'Yerler': 'tg-yer', 'Kültür ve inanç': 'tg-kultur', 'Evrenin işleyişi': 'tg-isleyis',
+  'Zaman ve tarih': 'tg-zaman', 'Anlatı ve yazarlık': 'tg-anlati',
+};
+export const grupSinifi = (t: Tur | string) => GRUP_SINIFI[(typeof t === 'string' ? turBul(t) : t).grup] ?? 'tg-diger';
 export const turBul = (kod: string): Tur => harita.get(kod) ?? { kod, ad: 'Diğer', grup: 'Diğer', kisa: '··' };
 export const turGecerli = (kod: unknown): kod is string => typeof kod === 'string' && harita.has(kod);
 

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AgKenari, AgSonucu, BolumMatrisi, DurumGecmisi, DurumSatiri, EtkiRaporu, KurguHatlari, NedenSonucAgi, SoyAgaci } from '../veri/api';
 import { ILISKI_TURLERI, iliskiTuruBul, rolAdi } from '../alan/iliski-turleri';
-import { TURLER, turBul } from '../alan/turler';
+import { TURLER, turBul, grupSinifi } from '../alan/turler';
 import { anaTakvim, eksenYili, tarihAciklamasi, yilYazisi, type EvrenTarihi, type TakvimYa } from '../alan/tarih';
 import { KararRozeti } from './ortak';
 import { KayitSec } from './KayitBolumleri';
@@ -16,8 +16,6 @@ import type { Secim } from './BaglantiSecici';
 import { kuvvetYerlesimi, soyYerlesimi, SOY_BOY, SOY_EN, type Nokta } from './yerlesim';
 
 const hataYaz = (e: unknown) => (e as Error).message;
-const GRUPLAR = [...new Set(TURLER.map((t) => t.grup))];
-const grupSinifi = (tur: string) => `tg-${Math.max(0, GRUPLAR.indexOf(turBul(tur).grup))}`;
 const kisalt = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
 function useYenile(istemci: Istemci, evren: string) {
@@ -204,6 +202,7 @@ function SoyAciklamasi() {
 }
 
 // ---------- Ağ ----------
+const GRUPLAR = [...new Set(TURLER.map((t) => t.grup))];
 const ILISKI_GRUPLARI = [...new Set(ILISKI_TURLERI.map((t) => t.grup))];
 
 export function AgGorunumu({ istemci, evren, merkez }: { istemci: Istemci; evren: string; merkez: string | null }) {

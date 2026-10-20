@@ -1678,6 +1678,14 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return [...harita.values()];
   }
 
+  /** Bir kaydın metninin son paragrafı (K28 boş sahnede başlama yardımı); en çok 300 harf. */
+  sonParagraf({ evren, kod }: { evren: string; kod: string }): string {
+    const e = this.evren(evren);
+    const duz = (e.db.selectValue("SELECT duz FROM metinler WHERE kayit=? AND alan='govde'", [yonlendirKod(e, kod)]) as string | undefined) ?? '';
+    const p = duz.split('\n').map((x) => x.trim()).filter(Boolean).pop() ?? '';
+    return p.length > 300 ? '…' + p.slice(-299) : p;
+  }
+
   /** Bu kaydın kendi metinlerinde bağlantı verdiği kayıtlar ("andıkları", §3.2, K28); birleşmiş hedef son kayda çevrilir. */
   andiklari({ evren, kod }: { evren: string; kod: string }): BaglananKayit[] {
     const e = this.evren(evren);

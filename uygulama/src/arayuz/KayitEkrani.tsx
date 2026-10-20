@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AdDuzeltmesi, EvrenBilgisi, BaglananKayit, DegisebilirAlan, GunlukSatiri, Kayit, Spans } from '../veri/api';
 import { sesBilgisi } from '../alan/turkce-ek';
-import { KARARLAR, turBul } from '../alan/turler';
+import { KARARLAR, turBul, grupSinifi } from '../alan/turler';
 import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
 import { MetinEditoru, MetinGorunumu, type EditorDenetimi } from './MetinEditoru';
 import { KararSecici, TurSecici } from './ortak';
@@ -137,7 +137,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         <CatismaListesi istemci={istemci} evren={evren} kod={kod} surum={surum} />
         {(kayit.tur === 'sahne' || kayit.tur === 'bolum') && <AnlatiYolu istemci={istemci} evren={evren} kayit={kayit} />}
         <div class="kayit-basi">
-          <span class="tur-rozeti" title={tur.ad} aria-hidden="true">{tur.kisa}</span>
+          <span class={`tur-rozeti ${grupSinifi(tur)}`} title={tur.ad} aria-hidden="true">{tur.kisa}</span>
           <GorunurlukRozeti g={kayit.gorunurluk} />
           <AlanGirdisi etiket="Ad" deger={kayit.ad} buyuk zorunlu kaydet={async (v) => {
             const eskiAd = kayit.ad, eskiOkunus = kayit.okunus;
@@ -442,7 +442,7 @@ function Baglananlar({ istemci, evren, kod, surum }: { istemci: Istemci; evren: 
           return (
             <li key={b.kod}>
               <a class="kayit-satiri" href={`#/e/${evren}/k/${b.kod}`}>
-                <span class="tur-rozeti" aria-hidden="true" title={tur.ad}>{tur.kisa}</span>
+                <span class={`tur-rozeti ${grupSinifi(tur)}`} aria-hidden="true" title={tur.ad}>{tur.kisa}</span>
                 <span class="govde">
                   <span class="satir-ad">{b.ad}</span>
                   <span class="soluk kucuk">{b.ifadeler.map((i) => `“${i}”`).join(', ')}</span>

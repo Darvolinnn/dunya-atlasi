@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AramaSonucu } from '../veri/api';
-import { turBul } from '../alan/turler';
+import { turBul, grupSinifi } from '../alan/turler';
 import { KararRozeti, TurSecici } from './ortak';
 
 export interface Secim { kod: string; ad: string }
@@ -102,7 +102,7 @@ export function BaglantiSecici({ istemci, evren, sorgu: disSorgu, konum, sec, ka
               return (
                 <li id={`secici-${i}`} role="option" aria-selected={i === etkin} class={i === etkin ? 'etkin' : ''}
                   onMouseEnter={() => setEtkin(i)} onMouseDown={(e) => { e.preventDefault(); sec(s); }}>
-                  <span class="tur-rozeti kucuk-rozet" aria-hidden="true">{tur.kisa}</span>
+                  <span class={`tur-rozeti kucuk-rozet ${grupSinifi(tur)}`} aria-hidden="true">{tur.kisa}</span>
                   <span class="govde">
                     <span class="satir-ad">{s.ad} <KararRozeti karar={s.karar} /></span>
                     <span class="soluk kucuk">{tur.ad}{s.ozet ? ` · ${s.ozet}` : ''}{NEREDEN[s.nereden.tur] && s.nereden.tur !== 'ozet' ? ` · ${NEREDEN[s.nereden.tur]}${s.nereden.tur !== 'kok' ? ` “${s.nereden.metin}”` : ''}` : ''}</span>
