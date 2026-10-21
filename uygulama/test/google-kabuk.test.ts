@@ -26,6 +26,11 @@ describe('Windows uygulamasında Google izni', () => {
     kabukla(() => { throw 'Google izni verilmedi.'; });
     await expect(izinAl()).rejects.toThrow('Google izni verilmedi.');
   });
+  it('kabuk isteğe izin vermiyorsa eski pencereye düşer, ham hata gösterilmez', async () => {
+    kabukla(() => { throw 'Command google_izin not allowed by ACL'; });
+    // Eski yol Google kütüphanesini yüklemeye çalışır; sınamada belge yok, bu yüzden başka bir hata gelir.
+    await expect(izinAl()).rejects.not.toThrow(/ACL/);
+  });
   it('bağlantı kesilince kabuktaki yenileme anahtarı da geri alınır', async () => {
     const c = kabukla(() => null);
     await izniGeriAl(null);

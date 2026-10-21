@@ -21,6 +21,10 @@ sha2 = "0.10"
 tokio = { version = "1", features = ["net", "io-util", "time", "macros", "rt-multi-thread", "sync"] }
 url = "2"
 
+[dev-dependencies]
+# İzin listesinin (capabilities) yerel adresten gelen sayfaya Google isteklerini açtığını sınamak için.
+tauri = { version = "2", features = ["test"] }
+
 [profile.release]
 codegen-units = 1
 lto = true

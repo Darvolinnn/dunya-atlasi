@@ -35,7 +35,11 @@ async function kabuktanIzin(eposta: string | undefined): Promise<{ jeton: string
   if (!k) return null;
   let y: KabukIzni | null;
   try { y = await k.invoke<KabukIzni | null>('google_izin', { eposta: eposta ?? null }); }
-  catch (e) { throw kabukHatasi(e); }
+  catch (e) {
+    // Kabuk bu isteği tanımıyor ya da çağırmaya izin vermiyorsa (eski ya da hatalı kurulum) eski yol kullanılır.
+    if (/not allowed|not found|ACL/i.test(String(e instanceof Error ? e.message : e))) return null;
+    throw kabukHatasi(e);
+  }
   if (!y) return null;
   if (!y.kapsam.split(' ').includes('https://www.googleapis.com/auth/drive.appdata')) {
     throw new Error('Drive izni verilmedi. Bağlanırken programın kendi Drive klasörüne erişim izni veren kutuyu işaretleyin.');
