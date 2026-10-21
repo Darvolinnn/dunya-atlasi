@@ -107,3 +107,31 @@ describe('Drive: büyük dosyada kaldığı yerden yükleme (TK5)', () => {
     expect(ayni([...d.biten.values()][0], v)).toBe(true);
   });
 });
+
+describe('Drive: takılan istek eşitlemeyi bekletmez', () => {
+  /** Yanıt vermeyen ya da yanıtın gövdesini hiç bitirmeyen sahte Drive; yalnız istek kesilince hata verir. */
+  const takilan = (govdeyiBitirme: boolean) => {
+    let deneme = 0;
+    const getir = (async (_url: string, ayar: RequestInit = {}) => {
+      deneme++;
+      const sinyal = ayar.signal!;
+      const kesilince = (hata: (e: unknown) => void) => sinyal.addEventListener('abort', () => hata(sinyal.reason), { once: true });
+      if (!govdeyiBitirme) return new Promise<Response>((_, red) => kesilince(red));
+      const akis = new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('{"files":[')); kesilince((e) => c.error(e)); } });
+      return new Response(akis, { status: 200 });
+    }) as unknown as typeof fetch;
+    return { getir, denemeler: () => deneme };
+  };
+  const t = (getir: typeof fetch) => new DriveTasiyici('jeton', Date.now() + 3600_000, 'appDataFolder', { fetch: getir, bekleme: 0, istekSuresi: 20 });
+
+  it('yanıt gelmezse süre dolunca yeniden dener, sonra anlaşılır hata verir', async () => {
+    const s = takilan(false);
+    await expect(t(s.getir).listele({})).rejects.toThrow(/ulaşılamadı/);
+    expect(s.denemeler()).toBe(4);
+  });
+
+  it('yanıtın gövdesi bitmezse de süre dolunca hata verir', async () => {
+    const s = takilan(true);
+    await expect(t(s.getir).listele({})).rejects.toThrow(/zamanında gelmedi/);
+  });
+});

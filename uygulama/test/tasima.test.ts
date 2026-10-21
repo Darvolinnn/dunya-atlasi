@@ -129,7 +129,7 @@ describe('yedek ve geri yükleme', () => {
     const bilgi = await yeni.h.yedekIncele({ veri });
     expect(bilgi).toMatchObject({ evrenKod: evren, evrenAdi: 'Kuzey Toprakları', medyaSayisi: 1, mevcut: null });
     const r = await yeni.h.yedektenYukle({ veri });
-    expect(r).toEqual({ kod: evren, ayri: false });
+    expect(r).toEqual({ kod: evren, ayri: false, eksikGorseller: [] });
     expect(yeni.h.evrenler().map((e) => e.ad)).toContain('Kuzey Toprakları');
     expect(yeni.h.kayitlar({ evren })).toEqual(h.kayitlar({ evren }));
     expect(yeni.h.kayitlar({ evren, cop: true }).map((k) => k.ad)).toEqual(['Silinen']);
@@ -158,6 +158,35 @@ describe('yedek ve geri yükleme', () => {
     h.evrenYerineKoy({ kopya: r.kod, asil: evren });
     expect(h.evrenBilgisi({ evren: r.kod }).ad).toBe('Kuzey Toprakları');
     expect(h.evrenBilgisi({ evren }).ad).toMatch(/^Kuzey Toprakları \(eski, /);
+  });
+
+  it('bu cihazda dosyası olmayan görsel yedek alınırken bildirilir; geri yüklemede de söylenir', async () => {
+    const { h, depo, evren } = await dolu();
+    expect((await h.yedekAl({ evren })).eksikGorsel).toBe(0);
+    depo.dosyalar.clear(); // görselin kaydı var, dosyası bu cihazda yok
+    const { veri, eksikGorsel } = await h.yedekAl({ evren });
+    expect(eksikGorsel).toBe(1);
+    const yeni = kur('Dizüstü');
+    expect(await yeni.h.yedekIncele({ veri })).toMatchObject({ medyaSayisi: 0, eksikMedya: 1 });
+    const r = await yeni.h.yedektenYukle({ veri });
+    expect(r.eksikGorseller).toHaveLength(1);
+    expect(yeni.h.kayitlar({ evren }).length).toBe(h.kayitlar({ evren }).length); // metin kurtarılır
+  });
+
+  it('pakette listelenip içinde olmayan görsel, paketin kendi eksik sayısına bakılmadan bulunur', async () => {
+    const { h, evren } = await dolu();
+    const { veri } = await h.yedekAl({ evren });
+    const o = await zipOku(veri);
+    for (const ad of [...o.keys()]) if (ad.startsWith('medya/')) o.delete(ad);
+    const paket = JSON.parse(new TextDecoder().decode(o.get('paket.json')!));
+    expect(paket.eksikMedya).toBe(0);
+    const kirpik = await zipYaz([...o].map(([ad, v]) => ({ ad, veri: v })));
+    const yeni = kur('Dizüstü');
+    expect((await yeni.h.yedekIncele({ veri: kirpik })).eksikMedya).toBe(1);
+    expect((await yeni.h.yedektenYukle({ veri: kirpik })).eksikGorseller).toEqual(paket.medyaAdlari);
+    // Görsel bu cihazda zaten varsa kaybolan bir şey yok.
+    expect((await h.yedekIncele({ veri: kirpik })).eksikMedya).toBe(0);
+    expect((await h.yedektenYukle({ veri: kirpik })).eksikGorseller).toEqual([]);
   });
 
   it('yedek olmayan ya da bozulmuş dosya reddedilir', async () => {

@@ -22,7 +22,7 @@ export interface DonemselYedekErisimi {
   paketYaz(evren: string, medyaDahil: boolean): Promise<{ dosyaAdi: string; veri: Uint8Array; zaman: number; medyaAdlari: string[]; ad: string; islemSayisi: number }>;
   /** Paketi açar ve her değişiklik satırını denetler (bozuksa hata atar); evrene dokunmaz. */
   yedekIncele(veri: Uint8Array): Promise<{ evrenKod: string; islemSayisi: number }>;
-  yedektenYukle(veri: Uint8Array): Promise<{ kod: string; ayri: boolean }>;
+  yedektenYukle(veri: Uint8Array): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[] }>;
 }
 
 import type { DriveYedegi, DonemselYedekDurumu as Durum } from '../veri/api';

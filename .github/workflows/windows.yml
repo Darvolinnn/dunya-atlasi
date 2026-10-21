@@ -1,5 +1,7 @@
 # Windows kurulum dosyası (TK6): Tauri kabuğuyla derlenir ve "windows" sürüm sayfasına
 # "Dunya-Atlasi-kurulum.exe" adıyla konur. Bilgisayara yalnızca bu dosya indirilip çalıştırılır.
+# Sürüm sayfasına yalnız `main`'in, tür denetimi ve sınamaları geçmiş derlemesi konur. Öteki dallarda kurulum
+# dosyası yalnız bu işin eki olarak indirilebilir; indirme bağlantısındaki dosyanın yerini almaz.
 name: Windows uygulaması
 on:
   push:
@@ -29,6 +31,8 @@ jobs:
         with:
           workspaces: uygulama/src-tauri
       - run: npm ci
+      - run: npm run denetle
+      - run: npm test
       - run: npx tauri build
       - name: Kurulum dosyasını adlandır
         shell: pwsh
@@ -40,6 +44,7 @@ jobs:
           name: Dunya-Atlasi-kurulum
           path: uygulama/Dunya-Atlasi-kurulum.exe
       - name: Sürüm sayfasına koy
+        if: github.ref == 'refs/heads/main'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
