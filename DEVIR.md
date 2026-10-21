@@ -24,7 +24,8 @@ Kullanıcı projenin bittiğini düşünüp son kontrol istedi. Bulutta (Linux, 
 - Kod işi kalmadı: bağlam panelinin boş sahnede kapalı açılması (`sahneBaglamiBos`) ve evren içi durum özeti (`DurumOzeti`) kodlu; rehberli arayüz kararlarının hepsi kodlu (§3.5).
 - **Windows PR #1** `main`'in 2 kayıt gerisinde (yalnız DEVIR), çakışmasız birleşir. Birleştirmek kullanıcının denemesine bağlı (§3.3-4).
 - **Eski dallar:** 24 eski dal duruyor. `paket/**` dalları `main`'in yeniden yazılmadan önceki geçmişinde kaldığı için `main` ile ortak ataları yok; içerikleri zaten `main`'de (§3.1). `claude/*` dallarının PR'ları birleşti. Silinebilirler; silme geri alınamaz sayıldığı için kullanıcıya soruldu.
-- Kalanlar kullanıcıda: Windows kurulumunu denemek ve Google izinli adreslerine `http://localhost:41730` eklemek, K16 gerçek kullanım. Tablette gerçek bellek ölçümü ve tablet sürümü ertelenmiş durumda (kullanıcı kararı, 19 Ekim).
+- **Kullanıcı 21 Ekim 15:54'te Google izinli JavaScript kaynaklarına `http://localhost:41730` adresini ekledi** (kapı `src-tauri/src/main.rs` `KAPI` sabit, değişmez; yönlendirme adresi gerekmez, giriş `initTokenClient` açılır pencereyle). Kalanlar kullanıcıda: Windows uygulamasında Google girişini ve uygulamayı denemek ("çalışıyor" derse PR #1 birleştirilir), K16 gerçek kullanım.
+- Eski 24 dalı silme kararı: kullanıcı "Sil" dedi (21 Ekim); bulut oturumunun GitHub erişimi dal silmeye izin vermedi (403), kullanıcıya GitHub dallar sayfasından nasıl sileceği anlatıldı. Tablette gerçek bellek ölçümü ve tablet sürümü ertelenmiş durumda (kullanıcı kararı, 19 Ekim).
 
 ## 1. Önce oku (sırayla)
 
