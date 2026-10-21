@@ -113,11 +113,11 @@ Aşağıdaki sözcükler belgede yalnızca bu anlamlarda kullanılır. Kodu yaza
 |---|---|---|
 | K1 | **Programda yapay zekâ yoktur.** İçeriği kullanıcı yazar. Arama, filtreleme, hesap ve denetim yalnızca kullanıcının kaydettiği yapılandırılmış veri ve tanımladığı kurallarla çalışır. Program serbest metinden anlam çıkarmış gibi davranmaz. | 18 Ekim |
 | K2 | **Eşitleme ve yedek Google Drive üzerinden yapılır ve ayrı işlevlerdir.** Eşitleme cihazları güncel tutar; dönemsel yedek geri dönülebilir kopyalar saklar. Ayrıntı §10. | 18 Ekim |
-| K3 | **Cihazlar:** Windows 11 bilgisayar, Samsung Galaxy Tab S11 Ultra (Android) ve iPhone aynı evrende çalışır; bir cihazda başlanan işe öbüründe devam edilir. | 18 Ekim |
+| K3 | **Cihazlar:** Windows 11 bilgisayar ve Samsung Galaxy Tab S11 Ultra (Android) aynı evrende çalışır; bir cihazda başlanan işe öbüründe devam edilir. iPhone için sürüm yapılmaz (19 Ekim). | 18 Ekim, 19 Ekim |
 | K4 | **Tasarım, geliştirme maliyeti kaygısıyla daraltılmaz.** Geliştirme sırası (§14) yalnızca sırayı belirler. | 18 Ekim |
 | K5 | **Program yazarlık yöntemi dayatmaz.** Hiçbir alan zorunlu değildir; kullanıcı önce serbestçe yazar, ayrıntıyı ihtiyaç duydukça açar. | 18 Ekim |
 | K6 | **Özellik seçiminin ölçütü:** "Bu özellik evrenimi kurarken hangi işimi kolaylaştırıyor?" Rakiplerden farklılaşmak tek başına gerekçe değildir. | 18 Ekim |
-| K7 | **Kod ve tasarım belgeleri herkese açık bir GitHub deposunda tutulur:** `Darvolinnn/dunya-atlasi` (Darvolinnn ve TearsFears227 hesaplarının ikisi de kullanıcınındır). Depo önce gizli olarak düşünülmüştü; kullanıcı 18 Ekim'de herkese açık olmasını seçti. Depoya sır, gerçek evren içeriği ve ekran görüntüsü konmaz. Program ana ekrana eklenebilen bir web uygulamasıdır (PWA). Depodan Cloudflare Pages ile, yalnızca kendisine ait bir kökende yayımlanır; adrese yalnızca kullanıcının hesabıyla girilir (Cloudflare Access). Evren verisi depoya ve siteye girmez (§17.3). | 18 Ekim |
+| K7 | **Kod ve tasarım belgeleri herkese açık bir GitHub deposunda tutulur:** `Darvolinnn/dunya-atlasi` (Darvolinnn ve TearsFears227 hesaplarının ikisi de kullanıcınındır). Depo önce gizli olarak düşünülmüştü; kullanıcı 18 Ekim'de herkese açık olmasını seçti. Depoya sır, gerçek evren içeriği ve ekran görüntüsü konmaz. Program bilgisayara kurulan bir uygulamadır: Windows için kurulum dosyası, tablet için APK; ikisi de aynı koddan bir uygulama kabuğuyla üretilir (TK6, §17.1). İnternette yayımlanan bir site yoktur. Evren verisi depoya girmez (§17.3). | 18 Ekim, 19 Ekim |
 | K8 | **Görünüm: soft, temiz, narin; sade kartlar.** Parşömen ve arşiv dokusu yalnızca kapakta, wikide ve evren içi belge çıktılarında. Ayrıntı §12. | 18 Ekim |
 | K9 | **Tasarım aşaması kullanıcı "geç" demeden kapanmaz.** O zamana kadar depoya yalnızca tasarım belgeleri girer. Kullanıcının açık onayı olmadan kodlamaya geçilmez. | 18 Ekim |
 | K10 | **Tasarım belgesi yalnızca güncel davranışı anlatır;** geçmiş ayrı tutulur (§0.2). | 18 Ekim |
@@ -126,8 +126,8 @@ Aşağıdaki sözcükler belgede yalnızca bu anlamlarda kullanılır. Kodu yaza
 | K13 | **Düz değerin varsayılan anlamı:** Bir alana düz girilen değer *kesinleşmiş* ve *evrenin gerçeği*dir; `[[` ile doğan kayıt *fikir*dir. Fikir durumundaki değerler denetlenir ama uyarıları ayrı ve sessiz bir grupta durur; vazgeçilmiş değerler denetlenmez. Ayrıntı §3.6. | 18 Ekim |
 | K14 | **Sahne olayı:** Sahnedeki değişimleri kaydetmek için önce olay oluşturmak gerekmez; her sahnenin görünür bir sahne olayı vardır. Ayrıntı §3.3. | 18 Ekim |
 | K15 | **Eşitleme biçimi (eski A1):** Her kurulum değişmez parça dosyaları yazar. Yapılandırılmış veri programın kendi işlem günlüğüyle, uzun metin bir metin CRDT'siyle tutulur. Ayrıntı §10. | 18 Ekim |
-| K16 | **Geliştirme ve cihaz sırası:** Önce Windows'ta, tek cihazda yerel çalışan sürüm; sonra Drive eşitlemesi; tablet ve iPhone en son, adım adım. Bir aşama, kullanıcının o sürümü kendi evreniyle iki hafta her gün kullanmasıyla biter. Ayrıntı §14. | 18 Ekim |
-| K17 | **Teknik deneyler:** Tasarımın dayandığı platform varsayımları kodlamadan önce depo dışındaki küçük deneylerle sınanır. Windows deneyleri önce, tablet ve iPhone deneyleri en son yapılır. Ayrıntı §1.3, §14. | 18 Ekim |
+| K16 | **Geliştirme ve cihaz sırası:** Önce Windows'ta, tek cihazda yerel çalışan sürüm; sonra Drive eşitlemesi; tablet en son. Bir aşama, kullanıcının o sürümü kendi evreniyle iki hafta her gün kullanmasıyla biter. Ayrıntı §14. | 18 Ekim |
+| K17 | **Teknik deneyler:** Tasarımın dayandığı platform varsayımları kodlamadan önce depo dışındaki küçük deneylerle sınanır. Windows deneyleri önce, tablet deneyleri en son yapılır. Ayrıntı §1.3, §14. | 18 Ekim |
 | K18 | **Tek yazar, birden çok evren:** Program yalnızca kullanıcının kendi cihazları içindir; ortak yazarlık hedef değildir. Kullanıcının birden çok evreni olabilir; her evren ayrı eşitlenir ve yedeklenir. | 18 Ekim |
 | K19 | **Lisans ve görünürlük:** Depoya lisans eklenmez; kodu başkası kullanamaz. Depo, uygulama adresi ve belgeler olabildiğince kapalı tutulur. | 18 Ekim |
 | K20 | **Wiki şimdilik yok.** Yayın ve wiki (§11) kullanıcı ileride isterse uygulanacak tasarım olarak durur; geliştirme sırasında yer almaz ve hiç yapılmayabilir. | 18 Ekim |
@@ -148,7 +148,7 @@ Her satırda tasarımın önerisi yazılıdır. Kullanıcı karar verene kadar �
 
 | # | Soru | Öneri | Etkilediği yer |
 |---|---|---|---|
-| A3 | Wiki hiç olacak mı; olursa nerede ve kimin için? | Şimdilik yok (K20). Olursa yazar uygulamasından **ayrı bir kökende**, Cloudflare Pages ile; okurları kullanıcı seçer | §11 |
+| A3 | Wiki hiç olacak mı; olursa nerede ve kimin için? | Şimdilik yok (K20). Olursa yazar uygulamasından **ayrı bir kökende** yayımlanan bir sitedir; okurları kullanıcı seçer | §11 |
 | A4 | Yazar sayfası gerekli mi? | Ayrı modül yerine wiki kapağında isteğe bağlı "Hakkında / Önsöz" alanı | §11 |
 | A5 | Harita çizimi: yalnızca yüklenen görseller mi, çizim aracı da mı? | Önce yükleme ve işaretleme; bölge çizimi aşama 3'te; serbest çizim için F46 değerlendirilir | §8 |
 | A6 | Claude'daki prototipin akıbeti | Program hazır olana kadar karalama defteri; içe aktarımı aşama 1'dedir (§14); aktarım yazılırken sınanır, şimdiden kayıpsız sayılmaz | §14 |
@@ -167,11 +167,11 @@ Kodlamadan önce kapanması gereken teknik kararlardır. Numaraları §13'teki T
 | # | Soru | Öneri | Nasıl kapanır | Etkilediği yer |
 |---|---|---|---|---|
 | TK1 | Yerel veritabanı | **Karar verildi (18 Ekim, Windows deneyi):** tarayıcıda SQLite (WASM), tarayıcının özel dosya alanında, "SAH havuzu" biçimiyle. Özel sunucu başlığı gerektirmez. Veritabanını aynı anda yalnızca bir sekme açar; bu, §10.5'teki tek yazıcı kuralıyla uyumludur. IndexedDB yalnızca özel dosya alanı olmayan bir cihaz için yedek kalır | Karar verildi. Ölçüm (25.000 kayıt, 3.000 sahne): açılış 0,2 sn, tüm sahnelerde arama 17–100 ms, sahne kaydı 13 ms, 162 MB. Ayrıntı: `deneyler/tk1-veritabani/SONUC.md` | §10.1 |
-| TK2 | Uzun metin için metin CRDT kütüphanesi | **Karar verildi (18 Ekim, Windows deneyi): Automerge.** Değişiklik geçmişi ve işaretin sınır davranışı kütüphanede hazır. Tuşlar otomatik kaydetme aralığında gruplanıp tek değişiklik olarak kaydedilir. İşaretli metnin tamamı değişirse işaret kalkar; uygulama bunu inceleme listesine düşürür. Paragraf bölme ve birleştirme aşama 1a'da sınanır. Yjs yedek kalır (iPhone deneyinde boyut ya da hız sorun çıkarırsa) | Karar verildi. İki profilde eşzamanlı düzenleme: yazım kaybı yok, işaretler yerinde, ortak başlangıç ile A ve B sürümleri okunabiliyor. Ayrıntı: `deneyler/tk2-metin/SONUC.md` | §10.3, §5.7 |
-| TK3 | Google oturum modeli | **Windows kısmı için karar verildi (18 Ekim):** tarayıcıda 1 saatlik erişim izni, sunucu yok. Açılışta ve izin dolunca tarayıcı dokunmadan Google penceresi açtırmaz; "eşitlemek için dokun" şeridi tek dokunuşla yeniler. Hesap e-postası yalnızca cihazda saklanır ve yenilemede Google'a ipucu olarak verilir; böylece birden çok hesap açıkken bile hesap seçimi ve izin sorulmaz. İzin yokken yazma sürer, değişiklikler bekler | Windows'ta karar verildi (yenileme yaklaşık 4,4 sn). iPhone ana ekran uygulaması kısmı açık: en son deneyde. Ayrıntı: `deneyler/tk3-tk4-google/SONUC.md` | §10.8 |
+| TK2 | Uzun metin için metin CRDT kütüphanesi | **Karar verildi (18 Ekim, Windows deneyi): Automerge.** Değişiklik geçmişi ve işaretin sınır davranışı kütüphanede hazır. Tuşlar otomatik kaydetme aralığında gruplanıp tek değişiklik olarak kaydedilir. İşaretli metnin tamamı değişirse işaret kalkar; uygulama bunu inceleme listesine düşürür. Paragraf bölme ve birleştirme aşama 1a'da sınanır. Yjs yedek kalır (tablette boyut ya da hız sorun çıkarırsa) | Karar verildi. İki profilde eşzamanlı düzenleme: yazım kaybı yok, işaretler yerinde, ortak başlangıç ile A ve B sürümleri okunabiliyor. Ayrıntı: `deneyler/tk2-metin/SONUC.md` | §10.3, §5.7 |
+| TK3 | Google oturum modeli | **Windows kısmı için karar verildi (18 Ekim):** tarayıcıda 1 saatlik erişim izni, sunucu yok. Açılışta ve izin dolunca tarayıcı dokunmadan Google penceresi açtırmaz; "eşitlemek için dokun" şeridi tek dokunuşla yeniler. Hesap e-postası yalnızca cihazda saklanır ve yenilemede Google'a ipucu olarak verilir; böylece birden çok hesap açıkken bile hesap seçimi ve izin sorulmaz. İzin yokken yazma sürer, değişiklikler bekler | Windows'ta karar verildi (yenileme yaklaşık 4,4 sn). Windows uygulamasında aynı model, uygulamanın yerel adresinde çalışır; bu adres Google projesinde izinli adreslere eklenir (§17.4). Tablet (APK) kısmı açık: Google, uygulama içi pencerede girişe izin vermeyebilir. Ayrıntı: `deneyler/tk3-tk4-google/SONUC.md` | §10.8 |
 | TK4 | Drive izin kapsamı ve klasörler | **Karar verildi (18 Ekim, Windows deneyi):** eşitleme gizli uygulama klasöründe (`drive.appdata`); yedekler kullanıcının görebildiği bir klasörde (`drive.file`). Uygulama yalnızca kendi oluşturduğu dosyaları görür. Dosyalar aynı anda birden çok gönderilip alınır (tek dosya yaklaşık 1,4 sn). Google'ın dosya seçicisi ilk sürümde yok; yalnızca elle taşınmış bir yedeği açmak için ileride eklenir | Karar verildi. 20 deneme dosyası yazıldı, geri okundu ve değişiklik listesinden bulundu; Drive'da yalnızca yedek görünüyor. Ayrıntı: `deneyler/tk3-tk4-google/SONUC.md` | §10.2, §10.10, §10.11 |
 | TK5 | Medya saklama | **Karar verildi (18 Ekim, Windows deneyi):** içerikle adlandırılmış değişmez dosyalar; parça parça ve kaldığı yerden sürdürülebilen yükleme; cihaz başına indirme politikası, telefon için küçük önizleme. Yedekte her görsel bir kez saklanır. Konum bilgisi silinir. Büyük görsellerin gidip gelmesi arka planda yürür ve "indirilmemiş" durumu ekranda görünür (§10.8) | Karar verildi. 26 MB harita: yükleme 26 sn, yarıda kopunca 16 MB'tan sürdü; indirme 20 sn; önizleme 0,5 MB; günlük yedek başına 195 KB. Ayrıntı: `deneyler/tk3-tk4-google/SONUC.md` | §10.12 |
-| TK6 | Uygulama kabuğu (mağaza uygulaması) | Şimdilik yok; PWA yeter | Tablet ve iPhone deneylerinden sonra | §17.1 |
+| TK6 | Uygulama kabuğu | **Karar verildi (19 Ekim, kullanıcı kararı): Tauri 2.** Aynı web kodu Windows'ta kendi penceresinde, Windows'un yerleşik tarayıcı motoruyla (WebView2) çalışır; kurulum dosyası GitHub'da derlenir. Tablet için aynı kabuktan APK | Windows'ta karar verildi. APK kısmı tablet aşamasında. Ayrıntı: proje klasöründe `analiz/uygulama-paketleme.md` | §17.1 |
 | TK7 | Yayın mekanizması | Wiki yapılırsa uygulama paketi zip olarak üretir; yükleme ayrı ve bilinçli bir adımdır | K20 değişirse | §11 |
 | TK8 | Kural ve formül dili (F16) | **Karar verildi (19 Ekim, kullanıcı onayı):** formül hukuk kuralının "kimlere" kısmını yazar; ilişkiler, şablon alanları, tarih ve birimli sayılar kullanılabilir; sonuç üç değerlidir; hatalı formül kaydedilmez | Karar verildi. Sözleşme §18.1 "Kural ve formül dili" | §18.1, §16.1 F16 |
 
@@ -525,7 +525,7 @@ Her tür bir **varsayılan bileşen listesi** ve bir **soru kütüphanesi** ile 
 ### 5.1 Bağlantı yazma
 
 - `[[` yazılınca küçük bir **seçim kutusu** açılır. Kullanıcı mevcut bir kaydı seçer ya da türü ve özetiyle yeni kayıt oluşturur. Yeni kayıt **fikir** durumunda doğar ve "Bahsedilen ama yazılmamış" listesine düşer.
-- **`[[` tek yol değildir.** Türkçe Q ve F klavyede `[` AltGr+8 ile, iPhone'un Türkçe klavyesinde ikinci sembol sayfasından yazılır. Bu yüzden dokunmatik ekranda klavyenin üstünde bir **Bağla** düğmesi aynı seçim kutusunu açar; her cihazda metin seçilip "Bağla" denebilir. `[[` masaüstünde kısayol olarak kalır. **`@` de aynı seçim kutusunu açar (K29):** yalnız kelime başında (satır başı, boşluk ya da açılan ayraçtan sonra) yazılınca; "ad@örnek" gibi kelime içindeki `@` kutu açmaz. Esc kutuyu kapatır ve `@` düz yazı olarak kalır.
+- **`[[` tek yol değildir.** Türkçe Q ve F klavyede `[` AltGr+8 ile, tabletin Türkçe ekran klavyesinde sembol sayfasından yazılır. Bu yüzden dokunmatik ekranda klavyenin üstünde bir **Bağla** düğmesi aynı seçim kutusunu açar; her cihazda metin seçilip "Bağla" denebilir. `[[` masaüstünde kısayol olarak kalır. **`@` de aynı seçim kutusunu açar (K29):** yalnız kelime başında (satır başı, boşluk ya da açılan ayraçtan sonra) yazılınca; "ad@örnek" gibi kelime içindeki `@` kutu açmaz. Esc kutuyu kapatır ve `@` düz yazı olarak kalır.
 - **Bağlantısız geçen adlar (K29):** Bir sahnenin ya da kaydın metninde bir kaydın adı, lakabı ya da önceki adı bağlantısız geçiyorsa metnin altında katlı tek satır görünür: "Bu metinde bağlantısız geçen 3 ad var · Göster". Açılınca her biri cümlesiyle listelenir ve yanında "Bağla", "Bu sefer değil" ve "Bu adı hiç önerme" vardır. Eşleşme yalnız adın kendisine ve Türkçe ekli biçimlerine (ek modülü) bakar; büyük-küçük harf ve Türkçe harfler ayırt edilmez ("DENİZ", "Deniz'in"), ancak büyük harfle başlayan bir ad metinde küçük harfle başlıyorsa önerilmez ("Deniz" adı ile "deniz kıyısı" karışmasın); kelimenin ortasında eşleşmez; üç harften kısa adlar aranmaz. Sahne, bölüm, not, açık mesele ve gerekçe kayıtlarının adları aranmaz (yapı kayıtlarıdır), metnin kendi kaydı da önerilmez. Aynı adı taşıyan birden çok kayıt varsa "Bağla" ayırt etme satırıyla seçim ister. **Program kendiliğinden bağlamaz** ve yazarken öneri açmaz (yazı bölünmez, §5.10); liste metin kaydedildikten sonra güncellenir. "Bu sefer değil" o metindeki o yeri bir daha göstermez; "Bu adı hiç önerme" o kaydı evrenin her yerinde öneriden çıkarır; listenin altındaki "Önerilmeyen adlar" satırında "Yeniden öner" ile geri alınır. Bu iki seçim evrene yazılır ve eşitlenir. Bağlantı kurulunca görünen metin değişmez, ek bağlantının görünümüne dahil edilir.
 - **Kısayol sözdizimi:** görünen metin için `[[Kayıt|görünen metin]]`; yeni kayıt için `[[Ad::Tür::özet]]`. `|` yalnızca görünen metin içindir; `#` blok bağlantısına ayrılmıştır.
 - **Türkçe ekler:** `[[Velkar]]'dan` ya da `[[Kaelen]]'in` yazıldığında ek bağlantının görünümüne dahil edilir. Program cümledeki ekleri kendiliğinden değiştirmez. Bağlantının hedefi ile görünen ifade ayrı tutulur.
@@ -685,7 +685,7 @@ Bu, programın yazara ne zaman ve nasıl soru sorduğunun tek tanımıdır. Soru
 - **Evrensel görsel işaretleme:** Görsel yükleme, üstüne işaret koyma ve işareti bir kayda bağlama aynı bileşenle yapılır; haritalarda, kat planlarında, krokilerde ve karakter ya da eşya görsellerinde kullanılır. İlk harita sürümü bu bileşenden ibarettir.
 - **İşaret kesinliği:** *kesin yer · yaklaşık bölge · yeri bilinmiyor*. Efsanevi bir şehir için koordinat gerekmez.
 - **Harita uzayı:** Her haritanın kendi koordinat uzayı vardır; işaretler, bölgeler ve rotalar görselde değil bu uzayda saklanır. Uzay en-boy oranını korur (iki eksen ayrı ayrı 0–1'e indirgenmez), böylece ölçekli mesafe hesabı bozulmaz (§8.4). Görseller bu uzaya oturtulmuş katmanlardır: görsel değişince yalnızca oturtulması yenilenir, hiçbir işaret yeniden yazılmaz (§8.5). Eski haritalar, propaganda haritaları (§8.3) ve eskizler aynı uzaya üst üste bindirilebilir.
-- Büyük harita görselleri parça parça (döşeme yöntemiyle) gösterilir; iPhone'da önizleme yeterlidir (§10.12).
+- Büyük harita görselleri parça parça (döşeme yöntemiyle) gösterilir (§10.12).
 - **Harita ekranı (K30):** açık harita sayfanın bütün genişliğini ve yüksekliğini kaplar; başlık satırında haritanın adı, gösterdiği yer ve sayfa rehberi durur. İşaretleme araçları (gez ve seç, kesin yer, yaklaşık bölge, bölge çiz, yol çiz) sol kenarda yazılı ve dikey durur; yakınlaştırma ve "Sığdır" sağ altta, zaman kaydırıcısı (§8.2) sol altta, seçili aracın yönergesi üstte. Sağda kapatılabilen bir **çekmece** üç sekmedir: *İşaretler* (aranabilir işaret, bölge ve yol listesi, yeri bilinmeyenler, seçilen tarihte olanlar), *Katmanlar* (katmanlar ve hizalama, gösterilen kayıt türleri, bakış açısı, ölçekli geometri) ve *Künye* (§8.3; haritayı kaldırma da buradadır). Bir işaret seçilince çekmecede **yer kartı** açılır: kaydın türü ve kesinliği, kısa özeti, orada geçen sahne ve olaylar, öbür bağları (kayıtlı ilişkilerden) ve işarete değen yollar (haritadaki çizgilerden); altında işaretin ayarları. Haritanın altında **lejant** işaret ve çizgi anlamlarını, yeri bilinmeyenlerin sayısını söyler.
 
 ### 8.2 Katmanlar ve bölgeler
@@ -876,7 +876,7 @@ Bilgisayarda bir karakter silindi; çevrimdışı tablette o karakter için üç
 
 ### 10.7 Sürümler ve güncelleme
 
-Dört sürüm ayrıdır: **uygulama sürümü**, **veri biçimi sürümü**, **kural sürümü** ve **eşitleme protokolü sürümü**. Aynı adresi açmak aynı sürümü çalıştırmak demek değildir: bir PWA güncellemesi indirilir, bekler ve ancak sonra etkinleşir; uzun süre çevrimdışı kalan tablet eski sürümle çalışabilir.
+Dört sürüm ayrıdır: **uygulama sürümü**, **veri biçimi sürümü**, **kural sürümü** ve **eşitleme protokolü sürümü**. Cihazlar aynı sürümü çalıştırmak zorunda değildir: her cihazdaki uygulama ayrı güncellenir; uzun süre güncellenmeyen tablet eski sürümle çalışabilir.
 
 - **Anlaşılmayan veri korunur.** Eski uygulama yeni bir alan türünü ya da ilişki biçimini okuduğunda onu atmaz ve üzerine yanlış yazmaz. Güvenle düzenleyemediği kaydı salt okunur açar ve "bu kayıt için güncelleme gerekli" der. Yazmaya devam etmek isteyen kullanıcı, evren verisini bozmayan ayrı bir not alanına yazabilir.
 - **Tablo yapısını değiştiren güncellemede evren baştan kurulur ve beklenir** (kullanıcı kararı, 19 Ekim 2026). Kurma sürerken ekranın üstünde "Program güncellendi; evren yeni sürüme hazırlanıyor · %40" yazan bir şerit ilerlemeyi gösterir; evren yeni bir cihaza indirilirken de aynı şerit görünür. Kısa süren kurmada şerit gösterilmez. Tabloları yerinde dönüştürmek, kurma süresi rahatsız edici olunca değerlendirilir.
@@ -888,7 +888,7 @@ Dört sürüm ayrıdır: **uygulama sürümü**, **veri biçimi sürümü**, **k
 
 ### 10.8 Görünen durum ve geri alma
 
-- **Doğrulanabilir eşitleme durumları** her zaman görünür: *Bu cihaza kaydedildi · Drive'a gönderildi · Tablet / bilgisayar / iPhone şu değişikliğe kadar aldı · Yedek doğrulandı*. Drive'a gönderilmiş olmak öbür cihazın aldığı anlamına gelmez; çevrimdışı bir cihaz için "bütün cihazlar güncel" yazılmaz.
+- **Doğrulanabilir eşitleme durumları** her zaman görünür: *Bu cihaza kaydedildi · Drive'a gönderildi · Tablet / bilgisayar şu değişikliğe kadar aldı · Yedek doğrulandı*. Drive'a gönderilmiş olmak öbür cihazın aldığı anlamına gelmez; çevrimdışı bir cihaz için "bütün cihazlar güncel" yazılmaz.
 - **Evren içindeki durum özeti** gezinti çubuğunun altında katlı durur. Başlığı en zayıf halkayı söyler ("Yalnız bu cihazda kayıtlı", "3 değişiklik gönderilecek", "Kaydedildi ve eşitlendi"); açılınca bu cihazdaki kayıt, Drive durumu ve son doğrulanan yedek ayrı satırlarda ve kendi eylemleriyle görünür. Eşitleme ile yedeğin farkı tek cümleyle söylenir. Yedek hiç yoksa ya da yedi günden eskiyse satır sarıdır; yazıyı kesen bir uyarı çıkmaz. Son doğrulanan yedeğin zamanı özetin kapalı başlığında da ve Genel bakışta da görünür ("Son yedek: dün 21:04 · doğrulandı"); yedek yoksa ya da yedi günden eskiyse yanında "Şimdi yedekle" düğmesi çıkar (K28).
 - **Yalnızca bu cihazda olan değişiklikler** ayrıca görünür: "Son eşitlemeden beri 3 değişiklik yalnızca bu telefonda." Cihazın yerel verisi kaybolursa yalnızca Drive'a başarıyla gönderilmiş kısım geri gelir; gönderilmemiş iş uzak kopyada yoktur.
 - **Google oturumu düşünce yazma durmaz.** Üst çubukta "eşitlemek için dokun" görünür; dokununca izin yenilenir ve biriken değişiklikler gönderilir. Oturum modeli TK3'tür ve deneyle kesinleşir.
@@ -899,7 +899,7 @@ Dört sürüm ayrıdır: **uygulama sürümü**, **veri biçimi sürümü**, **k
 
 ### 10.9 Tarayıcı depolaması
 
-Tarayıcı depolaması tek başına güvence değildir: iPhone'daki Safari bazı koşullarda site verisini silebilir. Kalıcı depolama izni uygulama ana ekran kipinde açıkken istenir; bu da koşulsuz garanti değildir. Safari sekmesi ile ana ekran uygulaması ayrı depolama kullanır, yani iki ayrı kurulumdur (§10.5); uygulama bir Safari sekmesinde açılırsa bunu kullanıcıya söyler. Asıl güvence Drive eşitlemesi ve yedektir; sınırı §10.8'de yazılıdır. iPhone'daki davranış en son deneylerde sınanır (K17).
+Uygulama verisini kendi tarayıcı motorunun depolamasında tutar (TK1, TK6). Bu depolama tek başına güvence değildir: uygulamayı kaldırmak ya da aynı programı bir tarayıcı sekmesinde açmak ayrı bir depolama, yani ayrı bir kurulum demektir (§10.5). Asıl güvence Drive eşitlemesi ve yedektir; sınırı §10.8'de yazılıdır.
 
 ### 10.10 Dönemsel yedek
 
@@ -915,7 +915,7 @@ Drive'da eşitlemeden ayrı, kullanıcının görebildiği bir klasöre alınır
 ### 10.12 Medya dosyaları
 
 - Görseller, haritalar ve ekler içerikleriyle adlandırılmış değişmez dosyalardır: aynı dosya iki kez yüklenirse bir kez saklanır; değişen görsel yeni bir dosyadır (TK5).
-- Kayıtlar ve metinler her kurulumda tamdır (§10.1); medya cihaz politikasına göre indirilir. Varsayılan: Windows ve tablette hepsi; iPhone'da önizleme boyutu, istenince tam dosya.
+- Kayıtlar ve metinler her kurulumda tamdır (§10.1); medya cihaz politikasına göre indirilir. Varsayılan: Windows ve tablette hepsi.
 - "İndirilmemiş" ile "silinmiş" ayrı gösterilir (§10.8).
 - Fotoğrafı çekilmiş eskizler ve görseller içe alınırken fotoğraf meta verisindeki konum bilgisi silinir.
 - Yedeklerde her medya dosyası bir kez saklanır (§10.10).
@@ -976,13 +976,12 @@ Mektup, gazete sayfası, ilan, seyahat izni, günlük, antlaşma, mezar yazısı
 
 ### 12.3 Cihaza göre düzen
 
-Ortak olan sahne, bağlam ve çalışma niyetidir; pencere genişliği, kaydırma, yakınlaştırma ve panel yerleşimi cihaza özeldir (§5.9). Telefonda alınan hızlı not bilgisayarın masaüstü düzenini bozmaz. Masaüstü panelleri telefona sıkıştırılmaz. Cihazlar K16'daki sırayla ele alınır: önce Windows, sonra tablet, en son iPhone.
+Ortak olan sahne, bağlam ve çalışma niyetidir; pencere genişliği, kaydırma, yakınlaştırma ve panel yerleşimi cihaza özeldir (§5.9). Tablette yapılan düzen değişikliği bilgisayarın masaüstü düzenini bozmaz. Cihazlar K16'daki sırayla ele alınır: önce Windows, sonra tablet.
 
 | Cihaz | Öne çıkan kullanım |
 |---|---|
 | Windows 11 bilgisayar | Uzun yazma, klavye ve komut paleti, geniş ekranda yan panel |
 | Galaxy Tab S11 Ultra | S Pen ile harita ve kroki, iki panel yan yana, okuma ve düzenleme; DeX'te bilgisayar düzeni |
-| iPhone | Hızlı not, arama, sahne okuma, kayıt düzeltme; yan panel yerine alttan açılan kart |
 
 
 ### 12.4 Sayfa rehberi ve dil (K25)
@@ -1088,7 +1087,6 @@ Bunlar çalıştırılmış yazılım testleri değil, tasarımın hedeflediği 
 | E14 | Bilgisayar "Yaş" alanını sayıya çevirirken çevrimdışı tablet o alana "yirmili yaşlarında" yazar | Değer korunur, dönüşüm kuyruğuna düşer | §10.3 |
 | E15 | Bir satış işlem grubunun yüklenmesi yarıda kesilir | Parça hiç görünmez; öbür cihazda yarım satış oluşmaz | §10.2 |
 | E16 | Aynı paragraf iki cihazda eşzamanlı düzenlenir | Hiçbir yazım kaybolmaz; incelemeye açılır; işaretler yerinde kalır | §10.3, §5.7 |
-| E17 | Uygulama iPhone'da Safari sekmesinde açılır | Bunun ayrı bir kurulum olduğu söylenir | §10.9 |
 
 ### 13.5 Yayın
 
@@ -1150,10 +1148,9 @@ Bir aşama, kullanıcının o sürümü kendi gerçek evreniyle **iki hafta her 
 | Sıra | Cihaz | Deneyler | Kapattığı kararlar |
 |---|---|---|---|
 | 1 | Windows 11 | Yerel veritabanında büyük bir deneme evreni; iki tarayıcı profili arasında parça dosyalarıyla eşitleme; aynı paragrafın eşzamanlı düzenlenmesi ve işaretlerin korunması; Google girişi ve yenilenmesi; Drive klasörleri; yazım denetimi muafiyeti | TK1, TK2, TK3 (Windows kısmı), TK4, TK5 |
-| 2 | Galaxy Tab S11 Ultra | Kurulum, kalem kipleri, kalıcı depolama, üç kurulum arasında eşitleme | — |
-| 3 | iPhone | Ana ekran uygulamasında Google girişi ve yenilenmesi; kalıcı depolama izni ve kota; Safari sekmesinin ayrı kurulum olması | TK3 (son kısmı), TK6 |
+| 2 | Galaxy Tab S11 Ultra | APK kurulumu, uygulama içinde Google girişi ve yenilenmesi, kalem kipleri, kalıcı depolama, kurulumlar arasında eşitleme | TK3 (tablet kısmı), TK6 (APK kısmı) |
 
-**Bilinen risk:** iPhone deneyi en sona kaldığı için, iPhone'da Google girişi beklendiği gibi çalışmazsa eşitlemenin oturum kısmı o noktada değişebilir. Bu, Windows ve tablet aşamalarını etkilemez.
+**Bilinen risk:** Google, uygulama içi pencerede girişe izin vermezse tablette giriş sistem tarayıcısı üzerinden yapılır; eşitlemenin oturum kısmı o noktada değişebilir. Bu, Windows aşamasını etkilemez.
 
 ---
 
@@ -1260,32 +1257,23 @@ F37 ve F40 tasarıma alındı (K23); tanımları §3.11 ve §3.8'dedir. Diğerle
 
 ## 17. Platform ve cihazlar
 
-### 17.1 Tek program, üç cihaz
+### 17.1 Tek program, iki cihaz
 
-Program tek bir web uygulamasıdır (PWA, K7). Aynı adres üç cihazda açılır ve "uygulama olarak yüklenir"; yüklendikten sonra kendi simgesiyle, kendi penceresinde, internetsiz de çalışır. Aynı adres her an aynı sürümü çalıştırmak demek değildir (§10.7).
+Program tek bir web kodudur ve bir uygulama kabuğuyla (TK6) her cihaza ayrı bir uygulama olarak kurulur: kendi simgesiyle, kendi penceresinde, internetsiz de çalışır. İnternette yayımlanan bir adres yoktur. Cihazlar aynı sürümü çalıştırmak zorunda değildir (§10.7).
 
 | Cihaz | Nasıl kurulur |
 |---|---|
-| Windows 11 bilgisayar | Edge ya da Chrome'da adres çubuğundaki "Uygulamayı yükle" |
-| Galaxy Tab S11 Ultra (Android) | Chrome ya da Samsung Internet'te "Ana ekrana ekle / Yükle" |
-| iPhone | Safari'de Paylaş → "Ana Ekrana Ekle" |
+| Windows 11 bilgisayar | Depodaki "windows" sürüm sayfasından kurulum dosyası indirilip çalıştırılır; yeni sürüm aynı yolla üstüne kurulur. Veri silinmez |
+| Galaxy Tab S11 Ultra (Android) | APK dosyası tablete indirilip kurulur (tablet aşamasında) |
 
-Ayrı Windows, Android ve App Store uygulamaları yazmak gerekmez; App Store yolu ayrıca yıllık Apple geliştirici üyeliği ister. İleride aynı program, veri modeli değişmeden, bir uygulama kabuğuna konabilir; bu açık bir teknik karardır (TK6).
+Mağaza (Microsoft Store, Play Store) kullanılmaz. Kurulum dosyası imzasız olduğu için Windows ilk açılışta bir kez uyarı gösterir.
 
-**Neden bağımsız bir web uygulaması?** Kullanıcının verisi üzerinde tam denetim (kendi cihazında ve kendi Drive'ında), internetsiz çalışma ve Drive ile kendi eşitleme protokolünü uygulayabilmek için. Claude'daki prototip bu davranışları sağlamıyor; bu, Claude sayfalarının hiçbir dış hizmete bağlanamadığı anlamına gelmez.
-
-### 17.2 iPhone'a özel durumlar
-
-- **Bu PWA için** iPhone'da uygulama kapalıyken düzenli arka plan eşitlemesi garanti edilmez. Eşitleme uygulama açılınca ve açıkken yapılır; açılışta son eşitleme zamanı görünür. (Yerel iOS uygulamalarının arka plan görevleri vardır; bu bir PWA'ya aynı güvenceyi vermez.)
-- Safari'nin site verisini silebilmesi ve Drive'ın bunu ne ölçüde karşıladığı §10.8–§10.9'dadır.
-- Google izninin yenilenmesi yazmayı kesmez (§10.8).
-- iPhone deneyleri en son yapılır (§14.3).
+**Neden bağımsız bir uygulama?** Kullanıcının verisi üzerinde tam denetim (kendi cihazında ve kendi Drive'ında), internetsiz çalışma ve Drive ile kendi eşitleme protokolünü uygulayabilmek için.
 
 ### 17.3 Depo ve barındırma
 
 - Kod ve tasarım belgeleri herkese açık `Darvolinnn/dunya-atlasi` deposundadır (K7). Depoda lisans dosyası yoktur; kodu başkası kullanamaz (K19).
-- Program **Cloudflare Pages** ile yayımlanır: yalnızca bu projeye ait bir köken verir ve adrese girişi Cloudflare Access ile kullanıcıya sınırlar. Cloudflare Pages ayrıca HTTP başlıklarını ayarlamaya izin verir: güvenlik ilkesi ve yerel veritabanının istediği başlıklar verilebilir (TK1).
-- Uygulamanın adresine **Cloudflare Access** ile yalnızca kullanıcının hesabıyla girilir. Bu, kodun ve uygulamanın görünürlüğünü kısar; evren verisi zaten sitede değildir.
+- Kurulum dosyaları GitHub'da depodan derlenir ve deponun sürüm sayfasına konur. İçlerinde evren verisi ve sır yoktur; Google istemci kodu gizli değildir.
 - Depoda yalnızca program kodu ve tasarım belgeleri olur. **Evren verisi, dışa aktarımlar ve gerçek evrenden ekran görüntüleri depoya girmez**; kullanıcının cihazlarında ve Drive'ında durur. Tasarım örnekleri uydurmadır (§0.3).
 - Kod başlayınca depoya bir ajan talimat dosyası konur: bağlayıcı bölümler §0 ve §18'dir, Öneri kodlanmaz, depoya sır ve evren verisi girmez.
 - Wiki şimdilik yoktur (K20).
@@ -1294,7 +1282,8 @@ Ayrı Windows, Android ve App Store uygulamaları yazmak gerekmez; App Store yol
 
 Tarayıcı, yerel veriyi (yerel veritabanı, tarayıcı depolaması) adres klasörüne göre değil **kökene** (protokol ve alan adı) göre ayırır. Aynı kökende çalışan her sayfa o kökenin yerel verisini okuyabilir. Yazar uygulamasının yerel verisinde evrenin tamamı ve Google izni bulunur.
 
-- **Yazar uygulaması kendine ait bir kökende çalışır** ve o kökeni başka hiçbir sayfayla paylaşmaz. Örneğin aynı GitHub hesabının bütün Pages projeleri `<hesap>.github.io` kökenini paylaşır; bu yüzden yazar uygulaması bir hesap adresinin alt yolunda çalıştırılmaz. Cloudflare Pages'te yalnızca bu projeye ait adres (K7) bu kurala uyar.
+- **Yazar uygulaması kendine ait bir kökende çalışır** ve o kökeni başka hiçbir sayfayla paylaşmaz. Windows uygulamasının kökeni `http://localhost:41730`'dur: kabuk dosyaları bu bilgisayarda bu yerel adresten sunar ve kendi penceresi dışında hiçbir şey açmaz. Geliştirme sırasında tarayıcıda açılan `http://localhost:5173` ayrı bir köken, yani ayrı bir kurulumdur.
+- Google projesinde izinli adresler bu kökenlerdir (TK3).
 - Wiki yapılırsa yazar uygulamasından ayrı bir kökende yayımlanır (A3). Yol ayrımı (`/uygulama/` ile `/wiki/`) yalıtım sayılmaz.
 - **Köken ilk gerçek kullanımdan önce kesinleşir.** Köken sonradan değişirse her cihazda kurulum ve yerel veritabanı sıfırdan başlar, Google'daki izinli adres ayarı güncellenir ve gönderilmemiş iş kaybolabilir.
 
