@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 20 Ekim 2026, gece (K30 arayüz taslakları #19, sabit gezinti çubuğu #20 `main`'de; Windows dalına alındı, kullanıcının bilgisayarında Windows uygulaması ve tarayıcı sürümü güncel). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 106 dosya, 525 sınama; tarayıcıda 37 akış sınaması. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows, Node 22).*
+*Son güncelleme: 21 Ekim 2026, öğleden sonra (son kontrol, aşağıda §0.1). Önceki: 20 Ekim gece (K30 arayüz taslakları #19, sabit gezinti çubuğu #20 `main`'de; Windows dalına alındı, kullanıcının bilgisayarında Windows uygulaması ve tarayıcı sürümü güncel). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 106 dosya, 525 sınama; tarayıcıda 37 akış sınaması. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows, Node 22).*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -15,6 +15,16 @@ Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey s
 - **Windows dalı güncel:** `main` (#20'ye kadar) Windows dalına alındı (20 Ekim gece, `d6372fb`); kullanıcının bilgisayarına 21:26 derlemesi kuruldu; kurulum dosyası yeniden derlenir. Çakışma çıkarsa DEVIR'de `main`'in tablosu, tasarımda iki tarafın birleşimi alınır.
 - **Ajanın kendiliğinden yapabileceği küçük işler:** §3.3-6 (Google hesabı gerekir) ve 7. `metinBelleginiTemizle` sızıntısı ve örnek evren hızı K30 dalında yapıldı.
 - **Yeni iş gelirse:** §2'deki kurallar (arayüzde önce taslak, birleştirme, kullanıcının bilgisayarını güncelleme), §4 tarif, §5 denetim. İş bitince bu dosyayı güncelle.
+
+## 0.1 Son kontrol (21 Ekim 2026)
+
+Kullanıcı projenin bittiğini düşünüp son kontrol istedi. Bulutta (Linux, Node 22) `main` (`f856272`) denetlendi:
+- Tür denetimi temiz; **525/525 sınama** geçti (Node 24'te kırılan `bellek-sizintisi` sınaması da burada geçti); derleme başarılı; **37/37 tarayıcı akışı** geçti. GitHub'daki son otomatik denetimlerin hepsi yeşil (Ubuntu, Windows, Windows uygulaması derlemesi).
+- Örnek evrenle 33 sayfa ve grafik, bir kayıt sayfası, bir sahne ve komut paleti tarayıcıda tek tek açıldı: hiçbir sayfada hata, boş ekran ya da bozuk metin yok. Tek konsol iletisi: sekme simgesi (`favicon.ico`) yok, 404 döner; zararsız.
+- Kod işi kalmadı: bağlam panelinin boş sahnede kapalı açılması (`sahneBaglamiBos`) ve evren içi durum özeti (`DurumOzeti`) kodlu; rehberli arayüz kararlarının hepsi kodlu (§3.5).
+- **Windows PR #1** `main`'in 2 kayıt gerisinde (yalnız DEVIR), çakışmasız birleşir. Birleştirmek kullanıcının denemesine bağlı (§3.3-4).
+- **Eski dallar:** 24 eski dal duruyor. `paket/**` dalları `main`'in yeniden yazılmadan önceki geçmişinde kaldığı için `main` ile ortak ataları yok; içerikleri zaten `main`'de (§3.1). `claude/*` dallarının PR'ları birleşti. Silinebilirler; silme geri alınamaz sayıldığı için kullanıcıya soruldu.
+- Kalanlar kullanıcıda: Windows kurulumunu denemek ve Google izinli adreslerine `http://localhost:41730` eklemek, K16 gerçek kullanım. Tablette gerçek bellek ölçümü ve tablet sürümü ertelenmiş durumda (kullanıcı kararı, 19 Ekim).
 
 ## 1. Önce oku (sırayla)
 
