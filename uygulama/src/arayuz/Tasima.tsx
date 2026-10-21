@@ -29,14 +29,16 @@ const hataMetni = (e: unknown) => (e instanceof Error ? e.message : String(e));
 export function YedekSekmesi({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
   const [son, setSon] = useState<number | null>(null);
   const [durum, setDurum] = useState<'bos' | 'aliniyor' | 'alindi'>('bos');
+  const [eksikGorsel, setEksikGorsel] = useState(0);
   const [hata, setHata] = useState<string | null>(null);
   useEffect(() => { istemci.iste('sonYedek', { evren }).then(setSon); }, [evren, surum, durum]);
 
   const al = async () => {
-    setHata(null); setDurum('aliniyor');
+    setHata(null); setDurum('aliniyor'); setEksikGorsel(0);
     try {
-      const { dosyaAdi, veri } = await istemci.iste('yedekAl', { evren });
+      const { dosyaAdi, veri, eksikGorsel } = await istemci.iste('yedekAl', { evren });
       indir(dosyaAdi, veri);
+      setEksikGorsel(eksikGorsel);
       setDurum('alindi');
     } catch (e) { setHata(hataMetni(e)); setDurum('bos'); }
   };
@@ -51,6 +53,9 @@ export function YedekSekmesi({ istemci, evren, surum }: { istemci: Istemci; evre
         <span class="soluk kucuk">{son ? `Son hazırlanan yedek dosyası: ${zamanYaz(son)}` : 'Bu evrenin bu cihazdan alınmış yedeği yok.'}</span>
       </div>
       {durum === 'alindi' && <p class="kucuk" role="status">Yedek dosyası hazırlandı ve indirme başlatıldı. Dosyanın kaydedildiğini tarayıcının indirilenler klasöründen denetleyin; program bunu göremez.</p>}
+      {durum === 'alindi' && eksikGorsel > 0 && (
+        <p class="uyari kucuk" role="alert">Bu yedek eksik: {eksikGorsel} görsel bu cihazda olmadığı için yedeğe girmedi ve bu dosyadan geri gelmez. Kayıtlar ve metinler eksiksiz. Görsellerin bulunduğu cihazdan yeniden yedek alın.</p>
+      )}
       {hata && <p class="hata" role="alert">{hata}</p>}
     </div>
   );
@@ -160,7 +165,7 @@ const saatMetni = (t: number) => new Date(t).toLocaleTimeString('tr-TR', { hour:
 export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci; kapat: () => void; yenile: () => void }) {
   const [veri, setVeri] = useState<Uint8Array | null>(null);
   const [bilgi, setBilgi] = useState<YedekBilgisi | null>(null);
-  const [sonuc, setSonuc] = useState<{ kod: string; ayri: boolean } | null>(null);
+  const [sonuc, setSonuc] = useState<{ kod: string; ayri: boolean; eksikGorseller: string[] } | null>(null);
   const [mesgul, setMesgul] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
 
@@ -207,7 +212,7 @@ export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci
           <p><strong>{bilgi.evrenAdi}</strong></p>
           <p class="kucuk">Yedeğin alındığı an: {zamanYaz(bilgi.tarih)}<br />
             {bilgi.kayitSayisi} kayıt · {bilgi.islemSayisi} değişiklik · {bilgi.medyaSayisi} görsel</p>
-          {bilgi.eksikMedya > 0 && <p class="kucuk">Yedek alınırken {bilgi.eksikMedya} görsel o cihazda yoktu, bu görseller geri gelmeyecek.</p>}
+          {bilgi.eksikMedya > 0 && <p class="uyari kucuk">Bu yedekte {bilgi.eksikMedya} görsel eksik; bu görseller geri gelmeyecek. Kayıtlar ve metinler yine geri yüklenebilir.</p>}
           {bilgi.mevcut
             ? <p class="uyari kucuk">Bu evren bu cihazda zaten var (“{bilgi.mevcut.ad}”). Var olan evren değişmez, yedek <strong>ayrı bir evren</strong> olarak açılır. İnceledikten sonra isterseniz asıl evrenin yerine koyabilirsiniz.</p>
             : <p class="kucuk">Bu evren bu cihazda yok, olduğu gibi geri yüklenecek.</p>}
@@ -217,6 +222,9 @@ export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci
       {sonuc && (
         <div style="margin-top:12px" role="status">
           <p>{sonuc.ayri ? 'Yedek ayrı bir evren olarak açıldı. Asıl evrene dokunulmadı.' : 'Evren geri yüklendi.'}</p>
+          {sonuc.eksikGorseller.length > 0 && (
+            <p class="uyari kucuk">Kayıtlar ve metinler eksiksiz geldi, ama {sonuc.eksikGorseller.length} görsel yedekte bulunamadı. Bu görsellerin yerinde “görsel yok” görünür.</p>
+          )}
           <div class="satir">
             <button class="dugme ana" onClick={() => git(`/e/${sonuc.kod}`)}>Evreni aç</button>
             {sonuc.ayri && bilgi?.mevcut && (

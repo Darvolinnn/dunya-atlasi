@@ -797,6 +797,7 @@ export interface IceAktarimRaporu {
 }
 export interface YedekBilgisi {
   evrenKod: string; evrenAdi: string; tarih: number; islemSayisi: number; kayitSayisi: number;
+  /** eksikMedya: yedeğin listesinde olup ne yedekte ne bu cihazda bulunan, geri gelmeyecek görsel sayısı. */
   medyaSayisi: number; eksikMedya: number;
   /** Bu evren bu cihazda zaten var mı (varsa yedek ayrı bir evren olarak açılır). */
   mevcut: { kod: string; ad: string } | null;
@@ -1252,9 +1253,11 @@ export interface Istekler {
   iceAktarIncele(a: { dosyalar: { yol: string; metin?: string; veri?: Uint8Array; tur?: string }[] }): IceAktarimRaporu;
   ornekEvrenKur(): Promise<{ kod: string }>;
   iceAktar(a: { dosyalar: { yol: string; metin?: string; veri?: Uint8Array; tur?: string }[]; evrenAdi: string }): Promise<{ kod: string; rapor: IceAktarimRaporu; gorselHatalari: string[] }>;
-  yedekAl(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
+  /** eksikGorsel: bu cihazda dosyası olmadığı için yedeğe giremeyen görsel sayısı. */
+  yedekAl(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Uint8Array; eksikGorsel: number }>;
   yedekIncele(a: { veri: Uint8Array }): Promise<YedekBilgisi>;
-  yedektenYukle(a: { veri: Uint8Array }): Promise<{ kod: string; ayri: boolean }>;
+  /** eksikGorseller: yedeğin listesinde olup ne yedekte ne bu cihazda bulunan görseller. */
+  yedektenYukle(a: { veri: Uint8Array }): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[] }>;
   evrenYerineKoy(a: { kopya: string; asil: string }): void;
   sonYedek(a: { evren: string }): number | null;
 

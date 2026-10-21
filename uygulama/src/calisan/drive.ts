@@ -10,6 +10,13 @@ const BUYUK = 5 * 1024 * 1024;
 const PARCA = 8 * 1024 * 1024;
 /** Tek bir parçanın gönderilmesi bundan uzun sürerse kesilir; yükleme kaldığı yerden sürer. */
 const PARCA_SURESI = 120_000;
+/**
+ * Genel bir Drive isteği (yanıtın okunması dahil) bundan uzun sürerse kesilir ve yeniden denenir. Takılan bir istek
+ * eşitlemeyi sonsuza dek bekletmesin; bekleyen sonraki eşitleme de ancak bu biterse başlayabilir.
+ */
+const ISTEK_SURESI = 60_000;
+/** Dosya indirme ve tek parçada yükleme daha büyük olabilir; onlara daha uzun süre tanınır. */
+const AKTARIM_SURESI = 10 * 60_000;
 /** Kaydedilmiş yükleme adresi bundan eskiyse kullanılmaz (Drive bir hafta tutar). */
 const OTURUM_OMRU = 6 * 24 * 3600_000;
 
@@ -20,7 +27,7 @@ export interface DriveSecenekleri {
   oturumlar?: YuklemeOturumlari;
   ilerleme?: (i: YuklemeIlerlemesi | null) => void;
   /** Sınama için. */
-  fetch?: typeof fetch; parca?: number; buyuk?: number; bekleme?: number;
+  fetch?: typeof fetch; parca?: number; buyuk?: number; bekleme?: number; istekSuresi?: number;
 }
 
 const kacis = (s: string) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
@@ -47,23 +54,27 @@ export class DriveTasiyici implements Tasiyici {
 
   private bekle(ms: number) { return bekle(this.secenek.bekleme ?? ms); }
 
-  /** İstek gönderir; geçici hatalarda (çok istek, sunucu hatası, bağlantı kopması) birkaç kez yeniden dener. */
-  private async istek(url: string, ayar: RequestInit = {}, deneme = 0): Promise<Response> {
+  /**
+   * İstek gönderir; geçici hatalarda (çok istek, sunucu hatası, bağlantı kopması, süre aşımı) birkaç kez yeniden dener.
+   * Süre sınırı yanıtın gövdesini de kapsar: gövdeyi `oku` ile okuyun.
+   */
+  private async istek(url: string, ayar: RequestInit = {}, deneme = 0, sure = ISTEK_SURESI): Promise<Response> {
     if (Date.now() > this.bitis - 30_000) throw new IzinHatasi('Google izninin süresi doldu.');
     let r: Response;
     try {
-      r = await this.getir(url, { ...ayar, signal: this.iptalci.signal, headers: { ...(ayar.headers as Record<string, string> | undefined), Authorization: `Bearer ${this.jeton}` } });
+      const signal = AbortSignal.any([this.iptalci.signal, AbortSignal.timeout(this.secenek.istekSuresi ?? sure)]);
+      r = await this.getir(url, { ...ayar, signal, headers: { ...(ayar.headers as Record<string, string> | undefined), Authorization: `Bearer ${this.jeton}` } });
     } catch (e) {
       if (this.iptalci.signal.aborted) throw new Error('Drive bağlantısı kesildi.');
-      if (deneme < 3) { await this.bekle(1000 * 2 ** deneme); return this.istek(url, ayar, deneme + 1); }
+      if (deneme < 3) { await this.bekle(1000 * 2 ** deneme); return this.istek(url, ayar, deneme + 1, sure); }
       throw new Error('Drive\'a ulaşılamadı. İnternet bağlantısını kontrol edin.');
     }
     if (r.status === 401) throw new IzinHatasi('Google izni yenilenmeli.');
-    const metin = r.status === 403 ? await r.clone().text() : '';
+    const metin = r.status === 403 ? await r.clone().text().catch(() => '') : '';
     if (r.status === 507 || /storageQuota/i.test(metin)) throw new Error('Drive\'da yer kalmadı.');
     if ((r.status === 429 || r.status >= 500 || /rateLimit|userRateLimit/i.test(metin)) && deneme < 4) {
       await this.bekle(1000 * 2 ** deneme + Math.random() * 500);
-      return this.istek(url, ayar, deneme + 1);
+      return this.istek(url, ayar, deneme + 1, sure);
     }
     if (r.status === 403) {
       if (/insufficient|scope/i.test(metin)) throw new IzinHatasi('Programın Drive izni eksik. Bağlanırken izin kutularını işaretleyin.');
@@ -72,6 +83,16 @@ export class DriveTasiyici implements Tasiyici {
     if (!r.ok) throw new Error(`Drive işlemi tamamlanamadı (hata ${r.status}).`);
     return r;
   }
+
+  /** Yanıtın gövdesini okur; bağlantı kesilir ya da süre dolarsa anlaşılır bir hata verir. */
+  private async oku<T>(r: Response, bicim: (r: Response) => Promise<T>): Promise<T> {
+    try { return await bicim(r); }
+    catch {
+      if (this.iptalci.signal.aborted) throw new Error('Drive bağlantısı kesildi.');
+      throw new Error('Drive yanıtı zamanında gelmedi. Eşitleme sonra yeniden denenecek.');
+    }
+  }
+  private json<T>(r: Response) { return this.oku(r, (x) => x.json() as Promise<T>); }
 
   async listele(oz: Record<string, string>): Promise<UzakDosya[]> {
     const kosul = Object.entries(oz).map(([k, v]) => `appProperties has { key='${kacis(k)}' and value='${kacis(v)}' }`);
@@ -83,7 +104,7 @@ export class DriveTasiyici implements Tasiyici {
       const p = new URLSearchParams({ q: kosul.join(' and '), fields: 'nextPageToken,files(id,name,appProperties)', pageSize: '1000' });
       if (this.alan === 'appDataFolder') p.set('spaces', 'appDataFolder');
       if (sayfa) p.set('pageToken', sayfa);
-      const j = await (await this.istek(`${API}/files?${p}`)).json() as { nextPageToken?: string; files: { id: string; name: string; appProperties?: Record<string, string> }[] };
+      const j = await this.json<{ nextPageToken?: string; files: { id: string; name: string; appProperties?: Record<string, string> }[] }>(await this.istek(`${API}/files?${p}`));
       for (const f of j.files) sonuc.push({ id: f.id, ad: f.name, ozellikler: f.appProperties ?? {} });
       sayfa = j.nextPageToken;
     } while (sayfa);
@@ -91,7 +112,8 @@ export class DriveTasiyici implements Tasiyici {
   }
 
   async indir(id: string): Promise<Uint8Array> {
-    return new Uint8Array(await (await this.istek(`${API}/files/${encodeURIComponent(id)}?alt=media`)).arrayBuffer());
+    const r = await this.istek(`${API}/files/${encodeURIComponent(id)}?alt=media`, {}, 0, AKTARIM_SURESI);
+    return new Uint8Array(await this.oku(r, (x) => x.arrayBuffer()));
   }
 
   async yukle(ad: string, ozellikler: Record<string, string>, veri: Uint8Array, id?: string, ust?: string): Promise<UzakDosya> {
@@ -109,9 +131,9 @@ export class DriveTasiyici implements Tasiyici {
         `--${sinir}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(ustBilgi)}\r\n`,
         `--${sinir}\r\nContent-Type: application/octet-stream\r\n\r\n`, veri as BlobPart, `\r\n--${sinir}--`,
       ]);
-      r = await this.istek(`${yol}?uploadType=multipart&${alanlar}`, { method: yontem, headers: { 'Content-Type': `multipart/related; boundary=${sinir}` }, body: govde });
+      r = await this.istek(`${yol}?uploadType=multipart&${alanlar}`, { method: yontem, headers: { 'Content-Type': `multipart/related; boundary=${sinir}` }, body: govde }, 0, AKTARIM_SURESI);
     }
-    const f = await r.json() as { id: string; name: string; appProperties?: Record<string, string> };
+    const f = await this.json<{ id: string; name: string; appProperties?: Record<string, string> }>(r);
     return { id: f.id, ad: f.name, ozellikler: f.appProperties ?? {} };
   }
 
@@ -195,18 +217,18 @@ export class DriveTasiyici implements Tasiyici {
       "mimeType = 'application/vnd.google-apps.folder'", 'trashed = false'];
     if (ust) kosul.push(`'${kacis(ust)}' in parents`);
     const p = new URLSearchParams({ q: kosul.join(' and '), fields: 'files(id)', pageSize: '10' });
-    const j = await (await this.istek(`${API}/files?${p}`)).json() as { files: { id: string }[] };
+    const j = await this.json<{ files: { id: string }[] }>(await this.istek(`${API}/files?${p}`));
     if (j.files[0]) return j.files[0].id;
     const r = await this.istek(`${API}/files?fields=id`, {
       method: 'POST', headers: { 'Content-Type': 'application/json; charset=UTF-8' },
       body: JSON.stringify({ name: ad, mimeType: 'application/vnd.google-apps.folder', appProperties: ozellikler, ...(ust ? { parents: [ust] } : {}) }),
     });
-    return (await r.json() as { id: string }).id;
+    return (await this.json<{ id: string }>(r)).id;
   }
 
   /** Hesabın e-postası (yenilemede Google'a ipucu olarak verilir, TK3). */
   async hesap(): Promise<{ eposta: string; ad: string }> {
-    const j = await (await this.istek(`${API}/about?fields=user(emailAddress,displayName)`)).json() as { user: { emailAddress: string; displayName: string } };
+    const j = await this.json<{ user: { emailAddress: string; displayName: string } }>(await this.istek(`${API}/about?fields=user(emailAddress,displayName)`));
     return { eposta: j.user.emailAddress, ad: j.user.displayName };
   }
 }

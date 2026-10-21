@@ -3243,7 +3243,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   async yedekAl({ evren }: { evren: string }) {
     const p = await this.paketYaz(evren, true);
     this.kurulum.ayarYaz(`son_yedek:${evren}`, String(p.zaman));
-    return { dosyaAdi: p.dosyaAdi, veri: p.veri };
+    // Bu cihazda dosyası olmayan görsel yedeğe giremez; ekran bunu "hazırlandı" iletisiyle birlikte söyler.
+    return { dosyaAdi: p.dosyaAdi, veri: p.veri, eksikGorsel: p.eksikGorsel };
   }
 
   /**
@@ -3296,7 +3297,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const gun = new Date(simdi).toISOString().slice(0, 10);
     // Dosya adı yalnız İngiliz harfleriyle: bazı tarayıcılar Türkçe harfli indirme adını yok sayıyor.
     const dosyaAdi = `${katla(bilgi.ad).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'evren'}-yedek-${gun}.zip`;
-    return { dosyaAdi, veri: zip, zaman: simdi, medyaAdlari, ad: bilgi.ad, islemSayisi: islemler.length };
+    return { dosyaAdi, veri: zip, zaman: simdi, medyaAdlari, ad: bilgi.ad, islemSayisi: islemler.length, eksikGorsel: eksik };
   }
 
   sonYedek({ evren }: { evren: string }) {
@@ -3323,14 +3324,31 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return { paket, islemler, dosyalar };
   }
 
+  /**
+   * Paketin listesinde olup ne paketin içinde ne bu cihazda bulunan görseller. Paketin kendi yazdığı eksik sayısına
+   * güvenilmez: listedeki her görsel paketin gerçek içeriğiyle karşılaştırılır. Görselleri ayrı saklanan
+   * Drive yedeğinde (medyaAyri) görseller yedek klasöründen gelir; orada bu denetimi geri yükleme yapar.
+   */
+  private async yedektekiEksikGorseller(paket: { medyaAyri?: unknown; medyaAdlari?: unknown }, dosyalar: Map<string, Uint8Array>) {
+    if (paket.medyaAyri || !Array.isArray(paket.medyaAdlari)) return [];
+    const eksik: string[] = [];
+    for (const ad of paket.medyaAdlari) {
+      if (typeof ad !== 'string' || dosyalar.has(`medya/${ad}`)) continue;
+      if (this.medya && /^[0-9a-f]{64}$/.test(ad) && (await this.medya.var(ad))) continue;
+      eksik.push(ad);
+    }
+    return eksik;
+  }
+
   async yedekIncele({ veri }: { veri: Uint8Array }): Promise<YedekBilgisi> {
     const { paket, islemler, dosyalar } = await this.paketAc(veri);
     const mevcut = this.kurulum.evrenler().find((x) => x.kod === paket.evren.kod);
     const medya = [...dosyalar.keys()].filter((a) => a.startsWith('medya/') && !a.endsWith('.onizleme')).length;
+    const eksik = await this.yedektekiEksikGorseller(paket, dosyalar);
     return {
       evrenKod: paket.evren.kod, evrenAdi: String(paket.evren.ad), tarih: Number(paket.olusturma), islemSayisi: islemler.length,
       kayitSayisi: Number(paket.kayitSayisi) || islemler.filter((i) => i.tur === 'kayit_olustur').length,
-      medyaSayisi: medya, eksikMedya: Number(paket.eksikMedya) || 0, mevcut: mevcut ? { kod: mevcut.kod, ad: mevcut.ad } : null,
+      medyaSayisi: medya, eksikMedya: Array.isArray(paket.medyaAdlari) && !paket.medyaAyri ? eksik.length : Number(paket.eksikMedya) || 0, mevcut: mevcut ? { kod: mevcut.kod, ad: mevcut.ad } : null,
       veriBicimi: Number(paket.veriBicimi),
     };
   }
@@ -3366,7 +3384,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     if (ayri) e.islemYap([{ tur: 'evren_adlandir', veri: { ad: gosterilen } }]);
     this.kurulum.evrenEkle(kod, gosterilen, Number(e.db.selectValue("SELECT v FROM evren WHERE k='olusturma'")) || Date.now());
     this.acik.set(kod, e);
-    return { kod, ayri };
+    // Kayıtlar ve metinler eksiksiz geldi; gelmeyen görseller sessizce atlanmaz, listesi sonuçla döner.
+    return { kod, ayri, eksikGorseller: await this.yedektekiEksikGorseller(paket, dosyalar) };
   }
 
   /** Geri yüklenen kopyayı asıl evrenin yerine koyar: kopya asıl adı alır, asıl "eski" diye adlanır. Hiçbir şey silinmez. */
