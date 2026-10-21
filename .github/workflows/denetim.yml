@@ -25,6 +25,13 @@ jobs:
       - run: npm ci
       - run: npm run denetle
       - run: npm test
+        if: runner.os == 'Windows'
+      # Linux'ta sınamalar UTC+14 saat diliminde koşar: "bugün"ü bilgisayarın saati yerine UTC'ye göre hesaplayan
+      # yanlış (Türkiye'de gece yarısından sonra dünün tarihini taşıyan dosya adı) günün çoğu saatinde burada yakalanır.
+      - run: npm test
+        if: runner.os == 'Linux'
+        env:
+          TZ: Pacific/Kiritimati
       - run: npm run build
   tarayici:
     # Kullanıcı akışları gerçek tarayıcıda (inceleme 9): yazma, bağlantı, rehber, yedek, hata anları.

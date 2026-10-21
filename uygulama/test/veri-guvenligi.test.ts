@@ -12,6 +12,7 @@ import { metinSemasi } from '../src/alan/metin-sema';
 import { BellekDeposu, type GorselIsleyici } from '../src/calisan/medya';
 import { BellekTasiyici } from '../src/calisan/bellek-tasiyici';
 import { sinirlar } from '../src/calisan/esitleme';
+import { gunYaz } from '../src/calisan/donemsel-yedek';
 import { zipAc, zipOku, zipYaz, zipYazBlob } from '../src/alan/zip';
 import { islemDosyasiOku, islemDosyasiYaz, islemSatiri, jsonPaketle, sikistir, sikistirmaAc } from '../src/alan/paket';
 import { yeniKod } from '../src/alan/kod';
@@ -312,7 +313,7 @@ describe('Drive yedeklerinin saklanması', () => {
     await yedek.yukle('x.zip', { uygulama: 'dunya-atlasi', tur: 'yedek', evren, gun: '2020-01-02', zaman: '1', kurulum: 'x', islem: '5000' }, new Uint8Array([1]), undefined, ana);
     await m.h.esitle();
     const liste = await m.h.driveYedekleri({ evren });
-    expect(liste.map((y) => y.gun).sort()).toEqual(['2020-01-02', new Date().toISOString().slice(0, 10)].sort());
+    expect(liste.map((y) => y.gun).sort()).toEqual(['2020-01-02', gunYaz(Date.now())].sort());
     expect(m.h.donemselYedekDurumu({ evren }).hata).toMatch(/daha önceki bir yedekte 5000 vardı.*hiçbiri silinmedi/);
   });
 });
