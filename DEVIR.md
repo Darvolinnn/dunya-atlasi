@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 21 Ekim 2026, gece (K31: bu bilgisayarda günlük yedek ve Windows parola kasasında hatırlanan Google bağlantısı; aşağıda §0.4). Önceki: 21 Ekim gece (veri güvenliği son kontrolü, #28, §0.3). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 112 dosya, 569 sınama (2'si yalnız `AGIR=1` ile çalışan ağır yük sınaması) ve 11 Rust sınaması (+1 yalnız Windows'ta: gerçek parola kasası); tarayıcıda 41 akış sınaması. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows, Node 22).*
+*Son güncelleme: 22 Ekim 2026, gece (K31: bu bilgisayarda günlük yedek ve Windows parola kasasında hatırlanan Google bağlantısı; kullanıcının bilgisayarında çıkan iki sınama sorununun düzeltmesi; aşağıda §0.4). Önceki: 21 Ekim gece (veri güvenliği son kontrolü, #28, §0.3). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 112 dosya, 569 sınama (2'si yalnız `AGIR=1` ile çalışan ağır yük sınaması) ve 11 Rust sınaması (+1 yalnız Windows'ta: gerçek parola kasası); tarayıcıda 41 akış sınaması. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows, Node 22).*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -65,6 +65,7 @@ Kullanıcı "İkisi de" dedi; Yedek sekmesinin görünüşü için resimli tasla
 - **Kapatılan açık:** görselleri pakette olmayan (Drive ya da yerel) günlük yedek "Yedekten geri yükle" ile dosya olarak seçilince görseller gelmiyor ve eksik diye bildirilmiyordu. Artık `yedektenYukle` görselleri bilinen klasörlerden (önce yerel, sonra Drive) alır; gelmeyenler `eksikGorseller`, bozuk bulunanlar `bozukGorseller`. `yedekIncele` bu yedeklerde görsel sayısını listeden verir ve klasörlerde de olmayanları eksik sayar. Günlük yedeğin doğrulaması `yedekDenetle` ile (görsel aramaz).
 - **Ekran:** `Tasima.tsx` `YerelYedekler` (yalnız kabukta; Yedek sekmesinde "Dosyaya tam yedek"ten sonra), "Yedekten geri yükle" kutusunda klasör satırı ve "Klasörü aç". Son yedek satırı (`useSonYedek`) yerel doğrulanmış yedeği de sayar.
 - **Sınamalar:** `test/yerel-yedek.test.ts` (14: günlük yedek, doğrulama, bir kez saklanan görseller, başka bilgisayarda geri yükleme, dosya olarak seçilen günlük yedek, Drive yedeği dosyası, liste dosyasının kaybı, kullanıcı dosyalarına dokunmama, saklama, aynı ad, disk dolu, bozuk geri okuma, kapatma, tarayıcı, köprü, sessiz Google), `e2e/yerel-yedek.spec.ts` (sahte kabukla gerçek çalışan ve köprü), Rust: `yerel_yedek::sinama` (3), `sinama::yedek_dosyasi_istekle_yazilir_listelenir_okunur_silinir`, `google::sinama` (yeni 3 + Windows'ta gerçek kasa).
+- **Kullanıcının bilgisayarında (22 Ekim gece):** iki klasör `472070c`'de, yeni kurulum dosyası sessizce kuruldu (veri yerinde). Orada 569 sınamadan ikisi düştü, ikisi de sınamanın kendisindendi: biri "bugün"ü UTC'ye göre hesaplıyordu, biri bütün sınamalar aynı anda koşarken 5 sn'yi aştı. Düzeltme: `vite.config.ts` `testTimeout: 30_000`; elle indirilen yedek ve Markdown dosyasının adındaki tarih artık `gunYaz` (günlük Drive ve yerel yedekler zaten yerel günü kullanıyordu); denetimde Linux sınamaları UTC+14'te.
 - **Kullanıcıya not:** Google projesi "Testing" durumundaysa Google yenileme anahtarını 7 günde geçersiz kılar; o zaman haftada bir "Eşitle"ye dokunmak gerekir. Google Cloud'da OAuth uygulaması "In production"a alınırsa bu düşer (kapsamlar `drive.appdata` ve `drive.file` hassas değil; yalnız temel doğrulama). Kullanıcının kararı.
 
 ## 1. Önce oku (sırayla)
@@ -281,7 +282,7 @@ Yeni bir yazma isteği eklemek (sırayla):
 
 Deneme kopyaları: dalda her cihaz kendi kurulum koduyla yazar (eski dallarda yazar dalın kodudur); dalın kendi işlemleri `gordu`'dan (açıldığı an) sonraki işlemlerdir (`dalIslemleri`). Eşitlemede dal, ana evreninin ardından kendi koduyla ve Drive dosyalarında `ana` özelliğiyle eşitlenir; bu cihazda hiç açılmamış ve Drive'da dosyası olmayan dal kurulmaz, silinen dal eşitlenmez. Eşitleme ekranı dalların yalnızca bu cihazda olan ve bekleyen değişikliklerini ayrıca gösterir.
 
-Kurallar: veritabanına yalnızca `EvrenVt.islemYap()` (hizmette `this.yaz`) yazar; serbest metinden anlam çıkarılmaz; kayıt kodları `yonlendir` ile birleşmiş kayda çevrilir; yeni kod `yeniKod()`.
+Kurallar: veritabanına yalnızca `EvrenVt.islemYap()` (hizmette `this.yaz`) yazar; serbest metinden anlam çıkarılmaz; kayıt kodları `yonlendir` ile birleşmiş kayda çevrilir; yeni kod `yeniKod()`. Günün adı (dosya adları, yedek günleri, "bugün") bilgisayarın saatine göre `gunYaz` (`calisan/donemsel-yedek.ts`) ile yazılır; `toISOString().slice(0, 10)` UTC verir ve Türkiye'de gece yarısından sonra dünün tarihini yazar. Denetimin Linux işi sınamaları UTC+14'te (`TZ=Pacific/Kiritimati`) koşturur.
 
 ## 5. Komutlar ve denetim
 

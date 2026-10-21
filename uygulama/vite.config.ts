@@ -8,5 +8,6 @@ export default defineConfig({
   optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm'] },
   worker: { format: 'es' },
   build: { target: 'es2022' },
-  test: { environment: 'node', setupFiles: ['test/hazirlik.ts'], include: ['test/**/*.test.ts'] },
+  // Bütün sınamalar aynı anda koşarken yavaş bir Windows makinesinde 5 sn'lik varsayılan süre yetmeyebiliyor.
+  test: { environment: 'node', setupFiles: ['test/hazirlik.ts'], include: ['test/**/*.test.ts'], testTimeout: 30_000 },
 } as never);

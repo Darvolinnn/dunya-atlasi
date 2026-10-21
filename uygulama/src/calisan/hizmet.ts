@@ -20,7 +20,7 @@ import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import type { DriveSecenekleri, YuklemeIlerlemesi } from './drive';
 import { KurulumVt } from './kurulum-vt';
-import { DonemselYedek, donemselDurum, type DonemselYedekErisimi, type YedekTasiyici } from './donemsel-yedek';
+import { DonemselYedek, donemselDurum, gunYaz, type DonemselYedekErisimi, type YedekTasiyici } from './donemsel-yedek';
 import { KlasorTasiyici, type YerelKlasor } from './klasor-tasiyici';
 import { metinBelgesi, takvimOku, yonlendir, zamanSetiOku } from './izdusum';
 const yonlendirKod = (e: EvrenVt, k: string) => yonlendir(e.db, k);
@@ -3093,7 +3093,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     const ad = this.evrenBilgisi({ evren }).ad;
     const r = await cikti.markdownDosyalari(e, ad, (g) => (this.medya ? this.medya.oku(g) : Promise.resolve(null)));
     const veri = await zipYaz(r.dosyalar);
-    return { dosyaAdi: `${this.dosyaKoku(ad)}-markdown-${new Date().toISOString().slice(0, 10)}.zip`, veri, kayitSayisi: r.kayitSayisi, eksikGorsel: r.eksikGorsel };
+    return { dosyaAdi: `${this.dosyaKoku(ad)}-markdown-${gunYaz(Date.now())}.zip`, veri, kayitSayisi: r.kayitSayisi, eksikGorsel: r.eksikGorsel };
   }
   private eserKontrol(e: EvrenVt, eser: string) {
     if (e.db.selectValue("SELECT 1 FROM kayitlar WHERE kod=? AND tur='eser' AND silindi IS NULL", [eser]) === undefined) throw new Error('Eser bulunamadı.');
@@ -3450,7 +3450,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       { ad: 'islemler.jsonl', veri: gunluk },
       ...dosyalar,
     ]);
-    const gun = new Date(simdi).toISOString().slice(0, 10);
+    // Günün adı bu bilgisayarın saatine göre (gece yarısından sonra alınan yedek yeni günün adını taşısın).
+    const gun = gunYaz(simdi);
     // Dosya adı yalnız İngiliz harfleriyle: bazı tarayıcılar Türkçe harfli indirme adını yok sayıyor.
     const dosyaAdi = `${katla(bilgi.ad).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'evren'}-yedek-${gun}.zip`;
     return { dosyaAdi, veri: zip, zaman: simdi, medyaAdlari, ad: bilgi.ad, islemSayisi, eksikGorsel: eksik };
