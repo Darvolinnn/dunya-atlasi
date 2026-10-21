@@ -23,6 +23,7 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
+        "installerHooks": "./windows/kaldirma.nsh",
         "languages": ["Turkish"],
         "displayLanguageSelector": false
       }

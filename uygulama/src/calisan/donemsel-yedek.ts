@@ -2,7 +2,7 @@
 // için günde bir yedek. Varsayılan saklama: günlük yedekler 30 gün, her ayın ilk yedeği bir yıl. Görseller
 // klasördeki "medya" alt klasöründe bir kez saklanır; her günlük yedekte yeniden kopyalanmaz.
 // Uygulama kapalıyken kaçan yedek bir sonraki açılışta (ilk eşitlemede) alınır.
-import { zipOku } from '../alan/zip';
+import { zipAc } from '../alan/zip';
 import { icerikAdi, onizlemeAdi, type MedyaDeposu } from './medya';
 import type { KurulumVt } from './kurulum-vt';
 import type { Tasiyici, UzakDosya } from './esitleme';
@@ -19,10 +19,10 @@ export interface YedekTasiyici extends Tasiyici {
 export interface DonemselYedekErisimi {
   kurulum: KurulumVt;
   medya: MedyaDeposu | null;
-  paketYaz(evren: string, medyaDahil: boolean): Promise<{ dosyaAdi: string; veri: Uint8Array; zaman: number; medyaAdlari: string[]; ad: string; islemSayisi: number }>;
+  paketYaz(evren: string, medyaDahil: boolean): Promise<{ dosyaAdi: string; veri: Blob; zaman: number; medyaAdlari: string[]; ad: string; islemSayisi: number }>;
   /** Paketi açar ve her değişiklik satırını denetler (bozuksa hata atar); evrene dokunmaz. */
-  yedekIncele(veri: Uint8Array): Promise<{ evrenKod: string; islemSayisi: number }>;
-  yedektenYukle(veri: Uint8Array): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[] }>;
+  yedekIncele(veri: Uint8Array | Blob): Promise<{ evrenKod: string; islemSayisi: number }>;
+  yedektenYukle(veri: Uint8Array | Blob): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[] }>;
 }
 
 import type { DriveYedegi, DonemselYedekDurumu as Durum } from '../veri/api';
@@ -109,7 +109,7 @@ export class DonemselYedek {
       const dosyaAdi = p.dosyaAdi.replace(/-yedek-\d{4}-\d{2}-\d{2}\.zip$/, `-yedek-${bugun}.zip`);
       // Yeni yedek her zaman yeni bir dosyadır: bugünün önceki yedeği, yenisi doğrulanana kadar yerinde kalır.
       const d = await this.t.yukle(dosyaAdi, { uygulama: UYGULAMA, tur: 'yedek', evren, gun: bugun, zaman: String(p.zaman), kurulum: this.x.kurulum.kod, islem: String(p.islemSayisi) },
-        p.veri, undefined, ana);
+        new Uint8Array(await p.veri.arrayBuffer()), undefined, ana);
       // Doğrulama (§10.10): yedek geri indirilir, açılır, her değişiklik satırı okunur ve sayı karşılaştırılır.
       let sorun: string | null = null;
       try {
@@ -167,8 +167,9 @@ export class DonemselYedek {
    */
   async geriYukle(id: string): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] }> {
     const veri = await this.t.indir(id);
-    const icerik = await zipOku(veri);
-    const paket = JSON.parse(new TextDecoder().decode(icerik.get('paket.json') ?? new Uint8Array()));
+    const icerik = await zipAc(veri);
+    let paket;
+    try { paket = JSON.parse(new TextDecoder().decode(await icerik.oku('paket.json'))); } catch { throw new Error('Bu dosya bir Dünya Atlası yedeği değil.'); }
     const adlar: string[] = Array.isArray(paket.medyaAdlari) ? paket.medyaAdlari : [];
     const eksikGorseller: string[] = [];
     const bozukGorseller: string[] = [];

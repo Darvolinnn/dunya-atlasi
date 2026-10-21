@@ -33,7 +33,7 @@ async function akistan(veri: Uint8Array, akis: CompressionStream | Decompression
 }
 
 /** Paketteki bir dosya. `veri` bayt dizisi, dosya (Blob) ya da parça parça üreten bir kaynak olabilir. */
-export interface ZipDosyasi { ad: string; veri: Uint8Array | Blob | (() => AsyncIterable<Uint8Array>); sikistirma?: boolean }
+export interface ZipDosyasi { ad: string; veri: Uint8Array | Blob | (() => Iterable<Uint8Array> | AsyncIterable<Uint8Array>); sikistirma?: boolean }
 
 const yaziKodla = (s: string) => new TextEncoder().encode(s);
 const SINIR32 = 0xffffffff;
@@ -49,7 +49,7 @@ async function* blobParcalari(b: Blob): AsyncIterable<Uint8Array> {
 }
 
 /** Kaynağı sıkıştırır; sıkışmış parçaları, boyları ve sağlama toplamını döner (parçalar bellekte, ham hâl değil). */
-async function akisiSikistir(kaynak: AsyncIterable<Uint8Array>) {
+async function akisiSikistir(kaynak: Iterable<Uint8Array> | AsyncIterable<Uint8Array>) {
   const cs = new CompressionStream('deflate-raw');
   const yazici = cs.writable.getWriter();
   const parcalar: Uint8Array[] = [];
@@ -106,15 +106,18 @@ function dosZamani(zaman: Date) {
   };
 }
 
-/** Dosyaları tek bir ZIP'e yazar; sonuç dosya (Blob) olarak döner, büyük içerik bellekte kopyalanmaz. */
-export async function zipYazBlob(dosyalar: ZipDosyasi[], zaman = new Date()): Promise<Blob> {
+/**
+ * Dosyaları tek bir ZIP'e yazar; sonuç dosya (Blob) olarak döner, büyük içerik bellekte kopyalanmaz.
+ * `zip64` her dosyayı ZIP64 biçimiyle yazdırır (yalnızca sınama için; gerektiğinde kendiliğinden kullanılır).
+ */
+export async function zipYazBlob(dosyalar: ZipDosyasi[], zaman = new Date(), secenek: { zip64?: boolean } = {}): Promise<Blob> {
   const z = dosZamani(zaman);
   const parcalar: BlobPart[] = [];
   const merkez: Uint8Array[] = [];
   let konum = 0;
   for (const d of dosyalar) {
     const h = await hazirla(d);
-    const buyuk = h.boy >= SINIR32 || h.hamBoy >= SINIR32 || konum >= SINIR32;
+    const buyuk = !!secenek.zip64 || h.boy >= SINIR32 || h.hamBoy >= SINIR32 || konum >= SINIR32;
     // Yerel başlık (ZIP64'te boylar ek alanda).
     const yerelEk = buyuk ? new DataView(new ArrayBuffer(20)) : null;
     if (yerelEk) {
@@ -162,7 +165,7 @@ export async function zipYazBlob(dosyalar: ZipDosyasi[], zaman = new Date()): Pr
   }
   const merkezBoyu = merkez.reduce((n, p) => n + p.length, 0);
   const son: Uint8Array[] = [];
-  const buyukArsiv = dosyalar.length >= SINIR16 || konum >= SINIR32 || merkezBoyu >= SINIR32;
+  const buyukArsiv = !!secenek.zip64 || dosyalar.length >= SINIR16 || konum >= SINIR32 || merkezBoyu >= SINIR32;
   if (buyukArsiv) {
     const z64 = new DataView(new ArrayBuffer(56));
     z64.setUint32(0, 0x06064b50, true);

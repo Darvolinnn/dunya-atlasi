@@ -9,14 +9,14 @@ import { akisGecerli, eksenAraligi, farkCoz, farkGecerli, farkYazisi, goreliTari
 import { iliskiTuruBul, iliskiTuruGecerli, rolAdi } from '../alan/iliski-turleri';
 import { icerikAdi, onizlemeAdi, type GorselIsleyici, type MedyaDeposu } from './medya';
 import { iceAktarimPlani, type IceDosya } from './ice-aktarim';
-import { zipOku, zipYaz, type ZipDosyasi } from '../alan/zip';
+import { zipAc, zipYaz, zipYazBlob, type ZipArsivi, type ZipDosyasi } from '../alan/zip';
 import { VERI_BICIMI, type Islem } from '../alan/islem';
-import { b64, b64Coz } from '../alan/paket';
+import { b64Coz, islemSatiri } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ayrilmaYazisi, kokAdaylari } from '../alan/turkce-ek';
 import { kararGecerli, kurguTuruGecerli, turBul, turGecerli } from '../alan/turler';
 import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
-import { EvrenVt, type AlmaSonucu } from './evren-vt';
+import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import type { DriveSecenekleri, YuklemeIlerlemesi } from './drive';
 import { KurulumVt } from './kurulum-vt';
@@ -166,6 +166,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
         const kod = db.selectValue("SELECT 1 FROM sqlite_master WHERE type='table' AND name='evren'") === undefined ? undefined
           : db.selectValue("SELECT v FROM evren WHERE k='kod'");
         if (kod !== m[1]) continue; // deneme kopyası, boş ya da yarım dosya
+        // Yarıda kalmış bir geri yüklemenin evreni listeye girmez (yedek dosyası yerinde; yeniden geri yüklenebilir).
+        if (db.selectValue("SELECT v FROM meta WHERE k='yarim'") === '1') continue;
         const e = this.evrenVt(m[1], db);
         if (e.islemSayisi() === 0) continue;
         const evrenAdi = (e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined) ?? 'Adsız evren';
@@ -3294,8 +3296,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   async paketYaz(evren: string, medyaDahil: boolean) {
     const e = this.evren(evren);
     const bilgi = this.evrenBilgisi({ evren });
-    const islemler = e.islemler();
-    const satirlar = islemler.map((i) => JSON.stringify({ ...i, ikili: i.ikili ? b64(i.ikili) : null }));
+    // Paket bu anın günlüğüdür: hazırlanırken yazılan değişiklikler pakete karışmaz (sayısı paket.json'dakiyle tutar).
+    const enFazlaNo = e.sonNo();
+    const islemSayisi = e.islemSayisi(enFazlaNo);
     const medyaAdlari = (e.db.selectObjects('SELECT ad FROM medya ORDER BY olusturma') as { ad: string }[]).map((r) => r.ad);
     const dosyalar: ZipDosyasi[] = [];
     let eksik = 0;
@@ -3303,13 +3306,15 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       const veri = await this.medya?.oku(ad);
       // Bu cihazda olmayan ya da içeriği adıyla tutmayan (bozuk) görsel yedeğe girmez; sayısı yazılır.
       if (!veri || (await icerikAdi(veri)) !== ad) { eksik++; continue; }
-      dosyalar.push({ ad: `medya/${ad}`, veri, sikistirma: false });
-      const k = await this.medya?.oku(onizlemeAdi(ad));
-      if (k) dosyalar.push({ ad: `medya/${onizlemeAdi(ad)}`, veri: k, sikistirma: false });
+      // Görsel diskteki dosya olarak eklenir; gigabaytlarca görsel aynı anda belleğe alınmaz.
+      dosyalar.push({ ad: `medya/${ad}`, veri: (await this.medya?.dosya?.(ad)) ?? veri, sikistirma: false });
+      const o = onizlemeAdi(ad);
+      const k = (await this.medya?.dosya?.(o)) ?? (await this.medya?.oku(o));
+      if (k) dosyalar.push({ ad: `medya/${o}`, veri: k, sikistirma: false });
     }
     const simdi = Date.now();
     const paket = { bicim: 'dunya-atlasi-paket', paketSurumu: 1, veriBicimi: VERI_BICIMI, evren: { kod: evren, ad: bilgi.ad },
-      olusturma: simdi, kurulum: { kod: this.kurulum.kod, ad: this.kurulum.ad }, islemSayisi: islemler.length, kayitSayisi: bilgi.kayitSayisi,
+      olusturma: simdi, kurulum: { kod: this.kurulum.kod, ad: this.kurulum.ad }, islemSayisi, kayitSayisi: bilgi.kayitSayisi,
       medya: medyaAdlari.length, eksikMedya: eksik, medyaAyri: !medyaDahil, medyaAdlari };
     const aciklama = [
       'Dünya Atlası evren paketi',
@@ -3317,7 +3322,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       `Evren: ${bilgi.ad}`,
       `Alındığı an: ${new Date(simdi).toISOString()}`,
       `Kayıt: ${bilgi.kayitSayisi} (çöp kutusunda ${bilgi.copSayisi})`,
-      `Değişiklik: ${islemler.length}`,
+      `Değişiklik: ${islemSayisi}`,
       medyaDahil ? `Görsel: ${medyaAdlari.length - eksik}${eksik ? ` (${eksik} görsel bu cihazda olmadığı için pakette yok)` : ''}`
         : `Görsel: ${medyaAdlari.length} (pakette değil; yedek klasöründeki "medya" klasöründe, her görsel bir kez)`,
       '',
@@ -3329,16 +3334,26 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       '',
       medyaDahil ? 'Geri yüklemek için: Dünya Atlası > Evrenler > Yedekten geri yükle.' : 'Geri yüklemek için: Dünya Atlası > evren > Yedek > Drive\'daki yedekler.',
     ].join('\n');
-    const zip = await zipYaz([
-      { ad: 'aciklama.txt', veri: new TextEncoder().encode(aciklama) },
-      { ad: 'paket.json', veri: new TextEncoder().encode(JSON.stringify(paket, null, 2)) },
-      { ad: 'islemler.jsonl', veri: new TextEncoder().encode(satirlar.join('\n')) },
+    // Değişiklikler sayfa sayfa yazılır ve sıkıştırılır: çok büyük evrenin günlüğü tek bir metin olarak kurulmaz.
+    const kodla = new TextEncoder();
+    const gunluk = function* () {
+      let ilk = true;
+      for (const sayfa of e.islemSayfalari(undefined, enFazlaNo)) {
+        let s = '';
+        for (const i of sayfa) { s += (ilk ? '' : '\n') + JSON.stringify(islemSatiri(i)); ilk = false; }
+        yield kodla.encode(s);
+      }
+    };
+    const zip = await zipYazBlob([
+      { ad: 'aciklama.txt', veri: kodla.encode(aciklama) },
+      { ad: 'paket.json', veri: kodla.encode(JSON.stringify(paket, null, 2)) },
+      { ad: 'islemler.jsonl', veri: gunluk },
       ...dosyalar,
     ]);
     const gun = new Date(simdi).toISOString().slice(0, 10);
     // Dosya adı yalnız İngiliz harfleriyle: bazı tarayıcılar Türkçe harfli indirme adını yok sayıyor.
     const dosyaAdi = `${katla(bilgi.ad).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'evren'}-yedek-${gun}.zip`;
-    return { dosyaAdi, veri: zip, zaman: simdi, medyaAdlari, ad: bilgi.ad, islemSayisi: islemler.length, eksikGorsel: eksik };
+    return { dosyaAdi, veri: zip, zaman: simdi, medyaAdlari, ad: bilgi.ad, islemSayisi, eksikGorsel: eksik };
   }
 
   sonYedek({ evren }: { evren: string }) {
@@ -3346,23 +3361,30 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return v ? Number(v) : null;
   }
 
-  private async paketAc(veri: Uint8Array) {
-    if (!(veri instanceof Uint8Array)) throw new Error('Dosya okunamadı.');
-    const dosyalar = await zipOku(veri);
-    const p = dosyalar.get('paket.json');
-    const g = dosyalar.get('islemler.jsonl');
-    if (!p || !g) throw new Error('Bu dosya bir Dünya Atlası yedeği değil.');
-    const paket = JSON.parse(new TextDecoder().decode(p));
-    if (paket.bicim !== 'dunya-atlasi-paket') throw new Error('Bu dosya bir Dünya Atlası yedeği değil.');
+  /**
+   * Paketi açar. Paket bir dosya (Blob) olabilir: içi istendikçe okunur, gigabaytlarca yedek belleğe tek seferde
+   * alınmaz. `islemler()` değişiklikleri sırayla ve her satırı denetleyerek verir; her çağrıda baştan okur.
+   */
+  private async paketAc(veri: Uint8Array | Blob) {
+    if (!(veri instanceof Uint8Array) && !(veri instanceof Blob)) throw new Error('Dosya okunamadı.');
+    const arsiv = await zipAc(veri);
+    if (!arsiv.var('paket.json') || !arsiv.var('islemler.jsonl')) throw new Error('Bu dosya bir Dünya Atlası yedeği değil.');
+    let paket;
+    try { paket = JSON.parse(new TextDecoder().decode(await arsiv.oku('paket.json'))); } catch { throw new Error('Bu dosya bir Dünya Atlası yedeği değil.'); }
+    if (paket?.bicim !== 'dunya-atlasi-paket') throw new Error('Bu dosya bir Dünya Atlası yedeği değil.');
     if (Number(paket.veriBicimi) > VERI_BICIMI) throw new Error('Bu yedek programın daha yeni bir sürümüyle alınmış. Önce programı güncelleyin.');
     if (!kodGecerliMi(paket.evren?.kod)) throw new Error('Yedekteki evren bilgisi bozuk.');
-    const metin = new TextDecoder().decode(g);
-    const islemler: Islem[] = metin ? metin.split('\n').filter(Boolean).map((satir, n) => {
-      const i = JSON.parse(satir);
-      if (!kodGecerliMi(i.kod) || !kodGecerliMi(i.kurulum) || typeof i.tur !== 'string' || !Number.isInteger(i.sira)) throw new Error(`Yedekte bozuk bir değişiklik var (satır ${n + 1}).`);
-      return { ...i, ikili: i.ikili ? b64Coz(i.ikili) : null };
-    }) : [];
-    return { paket, islemler, dosyalar };
+    async function* islemler(): AsyncGenerator<Islem> {
+      let n = 0;
+      for await (const satir of arsiv.satirlar('islemler.jsonl')) {
+        n++;
+        let i;
+        try { i = JSON.parse(satir); } catch { i = null; }
+        if (!i || !kodGecerliMi(i.kod) || !kodGecerliMi(i.kurulum) || typeof i.tur !== 'string' || !Number.isInteger(i.sira)) throw new Error(`Yedekte bozuk bir değişiklik var (satır ${n}).`);
+        yield { ...i, ikili: i.ikili ? b64Coz(i.ikili) : null };
+      }
+    }
+    return { paket, arsiv, islemler };
   }
 
   /**
@@ -3370,25 +3392,28 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
    * güvenilmez: listedeki her görsel paketin gerçek içeriğiyle karşılaştırılır. Görselleri ayrı saklanan
    * Drive yedeğinde (medyaAyri) görseller yedek klasöründen gelir; orada bu denetimi geri yükleme yapar.
    */
-  private async yedektekiEksikGorseller(paket: { medyaAyri?: unknown; medyaAdlari?: unknown }, dosyalar: Map<string, Uint8Array>) {
+  private async yedektekiEksikGorseller(paket: { medyaAyri?: unknown; medyaAdlari?: unknown }, arsiv: ZipArsivi, bozuk: Set<string> = new Set()) {
     if (paket.medyaAyri || !Array.isArray(paket.medyaAdlari)) return [];
     const eksik: string[] = [];
     for (const ad of paket.medyaAdlari) {
-      if (typeof ad !== 'string' || dosyalar.has(`medya/${ad}`)) continue;
+      if (typeof ad !== 'string' || (arsiv.var(`medya/${ad}`) && !bozuk.has(ad))) continue;
       if (this.medya && /^[0-9a-f]{64}$/.test(ad) && (await this.medya.var(ad))) continue;
       eksik.push(ad);
     }
     return eksik;
   }
 
-  async yedekIncele({ veri }: { veri: Uint8Array }): Promise<YedekBilgisi> {
-    const { paket, islemler, dosyalar } = await this.paketAc(veri);
+  async yedekIncele({ veri }: { veri: Uint8Array | Blob }): Promise<YedekBilgisi> {
+    const { paket, arsiv, islemler } = await this.paketAc(veri);
+    // Her değişiklik satırı okunup denetlenir (bozuksa hata), ama bellekte biriktirilmez.
+    let islemSayisi = 0, olusturma = 0;
+    for await (const i of islemler()) { islemSayisi++; if (i.tur === 'kayit_olustur') olusturma++; }
     const mevcut = this.kurulum.evrenler().find((x) => x.kod === paket.evren.kod);
-    const medya = [...dosyalar.keys()].filter((a) => a.startsWith('medya/') && !a.endsWith('.onizleme')).length;
-    const eksik = await this.yedektekiEksikGorseller(paket, dosyalar);
+    const medya = arsiv.adlar.filter((a) => a.startsWith('medya/') && !a.endsWith('.onizleme')).length;
+    const eksik = await this.yedektekiEksikGorseller(paket, arsiv);
     return {
-      evrenKod: paket.evren.kod, evrenAdi: String(paket.evren.ad), tarih: Number(paket.olusturma), islemSayisi: islemler.length,
-      kayitSayisi: Number(paket.kayitSayisi) || islemler.filter((i) => i.tur === 'kayit_olustur').length,
+      evrenKod: paket.evren.kod, evrenAdi: String(paket.evren.ad), tarih: Number(paket.olusturma), islemSayisi,
+      kayitSayisi: Number(paket.kayitSayisi) || olusturma,
       medyaSayisi: medya, eksikMedya: Array.isArray(paket.medyaAdlari) && !paket.medyaAyri ? eksik.length : Number(paket.eksikMedya) || 0, mevcut: mevcut ? { kod: mevcut.kod, ad: mevcut.ad } : null,
       veriBicimi: Number(paket.veriBicimi),
     };
@@ -3398,39 +3423,67 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
    * Yedeği geri yükler. Evren bu cihazda yoksa kendi koduyla geri gelir; varsa mevcut evrene dokunulmaz,
    * yedek ayrı bir evren olarak açılır (kurtarma alanı, §10.8). İnceledikten sonra "yerine koy" denebilir.
    */
-  async yedektenYukle({ veri }: { veri: Uint8Array }) {
-    const { paket, islemler, dosyalar } = await this.paketAc(veri);
+  /**
+   * Yedeği geri yükler. Önce bütün yedek okunup denetlenir (bu sırada hiçbir şey yazılmaz); sonra görseller tek tek,
+   * ardından değişiklikler parti parti yazılır. Yazma sürerken evren dosyası "yarım" diye işaretlidir: program bu sırada
+   * kapanırsa yarım evren listeye girmez ve bir sonraki geri yüklemede silinip baştan kurulur.
+   */
+  async yedektenYukle({ veri }: { veri: Uint8Array | Blob }) {
+    const { paket, arsiv, islemler } = await this.paketAc(veri);
+    let sayi = 0, kendi = false;
+    for await (const i of islemler()) { sayi++; if (i.kurulum === this.kurulum.kod) kendi = true; }
+    const beklenen = Number.isInteger(paket.islemSayisi) ? paket.islemSayisi : sayi;
+    const eksikMesaji = (n: number) => `Bu yedek eksik ya da bozuk: ${beklenen} değişiklikten ${n} tanesi eksiksiz okunabildi. Yedek açılmadı; başka bir yedek deneyin.`;
+    if (sayi !== beklenen) throw new Error(eksikMesaji(Math.min(sayi, beklenen)));
     // Yedekte bu cihazın kendi değişiklikleri varsa yedek her zaman ayrı bir evren olarak açılır: bu cihaz o evrende
     // yedekten sonra da yazmış olabilir (Drive'da); aynı kodla açılsaydı yeni yazılar o sıra numaralarını yeniden kullanırdı.
-    const kendi = islemler.some((i) => i.kurulum === this.kurulum.kod);
     const ayri = kendi || this.kurulum.evrenler().some((x) => x.kod === paket.evren.kod);
     const kod = ayri ? yeniKod() : paket.evren.kod as string;
-    for (const [ad, icerik] of dosyalar) {
+    // Görseller tek tek. Bozuk görsel yazılmaz ama kayıtların ve metinlerin geri gelmesini engellemez; eksik sayılır.
+    const bozuk = new Set<string>();
+    for (const ad of arsiv.adlar) {
       if (!ad.startsWith('medya/') || !this.medya) continue;
       const dosya = ad.slice('medya/'.length);
       if (!/^[0-9a-f]{64}(\.onizleme)?$/.test(dosya)) continue;
-      if (!dosya.endsWith('.onizleme') && (await icerikAdi(icerik)) !== dosya) throw new Error(`Yedekteki görsel bozuk: ${dosya}`);
+      const asil = dosya.replace(/\.onizleme$/, '');
+      let icerik: Uint8Array;
+      try { icerik = await arsiv.oku(ad); } catch { bozuk.add(asil); continue; }
+      if (dosya === asil && (await icerikAdi(icerik)) !== dosya) { bozuk.add(asil); continue; }
       if (!(await this.medya.var(dosya))) await this.medya.yaz(dosya, icerik);
     }
-    const e = this.evrenVt(kod);
-    if (e.islemSayisi() > 0) throw new Error('Bu evren bu cihazda zaten var.');
-    // Eksik ya da tekrarlanan satırlı yedek yarım bir evren kurar; açılmaz, kurulan yarım evren silinir.
+    let e = this.evrenVt(kod);
     const yarimiSil = () => { e.db.close(); for (const ek of ['', '-journal']) this.dosyaSil(`/evren-${kod}.db${ek}`); };
-    let r: AlmaSonucu;
-    try { r = e.disaridanAl(islemler); } catch (x) { yarimiSil(); throw x; }
-    const beklenen = Number.isInteger(paket.islemSayisi) ? paket.islemSayisi : islemler.length;
-    if (r.bekleyen > 0 || r.alinan !== islemler.length || r.alinan !== beklenen) {
+    // Önceki bir geri yükleme yarıda kalmışsa onun yarım evreni silinir (asıl evren değildir; yedekten kuruluyordu).
+    if (e.meta('yarim') === '1') { yarimiSil(); e = this.evrenVt(kod); }
+    if (e.islemSayisi() > 0) throw new Error('Bu evren bu cihazda zaten var.');
+    e.db.exec("INSERT INTO meta VALUES('yarim', '1') ON CONFLICT(k) DO UPDATE SET v=excluded.v");
+    // Eksik ya da tekrarlanan satırlı yedek yarım bir evren kurar; açılmaz, kurulan yarım evren silinir.
+    let alinan = 0, bekleyen = 0;
+    try {
+      let parti: Islem[] = [];
+      for await (const i of islemler()) {
+        parti.push(i);
+        if (parti.length >= Hizmet.geriYuklemePartisi) { alinan += e.disaridanAl(parti).alinan; parti = []; }
+      }
+      const r = e.disaridanAl(parti);
+      alinan += r.alinan; bekleyen = r.bekleyen;
+    } catch (x) { yarimiSil(); throw x; }
+    if (bekleyen > 0 || alinan !== sayi || alinan !== beklenen) {
       yarimiSil();
-      throw new Error(`Bu yedek eksik ya da bozuk: ${beklenen} değişiklikten ${r.alinan} tanesi eksiksiz okunabildi. Yedek açılmadı; başka bir yedek deneyin.`);
+      throw new Error(eksikMesaji(alinan));
     }
     const adi = (e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined) ?? String(paket.evren.ad);
     const gosterilen = ayri ? `${adi} (yedekten, ${new Date(Number(paket.olusturma)).toLocaleDateString('tr-TR')})` : adi;
     if (ayri) e.islemYap([{ tur: 'evren_adlandir', veri: { ad: gosterilen } }]);
+    e.db.exec("DELETE FROM meta WHERE k='yarim'");
     this.kurulum.evrenEkle(kod, gosterilen, Number(e.db.selectValue("SELECT v FROM evren WHERE k='olusturma'")) || Date.now());
     this.acik.set(kod, e);
     // Kayıtlar ve metinler eksiksiz geldi; gelmeyen görseller sessizce atlanmaz, listesi sonuçla döner.
-    return { kod, ayri, eksikGorseller: await this.yedektekiEksikGorseller(paket, dosyalar) };
+    return { kod, ayri, eksikGorseller: await this.yedektekiEksikGorseller(paket, arsiv, bozuk) };
   }
+
+  /** Geri yüklemede değişiklikler bu büyüklükte partilerle yazılır (sınamalar küçültebilir). */
+  static geriYuklemePartisi = 5000;
 
   /** Geri yüklenen kopyayı asıl evrenin yerine koyar: kopya asıl adı alır, asıl "eski" diye adlanır. Hiçbir şey silinmez. */
   evrenYerineKoy({ kopya, asil }: { kopya: string; asil: string }) {

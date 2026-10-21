@@ -82,6 +82,8 @@ export class EvrenVt {
   private topluDerinlik = 0;
   /** Bu kadar işlemde bir anlık görüntü alınır (§10.1). Sınamalar küçültebilir. */
   static goruntuAraligi = 5000;
+  /** Günlük dışarı sayfa sayfa verilirken bir sayfadaki işlem sayısı. Sınamalar küçültebilir. */
+  static sayfaBoyu = 2000;
   /** Son baştan kurmanın nasıl yapıldığı (sınama ve ölçüm için). */
   sonKurma: { goruntudenMi: boolean; uygulanan: number } | null = null;
 
@@ -410,6 +412,41 @@ export class EvrenVt {
     return this.db.selectObjects(`SELECT * FROM islemler ORDER BY saat ${y}, kurulum ${y}, sira ${y} LIMIT ?`, [sinir]).map(satirdan);
   }
 
+  /** Günlükteki en büyük satır numarası. Günlükten hiçbir şey silinmediği için sonra yazılan her işlemin numarası daha büyüktür. */
+  sonNo(): number {
+    return Number(this.db.selectValue('SELECT max(no) FROM islemler') ?? 0);
+  }
+
+  /**
+   * İşlemler uygulama sırasıyla, sayfa sayfa: çok büyük günlük belleğe tek seferde alınmaz (§10.1). Yalnızca
+   * `enFazlaNo` anına kadar yazılmış işlemler gelir; sayfalar arasında yazılanlar karışmaz, sonuç tek bir anın günlüğüdür.
+   */
+  *islemSayfalari(boyut = EvrenVt.sayfaBoyu, enFazlaNo = this.sonNo()): Generator<Islem[]> {
+    let son: [number, string, number] = [-Infinity, '', 0];
+    for (;;) {
+      const sayfa = this.db.selectObjects('SELECT * FROM islemler WHERE (saat, kurulum, sira) > (?, ?, ?) AND no <= ? ORDER BY saat, kurulum, sira LIMIT ?',
+        [...son, enFazlaNo, boyut]).map(satirdan);
+      if (!sayfa.length) return;
+      yield sayfa;
+      if (sayfa.length < boyut) return;
+      const x = sayfa[sayfa.length - 1];
+      son = [x.saat!, x.kurulum, x.sira];
+    }
+  }
+
+  /**
+   * Bir kurulumun `sonra` sırasından sonraki işlemleri, sıra sırasıyla, yaklaşık en çok `sinir` tane. Bir işlem grubu
+   * bölünmez (§10.4): sınır bir grubun ortasına düşerse grubun kalanı da eklenir.
+   */
+  kurulumIslemleri(kurulum: string, sonra: number, sinir: number): Islem[] {
+    const l = this.db.selectObjects('SELECT * FROM islemler WHERE kurulum=? AND sira>? ORDER BY sira LIMIT ?', [kurulum, sonra, sinir]).map(satirdan);
+    const g = l.length >= sinir ? l[l.length - 1].grup : null;
+    if (g) {
+      for (const r of this.db.selectObjects('SELECT * FROM islemler WHERE kurulum=? AND sira>? AND grup=? ORDER BY sira', [kurulum, l[l.length - 1].sira, g])) l.push(satirdan(r));
+    }
+    return l;
+  }
+
   /** Verilen özetin görmediği işlemler (karşı tarafa gönderilecekler), uygulama sırasıyla. */
   gorulmeyenler(gorulen: Record<string, number>, kurulum?: string): Islem[] {
     const sonuc: Islem[] = [];
@@ -426,8 +463,10 @@ export class EvrenVt {
     return Number(this.db.selectValue('SELECT count(*) FROM bekleyen_islemler'));
   }
 
-  islemSayisi(): number {
-    return Number(this.db.selectValue('SELECT count(*) FROM islemler'));
+  /** Günlükteki işlem sayısı; `enFazlaNo` verilirse o ana kadar yazılmış olanlar. */
+  islemSayisi(enFazlaNo?: number): number {
+    return Number(enFazlaNo === undefined ? this.db.selectValue('SELECT count(*) FROM islemler')
+      : this.db.selectValue('SELECT count(*) FROM islemler WHERE no <= ?', [enFazlaNo]));
   }
 }
 

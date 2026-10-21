@@ -62,6 +62,11 @@ export class OpfsDeposu implements MedyaDeposu {
     try { return new Uint8Array(await (await (await d.getFileHandle(ad)).getFile()).arrayBuffer()); }
     catch { return null; }
   }
+  async dosya(ad: string) {
+    const d = await this.dizin();
+    try { return await (await d.getFileHandle(ad)).getFile(); }
+    catch { return null; }
+  }
   async var(ad: string) {
     const d = await this.dizin();
     try { await d.getFileHandle(ad); return true; } catch { return false; }

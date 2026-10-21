@@ -189,7 +189,7 @@ describe('yedek ve geri yükleme', () => {
     expect((await h.yedektenYukle({ veri: kirpik })).eksikGorseller).toEqual([]);
   });
 
-  it('yedek olmayan ya da bozulmuş dosya reddedilir', async () => {
+  it('yedek olmayan dosya reddedilir; bozuk görsel geri yüklemeyi durdurmaz', async () => {
     const { h, evren } = await dolu();
     await expect(h.yedekIncele({ veri: await zipYaz([{ ad: 'x.txt', veri: yazi('x') }]) })).rejects.toThrow(/yedeği değil/);
     const { veri } = await h.yedekAl({ evren });
@@ -197,8 +197,13 @@ describe('yedek ve geri yükleme', () => {
     const ad = [...o.keys()].find((x) => x.startsWith('medya/'))!;
     o.set(ad, new Uint8Array([0]));
     const bozuk = await zipYaz([...o].map(([ad, veri]) => ({ ad, veri })));
+    // Bozuk görsel yazılmaz, ama kayıtların ve metinlerin geri gelmesini de engellemez: eksik görsel olarak bildirilir.
     const yeni = kur('Dizüstü');
-    await expect(yeni.h.yedektenYukle({ veri: bozuk })).rejects.toThrow(/görsel bozuk/);
+    const r = await yeni.h.yedektenYukle({ veri: bozuk });
+    const gorsel = ad.slice('medya/'.length);
+    expect(r.eksikGorseller).toEqual([gorsel]);
+    expect(yeni.depo.dosyalar.has(gorsel)).toBe(false);
+    expect(yeni.h.evrenler().map((e) => e.kod)).toEqual([r.kod]);
   });
 
   it('eksik, tekrarlanan satırlı ya da sayısı tutmayan yedek açılmaz; yarım evren kalmaz', async () => {
