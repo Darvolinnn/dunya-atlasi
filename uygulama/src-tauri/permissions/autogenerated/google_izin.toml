@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-google-izin"
+description = "Enables the google_izin command without any pre-configured scope."
+commands.allow = ["google_izin"]
+
+[[permission]]
+identifier = "deny-google-izin"
+description = "Denies the google_izin command without any pre-configured scope."
+commands.deny = ["google_izin"]
