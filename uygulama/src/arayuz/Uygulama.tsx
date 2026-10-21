@@ -11,6 +11,7 @@ import { CalismaSaglayici } from './Calisma';
 import { EsitlemeEkrani, EsitlemeOzeti, EsitlemeSaglayici, EsitlemeSeridi } from './Esitleme';
 import { HazirlanmaSeridi } from './Hazirlanma';
 import { YazarlikRehberiPaneli } from './YazarlikRehberi';
+import { yedekKlasoruYeri } from '../veri/kabuk';
 
 export type Yol = { ekran: 'evrenler' } | { ekran: 'esitleme' } | { ekran: 'evren'; kod: string; sekme: string; alt: string | null } | { ekran: 'kayit'; evren: string; kod: string }
   | { ekran: 'yaz'; evren: string; kod: string | null };
@@ -56,7 +57,15 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
   const [hata, setHata] = useState<string | null>(null);
   const kalici = useKalicilik();
 
-  useEffect(() => { istemci.iste('baslat').then(setKurulum, (e) => setHata(e.message)); }, [istemci]);
+  useEffect(() => {
+    (async () => {
+      const k = await istemci.iste('baslat');
+      // Windows uygulamasında bu bilgisayardaki yedek klasörü bağlanır (K31); günlük yedekler kendiliğinden alınır.
+      const yer = await yedekKlasoruYeri();
+      if (yer) await istemci.iste('yerelKlasorBagla', { yer }).catch(() => {});
+      setKurulum(k);
+    })().catch((e) => setHata(e.message));
+  }, [istemci]);
 
   const evren = yol.ekran === 'evren' ? yol.kod : yol.ekran === 'kayit' || yol.ekran === 'yaz' ? yol.evren : null;
   const acikKayit = yol.ekran === 'kayit' ? yol.kod : yol.ekran === 'yaz' ? yol.kod : null;

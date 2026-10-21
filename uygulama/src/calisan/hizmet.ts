@@ -20,7 +20,8 @@ import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import type { DriveSecenekleri, YuklemeIlerlemesi } from './drive';
 import { KurulumVt } from './kurulum-vt';
-import { DonemselYedek, donemselDurum, type YedekTasiyici } from './donemsel-yedek';
+import { DonemselYedek, donemselDurum, type DonemselYedekErisimi, type YedekTasiyici } from './donemsel-yedek';
+import { KlasorTasiyici, type YerelKlasor } from './klasor-tasiyici';
 import { metinBelgesi, takvimOku, yonlendir, zamanSetiOku } from './izdusum';
 const yonlendirKod = (e: EvrenVt, k: string) => yonlendir(e.db, k);
 import * as anlati from './anlati';
@@ -49,7 +50,7 @@ import * as montaj from './montaj';
 import * as seriPlan from './seri';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
-import type { AdDizini, AracTanitimDayanaklari, IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi } from '../veri/api';
+import type { AdDizini, AracTanitimDayanaklari, IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi, YerelYedekDurumu } from '../veri/api';
 import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
 import * as bakim from './bakim';
@@ -126,7 +127,7 @@ const BILGI_ALAN_ADLARI: Record<string, string> = {
 
 const katmanEtiketi = (alan: string) => ({ ad: 'Katmanın adı', silindi: 'Katmanın durumu', donusum: 'Katmanın hizalanması', gorsel: 'Katmanın görseli' } as Record<string, string>)[alan.split(':')[2]] ?? 'Katman';
 
-export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
+export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'yerelKlasorBagla'> {
   private readonly kurulum: KurulumVt;
   private readonly acik = new Map<string, EvrenVt>();
   /** Bir evrene bağlı açılan sabit sürümler ve deneme kopyaları (§9.7): kod → ana evren. */
@@ -441,13 +442,110 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   /** Uzak depoyu bağlar (Google izni gelince) ya da kaldırır. */
   tasiyiciAyarla(t: Tasiyici | null, yedek: YedekTasiyici | null = null) {
     this.esitleme = t ? new Esitleme(this.esitlemeErisimi(), t) : null;
-    this.donemsel = t && yedek ? new DonemselYedek({
-      kurulum: this.kurulum, medya: this.medya,
-      paketYaz: (evren, medyaDahil) => this.paketYaz(evren, medyaDahil),
-      yedekIncele: (veri) => this.yedekIncele({ veri }),
-      yedektenYukle: (veri) => this.yedektenYukle({ veri }),
-    }, yedek) : null;
+    this.donemsel = t && yedek ? new DonemselYedek(this.donemselErisimi('drive'), yedek) : null;
     if (t && this.esitlemeHatasi?.izin) this.esitlemeHatasi = null;
+  }
+
+  private donemselErisimi(yer: 'drive' | 'yerel'): DonemselYedekErisimi {
+    return {
+      kurulum: this.kurulum, medya: this.medya,
+      paketYaz: (evren) => this.paketYaz(evren, false, yer),
+      yedekIncele: (veri) => this.yedekDenetle(veri),
+      yedektenYukle: (veri) => this.yedektenYukle({ veri }),
+    };
+  }
+
+  // ---------- Bu bilgisayardaki günlük yedekler (§10.10, K31) ----------
+  /** Windows uygulamasında Belgeler klasöründeki yedek klasörü; tarayıcıda yoktur. */
+  private yerel: { yedek: DonemselYedek; yer: string } | null = null;
+  private yerelSira: Promise<unknown> = Promise.resolve();
+
+  /** Kabuğun yedek klasörünü bağlar (Windows uygulaması açılınca). */
+  yerelKlasorAyarla(k: YerelKlasor | null, yer = '') {
+    this.yerel = k ? { yedek: new DonemselYedek(this.donemselErisimi('yerel'), new KlasorTasiyici(k), 'yerel'), yer } : null;
+  }
+
+  /** Klasördeki işler sırayla: günlük yedek, elle yedek ve geri yükleme aynı anda klasöre yazmaz. */
+  private yerelSirayla<T>(is: () => Promise<T>): Promise<T> {
+    const p = this.yerelSira.then(is, is);
+    this.yerelSira = p.catch(() => {});
+    return p;
+  }
+
+  private yerelAcikMi(evren: string) { return this.kurulum.ayar(`yerel_kapali:${evren}`) !== '1'; }
+
+  private yerelGerekli(): DonemselYedek {
+    if (!this.yerel) throw new Error('Bu bilgisayardaki yedekler yalnız Windows uygulamasında alınır.');
+    return this.yerel.yedek;
+  }
+
+  yerelYedekDurumu({ evren }: { evren: string }): YerelYedekDurumu {
+    this.evren(evren);
+    return { ...donemselDurum(this.kurulum, evren, 'yerel'), var: !!this.yerel, acik: this.yerelAcikMi(evren), yer: this.yerel?.yer || null };
+  }
+
+  yerelYedekAyari({ evren, acik }: { evren: string; acik: boolean }) {
+    this.evren(evren);
+    if (typeof acik !== 'boolean') throw new Error('Geçersiz ayar.');
+    if (acik) this.kurulum.ayarSil(`yerel_kapali:${evren}`);
+    else this.kurulum.ayarYaz(`yerel_kapali:${evren}`, '1');
+    return this.yerelYedekDurumu({ evren });
+  }
+
+  async yerelYedekAl({ evren }: { evren: string }) {
+    const y = this.yerelGerekli();
+    this.evren(evren);
+    await this.yerelSirayla(() => y.al(evren, true));
+    return this.yerelYedekDurumu({ evren });
+  }
+
+  /** Evren bu cihazda olmasa da listelenir (başka bilgisayardan kopyalanan yedek klasörü). */
+  async yerelYedekleri({ evren }: { evren: string }) {
+    const y = this.yerelGerekli();
+    if (typeof evren !== 'string' || !evren) throw new Error('Evren bulunamadı.');
+    return this.yerelSirayla(() => y.liste(evren));
+  }
+
+  async yereldenGeriYukle({ id }: { id: string }) {
+    const y = this.yerelGerekli();
+    if (typeof id !== 'string' || !id) throw new Error('Yedek bulunamadı.');
+    return this.yerelSirayla(() => y.geriYukle(id));
+  }
+
+  /**
+   * Günü gelen evrenlerin bu bilgisayardaki yedeğini alır; program açılınca ve açıkken yarım saatte bir çağrılır.
+   * Bugünün yedeği varsa hiçbir şey yapılmaz. Bir evrenin hatası öbürlerini durdurmaz; hata o evrenin yedek bölümünde görünür.
+   */
+  async gunlukYerelYedekler() {
+    const y = this.yerel;
+    if (!y) return;
+    await this.yerelSirayla(async () => {
+      for (const e of this.kurulum.evrenler()) {
+        if (!this.yerelAcikMi(e.kod) || this.acik.get(e.kod)?.topluSuruyor) continue;
+        try { await y.yedek.al(e.kod); } catch { /* yukarıdaki not */ }
+      }
+    });
+  }
+
+  /** Görselleri ayrı saklanan (günlük) yedeklerin görsellerinin bulunabileceği klasörler: önce bu bilgisayardaki, sonra Drive'daki. */
+  private ayriGorselKaynaklari(): DonemselYedek[] {
+    return [this.yerel?.yedek ?? null, this.donemsel].filter((x): x is DonemselYedek => !!x);
+  }
+
+  /** Bu cihazda olmayan görselleri bilinen yedek klasörlerinden alır. Ulaşılamayan klasör atlanır; bozuk bulunanlar döner. */
+  private async ayriGorselleriGetir(adlar: string[]): Promise<Set<string>> {
+    const bozuk = new Set<string>();
+    let kalan = adlar;
+    for (const k of this.ayriGorselKaynaklari()) {
+      if (!kalan.length) break;
+      try {
+        const r = await k.gorselleriGetir(kalan);
+        for (const b of r.bozuk) bozuk.add(b);
+        kalan = [...r.eksik, ...r.bozuk];
+      } catch { /* bu klasöre ulaşılamadı; sıradaki denenir */ }
+    }
+    for (const b of [...bozuk]) if (this.medya && (await this.medya.var(b))) bozuk.delete(b);
+    return bozuk;
   }
 
   // ---------- Dönemsel yedek (§10.10) ----------
@@ -3293,7 +3391,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
    * Taşınabilir paket. Drive'daki dönemsel yedeklerde görseller pakete girmez: yedek klasöründe her görsel
    * bir kez saklanır (§10.10); paket hangi görselleri kullandığını yazar.
    */
-  async paketYaz(evren: string, medyaDahil: boolean) {
+  async paketYaz(evren: string, medyaDahil: boolean, yer: 'drive' | 'yerel' = 'drive') {
     const e = this.evren(evren);
     const bilgi = this.evrenBilgisi({ evren });
     // Paket bu anın günlüğüdür: hazırlanırken yazılan değişiklikler pakete karışmaz (sayısı paket.json'dakiyle tutar).
@@ -3315,7 +3413,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const simdi = Date.now();
     const paket = { bicim: 'dunya-atlasi-paket', paketSurumu: 1, veriBicimi: VERI_BICIMI, evren: { kod: evren, ad: bilgi.ad },
       olusturma: simdi, kurulum: { kod: this.kurulum.kod, ad: this.kurulum.ad }, islemSayisi, kayitSayisi: bilgi.kayitSayisi,
-      medya: medyaAdlari.length, eksikMedya: eksik, medyaAyri: !medyaDahil, medyaAdlari };
+      medya: medyaAdlari.length, eksikMedya: eksik, medyaAyri: !medyaDahil, medyaAdlari, ...(medyaDahil ? {} : { donemsel: yer }) };
     const aciklama = [
       'Dünya Atlası evren paketi',
       '',
@@ -3324,15 +3422,17 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       `Kayıt: ${bilgi.kayitSayisi} (çöp kutusunda ${bilgi.copSayisi})`,
       `Değişiklik: ${islemSayisi}`,
       medyaDahil ? `Görsel: ${medyaAdlari.length - eksik}${eksik ? ` (${eksik} görsel bu cihazda olmadığı için pakette yok)` : ''}`
-        : `Görsel: ${medyaAdlari.length} (pakette değil; yedek klasöründeki "medya" klasöründe, her görsel bir kez)`,
+        : `Görsel: ${medyaAdlari.length} (pakette değil; bu yedeğin durduğu klasördeki "medya" klasöründe, her görsel bir kez)`,
       '',
       'İçindekiler:',
       '- paket.json: paketin özeti ve veri biçimi sürümü',
       '- islemler.jsonl: evrende yapılmış bütün değişiklikler, yapıldıkları sırayla (her satır bir değişiklik).',
       '  Kayıtlar, metinler, bağlantılar, ilişkiler, tarihler ve sürüm geçmişi bunlardan yeniden kurulur.',
-      medyaDahil ? '- medya/: görseller, içerikleriyle adlandırılmış olarak (her görsel bir kez)' : '- görseller: yedek klasöründeki "medya" klasöründe',
+      medyaDahil ? '- medya/: görseller, içerikleriyle adlandırılmış olarak (her görsel bir kez)' : '- görseller: bu yedeğin durduğu klasördeki "medya" klasöründe',
       '',
-      medyaDahil ? 'Geri yüklemek için: Dünya Atlası > Evrenler > Yedekten geri yükle.' : 'Geri yüklemek için: Dünya Atlası > evren > Yedek > Drive\'daki yedekler.',
+      medyaDahil ? 'Geri yüklemek için: Dünya Atlası > Evrenler > Yedekten geri yükle.'
+        : yer === 'yerel' ? 'Geri yüklemek için: Dünya Atlası > evren > Yedek > Bu bilgisayardaki yedekler; ya da Evrenler > Yedekten geri yükle ile bu dosyayı seçin (görseller "medya" klasöründen alınır).'
+        : 'Geri yüklemek için: Dünya Atlası > evren > Yedek > Drive\'daki yedekler.',
     ].join('\n');
     // Değişiklikler sayfa sayfa yazılır ve sıkıştırılır: çok büyük evrenin günlüğü tek bir metin olarak kurulmaz.
     const kodla = new TextEncoder();
@@ -3390,10 +3490,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
   /**
    * Paketin listesinde olup ne paketin içinde ne bu cihazda bulunan görseller. Paketin kendi yazdığı eksik sayısına
    * güvenilmez: listedeki her görsel paketin gerçek içeriğiyle karşılaştırılır. Görselleri ayrı saklanan
-   * Drive yedeğinde (medyaAyri) görseller yedek klasöründen gelir; orada bu denetimi geri yükleme yapar.
+   * Günlük yedekte (medyaAyri) görseller pakette değildir: geri yüklemede yedek klasörlerinden alınır, alınamayanlar
+   * burada eksik çıkar.
    */
-  private async yedektekiEksikGorseller(paket: { medyaAyri?: unknown; medyaAdlari?: unknown }, arsiv: ZipArsivi, bozuk: Set<string> = new Set()) {
-    if (paket.medyaAyri || !Array.isArray(paket.medyaAdlari)) return [];
+  private async yedektekiEksikGorseller(paket: { medyaAdlari?: unknown }, arsiv: ZipArsivi, bozuk: Set<string> = new Set()) {
+    if (!Array.isArray(paket.medyaAdlari)) return [];
     const eksik: string[] = [];
     for (const ad of paket.medyaAdlari) {
       if (typeof ad !== 'string' || (arsiv.var(`medya/${ad}`) && !bozuk.has(ad))) continue;
@@ -3403,18 +3504,33 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     return eksik;
   }
 
+  /** Günlük yedeğin doğrulaması: paket açılır, her değişiklik satırı okunup denetlenir (bozuksa hata). */
+  private async yedekDenetle(veri: Uint8Array | Blob) {
+    const { paket, islemler } = await this.paketAc(veri);
+    let islemSayisi = 0;
+    for await (const _ of islemler()) islemSayisi++;
+    return { evrenKod: paket.evren.kod as string, islemSayisi };
+  }
+
   async yedekIncele({ veri }: { veri: Uint8Array | Blob }): Promise<YedekBilgisi> {
     const { paket, arsiv, islemler } = await this.paketAc(veri);
     // Her değişiklik satırı okunup denetlenir (bozuksa hata), ama bellekte biriktirilmez.
     let islemSayisi = 0, olusturma = 0;
     for await (const i of islemler()) { islemSayisi++; if (i.tur === 'kayit_olustur') olusturma++; }
     const mevcut = this.kurulum.evrenler().find((x) => x.kod === paket.evren.kod);
-    const medya = arsiv.adlar.filter((a) => a.startsWith('medya/') && !a.endsWith('.onizleme')).length;
-    const eksik = await this.yedektekiEksikGorseller(paket, arsiv);
+    const adlar = Array.isArray(paket.medyaAdlari) ? paket.medyaAdlari : null;
+    let eksik = await this.yedektekiEksikGorseller(paket, arsiv);
+    if (paket.medyaAyri && eksik.length) {
+      // Görselleri pakette olmayan günlük yedek: yedek klasörlerinde bulunanlar geri yüklemede oradan alınır.
+      const bulunan = new Set<string>();
+      for (const k of this.ayriGorselKaynaklari()) { try { for (const a of await k.gorselAdlari()) bulunan.add(a); } catch { /* ulaşılamadı */ } }
+      eksik = eksik.filter((a) => !bulunan.has(a));
+    }
+    const medya = paket.medyaAyri && adlar ? adlar.length : arsiv.adlar.filter((a) => a.startsWith('medya/') && !a.endsWith('.onizleme')).length;
     return {
       evrenKod: paket.evren.kod, evrenAdi: String(paket.evren.ad), tarih: Number(paket.olusturma), islemSayisi,
       kayitSayisi: Number(paket.kayitSayisi) || olusturma,
-      medyaSayisi: medya, eksikMedya: Array.isArray(paket.medyaAdlari) && !paket.medyaAyri ? eksik.length : Number(paket.eksikMedya) || 0, mevcut: mevcut ? { kod: mevcut.kod, ad: mevcut.ad } : null,
+      medyaSayisi: medya, eksikMedya: adlar ? eksik.length : Number(paket.eksikMedya) || 0, mevcut: mevcut ? { kod: mevcut.kod, ad: mevcut.ad } : null,
       veriBicimi: Number(paket.veriBicimi),
     };
   }
@@ -3441,6 +3557,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     const kod = ayri ? yeniKod() : paket.evren.kod as string;
     // Görseller tek tek. Bozuk görsel yazılmaz ama kayıtların ve metinlerin geri gelmesini engellemez; eksik sayılır.
     const bozuk = new Set<string>();
+    // Günlük yedekte görseller pakette değil: bilinen yedek klasörlerinden (bu bilgisayar, Drive) alınır.
+    let klasordeBozuk = new Set<string>();
+    if (paket.medyaAyri && Array.isArray(paket.medyaAdlari)) {
+      klasordeBozuk = await this.ayriGorselleriGetir(paket.medyaAdlari.filter((a: unknown): a is string => typeof a === 'string' && /^[0-9a-f]{64}$/.test(a)));
+    }
     for (const ad of arsiv.adlar) {
       if (!ad.startsWith('medya/') || !this.medya) continue;
       const dosya = ad.slice('medya/'.length);
@@ -3479,7 +3600,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     this.kurulum.evrenEkle(kod, gosterilen, Number(e.db.selectValue("SELECT v FROM evren WHERE k='olusturma'")) || Date.now());
     this.acik.set(kod, e);
     // Kayıtlar ve metinler eksiksiz geldi; gelmeyen görseller sessizce atlanmaz, listesi sonuçla döner.
-    return { kod, ayri, eksikGorseller: await this.yedektekiEksikGorseller(paket, arsiv, bozuk) };
+    const gelmeyen = await this.yedektekiEksikGorseller(paket, arsiv, bozuk);
+    return { kod, ayri, eksikGorseller: gelmeyen.filter((a) => !klasordeBozuk.has(a)), bozukGorseller: gelmeyen.filter((a) => klasordeBozuk.has(a)) };
   }
 
   /** Geri yüklemede değişiklikler bu büyüklükte partilerle yazılır (sınamalar küçültebilir). */

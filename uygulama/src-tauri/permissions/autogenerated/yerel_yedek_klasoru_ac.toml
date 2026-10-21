@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-yerel-yedek-klasoru-ac"
+description = "Enables the yerel_yedek_klasoru_ac command without any pre-configured scope."
+commands.allow = ["yerel_yedek_klasoru_ac"]
+
+[[permission]]
+identifier = "deny-yerel-yedek-klasoru-ac"
+description = "Denies the yerel_yedek_klasoru_ac command without any pre-configured scope."
+commands.deny = ["yerel_yedek_klasoru_ac"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-yerel-yedek-yaz"
+description = "Enables the yerel_yedek_yaz command without any pre-configured scope."
+commands.allow = ["yerel_yedek_yaz"]
+
+[[permission]]
+identifier = "deny-yerel-yedek-yaz"
+description = "Denies the yerel_yedek_yaz command without any pre-configured scope."
+commands.deny = ["yerel_yedek_yaz"]

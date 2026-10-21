@@ -7,6 +7,7 @@ import { automergeHazirla } from '../alan/automerge';
 import automergeWasm from '@automerge/automerge/automerge.wasm?url';
 import { OpfsDeposu, tarayiciIsleyici } from './medya-tarayici';
 import { DriveTasiyici } from './drive';
+import type { AltKlasor, YerelDosya, YerelKlasor } from './klasor-tasiyici';
 
 let hizmet: Hizmet | null = null;
 let havuz: { getFileCount(): number; getCapacity(): number; addCapacity(n: number): Promise<number>; unlink(ad: string): boolean; getFileNames(): string[] } | null = null;
@@ -50,12 +51,44 @@ const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', '
   'olaySurecSorumlulari', 'surecAdimSorumlusuYaz', 'surecEngelEkle', 'surecEngelDegistir', 'surecEngelSil',
   'olayIzleri', 'mekanIzKatmanlari', 'izKaydiYaz', 'izKaydiSil', 'izKaydiGeriYukle',
   'olcekliHaritaDurumu', 'olcekliOlcekYaz', 'olcekliVarsayilanHizYaz', 'olcekliAraziYaz', 'olcekliAraziSil', 'olcekliOlcum', 'olcekliKonturlar',
-  'jetonVer', 'baglantiyiKes']);
+  'yerelYedekDurumu', 'yerelYedekAyari', 'yerelYedekAl', 'yerelYedekleri', 'yereldenGeriYukle', 'gunlukYerelYedekler',
+  'jetonVer', 'baglantiyiKes', 'yerelKlasorBagla']);
 
 // Drive izni yalnızca bu çalışanın belleğinde durur; hiçbir yere yazılmaz.
 let jeton: string | null = null;
 let tasiyicilar: DriveTasiyici[] = [];
+
+// Bu bilgisayardaki yedek klasörü (K31): kabuğun istekleri yalnızca sayfadan çağrılabilir. Çalışan isteği sayfaya
+// gönderir, sayfa kabuğa iletip yanıtı geri yollar (istemci.ts).
+let kabukNo = 0;
+const kabukBekleyen = new Map<number, { ok: (v: unknown) => void; no: (e: Error) => void }>();
+function kabukIste(komut: string, arg: { alt: AltKlasor; ad?: string }, veri?: Uint8Array): Promise<unknown> {
+  return new Promise((ok, no) => {
+    const n = ++kabukNo;
+    kabukBekleyen.set(n, { ok, no });
+    const kopya = veri?.slice();
+    postMessage({ kabuk: { no: n, komut, arg, veri: kopya } }, { transfer: kopya ? [kopya.buffer] : [] });
+  });
+}
+const kabukKlasoru: YerelKlasor = {
+  listele: (alt) => kabukIste('yerel_yedek_listele', { alt }) as Promise<YerelDosya[]>,
+  oku: (alt, ad) => kabukIste('yerel_yedek_oku', { alt, ad }) as Promise<Uint8Array>,
+  yaz: async (alt, ad, veri) => { await kabukIste('yerel_yedek_yaz', { alt, ad }, veri); },
+  sil: async (alt, ad) => { await kabukIste('yerel_yedek_sil', { alt, ad }); },
+};
+/** Program açıldıktan yarım dakika sonra ve açık kaldıkça yarım saatte bir: günü gelen yedekler alınır. */
+const ILK_YEREL_YEDEK = 30_000;
+const YEREL_YEDEK_ARALIGI = 30 * 60_000;
+let yerelZamanlayici: ReturnType<typeof setInterval> | null = null;
+
 const ozel = {
+  yerelKlasorBagla(h: Hizmet, a: { yer: string }) {
+    h.yerelKlasorAyarla(kabukKlasoru, typeof a?.yer === 'string' ? a.yer : '');
+    if (!yerelZamanlayici) {
+      setTimeout(() => { void h.gunlukYerelYedekler(); }, ILK_YEREL_YEDEK);
+      yerelZamanlayici = setInterval(() => { void h.gunlukYerelYedekler(); }, YEREL_YEDEK_ARALIGI);
+    }
+  },
   async jetonVer(h: Hizmet, a: { jeton: string; bitis: number }) {
     if (typeof a?.jeton !== 'string' || !Number.isFinite(a.bitis)) throw new Error('Geçersiz izin.');
     const t = new DriveTasiyici(a.jeton, a.bitis, 'appDataFolder', h.yuklemeSecenekleri());
@@ -93,7 +126,17 @@ async function hazirla(): Promise<Hizmet> {
     () => havuz?.getFileNames() ?? []);
 }
 
-onmessage = async (e: MessageEvent<{ no: number; ad: IstekAdi; arg: unknown }>) => {
+type Gelen = { no: number; ad: IstekAdi; arg: unknown } | { kabukYanit: { no: number; sonuc?: unknown; hata?: string } };
+
+onmessage = async (e: MessageEvent<Gelen>) => {
+  if ('kabukYanit' in e.data) {
+    const y = e.data.kabukYanit;
+    const b = kabukBekleyen.get(y.no);
+    if (!b) return;
+    kabukBekleyen.delete(y.no);
+    if (typeof y.hata === 'string') b.no(new Error(y.hata)); else b.ok(y.sonuc);
+    return;
+  }
   const { no, ad, arg } = e.data;
   try {
     hazirlik ??= hazirla();
@@ -101,7 +144,7 @@ onmessage = async (e: MessageEvent<{ no: number; ad: IstekAdi; arg: unknown }>) 
     // Her veritabanı dosyası ve günlüğü havuzda bir yer tutar; yeni evren için yer kalsın.
     if (havuz && havuz.getFileCount() + 6 > havuz.getCapacity()) await havuz.addCapacity(16);
     if (!IZINLI.has(ad)) throw new Error('Bilinmeyen istek: ' + ad);
-    const sonuc = ad === 'jetonVer' || ad === 'baglantiyiKes'
+    const sonuc = ad === 'jetonVer' || ad === 'baglantiyiKes' || ad === 'yerelKlasorBagla'
       ? await ozel[ad](hizmet, arg as never)
       : await (hizmet as unknown as Record<string, (a: unknown) => unknown>)[ad].call(hizmet, arg);
     // Görsel baytları kopyalanmadan aktarılır.
