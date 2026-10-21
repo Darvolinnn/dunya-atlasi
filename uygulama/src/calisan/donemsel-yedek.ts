@@ -100,13 +100,15 @@ export class DonemselYedek {
         for (const ad of p.medyaAdlari) for (const dosya of [ad, onizlemeAdi(ad)]) {
           if (uzak.has(dosya)) continue;
           const veri = await this.x.medya.oku(dosya);
-          if (veri) { await this.t.yukle(dosya, { uygulama: UYGULAMA, tur: 'yedek-medya', ad: dosya }, veri, undefined, medya); uzak.add(dosya); }
+          // Bozuk görsel yedeğe konmaz (içeriği adıyla tutmuyor); eksik sayılır.
+          const saglam = veri && (dosya !== ad || (await icerikAdi(veri)) === ad);
+          if (saglam) { await this.t.yukle(dosya, { uygulama: UYGULAMA, tur: 'yedek-medya', ad: dosya }, veri, undefined, medya); uzak.add(dosya); }
           else if (dosya === ad) eksikGorsel++;
         }
       }
       const dosyaAdi = p.dosyaAdi.replace(/-yedek-\d{4}-\d{2}-\d{2}\.zip$/, `-yedek-${bugun}.zip`);
       // Yeni yedek her zaman yeni bir dosyadır: bugünün önceki yedeği, yenisi doğrulanana kadar yerinde kalır.
-      const d = await this.t.yukle(dosyaAdi, { uygulama: UYGULAMA, tur: 'yedek', evren, gun: bugun, zaman: String(p.zaman), kurulum: this.x.kurulum.kod },
+      const d = await this.t.yukle(dosyaAdi, { uygulama: UYGULAMA, tur: 'yedek', evren, gun: bugun, zaman: String(p.zaman), kurulum: this.x.kurulum.kod, islem: String(p.islemSayisi) },
         p.veri, undefined, ana);
       // Doğrulama (§10.10): yedek geri indirilir, açılır, her değişiklik satırı okunur ve sayı karşılaştırılır.
       let sorun: string | null = null;
@@ -123,6 +125,14 @@ export class DonemselYedek {
       }
       this.kaydet(evren, { zaman: p.zaman, gun: bugun, dogrulandi: true, ...(eksikGorsel ? { eksikGorsel } : {}) });
       this.x.kurulum.ayarYaz(`donemsel_hata:${evren}`, '');
+      // Bir evrenin değişiklik geçmişi yalnızca büyür. Yeni yedekte eski bir yedekten daha az değişiklik varsa bir şey
+      // kaybolmuş olabilir (ya da bu cihaz henüz her şeyi almamış): o zaman hiçbir eski yedek silinmez.
+      const enCok = Math.max(0, ...mevcut.map((y) => y.islemSayisi ?? 0));
+      if (p.islemSayisi < enCok) {
+        this.x.kurulum.ayarYaz(`donemsel_hata:${evren}`, `Yedek alındı ve doğrulandı, ama içinde ${p.islemSayisi} değişiklik var; daha önceki bir yedekte ${enCok} vardı. `
+          + 'Bu cihaz başka cihazların bütün değişikliklerini henüz almamış olabilir. Eski yedeklerin hiçbiri silinmedi.');
+        return 'alindi';
+      }
       // Ancak şimdi: bugünün eski yedeği ve saklama süresi dolanlar silinir. Silme hatası yeni yedeği bozmaz.
       const { gunSayisi, aySayisi } = this.ayarlar();
       const sil = new Set(silinecekGunler([...mevcut.map((y) => y.gun), bugun], bugun, gunSayisi, aySayisi));
@@ -145,7 +155,8 @@ export class DonemselYedek {
 
   async liste(evren: string): Promise<DriveYedegi[]> {
     return (await this.t.listele({ uygulama: UYGULAMA, tur: 'yedek', evren }))
-      .map((d) => ({ id: d.id, gun: d.ozellikler.gun, zaman: Number(d.ozellikler.zaman) || 0, ad: d.ad, kurulum: d.ozellikler.kurulum }))
+      .map((d) => ({ id: d.id, gun: d.ozellikler.gun, zaman: Number(d.ozellikler.zaman) || 0, ad: d.ad, kurulum: d.ozellikler.kurulum,
+        ...(Number.isInteger(Number(d.ozellikler.islem)) && d.ozellikler.islem ? { islemSayisi: Number(d.ozellikler.islem) } : {}) }))
       .filter((y) => /^\d{4}-\d{2}-\d{2}$/.test(y.gun))
       .sort((a, b) => b.gun.localeCompare(a.gun));
   }

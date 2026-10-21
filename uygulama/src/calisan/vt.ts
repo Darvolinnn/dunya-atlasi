@@ -9,7 +9,7 @@ import { OpfsDeposu, tarayiciIsleyici } from './medya-tarayici';
 import { DriveTasiyici } from './drive';
 
 let hizmet: Hizmet | null = null;
-let havuz: { getFileCount(): number; getCapacity(): number; addCapacity(n: number): Promise<number>; unlink(ad: string): boolean } | null = null;
+let havuz: { getFileCount(): number; getCapacity(): number; addCapacity(n: number): Promise<number>; unlink(ad: string): boolean; getFileNames(): string[] } | null = null;
 let hazirlik: Promise<Hizmet> | null = null;
 
 // Arayüzün çağırabildiği istekler; başka hiçbir yöntem dışarıdan çağrılamaz.
@@ -89,7 +89,8 @@ async function hazirla(): Promise<Hizmet> {
   havuz = h as never;
   const ac = (ad: string) => new h.OpfsSAHPoolDb(ad);
   return new Hizmet(ac, kurulumAdi(), sqlite3.version.libVersion, (evren, turler, kayitlar, uzaktan) => postMessage({ degisti: { evren, turler, kayitlar, uzaktan } }),
-    new OpfsDeposu(), tarayiciIsleyici, () => new sqlite3.oo1.DB(':memory:'), (ilerleme) => postMessage({ ilerleme }), (ad) => { havuz?.unlink(ad); });
+    new OpfsDeposu(), tarayiciIsleyici, () => new sqlite3.oo1.DB(':memory:'), (ilerleme) => postMessage({ ilerleme }), (ad) => { havuz?.unlink(ad); },
+    () => havuz?.getFileNames() ?? []);
 }
 
 onmessage = async (e: MessageEvent<{ no: number; ad: IstekAdi; arg: unknown }>) => {

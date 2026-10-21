@@ -315,7 +315,8 @@ export class Esitleme {
         const d = uzak.get(dosya);
         if (yerelde && !d) {
           const veri = await depo.oku(dosya);
-          if (veri) await this.t.yukle(`${UYGULAMA}-${evren}-medya-${dosya}`, ozellik(evren, 'medya', { ad: dosya }), veri);
+          // İçeriği adıyla tutmayan (bozuk) görsel Drive'a gönderilmez; bozukluk öbür cihazlara yayılmasın.
+          if (veri && (dosya !== ad || (await icerikAdi(veri)) === ad)) await this.t.yukle(`${UYGULAMA}-${evren}-medya-${dosya}`, ozellik(evren, 'medya', { ad: dosya }), veri);
         } else if (!yerelde && d) {
           const veri = await this.t.indir(d.id);
           // İçerikle adlandırıldığı için bozuk ya da değiştirilmiş görsel kabul edilmez.

@@ -821,7 +821,7 @@ export interface EsitlemeDurumu {
   kurulum: { kod: string; ad: string };
   evrenler: EvrenEsitlemeDurumu[];
 }
-export interface DriveYedegi { id: string; gun: string; zaman: number; ad: string; kurulum: string }
+export interface DriveYedegi { id: string; gun: string; zaman: number; ad: string; kurulum: string; /** Yedekteki değişiklik sayısı (eski yedeklerde yok). */ islemSayisi?: number }
 export interface DonemselYedekDurumu {
   son: { zaman: number; gun: string; dogrulandi: boolean; eksikGorsel?: number } | null; gunSayisi: number; aySayisi: number; hata: string | null;
   bagli: boolean; esitlenir: boolean;

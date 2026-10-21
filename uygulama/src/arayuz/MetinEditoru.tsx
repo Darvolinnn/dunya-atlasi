@@ -28,6 +28,7 @@ import { acilistaTaslak, kurtarmaAnahtari, taslakAnahtari, taslakSil, taslakYaz,
 const sema = metinSemasi.schema;
 const ARA = 1200;        // yazmaya bu kadar ara verilince kaydedilir
 const EN_GEC = 8000;     // sürekli yazarken bile en geç bu aralıkla kaydedilir
+const YENIDEN_DENEME = [5000, 15000, 30000, 60000]; // kaydedilemeyen yazı bu aralıklarla yeniden denenir
 
 /** Taslaklar çalışan üzerinden bu cihazın veritabanına yazılır (ani kapanmada kaybolmaz). */
 const taslakDeposu = (istemci: Istemci): TaslakDeposu => ({
@@ -189,6 +190,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     let ilkKirlilik = 0;
     let zamanlayici: ReturnType<typeof setTimeout> | null = null;
     let suren: Promise<void> | null = null;
+    let hataSayisi = 0;
     // Kurtarma taslağı: yazı asıl kayda geçene kadar cihazda ayrıca durur (§10.7).
     const anahtar = taslakAnahtari(evren, kayit, alan);
     const depo = taslakDeposu(istemci);
@@ -216,10 +218,17 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           // Bu arada başka cihazdan gelen değişiklikle birleşti: editör birleşmiş metni gösterir.
           if (r.birlesti && r.spans && !kirli) icerigiDegistir(r.spans);
           if (!kirli) { void taslakSil(depo, anahtar); taslakVar = false; setDurum({ tur: 'kayitli', zaman: Date.now() }); }
+          hataSayisi = 0;
         } catch (e) {
           kirli = true;
           await taslakKaydet();
           setDurum({ tur: 'hata', mesaj: (e as Error).message, taslak: taslakVar });
+          // Kayıt kendiliğinden yeniden denenir (yer açılınca ya da geçici bir sorun geçince yazı kaydolsun);
+          // yazar bu arada yazmaya devam ederse olağan kaydetme zaten çalışır.
+          if (!iptal && !zamanlayici) {
+            const bekle = YENIDEN_DENEME[Math.min(hataSayisi++, YENIDEN_DENEME.length - 1)];
+            zamanlayici = setTimeout(() => { zamanlayici = null; void kaydet(); }, bekle);
+          }
         } finally { suren = null; }
       })();
       await suren;

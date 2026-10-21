@@ -141,9 +141,38 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     /** Uzun süren baştan kurmanın ilerlemesi (§10.7); arayüz şerit gösterir. */
     private readonly ilerle: (d: IlerlemeBildirimi) => void = () => {},
     /** Kapatılmış bir veritabanı dosyasını siler (evreni bu cihazdan kaldırırken). */
-    private readonly dosyaSil: (ad: string) => void = () => {}) {
+    private readonly dosyaSil: (ad: string) => void = () => {},
+    /** Bu cihazdaki veritabanı dosyalarının adları (listede olmayan evren dosyalarını bulmak için). */
+    dosyaAdlari: () => string[] = () => []) {
     this.kurulum = new KurulumVt(ac('/kurulum.db'), varsayilanKurulumAdi);
     this.aktor = aktor(this.kurulum.kod);
+    this.sahipsizEvrenleriBul(dosyaAdlari);
+  }
+
+  /**
+   * Dosyası bu cihazda olup evren listesinde olmayan evrenler listeye geri eklenir: evren oluşturulurken, indirilirken
+   * ya da yedekten açılırken program tam o anda kapandıysa ya da evren listesi bozulduysa evren görünmez olmasın.
+   * Deneme kopyalarının dosyaları ana evrenin kodunu taşıdığı için evren sayılmaz.
+   */
+  private sahipsizEvrenleriBul(dosyaAdlari: () => string[]) {
+    let adlar: string[];
+    try { adlar = dosyaAdlari(); } catch { return; }
+    const bilinen = new Set(this.kurulum.evrenler().map((x) => x.kod));
+    for (const ad of adlar) {
+      const m = /^\/evren-([a-z0-9]+)\.db$/.exec(ad);
+      if (!m || bilinen.has(m[1]) || !kodGecerliMi(m[1])) continue;
+      try {
+        const db = this.ac(ad);
+        const kod = db.selectValue("SELECT 1 FROM sqlite_master WHERE type='table' AND name='evren'") === undefined ? undefined
+          : db.selectValue("SELECT v FROM evren WHERE k='kod'");
+        if (kod !== m[1]) continue; // deneme kopyası, boş ya da yarım dosya
+        const e = this.evrenVt(m[1], db);
+        if (e.islemSayisi() === 0) continue;
+        const evrenAdi = (e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined) ?? 'Adsız evren';
+        this.kurulum.evrenEkle(m[1], evrenAdi, Number(e.db.selectValue("SELECT v FROM evren WHERE k='olusturma'")) || Date.now());
+        this.acik.set(m[1], e);
+      } catch { /* açılamayan dosyaya dokunulmaz */ }
+    }
   }
 
   /** Evrenin veritabanını açar; uzun kurma sürerse ilerleme bildirilir. */
@@ -473,8 +502,19 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
       this.esitlemeSuruyor = (async () => {
         await Promise.resolve(); // gövde, işaret konmadan önce bitmesin
         try {
-          for (const e of this.kurulum.evrenler()) await es.evreniEsitle(e.kod);
+          // Bir evrenin eşitleme hatası öbür evrenleri ve günlük yedekleri durdurmaz; hata yine gösterilir.
+          const hatalar: string[] = [];
+          const evrenler = this.kurulum.evrenler();
+          for (const e of evrenler) {
+            if (this.acik.get(e.kod)?.topluSuruyor) continue; // toplu yazma bitince sonraki eşitlemede
+            try { await es.evreniEsitle(e.kod); }
+            catch (err) {
+              if (err instanceof IzinHatasi) throw err;
+              hatalar.push(evrenler.length > 1 ? `“${e.ad}”: ${(err as Error).message}` : (err as Error).message);
+            }
+          }
           await this.donemselYedekleriAl();
+          if (hatalar.length) throw new Error(hatalar.join(' '));
           this.esitlemeHatasi = null;
         } catch (err) {
           const izin = err instanceof IzinHatasi;
@@ -3261,7 +3301,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
     let eksik = 0;
     for (const ad of medyaDahil ? medyaAdlari : []) {
       const veri = await this.medya?.oku(ad);
-      if (!veri) { eksik++; continue; }
+      // Bu cihazda olmayan ya da içeriği adıyla tutmayan (bozuk) görsel yedeğe girmez; sayısı yazılır.
+      if (!veri || (await icerikAdi(veri)) !== ad) { eksik++; continue; }
       dosyalar.push({ ad: `medya/${ad}`, veri, sikistirma: false });
       const k = await this.medya?.oku(onizlemeAdi(ad));
       if (k) dosyalar.push({ ad: `medya/${onizlemeAdi(ad)}`, veri: k, sikistirma: false });
@@ -3359,7 +3400,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes'> {
    */
   async yedektenYukle({ veri }: { veri: Uint8Array }) {
     const { paket, islemler, dosyalar } = await this.paketAc(veri);
-    const ayri = this.kurulum.evrenler().some((x) => x.kod === paket.evren.kod);
+    // Yedekte bu cihazın kendi değişiklikleri varsa yedek her zaman ayrı bir evren olarak açılır: bu cihaz o evrende
+    // yedekten sonra da yazmış olabilir (Drive'da); aynı kodla açılsaydı yeni yazılar o sıra numaralarını yeniden kullanırdı.
+    const kendi = islemler.some((i) => i.kurulum === this.kurulum.kod);
+    const ayri = kendi || this.kurulum.evrenler().some((x) => x.kod === paket.evren.kod);
     const kod = ayri ? yeniKod() : paket.evren.kod as string;
     for (const [ad, icerik] of dosyalar) {
       if (!ad.startsWith('medya/') || !this.medya) continue;
