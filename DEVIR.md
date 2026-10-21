@@ -39,7 +39,7 @@ Kullanıcı başka bir ajanın yazdığı değerlendirme raporunu (`proje-degerl
 
 ## 0.3 Veri güvenliği son kontrolü (21 Ekim 2026, gece)
 
-Kullanıcı (21 Ekim 18:42): "uzun bir evren kurduğumda programın bir hatası yüzünden silinmesini istemiyorum; gerekli bütün testler ve ek güvenlikler." Bütün veri kaybı yolları koda karşı tek tek incelendi. Rapor: proje dosyalarında `analiz/veri-guvenligi-raporu.md` (depoda değil). Yapılanlar:
+Kullanıcı (21 Ekim 18:42): "uzun bir evren kurduğumda programın bir hatası yüzünden silinmesini istemiyorum; gerekli bütün testler ve ek güvenlikler." Bütün veri kaybı yolları koda karşı tek tek incelendi. Kullanıcıya verilen sade rapor: Claude Docs belgesi "Veri güvenliği raporu" (depoda değil). PR #28. Yapılanlar:
 - **Değişiklik geçmişi dokunulmaz:** `islemler` tablosunda silme ve değiştirme veritabanı tetikleyicisiyle engellenir (`GUNLUK_KORUMASI`, `evren-vt.ts`). Bilerek silen tek yol evrenin dosyasını silmektir.
 - **Çatallanma sessizce atılmaz:** aynı kurulumun aynı sırasında farklı bir değişiklik gelirse `CatallanmaHatasi`; o evrenin eşitlemesi durur, hiçbir şey üzerine yazılmaz.
 - **Eşitleme yalıtımı:** bir evrenin hatası öbür evrenleri ve dönemsel yedeği durdurmaz; `topluYaz` sürerken eşitleme o evreni atlar (`topluSuruyor`).
