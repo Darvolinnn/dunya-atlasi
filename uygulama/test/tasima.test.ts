@@ -129,7 +129,7 @@ describe('yedek ve geri yükleme', () => {
     const bilgi = await yeni.h.yedekIncele({ veri });
     expect(bilgi).toMatchObject({ evrenKod: evren, evrenAdi: 'Kuzey Toprakları', medyaSayisi: 1, mevcut: null });
     const r = await yeni.h.yedektenYukle({ veri });
-    expect(r).toEqual({ kod: evren, ayri: false, eksikGorseller: [] });
+    expect(r).toEqual({ kod: evren, ayri: false, eksikGorseller: [], bozukGorseller: [] });
     expect(yeni.h.evrenler().map((e) => e.ad)).toContain('Kuzey Toprakları');
     expect(yeni.h.kayitlar({ evren })).toEqual(h.kayitlar({ evren }));
     expect(yeni.h.kayitlar({ evren, cop: true }).map((k) => k.ad)).toEqual(['Silinen']);

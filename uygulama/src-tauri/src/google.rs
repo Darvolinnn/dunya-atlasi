@@ -1,7 +1,8 @@
 // Windows uygulamasında Google girişi (TK3). Google, izin sayfasının programın kendi penceresinde açılmasına izin
 // vermez; masaüstü programı için yol şudur: izin sayfası bilgisayarın tarayıcısında açılır, Google yanıtı bu
 // bilgisayardaki geçici bir yerel adrese (127.0.0.1, rastgele kapı) gönderir, program oradan alır (PKCE ile).
-// Uzun süreli yenileme anahtarı yalnız bu süreçte, bellekte durur; program kapanınca unutulur, diske yazılmaz.
+// Uzun süreli yenileme anahtarı Windows'un parola kasasında (Kimlik Bilgisi Yöneticisi) saklanır (K31): program
+// açılınca tarayıcı açılmadan Drive'a bağlanır. "Bağlantıyı kes" anahtarı Google'da geri alır ve kasadan siler.
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -51,10 +52,72 @@ pub fn derlemedeki_istemci() -> Option<Istemci> {
     }
 }
 
-/// Bu süreçteki yenileme anahtarı.
-#[derive(Default)]
+/// Yenileme anahtarının saklandığı yer. Windows'ta parola kasası; sınamada bellek.
+pub trait Kasa: Send + Sync {
+    fn oku(&self) -> Option<String>;
+    fn yaz(&self, anahtar: &str);
+    fn sil(&self);
+}
+
+/// Windows'un Kimlik Bilgisi Yöneticisi. Kasa açılamazsa anahtar yalnız bu oturumda kalır (eski davranış).
+/// Kayıt, program kimliği ve sabit bir adla durur; sınama başka bir adla çalışır, gerçek kaydı bozmaz.
+#[cfg(windows)]
+struct WindowsKasasi(&'static str);
+
+#[cfg(windows)]
+impl WindowsKasasi {
+    fn giris(&self) -> Option<keyring::Entry> {
+        keyring::Entry::new("io.github.darvolinnn.dunyaatlasi", self.0).ok()
+    }
+}
+
+#[cfg(windows)]
+impl Kasa for WindowsKasasi {
+    fn oku(&self) -> Option<String> {
+        self.giris()?.get_password().ok().filter(|s| !s.is_empty())
+    }
+    fn yaz(&self, anahtar: &str) {
+        if let Some(g) = self.giris() {
+            let _ = g.set_password(anahtar);
+        }
+    }
+    fn sil(&self) {
+        if let Some(g) = self.giris() {
+            let _ = g.delete_credential();
+        }
+    }
+}
+
+/// Windows dışında (yalnız geliştirme derlemesi) kasa yok: anahtar bu oturumda kalır.
+#[cfg(not(windows))]
+struct KasaYok;
+
+#[cfg(not(windows))]
+impl Kasa for KasaYok {
+    fn oku(&self) -> Option<String> {
+        None
+    }
+    fn yaz(&self, _: &str) {}
+    fn sil(&self) {}
+}
+
+fn sistem_kasasi() -> Box<dyn Kasa> {
+    #[cfg(windows)]
+    return Box::new(WindowsKasasi("google-yenileme"));
+    #[cfg(not(windows))]
+    return Box::new(KasaYok);
+}
+
+/// Yenileme anahtarı: bu süreçte bellekte, kalıcı olarak kasada.
 pub struct Durum {
     yenileme: Mutex<Option<String>>,
+    kasa: Box<dyn Kasa>,
+}
+
+impl Default for Durum {
+    fn default() -> Self {
+        Durum::yeni(sistem_kasasi())
+    }
 }
 
 #[derive(Serialize, Debug)]
@@ -148,19 +211,27 @@ async fn kodu_bekle(dinleyici: TcpListener, durum_kodu: &str) -> Result<String, 
     }
 }
 
-async fn jeton_iste(uclar: &Uclar, form: &[(&str, &str)]) -> Result<JetonYaniti, String> {
-    let r = istemci_http()?
+/// Jeton isteğinin hatası: `gecersiz` ise saklı anahtar artık işe yaramaz (geri alınmış ya da süresi dolmuş).
+struct JetonHatasi {
+    gecersiz: bool,
+    mesaj: String,
+}
+
+async fn jeton_iste(uclar: &Uclar, form: &[(&str, &str)]) -> Result<JetonYaniti, JetonHatasi> {
+    let diger = |m: &str| JetonHatasi { gecersiz: false, mesaj: m.to_string() };
+    let r = istemci_http()
+        .map_err(|m| diger(&m))?
         .post(&uclar.jeton)
         .form(form)
         .send()
         .await
-        .map_err(|_| "Google'a ulaşılamadı. İnternet bağlantısını kontrol edin.".to_string())?;
-    let y: JetonYaniti = r.json().await.map_err(|_| "Google'ın yanıtı okunamadı.".to_string())?;
+        .map_err(|_| diger("Google'a ulaşılamadı. İnternet bağlantısını kontrol edin."))?;
+    let y: JetonYaniti = r.json().await.map_err(|_| diger("Google'ın yanıtı okunamadı."))?;
     if y.error.is_some() || y.access_token.is_none() {
         return Err(match y.error.as_deref() {
-            Some("invalid_grant") => "Google izninin süresi dolmuş. Yeniden bağlanın.".into(),
-            Some("invalid_client") | Some("unauthorized_client") => "Programın Google ayarı geçersiz. Google Cloud'daki masaüstü istemcisini denetleyin.".into(),
-            _ => "Google izni alınamadı.".into(),
+            Some("invalid_grant") => JetonHatasi { gecersiz: true, mesaj: "Google izninin süresi dolmuş. Yeniden bağlanın.".into() },
+            Some("invalid_client") | Some("unauthorized_client") => diger("Programın Google ayarı geçersiz. Google Cloud'daki masaüstü istemcisini denetleyin."),
+            _ => diger("Google izni alınamadı."),
         });
     }
     Ok(y)
@@ -171,16 +242,49 @@ fn izne_cevir(y: JetonYaniti) -> Izin {
 }
 
 impl Durum {
-    /// Drive izni: bu oturumda yenileme anahtarı varsa tarayıcı açılmadan yenilenir; yoksa tarayıcıda izin istenir.
-    pub async fn izin(&self, ist: &Istemci, uclar: &Uclar, eposta: Option<String>, tarayicida_ac: impl Fn(&str) -> Result<(), String>) -> Result<Izin, String> {
-        let elde = self.yenileme.lock().unwrap().clone();
-        if let Some(rt) = elde {
+    pub fn yeni(kasa: Box<dyn Kasa>) -> Self {
+        Durum { yenileme: Mutex::new(None), kasa }
+    }
+
+    fn sakli_anahtar(&self) -> Option<String> {
+        let mut m = self.yenileme.lock().unwrap();
+        if m.is_none() {
+            *m = self.kasa.oku();
+        }
+        m.clone()
+    }
+
+    fn anahtari_sakla(&self, rt: String) {
+        self.kasa.yaz(&rt);
+        *self.yenileme.lock().unwrap() = Some(rt);
+    }
+
+    fn anahtari_unut(&self) {
+        *self.yenileme.lock().unwrap() = None;
+        self.kasa.sil();
+    }
+
+    /// Drive izni: saklı yenileme anahtarı varsa tarayıcı açılmadan yenilenir; yoksa tarayıcıda izin istenir.
+    /// `sessiz` ise tarayıcı hiç açılmaz: saklı anahtar yoksa ya da geçersizse `None` döner (program açılırken).
+    pub async fn izin(&self, ist: &Istemci, uclar: &Uclar, eposta: Option<String>, sessiz: bool, tarayicida_ac: impl Fn(&str) -> Result<(), String>) -> Result<Option<Izin>, String> {
+        if let Some(rt) = self.sakli_anahtar() {
             let form = [("client_id", ist.kod.as_str()), ("client_secret", ist.gizli.as_str()), ("refresh_token", rt.as_str()), ("grant_type", "refresh_token")];
             match jeton_iste(uclar, &form).await {
-                Ok(y) => return Ok(izne_cevir(y)),
+                Ok(mut y) => {
+                    // Google ender olarak yeni bir yenileme anahtarı verir; o zaman eskisinin yerine saklanır.
+                    if let Some(yeni) = y.refresh_token.take() {
+                        self.anahtari_sakla(yeni);
+                    }
+                    return Ok(Some(izne_cevir(y)));
+                }
                 // Anahtar geri alınmış ya da süresi dolmuş: unutulur, tarayıcıda yeniden izin istenir.
-                Err(_) => { *self.yenileme.lock().unwrap() = None; }
+                Err(h) if h.gecersiz => self.anahtari_unut(),
+                // İnternet yok ya da Google yanıt vermedi: anahtar saklı kalır, sonra yeniden denenir.
+                Err(h) => return Err(h.mesaj),
             }
+        }
+        if sessiz {
+            return Ok(None);
         }
         let dinleyici = TcpListener::bind("127.0.0.1:0").await.map_err(|_| "Google girişi için yerel bağlantı açılamadı.".to_string())?;
         let kapi = dinleyici.local_addr().map_err(|_| "Google girişi için yerel bağlantı açılamadı.".to_string())?.port();
@@ -211,16 +315,17 @@ impl Durum {
             ("client_id", ist.kod.as_str()), ("client_secret", ist.gizli.as_str()), ("code", kod.as_str()),
             ("code_verifier", dogrulayici.as_str()), ("redirect_uri", donus.as_str()), ("grant_type", "authorization_code"),
         ];
-        let mut y = jeton_iste(uclar, &form).await?;
+        let mut y = jeton_iste(uclar, &form).await.map_err(|h| h.mesaj)?;
         if let Some(rt) = y.refresh_token.take() {
-            *self.yenileme.lock().unwrap() = Some(rt);
+            self.anahtari_sakla(rt);
         }
-        Ok(izne_cevir(y))
+        Ok(Some(izne_cevir(y)))
     }
 
-    /// Bağlantı kesilince yenileme anahtarı Google'da geri alınır ve unutulur.
+    /// Bağlantı kesilince yenileme anahtarı Google'da geri alınır, bellekten ve kasadan silinir.
     pub async fn cikis(&self, uclar: &Uclar) {
-        let rt = self.yenileme.lock().unwrap().take();
+        let rt = self.sakli_anahtar();
+        self.anahtari_unut();
         if let (Some(rt), Ok(h)) = (rt, istemci_http()) {
             let _ = h.post(&uclar.geri_al).form(&[("token", rt.as_str())]).send().await;
         }
@@ -262,6 +367,17 @@ mod sinama {
 
     fn ist() -> Istemci { Istemci { kod: "istemci-kodu".into(), gizli: "gizli".into() } }
 
+    /// Bellekte kasa: program kapanıp açılınca (yeni `Durum`) aynı kasa kalır.
+    #[derive(Clone, Default)]
+    struct BellekKasa(Arc<Mutex<Option<String>>>);
+    impl Kasa for BellekKasa {
+        fn oku(&self) -> Option<String> { self.0.lock().unwrap().clone() }
+        fn yaz(&self, a: &str) { *self.0.lock().unwrap() = Some(a.to_string()); }
+        fn sil(&self) { *self.0.lock().unwrap() = None; }
+    }
+    fn durum(k: &BellekKasa) -> Durum { Durum::yeni(Box::new(k.clone())) }
+    fn acilmamali(_: &str) -> Result<(), String> { panic!("tarayıcı açılmamalı") }
+
     /// Tarayıcıyı taklit eder: adresi okur ve Google gibi yerel dönüş adresine gider.
     fn tarayici(sorgu: impl Fn(&url::Url) -> String) -> impl Fn(&str) -> Result<(), String> {
         move |a: &str| {
@@ -289,29 +405,86 @@ mod sinama {
             r#"{"access_token":"j2","expires_in":3599,"scope":"https://www.googleapis.com/auth/drive.appdata"}"#,
         ]).await;
         let uclar = Uclar { yetki: "https://ornek.invalid/auth".into(), jeton, geri_al: "http://127.0.0.1:9/".into() };
-        let d = Durum::default();
+        let kasa = BellekKasa::default();
+        let d = durum(&kasa);
         let ac = tarayici(|u| {
             assert_eq!(deger(u, "code_challenge_method"), "S256");
             assert_eq!(deger(u, "login_hint"), "yazar@ornek.invalid");
             format!("state={}&code=KOD1", deger(u, "state"))
         });
-        let i = d.izin(&ist(), &uclar, Some("yazar@ornek.invalid".into()), ac).await.unwrap();
+        let i = d.izin(&ist(), &uclar, Some("yazar@ornek.invalid".into()), false, ac).await.unwrap().unwrap();
         assert_eq!(i.jeton, "j1");
+        assert_eq!(kasa.oku().as_deref(), Some("r1"));
         let ilk = gelen.lock().unwrap()[0].clone();
         assert!(ilk.contains("code=KOD1") && ilk.contains("code_verifier=") && ilk.contains("grant_type=authorization_code"));
         // İkinci istekte tarayıcı açılmaz.
-        let i2 = d.izin(&ist(), &uclar, None, |_| -> Result<(), String> { panic!("tarayıcı açılmamalı") }).await.unwrap();
+        let i2 = d.izin(&ist(), &uclar, None, false, acilmamali).await.unwrap().unwrap();
         assert_eq!(i2.jeton, "j2");
         assert!(gelen.lock().unwrap()[1].contains("refresh_token=r1"));
     }
 
     #[tokio::test]
+    async fn program_yeniden_acilinca_tarayicisiz_baglanir() {
+        let (jeton, gelen) = sahte_jeton(vec![r#"{"access_token":"j3","expires_in":3599,"scope":"https://www.googleapis.com/auth/drive.appdata"}"#]).await;
+        let uclar = Uclar { yetki: "https://ornek.invalid/auth".into(), jeton, geri_al: "http://127.0.0.1:9/".into() };
+        let kasa = BellekKasa::default();
+        // Kasa boşken sessiz istek hiçbir şey açmadan boş döner.
+        assert!(durum(&kasa).izin(&ist(), &uclar, None, true, acilmamali).await.unwrap().is_none());
+        kasa.yaz("r-saklı");
+        let i = durum(&kasa).izin(&ist(), &uclar, None, true, acilmamali).await.unwrap().unwrap();
+        assert_eq!(i.jeton, "j3");
+        assert!(gelen.lock().unwrap()[0].contains("refresh_token=r-sakl"));
+    }
+
+    #[tokio::test]
+    async fn suresi_dolan_anahtar_silinir_internet_yoksa_saklanir() {
+        let (jeton, _) = sahte_jeton(vec![r#"{"error":"invalid_grant"}"#]).await;
+        let uclar = Uclar { yetki: "https://ornek.invalid/auth".into(), jeton, geri_al: "http://127.0.0.1:9/".into() };
+        let kasa = BellekKasa::default();
+        kasa.yaz("r-eski");
+        // Google anahtarı tanımıyor (deneme durumundaki projede 7 gün sonra): silinir, sessiz istek boş döner.
+        assert!(durum(&kasa).izin(&ist(), &uclar, None, true, acilmamali).await.unwrap().is_none());
+        assert_eq!(kasa.oku(), None);
+        // Google'a ulaşılamıyor: anahtar silinmez, hata döner, tarayıcı açılmaz.
+        kasa.yaz("r-iyi");
+        let ulasilamaz = Uclar { yetki: "https://ornek.invalid/auth".into(), jeton: "http://127.0.0.1:9/".into(), geri_al: "http://127.0.0.1:9/".into() };
+        assert!(durum(&kasa).izin(&ist(), &ulasilamaz, None, false, acilmamali).await.is_err());
+        assert_eq!(kasa.oku().as_deref(), Some("r-iyi"));
+    }
+
+    #[tokio::test]
+    async fn baglantiyi_kesmek_kasadan_da_siler() {
+        let kasa = BellekKasa::default();
+        kasa.yaz("r-kes");
+        let uclar = Uclar { yetki: "https://ornek.invalid/auth".into(), jeton: "http://127.0.0.1:9/".into(), geri_al: "http://127.0.0.1:9/".into() };
+        durum(&kasa).cikis(&uclar).await;
+        assert_eq!(kasa.oku(), None);
+    }
+
+    /// Windows'un gerçek parola kasası (yalnız Windows'ta; sınama kendi adıyla yazar, programın kaydına dokunmaz).
+    #[cfg(windows)]
+    #[test]
+    fn windows_kasasi_saklar_okur_siler() {
+        let k = WindowsKasasi("google-yenileme-sinama");
+        k.sil();
+        assert_eq!(k.oku(), None);
+        k.yaz("r-sınama-1");
+        assert_eq!(k.oku().as_deref(), Some("r-sınama-1"));
+        // Program yeniden açılmış gibi: yeni bir nesne aynı kaydı okur.
+        assert_eq!(WindowsKasasi("google-yenileme-sinama").oku().as_deref(), Some("r-sınama-1"));
+        k.yaz("r-sınama-2");
+        assert_eq!(k.oku().as_deref(), Some("r-sınama-2"));
+        k.sil();
+        assert_eq!(WindowsKasasi("google-yenileme-sinama").oku(), None);
+    }
+
+    #[tokio::test]
     async fn baska_girisin_yaniti_ve_reddedilen_izin_kabul_edilmez() {
         let uclar = Uclar { yetki: "https://ornek.invalid/auth".into(), jeton: "http://127.0.0.1:9/".into(), geri_al: "http://127.0.0.1:9/".into() };
-        let d = Durum::default();
-        let e = d.izin(&ist(), &uclar, None, tarayici(|_| "state=yanlis&code=KOD".into())).await.unwrap_err();
+        let d = durum(&BellekKasa::default());
+        let e = d.izin(&ist(), &uclar, None, false, tarayici(|_| "state=yanlis&code=KOD".into())).await.unwrap_err();
         assert!(e.contains("bu girişe ait değil"), "{e}");
-        let e = d.izin(&ist(), &uclar, None, tarayici(|u| format!("state={}&error=access_denied", deger(u, "state")))).await.unwrap_err();
+        let e = d.izin(&ist(), &uclar, None, false, tarayici(|u| format!("state={}&error=access_denied", deger(u, "state")))).await.unwrap_err();
         assert_eq!(e, "Google izni verilmedi.");
     }
 }

@@ -1,5 +1,6 @@
 // Arayüz tarafındaki veritabanı istemcisi: çalışana istek gönderir, değişiklik bildirimlerini dağıtır.
 import type { IstekAdi, IstekArg, IstekSonuc, DegisiklikBildirimi, IlerlemeBildirimi } from './api';
+import { klasorIstegi } from './kabuk';
 
 type Bekleyen = { ok: (v: unknown) => void; no: (e: Error) => void };
 
@@ -8,8 +9,11 @@ export interface CalisanBenzeri {
   onmessage: ((e: MessageEvent) => void) | null;
   onerror: ((e: ErrorEvent) => void) | null;
   onmessageerror: ((e: MessageEvent) => void) | null;
-  postMessage(m: unknown): void;
+  postMessage(m: unknown, aktar?: Transferable[]): void;
 }
+
+/** Çalışanın kabuktan (Windows uygulaması) istediği bir klasör işi. */
+interface KabukIstegi { no: number; komut: string; arg?: { alt?: unknown; ad?: unknown }; veri?: Uint8Array }
 
 /** Çalışan yüklenemez ya da çökerse bekleyen ve sonraki istekler bu iletiyle sonuçlanır; ekran "Açılıyor…"da kalmaz. */
 export const CALISAN_HATASI = 'Programın veri bölümü başlatılamadı ya da durdu. Sayfayı yenileyip yeniden deneyin.';
@@ -23,11 +27,12 @@ export class Istemci {
   private readonly ilerlemeDinleyicileri = new Set<(b: IlerlemeBildirimi) => void>();
   private durdu: string | null = null;
 
-  constructor(calisan?: CalisanBenzeri) {
+  constructor(calisan?: CalisanBenzeri, private readonly kabukIstegi = klasorIstegi) {
     this.calisan = calisan ?? new Worker(new URL('../calisan/vt.ts', import.meta.url), { type: 'module' });
     this.calisan.onmessage = (e: MessageEvent) => {
       const m = e.data;
       if (m.degisti) { for (const d of this.dinleyiciler) d(m.degisti); return; }
+      if (m.kabuk) { void this.kabugaIlet(m.kabuk); return; }
       if (m.ilerleme) { for (const d of this.ilerlemeDinleyicileri) d(m.ilerleme); return; }
       const b = this.bekleyen.get(m.no);
       if (!b) return;
@@ -38,6 +43,16 @@ export class Istemci {
     this.calisan.onerror = () => { this.durdu = CALISAN_HATASI; this.hepsiniBitir(CALISAN_HATASI); };
     // Okunamayan yanıtın hangi isteğe ait olduğu bilinemez; bekleyenlerin hiçbiri sonsuza dek beklemesin.
     this.calisan.onmessageerror = () => this.hepsiniBitir(ILETI_HATASI);
+  }
+
+  /** Çalışan kabuğa doğrudan ulaşamaz; isteği iletilir, yanıtı (baytlar kopyalanmadan) geri gönderilir. */
+  private async kabugaIlet(k: KabukIstegi) {
+    try {
+      const sonuc = await this.kabukIstegi(k.komut, k.arg, k.veri);
+      this.calisan.postMessage({ kabukYanit: { no: k.no, sonuc } }, sonuc instanceof Uint8Array ? [sonuc.buffer as ArrayBuffer] : []);
+    } catch (e) {
+      this.calisan.postMessage({ kabukYanit: { no: k.no, hata: e instanceof Error ? e.message : String(e) } });
+    }
   }
 
   private hepsiniBitir(ileti: string) {

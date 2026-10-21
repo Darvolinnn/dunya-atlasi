@@ -1,6 +1,8 @@
 // Google girişi (TK3, Windows kısmı): sunucu yok, tarayıcıda yaklaşık 1 saatlik Drive izni alınır.
 // Google penceresi yalnızca kullanıcı dokununca açılır. Hesabın e-postası yalnızca bu cihazda saklanır ve
 // yenilemede Google'a ipucu olarak verilir; böylece birden çok hesap açıkken bile hesap seçimi sorulmaz.
+// Windows uygulamasında bağlantı Windows'un parola kasasında saklanır ve program açılınca dokunmadan yenilenir (K31).
+import { kabuk } from '../veri/kabuk';
 
 /**
  * Google projesinin web istemci kodu. Gizli değildir: Google girişi kullanan her sayfa bunu tarayıcıya verir.
@@ -26,8 +28,7 @@ declare global {
  * (`src-tauri/src/google.rs`). Kabuğa masaüstü istemcisi konmamışsa istek boş döner ve eski yol kullanılır.
  */
 interface KabukIzni { jeton: string; sureSn: number; kapsam: string }
-type Kabuk = { invoke<T>(komut: string, arg?: Record<string, unknown>): Promise<T> };
-const kabuk = (): Kabuk | undefined => (window as unknown as { __TAURI_INTERNALS__?: Kabuk }).__TAURI_INTERNALS__;
+const DRIVE_UYGULAMA_KLASORU = 'https://www.googleapis.com/auth/drive.appdata';
 const kabukHatasi = (e: unknown) => new Error(typeof e === 'string' ? e : e instanceof Error ? e.message : 'Google izni alınamadı.');
 
 async function kabuktanIzin(eposta: string | undefined): Promise<{ jeton: string; bitis: number } | null> {
@@ -41,11 +42,29 @@ async function kabuktanIzin(eposta: string | undefined): Promise<{ jeton: string
     throw kabukHatasi(e);
   }
   if (!y) return null;
-  if (!y.kapsam.split(' ').includes('https://www.googleapis.com/auth/drive.appdata')) {
+  if (!y.kapsam.split(' ').includes(DRIVE_UYGULAMA_KLASORU)) {
     throw new Error('Drive izni verilmedi. Bağlanırken programın kendi Drive klasörüne erişim izni veren kutuyu işaretleyin.');
   }
   return { jeton: y.jeton, bitis: Date.now() + y.sureSn * 1000 };
 }
+
+/**
+ * Windows uygulamasında, dokunmadan: kabuk Google bağlantısını Windows'un parola kasasında saklar (K31). Saklı bağlantı
+ * varsa tarayıcı açılmadan izin alınır. Saklı bağlantı yoksa, Google onu artık tanımıyorsa (deneme durumundaki Google
+ * projesinde haftada bir) ya da internet yoksa hiçbir şey açılmaz ve null döner; kullanıcı yine dokunarak bağlanır.
+ */
+export async function sessizIzin(): Promise<{ jeton: string; bitis: number } | null> {
+  const k = kabuk();
+  if (!k) return null;
+  try {
+    const y = await k.invoke<KabukIzni | null>('google_izin', { eposta: kayitliEposta(), sessiz: true });
+    if (!y || !y.kapsam.split(' ').includes(DRIVE_UYGULAMA_KLASORU)) return null;
+    return { jeton: y.jeton, bitis: Date.now() + y.sureSn * 1000 };
+  } catch { return null; }
+}
+
+/** Windows uygulamasında mı (tarayıcıda değil). */
+export const kabuktaMi = () => !!kabuk();
 
 let yukleniyor: Promise<void> | null = null;
 function kutuphane(): Promise<void> {

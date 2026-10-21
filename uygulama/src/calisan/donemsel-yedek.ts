@@ -2,7 +2,8 @@
 // için günde bir yedek. Varsayılan saklama: günlük yedekler 30 gün, her ayın ilk yedeği bir yıl. Görseller
 // klasördeki "medya" alt klasöründe bir kez saklanır; her günlük yedekte yeniden kopyalanmaz.
 // Uygulama kapalıyken kaçan yedek bir sonraki açılışta (ilk eşitlemede) alınır.
-import { zipAc } from '../alan/zip';
+// Aynı kurallar Windows uygulamasında bu bilgisayarın Belgeler klasöründeki yedeklerde de çalışır (K31,
+// klasor-tasiyici.ts); orada ayarlar "yerel" önekiyle ayrı tutulur.
 import { icerikAdi, onizlemeAdi, type MedyaDeposu } from './medya';
 import type { KurulumVt } from './kurulum-vt';
 import type { Tasiyici, UzakDosya } from './esitleme';
@@ -19,11 +20,16 @@ export interface YedekTasiyici extends Tasiyici {
 export interface DonemselYedekErisimi {
   kurulum: KurulumVt;
   medya: MedyaDeposu | null;
-  paketYaz(evren: string, medyaDahil: boolean): Promise<{ dosyaAdi: string; veri: Blob; zaman: number; medyaAdlari: string[]; ad: string; islemSayisi: number }>;
+  /** Görselsiz paket (görseller yedek klasörünün "medya" klasöründe). */
+  paketYaz(evren: string): Promise<{ dosyaAdi: string; veri: Blob; zaman: number; medyaAdlari: string[]; ad: string; islemSayisi: number }>;
   /** Paketi açar ve her değişiklik satırını denetler (bozuksa hata atar); evrene dokunmaz. */
   yedekIncele(veri: Uint8Array | Blob): Promise<{ evrenKod: string; islemSayisi: number }>;
-  yedektenYukle(veri: Uint8Array | Blob): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[] }>;
+  /** Paketi geri yükler; görselleri bilinen yedek klasörlerinden (bu dahil) alır. */
+  yedektenYukle(veri: Uint8Array | Blob): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] }>;
 }
+
+/** Ayarların öneki: Drive'daki yedekler "donemsel", bu bilgisayardaki yedekler "yerel". */
+export type YedekOneki = 'donemsel' | 'yerel';
 
 import type { DriveYedegi, DonemselYedekDurumu as Durum } from '../veri/api';
 export type { DriveYedegi };
@@ -54,14 +60,14 @@ export function yedekAyarlari(k: KurulumVt) {
   return { gunSayisi: Number(k.ayar('yedek_gun') ?? 30), aySayisi: Number(k.ayar('yedek_ay') ?? 12) };
 }
 
-export function donemselDurum(k: KurulumVt, evren: string): DonemselYedekDurumu {
+export function donemselDurum(k: KurulumVt, evren: string, onek: YedekOneki = 'donemsel'): DonemselYedekDurumu {
   let son = null;
-  try { son = JSON.parse(k.ayar(`donemsel:${evren}`) ?? 'null'); } catch { /* yok */ }
-  return { son, ...yedekAyarlari(k), hata: k.ayar(`donemsel_hata:${evren}`) || null };
+  try { son = JSON.parse(k.ayar(`${onek}:${evren}`) ?? 'null'); } catch { /* yok */ }
+  return { son, ...yedekAyarlari(k), hata: k.ayar(`${onek}_hata:${evren}`) || null };
 }
 
 export class DonemselYedek {
-  constructor(private readonly x: DonemselYedekErisimi, private readonly t: YedekTasiyici) {}
+  constructor(private readonly x: DonemselYedekErisimi, private readonly t: YedekTasiyici, private readonly onek: YedekOneki = 'donemsel') {}
 
   private klasorler: { ana: string; medya: string } | null = null;
   private async klasorBul() {
@@ -74,16 +80,16 @@ export class DonemselYedek {
   }
 
   ayarlar() { return yedekAyarlari(this.x.kurulum); }
-  durum(evren: string) { return donemselDurum(this.x.kurulum, evren); }
+  durum(evren: string) { return donemselDurum(this.x.kurulum, evren, this.onek); }
 
   /** Bugünün yedeği yoksa alır (zorla: her durumda yeni yedek). Başka cihaz bugün aldıysa yeniden alınmaz. */
   async al(evren: string, zorla = false): Promise<'alindi' | 'zaten-var'> {
     const bugun = gunYaz(Date.now());
-    if (!zorla && this.x.kurulum.ayar(`donemsel_gun:${evren}`) === bugun) return 'zaten-var';
+    if (!zorla && this.x.kurulum.ayar(`${this.onek}_gun:${evren}`) === bugun) return 'zaten-var';
     // Başarısız denemeden sonra her eşitlemede yeniden denenmez; bir saat beklenir.
-    const sonDeneme = Number(this.x.kurulum.ayar(`donemsel_deneme:${evren}`) ?? 0);
-    if (!zorla && this.x.kurulum.ayar(`donemsel_hata:${evren}`) && Date.now() - sonDeneme < 3_600_000) return 'zaten-var';
-    this.x.kurulum.ayarYaz(`donemsel_deneme:${evren}`, String(Date.now()));
+    const sonDeneme = Number(this.x.kurulum.ayar(`${this.onek}_deneme:${evren}`) ?? 0);
+    if (!zorla && this.x.kurulum.ayar(`${this.onek}_hata:${evren}`) && Date.now() - sonDeneme < 3_600_000) return 'zaten-var';
+    this.x.kurulum.ayarYaz(`${this.onek}_deneme:${evren}`, String(Date.now()));
     try {
       const { ana, medya } = await this.klasorBul();
       const mevcut = await this.liste(evren);
@@ -92,7 +98,7 @@ export class DonemselYedek {
         this.kaydet(evren, { zaman: bugunku.zaman, gun: bugun, dogrulandi: true });
         return 'zaten-var';
       }
-      const p = await this.x.paketYaz(evren, false);
+      const p = await this.x.paketYaz(evren);
       // Görseller: klasörde olmayanlar bir kez yüklenir. Bu cihazda olmayan görsel yedeğe giremez; sayısı yazılır.
       let eksikGorsel = 0;
       if (this.x.medya && p.medyaAdlari.length) {
@@ -124,12 +130,12 @@ export class DonemselYedek {
         throw new Error(`Yeni yedek geri okunurken doğrulanamadı (${sorun}). Eski yedeklerin hiçbiri silinmedi.`);
       }
       this.kaydet(evren, { zaman: p.zaman, gun: bugun, dogrulandi: true, ...(eksikGorsel ? { eksikGorsel } : {}) });
-      this.x.kurulum.ayarYaz(`donemsel_hata:${evren}`, '');
+      this.x.kurulum.ayarYaz(`${this.onek}_hata:${evren}`, '');
       // Bir evrenin değişiklik geçmişi yalnızca büyür. Yeni yedekte eski bir yedekten daha az değişiklik varsa bir şey
       // kaybolmuş olabilir (ya da bu cihaz henüz her şeyi almamış): o zaman hiçbir eski yedek silinmez.
       const enCok = Math.max(0, ...mevcut.map((y) => y.islemSayisi ?? 0));
       if (p.islemSayisi < enCok) {
-        this.x.kurulum.ayarYaz(`donemsel_hata:${evren}`, `Yedek alındı ve doğrulandı, ama içinde ${p.islemSayisi} değişiklik var; daha önceki bir yedekte ${enCok} vardı. `
+        this.x.kurulum.ayarYaz(`${this.onek}_hata:${evren}`, `Yedek alındı ve doğrulandı, ama içinde ${p.islemSayisi} değişiklik var; daha önceki bir yedekte ${enCok} vardı. `
           + 'Bu cihaz başka cihazların bütün değişikliklerini henüz almamış olabilir. Eski yedeklerin hiçbiri silinmedi.');
         return 'alindi';
       }
@@ -139,18 +145,18 @@ export class DonemselYedek {
       try {
         for (const y of mevcut) if (y.gun === bugun || sil.has(y.gun)) await this.t.sil(y.id);
       } catch (e) {
-        this.x.kurulum.ayarYaz(`donemsel_hata:${evren}`, `Yedek alındı ve doğrulandı, ama eski yedekler kaldırılamadı: ${(e as Error).message}`);
+        this.x.kurulum.ayarYaz(`${this.onek}_hata:${evren}`, `Yedek alındı ve doğrulandı, ama eski yedekler kaldırılamadı: ${(e as Error).message}`);
       }
       return 'alindi';
     } catch (e) {
-      this.x.kurulum.ayarYaz(`donemsel_hata:${evren}`, (e as Error).message);
+      this.x.kurulum.ayarYaz(`${this.onek}_hata:${evren}`, (e as Error).message);
       throw e;
     }
   }
 
   private kaydet(evren: string, son: { zaman: number; gun: string; dogrulandi: boolean; eksikGorsel?: number }) {
-    this.x.kurulum.ayarYaz(`donemsel:${evren}`, JSON.stringify(son));
-    this.x.kurulum.ayarYaz(`donemsel_gun:${evren}`, son.gun);
+    this.x.kurulum.ayarYaz(`${this.onek}:${evren}`, JSON.stringify(son));
+    this.x.kurulum.ayarYaz(`${this.onek}_gun:${evren}`, son.gun);
   }
 
   async liste(evren: string): Promise<DriveYedegi[]> {
@@ -161,30 +167,37 @@ export class DonemselYedek {
       .sort((a, b) => b.gun.localeCompare(a.gun));
   }
 
+  /** Yedek klasörünün "medya" klasöründeki görsellerin adları. */
+  async gorselAdlari(): Promise<Set<string>> {
+    return new Set((await this.t.listele({ uygulama: UYGULAMA, tur: 'yedek-medya' })).map((d) => d.ozellikler.ad));
+  }
+
   /**
-   * Drive'daki bir yedeği geri yükler: önce görseller yerel depoya, sonra paket (mevcut evrene dokunmaz).
-   * Yedek klasöründe bulunmayan ya da bozuk görseller atlanmaz gibi yapılmaz: listesi sonuçla döner.
+   * Bu cihazda olmayan görselleri yedek klasöründen alır (içeriği adıyla tutmayan görsel alınmaz).
+   * Klasörde bulunmayanlar ve bozuk olanlar ayrı ayrı döner; hiçbiri sessizce atlanmaz.
+   */
+  async gorselleriGetir(adlar: string[]): Promise<{ eksik: string[]; bozuk: string[] }> {
+    const eksik: string[] = [];
+    const bozuk: string[] = [];
+    if (!this.x.medya || !adlar.length) return { eksik, bozuk };
+    const uzak = new Map((await this.t.listele({ uygulama: UYGULAMA, tur: 'yedek-medya' })).map((d) => [d.ozellikler.ad, d.id]));
+    for (const ad of adlar) for (const dosya of [ad, onizlemeAdi(ad)]) {
+      if (!/^[0-9a-f]{64}(\.onizleme)?$/.test(dosya) || (await this.x.medya.var(dosya))) continue;
+      const uid = uzak.get(dosya);
+      // Önizleme yoksa görsel yine açılır; yalnızca asıl dosyanın eksikliği bildirilir.
+      if (!uid) { if (dosya === ad) eksik.push(ad); continue; }
+      const v = await this.t.indir(uid);
+      if (dosya === ad && (await icerikAdi(v)) !== ad) { bozuk.push(ad); continue; }
+      await this.x.medya.yaz(dosya, v);
+    }
+    return { eksik, bozuk };
+  }
+
+  /**
+   * Klasördeki bir yedeği geri yükler (mevcut evrene dokunmaz). Görseller önce yerel depoya alınır; bulunamayan ya da
+   * bozuk görsellerin listesi sonuçla döner.
    */
   async geriYukle(id: string): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] }> {
-    const veri = await this.t.indir(id);
-    const icerik = await zipAc(veri);
-    let paket;
-    try { paket = JSON.parse(new TextDecoder().decode(await icerik.oku('paket.json'))); } catch { throw new Error('Bu dosya bir Dünya Atlası yedeği değil.'); }
-    const adlar: string[] = Array.isArray(paket.medyaAdlari) ? paket.medyaAdlari : [];
-    const eksikGorseller: string[] = [];
-    const bozukGorseller: string[] = [];
-    if (this.x.medya && adlar.length) {
-      const uzak = new Map((await this.t.listele({ uygulama: UYGULAMA, tur: 'yedek-medya' })).map((d) => [d.ozellikler.ad, d.id]));
-      for (const ad of adlar) for (const dosya of [ad, onizlemeAdi(ad)]) {
-        if (!/^[0-9a-f]{64}(\.onizleme)?$/.test(dosya) || (await this.x.medya.var(dosya))) continue;
-        const uid = uzak.get(dosya);
-        // Önizleme yoksa görsel yine açılır; yalnızca asıl dosyanın eksikliği bildirilir.
-        if (!uid) { if (dosya === ad) eksikGorseller.push(ad); continue; }
-        const v = await this.t.indir(uid);
-        if (dosya === ad && (await icerikAdi(v)) !== ad) { bozukGorseller.push(ad); continue; }
-        await this.x.medya.yaz(dosya, v);
-      }
-    }
-    return { ...(await this.x.yedektenYukle(veri)), eksikGorseller, bozukGorseller };
+    return this.x.yedektenYukle(await this.t.indir(id));
   }
 }

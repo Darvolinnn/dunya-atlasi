@@ -822,6 +822,11 @@ export interface EsitlemeDurumu {
   evrenler: EvrenEsitlemeDurumu[];
 }
 export interface DriveYedegi { id: string; gun: string; zaman: number; ad: string; kurulum: string; /** Yedekteki değişiklik sayısı (eski yedeklerde yok). */ islemSayisi?: number }
+/** Bu bilgisayardaki günlük yedekler (K31). var: Windows uygulamasında mı (tarayıcıda klasör yok); acik: bu evren için açık mı. */
+export interface YerelYedekDurumu {
+  son: { zaman: number; gun: string; dogrulandi: boolean; eksikGorsel?: number } | null; gunSayisi: number; aySayisi: number; hata: string | null;
+  var: boolean; acik: boolean; yer: string | null;
+}
 export interface DonemselYedekDurumu {
   son: { zaman: number; gun: string; dogrulandi: boolean; eksikGorsel?: number } | null; gunSayisi: number; aySayisi: number; hata: string | null;
   bagli: boolean; esitlenir: boolean;
@@ -1256,8 +1261,11 @@ export interface Istekler {
   /** eksikGorsel: bu cihazda dosyası olmadığı için yedeğe giremeyen görsel sayısı. */
   yedekAl(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Blob; eksikGorsel: number }>;
   yedekIncele(a: { veri: Uint8Array | Blob }): Promise<YedekBilgisi>;
-  /** eksikGorseller: yedeğin listesinde olup ne yedekte ne bu cihazda bulunan görseller. */
-  yedektenYukle(a: { veri: Uint8Array | Blob }): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[] }>;
+  /**
+   * eksikGorseller: yedeğin listesinde olup ne yedekte ne bu cihazda bulunan görseller. Görselleri pakette olmayan günlük
+   * yedekte görseller bilinen yedek klasörlerinden alınır; bozukGorseller orada bozuk bulunduğu için alınmayanlardır.
+   */
+  yedektenYukle(a: { veri: Uint8Array | Blob }): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] }>;
   evrenYerineKoy(a: { kopya: string; asil: string }): void;
   sonYedek(a: { evren: string }): number | null;
 
@@ -1280,6 +1288,14 @@ export interface Istekler {
   drivedaYedekAl(a: { evren: string }): Promise<DonemselYedekDurumu>;
   drivedanGeriYukle(a: { id: string }): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] }>;
   yedekAyarlari(a: { gunSayisi: number; aySayisi: number }): void;
+  /** Windows uygulaması açılınca: kabuğun Belgeler'deki yedek klasörü bağlanır (K31). yer: ekranda gösterilen yol. */
+  yerelKlasorBagla(a: { yer: string }): void;
+  yerelYedekDurumu(a: { evren: string }): YerelYedekDurumu;
+  yerelYedekAyari(a: { evren: string; acik: boolean }): YerelYedekDurumu;
+  yerelYedekAl(a: { evren: string }): Promise<YerelYedekDurumu>;
+  yerelYedekleri(a: { evren: string }): Promise<DriveYedegi[]>;
+  yereldenGeriYukle(a: { id: string }): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] }>;
+  gunlukYerelYedekler(): Promise<void>;
   esitle(): Promise<EsitlemeDurumu>;
   esitlemeDurumu(): EsitlemeDurumu;
   uzakEvrenler(): Promise<{ kod: string; ad: string; sonGorulme: number }[]>;

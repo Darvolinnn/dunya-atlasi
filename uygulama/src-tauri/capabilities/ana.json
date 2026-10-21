@@ -1,7 +1,10 @@
 {
   "identifier": "ana",
-  "description": "Ana pencere: kurulu programda sayfa sabit yerel adresten (localhost:41730) gelir; Google girişi isteklerini çağırabilsin.",
+  "description": "Ana pencere: kurulu programda sayfa sabit yerel adresten (localhost:41730) gelir; Google girişi ve yedek klasörü isteklerini çağırabilsin.",
   "windows": ["ana"],
   "remote": { "urls": ["http://localhost:41730"] },
-  "permissions": ["core:default", "allow-google-izin", "allow-google-cikis"]
+  "permissions": [
+    "core:default", "allow-google-izin", "allow-google-cikis", "allow-yerel-yedek-yeri", "allow-yerel-yedek-listele",
+    "allow-yerel-yedek-oku", "allow-yerel-yedek-yaz", "allow-yerel-yedek-sil", "allow-yerel-yedek-klasoru-ac"
+  ]
 }

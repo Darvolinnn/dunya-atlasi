@@ -6,13 +6,17 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { EsitlemeDurumu } from '../veri/api';
 import { zamanYaz, saatYaz } from '../alan/islem-metni';
-import { epostaKaydet, googleHazirla, izinAl, izniGeriAl, kayitliEposta } from './google';
+import { epostaKaydet, googleHazirla, izinAl, izniGeriAl, kabuktaMi, kayitliEposta, sessizIzin } from './google';
 import { SayfaYardimi } from './SayfaYardimi';
 import { TEMALAR, temaOku, temaYaz, type Tema } from './tema';
 import { git } from './Uygulama';
 
 const YOKLAMA = 3 * 60_000;
 const DEGISIKLIKTEN_SONRA = 20_000;
+/** Windows uygulamasında bağlı değilken saklı bağlantıyla dokunmadan bağlanma denemeleri arasında en az bu kadar. */
+const SESSIZ_ARALIK = 5 * 60_000;
+/** İznin bitmesine bu kadar kala yenilenir: eşitleme yarıda "izin yenilenmeli"ye düşmez. */
+const YENILEME_PAYI = 10 * 60_000;
 
 export interface EsitlemeDenetimi {
   durum: EsitlemeDurumu | null;
@@ -35,6 +39,8 @@ export function EsitlemeSaglayici({ istemci, children }: { istemci: Istemci; chi
   const [baglaniyor, setBaglaniyor] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const bagliRef = useRef(false);
+  const bitisRef = useRef(0);
+  const sessiz = useRef<{ suruyor: boolean; son: number }>({ suruyor: false, son: 0 });
 
   const yenile = () => { void istemci.iste('esitlemeDurumu').then((d) => { bagliRef.current = d.bagli; setDurum(d); }); };
   const esitle = async () => {
@@ -56,23 +62,50 @@ export function EsitlemeSaglayici({ istemci, children }: { istemci: Istemci; chi
       const izin = await izinAl();
       const hesap = await istemci.iste('jetonVer', izin);
       epostaKaydet(hesap.eposta); setEposta(hesap.eposta);
-      bagliRef.current = true;
+      bagliRef.current = true; bitisRef.current = izin.bitis;
       await esitle();
     } catch (e) { setHata((e as Error).message); yenile(); }
     finally { setBaglaniyor(false); }
   };
 
+  /**
+   * Windows uygulamasında dokunmadan bağlanır (K31): açılışta, bağlantı düşünce ve izin bitmeden önce. Olmazsa hiçbir şey
+   * gösterilmez; şerit yine "tıklayın" der. Bağlantı kesildiyse saklı bağlantı da silinmiştir, bu yüzden yeniden bağlanmaz.
+   */
+  const sessizBaglan = async (zorla = false) => {
+    const s = sessiz.current;
+    if (!kabuktaMi() || s.suruyor || (!zorla && Date.now() - s.son < SESSIZ_ARALIK)) return;
+    s.suruyor = true; s.son = Date.now();
+    const ilk = !bagliRef.current;
+    if (ilk) setBaglaniyor(true);
+    try {
+      const izin = await sessizIzin();
+      if (!izin) return;
+      const hesap = await istemci.iste('jetonVer', izin);
+      epostaKaydet(hesap.eposta); setEposta(hesap.eposta);
+      bagliRef.current = true; bitisRef.current = izin.bitis;
+      setHata(null);
+      if (ilk) await esitle(); else yenile();
+    } catch { /* sessiz deneme: kullanıcı yine dokunarak bağlanabilir */ }
+    finally { s.suruyor = false; if (ilk) setBaglaniyor(false); }
+  };
+  const yokla = () => {
+    if (!bagliRef.current) void sessizBaglan();
+    else if (bitisRef.current && bitisRef.current - Date.now() < YENILEME_PAYI) void sessizBaglan(true);
+  };
+
   const kes = async () => {
     const { jeton } = await istemci.iste('baglantiyiKes');
     await izniGeriAl(jeton);
-    setEposta(null); bagliRef.current = false; yenile();
+    setEposta(null); bagliRef.current = false; bitisRef.current = 0; yenile();
   };
 
   useEffect(() => {
     googleHazirla();
     yenile();
-    const zamanlayici = setInterval(() => { if (document.visibilityState === 'visible') void esitle(); }, YOKLAMA);
-    const gorununce = () => { if (document.visibilityState === 'visible') void esitle(); };
+    void sessizBaglan(true);
+    const zamanlayici = setInterval(() => { yokla(); if (document.visibilityState === 'visible') void esitle(); }, YOKLAMA);
+    const gorununce = () => { if (document.visibilityState === 'visible') { yokla(); void esitle(); } };
     document.addEventListener('visibilitychange', gorununce);
     let bekleyen: ReturnType<typeof setTimeout> | null = null;
     const birak = istemci.dinle((d) => {
@@ -127,21 +160,32 @@ export function EsitlemeOzeti() {
 }
 
 const GUN = 24 * 60 * 60_000;
+const YEDEK_YERI: Record<SonYedek['yer'], string> = {
+  drive: ' (Drive, doğrulandı)', yerel: ' (bu bilgisayarda, doğrulandı)', dosya: ' (dosya hazırlandı, kaydedildiği denetlenemez)',
+};
 
 /** Evren içindeki kayıt, eşitleme ve yedek özeti (§10.8): başlıkta en zayıf halka, açılınca üç ayrı satır. */
-/** Son doğrulanan yedek (dosya ya da doğrulanmış Drive yedeği); undefined okunuyor, null hiç yok. */
+/** Son yedek: indirilen dosya, doğrulanmış Drive yedeği ya da bu bilgisayardaki doğrulanmış günlük yedek (K31). */
+type SonYedek = { zaman: number; yer: 'dosya' | 'drive' | 'yerel' };
+
+/** Son yedek; undefined okunuyor, null hiç yok. Aynı anda alınmışsa doğrulanmış olan gösterilir. */
 function useSonYedek(istemci: Istemci, evren: string, bag: unknown[]) {
-  const [yedek, setYedek] = useState<{ zaman: number; drive: boolean } | null | undefined>(undefined);
+  const [yedek, setYedek] = useState<SonYedek | null | undefined>(undefined);
   useEffect(() => {
     let iptal = false;
     Promise.all([
       istemci.iste('sonYedek', { evren }).catch(() => null),
       istemci.iste('donemselYedekDurumu', { evren }).catch(() => null),
-    ]).then(([dosya, donemsel]) => {
+      istemci.iste('yerelYedekDurumu', { evren }).catch(() => null),
+    ]).then(([dosya, donemsel, yerel]) => {
       if (iptal) return;
-      const drive = donemsel?.son?.dogrulandi ? donemsel.son.zaman : 0;
-      const en = Math.max(dosya ?? 0, drive);
-      setYedek(en ? { zaman: en, drive: drive >= (dosya ?? 0) } : null);
+      const adaylar: SonYedek[] = [
+        { zaman: donemsel?.son?.dogrulandi ? donemsel.son.zaman : 0, yer: 'drive' },
+        { zaman: yerel?.son?.dogrulandi ? yerel.son.zaman : 0, yer: 'yerel' },
+        { zaman: dosya ?? 0, yer: 'dosya' },
+      ];
+      const en = adaylar.reduce((a, b) => (b.zaman > a.zaman ? b : a));
+      setYedek(en.zaman ? en : null);
     });
     return () => { iptal = true; };
   }, [evren, ...bag]);
@@ -158,11 +202,11 @@ export function goreceZaman(t: number, simdi = Date.now()): string {
 }
 
 /** Son yedeğin kısa satırı (§10.8, K28): durum özetinin kapalı başlığında ve Genel bakışta. */
-function SonYedekYazisi({ evren, yedek, yedekVar }: { evren: string; yedek: { zaman: number; drive: boolean } | null; yedekVar: boolean }) {
+function SonYedekYazisi({ evren, yedek, yedekVar }: { evren: string; yedek: SonYedek | null; yedekVar: boolean }) {
   const eski = !yedek || Date.now() - yedek.zaman > 7 * GUN;
   return (
     <span class={eski ? 'son-yedek durum-zayif' : 'son-yedek'}>
-      {yedek ? `Son yedek: ${goreceZaman(yedek.zaman)}${yedek.drive ? ' · doğrulandı' : ''}` : 'Henüz yedek yok'}
+      {yedek ? `Son yedek: ${goreceZaman(yedek.zaman)}${yedek.yer !== 'dosya' ? ' · doğrulandı' : ''}` : 'Henüz yedek yok'}
       {eski && yedekVar && <> · <a href={`#/e/${evren}/yedek`}>Şimdi yedekle</a></>}
     </span>
   );
@@ -210,7 +254,7 @@ export function DurumOzeti({ istemci, evren, yedekVar }: { istemci: Istemci; evr
         <li>Bu cihazda kaydedildi.</li>
         <li>{drive}</li>
         <li class={eskiYedek ? 'durum-zayif' : undefined}>
-          {yedek ? `Son yedek: ${zamanYaz(yedek.zaman)}${yedek.drive ? ' (Drive, doğrulandı)' : ' (dosya hazırlandı, kaydedildiği denetlenemez)'}` : 'Henüz yedek yok.'}
+          {yedek ? `Son yedek: ${zamanYaz(yedek.zaman)}${YEDEK_YERI[yedek.yer]}` : 'Henüz yedek yok.'}
           {yedekVar && <>{' '}<a class="dugme sade kucuk" href={`#/e/${evren}/yedek`}>Yedek al</a></>}
         </li>
       </ul>

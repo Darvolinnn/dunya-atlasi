@@ -207,7 +207,7 @@ describe('geri yükleme', () => {
     const bilgi = await b.h.yedekIncele({ veri });
     expect(bilgi.islemSayisi).toBe(vt(a.h, evren).islemSayisi());
     const r = await b.h.yedektenYukle({ veri });
-    expect(r).toEqual({ kod: evren, ayri: false, eksikGorseller: [] });
+    expect(r).toEqual({ kod: evren, ayri: false, eksikGorseller: [], bozukGorseller: [] });
     expect(tablolar(b.h, evren)).toEqual(tablolar(a.h, evren));
     expect(metni(b.h, evren, kayitlar[0])).toBe(metni(a.h, evren, kayitlar[0]));
     expect(b.medya.dosyalar.size).toBe(a.medya.dosyalar.size);

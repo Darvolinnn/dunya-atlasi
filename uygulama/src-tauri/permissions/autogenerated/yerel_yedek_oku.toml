@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-yerel-yedek-oku"
+description = "Enables the yerel_yedek_oku command without any pre-configured scope."
+commands.allow = ["yerel_yedek_oku"]
+
+[[permission]]
+identifier = "deny-yerel-yedek-oku"
+description = "Denies the yerel_yedek_oku command without any pre-configured scope."
+commands.deny = ["yerel_yedek_oku"]

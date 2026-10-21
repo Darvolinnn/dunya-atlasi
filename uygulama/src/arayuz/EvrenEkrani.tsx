@@ -5,7 +5,7 @@ import { KURGU_TURLERI } from '../alan/turler';
 import type { Istemci } from '../veri/istemci';
 import type { EvrenBilgisi, GunlukSatiri } from '../veri/api';
 import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
-import { DriveYedekleri, YedekSekmesi } from './Tasima';
+import { DriveYedekleri, YedekSekmesi, YerelYedekler } from './Tasima';
 import { Bahsedilenler, CopKutusu, KayitListesi } from './KayitListesi';
 import { Masa } from './Masa';
 import { MasalarSekmesi } from './Masalar';
@@ -59,7 +59,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
         )}
         {baslik && !haritaAcik && <div class="baslik-satiri sayfa-basligi"><h1>{gorunumMu(sekme) ? <><span class="soluk">Grafikler · </span>{baslik}</> : baslik}</h1><SayfaYardimi sayfa={sekme} /></div>}
         {sekme === 'inceleme' ? <IncelemeKuyrugu istemci={istemci} evren={kod} surum={surum} />
-          : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><MarkdownCiktisi istemci={istemci} evren={kod} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
+          : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><YerelYedekler istemci={istemci} evren={kod} surum={surum} /><MarkdownCiktisi istemci={istemci} evren={kod} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
           : sekme === 'surumler' && !bilgi.bag ? <SurumlerSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
           : sekme === 'bahsedilen' ? <Bahsedilenler istemci={istemci} evren={kod} surum={surum} />

@@ -17,9 +17,16 @@ open = "5"
 rand = "0.8"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "charset"] }
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 sha2 = "0.10"
 tokio = { version = "1", features = ["net", "io-util", "time", "macros", "rt-multi-thread", "sync"] }
 url = "2"
+# Bu bilgisayardaki yedek klasörü: Türkçe harfli dosya adları istek başlığında yüzde kodlu gelir.
+percent-encoding = "2"
+
+# Google yenileme anahtarı Windows'un parola kasasında (Kimlik Bilgisi Yöneticisi) saklanır (K31).
+[target.'cfg(windows)'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
 
 [dev-dependencies]
 # İzin listesinin (capabilities) yerel adresten gelen sayfaya Google isteklerini açtığını sınamak için.

@@ -1,7 +1,8 @@
 // Dosyaya yedek, yedekten geri yükleme ve dışarıdan içe aktarma ekranları (§10.11).
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { DonemselYedekDurumu, DriveYedegi, IceAktarimRaporu, YedekBilgisi } from '../veri/api';
+import type { DonemselYedekDurumu, DriveYedegi, IceAktarimRaporu, YedekBilgisi, YerelYedekDurumu } from '../veri/api';
+import { kabuk, yedekKlasorunuAc } from '../veri/kabuk';
 import { useEsitleme } from './Esitleme';
 import { zamanYaz } from '../alan/islem-metni';
 import { turBul } from '../alan/turler';
@@ -70,7 +71,7 @@ export function DriveYedekleri({ istemci, evren, surum }: { istemci: Istemci; ev
   const [liste, setListe] = useState<DriveYedegi[] | null>(null);
   const [mesgul, setMesgul] = useState<string | null>(null);
   const [hata, setHata] = useState<string | null>(null);
-  const [sonuc, setSonuc] = useState<{ kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] } | null>(null);
+  const [sonuc, setSonuc] = useState<GeriYuklemeSonucu | null>(null);
   const [ayar, setAyar] = useState<{ gun: string; ay: string } | null>(null);
   const bagli = !!es?.durum?.bagli;
 
@@ -122,12 +123,7 @@ export function DriveYedekleri({ istemci, evren, surum }: { istemci: Istemci; ev
       {sonuc && (
         <div style="margin-top:12px" role="status">
           <p>{sonuc.ayri ? 'Yedek ayrı bir evren olarak açıldı. Bu evrene dokunulmadı.' : 'Evren geri yüklendi.'}</p>
-          {(sonuc.eksikGorseller.length > 0 || sonuc.bozukGorseller.length > 0) && (
-            <p class="uyari kucuk">Kayıtlar ve metinler eksiksiz geldi, ama {[
-              sonuc.eksikGorseller.length ? `${sonuc.eksikGorseller.length} görsel yedek klasöründe bulunamadı` : '',
-              sonuc.bozukGorseller.length ? `${sonuc.bozukGorseller.length} görsel bozuk olduğu için alınmadı` : '',
-            ].filter(Boolean).join(', ')}. Bu görsellerin yerinde “görsel yok” görünür.</p>
-          )}
+          <GorselUyarisi sonuc={sonuc} nerede="yedek klasöründe" />
           <button class="dugme ana" onClick={() => git(`/e/${sonuc.kod}`)}>Evreni aç</button>
         </div>
       )}
@@ -161,11 +157,103 @@ export function DriveYedekleri({ istemci, evren, surum }: { istemci: Istemci; ev
 
 const saatMetni = (t: number) => new Date(t).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
+type GeriYuklemeSonucu = { kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] };
+
+/** Geri yüklemenin sonucu: gelmeyen görseller sessizce atlanmaz (§10.10). */
+function GorselUyarisi({ sonuc, nerede = 'yedekte' }: { sonuc: GeriYuklemeSonucu; nerede?: string }) {
+  if (!sonuc.eksikGorseller.length && !sonuc.bozukGorseller.length) return null;
+  return (
+    <p class="uyari kucuk">Kayıtlar ve metinler eksiksiz geldi, ama {[
+      sonuc.eksikGorseller.length ? `${sonuc.eksikGorseller.length} görsel ${nerede} bulunamadı` : '',
+      sonuc.bozukGorseller.length ? `${sonuc.bozukGorseller.length} görsel bozuk olduğu için alınmadı` : '',
+    ].filter(Boolean).join(', ')}. Bu görsellerin yerinde “görsel yok” görünür.</p>
+  );
+}
+
+/** Bu bilgisayardaki günlük yedekler (K31, §10.10): yalnız Windows uygulamasında görünür. */
+export function YerelYedekler({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
+  const [d, setD] = useState<YerelYedekDurumu | null>(null);
+  const [liste, setListe] = useState<DriveYedegi[] | null>(null);
+  const [mesgul, setMesgul] = useState<string | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  const [sonuc, setSonuc] = useState<GeriYuklemeSonucu | null>(null);
+
+  const yukle = async () => {
+    const x = await istemci.iste('yerelYedekDurumu', { evren });
+    setD(x);
+    if (x.var) istemci.iste('yerelYedekleri', { evren }).then(setListe, (e) => setHata(hataMetni(e)));
+  };
+  useEffect(() => { void yukle(); }, [evren, surum]);
+
+  const simdi = async () => {
+    setHata(null); setMesgul('yedekleniyor');
+    try { setD(await istemci.iste('yerelYedekAl', { evren })); setListe(await istemci.iste('yerelYedekleri', { evren })); }
+    catch (e) { setHata(hataMetni(e)); void yukle(); }
+    setMesgul(null);
+  };
+  const ac = async (acik: boolean) => {
+    setHata(null);
+    try { setD(await istemci.iste('yerelYedekAyari', { evren, acik })); } catch (e) { setHata(hataMetni(e)); }
+  };
+  const klasor = async () => {
+    setHata(null);
+    try { await yedekKlasorunuAc(); } catch (e) { setHata(hataMetni(e)); }
+  };
+  const geriYukle = async (y: DriveYedegi) => {
+    setHata(null); setMesgul(y.id);
+    try { setSonuc(await istemci.iste('yereldenGeriYukle', { id: y.id })); }
+    catch (e) { setHata(hataMetni(e)); }
+    setMesgul(null);
+  };
+
+  if (!d?.var) return null;
+  return (
+    <div class="kart" style="margin-top:12px">
+      <h3>Bu bilgisayardaki yedekler</h3>
+      <p class="soluk kucuk">Program her gün bu bilgisayarın Belgeler klasöründeki “Dünya Atlası yedekleri” klasörüne bu evrenin tam yedeğini alır; internet gerekmez.
+        Görseller bu klasörün içindeki “medya” klasöründe tek kopya olarak saklanır. Günlük yedekler {d.gunSayisi} gün, her ayın ilk yedeği {d.aySayisi} ay saklanır.</p>
+      <label class="kucuk" style="display:flex;gap:8px;align-items:center">
+        <input type="checkbox" checked={d.acik} onChange={(e) => void ac((e.target as HTMLInputElement).checked)} /> Her gün kendiliğinden yedek al
+      </label>
+      <p class="kucuk">{d.son
+        ? <>Son yedek: <strong>{zamanYaz(d.son.zaman)}</strong>{d.son.dogrulandi ? ' · geri okunup doğrulandı' : ' · doğrulanamadı'}
+          {d.son.eksikGorsel ? ` · ${d.son.eksikGorsel} görsel bu cihazda olmadığı için yedekte yok` : ''}</>
+        : 'Bu evrenin bu bilgisayarda günlük yedeği henüz yok.'}</p>
+      {!d.acik && <p class="soluk kucuk">Bu evren için günlük yedek kapalı. Elle yedek yine alınabilir.</p>}
+      {d.hata && <p class="uyari kucuk">Son yedekleme denemesi başarısız oldu: {d.hata}</p>}
+      <div class="satir" style="margin-top:8px">
+        <button class="dugme" onClick={simdi} disabled={!!mesgul}>{mesgul === 'yedekleniyor' ? 'Yedekleniyor…' : 'Şimdi yedekle'}</button>
+        <button class="dugme sade" onClick={klasor} title={d.yer ?? undefined}>Klasörü aç</button>
+      </div>
+      {sonuc && (
+        <div style="margin-top:12px" role="status">
+          <p>{sonuc.ayri ? 'Yedek ayrı bir evren olarak açıldı. Bu evrene dokunulmadı.' : 'Evren geri yüklendi.'}</p>
+          <GorselUyarisi sonuc={sonuc} nerede="yedek klasöründe" />
+          <button class="dugme ana" onClick={() => git(`/e/${sonuc.kod}`)}>Evreni aç</button>
+        </div>
+      )}
+      {liste && liste.length > 0 && (
+        <ul style="margin-top:12px;list-style:none;padding:0">
+          {liste.map((y) => (
+            <li key={y.id} class="satir">
+              <span>{gunMetni(y.gun)} <span class="soluk kucuk">{y.zaman ? saatMetni(y.zaman) : ''}</span></span>
+              <span class="bosluk" />
+              <button class="dugme sade" onClick={() => geriYukle(y)} disabled={!!mesgul}
+                title="Bu evren değişmez, yedek ayrı bir evren olarak açılır.">{mesgul === y.id ? 'Geri yükleniyor…' : 'Ayrı evren olarak aç'}</button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {hata && <p class="hata" role="alert">{hata}</p>}
+    </div>
+  );
+}
+
 // ---------- Evrenler ekranı: yedekten geri yükleme ----------
 export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci; kapat: () => void; yenile: () => void }) {
   const [veri, setVeri] = useState<Blob | null>(null);
   const [bilgi, setBilgi] = useState<YedekBilgisi | null>(null);
-  const [sonuc, setSonuc] = useState<{ kod: string; ayri: boolean; eksikGorseller: string[] } | null>(null);
+  const [sonuc, setSonuc] = useState<GeriYuklemeSonucu | null>(null);
   const [mesgul, setMesgul] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
 
@@ -203,6 +291,12 @@ export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci
         <>
           <p class="soluk kucuk">“Yedek al” ile indirdiğiniz dosyayı seçin. Önce içinde ne olduğu gösterilir, siz onaylamadan hiçbir şey yazılmaz.</p>
           <label class="dugme">Yedek dosyasını seç<input type="file" accept=".zip,application/zip" style="display:none" onChange={sec} /></label>
+          {kabuk() && (
+            <div style="margin-top:10px">
+              <p class="soluk kucuk">Bu bilgisayarın günlük yedekleri Belgeler › Dünya Atlası yedekleri klasöründedir. Oradaki bir dosyayı seçerseniz görseller de o klasörden alınır.</p>
+              <button class="dugme sade" onClick={() => yedekKlasorunuAc().catch((e) => setHata(hataMetni(e)))}>Klasörü aç</button>
+            </div>
+          )}
         </>
       )}
       {mesgul && <p class="soluk" role="status">Okunuyor…</p>}
@@ -221,9 +315,7 @@ export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci
       {sonuc && (
         <div style="margin-top:12px" role="status">
           <p>{sonuc.ayri ? 'Yedek ayrı bir evren olarak açıldı. Asıl evrene dokunulmadı.' : 'Evren geri yüklendi.'}</p>
-          {sonuc.eksikGorseller.length > 0 && (
-            <p class="uyari kucuk">Kayıtlar ve metinler eksiksiz geldi, ama {sonuc.eksikGorseller.length} görsel yedekte bulunamadı. Bu görsellerin yerinde “görsel yok” görünür.</p>
-          )}
+          <GorselUyarisi sonuc={sonuc} />
           <div class="satir">
             <button class="dugme ana" onClick={() => git(`/e/${sonuc.kod}`)}>Evreni aç</button>
             {sonuc.ayri && bilgi?.mevcut && (
