@@ -821,7 +821,7 @@ export interface EsitlemeDurumu {
   kurulum: { kod: string; ad: string };
   evrenler: EvrenEsitlemeDurumu[];
 }
-export interface DriveYedegi { id: string; gun: string; zaman: number; ad: string; kurulum: string }
+export interface DriveYedegi { id: string; gun: string; zaman: number; ad: string; kurulum: string; /** Yedekteki değişiklik sayısı (eski yedeklerde yok). */ islemSayisi?: number }
 export interface DonemselYedekDurumu {
   son: { zaman: number; gun: string; dogrulandi: boolean; eksikGorsel?: number } | null; gunSayisi: number; aySayisi: number; hata: string | null;
   bagli: boolean; esitlenir: boolean;
@@ -1254,10 +1254,10 @@ export interface Istekler {
   ornekEvrenKur(): Promise<{ kod: string }>;
   iceAktar(a: { dosyalar: { yol: string; metin?: string; veri?: Uint8Array; tur?: string }[]; evrenAdi: string }): Promise<{ kod: string; rapor: IceAktarimRaporu; gorselHatalari: string[] }>;
   /** eksikGorsel: bu cihazda dosyası olmadığı için yedeğe giremeyen görsel sayısı. */
-  yedekAl(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Uint8Array; eksikGorsel: number }>;
-  yedekIncele(a: { veri: Uint8Array }): Promise<YedekBilgisi>;
+  yedekAl(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Blob; eksikGorsel: number }>;
+  yedekIncele(a: { veri: Uint8Array | Blob }): Promise<YedekBilgisi>;
   /** eksikGorseller: yedeğin listesinde olup ne yedekte ne bu cihazda bulunan görseller. */
-  yedektenYukle(a: { veri: Uint8Array }): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[] }>;
+  yedektenYukle(a: { veri: Uint8Array | Blob }): Promise<{ kod: string; ayri: boolean; eksikGorseller: string[] }>;
   evrenYerineKoy(a: { kopya: string; asil: string }): void;
   sonYedek(a: { evren: string }): number | null;
 

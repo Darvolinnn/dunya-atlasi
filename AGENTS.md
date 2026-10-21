@@ -17,6 +17,7 @@ Bu depo, bir yazarın kurgu evrenlerini kurmasına yardım eden kişisel bir web
 - Her değişiklik işlem günlüğünden geçer: veritabanına yalnızca `EvrenVt.islemYap()` (başka cihazdan gelenler için `disaridanAl()`) yazar; görünen tablolar işlemlerden türetilir (§10.1).
 - Programda yapay zekâ yoktur; serbest metinden anlam çıkarılmaz (K1).
 - Kullanıcıya gösterilen metinde programlama terimi kullanılmaz.
+- Windows uygulamasının kimliği (`tauri.conf.json` `identifier`) ve yerel kapısı (`main.rs` `KAPI`, 41730) değiştirilmez: kullanıcının evrenleri bunlara bağlı depoda durur, değişirse hepsi kaybolmuş görünür (`DEVIR.md` §0.3).
 
 ## Yapı
 - `uygulama/`: Vite + TypeScript + Preact. `npm run dev` (port 5173; Google girişine izin verilen adres), `npm test`, `npm run denetle`.

@@ -10,7 +10,7 @@
 // Her kurulum yalnızca kendi dosyalarını yazar ve siler; başkasının dosyasına dokunmaz (§10.2).
 import { VERI_BICIMI, type Islem } from '../alan/islem';
 import { kodGecerliMi } from '../alan/kod';
-import { islemSatiri, jsonAc, jsonPaketle, satirdanIslem } from '../alan/paket';
+import { islemDosyasiOku, islemDosyasiYaz, jsonAc, jsonPaketle } from '../alan/paket';
 import type { EvrenVt } from './evren-vt';
 import type { KurulumVt } from './kurulum-vt';
 import { icerikAdi, onizlemeAdi, type MedyaDeposu } from './medya';
@@ -19,6 +19,12 @@ export const PROTOKOL = 1;
 const UYGULAMA = 'dunya-atlasi';
 /** Bir kurulumun kaç parçasından sonra yeni anlık görüntü yazılır. */
 export const GORUNTU_ARALIGI = 40;
+/**
+ * Bir parçaya en çok bu kadar işlem girer (bir işlem grubu bölünmez); daha çoğu birkaç parçaya bölünür. Bir kurulum son
+ * görüntüsünden beri bu kadar işlem gönderdiyse yeni görüntü de yazar: yeni cihaz çok sayıda işlemi tek seferde değil,
+ * görüntüden parça parça alır. Sınamalar küçültebilir.
+ */
+export const sinirlar = { parca: 20_000, /** Görüntüden işlemler bu büyüklükte partilerle alınır. */ parti: 5000 };
 
 export interface UzakDosya { id: string; ad: string; ozellikler: Record<string, string> }
 
@@ -105,23 +111,35 @@ export class Esitleme {
     return [...sonuc.values()];
   }
 
-  /** Drive'daki bir evreni bu cihaza indirir. */
+  /**
+   * Drive'daki bir evreni bu cihaza indirir. Görüntüdeki işlemler parti parti alınır (çok büyük evren belleğe tek
+   * seferde alınmaz); evren ilk partiyle kurulur. İndirme yarıda kalırsa evren bir sonraki eşitlemede tamamlanır.
+   */
   async evreniIndir(evren: string) {
     if (!kodGecerliMi(evren)) throw new Error('Evren bulunamadı.');
     const dosyalar = await this.t.listele({ uygulama: UYGULAMA, evren });
-    const islemler = await this.uzakIslemler(dosyalar, {});
-    if (!islemler.length) throw new Error('Bu evrenin Drive\'da okunabilir değişikliği yok.');
-    this.x.evreniDisaridanKur(evren, islemler);
+    let kuruldu = false;
+    await this.uzakIslemler(dosyalar, {}, (islemler) => {
+      if (!islemler.length) return;
+      if (!kuruldu) { this.x.evreniDisaridanKur(evren, islemler); kuruldu = true; }
+      else this.x.islemleriAl(evren, islemler);
+    });
+    if (!kuruldu) throw new Error('Bu evrenin Drive\'da okunabilir değişikliği yok.');
     this.kurulum.ayarYaz(`esitle:${evren}`, '1');
     await this.evreniEsitle(evren);
   }
 
-  /** Görülenlerden sonraki işlemleri uzak dosyalardan toplar; gerekirse önce anlık görüntüyü kullanır. */
-  private async uzakIslemler(dosyalar: UzakDosya[], gorulen: Record<string, number>): Promise<Islem[]> {
+  /**
+   * Görülenlerden sonraki işlemleri uzak dosyalardan toplar; gerekirse önce anlık görüntüyü kullanır. `al` verilirse
+   * görüntünün işlemleri uygulama sırasıyla parti parti, ardından parçaların işlemleri birlikte ona verilir.
+   */
+  private async uzakIslemler(dosyalar: UzakDosya[], gorulen: Record<string, number>, al?: (islemler: Islem[]) => void): Promise<Islem[]> {
     const parcalar = dosyalar.filter((d) => d.ozellikler.tur === 'parca' && kodGecerliMi(d.ozellikler.kurulum))
       .map((d) => ({ d, kurulum: d.ozellikler.kurulum, ilk: Number(d.ozellikler.ilk), son: Number(d.ozellikler.son) }))
       .filter((p) => Number.isInteger(p.ilk) && Number.isInteger(p.son) && p.son >= p.ilk);
     const islemler: Islem[] = [];
+    // Tek tek eklenir: push(...dizi) çok büyük dizide yığını taşırır.
+    const ekle = al ?? ((l: Islem[]) => { for (const i of l) islemler.push(i); });
     const elde = { ...gorulen };
     // Parçalar bir kurulum için baştan art arda gelmiyorsa (eski parçalar temizlenmiş) görüntü gerekir.
     const bosluk = (g: Record<string, number>) => {
@@ -146,27 +164,28 @@ export class Esitleme {
     if (bosluk(elde) || !Object.keys(elde).length || eksikKapsam()) {
       const goruntu = dosyalar.filter((d) => d.ozellikler.tur === 'goruntu').sort((a, b) => Number(b.ozellikler.zaman) - Number(a.ozellikler.zaman))[0];
       if (goruntu) {
-        const g = await this.dosyaOku(goruntu);
-        for (const i of g.islemler) {
-          if ((elde[i.kurulum] ?? 0) >= i.sira) continue;
-          islemler.push(i);
-        }
+        const once = { ...elde };
+        const g = await this.dosyaOku(goruntu, (parti) => ekle(parti.filter((i) => (once[i.kurulum] ?? 0) < i.sira)));
         for (const [k, s] of Object.entries(g.gorulen ?? {})) elde[k] = Math.max(elde[k] ?? 0, s);
       }
     }
+    const parcaIslemleri: Islem[] = [];
     for (const p of parcalar.sort((a, b) => a.kurulum.localeCompare(b.kurulum) || a.ilk - b.ilk)) {
       if (p.son <= (elde[p.kurulum] ?? 0)) continue;
       const dosya = await this.dosyaOku(p.d);
-      // Tek tek eklenir: push(...dizi) çok büyük parçada yığını taşırır.
-      for (const i of dosya.islemler) if (i.sira > (elde[p.kurulum] ?? 0)) islemler.push(i);
+      for (const i of dosya.islemler) if (i.sira > (elde[p.kurulum] ?? 0)) parcaIslemleri.push(i);
     }
+    if (parcaIslemleri.length) ekle(parcaIslemleri);
     return islemler;
   }
 
-  private async dosyaOku(d: UzakDosya): Promise<{ islemler: Islem[]; gorulen?: Record<string, number> }> {
-    const x = await jsonAc<IslemDosyasi>(await this.t.indir(d.id));
-    if (x.protokol > PROTOKOL || x.veriBicimi > VERI_BICIMI) throw new GuncellemeGerekli();
-    return { islemler: x.islemler.map(satirdanIslem), gorulen: x.gorulen };
+  /** İşlem dosyasını okur; `her` verilirse işlemler parti parti ona verilir. Yeni sürümün dosyası okunmaz. */
+  private async dosyaOku(d: UzakDosya, her?: (islemler: Islem[]) => void): Promise<{ islemler: Islem[]; gorulen?: Record<string, number> }> {
+    const x = await islemDosyasiOku(await this.t.indir(d.id), {
+      her, parti: sinirlar.parti,
+      basliktan: (b) => { if (Number(b.protokol) > PROTOKOL || Number(b.veriBicimi) > VERI_BICIMI) throw new GuncellemeGerekli(); },
+    });
+    return { islemler: x.islemler, gorulen: x.baslik.gorulen as Record<string, number> | undefined };
   }
 
   /** Bir evreni eşitler: önce alır, sonra gönderir; görseller, görüntü, kurulum dosyası ve temizlik. */
@@ -205,17 +224,19 @@ export class Esitleme {
     }
     this.kurulum.ayarYaz(`guncelleme:${evren}`, guncellemeGerekli ? '1' : '0');
 
-    // 2. Gönder: bu kurulumun gönderilmemiş işlemleri tek parça olarak (bir işlem grubu bölünmez, §10.4).
+    // 2. Gönder: bu kurulumun gönderilmemiş işlemleri; çoksa birkaç parçaya bölünerek (bir işlem grubu bölünmez, §10.4).
+    // Her parçadan sonra neye kadar gönderildiği yazılır: gönderme yarıda kesilirse kalan yerden sürer.
     const kendiParcalari = dosyalar.filter((d) => d.ozellikler.tur === 'parca' && d.ozellikler.kurulum === ben);
     let gonderilen = Math.max(this.gonderilen(evren), ...kendiParcalari.map((d) => Number(d.ozellikler.son) || 0));
-    const gorulen = e.gorulenler();
-    if ((gorulen[ben] ?? 0) > gonderilen) {
-      const islemler = e.gorulmeyenler({ [ben]: gonderilen }, ben);
+    while ((e.gorulenler()[ben] ?? 0) > gonderilen) {
+      const islemler = e.kurulumIslemleri(ben, gonderilen, sinirlar.parca);
+      if (!islemler.length) break;
       const ilk = islemler[0].sira, son = islemler[islemler.length - 1].sira;
-      const veri = await jsonPaketle({ protokol: PROTOKOL, veriBicimi: VERI_BICIMI, evren, kurulum: ben, islemler: islemler.map(islemSatiri) } satisfies IslemDosyasi);
+      const veri = await islemDosyasiYaz({ protokol: PROTOKOL, veriBicimi: VERI_BICIMI, evren, kurulum: ben } satisfies Omit<IslemDosyasi, 'islemler'>, [islemler]);
       const d = await this.t.yukle(`${UYGULAMA}-${evren}-parca-${ben}-${ilk}-${son}`, ozellik(evren, 'parca', { kurulum: ben, ilk: String(ilk), son: String(son) }), veri);
       dosyalar = [...dosyalar, d];
       gonderilen = son;
+      this.kurulum.ayarYaz(`gonderilen:${evren}`, String(gonderilen));
     }
     this.kurulum.ayarYaz(`gonderilen:${evren}`, String(gonderilen));
 
@@ -247,14 +268,15 @@ export class Esitleme {
     const goruntuler = dosyalar.filter((d) => d.ozellikler.tur === 'goruntu');
     const kapsama = this.kapsama(dosyalar);
     const tum = e.gorulenler();
+    const enFazlaNo = e.sonNo(); // görüntü tam bu anın günlüğü olur; aradaki yazılar karışmaz
     const eksikVar = Object.entries(tum).some(([k, s]) => (kapsama[k] ?? 0) < s);
     const kendiGoruntum = goruntuler.filter((d) => d.ozellikler.kurulum === ben);
     const sonGoruntuSirasi = Math.max(0, ...kendiGoruntum.map((d) => Number(d.ozellikler[`s_${ben}`]) || 0));
     const yeniParca = kendiParcalari.filter((d) => Number(d.ozellikler.ilk) > sonGoruntuSirasi).length;
     let yeniGoruntu: UzakDosya | null = null;
-    if (eksikVar || yeniParca >= GORUNTU_ARALIGI) {
-      const islemler = e.islemler();
-      const veri = await jsonPaketle({ protokol: PROTOKOL, veriBicimi: VERI_BICIMI, evren, kurulum: ben, gorulen: tum, islemler: islemler.map(islemSatiri) } satisfies IslemDosyasi);
+    if (eksikVar || yeniParca >= GORUNTU_ARALIGI || gonderilen - sonGoruntuSirasi >= sinirlar.parca) {
+      const veri = await islemDosyasiYaz({ protokol: PROTOKOL, veriBicimi: VERI_BICIMI, evren, kurulum: ben, gorulen: tum } satisfies Omit<IslemDosyasi, 'islemler'>,
+        e.islemSayfalari(undefined, enFazlaNo));
       yeniGoruntu = await this.t.yukle(`${UYGULAMA}-${evren}-goruntu-${ben}-${simdi}`,
         ozellik(evren, 'goruntu', { kurulum: ben, zaman: String(simdi), ...Object.fromEntries(Object.entries(tum).slice(0, 24).map(([k, s]) => [`s_${k}`, String(s)])) }), veri);
       for (const d of kendiGoruntum) await this.t.sil(d.id); // yalnızca kendi eski görüntülerimi
@@ -315,7 +337,8 @@ export class Esitleme {
         const d = uzak.get(dosya);
         if (yerelde && !d) {
           const veri = await depo.oku(dosya);
-          if (veri) await this.t.yukle(`${UYGULAMA}-${evren}-medya-${dosya}`, ozellik(evren, 'medya', { ad: dosya }), veri);
+          // İçeriği adıyla tutmayan (bozuk) görsel Drive'a gönderilmez; bozukluk öbür cihazlara yayılmasın.
+          if (veri && (dosya !== ad || (await icerikAdi(veri)) === ad)) await this.t.yukle(`${UYGULAMA}-${evren}-medya-${dosya}`, ozellik(evren, 'medya', { ad: dosya }), veri);
         } else if (!yerelde && d) {
           const veri = await this.t.indir(d.id);
           // İçerikle adlandırıldığı için bozuk ya da değiştirilmiş görsel kabul edilmez.

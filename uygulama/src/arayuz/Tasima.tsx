@@ -13,7 +13,7 @@ const METIN = /\.(md|markdown|txt|json)$/i;
 const GORSEL = /\.(jpe?g|png|webp|gif|avif)$/i;
 const EN_BUYUK = 60 * 1024 * 1024;
 
-function indir(ad: string, veri: Uint8Array, tur = 'application/zip') {
+function indir(ad: string, veri: Uint8Array | Blob, tur = 'application/zip') {
   const url = URL.createObjectURL(new Blob([veri as BlobPart], { type: tur }));
   const a = document.createElement('a');
   a.href = url; a.download = ad;
@@ -163,7 +163,7 @@ const saatMetni = (t: number) => new Date(t).toLocaleTimeString('tr-TR', { hour:
 
 // ---------- Evrenler ekranı: yedekten geri yükleme ----------
 export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci; kapat: () => void; yenile: () => void }) {
-  const [veri, setVeri] = useState<Uint8Array | null>(null);
+  const [veri, setVeri] = useState<Blob | null>(null);
   const [bilgi, setBilgi] = useState<YedekBilgisi | null>(null);
   const [sonuc, setSonuc] = useState<{ kod: string; ayri: boolean; eksikGorseller: string[] } | null>(null);
   const [mesgul, setMesgul] = useState(false);
@@ -173,12 +173,11 @@ export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci
     const f = (e.target as HTMLInputElement).files?.[0];
     setHata(null); setBilgi(null); setSonuc(null); setVeri(null);
     if (!f) return;
-    if (f.size > 2 * 1024 * 1024 * 1024) { setHata('Dosya çok büyük.'); return; }
     setMesgul(true);
     try {
-      const v = new Uint8Array(await f.arrayBuffer());
-      setBilgi(await istemci.iste('yedekIncele', { veri: v }));
-      setVeri(v);
+      // Dosyanın kendisi verilir: içi istendikçe okunur, çok büyük yedek de belleğe tek seferde alınmaz.
+      setBilgi(await istemci.iste('yedekIncele', { veri: f }));
+      setVeri(f);
     } catch (err) { setHata(hataMetni(err)); }
     setMesgul(false);
   };

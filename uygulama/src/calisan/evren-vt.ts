@@ -31,7 +31,34 @@ CREATE INDEX IF NOT EXISTS islemler_grup ON islemler(grup);
 CREATE TABLE IF NOT EXISTS bekleyen_islemler(kod TEXT PRIMARY KEY, islem TEXT NOT NULL, ikili BLOB);
 `;
 
+/**
+ * Değişiklik geçmişi yalnızca büyür (§10.1): hiçbir kod yolu bir işlemi silemez ya da değiştiremez. Bu kural
+ * veritabanının kendisinde de durur; ileride yazılacak hatalı bir kod geçmişi bozmaya kalkarsa yazma reddedilir.
+ * Tek istisna eski veritabanlarına saat verilmesidir (saat boşken yalnızca saat yazılabilir).
+ */
+const GUNLUK_KORUMASI = `
+CREATE TRIGGER IF NOT EXISTS islemler_silinmez BEFORE DELETE ON islemler
+BEGIN SELECT RAISE(ABORT, 'Değişiklik geçmişi silinemez.'); END;
+CREATE TRIGGER IF NOT EXISTS islemler_degismez BEFORE UPDATE ON islemler
+WHEN NOT (OLD.saat IS NULL AND NEW.no = OLD.no AND NEW.kod = OLD.kod AND NEW.kurulum = OLD.kurulum AND NEW.sira = OLD.sira
+  AND NEW.zaman = OLD.zaman AND NEW.grup IS OLD.grup AND NEW.tur = OLD.tur AND NEW.veri = OLD.veri AND NEW.ikili IS OLD.ikili
+  AND NEW.gordu = OLD.gordu)
+BEGIN SELECT RAISE(ABORT, 'Değişiklik geçmişi değiştirilemez.'); END;
+`;
+
 export class VeriBicimiHatasi extends Error {}
+
+/**
+ * Aynı kurulumun aynı sıra numarasında iki farklı değişiklik: bu cihazın verileri eski bir yedekten geri gelmiş ya da
+ * başka bir bilgisayara kopyalanmış olabilir. Hiçbiri sessizce atılmaz; evrenin eşitlemesi durur (§10.5).
+ */
+export class CatallanmaHatasi extends Error {
+  constructor() {
+    super('Bu evrenin bu cihazdaki kopyası ile başka bir kopyası ayrı yollara ayrılmış (bu cihazın verileri eski bir yedekten geri gelmiş '
+      + 'ya da başka bir bilgisayara kopyalanmış olabilir). Hiçbir şey silinmedi; bu evrenin eşitlemesi durduruldu. Önce bu evrenin '
+      + 'dosyaya tam yedeğini alın; sonra evreni bu cihazdan kaldırıp Drive\'dan yeniden indirin ve yedeği ayrı bir evren olarak geri yükleyin.');
+  }
+}
 
 type Anahtar = [number, string, number];
 const anahtarKarsilastir = (a: Anahtar, b: Anahtar) => a[0] - b[0] || (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0) || a[2] - b[2];
@@ -55,6 +82,8 @@ export class EvrenVt {
   private topluDerinlik = 0;
   /** Bu kadar işlemde bir anlık görüntü alınır (§10.1). Sınamalar küçültebilir. */
   static goruntuAraligi = 5000;
+  /** Günlük dışarı sayfa sayfa verilirken bir sayfadaki işlem sayısı. Sınamalar küçültebilir. */
+  static sayfaBoyu = 2000;
   /** Son baştan kurmanın nasıl yapıldığı (sınama ve ölçüm için). */
   sonKurma: { goruntudenMi: boolean; uygulanan: number } | null = null;
 
@@ -69,6 +98,7 @@ export class EvrenVt {
       db.exec('BEGIN IMMEDIATE');
       try {
         db.exec(GUNLUK_SEMA);
+        db.exec(GUNLUK_KORUMASI);
         db.exec(IZDUSUM_SEMA);
         goruntuSemasi(db);
         db.exec('CREATE INDEX IF NOT EXISTS islemler_sira ON islemler(saat, kurulum, sira)');
@@ -83,6 +113,7 @@ export class EvrenVt {
     else if (Number(bicim) > VERI_BICIMI) throw new VeriBicimiHatasi(`Bu evren programın daha yeni bir sürümüyle kaydedilmiş (biçim ${bicim}). Açmak için programı güncelleyin.`);
     else if (Number(bicim) < VERI_BICIMI) db.exec({ sql: "UPDATE meta SET v=? WHERE k='veri_bicimi'", bind: [String(VERI_BICIMI)] });
     this.saatleriTamamla();
+    db.exec(GUNLUK_KORUMASI);
     db.exec('CREATE INDEX IF NOT EXISTS islemler_sira ON islemler(saat, kurulum, sira)');
     const izdusum = Number(this.meta('izdusum_surumu') ?? 0);
     if (izdusum !== IZDUSUM_SURUMU) {
@@ -145,6 +176,9 @@ export class EvrenVt {
 
   /** Bu cihazdaki işlemlerin özeti: kurulum → son sıra. */
   gorulenler(): Record<string, number> { return { ...this.gorulen }; }
+
+  /** Toplu yazma sürüyor mu (o sırada eşitleme bu evreni atlar). */
+  get topluSuruyor() { return this.topluDerinlik > 0; }
 
   /**
    * Bir ya da birden çok değişikliği tek işlem grubu olarak yazar ve uygular (§10.4).
@@ -217,6 +251,8 @@ export class EvrenVt {
    * işleminde yazılır.
    */
   disaridanAl(gelenler: Islem[]): AlmaSonucu {
+    // Toplu yazma kendi veritabanı işlemini açık tutar; içine başka kaynaktan yazılmaz (geri alınırsa onlar da giderdi).
+    if (this.topluDerinlik) throw new Error('Evrene şu anda çok sayıda değişiklik yazılıyor; eşitleme biraz sonra yeniden denenecek.');
     const onceki = { ...this.gorulen };
     const oncekiSon = this.son;
     const alinanlar: Islem[] = [];
@@ -235,7 +271,8 @@ export class EvrenVt {
       for (const i of gelenler) {
         islemDenetle(i);
         if (adaylar.has(i.kod) || this.db.selectValue('SELECT 1 FROM islemler WHERE kod=?', [i.kod]) !== undefined) continue;
-        if ((this.gorulen[i.kurulum] ?? 0) >= i.sira) continue; // aynı yerde başka işlem: bozuk ya da tekrar
+        // Bu kurulumun bu sırasında burada başka bir değişiklik var: aynı kurulum iki ayrı yerde yazmış. Biri sessizce atılmaz.
+        if ((this.gorulen[i.kurulum] ?? 0) >= i.sira) throw new CatallanmaHatasi();
         adaylar.set(i.kod, i);
       }
       // Hazır olanları (gördüğü her işlem burada olanları) sırayla al. Adaylar kurulum ve sıraya göre dizinlenir:
@@ -245,7 +282,8 @@ export class EvrenVt {
       for (const i of adaylar.values()) {
         const k = dizin.get(i.kurulum) ?? new Map<number, Islem[]>();
         dizin.set(i.kurulum, k);
-        k.set(i.sira, [...(k.get(i.sira) ?? []), i]);
+        if (k.has(i.sira)) throw new CatallanmaHatasi(); // aynı kurulumun aynı sırasında iki farklı değişiklik
+        k.set(i.sira, [i]);
       }
       const alinanKodlar = new Set<string>();
       const bildir = adaylar.size >= ILERLEME_ESIGI;
@@ -374,6 +412,41 @@ export class EvrenVt {
     return this.db.selectObjects(`SELECT * FROM islemler ORDER BY saat ${y}, kurulum ${y}, sira ${y} LIMIT ?`, [sinir]).map(satirdan);
   }
 
+  /** Günlükteki en büyük satır numarası. Günlükten hiçbir şey silinmediği için sonra yazılan her işlemin numarası daha büyüktür. */
+  sonNo(): number {
+    return Number(this.db.selectValue('SELECT max(no) FROM islemler') ?? 0);
+  }
+
+  /**
+   * İşlemler uygulama sırasıyla, sayfa sayfa: çok büyük günlük belleğe tek seferde alınmaz (§10.1). Yalnızca
+   * `enFazlaNo` anına kadar yazılmış işlemler gelir; sayfalar arasında yazılanlar karışmaz, sonuç tek bir anın günlüğüdür.
+   */
+  *islemSayfalari(boyut = EvrenVt.sayfaBoyu, enFazlaNo = this.sonNo()): Generator<Islem[]> {
+    let son: [number, string, number] = [-Infinity, '', 0];
+    for (;;) {
+      const sayfa = this.db.selectObjects('SELECT * FROM islemler WHERE (saat, kurulum, sira) > (?, ?, ?) AND no <= ? ORDER BY saat, kurulum, sira LIMIT ?',
+        [...son, enFazlaNo, boyut]).map(satirdan);
+      if (!sayfa.length) return;
+      yield sayfa;
+      if (sayfa.length < boyut) return;
+      const x = sayfa[sayfa.length - 1];
+      son = [x.saat!, x.kurulum, x.sira];
+    }
+  }
+
+  /**
+   * Bir kurulumun `sonra` sırasından sonraki işlemleri, sıra sırasıyla, yaklaşık en çok `sinir` tane. Bir işlem grubu
+   * bölünmez (§10.4): sınır bir grubun ortasına düşerse grubun kalanı da eklenir.
+   */
+  kurulumIslemleri(kurulum: string, sonra: number, sinir: number): Islem[] {
+    const l = this.db.selectObjects('SELECT * FROM islemler WHERE kurulum=? AND sira>? ORDER BY sira LIMIT ?', [kurulum, sonra, sinir]).map(satirdan);
+    const g = l.length >= sinir ? l[l.length - 1].grup : null;
+    if (g) {
+      for (const r of this.db.selectObjects('SELECT * FROM islemler WHERE kurulum=? AND sira>? AND grup=? ORDER BY sira', [kurulum, l[l.length - 1].sira, g])) l.push(satirdan(r));
+    }
+    return l;
+  }
+
   /** Verilen özetin görmediği işlemler (karşı tarafa gönderilecekler), uygulama sırasıyla. */
   gorulmeyenler(gorulen: Record<string, number>, kurulum?: string): Islem[] {
     const sonuc: Islem[] = [];
@@ -390,8 +463,10 @@ export class EvrenVt {
     return Number(this.db.selectValue('SELECT count(*) FROM bekleyen_islemler'));
   }
 
-  islemSayisi(): number {
-    return Number(this.db.selectValue('SELECT count(*) FROM islemler'));
+  /** Günlükteki işlem sayısı; `enFazlaNo` verilirse o ana kadar yazılmış olanlar. */
+  islemSayisi(enFazlaNo?: number): number {
+    return Number(enFazlaNo === undefined ? this.db.selectValue('SELECT count(*) FROM islemler')
+      : this.db.selectValue('SELECT count(*) FROM islemler WHERE no <= ?', [enFazlaNo]));
   }
 }
 

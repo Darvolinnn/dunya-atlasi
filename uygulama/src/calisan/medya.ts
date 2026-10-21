@@ -6,6 +6,8 @@ export interface MedyaDeposu {
   yaz(ad: string, veri: Uint8Array): Promise<void>;
   oku(ad: string): Promise<Uint8Array | null>;
   var(ad: string): Promise<boolean>;
+  /** Görsel diskteki dosya olarak (içi istendikçe okunur); büyük yedekte görseller belleğe toplanmasın diye. */
+  dosya?(ad: string): Promise<Blob | null>;
 }
 
 export interface IslenmisGorsel { veri: Uint8Array; tur: string; en: number | null; boy: number | null; onizleme: Uint8Array | null }
