@@ -33,7 +33,13 @@ jobs:
       - run: npm ci
       - run: npm run denetle
       - run: npm test
+      # Google girişi kabuğunun sınamaları (src-tauri/src/google.rs).
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      # Masaüstü Google istemcisi depoda değil, GitHub'daki gizli değerlerden gelir; yoksa program eski girişle derlenir.
       - run: npx tauri build
+        env:
+          GOOGLE_MASAUSTU_ISTEMCI: ${{ secrets.GOOGLE_MASAUSTU_ISTEMCI }}
+          GOOGLE_MASAUSTU_GIZLI: ${{ secrets.GOOGLE_MASAUSTU_GIZLI }}
       - name: Kurulum dosyasını adlandır
         shell: pwsh
         run: |

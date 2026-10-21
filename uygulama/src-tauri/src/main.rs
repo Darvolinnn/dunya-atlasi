@@ -3,7 +3,33 @@
 // depolaması (veritabanı) ve Google'ın izin verdiği adres buna bağlıdır: değiştirilirse eski veri görünmez.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod google;
+
 use tauri::{webview::NewWindowResponse, Manager, WebviewUrl, WebviewWindowBuilder};
+
+/// Drive izni (TK3). Masaüstü istemcisi derlemeye konmamışsa `None` döner; program o zaman eski yoldan bağlanır.
+#[tauri::command]
+async fn google_izin(app: tauri::AppHandle, durum: tauri::State<'_, google::Durum>, eposta: Option<String>) -> Result<Option<google::Izin>, String> {
+    let Some(ist) = google::derlemedeki_istemci() else { return Ok(None) };
+    let izin = durum
+        .izin(&ist, &google::Uclar::default(), eposta, |adres| {
+            open::that_detached(adres).map_err(|_| "Tarayıcı açılamadı. Varsayılan tarayıcınızı denetleyin.".to_string())
+        })
+        .await?;
+    // İzin tarayıcıda verildi; program yeniden öne gelsin.
+    if let Some(p) = app.get_webview_window("ana") {
+        let _ = p.unminimize();
+        let _ = p.set_focus();
+    }
+    Ok(Some(izin))
+}
+
+/// Drive bağlantısı kesilince bu oturumdaki yenileme anahtarı Google'da geri alınır.
+#[tauri::command]
+async fn google_cikis(durum: tauri::State<'_, google::Durum>) -> Result<(), String> {
+    durum.cikis(&google::Uclar::default()).await;
+    Ok(())
+}
 
 /// Kurulu programın yerel adresinin kapısı. Geliştirme sunucusu (5173) ile aynı anda çalışabilsin diye ayrıdır.
 #[cfg(not(debug_assertions))]
@@ -30,6 +56,8 @@ fn main() {
     );
 
     kurucu
+        .manage(google::Durum::default())
+        .invoke_handler(tauri::generate_handler![google_izin, google_cikis])
         .setup(|app| {
             #[cfg(debug_assertions)]
             let adres = WebviewUrl::App("index.html".into());
@@ -40,7 +68,8 @@ fn main() {
                 .inner_size(1400.0, 900.0)
                 .min_inner_size(900.0, 600.0)
                 .maximized(true)
-                // Google'ın izin penceresi açılabilsin; başka yeni pencere açılmaz.
+                // Google'ın izin penceresi açılabilsin; başka yeni pencere açılmaz. Masaüstü istemcisi derlemeye
+                // konduysa izin bu pencere yerine bilgisayarın tarayıcısında verilir (google.rs); bu yol yedektir.
                 .on_new_window(|adres, _| {
                     if adres.host_str() == Some("accounts.google.com") {
                         NewWindowResponse::Allow

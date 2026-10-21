@@ -20,6 +20,29 @@ declare global {
   } } } }
 }
 
+/**
+ * Windows uygulamasında (Tauri kabuğu) Google izni bilgisayarın tarayıcısında verilir: Google, izin sayfasının
+ * programın kendi penceresinde açılmasına izin vermez. Kabuk bunu `google_izin` isteğiyle yapar
+ * (`src-tauri/src/google.rs`). Kabuğa masaüstü istemcisi konmamışsa istek boş döner ve eski yol kullanılır.
+ */
+interface KabukIzni { jeton: string; sureSn: number; kapsam: string }
+type Kabuk = { invoke<T>(komut: string, arg?: Record<string, unknown>): Promise<T> };
+const kabuk = (): Kabuk | undefined => (window as unknown as { __TAURI_INTERNALS__?: Kabuk }).__TAURI_INTERNALS__;
+const kabukHatasi = (e: unknown) => new Error(typeof e === 'string' ? e : e instanceof Error ? e.message : 'Google izni alınamadı.');
+
+async function kabuktanIzin(eposta: string | undefined): Promise<{ jeton: string; bitis: number } | null> {
+  const k = kabuk();
+  if (!k) return null;
+  let y: KabukIzni | null;
+  try { y = await k.invoke<KabukIzni | null>('google_izin', { eposta: eposta ?? null }); }
+  catch (e) { throw kabukHatasi(e); }
+  if (!y) return null;
+  if (!y.kapsam.split(' ').includes('https://www.googleapis.com/auth/drive.appdata')) {
+    throw new Error('Drive izni verilmedi. Bağlanırken programın kendi Drive klasörüne erişim izni veren kutuyu işaretleyin.');
+  }
+  return { jeton: y.jeton, bitis: Date.now() + y.sureSn * 1000 };
+}
+
 let yukleniyor: Promise<void> | null = null;
 function kutuphane(): Promise<void> {
   if (window.google?.accounts?.oauth2) return Promise.resolve();
@@ -48,8 +71,10 @@ export function googleHazirla() { if (kayitliEposta()) void kutuphane().catch(()
  * sonrasında e-posta ipucuyla çoğunlukla hiçbir şey sormadan döner.
  */
 export async function izinAl(): Promise<{ jeton: string; bitis: number }> {
-  await kutuphane();
   const eposta = kayitliEposta() ?? undefined;
+  const masaustu = await kabuktanIzin(eposta);
+  if (masaustu) return masaustu;
+  await kutuphane();
   return new Promise((ok, no) => {
     const istemci = window.google!.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_ISTEMCI, scope: IZINLER, login_hint: eposta,
@@ -69,6 +94,8 @@ export async function izinAl(): Promise<{ jeton: string; bitis: number }> {
 /** Drive bağlantısını keser: izin Google'da geri alınır, e-posta unutulur. Drive'daki dosyalar silinmez. */
 export async function izniGeriAl(jeton: string | null) {
   epostaKaydet(null);
+  // Windows uygulamasında bu oturumdaki yenileme anahtarı da geri alınır.
+  try { await kabuk()?.invoke('google_cikis'); } catch { /* eski kabuk: istek yok */ }
   if (!jeton) return;
   try { await kutuphane(); window.google!.accounts.oauth2.revoke(jeton); } catch { /* bağlantı yok: izin süresi zaten dolacak */ }
 }

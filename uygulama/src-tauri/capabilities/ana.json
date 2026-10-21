@@ -1,0 +1,7 @@
+{
+  "identifier": "ana",
+  "description": "Ana pencere: kurulu programda sayfa sabit yerel adresten (localhost:41730) gelir; Google girişi isteklerini çağırabilsin.",
+  "windows": ["ana"],
+  "remote": { "urls": ["http://localhost:41730"] },
+  "permissions": ["core:default"]
+}

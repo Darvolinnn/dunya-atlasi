@@ -11,6 +11,15 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-localhost = "2"
 tauri-plugin-single-instance = "2"
+# Google girişi sistem tarayıcısında (google.rs).
+base64 = "0.22"
+open = "5"
+rand = "0.8"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "charset"] }
+serde = { version = "1", features = ["derive"] }
+sha2 = "0.10"
+tokio = { version = "1", features = ["net", "io-util", "time", "macros", "rt-multi-thread", "sync"] }
+url = "2"
 
 [profile.release]
 codegen-units = 1
