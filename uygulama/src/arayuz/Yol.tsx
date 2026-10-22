@@ -81,7 +81,7 @@ function GecisSartlari({ istemci, evren, rota }: { istemci: Istemci; evren: stri
   const [hata, setHata] = useState<string | null>(null);
   if (!l) return null;
   const girdi = (): GecisSartiGirdisi[] => l.map((s) => ({ kod: s.kod, tur: s.tur, kayit: s.kayit?.kod ?? null, aciklama: s.aciklama }));
-  const yaz = (sartlar: GecisSartiGirdisi[]) => istemci.iste('rotaSartlariYaz', { evren, rota, sartlar }).then(() => { setHata(null); setAciklama(''); }, (e) => setHata(hataYaz(e)));
+  const yaz = (sartlar: GecisSartiGirdisi[]) => istemci.iste('rotaSartlariYaz', { evren, rota, sartlar }).then(() => { setHata(null); setAciklama(''); return true; }, (e) => { setHata(hataYaz(e)); return false; });
   return (
     <div class="alan genis"><span class="alan-adi">Geçiş şartları</span>
       <p class="soluk kucuk">Geçiş için gereken izin (mühür, belge, makam) ya da ücret. Bir kişinin izni, kişiden izin kaydına “taşıdığı izin” ilişkisiyle ve tarihleriyle girilir. İzin, kişinin rotanın başına vardığı ana göre değerlendirilir. Program geçişi engellemez.</p>
@@ -113,7 +113,7 @@ export function YolculukBolumu({ istemci, evren, kayit }: { istemci: Istemci; ev
   if (!y) return null;
   const girdiler = (): YolculukAsamaGirdisi[] => y.asamalar.map((a) => ({ nereden: a.nereden?.kod ?? null, nereye: a.nereye?.kod ?? null, rota: a.rota?.kod ?? null,
     cikis: a.cikis?.ifade ?? '', varis: a.varis?.ifade ?? '', durum: a.durum }));
-  const yaz = (l: YolculukAsamaGirdisi[]) => istemci.iste('yolculukYaz', { evren, kod: kayit.kod, asamalar: l }).then(() => setHata(null), (e) => setHata(hataYaz(e)));
+  const yaz = (l: YolculukAsamaGirdisi[]) => istemci.iste('yolculukYaz', { evren, kod: kayit.kod, asamalar: l }).then(() => { setHata(null); return true; }, (e) => { setHata(hataYaz(e)); return false; });
   const degistir = (i: number, d: Partial<YolculukAsamaGirdisi>) => yaz(girdiler().map((g, j) => (j === i ? { ...g, ...d } : g)));
   return (
     <section class="yol-bolumu" aria-label="Yolculuğun aşamaları">

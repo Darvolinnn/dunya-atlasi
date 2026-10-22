@@ -1,6 +1,7 @@
 // Takvimler (§3.4) ve zaman çizelgesi (§7): ana takvim ve çağları, paralel takvimler, zaman akışları.
 // Takvim değişince tarihlerin yazılışı korunur, evrendeki yerleri yeniden hesaplanır; kaydetmeden önce hangi
 // tarihlerin yerinin değişeceği gösterilir.
+import { sayiGirdisi } from '../alan/nicelik';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { CizelgeOgesi, KisaKayit, TakvimEtkisi } from '../veri/api';
@@ -87,7 +88,7 @@ export function TakvimSekmesi({ istemci, evren }: { istemci: Istemci; evren: str
   );
 }
 
-const oranYazisi = (o: Akis['oranlar'][number]) => `${o.bas ? `${o.bas} tarihinden itibaren ` : ''}${o.ana ? `${o.akis} gün = ana akışta ${o.ana[0] === o.ana[1] ? o.ana[0] : `${o.ana[0]}–${o.ana[1]}`} gün` : 'oran bilinmiyor'}`;
+const oranYazisi = (o: Akis['oranlar'][number]) => `${o.bas ? `${o.bas} tarihinden itibaren ` : ''}${o.ana ? `${sayiGirdisi(o.akis)} gün = ana akışta ${o.ana[0] === o.ana[1] ? sayiGirdisi(o.ana[0]) : `${sayiGirdisi(o.ana[0])}–${sayiGirdisi(o.ana[1])}`} gün` : 'oran bilinmiyor'}`;
 
 // ---------- Takvim düzenleyici (ana ya da paralel) ----------
 type Taslak = Takvim & { cap?: { yil: number; ana: string } | null; bagli?: string | null };

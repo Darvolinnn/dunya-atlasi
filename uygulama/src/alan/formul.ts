@@ -5,7 +5,7 @@
 // sonradan bozulan formül "hesaplanamadı" der, kendiliğinden düzeltilmez. Formül hesap yapmaz, yazıdan anlam çıkarmaz.
 import type { SablonAlani } from './sablon';
 import type { EvrenTarihi } from './tarih';
-import { birimAdi, birimCevir, SAYI_DESENI, sayiOku, type SayiDegeri } from './nicelik';
+import { birimAdi, birimCevir, SAYI_DESENI, sayiGirdisi, sayiOku, type SayiDegeri } from './nicelik';
 import { katla } from './turkce';
 
 export const FORMUL_DIL_SURUMU = 1;
@@ -265,7 +265,7 @@ export function turUyar(turAdi: string, yazilan: string): boolean {
 
 export interface FormulAdlari { kayit(kod: string): string; alan(kod: string): string; secenek(alan: string, kod: string): string }
 const OP_YAZI: Record<Karsilastirici, string> = { '=': '=', '!=': '!=', '<': '<', '<=': '<=', '>': '>', '>=': '>=' };
-const sayiYazi = (n: number) => String(n).replace('.', ',');
+const sayiYazi = sayiGirdisi;
 
 /** Saklanan formülün güncel adlarla yazısı. */
 export function formulYazisi(f: Formul, a: FormulAdlari): string {

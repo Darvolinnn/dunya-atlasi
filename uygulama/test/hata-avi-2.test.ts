@@ -5,13 +5,14 @@ import type { Database } from '@sqlite.org/sqlite-wasm';
 import { Hizmet } from '../src/calisan/hizmet';
 import { BellekDeposu, jpegBilgiSil, type GorselIsleyici } from '../src/calisan/medya';
 import type { HukukTanimGirdisi } from '../src/veri/api';
-import { sayiCoz, sayiOku } from '../src/alan/nicelik';
+import { sayiCoz, sayiGirdisi, sayiOku } from '../src/alan/nicelik';
 import { formulOku, type FormulCozucu } from '../src/alan/formul';
 import { tarihCoz } from '../src/alan/tarih';
 import { metinSemasi } from '../src/alan/metin-sema';
 import { pmDocFromSpans, pmNodeToSpans } from '@automerge/prosemirror';
 import { zipOku } from '../src/alan/zip';
 import { onBilgiAyir } from '../src/alan/markdown';
+import { yeniKod } from '../src/alan/kod';
 
 let sqlite3: Awaited<ReturnType<typeof sqlite3InitModule>>;
 beforeAll(async () => { sqlite3 = await sqlite3InitModule(); });
@@ -104,6 +105,8 @@ describe('hata avı 2: Türkçe sayı yazımı', () => {
 
   it('saklanmış ondalıklı değer yeniden okunurken binlik sanılmaz', () => {
     expect(sayiCoz({ enAz: 1.234, enCok: 1.234, birim: 'm' }, 'm', 3)).toEqual({ enAz: 1.234, enCok: 1.234, birim: 'm' });
+    expect(sayiOku('0.125')).toBe(0.125);
+    for (const n of [1.234, 0.125, 1250, -3.5, 12, 1e-7]) expect(sayiOku(sayiGirdisi(n))).toBe(n);
   });
 
   it('formüldeki "1.000" bin sayılır', () => {
@@ -218,5 +221,42 @@ describe('hata avı 2: Markdown ön bilgisi', () => {
   it('girintisiz liste maddeleri ve çok satırlı değerler okunur', () => {
     const { ozellikler } = onBilgiAyir('---\ntags:\n- kuzey\n- savaş\nozet: >\n  Yaşlı kral\n  kuzeyde yaşar.\nnotlar: |\n  bir\n  iki\nad: Aldren\n---\nMetin');
     expect(ozellikler).toEqual({ tags: ['kuzey', 'savaş'], ozet: 'Yaşlı kral kuzeyde yaşar.', notlar: 'bir\niki', ad: 'Aldren' });
+  });
+});
+
+describe('hata avı 2: önceki avdan kalan teknik iletiler', () => {
+  it('kesirli sınırla değişiklik günlüğü ve bozuk şablon Türkçe iletiyle karşılanır', () => {
+    const { h } = cihaz('A');
+    const { kod: e } = h.evrenOlustur({ ad: 'Deneme' });
+    h.kayitOlustur({ evren: e, ad: 'Aldren', tur: 'karakter' });
+    expect(h.islemGunlugu({ evren: e, sinir: 1.5 }).length).toBe(1);
+    expect(() => h.sablonYaz({ evren: e, tur: 'karakter', sablon: 5 as never })).toThrow('Şablon okunamadı.');
+    expect(() => h.sablonYaz({ evren: e, tur: 'karakter', sablon: { alanlar: [null], sorular: [] } as never })).toThrow('Şablon okunamadı.');
+  });
+});
+
+describe('hata avı 2: ondalıklı sayıların yazılışı', () => {
+  it('ondalıklı iyileşme süresi, gökyüzü dönemi ve rota süresi Türkçe virgülle yazılır', () => {
+    const { h } = cihaz('A');
+    const { kod: e } = h.evrenOlustur({ ad: 'Deneme' });
+    h.takvimYaz({ evren: e, takvim: { kod: 'ana', surum: 1, ad: 'Yıl', yilGun: 0, aylar: [{ ad: 'Tohum', gun: 30 }, { ad: 'Hasat', gun: 30 }] } });
+    const kayit = (ad: string, tur: string, tarih?: string) => {
+      const kod = h.kayitOlustur({ evren: e, ad, tur }).kod;
+      if (tarih) h.kayitTarih({ evren: e, kod, ifade: tarih });
+      return kod;
+    };
+    const elin = kayit('Elin', 'karakter');
+    const s1 = kayit('Pusu', 'sahne', '1 Tohum 412');
+    const s2 = kayit('Kaçış', 'sahne', '2 Tohum 412');
+    const { kod: iz } = h.izOlustur({ evren: e, konu: elin, ad: 'Sağ el', model: 'iyilesme', sure: 1.5 });
+    h.degisimEkle({ evren: e, sahne: s1, metin: 'Eli yaralandı', iz });
+    h.izGozlem({ evren: e, iz, sahne: s2, an: 'bas', deger: 'sargılı' });
+    expect(h.sahneSurekliligi({ evren: e, sahne: s2 }).izler[0].bas.dayanak).toContain('1,5 günlük');
+
+    const ay = { kod: yeniKod(), ad: 'Solgun', donem: 29.5, baslangic: '1 Tohum 412', evre: 'yeni' as const };
+    h.gokyuzuYaz({ evren: e, tanim: { aylar: [ay], mevsimler: [], gelgitler: [] } });
+    const g = h.gokyuzuHesapla({ evren: e, tarih: '1 Tohum 412' });
+    expect(JSON.stringify(g)).toContain('29,5 gün');
+    expect(JSON.stringify(g)).not.toContain('29.5');
   });
 });

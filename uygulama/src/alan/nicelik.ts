@@ -51,14 +51,17 @@ export interface SayiDegeri { enAz: number; enCok: number; birim: string }
 
 /** Türkçe yazılmış bir sayı: ondalık virgülle ("1,75"), binlikler noktayla ayrılır ("12.000", "1.250,5"). Noktadan
  *  sonra tam üç basamaklı gruplar geliyorsa nokta binlik ayırıcıdır; değilse ondalık sayılır ("1.75"). */
-export const SAYI_DESENI = String.raw`-?\d{1,3}(?:\.\d{3})+(?:,\d+)?(?![.,]?\d)|-?\d+(?:[.,]\d+)?`;
+export const SAYI_DESENI = String.raw`-?[1-9]\d{0,2}(?:\.\d{3})+(?:,\d+)?(?![.,]?\d)|-?\d+(?:[.,]\d+)?`;
 const TAM_SAYI = new RegExp(`^(?:${SAYI_DESENI})$`);
-/** Sayı yazısını okur; okunamazsa NaN. Baştaki uzun eksi işareti (−) de eksi sayılır. */
+/** Sayı yazısını okur; okunamazsa NaN. Baştaki uzun eksi işareti (−) de eksi sayılır. "0.125" ondalıktır. */
 export function sayiOku(yazi: string): number {
   const s = String(yazi ?? '').trim().replace(/^−/, '-');
   if (!TAM_SAYI.test(s)) return NaN;
-  return Number(/^-?\d{1,3}(?:\.\d{3})+(?:,\d+)?$/.test(s) ? s.replace(/\./g, '').replace(',', '.') : s.replace(',', '.'));
+  return Number(/^-?[1-9]\d{0,2}(?:\.\d{3})+(?:,\d+)?$/.test(s) ? s.replace(/\./g, '').replace(',', '.') : s.replace(',', '.'));
 }
+/** Saklanan sayının girdi kutusundaki yazısı: ondalık virgülle ("1,234"; "1.234" bin sanılmasın). */
+export const sayiGirdisi = (n: number | null | undefined) => (n === null || n === undefined || !Number.isFinite(n) ? ''
+  : n.toLocaleString('tr-TR', { useGrouping: false, maximumFractionDigits: 20 }).replace('−', '-'));
 
 /** "180", "1,75 m", "170–180 cm" biçimindeki girdiyi çözer ve alanın birimine çevirir. Birim yazılmazsa alanın
  *  birimi sayılır. Hassasiyet alanın birimindeki ondalık basamak sayısıdır. */
@@ -66,8 +69,7 @@ export function sayiCoz(girdi: unknown, alanBirimi: string, hassasiyet = 0): Say
   if (girdi && typeof girdi === 'object' && 'enAz' in (girdi as object)) {
     // Saklanmış değer yeniden yazılırken ondalık virgülle yazılır ("1.234" binlik ayırıcı sanılmasın).
     const g = girdi as SayiDegeri;
-    const y = (n: number) => String(n).replace('.', ',');
-    return sayiCoz(`${y(g.enAz)}${g.enCok !== g.enAz ? `-${y(g.enCok)}` : ''} ${g.birim}`, alanBirimi, hassasiyet);
+    return sayiCoz(`${sayiGirdisi(g.enAz)}${g.enCok !== g.enAz ? `-${sayiGirdisi(g.enCok)}` : ''} ${g.birim}`, alanBirimi, hassasiyet);
   }
   const s = String(girdi ?? '').replace(/\s+/g, ' ').trim();
   if (!s) return null;

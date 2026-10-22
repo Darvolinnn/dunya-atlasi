@@ -37,6 +37,8 @@ export function sablonBilgisi(e: EvrenVt, tur: string): SablonBilgisi {
 
 export function sablonYaz(b: SablonBaglami, tur: string, sablon: Sablon | null) {
   if (!turGecerli(tur)) throw new Error('Bilinmeyen tür.');
+  if (sablon !== null && (!sablon || typeof sablon !== 'object' || !Array.isArray(sablon.alanlar) || !Array.isArray(sablon.sorular)
+    || sablon.alanlar.some((a) => !a || typeof a !== 'object') || sablon.sorular.some((q) => !q || typeof q !== 'object'))) throw new Error('Şablon okunamadı.');
   if (sablon !== null) {
     // Adlar ve metinler kırpılır; biçim denetimi sonra yapılır.
     sablon = {

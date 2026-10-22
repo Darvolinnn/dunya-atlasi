@@ -7,11 +7,11 @@ import { KayitSec } from './KayitBolumleri';
 import type { Secim } from './BaglantiSecici';
 import { KararRozeti } from './ortak';
 import { geriAlinabilir, onayla } from './onay';
-import { sayiOku } from '../alan/nicelik';
+import { sayiGirdisi, sayiOku } from '../alan/nicelik';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const MODEL_ADI: Record<IzModeli, string> = { durum: 'Serbest durum', sayi: 'Sayılabilir', iyilesme: 'İyileşme süresiyle' };
-const modelAciklamasi = (iz: IzTanimi) => iz.model === 'sayi' ? `sayılabilir${iz.birim ? `, ${iz.birim}` : ''}` : iz.model === 'iyilesme' ? `iyileşme süresi ${iz.sure} gün` : 'serbest durum';
+const modelAciklamasi = (iz: IzTanimi) => iz.model === 'sayi' ? `sayılabilir${iz.birim ? `, ${iz.birim}` : ''}` : iz.model === 'iyilesme' ? `iyileşme süresi ${sayiGirdisi(iz.sure)} gün` : 'serbest durum';
 const miktarYaz = (m: number) => (m > 0 ? `+${m}` : m < 0 ? `−${Math.abs(m)}` : '0');
 
 export function SureklilikDefteri({ istemci, evren, sahne, olaylar, surum }: { istemci: Istemci; evren: string; sahne: string; olaylar: SahneOlayBilgisi[]; surum: number }) {
@@ -198,7 +198,7 @@ function IzGecmisiKarti({ istemci, evren, g }: { istemci: Istemci; evren: string
   const [duzenle, setDuzenle] = useState(false);
   const [ad, setAd] = useState(iz.ad);
   const [birim, setBirim] = useState(iz.birim);
-  const [sure, setSure] = useState(iz.sure ? String(iz.sure) : '');
+  const [sure, setSure] = useState(sayiGirdisi(iz.sure));
   const [hata, setHata] = useState<string | null>(null);
   const adim = (a: IzGecmisi['adimlar'][number], i: number) => (
     <li key={i} class="satir">
@@ -221,7 +221,7 @@ function IzGecmisiKarti({ istemci, evren, g }: { istemci: Istemci; evren: string
       {duzenle && (
         <form class="satir" onSubmit={async (e) => {
           e.preventDefault();
-          try { await istemci.iste('izDegistir', { evren, kod: iz.kod, ad, birim, sure: sure ? Number(sure) : null }); setDuzenle(false); setHata(null); } catch (err) { setHata(hataYaz(err)); }
+          try { await istemci.iste('izDegistir', { evren, kod: iz.kod, ad, birim, sure: sure.trim() ? sayiOku(sure) : null }); setDuzenle(false); setHata(null); } catch (err) { setHata(hataYaz(err)); }
         }}>
           <input class="girdi" style="flex:2;min-width:140px" aria-label="Ayrıntının adı" value={ad} lang="tr" onInput={(e) => setAd((e.target as HTMLInputElement).value)} />
           {iz.model === 'sayi' && <input class="girdi" style="width:110px" aria-label="Birim" value={birim} lang="tr" onInput={(e) => setBirim((e.target as HTMLInputElement).value)} />}

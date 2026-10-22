@@ -4,7 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { Dayaniklilik, KesintiAdimi, KesintiZinciri, KisaKayit, UretimOzeti } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
-import { sayiOku } from '../alan/nicelik';
+import { sayiGirdisi, sayiOku } from '../alan/nicelik';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 export const KESINTI_TURLERI = ['urun', 'canli', 'rota', 'mekan', 'sehir', 'topluluk', 'esya', 'teknoloji'];
@@ -77,8 +77,8 @@ function KesintiSatiri({ istemci, evren, a, zincir }: { istemci: Istemci; evren:
 }
 
 function DayaniklilikFormu({ istemci, evren, iliski, d, kapat }: { istemci: Istemci; evren: string; iliski: string; d: KesintiAdimi['dayaniklilik']; kapat: () => void }) {
-  const [enAz, setEnAz] = useState(d?.enAz?.toString() ?? '');
-  const [enCok, setEnCok] = useState(d?.enCok?.toString() ?? '');
+  const [enAz, setEnAz] = useState(sayiGirdisi(d?.enAz));
+  const [enCok, setEnCok] = useState(sayiGirdisi(d?.enCok));
   const [birim, setBirim] = useState<Dayaniklilik['birim']>(d?.birim ?? 'gun');
   const [ikame, setIkame] = useState<{ kod: string; ad: string } | null>(d?.ikameKayit ?? null);
   const [not, setNot] = useState(d?.not ?? '');

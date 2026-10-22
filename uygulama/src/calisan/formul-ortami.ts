@@ -41,16 +41,21 @@ export function formulCoz(e: EvrenVt, yazi: string | null | undefined): Formul |
 /** Saklanan formülün güncel adlarla yazısı. Silinmiş kayıt ya da kalkmış alan da adıyla (ya da işaretle) görünür.
  *  Adı başka bir kayıtla (alanla) aynı olan ya da parantezle biten ad türüyle yazılır: "[Kuzey (Şehir)]". Böylece
  *  yazı yeniden okunduğunda aynı kayda (alana) varır. */
+const AD_SAYILARI = new WeakMap<EvrenVt, { no: number; sayilar: Map<string, number> }>();
+/** Her adı kaç kaydın taşıdığı (katlanmış adla). Kural listesi her kural için sormasın diye son değişikliğe kadar saklanır. */
+function adSayilari(e: EvrenVt): Map<string, number> {
+  const no = e.sonNo();
+  const x = AD_SAYILARI.get(e);
+  if (x && x.no === no) return x.sayilar;
+  const sayilar = new Map<string, number>();
+  for (const r of e.db.selectObjects('SELECT ad FROM kayitlar WHERE silindi IS NULL')) { const k = katla(r.ad as string); sayilar.set(k, (sayilar.get(k) ?? 0) + 1); }
+  AD_SAYILARI.set(e, { no, sayilar });
+  return sayilar;
+}
+
 export function formulGoster(e: EvrenVt, f: Formul): string {
   const alanlar = tumAlanlar(e);
-  let adSayilari: Map<string, number> | null = null;
-  const ayniAdli = (ad: string) => {
-    if (!adSayilari) {
-      adSayilari = new Map();
-      for (const r of e.db.selectObjects('SELECT ad FROM kayitlar WHERE silindi IS NULL')) { const k = katla(r.ad as string); adSayilari.set(k, (adSayilari.get(k) ?? 0) + 1); }
-    }
-    return (adSayilari.get(katla(ad)) ?? 0) > 1;
-  };
+  const ayniAdli = (ad: string) => (adSayilari(e).get(katla(ad)) ?? 0) > 1;
   return formulYazisi(f, {
     kayit: (kod) => {
       const r = e.db.selectObject('SELECT ad, tur, silindi FROM kayitlar WHERE kod=?', [yonlendir(e.db, kod)]);

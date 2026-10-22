@@ -209,7 +209,7 @@ function gecenGun(a: EvrenTarihi | null, b: EvrenTarihi | null): [number, number
 function iyilesmeYazisi(iz: IzTanimi, d: Durum, t: EvrenTarihi | null): { deger: string | null; dayanak: string | null } {
   if (!d.baslangic) return { deger: null, dayanak: null };
   const g = gecenGun(d.baslangic.tarih, t);
-  const dayanak = `“${d.baslangic.olay}” olayından sonra, ${iz.sure} günlük iyileşme süresine göre`;
+  const dayanak = `“${d.baslangic.olay}” olayından sonra, ${sayiYaz(iz.sure!)} günlük iyileşme süresine göre`;
   if (!g) return { deger: 'İyileşme süresinin dolup dolmadığı tarihlerden çıkarılamıyor', dayanak };
   if (g[1] < iz.sure!) {
     const kalan = Math.ceil(iz.sure! - g[1]);

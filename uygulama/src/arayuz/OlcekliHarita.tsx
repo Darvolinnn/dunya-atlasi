@@ -1,5 +1,6 @@
 // Ölçekli geometri kipi ve erişim konturları (§8.4, §15-2, §2.2 kural 1 ve 13, §2.3).
 // Yalnızca ilgili görünüm açılınca çalışır; hesaplar Web Worker üzerinden arka planda yürür ve arayüzü dondurmaz.
+import { sayiGirdisi } from '../alan/nicelik';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import { geriAlinabilir } from './onay';
@@ -538,7 +539,7 @@ export function OlcekliHaritaBolumu({
               <li key={a.kod}>
                 <strong>{a.ad}</strong>{' '}
                 <span class="soluk">
-                  ({a.kurallar.map((k) => `${k.ulasim}${k.mevsim ? `/${k.mevsim}` : ''}: ${k.gecilmez ? 'geçilmez' : `${k.gunlukHiz} ${durum.olcek?.birim ?? 'birim'}/gün`}`).join(', ')})
+                  ({a.kurallar.map((k) => `${k.ulasim}${k.mevsim ? `/${k.mevsim}` : ''}: ${k.gecilmez ? 'geçilmez' : `${sayiGirdisi(k.gunlukHiz)} ${durum.olcek?.birim ?? 'birim'}/gün`}`).join(', ')})
                 </span>
                 {a.catismali && <span class="rozet uyari">İki cihazda farklı</span>}
                 {!h.silindi && (
