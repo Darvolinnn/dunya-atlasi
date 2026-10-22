@@ -5,7 +5,7 @@ import { zamanYaz } from '../alan/islem-metni';
 import { git } from './Uygulama';
 import { SayfaYardimi } from './SayfaYardimi';
 import { IceAktar, YedektenGeriYukle } from './Tasima';
-import { onayla } from './onay';
+import { onayla, sonYedekZamani } from './onay';
 import { BosSayfa, KurguSecici, YeniKarti } from './ortak';
 import { ORNEK_EVREN_ADI } from '../calisan/ornek-evren';
 
@@ -24,12 +24,12 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
   const kaldir = async (e: EvrenOzeti) => {
     setHata(null);
     try {
-      const [d, dosyaYedegi, donemsel] = await Promise.all([istemci.iste('esitlemeDurumu'), istemci.iste('sonYedek', { evren: e.kod }),
-        istemci.iste('donemselYedekDurumu', { evren: e.kod }).catch(() => null)]);
+      const [d, dosyaYedegi, donemsel, yerel] = await Promise.all([istemci.iste('esitlemeDurumu'), istemci.iste('sonYedek', { evren: e.kod }),
+        istemci.iste('donemselYedekDurumu', { evren: e.kod }).catch(() => null), istemci.iste('yerelYedekDurumu', { evren: e.kod }).catch(() => null)]);
       const v = d.evrenler.find((x) => x.kod === e.kod);
       const driveda = !!(v?.esitlenir && v.sonEsitleme);
       const yalniz = v ? v.yalnizBuCihazda + v.denemeler.reduce((n, y) => n + y.yalnizBuCihazda, 0) : 0;
-      const yedek = Math.max(dosyaYedegi ?? 0, donemsel?.son?.dogrulandi ? donemsel.son.zaman : 0);
+      const yedek = sonYedekZamani(dosyaYedegi, donemsel, yerel);
       const yedekCumlesi = yedek
         ? `Son yedek: ${zamanYaz(yedek)}. O tarihten sonraki değişiklikler yedekte yok.`
         : 'Bu evrenin hiç yedeği yok. Önce evrenin Yedek sayfasından yedek almanızı öneririz.';

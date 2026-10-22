@@ -264,9 +264,13 @@ export class Esitleme {
       evrenAdi: (e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string) ?? '', aldigi: e.gorulenler(),
       kullanimDisi: this.kullanimDisiListesi(), kaldigi,
     };
-    const eskiBenim = dosyalar.find((d) => d.ozellikler.tur === 'kurulum' && d.ozellikler.kurulum === ben);
+    const benimkiler = dosyalar.filter((d) => d.ozellikler.tur === 'kurulum' && d.ozellikler.kurulum === ben)
+      .sort((a, b) => Number(b.ozellikler.zaman) - Number(a.ozellikler.zaman));
     await this.t.yukle(`${UYGULAMA}-${evren}-kurulum-${ben}`, ozellik(evren, 'kurulum', { kurulum: ben, zaman: String(simdi), evrenAdi: benim.evrenAdi.slice(0, 100) }),
-      await jsonPaketle(benim), eskiBenim?.id);
+      await jsonPaketle(benim), benimkiler[0]?.id);
+    // Yanıtı yolda kaybolup yeniden denenen bir yükleme durum dosyasını ikilemiş olabilir: fazlası silinir. Kalsaydı
+    // güncellenmeyen kopya öbür cihazlara bu cihazı iki kez gösterir ve eski parçaların temizliğini sonsuza dek durdururdu.
+    for (const d of benimkiler.slice(1)) await this.t.sil(d.id);
     this.kurulum.ayarYaz(`cihazlar:${evren}`, JSON.stringify([...kurulumDosyalari.filter((k) => k.kod !== ben), benim]
       .map((k) => ({ kod: k.kod, ad: k.ad, sonGorulme: k.sonGorulme, aldigi: k.aldigi }))));
 
@@ -323,14 +327,17 @@ export class Esitleme {
   }
 
   private async kurulumDosyalari(dosyalar: UzakDosya[]): Promise<KurulumDosyasi[]> {
-    const sonuc: KurulumDosyasi[] = [];
+    // Bir kurulumun birden çok durum dosyası varsa (ikilenmiş yükleme) en son güncelleneni geçerlidir.
+    const sonuc = new Map<string, KurulumDosyasi>();
     for (const d of dosyalar.filter((x) => x.ozellikler.tur === 'kurulum' && kodGecerliMi(x.ozellikler.kurulum))) {
       try {
         const k = await jsonAc<KurulumDosyasi>(await this.t.indir(d.id));
-        if (k.kod === d.ozellikler.kurulum) sonuc.push({ ...k, ad: String(k.ad).slice(0, 100), kullanimDisi: Array.isArray(k.kullanimDisi) ? k.kullanimDisi : [] });
+        if (k.kod !== d.ozellikler.kurulum) continue;
+        const o = sonuc.get(k.kod);
+        if (!o || Number(k.sonGorulme) > Number(o.sonGorulme)) sonuc.set(k.kod, { ...k, ad: String(k.ad).slice(0, 100), kullanimDisi: Array.isArray(k.kullanimDisi) ? k.kullanimDisi : [] });
       } catch { /* okunamayan durum dosyası atlanır */ }
     }
-    return sonuc;
+    return [...sonuc.values()];
   }
 
   private async medyaEsitle(evren: string, e: EvrenVt, dosyalar: UzakDosya[], ozellik: typeof ozellikYap) {

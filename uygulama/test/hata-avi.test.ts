@@ -14,6 +14,7 @@ import { iceAktarimPlani } from '../src/calisan/ice-aktarim';
 import { BellekKlasor, KlasorTasiyici } from '../src/calisan/klasor-tasiyici';
 import { zipYaz } from '../src/alan/zip';
 import { sinirlar } from '../src/calisan/esitleme';
+import { sonYedekZamani } from '../src/arayuz/onay';
 
 let sqlite3: Awaited<ReturnType<typeof sqlite3InitModule>>;
 beforeAll(async () => { sqlite3 = await sqlite3InitModule(); });
@@ -210,5 +211,61 @@ describe('hata avı: dış rapordaki bulgular', () => {
       expect(c.h.kayitlar({ evren }).length).toBe(18);
       expect(c.h.kayitlar({ evren }).map((x) => x.ad).sort()).toEqual(a.h.kayitlar({ evren }).map((x) => x.ad).sort());
     } finally { zaman.mockRestore(); sinirlar.parca = eskiSinir; }
+  });
+});
+
+describe('hata avı: yanlış gösterilen bilgi', () => {
+  it('metinde bulunan sözün gösterilen parçası, önceki satırlarda æ, ß, þ gibi harfler olsa da sözü içerir', () => {
+    const m = cihaz('Masaüstü');
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    const v = m.h.kayitOlustur({ evren, ad: 'Sefer günlüğü', tur: 'diger' }).kod;
+    m.h.metinKaydet({ evren, kayit: v, alan: 'govde', spans: spansi('Ærendil ve Þórvald '.repeat(30), 'Sonunda kuzey kapısı açıldı.'), temel: m.h.metinAc({ evren, kayit: v, alan: 'govde' }).basliklar });
+    const [s] = m.h.ara({ evren, metin: 'kapısı' });
+    expect(s.nereden.tur).toBe('metin');
+    expect(s.parca).toContain('kuzey kapısı açıldı');
+  });
+});
+
+describe('hata avı: kaldırma sorusu', () => {
+  it('Windows\'ta bu bilgisayardaki günlük yedek varken evreni kaldırma sorusu "hiç yedeği yok" demez', async () => {
+    const klasor = new BellekKlasor();
+    const m = cihaz('Masaüstü');
+    m.h.yerelKlasorAyarla(klasor, 'C:\\Users\\Yazar\\Documents\\Dünya Atlası yedekleri');
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    m.h.kayitOlustur({ evren, ad: 'Velkar', tur: 'karakter' });
+    await m.h.yerelYedekAl({ evren });
+    const yerel = m.h.yerelYedekDurumu({ evren });
+    expect(yerel.son?.dogrulandi).toBe(true);
+    expect(sonYedekZamani(m.h.sonYedek({ evren }), m.h.donemselYedekDurumu({ evren }), yerel)).toBe(yerel.son!.zaman);
+    expect(sonYedekZamani(null, null, null)).toBe(0);
+  });
+});
+
+describe('hata avı: Drive\'da ikilenen durum dosyası', () => {
+  it('yanıtı kaybolan yükleme bir cihazın durum dosyasını ikilerse cihaz iki kez görünmez, eski parçalar yine temizlenir', async () => {
+    const drive = new BellekTasiyici();
+    // İlk durum dosyası yüklenirken Drive dosyayı yazar ama yanıt yolda kaybolur; program yeniden dener (ikinci kopya).
+    const yukle = drive.yukle.bind(drive);
+    let ikile = true;
+    drive.yukle = async (ad, oz, veri, id, ust) => {
+      if (ikile && oz.tur === 'kurulum' && !id) { ikile = false; await yukle(ad, oz, veri, id, ust); }
+      return yukle(ad, oz, veri, id, ust);
+    };
+    const m = cihaz('Masaüstü', drive), t = cihaz('Tablet', drive);
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    await m.h.esitle();
+    await t.h.evreniIndir({ kod: evren });
+    for (let i = 0; i < 45; i++) {
+      t.h.kayitOlustur({ evren, ad: `Ada ${i}`, tur: 'mekan' });
+      await t.h.esitle();
+      if (i % 5 === 0) await m.h.esitle();
+    }
+    await m.h.esitle(); await t.h.esitle(); await m.h.esitle(); await t.h.esitle();
+    const cihazlar = t.h.esitlemeDurumu().evrenler[0].cihazlar.map((c) => c.ad).sort();
+    expect(cihazlar).toEqual(['Masaüstü', 'Tablet']);
+    const kurulumlar = [...drive.dosyalar.values()].filter((d) => d.ozellikler.tur === 'kurulum').length;
+    expect(kurulumlar).toBe(2);
+    const tabletParcalari = [...drive.dosyalar.values()].filter((d) => d.ozellikler.tur === 'parca' && d.ozellikler.kurulum === t.h.baslat().kod).length;
+    expect(tabletParcalari).toBeLessThan(10);
   });
 });

@@ -134,6 +134,20 @@ const BILGI_ALAN_ADLARI: Record<string, string> = {
 
 const katmanEtiketi = (alan: string) => ({ ad: 'Katmanın adı', silindi: 'Katmanın durumu', donusum: 'Katmanın hizalanması', gorsel: 'Katmanın görseli' } as Record<string, string>)[alan.split(':')[2]] ?? 'Katman';
 
+/**
+ * Katlanmış metindeki konumun düz metindeki karşılığı. Katlama bazı harflerin boyunu değiştirir ("æ" → "ae", "ß" → "ss",
+ * ayrık yazılmış aksan düşer); konum bunlar sayılarak çevrilir, yoksa gösterilen parça bulunan sözden kayar.
+ */
+function duzKonumu(duz: string, katliKonum: number): number {
+  let n = 0, j = 0;
+  for (const c of duz) {
+    if (n >= katliKonum) return j;
+    n += katla(c).length;
+    j += c.length;
+  }
+  return j;
+}
+
 export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'yerelKlasorBagla'> {
   private readonly kurulum: KurulumVt;
   private readonly acik = new Map<string, EvrenVt>();
@@ -1855,8 +1869,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       }
       if (!en && katla(r.ozet as string).includes(q)) dene(30, { tur: 'ozet', metin: r.ozet as string });
       if (!en && metinde && r.katli && (r.katli as string).includes(q)) {
-        const i = (r.katli as string).indexOf(q);
         const duz = r.duz as string;
+        const i = duzKonumu(duz, (r.katli as string).indexOf(q));
         const bas = Math.max(0, i - 40);
         const parca = (bas > 0 ? '…' : '') + duz.slice(bas, i + q.length + 60).replace(/\s+/g, ' ') + (i + q.length + 60 < duz.length ? '…' : '');
         dene(20, { tur: 'metin', metin: '' }, false, parca);
