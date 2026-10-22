@@ -23,6 +23,7 @@ import { TurSecici } from './ortak';
 import { BaglamParcasiFormu, parcaYazisi } from './BaglamParcasi';
 import { KullanimSeridi, MetinAlFormu } from './MetinKullanim';
 import { BagsizAdlar } from './BagsizAdlar';
+import { daktiloEklentisi } from './daktilo';
 import { acilistaTaslak, kurtarmaAnahtari, taslakAnahtari, taslakSil, taslakYaz, type Taslak, type TaslakDeposu } from './taslak';
 
 const sema = metinSemasi.schema;
@@ -307,6 +308,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
             paletAc: () => { calismaRef.current?.paletAc({ bagla }); },
             yeniKayit: async (ad, tur, ozet) => (await istemci.iste('kayitOlustur', { evren, ad, tur, ozet, karar: 'fikir' })).kod,
           }),
+          daktiloEklentisi(),
           history(), keymap({ ...KISAYOLLAR, 'Mod-k': () => { if (calismaRef.current) calismaRef.current.paletAc({ bagla }); else bagla(); return true; } }), keymap(baseKeymap),
         ],
       });

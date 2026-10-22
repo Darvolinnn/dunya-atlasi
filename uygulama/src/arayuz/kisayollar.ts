@@ -6,6 +6,7 @@ export const KISAYOLLAR: Kisayol[] = [
   { anahtar: 'bagla', ad: 'Bağlantı aç', tus: '[[ ya da @', not: 'Türkçe klavyede [ işareti AltGr+8, @ işareti AltGr+Q ile yazılır. @ yalnız kelime başında açar. Metindeyken Ctrl+K de açar' },
   { anahtar: 'not', ad: 'Hızlı not', tus: 'Alt+N' },
   { anahtar: 'odak', ad: 'Odak kipi', tus: 'Ctrl+Shift+F', not: 'Yazma ekranında; Esc ile çıkılır' },
+  { anahtar: 'daktilo', ad: 'Daktilo kipi', tus: 'Ctrl+Shift+D', not: 'Yazma ekranında; yazdığınız satır ekranın ortasında kalır' },
   { anahtar: 'kisayollar', ad: 'Kısayollar', tus: '?', not: 'Metin dışındayken' },
   { anahtar: 'bag-ac', ad: 'Bağlantılı kaydı aç', tus: 'Ctrl+tıklama' },
   { anahtar: 'kalin', ad: 'Kalın', tus: 'Ctrl+B' },
@@ -19,3 +20,5 @@ export const kisayolTusu = (anahtar: string) => KISAYOLLAR.find((k) => k.anahtar
 export const KISAYOL_OLAYI = 'dunya-atlasi:kisayollar';
 /** Odak kipini açar/kapatır (K28, §5.10); detail verilmezse durumu çevirir. */
 export const ODAK_OLAYI = 'dunya-atlasi:odak-kipi';
+/** Daktilo kipini açar/kapatır (K33, §5.10); detail verilmezse durumu çevirir. */
+export const DAKTILO_OLAYI = 'dunya-atlasi:daktilo-kipi';

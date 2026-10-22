@@ -1059,8 +1059,10 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .yaz-ust .anlati-yolu > a:not(.dugme) { overflow: hidden; text-overflow: ellipsis; min-width: 2em; }
 .yaz-ust .anlati-yolu .bosluk { flex: 0 0 4px; }
 .yaz-ust > .dugme, .yaz-ust .kelime-sayaci { flex: none; }
-.yaz-kagidi .arac-cubugu { opacity: 0.55; transition: opacity 150ms; }
-.yaz-kagidi .arac-cubugu:hover, .yaz-kagidi .arac-cubugu:focus-within { opacity: 1; }
+.yaz-kagidi .arac-cubugu > * { opacity: 0.55; transition: opacity 150ms; }
+.yaz-kagidi .arac-cubugu:hover > *, .yaz-kagidi .arac-cubugu:focus-within > * { opacity: 1; }
+/* Daktilo kipi (K33): son satır da ekranın ortasına gelebilsin diye metnin altında boşluk. */
+.daktilo-kipi .yaz-kagidi .metin-editoru { padding-bottom: 50vh; }
 .islem-menusu { position: relative; flex: none; }
 .islem-menusu > summary { list-style: none; cursor: pointer; }
 .islem-menusu > summary::-webkit-details-marker { display: none; }
