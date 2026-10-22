@@ -1267,3 +1267,33 @@ a.defter-karti.belirsiz { border-left-style: dashed; }
   .gezinti-diger summary { min-height: 32px; padding: 4px 10px; }
   .gezinti-alti { padding-top: 8px; }
 }
+
+/* ---------- Geçişler: kısa ve yumuşak (150–200 ms), gösterişsiz; "animasyonları azalt" açıkken hiç oynamaz ---------- */
+:root { --gecis-egri: cubic-bezier(0.2, 0.7, 0.3, 1); }
+@keyframes sol-gir { from { opacity: 0; } to { opacity: 1; } }
+@keyframes asagi-gir { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes yukari-gir { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes sagdan-gir { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@keyframes pencere-gir { from { opacity: 0; transform: translateY(6px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes serit-gir { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translateX(-50%); } }
+/* Evrenin dışındaki sayfalar (Evrenler, Eşitleme) açılırken; evrenin içindeki sayfa değişimi Kabuk.tsx useSayfaGecisi. */
+.sayfa:not(.kabuk-ic .sayfa) { animation: yukari-gir 180ms var(--gecis-egri); }
+/* Pencereler, komut paleti ve kısayol listesi. */
+.perde { animation: sol-gir 150ms ease-out; }
+.perde > .perde-ic, .perde > .palet { animation: pencere-gir 180ms var(--gecis-egri); }
+/* Açılır menüler ve katlanan bölümler. */
+.islem-menusu[open] > .menu-icerik { animation: asagi-gir 150ms var(--gecis-egri); transform-origin: top right; }
+/* Gezinti çubuğundakiler her sayfada yeniden çizildiği için yalnız yazar açınca oynar. */
+details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] > ul { animation: asagi-gir 160ms var(--gecis-egri); }
+/* Kenardan gelen paneller. */
+.yan-panel, .yaz-baglami.kayarak, .harita-cekmece { animation: sagdan-gir 180ms var(--gecis-egri); }
+.baglam-sekme-icerik { animation: sol-gir 150ms ease-out; }
+.hizli-not { animation: yukari-gir 180ms var(--gecis-egri); }
+.geri-al-seridi { animation: serit-gir 180ms var(--gecis-egri); }
+/* Üzerine gelince renk değişimleri. */
+.dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .gezinti-diger summary, .kart { transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, filter 150ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  .sayfa, .perde, .perde > .perde-ic, .perde > .palet, .islem-menusu[open] > .menu-icerik, details[open] > :not(summary), .gezinti-diger.oynat[open] > ul,
+  .yan-panel, .yaz-baglami.kayarak, .harita-cekmece, .baglam-sekme-icerik, .hizli-not, .geri-al-seridi { animation: none; }
+  .dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .gezinti-diger summary, .kart { transition: none; }
+}
