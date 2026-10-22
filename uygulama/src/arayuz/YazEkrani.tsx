@@ -100,7 +100,9 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
 
   if (hata) return <main class="sayfa"><p class="hata">{hata}</p></main>;
   if (!kayit) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
-  const baglamAc = (acik: boolean) => { setBaglamTercihi(!acik); yazYerel(baglamAnahtari, acik ? '0' : '1'); };
+  // Panel yalnız yazar açınca kayarak gelir; sahne değişince yerinde durur.
+  const [baglamKaysin, setBaglamKaysin] = useState(false);
+  const baglamAc = (acik: boolean) => { setBaglamKaysin(acik); setBaglamTercihi(!acik); yazYerel(baglamAnahtari, acik ? '0' : '1'); };
   const bos = sahneBaglamiBos(sahneBaglami);
   // Seçilmemişken bağlam okunana kadar panel açılmaz; dolu sahnede okununca açılır.
   const baglamKapali = baglamTercihi ?? (!sahneBaglami || bos);
@@ -151,7 +153,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
         </article>
       </main>
       {baglamGorunur && (
-        <aside class="yaz-baglami" aria-label="Sahnenin bağlamı">
+        <aside class={baglamKaysin ? 'yaz-baglami kayarak' : 'yaz-baglami'} aria-label="Sahnenin bağlamı">
           <div class="yaz-baglami-basi">
             <div class="sekmeler baglam-sekmeleri" role="tablist" aria-label="Bağlam paneli">
               {BAGLAM_SEKMELERI.map(([k, ad]) => (
@@ -160,7 +162,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
             </div>
             <button class="dugme sade kucuk" aria-label="Bağlam panelini kapat" onClick={() => baglamAc(false)}>×</button>
           </div>
-          <div id="baglam-sekme-icerik" role="tabpanel" aria-labelledby={`baglam-sekme-${sekme}`} class="baglam-sekme-icerik">
+          <div key={sekme} id="baglam-sekme-icerik" role="tabpanel" aria-labelledby={`baglam-sekme-${sekme}`} class="baglam-sekme-icerik">
             {sekme === 'baglam' && <>
               <SahneOzeti istemci={istemci} evren={evren} kayit={kayit} baglam={sahneBaglami} bos={bos} />
               <SahneBaglamPaneli evren={evren} baglam={gosterilenBaglam} parca={parcaVar} bos={bos && !parcaVar} bilgisiz />

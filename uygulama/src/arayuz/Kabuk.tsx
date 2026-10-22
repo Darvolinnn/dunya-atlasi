@@ -1,7 +1,7 @@
 // Evren içindeki her ekranın kabuğu (§5.10, K24): solda sabit gezinti çubuğu. "Yaz" seçiliyken eserlerin ağacı
 // (eser › bölüm › sahne) çubukta görünür; görünümlerden biri açıkken görünümlerin listesi açılır. Az kullanılan
 // sayfalar "Diğer" altında katlanır.
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { gitVeYap, YENI_SAHNE_OLAYI } from './yonlendirme';
 import { SiradakiAdim } from './IlkAdimlar';
 import type { Istemci } from '../veri/istemci';
@@ -28,15 +28,29 @@ const digerAnahtari = 'dunya-atlasi:diger-acik';
 const oku = (a: string) => { try { return localStorage.getItem(a); } catch { return null; } };
 const yaz = (a: string, v: string) => { try { localStorage.setItem(a, v); } catch { /* yok */ } };
 
+/** Sayfa değişince içerik kısa ve yumuşak belirir; "animasyonları azalt" ayarı açıksa hiç oynamaz. */
+export function useSayfaGecisi(anahtar: string) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el?.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const a = el.animate([{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 180, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
+    return () => a.cancel();
+  }, [anahtar]);
+  return ref;
+}
+
 export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
   istemci: Istemci; evren: string; etkin: string; acik?: string | null; children: preact.ComponentChildren;
 }) {
   const [bilgi, setBilgi] = useState<EvrenBilgisi | null>(null);
   const [surum, setSurum] = useState(0);
+  const [digerOynat, setDigerOynat] = useState(false);
   const [digerAcik, setDigerAcik] = useState(() => oku(digerAnahtari) === '1' || DIGER_SAYFALAR.some(([k]) => k === etkin));
   useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then(setBilgi, () => {}); }, [evren, surum]);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren) setSurum((s) => s + 1); }), [evren]);
   if (gorunumMu(etkin)) sonGorunum = etkin;
+  const icRef = useSayfaGecisi(`${etkin}/${acik ?? ''}`);
 
   const sayi = (k: string) => !bilgi ? '' : k === 'kayitlar' ? bilgi.kayitSayisi : k === 'cop' ? bilgi.copSayisi
     : k === 'inceleme' ? (bilgi.catismaSayisi + bilgi.sorunSayisi || '') : '';
@@ -75,8 +89,8 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
         <a class="gezinti-geri" href="#/">← Evrenler</a>
         <div class="gezinti-evren" title={bilgi?.ad}>{bilgi?.ad ?? '…'}</div>
         <ul class="gezinti-listesi">{ANA_SAYFALAR.map(([k, ad]) => oge(k, ad))}</ul>
-        <details class="gezinti-diger" open={digerAcik} onToggle={(e) => { const v = (e.target as HTMLDetailsElement).open; setDigerAcik(v); yaz(digerAnahtari, v ? '1' : '0'); }}>
-          <summary>Diğer</summary>
+        <details class={digerOynat ? 'gezinti-diger oynat' : 'gezinti-diger'} open={digerAcik} onToggle={(e) => { const v = (e.target as HTMLDetailsElement).open; setDigerAcik(v); yaz(digerAnahtari, v ? '1' : '0'); }}>
+          <summary onClick={() => setDigerOynat(true)}>Diğer</summary>
           <ul class="gezinti-listesi">{DIGER_SAYFALAR.filter(([k]) => !bagli || !['surumler', 'yedek'].includes(k)).map(([k, ad]) => oge(k, ad))}</ul>
         </details>
         <div class="gezinti-alti">
@@ -84,7 +98,7 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
           <span>Komutlar: Ctrl+K</span>
         </div>
       </nav>
-      <div class="kabuk-ic">{!bagli && !(etkin === 'yaz' && !acik) && <SiradakiAdim istemci={istemci} evren={evren} yazda={etkin === 'yaz'} />}<KurguBaglami.Provider value={kurgu}>{children}</KurguBaglami.Provider></div>
+      <div class="kabuk-ic" ref={icRef}>{!bagli && !(etkin === 'yaz' && !acik) && <SiradakiAdim istemci={istemci} evren={evren} yazda={etkin === 'yaz'} />}<KurguBaglami.Provider value={kurgu}>{children}</KurguBaglami.Provider></div>
     </div>
   );
 }
