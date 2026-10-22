@@ -1,6 +1,6 @@
 // Bu bilgisayardaki günlük yedekler (K31): Belgeler klasöründeki "Dünya Atlası yedekleri" klasörü.
 // Program (web kodu) yedeği hazırlar ve buraya yalnızca bu birkaç istekle dosya yazar, okur ve siler; başka hiçbir
-// klasöre erişemez. Dosya adları denetlenir: yol ayracı, "..", Windows'un yasak harfleri kabul edilmez.
+// klasöre erişemez. Dosya adları denetlenir: yol ayracı, "..", Windows'un yasak harfleri ve aygıt adları kabul edilmez.
 // Yazma önce geçici dosyaya yapılır, diske işlenir, sonra yerine taşınır: elektrik kesilse de yarım dosya kalmaz.
 use std::fs;
 use std::io::Write;
@@ -31,6 +31,20 @@ pub fn ad_gecerli(ad: &str) -> bool {
         && !ad.ends_with(' ')
         && !ad.ends_with(GECICI_EK)
         && !ad.chars().any(|c| c.is_control() || matches!(c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|'))
+        && !aygit_adi(ad)
+}
+
+/// Windows'ta CON, NUL, COM1, LPT1 gibi adlar klasördeki bir dosyayı değil bir aygıtı açar; uzantılı biçimleri de öyle
+/// ("nul.zip", "Com1 .tar.gz"): ilk noktadan önceki kısım, sondaki boşluklar atılınca, harf büyüklüğüne bakılmadan aranır.
+fn aygit_adi(ad: &str) -> bool {
+    let govde = ad.split('.').next().unwrap_or("").trim_end_matches(' ').to_ascii_uppercase();
+    if matches!(govde.as_str(), "CON" | "PRN" | "AUX" | "NUL" | "CONIN$" | "CONOUT$") {
+        return true;
+    }
+    let mut h = govde.chars();
+    let on: String = h.by_ref().take(3).collect();
+    let son: Vec<char> = h.collect();
+    (on == "COM" || on == "LPT") && matches!(son.as_slice(), ['0'..='9' | '¹' | '²' | '³'])
 }
 
 pub struct Klasor {
@@ -173,6 +187,25 @@ mod sinama {
             assert!(k.yaz(alt, "a", b"x").is_err(), "{alt}");
         }
         assert!(!kok.join("disari.txt").exists());
+        let _ = fs::remove_dir_all(&kok);
+    }
+
+    #[test]
+    fn windows_aygit_adlari_reddedilir() {
+        for ad in ["CON", "con.zip", "Nul.tar.gz", "PRN.zip", "aux", "COM1.zip", "com9", "COM0.json", "LPT1.zip", "lpt¹.zip",
+            "COM².zip", "NUL .zip", "CONIN$.zip", "conout$"] {
+            assert!(!ad_gecerli(ad), "{ad}");
+        }
+        // Aygıt adını yalnız içeren ya da ona benzeyen adlar olağan dosyadır.
+        for ad in ["CONSOLE.zip", "icon.zip", "nul-yedek-2026-10-22.zip", "COM10.zip", "LPT.zip", "com1x.zip", "Sisli Kıyı.con",
+            "aux (2).zip", "yedek-listesi.json"] {
+            assert!(ad_gecerli(ad), "{ad}");
+        }
+        let kok = gecici_klasor("aygit");
+        let k = Klasor::new(kok.join(KLASOR_ADI));
+        assert!(k.yaz("", "nul.zip", b"x").is_err());
+        assert!(k.oku("", "COM1.zip").is_err());
+        assert!(k.sil("medya", "CON").is_err());
         let _ = fs::remove_dir_all(&kok);
     }
 
