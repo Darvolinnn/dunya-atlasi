@@ -125,7 +125,7 @@ export function kanalOku(e: EvrenVt, kod: string): KanalTanimi {
 export function kanalYaz(b: HaberBaglami, kod: string, t: KanalTanimi) {
   if (kayitTuru(b.e, kod) !== 'haberlesme') throw new Error('Bu bir haberleşme yöntemi kaydı değil.');
   const carpan = Number(t.carpan);
-  if (!Number.isFinite(carpan) || carpan <= 0 || carpan > 1000) throw new Error('Hız katsayısı sıfırdan büyük bir sayı olmalı.');
+  if (!Number.isFinite(carpan) || carpan <= 0 || carpan > 1000) throw new Error('Rota süresinin katı sıfırdan büyük bir sayı olmalı (ör. yarı sürede ulaşıyorsa 0,5).');
   if (!Array.isArray(t.baglantilar) || t.baglantilar.length > 200) throw new Error('Bağlantı listesi geçersiz.');
   const baglantilar = t.baglantilar.map((x) => {
     kayitTuru(b.e, x.a); kayitTuru(b.e, x.b);

@@ -74,7 +74,7 @@ describe('haber yayılımı (§15-3)', () => {
     h.kanalYaz({ evren, kod: kule, tanim: { rotalar: false, kosul: null, carpan: 1, baglantilar: [{ a: c, b: y, gun: 0.5 }] } });
     expect(h.kanal({ evren, kod: atli })).toMatchObject({ rotalar: true, carpan: 0.5 });
     expect(() => h.kanalYaz({ evren, kod: haber, tanim: { rotalar: true, kosul: null, carpan: 1, baglantilar: [] } })).toThrow(/haberleşme/);
-    expect(() => h.kanalYaz({ evren, kod: atli, tanim: { rotalar: true, kosul: null, carpan: 0, baglantilar: [] } })).toThrow(/katsayı/);
+    expect(() => h.kanalYaz({ evren, kod: atli, tanim: { rotalar: true, kosul: null, carpan: 0, baglantilar: [] } })).toThrow(/süresinin katı/);
 
     const s = h.haberYayilimi({ evren, kod: haber });
     expect(s.durum).toBe('hesaplandi');

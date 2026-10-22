@@ -308,9 +308,10 @@ Kanonik eksene eşlenemeyen tarih (takvim eşlemesi bilinmiyor, "üçüncü hük
 - Kişisel kronoloji ve zaman yolculuğu (F45, Öneri) tasarıma alınırsa aynı mekanizmanın bir kişiye uygulanmış hâli olarak tanımlanır.
 
 - **Dönüşüm her zaman tek tarih vermez.** Takvimler arası eşleme eksikse ya da kayıt "üçüncü hükümdarın yedinci kışı" diyorsa sonuç aralık, birkaç olasılık ya da "eşlenemiyor" olur. Kesin dönüşüm uydurulmaz.
+- **İki tarih arasındaki süre** (yolculuk aşaması, iyileşme, iki bulunma arasındaki zaman) aralıkların uçlarından hesaplanır: en geç uç o günün (ya da gün bölümünün) sonuna kadar sayılır. 1. günden 3. güne süre en az 1, en çok 3 gündür; aynı gün içinde en çok 1 gündür.
 - **Göreli ifadenin dayanağı sabittir.** "300 yıl önce" hangi olaya, sahneye ya da tarihli anlatıma göre söylendiyse ona bağlanır; uygulamanın bugününe göre kaymaz.
 - **Mevsimin etkileri:** Bir mevsime toplumsal etkiler bağlanabilir: savaş mevsimi, hasat, denizin kapandığı aylar. Bu etkiler rota sürelerinde ve üretim hesaplarında kullanılabilir (§15).
-- **Yaş:** Doğum tarihi biliniyorsa karakterin her olaydaki yaşı hesaplanır ve hangi evren tarihine bakıldığı yazılır. Doğum tarihinin çözülmemiş iki değeri varsa yaş koşullu gösterilir (§2.2 kural 15). Farklı zaman akışlarında bulunmuş bir kişide takvim yaşı ile yaşadığı süre ayrı gösterilir.
+- **Yaş:** Doğum tarihi biliniyorsa karakterin her olaydaki yaşı hesaplanır ve hangi evren tarihine bakıldığı yazılır. Yaş takvim günleriyle sayılır: kişi doğum gününde yeni yaşına girer, doğduğu gün 0 yaşındadır; tarihlerden biri gün düzeyinden kabaysa olası en küçük ve en büyük yaş gösterilir. Doğum tarihinin çözülmemiş iki değeri varsa yaş koşullu gösterilir (§2.2 kural 15). Farklı zaman akışlarında bulunmuş bir kişide takvim yaşı ile yaşadığı süre ayrı gösterilir.
 
 ### 3.5 Durum geçmişi
 
@@ -1354,7 +1355,7 @@ Tarayıcı, yerel veriyi (yerel veritabanı, tarayıcı depolaması) adres klas�
 - **Yapı taşları.** Formülde yalnızca şunlar bulunur; her biri değerlendirildiği kişi için *evet · hayır · belirsiz* verir:
   - *İlişki:* kişinin bir kayda kayıtlı ilişkisi, hukuk koşullarındaki ilişki adlarıyla: `üyesi [Kuzey Loncası]`, `kültüründen [Göçebeler]`, `türünden [...]`, `makamını yürüten [...]`, `hizmetinde [...]`, `orada yaşayan [...]`. Kayıtlı ilişki "evet"tir; kayıt yoksa sonuç "hayır" değil "belirsiz"dir, neden "kayıtlı değil" diye yazılır (§2.2 kural 4).
   - *Seçim alanı:* `{Rütbe} = "Subay"`; *evet / hayır alanı:* `{Mühürlü}`.
-  - *Tarih alanı:* `{Doğum tarihi} < "400"`; sağdaki yazı evren tarihi olarak okunur (§3.4). Karşılaştırma tarih karşılaştırmasının üç değerli kuralıyla yapılır.
+  - *Tarih alanı:* `{Doğum tarihi} < "400"`; sağdaki yazı evren tarihi olarak okunur (§3.4) ve kendi hassasiyetinde bir bütündür: `= "400"` 400 yılının içinde, `<= "400"` 400 yılı ya da öncesi, `< "400"` 400 yılından önce demektir. Alanın tarihi sınırın iki yanına düşüyorsa sonuç belirsizdir (§3.4 üç değerli karşılaştırma).
   - *Birimli sayı alanı:* `{Boy} >= 180 cm`. *Yaş:* `yaş >= 16 yıl`, kişinin doğum tarihinden ve kuralın değerlendirildiği tarihten hesaplanır.
   - *Bağlaçlar:* `ve`, `veya`, `değil` ve parantez. Öncelik: değil, sonra ve, sonra veya.
 - **Alan anlamına bağlılık.** Alan ve kayıt adla yazılır, kodla saklanır; ad değişince formül bozulmaz, gösterimde güncel ad görünür. Aynı adı taşıyan iki alan ya da iki kayıt varsa formül kaydedilmez ve hangisinin kastedildiği seçtirilir. Alan, kişinin kendi şablonundan okunur; kişinin şablonunda o alan yoksa sonuç "belirsiz", neden "bu kayıt için geçerli değil"dir.
