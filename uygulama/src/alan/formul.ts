@@ -321,6 +321,23 @@ function aralikKarsilastir(a: Aralik, op: Karsilastirici, b: Aralik): Uclu {
 }
 const ac = (x: number | null, uc: 'alt' | 'ust') => (x === null ? (uc === 'alt' ? -Infinity : Infinity) : x);
 
+/**
+ * Tarih alanı: formüldeki tarih kendi hassasiyetinde bir bütündür ("400" bütün 400 yılı). `= "400"` alanın 400 yılı
+ * içinde olması, `<= "400"` 400 yılı ya da öncesi, `< "400"` 400 yılından önce demektir. Alanın tarihi sınırın iki
+ * yanına düşüyorsa sonuç belirsizdir (§3.4 üç değerli karşılaştırma).
+ */
+function tarihKarsilastir(a: Aralik, op: Karsilastirici, b: Aralik): Uclu {
+  const [a1, a2] = a, [b1, b2] = b;
+  switch (op) {
+    case '<': return a2 < b1 ? 'evet' : a1 >= b1 ? 'hayir' : 'belirsiz';
+    case '<=': return a2 <= b2 ? 'evet' : a1 > b2 ? 'hayir' : 'belirsiz';
+    case '>': return a1 > b2 ? 'evet' : a2 <= b2 ? 'hayir' : 'belirsiz';
+    case '>=': return a1 >= b1 ? 'evet' : a2 < b1 ? 'hayir' : 'belirsiz';
+    case '=': return a1 >= b1 && a2 <= b2 ? 'evet' : a2 < b1 || a1 > b2 ? 'hayir' : 'belirsiz';
+    case '!=': { const e = tarihKarsilastir(a, '=', b); return e === 'evet' ? 'hayir' : e === 'hayir' ? 'evet' : 'belirsiz'; }
+  }
+}
+
 export function formulDegerlendir(f: Formul, o: FormulOrtami): FormulSonucu {
   if (f.dil !== FORMUL_DIL_SURUMU) throw new Hesaplanamadi('Bu formül daha yeni bir program sürümüyle yazılmış.');
   const nedenler: string[] = [];
@@ -375,7 +392,7 @@ export function formulDegerlendir(f: Formul, o: FormulOrtami): FormulSonucu {
         if (typeof r === 'string') return r;
         const v = (r.deger as EvrenTarihi | null)?.eksen, b = d.tarih.eksen;
         if (!v || !b) return belirsiz(`“${t.ad}” bir tarihe yerleştirilemiyor.`);
-        const x = aralikKarsilastir([ac(v.enErken, 'alt'), ac(v.enGec, 'ust')], d.op, [ac(b.enErken, 'alt'), ac(b.enGec, 'ust')]);
+        const x = tarihKarsilastir([ac(v.enErken, 'alt'), ac(v.enGec, 'ust')], d.op, [ac(b.enErken, 'alt'), ac(b.enGec, 'ust')]);
         return x === 'belirsiz' ? belirsiz(`“${t.ad}” ile “${d.tarih.ifade}” karşılaştırması kesin değil.`) : x;
       }
       case 'sayi': {

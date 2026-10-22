@@ -88,11 +88,15 @@ export function asamalarOku(e: EvrenVt, kod: string): SakliAsama[] {
   return (JSON.parse(ham) as SakliAsama[]).map((a) => ({ ...a, nereden: a.nereden && yonlendir(e.db, a.nereden), nereye: a.nereye && yonlendir(e.db, a.nereye), rota: a.rota && yonlendir(e.db, a.rota) }));
 }
 
-/** Aşamanın süresi (gün): en kısa ve en uzun olası. Tarihler eksik ya da açık uçluysa null. */
+/**
+ * Aşamanın süresi (gün): en kısa ve en uzun olası. Tarihler eksik ya da açık uçluysa null. Eksende en geç uç, aralığın
+ * son parçasıdır; süre o parçanın sonuna kadar sayılır (1. günden 3. güne en çok 3 gün). Varış çıkıştan önceyse eksidir.
+ */
 export function asamaSuresi(a: { cikis: EvrenTarihi | null; varis: EvrenTarihi | null }): { enAz: number; enCok: number } | null {
   const c = a.cikis?.eksen, v = a.varis?.eksen;
   if (!c || !v || c.enErken === null || c.enGec === null || v.enErken === null || v.enGec === null) return null;
-  return { enAz: Math.max(0, (v.enErken - c.enGec) / GUN_PARCA), enCok: (v.enGec - c.enErken) / GUN_PARCA };
+  if (v.enGec < c.enErken) return { enAz: (v.enErken - c.enGec - 1) / GUN_PARCA, enCok: (v.enGec - c.enErken) / GUN_PARCA };
+  return { enAz: Math.max(0, (v.enErken - c.enGec - 1) / GUN_PARCA), enCok: (v.enGec + 1 - c.enErken) / GUN_PARCA };
 }
 
 const gunYaz = (n: number) => `${n.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} gün`;

@@ -1,6 +1,7 @@
 // Yaş (§3.4): doğum tarihi biliniyorsa bir andaki yaş hesaplanır ve hangi tarihe bakıldığı yazılır.
-// Hassasiyet korunur: yıl düzeyinde iki tarihten tek yaş değil, olası en küçük ve en büyük yaş çıkar.
-import { anaTakvim, karsilastir, VARSAYILAN_TAKVIM, yilParcasi, type EvrenTarihi, type TakvimYa } from './tarih';
+// Hassasiyet korunur: yıl düzeyinde iki tarihten tek yaş değil, olası en küçük ve en büyük yaş çıkar. Yaş takvim
+// günleriyle sayılır: doğum gününde yeni yaşına girmiş olur, doğduğu gün 0 yaşındadır.
+import { anaTakvim, GUN_PARCA, karsilastir, VARSAYILAN_TAKVIM, yilGunu, type EvrenTarihi, type TakvimYa } from './tarih';
 
 export interface Yas { metin: string; enAz: number | null; enCok: number | null }
 
@@ -11,8 +12,9 @@ export function yasHesapla(dogum: EvrenTarihi | null, an: EvrenTarihi | null, ol
   if (!dogum.eksen || !an.eksen) return bilinmiyor;
   const { enErken: d1, enGec: d2 } = dogum.eksen;
   const { enErken: a1, enGec: a2 } = an.eksen;
-  const enAz = a1 !== null && d2 !== null ? Math.floor((a1 - d2) / yilParcasi(t)) : null;
-  const enCok = a2 !== null && d1 !== null ? Math.floor((a2 - d1) / yilParcasi(t)) : null;
+  const gun = (n: number) => Math.floor(n / GUN_PARCA), yg = yilGunu(t);
+  const enAz = a1 !== null && d2 !== null ? Math.floor((gun(a1) - gun(d2)) / yg) : null;
+  const enCok = a2 !== null && d1 !== null ? Math.floor((gun(a2) - gun(d1)) / yg) : null;
   const olumSirasi = olum ? karsilastir(olum, an) : null;
   if (olumSirasi === 'once') return { metin: 'Bu tarihte ölmüş', enAz, enCok };
   if (enCok !== null && enCok < 0) return { metin: 'Bu tarihte henüz doğmamış', enAz, enCok };

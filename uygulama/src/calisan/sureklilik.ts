@@ -198,11 +198,11 @@ function yurut(iz: IzTanimi, sirali: Oge[], okuma?: (o: Oge, d: Durum) => void) 
 const sayiYaz = (n: number) => (Number.isInteger(n) ? String(n) : n.toLocaleString('tr-TR', { maximumFractionDigits: 3 }));
 const birimli = (iz: IzTanimi, n: number) => `${sayiYaz(n)}${iz.birim ? ` ${iz.birim}` : ''}`;
 
-/** İki tarih arası geçen gün aralığı [en az, en çok]; eşlenemiyorsa null. */
+/** İki tarih arası geçen gün aralığı [en az, en çok]; eşlenemiyorsa null. En geç uç aralığın son parçasıdır, süre onun sonuna kadar sayılır. */
 function gecenGun(a: EvrenTarihi | null, b: EvrenTarihi | null): [number, number] | null {
   const x = a?.eksen, y = b?.eksen;
   if (!x || !y || x.enErken === null || x.enGec === null || y.enErken === null || y.enGec === null) return null;
-  return [Math.max(0, (y.enErken - x.enGec) / GUN_PARCA), (y.enGec - x.enErken) / GUN_PARCA];
+  return [Math.max(0, (y.enErken - x.enGec - 1) / GUN_PARCA), Math.max(0, (y.enGec + 1 - x.enErken) / GUN_PARCA)];
 }
 
 function iyilesmeYazisi(iz: IzTanimi, d: Durum, t: EvrenTarihi | null): { deger: string | null; dayanak: string | null } {

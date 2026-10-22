@@ -241,7 +241,8 @@ function konum(e: EvrenVt, b: Bulunma[], p: PaketEtkisi | null): { bulgular: Ham
         const r = yx.flatMap((a) => yy.map((c) => enHizli(a.yer.kod, c.yer.kod))).reduce((m, v) => (v && (!m || v.sure.gun < m.sure.gun) ? v : m), null);
         if (!r) continue;
         rotaDenetlenen++;
-        const enCok = Math.max(ey.enGec - ex.enErken, ex.enGec - ey.enErken) / GUN_PARCA;
+        // En geç uç aralığın son parçasıdır; süre o parçanın sonuna kadar sayılır.
+        const enCok = (Math.max(ey.enGec - ex.enErken, ex.enGec - ey.enErken) + 1) / GUN_PARCA;
         if (enCok >= r.sure.gun) continue;
         const [p, q] = [x, y].sort((m, n) => m.iliski.localeCompare(n.iliski));
         const [ilk, son] = karsilastir(x.tarih, y.tarih) === 'sonra' ? [y, x] : [x, y];
