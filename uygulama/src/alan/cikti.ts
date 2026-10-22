@@ -7,7 +7,15 @@ import { metinSemasi } from './metin-sema';
 export const belgeyeCevir = (spans: unknown[]): PmNode => pmDocFromSpans(metinSemasi, spans as never);
 
 const mdKacis = (s: string) => s.replace(/([\\*_`[\]#<>|])/g, '\\$1');
-export const xmlKacis = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/** Satır başında liste, yatay çizgi ya da kod bloğu sanılacak işaret kaçışlanır: "- Gel, dedi." konuşma çizgisi
+ *  Obsidian'da madde, içe aktarımda "• " olmasın. */
+const satirBasiKacis = (s: string) => s
+  .replace(/^(\s*)([-+])(?=\s|$)/, '$1\\$2')
+  .replace(/^(\s*)(-{3,}|~{3,})/, '$1\\$2')
+  .replace(/^(\s*)(\d+)([.)])(?=\s|$)/, '$1$2\\$3');
+/** XML'de bulunamayan karakterler (denetim karakterleri, eşsiz vekil yarımlar) atılır; yoksa okuyucu kitabı açamaz. */
+const XML_DISI = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
+export const xmlKacis = (s: string) => s.replace(XML_DISI, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 function satirIciMd(n: PmNode, hedefAdi: (kod: string) => string | null): string {
   let s = '';
@@ -33,7 +41,7 @@ export function markdownYaz(doc: PmNode, hedefAdi: (kod: string) => string | nul
     if (b.type.name === 'heading') parcalar.push(`${onek}${'#'.repeat(Math.min(6, Number(b.attrs.level) || 2))} ${satirIciMd(b, hedefAdi)}`);
     else if (b.type.name === 'blockquote' || b.type.name === 'unknownBlock') parcalar.push(markdownYaz(b, hedefAdi, `${onek}> `));
     else {
-      const t = satirIciMd(b, hedefAdi);
+      const t = satirBasiKacis(satirIciMd(b, hedefAdi));
       parcalar.push(t ? `${onek}${t}` : onek.trim());
     }
   });
@@ -65,7 +73,9 @@ export function xhtmlYaz(doc: PmNode): string {
 
 /** Dosya adı olarak güvenli ad (Obsidian bağlantılarıyla aynı kalsın diye Türkçe harfler korunur). */
 export function dosyaAdi(ad: string): string {
-  return ad.replace(/[\\/:*?"<>|#^[\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) || 'Adsız';
+  const a = ad.replace(/[\u0000-\u001F\u007F]/g, '').replace(/[\\/:*?"<>|#^[\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+  // Windows bu adları aygıt adı sayar ("Con.md" açılamaz); sona bir alt çizgi eklenir.
+  return /^(con|prn|aux|nul|com\d|lpt\d)$/i.test(a) ? `${a}_` : a || 'Adsız';
 }
 
 /** YAML ön bilgisi için değer. */

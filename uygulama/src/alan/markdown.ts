@@ -19,21 +19,38 @@ export function onBilgiAyir(metin: string): { ozellikler: Record<string, unknown
   if (!m) return { ozellikler: {}, govde: metin.replace(/^﻿/, '').replace(/\r\n?/g, '\n') };
   const ozellikler: Record<string, unknown> = {};
   let liste: string | null = null;
-  for (const satir of m[1].split('\n')) {
-    const madde = satir.match(/^\s+-\s+(.*)$/);
+  const satirlar = m[1].split('\n');
+  for (let i = 0; i < satirlar.length; i++) {
+    const satir = satirlar[i];
+    // Liste maddeleri girintili ("  - a") ya da girintisiz ("- a") yazılabilir.
+    const madde = satir.match(/^\s*-\s+(.*)$/);
     if (madde && liste) { (ozellikler[liste] as string[]).push(tirnaksiz(madde[1])); continue; }
     const kv = satir.match(/^([^:#\s][^:]*):\s*(.*)$/);
     if (!kv) continue;
-    const anahtar = kv[1].trim();
+    const anahtar = tirnaksiz(kv[1].trim());
     const deger = kv[2].trim();
     if (!deger) { ozellikler[anahtar] = []; liste = anahtar; continue; }
+    // Çok satırlı değer ("ozet: |" ya da ">"): sonraki girintili satırlar değerdir; ">" satırları boşlukla birleştirir.
+    if (/^[|>][+-]?$/.test(deger)) {
+      const govde: string[] = [];
+      while (i + 1 < satirlar.length && (/^\s+\S/.test(satirlar[i + 1]) || (!satirlar[i + 1].trim() && /^\s+\S/.test(satirlar[i + 2] ?? '')))) govde.push(satirlar[++i].trim());
+      ozellikler[anahtar] = deger.startsWith('>') ? govde.join(' ').replace(/ {2,}/g, '\n') : govde.join('\n');
+      liste = null;
+      continue;
+    }
     liste = null;
     if (/^\[.*\]$/.test(deger)) ozellikler[anahtar] = deger.slice(1, -1).split(',').map((x) => tirnaksiz(x.trim())).filter(Boolean);
     else ozellikler[anahtar] = tirnaksiz(deger);
   }
   return { ozellikler, govde: m[2] };
 }
-const tirnaksiz = (s: string) => s.replace(/^["'](.*)["']$/, '$1');
+/** Tırnaklı değer: çift tırnak JSON gibi kaçışlıdır (bizim dışa aktarımımız böyle yazar: "Kral \\"Deli\\""), tek tırnakta
+ *  YAML'deki gibi '' bir tırnaktır. */
+const tirnaksiz = (s: string) => {
+  if (/^".*"$/.test(s)) { try { const v = JSON.parse(s); if (typeof v === 'string') return v; } catch { /* düz kırpılır */ } }
+  if (/^'.*'$/.test(s)) return s.slice(1, -1).replace(/''/g, "'");
+  return s.replace(/^["'](.*)["']$/, '$1');
+};
 
 // ---------- Satır içi ----------
 export interface Parca { metin: string; kalin?: boolean; italik?: boolean; hedef?: string }
@@ -61,8 +78,22 @@ function vurgular(s: string, k: Kayiplar): Parca[] {
 /** Bağlantıdaki yüzde kodlu yol; kodlaması bozuksa ("%100.png") yazıldığı gibi kalır. */
 const yolCoz = (s: string) => { try { return decodeURIComponent(s); } catch { return s; } };
 
+// Ters bölüyle kaçışlanmış işaretler ("\\*", "\\-", "\\#") biçim sayılmaz ve metinde ters bölüsüz kalır. Okunurken
+// her biri Unicode'un "karakter olmayan" noktalarından birine (U+FDD0…U+FDEF, 32 tane: ASCII noktalama işaretleri
+// kadar) çevrilir, parçalar ayrıldıktan sonra geri çevrilir.
+const NOKTALAMA = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~';
+const kacisSakla = (s: string) => s.replace(/\\([!-/:-@[-`{-~])/g, (_, c: string) => String.fromCharCode(0xfdd0 + NOKTALAMA.indexOf(c)));
+const kacisAc = (s: string) => s.replace(/[\ufdd0-\ufdef]/g, (c) => NOKTALAMA[c.charCodeAt(0) - 0xfdd0]);
+
 /** Bir satırı parçalara böler: bağlantı, kalın, italik. Gömülü görsellerin yolları (yazıldığı gibi) ayrıca döner. */
 export function satirIci(s: string, k: Kayiplar, gomululer: string[]): Parca[] {
+  const ilk = gomululer.length;
+  const p = satirIciKacissiz(kacisSakla(s), k, gomululer).map((x) => ({ ...x, metin: kacisAc(x.metin), ...(x.hedef !== undefined ? { hedef: kacisAc(x.hedef) } : {}) }));
+  for (let i = ilk; i < gomululer.length; i++) gomululer[i] = kacisAc(gomululer[i]);
+  return p;
+}
+
+function satirIciKacissiz(s: string, k: Kayiplar, gomululer: string[]): Parca[] {
   const sonuc: Parca[] = [];
   let son = 0;
   for (const m of s.matchAll(BAG)) {

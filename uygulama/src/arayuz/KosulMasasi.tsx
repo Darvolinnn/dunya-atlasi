@@ -4,6 +4,7 @@ import type { Istemci } from '../veri/istemci';
 import type { KisaKayit, KosulMasasi } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
 import { PaketSecimi } from './Haber';
+import { sayiOku } from '../alan/nicelik';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const gun = (n: number) => `${n.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} gün`;
@@ -36,7 +37,7 @@ export function KosulMasasiSekmesi({ istemci, evren }: { istemci: Istemci; evren
   const ara = (e: Event) => {
     e.preventDefault();
     if (!nereden || !nereye) return;
-    istemci.iste('kosulMasasi', { evren, nereden: nereden.kod, nereye: nereye.kod, enCokGun: Number(sinir.replace(',', '.')), cikis: cikis.trim() || null,
+    istemci.iste('kosulMasasi', { evren, nereden: nereden.kod, nereye: nereye.kod, enCokGun: sayiOku(sinir), cikis: cikis.trim() || null,
       kosul: kosul.trim() || null, kisi: kisi?.kod ?? null, yasakRotalar: yasakRota.map((x) => x.kod), yasakYerler: yasakYer.map((x) => x.kod), paket })
       .then((x) => { setM(x); setHata(null); }, (x) => { setM(null); setHata(hataYaz(x)); });
   };

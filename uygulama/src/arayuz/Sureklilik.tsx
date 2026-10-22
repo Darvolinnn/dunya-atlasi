@@ -7,6 +7,7 @@ import { KayitSec } from './KayitBolumleri';
 import type { Secim } from './BaglantiSecici';
 import { KararRozeti } from './ortak';
 import { geriAlinabilir, onayla } from './onay';
+import { sayiOku } from '../alan/nicelik';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const MODEL_ADI: Record<IzModeli, string> = { durum: 'Serbest durum', sayi: 'Sayılabilir', iyilesme: 'İyileşme süresiyle' };
@@ -57,7 +58,7 @@ function YeniIzFormu({ istemci, evren, konu: sabitKonu, kapat }: { istemci: Iste
       e.preventDefault();
       if (!k) return;
       try {
-        const { kod } = await istemci.iste('izOlustur', { evren, konu: k, ad, model, birim, sure: sure ? Number(sure.replace(',', '.')) : null });
+        const { kod } = await istemci.iste('izOlustur', { evren, konu: k, ad, model, birim, sure: sure.trim() ? sayiOku(sure) : null });
         kapat(kod);
       } catch (err) { setHata(hataYaz(err)); }
     }}>
@@ -113,7 +114,7 @@ function IzKarti({ istemci, evren, sahne, olaylar, x }: { istemci: Istemci; evre
     e.preventDefault();
     if (!metin.trim()) return;
     try {
-      await istemci.iste('degisimEkle', { evren, sahne, olay: olay || null, metin, iz: iz.kod, miktar: iz.model === 'sayi' && miktar.trim() ? Number(miktar.replace(',', '.').replace('−', '-')) : null });
+      await istemci.iste('degisimEkle', { evren, sahne, olay: olay || null, metin, iz: iz.kod, miktar: iz.model === 'sayi' && miktar.trim() ? sayiOku(miktar) : null });
       setMetin(''); setMiktar(''); setHata(null);
     } catch (err) { setHata(hataYaz(err)); }
   };

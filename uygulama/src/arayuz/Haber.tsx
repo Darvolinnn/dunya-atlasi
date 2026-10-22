@@ -5,6 +5,7 @@ import type { Istemci } from '../veri/istemci';
 import type { HaberYayilimi, KanalTanimi, KisaKayit, PaketOzeti, RotaAdimi, RotaSonucu, SartDurumu } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
 import { geriAlinabilir } from './onay';
+import { sayiOku } from '../alan/nicelik';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 export const ROTA_ARACI_TURLERI = ['mekan', 'sehir', 'siyasi'];
@@ -142,7 +143,7 @@ export function KanalBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; 
           <>
             <label class="soluk kucuk" for={`carpan-${kod}`}>Rota süresinin katı</label>
             <input id={`carpan-${kod}`} class="girdi" style="width:70px" inputMode="decimal" value={String(t.carpan)}
-              onChange={(e) => yaz({ ...t, carpan: Number((e.target as HTMLInputElement).value.replace(',', '.')) })} />
+              onChange={(e) => yaz({ ...t, carpan: sayiOku((e.target as HTMLInputElement).value) })} />
             <input class="girdi" style="width:140px" lang="tr" aria-label="Rota koşulu" placeholder="koşul (boşsa en kısa)" value={t.kosul ?? ''}
               onChange={(e) => yaz({ ...t, kosul: (e.target as HTMLInputElement).value.trim() || null })} />
           </>
@@ -159,7 +160,7 @@ export function KanalBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; 
       <form class="satir" onSubmit={(e) => {
         e.preventDefault();
         if (!a || !b) return;
-        yaz({ ...t, baglantilar: [...t.baglantilar, { a: a.kod, b: b.kod, gun: Number(sure.replace(',', '.')) }] }).then(() => { setA(null); setB(null); setSure(''); });
+        yaz({ ...t, baglantilar: [...t.baglantilar, { a: a.kod, b: b.kod, gun: sayiOku(sure) }] }).then(() => { setA(null); setB(null); setSure(''); });
       }}>
         <KayitSec istemci={istemci} evren={evren} secili={a} etiket="Bir uç" sec={setA} />
         <KayitSec istemci={istemci} evren={evren} secili={b} etiket="Öteki uç" sec={setB} />

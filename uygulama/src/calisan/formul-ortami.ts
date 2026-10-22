@@ -31,18 +31,39 @@ export function formulCozucu(e: EvrenVt): FormulCozucu {
   };
 }
 
-/** Yazılan formülü okur (hata konumlu FormulHatasi atar). Boş yazı formül yok demektir. */
+/** Yazılan formülü okur (hata konumlu FormulHatasi atar). Boş yazı formül yok demektir. Hatanın yeri yazarın
+ *  yazdığı metne göredir (baştaki boşluklar kırpılmaz; okuyucu boşlukları zaten atlar). */
 export function formulCoz(e: EvrenVt, yazi: string | null | undefined): Formul | null {
-  const s = String(yazi ?? '').trim();
-  return s ? formulOku(s, formulCozucu(e)) : null;
+  const s = String(yazi ?? '');
+  return s.trim() ? formulOku(s, formulCozucu(e)) : null;
 }
 
-/** Saklanan formülün güncel adlarla yazısı. Silinmiş kayıt ya da kalkmış alan da adıyla (ya da işaretle) görünür. */
+/** Saklanan formülün güncel adlarla yazısı. Silinmiş kayıt ya da kalkmış alan da adıyla (ya da işaretle) görünür.
+ *  Adı başka bir kayıtla (alanla) aynı olan ya da parantezle biten ad türüyle yazılır: "[Kuzey (Şehir)]". Böylece
+ *  yazı yeniden okunduğunda aynı kayda (alana) varır. */
 export function formulGoster(e: EvrenVt, f: Formul): string {
   const alanlar = tumAlanlar(e);
+  let adSayilari: Map<string, number> | null = null;
+  const ayniAdli = (ad: string) => {
+    if (!adSayilari) {
+      adSayilari = new Map();
+      for (const r of e.db.selectObjects('SELECT ad FROM kayitlar WHERE silindi IS NULL')) { const k = katla(r.ad as string); adSayilari.set(k, (adSayilari.get(k) ?? 0) + 1); }
+    }
+    return (adSayilari.get(katla(ad)) ?? 0) > 1;
+  };
   return formulYazisi(f, {
-    kayit: (kod) => (e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [yonlendir(e.db, kod)]) as string | undefined) ?? 'Silinmiş kayıt',
-    alan: (kod) => alanlar.find((a) => a.kod === kod)?.ad ?? 'Kaldırılmış alan',
+    kayit: (kod) => {
+      const r = e.db.selectObject('SELECT ad, tur, silindi FROM kayitlar WHERE kod=?', [yonlendir(e.db, kod)]);
+      if (!r) return 'Silinmiş kayıt';
+      const ad = r.ad as string;
+      return r.silindi === null && (ayniAdli(ad) || ad.trimEnd().endsWith(')')) ? `${ad} (${turBul(r.tur as string).ad})` : ad;
+    },
+    alan: (kod) => {
+      const a = alanlar.find((x) => x.kod === kod);
+      if (!a) return 'Kaldırılmış alan';
+      const baskasi = alanlar.some((x) => x.kod !== kod && katla(x.ad) === katla(a.ad));
+      return baskasi || a.ad.trimEnd().endsWith(')') ? `${a.ad} (${a.turAdi})` : a.ad;
+    },
     secenek: (alan, kod) => alanlar.find((a) => a.kod === alan)?.secenekler?.find((s) => s.kod === kod)?.ad ?? 'Kaldırılmış seçenek',
   });
 }

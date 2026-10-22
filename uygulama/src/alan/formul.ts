@@ -5,7 +5,7 @@
 // sonradan bozulan formül "hesaplanamadı" der, kendiliğinden düzeltilmez. Formül hesap yapmaz, yazıdan anlam çıkarmaz.
 import type { SablonAlani } from './sablon';
 import type { EvrenTarihi } from './tarih';
-import { birimAdi, birimCevir, type SayiDegeri } from './nicelik';
+import { birimAdi, birimCevir, SAYI_DESENI, sayiOku, type SayiDegeri } from './nicelik';
 import { katla } from './turkce';
 
 export const FORMUL_DIL_SURUMU = 1;
@@ -52,6 +52,7 @@ type Jeton =
   | { t: 'sayi'; s: string; v: number; k: number; n: number }
   | { t: 'op'; s: Karsilastirici; k: number; n: number };
 
+const SAYI = new RegExp(`^(?:${SAYI_DESENI})`);
 const OPLAR: [string, Karsilastirici][] = [['<=', '<='], ['>=', '>='], ['!=', '!='], ['≠', '!='], ['≤', '<='], ['≥', '>='], ['<', '<'], ['>', '>'], ['=', '=']];
 
 function jetonla(s: string): Jeton[] {
@@ -77,8 +78,8 @@ function jetonla(s: string): Jeton[] {
     if (c === '“') { kapali('“', '”', 'metin', 'Tırnak'); continue; }
     const op = OPLAR.find(([y]) => s.startsWith(y, i));
     if (op) { l.push({ t: 'op', s: op[1], k: i, n: op[0].length }); i += op[0].length; continue; }
-    const sayi = /^-?\d+(?:[.,]\d+)?/.exec(s.slice(i));
-    if (sayi) { l.push({ t: 'sayi', s: sayi[0], v: Number(sayi[0].replace(',', '.')), k: i, n: sayi[0].length }); i += sayi[0].length; continue; }
+    const sayi = SAYI.exec(s.slice(i));
+    if (sayi) { l.push({ t: 'sayi', s: sayi[0], v: sayiOku(sayi[0]), k: i, n: sayi[0].length }); i += sayi[0].length; continue; }
     const kelime = /^[\p{L}\p{M}'’]+/u.exec(s.slice(i));
     if (kelime) { l.push({ t: 'kelime', s: kelime[0], k: i, n: kelime[0].length }); i += kelime[0].length; continue; }
     throw new FormulHatasi(`“${c}” işareti formülde kullanılamaz.`, i);
@@ -115,17 +116,20 @@ export function formulOku(yazi: string, c: FormulCozucu): Formul {
     return null;
   };
   const kayitCoz = (x: YaziJetonu) => {
-    const { ad, tur } = ayir(x.s);
-    let l = c.kayitlar(ad);
-    if (tur) l = l.filter((y) => katla(y.turAdi) === katla(tur));
+    // "[Kuzey (Şehir)]" önce tür ayrımı olarak okunur; parantezdeki söz bir tür değilse ("[Kral (Eski)]") adın parçasıdır.
+    const { ad: yalin, tur } = ayir(x.s);
+    const turlu = tur ? c.kayitlar(yalin).filter((y) => turUyar(y.turAdi, tur)) : [];
+    const ad = turlu.length ? yalin : x.s;
+    const l = turlu.length ? turlu : c.kayitlar(x.s);
     if (!l.length) throw new FormulHatasi(`“${x.s}” adlı bir kayıt bulunamadı.`, x.k, x.n);
     if (l.length > 1) throw new FormulHatasi(`“${ad}” adını taşıyan birden çok kayıt var (${l.map((y) => y.turAdi).join(', ')}). Hangisi olduğunu [${ad} (${l[0].turAdi})] biçiminde yazın.`, x.k, x.n);
     return l[0].kod;
   };
   const alanCoz = (x: YaziJetonu) => {
-    const { ad, tur } = ayir(x.s);
-    let l = c.alanlar(ad);
-    if (tur) l = l.filter((y) => katla(y.turAdi) === katla(tur));
+    const { ad: yalin, tur } = ayir(x.s);
+    const turlu = tur ? c.alanlar(yalin).filter((y) => turUyar(y.turAdi, tur)) : [];
+    const ad = turlu.length ? yalin : x.s;
+    const l = turlu.length ? turlu : c.alanlar(x.s);
     const kodlar = new Map(l.map((y) => [y.kod, y]));
     if (!kodlar.size) throw new FormulHatasi(`“${x.s}” adlı bir alan hiçbir şablonda yok.`, x.k, x.n);
     if (kodlar.size > 1) throw new FormulHatasi(`“${ad}” adını taşıyan birden çok alan var (${l.map((y) => y.turAdi).join(', ')}). Hangisi olduğunu {${ad} (${l[0].turAdi})} biçiminde yazın.`, x.k, x.n);
@@ -249,6 +253,12 @@ export function formulOku(yazi: string, c: FormulCozucu): Formul {
 function ayir(s: string): { ad: string; tur: string | null } {
   const m = /^(.*?)\s*\(([^()]+)\)$/.exec(s);
   return m && m[1] ? { ad: m[1].trim(), tur: m[2].trim() } : { ad: s, tur: null };
+}
+
+/** Yazılan tür, türün tam adı ya da "/" ile ayrılmış parçalarından biri olabilir: "(Topluluk)" → "Topluluk / kurum". */
+export function turUyar(turAdi: string, yazilan: string): boolean {
+  const y = katla(yazilan.trim());
+  return katla(turAdi) === y || turAdi.split('/').some((p) => katla(p.trim()) === y);
 }
 
 // ---------- Gösterme ----------

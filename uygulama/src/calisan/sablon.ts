@@ -26,8 +26,9 @@ export function sablonOku(e: EvrenVt, tur: string): Sablon {
 export function sablonBilgisi(e: EvrenVt, tur: string): SablonBilgisi {
   if (!turGecerli(tur)) throw new Error('Bilinmeyen tür.');
   const kullanim: Record<string, number> = {};
+  // Çöp kutusundaki (ve birleştirilmiş) kayıtların değerleri de sayılır: geri geldiklerinde alanın türüne uymalıdırlar.
   for (const r of e.db.selectObjects(
-    `SELECT d.alan, count(*) n FROM alan_degerleri d JOIN kayitlar k ON k.kod=d.kayit WHERE k.tur=? AND k.silindi IS NULL GROUP BY d.alan`, [tur])) {
+    `SELECT d.alan, count(*) n FROM alan_degerleri d JOIN kayitlar k ON k.kod=d.kayit WHERE k.tur=? GROUP BY d.alan`, [tur])) {
     kullanim[r.alan as string] = Number(r.n);
   }
   const degisti = e.db.selectValue('SELECT 1 FROM sablonlar WHERE tur=?', [tur]) !== undefined;

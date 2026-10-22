@@ -4,6 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { Dayaniklilik, KesintiAdimi, KesintiZinciri, KisaKayit, UretimOzeti } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
+import { sayiOku } from '../alan/nicelik';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 export const KESINTI_TURLERI = ['urun', 'canli', 'rota', 'mekan', 'sehir', 'topluluk', 'esya', 'teknoloji'];
@@ -84,7 +85,7 @@ function DayaniklilikFormu({ istemci, evren, iliski, d, kapat }: { istemci: Iste
   const [hata, setHata] = useState<string | null>(null);
   const kaydet = (deger: Dayaniklilik | null) => istemci.iste('dayaniklilikYaz', { evren, iliski, deger }).then(kapat, (x) => setHata(hataYaz(x)));
   return (
-    <form class="satir" onSubmit={(e) => { e.preventDefault(); kaydet({ enAz: enAz.trim() === '' ? null : Number(enAz.replace(',', '.')), enCok: enCok.trim() === '' ? null : Number(enCok.replace(',', '.')), birim, ikame: ikame?.kod ?? null, not }); }}>
+    <form class="satir" onSubmit={(e) => { e.preventDefault(); kaydet({ enAz: enAz.trim() === '' ? null : sayiOku(enAz), enCok: enCok.trim() === '' ? null : sayiOku(enCok), birim, ikame: ikame?.kod ?? null, not }); }}>
       <input class="girdi" style="width:70px" inputMode="decimal" aria-label="En az kaç" placeholder="en az" value={enAz} onInput={(e) => setEnAz((e.target as HTMLInputElement).value)} />
       <input class="girdi" style="width:70px" inputMode="decimal" aria-label="En çok kaç" placeholder="en çok" value={enCok} onInput={(e) => setEnCok((e.target as HTMLInputElement).value)} />
       <select class="girdi kucuk-secim" aria-label="Birim" value={birim} onChange={(e) => setBirim((e.target as HTMLSelectElement).value as Dayaniklilik['birim'])}>
