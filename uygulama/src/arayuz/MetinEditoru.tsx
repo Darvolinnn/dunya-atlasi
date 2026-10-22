@@ -23,7 +23,7 @@ import { TurSecici } from './ortak';
 import { BaglamParcasiFormu, parcaYazisi } from './BaglamParcasi';
 import { KullanimSeridi, MetinAlFormu } from './MetinKullanim';
 import { BagsizAdlar } from './BagsizAdlar';
-import { acilistaTaslak, kurtarmaAnahtari, taslakAnahtari, taslakSil, taslakYaz, type Taslak, type TaslakDeposu } from './taslak';
+import { acilistaTaslak, kayittanSonraTemel, kurtarmaAnahtari, taslakAnahtari, taslakSil, taslakYaz, type Taslak, type TaslakDeposu } from './taslak';
 
 const sema = metinSemasi.schema;
 const ARA = 1200;        // yazmaya bu kadar ara verilince kaydedilir
@@ -191,6 +191,8 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     let zamanlayici: ReturnType<typeof setTimeout> | null = null;
     let suren: Promise<void> | null = null;
     let hataSayisi = 0;
+    /** Kayıt sürerken başka cihazdan değişiklik geldi; kayıt bitince editör güncellenir. */
+    let uzaktanGeldi = false;
     // Kurtarma taslağı: yazı asıl kayda geçene kadar cihazda ayrıca durur (§10.7).
     const anahtar = taslakAnahtari(evren, kayit, alan);
     const depo = taslakDeposu(istemci);
@@ -214,11 +216,12 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       suren = (async () => {
         try {
           const r = await istemci.iste('metinKaydet', { evren, kayit, alan, spans, temel, taslak: { anahtar, zaman: istekZamani } });
-          temel = r.basliklar;
+          temel = kayittanSonraTemel(r, kirli);
           // Bu arada başka cihazdan gelen değişiklikle birleşti: editör birleşmiş metni gösterir.
           if (r.birlesti && r.spans && !kirli) icerigiDegistir(r.spans);
           if (!kirli) { void taslakSil(depo, anahtar); taslakVar = false; setDurum({ tur: 'kayitli', zaman: Date.now() }); }
           hataSayisi = 0;
+          if (uzaktanGeldi && !kirli) { uzaktanGeldi = false; setTimeout(() => { void metinIslemi.current?.yeniden(); }, 0); }
         } catch (e) {
           kirli = true;
           await taslakKaydet();
@@ -285,6 +288,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     // bir sonraki kaydetmede iki değişiklik birleştirilir.
     const birakDinle = istemci.dinle((d) => {
       if (!d.uzaktan || d.evren !== evren || !d.kayitlar.includes(kayit)) return;
+      if (suren && !kirli) uzaktanGeldi = true; // kayıt bitince yenilenir (yazılmamış yazı varsa sonraki kayıt birleştirir)
       if (kirli || suren || !gorunum.current) return;
       void istemci.iste('metinAc', { evren, kayit, alan }).then((m) => {
         if (iptal || kirli || suren) return;

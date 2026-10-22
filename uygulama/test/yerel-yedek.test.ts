@@ -155,10 +155,12 @@ describe('bu bilgisayardaki günlük yedek', () => {
     expect(yedekler(klasor).length).toBe(2);
     expect((await m.h.yerelYedekleri({ evren: a })).length).toBe(1);
     expect((await m.h.yerelYedekleri({ evren: b })).length).toBe(1);
-    // Programın iki yıl önce aldığı bir yedek (listede kayıtlı).
-    klasor.dosyalar.set('kuzey-yedek-2020-01-01.zip', new Uint8Array([1]));
+    // Programın iki yıl önce aldığı bir yedek (listede kayıtlı). Silinmeden önce paketinden yeniden tanınır.
+    const eskiZaman = new Date(2020, 0, 1, 12).getTime();
+    const eski = await zipYaz([{ ad: 'paket.json', veri: new TextEncoder().encode(JSON.stringify({ bicim: 'dunya-atlasi-paket', donemsel: 'yerel', evren: { kod: a, ad: 'Kuzey' }, olusturma: eskiZaman, islemSayisi: 1, kurulum: { kod: 'x' } })) }]);
+    klasor.dosyalar.set('kuzey-yedek-2020-01-01.zip', eski);
     const liste = JSON.parse(new TextDecoder().decode(klasor.dosyalar.get(LISTE_DOSYASI)!));
-    liste.dosyalar['kuzey-yedek-2020-01-01.zip'] = { boy: 1, ozellikler: { uygulama: 'dunya-atlasi', tur: 'yedek', evren: a, gun: '2020-01-01', zaman: '1', kurulum: 'x', islem: '1' } };
+    liste.dosyalar['kuzey-yedek-2020-01-01.zip'] = { boy: eski.length, ozellikler: { uygulama: 'dunya-atlasi', tur: 'yedek', evren: a, gun: '2020-01-01', zaman: String(eskiZaman), kurulum: 'x', islem: '1' } };
     klasor.dosyalar.set(LISTE_DOSYASI, new TextEncoder().encode(JSON.stringify(liste)));
     const y = yenidenAcildi(m, klasor);
     expect((await y.h.yerelYedekleri({ evren: a })).length).toBe(2);

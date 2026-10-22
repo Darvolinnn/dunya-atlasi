@@ -3,6 +3,14 @@
 // yedeği mevcut evrenin üzerine yüklemek) ya da bir karar sorulurken.
 export const onayla = (soru: string) => window.confirm(soru);
 
+type YedekDurumu = { son: { zaman: number; dogrulandi: boolean } | null } | null;
+/**
+ * Evreni kaldırma sorusundaki "son yedek" (§10.1): dosyaya alınan tam yedek, Drive'daki ve bu bilgisayardaki doğrulanmış
+ * günlük yedeklerin en yenisi; hiçbiri yoksa 0.
+ */
+export const sonYedekZamani = (dosya: number | null, ...gunlukler: YedekDurumu[]) =>
+  Math.max(dosya ?? 0, ...gunlukler.map((d) => (d?.son?.dogrulandi ? d.son.zaman : 0)));
+
 export interface GeriAlinabilirIs { ileti: string; geriAl: () => Promise<unknown> }
 type Dinleyici = (is: GeriAlinabilirIs | null) => void;
 const dinleyiciler = new Set<Dinleyici>();

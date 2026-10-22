@@ -45,3 +45,12 @@ export async function acilistaTaslak(depo: TaslakDeposu, anahtar: string, kayitl
   if (bekleyen && ayni(bekleyen)) { await taslakSil(depo, kurtarmaAnahtari(anahtar)); return null; }
   return bekleyen;
 }
+
+/**
+ * Kayıttan sonra editörün temel sürümü. Kayıt başka cihazdan gelen değişiklikle birleştiyse ve yazar bu arada yazmaya
+ * devam ettiyse editör birleşmiş metni göstermiyor: temel, birleşmiş sürüm değil yazarın kendi kaydı olmalı. Yoksa bir
+ * sonraki kayıt editördeki metni birleşmiş sürümün üzerine yazar ve öbür cihazın yazdıklarını siler.
+ */
+export function kayittanSonraTemel(r: { basliklar: string[]; birlesti: boolean; kendi?: string[] }, kirli: boolean): string[] {
+  return r.birlesti && kirli && r.kendi ? r.kendi : r.basliklar;
+}
