@@ -182,12 +182,13 @@ export class DriveTasiyici implements Tasiyici {
         } catch { if (this.iptalci.signal.aborted) throw new Error('Drive bağlantısı kesildi.'); }
         if (r?.ok) { depo?.sil(anahtar); return r; }
         if (r?.status === 308) {
-          // Range başlığı yoksa Drive hiçbir bayt almamıştır: baştan sürülür, parça atlanmaz.
-          const a = alinan(r) ?? 0;
-          const ilerledi = a > gonderilen;
-          gonderilen = a;
-          if (ilerledi) { hata = 0; continue; }
-          r = null; // ilerleme yok: geçici hata gibi beklenir ve durum sorulur (sonsuz döngü olmaz)
+          const a = alinan(r);
+          if (a !== undefined && a > gonderilen) { gonderilen = a; hata = 0; continue; }
+          // Range yoksa ya Drive hiçbir bayt almamıştır ya da başlık tarayıcıdan okunamıyordur: parça ulaşmış sayılır.
+          // Son parça da 308 alırsa (yükleme bitmedi) ya da Range ilerleme göstermezse bir parça yolda kalmıştır: geçici
+          // hata gibi beklenir, durum sorulur ve oradan sürülür. Hata sayacı yalnız görülen ilerlemede sıfırlanır (sonsuz döngü olmaz).
+          if (a === undefined && son < toplam) { gonderilen = son; continue; }
+          r = null;
         }
         if (r?.status === 401) throw new IzinHatasi('Google izni yenilenmeli.');
         if (r && (r.status === 404 || r.status === 410)) { depo?.sil(anahtar); throw new Error('Drive yüklemeyi yarıda bıraktı; sonraki eşitlemede yeniden başlar.'); }

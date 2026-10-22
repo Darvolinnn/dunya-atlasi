@@ -138,7 +138,37 @@ describe('hata avı: dış rapordaki bulgular', () => {
     const f = await t.yukle('harita', {}, v);
     expect(f.id).toBe('D1');
     expect(biten).toEqual(v);
-    expect(istekler.length).toBeLessThanOrEqual(5);
+    // 3 parça (ilki yolda kalır, Range okunamıyor gibi sürülür) + durum sorusu + baştan 3 parça.
+    expect(istekler.length).toBeLessThanOrEqual(7);
+  });
+
+  it('DA-01: Range başlığı tarayıcıdan okunamasa da yükleme parça parça biter; son parça bitmezse sonsuz döngüye girmez', async () => {
+    const K = 256 * 1024;
+    const v = new Uint8Array(3 * K).map((_x, i) => (i * 17 + 3) % 251);
+    const kur = (hepKayip: boolean) => {
+      let alinan = 0;
+      const istekler: string[] = [];
+      const getir = (async (url: string, ayar: RequestInit = {}) => {
+        if (url.includes('uploadType=resumable')) return new Response(null, { status: 200, headers: { Location: 'https://yukleme/1' } });
+        const aralik = (ayar.headers as Record<string, string>)['Content-Range'];
+        istekler.push(aralik);
+        if (istekler.length > 60) throw new Error('sonsuz döngü');
+        if (!aralik.startsWith('bytes */')) {
+          const bas = Number(/bytes (\d+)-/.exec(aralik)![1]);
+          if (bas === alinan && !(hepKayip && bas + K === v.length)) alinan += (ayar.body as Uint8Array).length;
+        }
+        if (alinan === v.length) return new Response(JSON.stringify({ id: 'D2', name: 'harita', appProperties: {} }), { status: 200 });
+        return new Response(null, { status: 308 }); // Range hiç görünmez
+      }) as unknown as typeof fetch;
+      return { istekler, t: new DriveTasiyici('jeton', Date.now() + 3600_000, 'appDataFolder', { fetch: getir, parca: K, buyuk: K, bekleme: 0 }) };
+    };
+    const a = kur(false);
+    expect((await a.t.yukle('harita', {}, v)).id).toBe('D2');
+    expect(a.istekler).toHaveLength(3);
+    // Son parça hiç ulaşmazsa birkaç denemeden sonra durur; yükleme sonraki eşitlemede sürer.
+    const b = kur(true);
+    await expect(b.t.yukle('harita', {}, v)).rejects.toThrow('sonraki eşitlemede');
+    expect(b.istekler.length).toBeLessThan(60);
   });
 
   it('DA-02: farklı klasörlerdeki aynı adlı görseller, notun kendi klasöründekine bağlanır', () => {
