@@ -161,13 +161,20 @@ export class Esitleme {
       for (const p of [...parcalar].sort((a, b) => a.ilk - b.ilk)) if (p.ilk <= (ulasilan[p.kurulum] ?? 0) + 1) ulasilan[p.kurulum] = Math.max(ulasilan[p.kurulum] ?? 0, p.son);
       return Object.entries(k).some(([x, s]) => (ulasilan[x] ?? 0) < s);
     };
-    if (bosluk(elde) || !Object.keys(elde).length || eksikKapsam()) {
-      const goruntu = dosyalar.filter((d) => d.ozellikler.tur === 'goruntu').sort((a, b) => Number(b.ozellikler.zaman) - Number(a.ozellikler.zaman))[0];
-      if (goruntu) {
-        const once = { ...elde };
-        const g = await this.dosyaOku(goruntu, (parti) => ekle(parti.filter((i) => (once[i.kurulum] ?? 0) < i.sira)));
-        for (const [k, s] of Object.entries(g.gorulen ?? {})) elde[k] = Math.max(elde[k] ?? 0, s);
-      }
+    // Görüntü, eldekinin ötesinde en çok işlemi kapsayandır (zamanına bakılmaz: cihaz saatleri tutmayabilir). Bir görüntü
+    // boşluğu kapatmazsa (ör. bir cihazın görüntüsü öbürünün temizlenmiş parçalarını kapsamıyor) sıradaki de okunur.
+    const okunan = new Set<string>();
+    while (bosluk(elde) || !Object.keys(elde).length || eksikKapsam()) {
+      const katki = (d: UzakDosya) => Object.entries(d.ozellikler).reduce((n, [a, v]) =>
+        (a.startsWith('s_') && kodGecerliMi(a.slice(2)) ? n + Math.max(0, (Number(v) || 0) - (elde[a.slice(2)] ?? 0)) : n), 0);
+      const goruntu = dosyalar.filter((d) => d.ozellikler.tur === 'goruntu' && !okunan.has(d.id))
+        .map((d) => ({ d, n: katki(d) })).filter((x) => x.n > 0 || !okunan.size)
+        .sort((a, b) => b.n - a.n || Number(b.d.ozellikler.zaman) - Number(a.d.ozellikler.zaman))[0]?.d;
+      if (!goruntu) break;
+      okunan.add(goruntu.id);
+      const once = { ...elde };
+      const g = await this.dosyaOku(goruntu, (parti) => ekle(parti.filter((i) => (once[i.kurulum] ?? 0) < i.sira)));
+      for (const [k, s] of Object.entries(g.gorulen ?? {})) elde[k] = Math.max(elde[k] ?? 0, s);
     }
     const parcaIslemleri: Islem[] = [];
     for (const p of parcalar.sort((a, b) => a.kurulum.localeCompare(b.kurulum) || a.ilk - b.ilk)) {

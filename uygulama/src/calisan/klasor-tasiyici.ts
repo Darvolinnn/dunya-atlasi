@@ -40,6 +40,8 @@ export class KlasorTasiyici implements YedekTasiyici {
   private liste: Map<string, Kayit> | null = null;
   private adlar = new Set<string>();
   private sira: Promise<unknown> = Promise.resolve();
+  /** Bu açılışta programın bu klasöre yazdığı yedekler. */
+  private yazilanlar = new Set<string>();
 
   constructor(private readonly k: YerelKlasor) {}
 
@@ -147,6 +149,7 @@ export class KlasorTasiyici implements YedekTasiyici {
       const hedef = id ? cozumle(id)[1] : this.bosAd(ad);
       await this.k.yaz('', hedef, veri);
       this.adlar.add(hedef);
+      this.yazilanlar.add(hedef);
       this.liste!.set(hedef, { boy: veri.byteLength, ozellikler: { ...ozellikler } });
       await this.listeyiYaz();
       return { id: hedef, ad: hedef, ozellikler: { ...ozellikler } };
@@ -159,10 +162,22 @@ export class KlasorTasiyici implements YedekTasiyici {
     await this.sirayla(async () => {
       // Yalnız programın kendi günlük yedekleri silinir; başka dosyaya dokunulmaz.
       const liste = await this.guncelListe();
-      if (!liste.get(ad)?.ozellikler) return;
+      const k = liste.get(ad);
+      if (!k?.ozellikler) return;
+      // Liste dosya değişti mi diye yalnız boya bakar; aynı ad ve boyda başka bir dosya konmuş olabilir. Bu açılışta
+      // yazılmamış bir yedek silinmeden önce kendi paketinden yeniden tanınır; tanınmazsa dokunulmaz.
+      if (!this.yazilanlar.has(ad)) {
+        const simdi = await this.paketten(ad);
+        if (!simdi || simdi.evren !== k.ozellikler.evren || simdi.zaman !== k.ozellikler.zaman) {
+          liste.set(ad, { boy: k.boy, ozellikler: simdi });
+          await this.listeyiYaz();
+          return;
+        }
+      }
       await this.k.sil('', ad);
       liste.delete(ad);
       this.adlar.delete(ad);
+      this.yazilanlar.delete(ad);
       await this.listeyiYaz();
     });
   }

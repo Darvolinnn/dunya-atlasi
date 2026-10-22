@@ -181,7 +181,14 @@ export class DriveTasiyici implements Tasiyici {
           });
         } catch { if (this.iptalci.signal.aborted) throw new Error('Drive bağlantısı kesildi.'); }
         if (r?.ok) { depo?.sil(anahtar); return r; }
-        if (r?.status === 308) { gonderilen = alinan(r) ?? son; hata = 0; continue; }
+        if (r?.status === 308) {
+          // Range başlığı yoksa Drive hiçbir bayt almamıştır: baştan sürülür, parça atlanmaz.
+          const a = alinan(r) ?? 0;
+          const ilerledi = a > gonderilen;
+          gonderilen = a;
+          if (ilerledi) { hata = 0; continue; }
+          r = null; // ilerleme yok: geçici hata gibi beklenir ve durum sorulur (sonsuz döngü olmaz)
+        }
         if (r?.status === 401) throw new IzinHatasi('Google izni yenilenmeli.');
         if (r && (r.status === 404 || r.status === 410)) { depo?.sil(anahtar); throw new Error('Drive yüklemeyi yarıda bıraktı; sonraki eşitlemede yeniden başlar.'); }
         if (r && r.status < 500 && r.status !== 429) throw new Error(`Drive işlemi tamamlanamadı (hata ${r.status}).`);

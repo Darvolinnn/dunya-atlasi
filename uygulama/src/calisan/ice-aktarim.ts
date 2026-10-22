@@ -30,7 +30,7 @@ const KAYIP_ACIKLAMASI: Record<string, (n: number) => string> = {
 const GORSEL = /\.(jpe?g|png|webp|gif|avif)$/i;
 
 /** Dosyalardan ara kayıtlar: .md/.markdown/.txt Markdown, .json prototip verisi. Ortak üst klasör atılır. */
-export function dosyalardanKayitlar(dosyalar: IceDosya[]): { kayitlar: IceKayit[]; okunamayan: string[] } {
+export function dosyalardanKayitlar(dosyalar: IceDosya[]): { kayitlar: IceKayit[]; okunamayan: string[]; ortak: string } {
   const metinler = dosyalar.filter((d) => d.metin !== undefined);
   const yollar = metinler.map((d) => d.yol.split('/'));
   const ortak = yollar.length > 1 && yollar.every((y) => y.length > 1 && y[0] === yollar[0][0]) ? yollar[0][0] + '/' : '';
@@ -47,12 +47,46 @@ export function dosyalardanKayitlar(dosyalar: IceDosya[]): { kayitlar: IceKayit[
     } else if (/\.(md|markdown|txt)$/i.test(yol)) kayitlar.push(markdownKaydi(yol, d.metin!));
     else okunamayan.push(`${yol}: bu dosya türü içe alınmıyor`);
   }
-  return { kayitlar, okunamayan };
+  return { kayitlar, okunamayan, ortak };
+}
+
+const kucuk = (s: string) => s.toLocaleLowerCase('tr-TR');
+
+/**
+ * Notta geçen görselin dosyası. Önce notun klasörüne göre yol (`../Kuzey/harita.png` da), sonra içe alınan klasörün
+ * köküne göre; bulunmazsa yalnız ad. Aynı adda birden çok görsel varsa nota en yakın klasördeki seçilir; iki aday
+ * eşit yakınsa hiçbiri seçilmez (rastgele bir görsel bağlanmaz, eksik sayılır).
+ */
+function gorselBulucu(dosyalar: IceDosya[], ortak: string) {
+  const yollar = dosyalar.filter((d) => d.veri && GORSEL.test(d.yol)).map((d) => d.yol);
+  const yolla = new Map(yollar.map((y) => [kucuk(y), y]));
+  const adla = new Map<string, string[]>();
+  for (const y of yollar) { const a = kucuk(y.split('/').pop()!); adla.set(a, [...(adla.get(a) ?? []), y]); }
+  return (ad: string, klasor: string[]): string | undefined => {
+    const coz = (bas: string[]) => {
+      const y = [...bas];
+      for (const p of ad.split('/')) { if (p === '..') y.pop(); else if (p && p !== '.') y.push(p); }
+      return yolla.get(kucuk(y.join('/')));
+    };
+    const bulunan = coz(klasor) ?? (ortak ? coz([ortak.slice(0, -1)]) : undefined) ?? coz([]);
+    if (bulunan) return bulunan;
+    const adaylar = adla.get(kucuk(ad.split('/').pop()!)) ?? [];
+    if (adaylar.length <= 1) return adaylar[0];
+    const yakinlik = (y: string) => {
+      const p = y.split('/').slice(0, -1);
+      let n = 0;
+      while (n < p.length && n < klasor.length && kucuk(p[n]) === kucuk(klasor[n])) n++;
+      return n;
+    };
+    const sirali = adaylar.map((y) => ({ y, n: yakinlik(y) })).sort((a, b) => b.n - a.n);
+    return sirali[0].n > sirali[1].n ? sirali[0].y : undefined;
+  };
 }
 
 export function iceAktarimPlani(dosyalar: IceDosya[]): { plan: PlanKaydi[]; rapor: IceAktarimRaporu } {
-  const { kayitlar, okunamayan } = dosyalardanKayitlar(dosyalar);
-  const gorselDosyalari = new Map(dosyalar.filter((d) => d.veri && GORSEL.test(d.yol)).map((d) => [d.yol.split('/').pop()!.toLocaleLowerCase('tr-TR'), d.yol]));
+  const { kayitlar, okunamayan, ortak } = dosyalardanKayitlar(dosyalar);
+  const gorselBul = gorselBulucu(dosyalar, ortak);
+  const klasorler = new Map<string, string[]>(); // plan kaydı → notun dosyasının klasörü (içe alınan klasörün adıyla)
   const kayiplar: Kayiplar = {};
   const adlar = new Map<string, string>();
   const tekrar = new Set<string>();
@@ -121,6 +155,7 @@ export function iceAktarimPlani(dosyalar: IceDosya[]): { plan: PlanKaydi[]; rapo
     const b = bloklar(govde, kayiplar, gomululer);
     p.spans = b.length ? pmNodeToSpans(metinSemasi, belgeYap(b, hedefKodu)) as Spans : [];
     p.gorseller = gomululer;
+    klasorler.set(kod, (ortak + k.kaynak).split('/').slice(0, -1));
     plan.push(p);
   }
 
@@ -129,7 +164,7 @@ export function iceAktarimPlani(dosyalar: IceDosya[]): { plan: PlanKaydi[]; rapo
   let gorselSayisi = 0;
   for (const p of plan) {
     p.gorseller = p.gorseller.flatMap((ad) => {
-      const yol = gorselDosyalari.get(ad.split('/').pop()!.toLocaleLowerCase('tr-TR'));
+      const yol = gorselBul(ad, klasorler.get(p.kod) ?? []);
       if (!yol) { if (GORSEL.test(ad)) eksikGorseller.push(ad); return []; }
       gorselSayisi++;
       return [yol];
