@@ -58,7 +58,10 @@ function vurgular(s: string, k: Kayiplar): Parca[] {
   });
 }
 
-/** Bir satırı parçalara böler: bağlantı, kalın, italik. Gömülü görsellerin adları ayrıca döner. */
+/** Bağlantıdaki yüzde kodlu yol; kodlaması bozuksa ("%100.png") yazıldığı gibi kalır. */
+const yolCoz = (s: string) => { try { return decodeURIComponent(s); } catch { return s; } };
+
+/** Bir satırı parçalara böler: bağlantı, kalın, italik. Gömülü görsellerin yolları (yazıldığı gibi) ayrıca döner. */
 export function satirIci(s: string, k: Kayiplar, gomululer: string[]): Parca[] {
   const sonuc: Parca[] = [];
   let son = 0;
@@ -71,7 +74,7 @@ export function satirIci(s: string, k: Kayiplar, gomululer: string[]): Parca[] {
       const hedef = m[1].trim();
       sonuc.push({ metin: (m[2] ?? m[1]).trim() + (m[3] ?? ''), hedef });
     } else {
-      if (gomme) { gomululer.push(decodeURIComponent(m[5].split('/').pop() ?? m[5])); continue; }
+      if (gomme) { gomululer.push(yolCoz(m[5])); continue; }
       sonuc.push({ metin: m[4] ? `${m[4]} (${m[5]})` : m[5] });
       say(k, 'dis-baglanti');
     }

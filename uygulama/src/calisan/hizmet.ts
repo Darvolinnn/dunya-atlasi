@@ -109,6 +109,13 @@ import type { OlcekliAraziGirdisi, OlcekliHizKurali, OlcekliOlcekTanimi } from '
 import { sayiDegeriMi, sayiMetni } from '../alan/nicelik';
 
 export type DosyaAcici = (ad: string) => Database;
+
+/**
+ * Evren dosyasının kendi kodu (bu cihazda, meta'da). Evrenin içindeki kod (`evren.kod`) yedekten ayrı evren olarak
+ * açılmış kopyada eski evrenin kodudur; dosya listeden düşerse kopya bununla tanınır.
+ */
+const evrenKodu = (db: Database) => db.selectValue("SELECT v FROM meta WHERE k='evren_kodu'") as string | undefined;
+const evrenKoduYaz = (db: Database, kod: string) => db.exec({ sql: "INSERT OR IGNORE INTO meta VALUES('evren_kodu', ?)", bind: [kod] });
 export type Bildirici = (evren: string, turler: string[], kayitlar: string[], uzaktan?: boolean) => void;
 
 const temizle = (deger: unknown, { bos = false, uzunluk = 200 } = {}) => {
@@ -126,6 +133,20 @@ const BILGI_ALAN_ADLARI: Record<string, string> = {
 };
 
 const katmanEtiketi = (alan: string) => ({ ad: 'Katmanın adı', silindi: 'Katmanın durumu', donusum: 'Katmanın hizalanması', gorsel: 'Katmanın görseli' } as Record<string, string>)[alan.split(':')[2]] ?? 'Katman';
+
+/**
+ * Katlanmış metindeki konumun düz metindeki karşılığı. Katlama bazı harflerin boyunu değiştirir ("æ" → "ae", "ß" → "ss",
+ * ayrık yazılmış aksan düşer); konum bunlar sayılarak çevrilir, yoksa gösterilen parça bulunan sözden kayar.
+ */
+function duzKonumu(duz: string, katliKonum: number): number {
+  let n = 0, j = 0;
+  for (const c of duz) {
+    if (n >= katliKonum) return j;
+    n += katla(c).length;
+    j += c.length;
+  }
+  return j;
+}
 
 export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'yerelKlasorBagla'> {
   private readonly kurulum: KurulumVt;
@@ -166,7 +187,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
         const db = this.ac(ad);
         const kod = db.selectValue("SELECT 1 FROM sqlite_master WHERE type='table' AND name='evren'") === undefined ? undefined
           : db.selectValue("SELECT v FROM evren WHERE k='kod'");
-        if (kod !== m[1]) continue; // deneme kopyası, boş ya da yarım dosya
+        // Yedekten ayrı evren olarak açılmış evrende içerideki kod eski evrenindir; dosyanın kendi kodu meta'da durur.
+        if (kod !== m[1] && evrenKodu(db) !== m[1]) continue; // deneme kopyası, boş ya da yarım dosya
         // Yarıda kalmış bir geri yüklemenin evreni listeye girmez (yedek dosyası yerinde; yeniden geri yüklenebilir).
         if (db.selectValue("SELECT v FROM meta WHERE k='yarim'") === '1') continue;
         const e = this.evrenVt(m[1], db);
@@ -190,6 +212,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     if (!e) {
       if (!this.kurulum.evrenler().some((x) => x.kod === kod)) return this.bagliAc(kod);
       e = this.evrenVt(kod);
+      evrenKoduYaz(e.db, kod);
       this.acik.set(kod, e);
     }
     return e;
@@ -295,7 +318,16 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
   evrenKaldir({ evren }: { evren: string }) {
     if (!kodGecerliMi(evren) || !this.kurulum.evrenler().some((x) => x.kod === evren)) throw new Error('Evren bulunamadı.');
     const e = this.evren(evren);
-    const dallar = (e.db.selectObjects('SELECT kod FROM dallar') as { kod: string }[]).map((r) => r.kod);
+    // Yedekten ayrı evren olarak açılmış kopya asıl evrenin deneme kopyalarını (aynı kodlarla) taşır; başka bir evrenin
+    // de deneme kopyası olan dosya silinmez.
+    const baskasinin = new Set<string>();
+    let bilinmeyen = false; // açılamayan bir evren varsa hiçbir deneme kopyası dosyası silinmez
+    for (const x of this.kurulum.evrenler()) {
+      if (x.kod === evren) continue;
+      try { for (const r of this.evren(x.kod).db.selectObjects('SELECT kod FROM dallar')) baskasinin.add(r.kod as string); }
+      catch { bilinmeyen = true; }
+    }
+    const dallar = bilinmeyen ? [] : (e.db.selectObjects('SELECT kod FROM dallar') as { kod: string }[]).map((r) => r.kod).filter((k) => !baskasinin.has(k));
     // Bu evrene bağlı açık sürüm ve deneme kopyaları kapatılır.
     for (const [kod, b] of [...this.bagli]) {
       if (b.evren !== evren) continue;
@@ -408,7 +440,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     const e = this.evrenVt(kod);
     if (e.islemSayisi() === 0) e.disaridanAl(islemler);
     const ad = (e.db.selectValue("SELECT v FROM evren WHERE k='ad'") as string | undefined) ?? 'Adsız evren';
-    if (e.db.selectValue("SELECT v FROM evren WHERE k='kod'") !== kod) throw new Error('Gelen evren eksik.');
+    // Yedekten ayrı evren olarak açılmış bir evrenin içindeki kod eski evrenindir; evrenin oluşturulmuş olması yeter.
+    if (!kodGecerliMi(e.db.selectValue("SELECT v FROM evren WHERE k='kod'"))) throw new Error('Gelen evren eksik.');
+    evrenKoduYaz(e.db, kod);
     this.kurulum.evrenEkle(kod, ad, Number(e.db.selectValue("SELECT v FROM evren WHERE k='olusturma'")) || Date.now());
     this.acik.set(kod, e);
     return { kod, yeni: true };
@@ -1758,6 +1792,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     // Değişiklik geçici bir kopyada hesaplanır; kopya iş bitince bırakılır (Automerge belleği kendiliğinden boşalmaz,
     // bırakılmazsa her kayıtta belge kadar bellek birikir).
     let yeni: A.Doc<{ t: string }>;
+    /** Birleşmede yazarın kendi kaydının sürümü (editör birleşmiş metni henüz göstermiyorsa bir sonraki kaydın temeli). */
+    let kendi: Basliklar | undefined;
     if (ayni) yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], spans as never, spanAyari()));
     else {
       // Editör eski bir sürümün üzerinde çalışıyorsa (bu arada başka cihazdan değişiklik geldi) yazılan, o sürümün
@@ -1765,13 +1801,13 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       // Dal ayrı bir yazar koduyla açılır: aynı yazarın sonraki değişiklikleriyle sıra numarası çakışmasın.
       const ek = [...crypto.getRandomValues(new Uint8Array(4))].map((b) => b.toString(16).padStart(2, '0')).join('');
       const dal = A.change(A.clone(A.view(d, temel), { actor: this.aktor + ek }), (x) => A.updateSpans(x, ['t'], spans as never, spanAyari()));
-      try { yeni = A.merge(A.clone(d, { actor: this.aktor }), dal); } finally { A.free(dal); }
+      try { kendi = A.getHeads(dal); yeni = A.merge(A.clone(d, { actor: this.aktor }), dal); } finally { A.free(dal); }
     }
     try {
       const basliklar = A.getHeads(yeni);
       if (JSON.stringify([...basliklar].sort()) === JSON.stringify([...simdiki].sort())) return { basliklar: simdiki, degisti: false, birlesti: false };
       const ikili = A.saveSince(yeni, simdiki);
-      const birlesik = !ayni ? { spans: A.spans(yeni, ['t']) as Spans } : {};
+      const birlesik = !ayni ? { spans: A.spans(yeni, ['t']) as Spans, kendi } : {};
       this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar, temel }, ikili }], [kayit]);
       return { basliklar, degisti: true, birlesti: !ayni, ...birlesik };
     } finally { A.free(yeni); }
@@ -1833,8 +1869,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       }
       if (!en && katla(r.ozet as string).includes(q)) dene(30, { tur: 'ozet', metin: r.ozet as string });
       if (!en && metinde && r.katli && (r.katli as string).includes(q)) {
-        const i = (r.katli as string).indexOf(q);
         const duz = r.duz as string;
+        const i = duzKonumu(duz, (r.katli as string).indexOf(q));
         const bas = Math.max(0, i - 40);
         const parca = (bas > 0 ? '…' : '') + duz.slice(bas, i + q.length + 60).replace(/\s+/g, ' ') + (i + q.length + 60 < duz.length ? '…' : '');
         dene(20, { tur: 'metin', metin: '' }, false, parca);
@@ -3579,6 +3615,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     if (e.meta('yarim') === '1') { yarimiSil(); e = this.evrenVt(kod); }
     if (e.islemSayisi() > 0) throw new Error('Bu evren bu cihazda zaten var.');
     e.db.exec("INSERT INTO meta VALUES('yarim', '1') ON CONFLICT(k) DO UPDATE SET v=excluded.v");
+    evrenKoduYaz(e.db, kod);
     // Eksik ya da tekrarlanan satırlı yedek yarım bir evren kurar; açılmaz, kurulan yarım evren silinir.
     let alinan = 0, bekleyen = 0;
     try {
