@@ -96,6 +96,16 @@ Kullanıcı (22 Ekim 20:28) bordo-altın açık kitap ve dağ resmini gönderip 
 - [x] Tarayıcı: `uygulama/public/` `favicon.ico` (16, 32, 48; §0.1'deki 404 iletisi kalktı), `simge-192.png`, `simge-512.png`, `apple-touch-icon.png` (180, bordo `#4f2331` zeminde), `simge-maskeli-512.png` (yüzde 80 güvenli alan) ve `manifest.webmanifest` (ad, simgeler, renk; hizmet çalışanı eklenmedi). `index.html` bunlara bağlandı.
 - [x] Denetim: tür denetimi, 574 sınama, derleme geçti.
 
+## 0.8 Hata avı (22 Ekim 2026, gece; sürüyor)
+
+Kullanıcı (22 Ekim 20:38) en güncel sürümde kapsamlı bir hata avı istedi; 20:41'de "olabildiğince kapsamı büyük tut, bütün olası hataları kapatmak istiyorum" dedi. Rehber: `/mnt/project-files/paket-promptlari/hata-avi/hata-avi-promptu.md` (depoda değil). Dal `claude/project-thread-6i7dft`; görünüşü değiştirmeyen düzeltmeler PR ile `main`'e, görünüşü değiştirenler ve kararlar kullanıcıya sorulur. Her bulgu önce kırılan bir sınamayla kanıtlanır.
+- [x] Başlangıç: `main` (`afa2bd0`) üzerinde 574 sınama geçti.
+- [ ] Veri kaybı ve eşitleme: yazma editörü ve metin kaydı, işlem günlüğü, Drive eşitlemesi, yedek ve geri yükleme, deneme kopyaları, görseller.
+- [ ] Yanlış hesap: tarih, takvim, formül, birimli sayı, gökyüzü, yolculuk, kalabalık, kelime sayısı.
+- [ ] Çökme: bütün isteklere boş, çok uzun, Türkçe harfli, tuhaf girdiler.
+- [ ] Arayüz: sayfaların tarayıcıda açılması, konsol hataları.
+- [ ] Rapor ve birleştirme.
+
 ## 1. Önce oku (sırayla)
 
 1. `AGENTS.md`: bağlayıcı kurallar.
