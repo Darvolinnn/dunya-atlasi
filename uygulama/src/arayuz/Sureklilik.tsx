@@ -19,7 +19,12 @@ export function SureklilikDefteri({ istemci, evren, sahne, olaylar, surum }: { i
   const [ek, setEk] = useState<string[]>([]);
   const [yeniAcik, setYeniAcik] = useState(false);
   useEffect(() => { setEk([]); }, [sahne]);
-  useEffect(() => { istemci.iste('sahneSurekliligi', { evren, sahne, ek }).then(setVeri); }, [sahne, surum, ek.join()]);
+  // Sahnenin türü değiştirilince defter kapanmadan bir kez daha istenebilir; o istek hata verir, eski veri kalmaz.
+  useEffect(() => {
+    let etkin = true;
+    istemci.iste('sahneSurekliligi', { evren, sahne, ek }).then((v) => { if (etkin) setVeri(v); }, () => { if (etkin) setVeri(null); });
+    return () => { etkin = false; };
+  }, [sahne, surum, ek.join()]);
   if (!veri) return null;
   return (
     <section class="sureklilik" aria-label="Süreklilik defteri">
@@ -175,7 +180,11 @@ function IzKarti({ istemci, evren, sahne, olaylar, x }: { istemci: Istemci; evre
 export function KayitIzleri({ istemci, evren, kod, surum }: { istemci: Istemci; evren: string; kod: string; surum: number }) {
   const [liste, setListe] = useState<IzGecmisi[] | null>(null);
   const [yeniAcik, setYeniAcik] = useState(false);
-  useEffect(() => { istemci.iste('kayitIzleri', { evren, kod }).then(setListe); }, [kod, surum]);
+  useEffect(() => {
+    let etkin = true;
+    istemci.iste('kayitIzleri', { evren, kod }).then((l) => { if (etkin) setListe(l); }, () => { if (etkin) setListe([]); });
+    return () => { etkin = false; };
+  }, [kod, surum]);
   if (!liste) return null;
   if (!liste.length && !yeniAcik) {
     return <div class="satir"><button class="dugme sade kucuk" onClick={() => setYeniAcik(true)}>Süreklilik için bir ayrıntı izle</button></div>;

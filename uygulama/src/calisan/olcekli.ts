@@ -441,7 +441,7 @@ function catismaDegerYazisi(alan: string, deger: unknown): string {
   if (alan === 'olcekli_olcek') {
     const o = olcekTemizle(deger);
     if (!o) return '(ölçeksiz)';
-    return `${o.mesafe} ${o.birim}${o.molaVarsayimi ? ` · ${o.molaVarsayimi}` : ''}`;
+    return `${sayiGirdisi(o.mesafe)} ${o.birim}${o.molaVarsayimi ? ` · ${o.molaVarsayimi}` : ''}`;
   }
   if (alan === 'olcekli_varsayilan_hiz') {
     return hizKuraliOzeti(hizKuraliListesiTemizle(deger));

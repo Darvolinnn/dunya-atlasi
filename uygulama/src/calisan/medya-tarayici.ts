@@ -15,7 +15,9 @@ export const tarayiciIsleyici: GorselIsleyici = async (veri, tur) => {
   else if (tur === 'image/webp') ciz = webpBilgiVarMi(veri);
   else if (tur === 'image/avif') { ciz = true; cikis = 'image/webp'; }
   // Görüntü, fotoğrafın kendi yön bilgisiyle çizilir; yeniden kodlanan dosyada hiçbir ek bilgi kalmaz.
-  const resim = await createImageBitmap(new Blob([veri as BlobPart], { type: tur }), { imageOrientation: 'from-image' });
+  let resim: ImageBitmap;
+  try { resim = await createImageBitmap(new Blob([veri as BlobPart], { type: tur }), { imageOrientation: 'from-image' }); }
+  catch { throw new Error('Görsel açılamadı. Dosya bozuk olabilir ya da uzantısı içeriğiyle uyuşmuyor.'); }
   const en = resim.width, boy = resim.height;
   // Görüntünün arkasındaki ek atıldıysa kalan dosyanın açıldığı denenir; açılmazsa görüntü yeniden çizilir (bilgisiz).
   if (denetle && !ciz) { try { (await createImageBitmap(new Blob([temiz as BlobPart], { type: tur }))).close(); } catch { ciz = true; } }

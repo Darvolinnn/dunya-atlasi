@@ -13,6 +13,7 @@ import { pmDocFromSpans, pmNodeToSpans } from '@automerge/prosemirror';
 import { zipOku } from '../src/alan/zip';
 import { onBilgiAyir } from '../src/alan/markdown';
 import { yeniKod } from '../src/alan/kod';
+import { kullaniciIletisi, VT_HATASI, YER_YOK } from '../src/calisan/ileti';
 
 let sqlite3: Awaited<ReturnType<typeof sqlite3InitModule>>;
 beforeAll(async () => { sqlite3 = await sqlite3InitModule(); });
@@ -158,6 +159,30 @@ describe('hata avı 2: dışa ve içe aktarma', () => {
     expect(metni(h, yeni, k.kod)).toBe(paragraflar.join('\n'));
   });
 
+  it('dışa aktarılan bağlantılar içe aktarınca aynı kayda gider: aynı adlı iki kayıt ve dosya adına sığmayan ad', async () => {
+    const { h } = cihaz('A');
+    const { kod: e } = h.evrenOlustur({ ad: 'Deneme' });
+    h.kayitOlustur({ evren: e, ad: 'Kuzey', tur: 'sehir' });
+    h.kayitOlustur({ evren: e, ad: 'Kuzey', tur: 'topluluk' });
+    h.kayitOlustur({ evren: e, ad: 'Selvi [Genç]', tur: 'karakter' });
+    const anlatan = h.kayitOlustur({ evren: e, ad: 'Aldren', tur: 'karakter' }).kod;
+    const kodlar = Object.fromEntries(h.kayitlar({ evren: e }).map((k) => [`${k.ad}/${k.tur}`, k.kod]));
+    const doc = sm.node('doc', null, [sm.node('paragraph', null, [
+      sm.text('Şehir', [sm.marks.bag.create({ hedef: kodlar['Kuzey/sehir'] })]), sm.text(', '),
+      sm.text('halk', [sm.marks.bag.create({ hedef: kodlar['Kuzey/topluluk'] })]), sm.text(', '),
+      sm.text('Selvi', [sm.marks.bag.create({ hedef: kodlar['Selvi [Genç]/karakter'] })]),
+    ])]);
+    h.metinKaydet({ evren: e, kayit: anlatan, alan: 'govde', spans: pmNodeToSpans(metinSemasi, doc) as never, temel: h.metinAc({ evren: e, kayit: anlatan, alan: 'govde' }).basliklar });
+    const m = await zipOku((await h.markdownDisaAktar({ evren: e })).veri);
+    const dosyalar = [...m].filter(([ad]) => ad.endsWith('.md') && ad !== 'OKUBENI.md').map(([yol, veri]) => ({ yol: `deneme-markdown/${yol}`, metin: new TextDecoder().decode(veri) }));
+    const { kod: yeni } = await h.iceAktar({ dosyalar, evrenAdi: 'Geri' });
+    const kayitlar = h.kayitlar({ evren: yeni });
+    expect(kayitlar.map((k) => k.ad).sort()).toEqual(['Aldren', 'Kuzey', 'Kuzey', 'Selvi [Genç]']);
+    const yeniAldren = kayitlar.find((k) => k.ad === 'Aldren')!.kod;
+    const hedefler = h.andiklari({ evren: yeni, kod: yeniAldren }).map((b) => kayitlar.find((k) => k.kod === b.kod));
+    expect(hedefler.map((k) => `${k?.ad}/${k?.tur}`).sort()).toEqual(['Kuzey/sehir', 'Kuzey/topluluk', 'Selvi [Genç]/karakter']);
+  });
+
   it('EPUB, metinde ya da adda denetim karakteri olsa da geçerli XML olur', async () => {
     const { h } = cihaz('A');
     const { kod: e } = h.evrenOlustur({ ad: 'Deneme' });
@@ -258,5 +283,14 @@ describe('hata avı 2: ondalıklı sayıların yazılışı', () => {
     const g = h.gokyuzuHesapla({ evren: e, tarih: '1 Tohum 412' });
     expect(JSON.stringify(g)).toContain('29,5 gün');
     expect(JSON.stringify(g)).not.toContain('29.5');
+  });
+});
+
+describe('hata avı 2: teknik iletiler Türkçeleşir', () => {
+  it('dolu disk ve SQLite iletileri kullanıcıya İngilizce gitmez; programın kendi iletisi değişmez', () => {
+    expect(kullaniciIletisi(new DOMException('The quota has been exceeded.', 'QuotaExceededError'))).toBe(YER_YOK);
+    expect(kullaniciIletisi(new Error('SQLITE_FULL: sqlite3 result code 13: database or disk is full'))).toBe(YER_YOK);
+    expect(kullaniciIletisi(new Error('SQLITE_IOERR: sqlite3 result code 10: disk I/O error'))).toBe(VT_HATASI);
+    expect(kullaniciIletisi(new Error('Kayıt bulunamadı.'))).toBe('Kayıt bulunamadı.');
   });
 });

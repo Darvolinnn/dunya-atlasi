@@ -107,6 +107,7 @@ import type { KaliciIzTuru } from '../veri/api';
 import * as olcekli from './olcekli';
 import type { OlcekliAraziGirdisi, OlcekliHizKurali, OlcekliOlcekTanimi } from '../veri/api';
 import { sayiDegeriMi, sayiGirdisi, sayiMetni } from '../alan/nicelik';
+import { kullaniciIletisi } from './ileti';
 
 export type DosyaAcici = (ad: string) => Database;
 
@@ -644,7 +645,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
             try { await es.evreniEsitle(e.kod); }
             catch (err) {
               if (err instanceof IzinHatasi) throw err;
-              hatalar.push(evrenler.length > 1 ? `“${e.ad}”: ${(err as Error).message}` : (err as Error).message);
+              hatalar.push(evrenler.length > 1 ? `“${e.ad}”: ${kullaniciIletisi(err)}` : kullaniciIletisi(err));
             }
           }
           await this.donemselYedekleriAl();
@@ -652,7 +653,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
           this.esitlemeHatasi = null;
         } catch (err) {
           const izin = err instanceof IzinHatasi;
-          this.esitlemeHatasi = { mesaj: izin ? 'Google izni yenilenmeli.' : (err as Error).message, izin, zaman: Date.now() };
+          this.esitlemeHatasi = { mesaj: izin ? 'Google izni yenilenmeli.' : kullaniciIletisi(err), izin, zaman: Date.now() };
           if (izin) { this.esitleme = null; this.donemsel = null; }
         } finally { this.esitlemeSuruyor = null; }
       })();
@@ -3409,7 +3410,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       const d = dosyaHaritasi.get(yol)!;
       const tur = d.tur || ({ jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif' } as Record<string, string>)[yol.split('.').pop()!.toLowerCase()];
       try { await this.gorselEkle({ evren, kod: p.kod, dosyaAdi: yol.split('/').pop()!, tur, veri: d.veri! }); }
-      catch (e) { gorselHatalari.push(`${yol}: ${(e as Error).message}`); }
+      catch (e) { gorselHatalari.push(`${yol}: ${kullaniciIletisi(e)}`); }
     }
     return { kod: evren, rapor, gorselHatalari };
   }
