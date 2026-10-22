@@ -23,7 +23,7 @@ import { yazarlikRehberiAc } from './YazarlikRehberi';
 import { YAZARLIK_KONULARI } from './yazarlik-rehberi';
 import { HesapPenceresi, type HesapTuru } from './Hesaplar';
 import type { YasananSure } from '../veri/api';
-import { KISAYOLLAR, KISAYOL_OLAYI, ODAK_OLAYI, kisayolTusu } from './kisayollar';
+import { DAKTILO_OLAYI, KISAYOLLAR, KISAYOL_OLAYI, ODAK_OLAYI, kisayolTusu } from './kisayollar';
 
 export interface PaletBaglami { bagla?: () => void; hesap?: (h: HesapTuru) => void }
 
@@ -473,6 +473,7 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
     if (baglam.bagla) komutlar.push({ anahtar: 'bagla', baslik: 'Bağla', aciklama: 'Seçili metni ya da imleçteki yeri bir kayda bağla', yap: () => baglam.bagla!() });
     komutlar.push({ anahtar: 'not', baslik: 'Hızlı not', aciklama: 'Aklınıza geleni yazın', kisayol: kisayolTusu('not'), yap: () => { document.dispatchEvent(new Event('hizli-not-ac')); } });
     if (document.querySelector('.yaz-kagidi')) komutlar.push({ anahtar: 'odak', baslik: 'Odak kipi', aciklama: 'Yalnız metin kalır', kisayol: kisayolTusu('odak'), yap: () => { window.dispatchEvent(new CustomEvent(ODAK_OLAYI, { detail: null })); } });
+    if (document.querySelector('.yaz-kagidi')) komutlar.push({ anahtar: 'daktilo', baslik: 'Daktilo kipi', aciklama: 'Yazdığınız satır ekranın ortasında kalır', kisayol: kisayolTusu('daktilo'), yap: () => { window.dispatchEvent(new CustomEvent(DAKTILO_OLAYI, { detail: null })); } });
     komutlar.push({ anahtar: 'kisayollar', baslik: 'Kısayollar', aciklama: 'Bütün klavye kısayolları', kisayol: kisayolTusu('kisayollar'), yap: () => { window.dispatchEvent(new Event(KISAYOL_OLAYI)); } });
     if (evren) {
       if (sorgu.trim()) komutlar.push({ anahtar: 'yeni', baslik: `Yeni kayıt: “${sorgu.trim()}”`, aciklama: 'Ardından türünü seçersiniz', yap: () => { setTurSec(sorgu.trim().replace(/\s+/g, ' ')); setSorgu(''); } });

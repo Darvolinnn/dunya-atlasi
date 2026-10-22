@@ -120,6 +120,21 @@ async fn google_cikis(durum: tauri::State<'_, google::Durum>) -> Result<(), Stri
     Ok(())
 }
 
+/// Pencerenin yeri, boyutu ve ekranı kaplayıp kaplamadığı bu bilgisayarda hatırlanır (K33). Görünürlük ve kenarlık
+/// hatırlanmaz: kayıt bozulsa da pencere her zaman görünür açılır.
+const PENCERE_HAFIZASI: tauri_plugin_window_state::StateFlags = tauri_plugin_window_state::StateFlags::SIZE
+    .union(tauri_plugin_window_state::StateFlags::POSITION)
+    .union(tauri_plugin_window_state::StateFlags::MAXIMIZED);
+
+/// Ana pencerenin kaydı var mı? Yoksa (ilk açılış, kayıt silinmiş ya da bozuk) pencere ekranı kaplayarak açılır;
+/// varsa eklenti onu son kapandığı yere ve boyuta getirir.
+fn pencere_kaydi_var(kayit_klasoru: &std::path::Path) -> bool {
+    std::fs::read(kayit_klasoru.join(tauri_plugin_window_state::DEFAULT_FILENAME))
+        .ok()
+        .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+        .is_some_and(|v| v.get("ana").is_some())
+}
+
 /// Kurulu programın yerel adresinin kapısı. Geliştirme sunucusu (5173) ile aynı anda çalışabilsin diye ayrıdır.
 #[cfg(not(debug_assertions))]
 const KAPI: u16 = 41730;
@@ -131,7 +146,8 @@ fn main() {
             let _ = p.unminimize();
             let _ = p.set_focus();
         }
-    }));
+    }))
+    .plugin(tauri_plugin_window_state::Builder::new().with_state_flags(PENCERE_HAFIZASI).build());
     #[cfg(not(debug_assertions))]
     let kurucu = kurucu.plugin(
         tauri_plugin_localhost::Builder::new(KAPI)
@@ -152,11 +168,12 @@ fn main() {
             let adres = WebviewUrl::App("index.html".into());
             #[cfg(not(debug_assertions))]
             let adres = WebviewUrl::External(format!("http://localhost:{KAPI}").parse().expect("yerel adres"));
+            let kayitli = app.path().app_config_dir().is_ok_and(|d| pencere_kaydi_var(&d));
             WebviewWindowBuilder::new(app, "ana", adres)
                 .title("Dünya Atlası")
                 .inner_size(1400.0, 900.0)
                 .min_inner_size(900.0, 600.0)
-                .maximized(true)
+                .maximized(!kayitli)
                 // Google'ın izin penceresi açılabilsin; başka yeni pencere açılmaz. Masaüstü istemcisi derlemeye
                 // konduysa izin bu pencere yerine bilgisayarın tarayıcısında verilir (google.rs); bu yol yedektir.
                 .on_new_window(|adres, _| {
@@ -192,7 +209,11 @@ mod sinama {
         if let Some(y) = yedek_yeri {
             kurucu = kurucu.manage(SinamaYedekYeri(y));
         }
-        let app = kurucu.invoke_handler(istekler!()).build(tauri::generate_context!()).unwrap();
+        let app = kurucu
+            .plugin(tauri_plugin_window_state::Builder::new().with_state_flags(PENCERE_HAFIZASI).build())
+            .invoke_handler(istekler!())
+            .build(tauri::generate_context!())
+            .unwrap();
         let url: tauri::Url = adres.parse().unwrap();
         let w = tauri::WebviewWindowBuilder::new(&app, "ana", tauri::WebviewUrl::External(url)).build().unwrap();
         (app, w)
@@ -237,6 +258,32 @@ mod sinama {
             let e = cagir("http://localhost:9999", komut).unwrap_err();
             assert!(e.contains("not allowed"), "{komut}: {e}");
         }
+    }
+
+    /// Pencere hafızası (K33) yalnız kabukta çalışır; sayfa pencerenin kaydını okuyup yazamaz.
+    #[test]
+    fn pencere_hafizasi_sayfaya_acik_degil() {
+        for komut in ["plugin:window-state|save_window_state", "plugin:window-state|restore_state", "plugin:window-state|filename"] {
+            let e = cagir("http://localhost:41730", komut).unwrap_err();
+            assert!(e.contains("not allowed"), "{komut}: {e}");
+        }
+    }
+
+    /// İlk açılışta (kayıt yok, silinmiş ya da bozuk) pencere ekranı kaplar; kayıt varsa son hâline döner.
+    #[test]
+    fn pencere_kaydi_yoksa_ekrani_kaplar() {
+        let yer = std::env::temp_dir().join(format!("dunya-atlasi-pencere-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&yer);
+        std::fs::create_dir_all(&yer).unwrap();
+        let dosya = yer.join(tauri_plugin_window_state::DEFAULT_FILENAME);
+        assert!(!super::pencere_kaydi_var(&yer));
+        std::fs::write(&dosya, b"{ bozuk").unwrap();
+        assert!(!super::pencere_kaydi_var(&yer));
+        std::fs::write(&dosya, br#"{"baska":{"width":800}}"#).unwrap();
+        assert!(!super::pencere_kaydi_var(&yer));
+        std::fs::write(&dosya, br#"{"ana":{"width":1200,"height":800,"x":40,"y":30,"prev_x":0,"prev_y":0,"maximized":false,"visible":true,"decorated":true,"fullscreen":false}}"#).unwrap();
+        assert!(super::pencere_kaydi_var(&yer));
+        let _ = std::fs::remove_dir_all(&yer);
     }
 
     /// Program yedeği, sayfadan gelen istekle olduğu gibi yazar ve geri okur: baytlar gövdede, Türkçe harfli ad başlıkta.

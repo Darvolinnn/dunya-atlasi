@@ -68,6 +68,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       'Metinde bir karakterin ya da yerin adını [[ ya da @ ile yazarsanız ona bağlantı kurulur; kayıt yoksa “fikir” olarak oluşturulur.',
       'Bağlam sekmesindeki “Bu sahne” kartı sahnenin tarihini, mekânını ve bakış açısını okunacak biçimde gösterir. Değiştirmek için karttaki “Düzenle”ye basın.',
       'Sağdaki bağlam panelini başlıktaki düğmeyle açıp × ile kapatabilirsiniz. Sahnenin bütün ayrıntıları ve çöp kutusuna taşıma, başlıktaki “Sahne ⋯” menüsündedir.',
+      '“Sahne ⋯” menüsündeki “Daktilo kipi” açıkken yazdığınız satır ekranın ortasında kalır, metin yukarı kayar; uzun sahnede başınızı eğmeden yazarsınız. Kısayolu Ctrl+Shift+D.',
     ],
     ipuclari: [
       'Kaldığınız yer hatırlanır; “Devam et” sizi son yazdığınız yere götürür.',

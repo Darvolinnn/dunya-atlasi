@@ -11,6 +11,8 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-localhost = "2"
 tauri-plugin-single-instance = "2"
+# Pencerenin yeri, boyutu ve tam ekran olup olmadığı bu bilgisayarda hatırlanır (K33).
+tauri-plugin-window-state = "2"
 # Google girişi sistem tarayıcısında (google.rs).
 base64 = "0.22"
 open = "5"
