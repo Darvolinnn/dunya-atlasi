@@ -98,10 +98,11 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const sahneBaglami = useSahneBaglami(istemci, evren, sahne ? kod : null);
   const parcaBaglami = useSahneBaglami(istemci, evren, sahne && imlecParcasi ? kod : null, imlecParcasi);
 
-  if (hata) return <main class="sayfa"><p class="hata">{hata}</p></main>;
-  if (!kayit) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
   // Panel yalnız yazar açınca kayarak gelir; sahne değişince yerinde durur.
   const [baglamKaysin, setBaglamKaysin] = useState(false);
+
+  if (hata) return <main class="sayfa"><p class="hata">{hata}</p></main>;
+  if (!kayit) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
   const baglamAc = (acik: boolean) => { setBaglamKaysin(acik); setBaglamTercihi(!acik); yazYerel(baglamAnahtari, acik ? '0' : '1'); };
   const bos = sahneBaglamiBos(sahneBaglami);
   // Seçilmemişken bağlam okunana kadar panel açılmaz; dolu sahnede okununca açılır.

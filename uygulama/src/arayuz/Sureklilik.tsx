@@ -7,10 +7,11 @@ import { KayitSec } from './KayitBolumleri';
 import type { Secim } from './BaglantiSecici';
 import { KararRozeti } from './ortak';
 import { geriAlinabilir, onayla } from './onay';
+import { sayiGirdisi, sayiOku } from '../alan/nicelik';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const MODEL_ADI: Record<IzModeli, string> = { durum: 'Serbest durum', sayi: 'Sayılabilir', iyilesme: 'İyileşme süresiyle' };
-const modelAciklamasi = (iz: IzTanimi) => iz.model === 'sayi' ? `sayılabilir${iz.birim ? `, ${iz.birim}` : ''}` : iz.model === 'iyilesme' ? `iyileşme süresi ${iz.sure} gün` : 'serbest durum';
+const modelAciklamasi = (iz: IzTanimi) => iz.model === 'sayi' ? `sayılabilir${iz.birim ? `, ${iz.birim}` : ''}` : iz.model === 'iyilesme' ? `iyileşme süresi ${sayiGirdisi(iz.sure)} gün` : 'serbest durum';
 const miktarYaz = (m: number) => (m > 0 ? `+${m}` : m < 0 ? `−${Math.abs(m)}` : '0');
 
 export function SureklilikDefteri({ istemci, evren, sahne, olaylar, surum }: { istemci: Istemci; evren: string; sahne: string; olaylar: SahneOlayBilgisi[]; surum: number }) {
@@ -18,7 +19,12 @@ export function SureklilikDefteri({ istemci, evren, sahne, olaylar, surum }: { i
   const [ek, setEk] = useState<string[]>([]);
   const [yeniAcik, setYeniAcik] = useState(false);
   useEffect(() => { setEk([]); }, [sahne]);
-  useEffect(() => { istemci.iste('sahneSurekliligi', { evren, sahne, ek }).then(setVeri); }, [sahne, surum, ek.join()]);
+  // Sahnenin türü değiştirilince defter kapanmadan bir kez daha istenebilir; o istek hata verir, eski veri kalmaz.
+  useEffect(() => {
+    let etkin = true;
+    istemci.iste('sahneSurekliligi', { evren, sahne, ek }).then((v) => { if (etkin) setVeri(v); }, () => { if (etkin) setVeri(null); });
+    return () => { etkin = false; };
+  }, [sahne, surum, ek.join()]);
   if (!veri) return null;
   return (
     <section class="sureklilik" aria-label="Süreklilik defteri">
@@ -57,7 +63,7 @@ function YeniIzFormu({ istemci, evren, konu: sabitKonu, kapat }: { istemci: Iste
       e.preventDefault();
       if (!k) return;
       try {
-        const { kod } = await istemci.iste('izOlustur', { evren, konu: k, ad, model, birim, sure: sure ? Number(sure.replace(',', '.')) : null });
+        const { kod } = await istemci.iste('izOlustur', { evren, konu: k, ad, model, birim, sure: sure.trim() ? sayiOku(sure) : null });
         kapat(kod);
       } catch (err) { setHata(hataYaz(err)); }
     }}>
@@ -113,7 +119,7 @@ function IzKarti({ istemci, evren, sahne, olaylar, x }: { istemci: Istemci; evre
     e.preventDefault();
     if (!metin.trim()) return;
     try {
-      await istemci.iste('degisimEkle', { evren, sahne, olay: olay || null, metin, iz: iz.kod, miktar: iz.model === 'sayi' && miktar.trim() ? Number(miktar.replace(',', '.').replace('−', '-')) : null });
+      await istemci.iste('degisimEkle', { evren, sahne, olay: olay || null, metin, iz: iz.kod, miktar: iz.model === 'sayi' && miktar.trim() ? sayiOku(miktar) : null });
       setMetin(''); setMiktar(''); setHata(null);
     } catch (err) { setHata(hataYaz(err)); }
   };
@@ -174,7 +180,11 @@ function IzKarti({ istemci, evren, sahne, olaylar, x }: { istemci: Istemci; evre
 export function KayitIzleri({ istemci, evren, kod, surum }: { istemci: Istemci; evren: string; kod: string; surum: number }) {
   const [liste, setListe] = useState<IzGecmisi[] | null>(null);
   const [yeniAcik, setYeniAcik] = useState(false);
-  useEffect(() => { istemci.iste('kayitIzleri', { evren, kod }).then(setListe); }, [kod, surum]);
+  useEffect(() => {
+    let etkin = true;
+    istemci.iste('kayitIzleri', { evren, kod }).then((l) => { if (etkin) setListe(l); }, () => { if (etkin) setListe([]); });
+    return () => { etkin = false; };
+  }, [kod, surum]);
   if (!liste) return null;
   if (!liste.length && !yeniAcik) {
     return <div class="satir"><button class="dugme sade kucuk" onClick={() => setYeniAcik(true)}>Süreklilik için bir ayrıntı izle</button></div>;
@@ -197,7 +207,7 @@ function IzGecmisiKarti({ istemci, evren, g }: { istemci: Istemci; evren: string
   const [duzenle, setDuzenle] = useState(false);
   const [ad, setAd] = useState(iz.ad);
   const [birim, setBirim] = useState(iz.birim);
-  const [sure, setSure] = useState(iz.sure ? String(iz.sure) : '');
+  const [sure, setSure] = useState(sayiGirdisi(iz.sure));
   const [hata, setHata] = useState<string | null>(null);
   const adim = (a: IzGecmisi['adimlar'][number], i: number) => (
     <li key={i} class="satir">
@@ -220,7 +230,7 @@ function IzGecmisiKarti({ istemci, evren, g }: { istemci: Istemci; evren: string
       {duzenle && (
         <form class="satir" onSubmit={async (e) => {
           e.preventDefault();
-          try { await istemci.iste('izDegistir', { evren, kod: iz.kod, ad, birim, sure: sure ? Number(sure) : null }); setDuzenle(false); setHata(null); } catch (err) { setHata(hataYaz(err)); }
+          try { await istemci.iste('izDegistir', { evren, kod: iz.kod, ad, birim, sure: sure.trim() ? sayiOku(sure) : null }); setDuzenle(false); setHata(null); } catch (err) { setHata(hataYaz(err)); }
         }}>
           <input class="girdi" style="flex:2;min-width:140px" aria-label="Ayrıntının adı" value={ad} lang="tr" onInput={(e) => setAd((e.target as HTMLInputElement).value)} />
           {iz.model === 'sayi' && <input class="girdi" style="width:110px" aria-label="Birim" value={birim} lang="tr" onInput={(e) => setBirim((e.target as HTMLInputElement).value)} />}

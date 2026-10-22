@@ -1,3 +1,4 @@
+import { sayiGirdisi } from '../alan/nicelik';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AyEvresi, GokyuzuTanimi, GokyuzuSonucu, GokyuzuCakismalari, GokyuzuZarfi } from '../veri/api';
@@ -96,7 +97,7 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
         </div>)}
         <button class="dugme" onClick={() => degis({ ...t, mevsimler: [...t.mevsimler, { ad: '', baslangicGunu: 1 }] })}>Mevsim ekle</button>
         <h3>Gelgit notları (isteğe bağlı)</h3>
-        <ul>{t.gelgitler.map((g, i) => <li key={i}><a href={`#/e/${evren}/k/${g.kiyi}`}>{kiyilar[g.kiyi] ?? 'Kıyı kaydı'}</a>: {g.not} · {g.saat} saatte bir <button class="dugme" onClick={() => degis({ ...t, gelgitler: t.gelgitler.filter((_, j) => j !== i) })}>Notu kaldır</button></li>)}</ul>
+        <ul>{t.gelgitler.map((g, i) => <li key={i}><a href={`#/e/${evren}/k/${g.kiyi}`}>{kiyilar[g.kiyi] ?? 'Kıyı kaydı'}</a>: {g.not} · {sayiGirdisi(g.saat)} saatte bir <button class="dugme" onClick={() => degis({ ...t, gelgitler: t.gelgitler.filter((_, j) => j !== i) })}>Notu kaldır</button></li>)}</ul>
         <div class="satir"><KayitSec istemci={istemci} evren={evren} secili={kiyi} sec={setKiyi} etiket="Kıyı kaydını seç" />
           <label>Kıyı notu <textarea class="girdi" value={not} onInput={(e) => setNot(e.currentTarget.value)} /></label>
           <label>Kaç saatte bir <input class="girdi" type="number" min="0" step="any" value={saat} onInput={(e) => setSaat(e.currentTarget.value)} /></label>

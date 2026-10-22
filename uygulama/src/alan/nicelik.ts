@@ -49,22 +49,37 @@ export function birimCevir(sayi: number, a: string, b: string): number | null {
 
 export interface SayiDegeri { enAz: number; enCok: number; birim: string }
 
+/** Türkçe yazılmış bir sayı: ondalık virgülle ("1,75"), binlikler noktayla ayrılır ("12.000", "1.250,5"). Noktadan
+ *  sonra tam üç basamaklı gruplar geliyorsa nokta binlik ayırıcıdır; değilse ondalık sayılır ("1.75"). */
+export const SAYI_DESENI = String.raw`-?[1-9]\d{0,2}(?:\.\d{3})+(?:,\d+)?(?![.,]?\d)|-?\d+(?:[.,]\d+)?`;
+const TAM_SAYI = new RegExp(`^(?:${SAYI_DESENI})$`);
+/** Sayı yazısını okur; okunamazsa NaN. Baştaki uzun eksi işareti (−) de eksi sayılır. "0.125" ondalıktır. */
+export function sayiOku(yazi: string): number {
+  const s = String(yazi ?? '').trim().replace(/^−/, '-');
+  if (!TAM_SAYI.test(s)) return NaN;
+  return Number(/^-?[1-9]\d{0,2}(?:\.\d{3})+(?:,\d+)?$/.test(s) ? s.replace(/\./g, '').replace(',', '.') : s.replace(',', '.'));
+}
+/** Saklanan sayının girdi kutusundaki yazısı: ondalık virgülle ("1,234"; "1.234" bin sanılmasın). */
+export const sayiGirdisi = (n: number | null | undefined) => (n === null || n === undefined || !Number.isFinite(n) ? ''
+  : n.toLocaleString('tr-TR', { useGrouping: false, maximumFractionDigits: 20 }).replace('−', '-'));
+
 /** "180", "1,75 m", "170–180 cm" biçimindeki girdiyi çözer ve alanın birimine çevirir. Birim yazılmazsa alanın
  *  birimi sayılır. Hassasiyet alanın birimindeki ondalık basamak sayısıdır. */
 export function sayiCoz(girdi: unknown, alanBirimi: string, hassasiyet = 0): SayiDegeri | null {
   if (girdi && typeof girdi === 'object' && 'enAz' in (girdi as object)) {
+    // Saklanmış değer yeniden yazılırken ondalık virgülle yazılır ("1.234" binlik ayırıcı sanılmasın).
     const g = girdi as SayiDegeri;
-    return sayiCoz(`${g.enAz}${g.enCok !== g.enAz ? `-${g.enCok}` : ''} ${g.birim}`, alanBirimi, hassasiyet);
+    return sayiCoz(`${sayiGirdisi(g.enAz)}${g.enCok !== g.enAz ? `-${sayiGirdisi(g.enCok)}` : ''} ${g.birim}`, alanBirimi, hassasiyet);
   }
   const s = String(girdi ?? '').replace(/\s+/g, ' ').trim();
   if (!s) return null;
-  const m = s.match(/^(-?\d+(?:[.,]\d+)?)(?:\s*[-–]\s*(-?\d+(?:[.,]\d+)?))?\s*(.*)$/u);
+  const m = s.match(new RegExp(`^(${SAYI_DESENI})(?:\\s*[-–]\\s*(${SAYI_DESENI}))?\\s*(.*)$`, 'u'));
   if (!m) throw new Error('Sayı okunamadı. Örnek: 180, 1,75 ya da 170–180.');
   const hedef = birimAdi(alanBirimi);
   const birim = m[3] ? birimAdi(m[3]) : hedef;
   if (birim.length > 30) throw new Error('Birim çok uzun.');
   const cevir = (t: string) => {
-    const x = birimCevir(Number(t.replace(',', '.')), birim, hedef);
+    const x = birimCevir(sayiOku(t), birim, hedef);
     if (x === null) throw new Error(`“${birim}” bu alanın birimine (${hedef}) çevrilemez.`);
     const yuvarlak = Math.round(x * 1e9) / 1e9;
     if (Math.round(yuvarlak * 10 ** hassasiyet) / 10 ** hassasiyet !== yuvarlak) {

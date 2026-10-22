@@ -32,6 +32,7 @@ export interface DonemselYedekErisimi {
 export type YedekOneki = 'donemsel' | 'yerel';
 
 import type { DriveYedegi, DonemselYedekDurumu as Durum } from '../veri/api';
+import { kullaniciIletisi } from './ileti';
 export type { DriveYedegi };
 export type DonemselYedekDurumu = Omit<Durum, 'bagli' | 'esitlenir'>;
 
@@ -123,7 +124,7 @@ export class DonemselYedek {
         const inc = await this.x.yedekIncele(geri);
         if (inc.evrenKod !== evren) sorun = 'yedekteki evren farklı';
         else if (inc.islemSayisi !== p.islemSayisi) sorun = `yedekte ${inc.islemSayisi} değişiklik var, ${p.islemSayisi} olmalıydı`;
-      } catch (e) { sorun = (e as Error).message; }
+      } catch (e) { sorun = kullaniciIletisi(e); }
       if (sorun) {
         // Doğrulanamayan yedek başarılı sayılmaz ve hiçbir eski yedek silinmez.
         try { await this.t.sil(d.id); } catch { /* kalsa da eski yedekler yerinde */ }
@@ -145,11 +146,11 @@ export class DonemselYedek {
       try {
         for (const y of mevcut) if (y.gun === bugun || sil.has(y.gun)) await this.t.sil(y.id);
       } catch (e) {
-        this.x.kurulum.ayarYaz(`${this.onek}_hata:${evren}`, `Yedek alındı ve doğrulandı, ama eski yedekler kaldırılamadı: ${(e as Error).message}`);
+        this.x.kurulum.ayarYaz(`${this.onek}_hata:${evren}`, `Yedek alındı ve doğrulandı, ama eski yedekler kaldırılamadı: ${kullaniciIletisi(e)}`);
       }
       return 'alindi';
     } catch (e) {
-      this.x.kurulum.ayarYaz(`${this.onek}_hata:${evren}`, (e as Error).message);
+      this.x.kurulum.ayarYaz(`${this.onek}_hata:${evren}`, kullaniciIletisi(e));
       throw e;
     }
   }

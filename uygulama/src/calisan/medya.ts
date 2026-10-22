@@ -41,24 +41,59 @@ const tiffOku = (b: Uint8Array, bas: number) => {
 };
 
 /**
- * JPEG'den Exif ve XMP bölümlerini (konum dahil) çıkarır; görüntü verisine dokunmaz.
+ * Görüntü verisinin bittiği yer (EOI işaretinden sonrası); bulunamazsa null. Telefonlar asıl görüntünün arkasına başka
+ * şeyler ekler: hareketli fotoğrafın videosu, kendi Exif'i (konumu) olan ikinci görüntüler (MPF). Bunlar atılır.
+ */
+function jpegSonu(b: Uint8Array, i: number): number | null {
+  for (;;) {
+    // i: uzunluklu bir bölümün (SOS, DHT…) başı.
+    if (i + 4 > b.length) return null;
+    const sos = b[i + 1] === 0xda;
+    i += 2 + ((b[i + 2] << 8) | b[i + 3]);
+    if (sos) {
+      // Sıkıştırılmış veri: FF 00 (dolgu), FF D0–D7 (yeniden başlama) ve FF FF verinin içindedir.
+      for (;;) {
+        i = b.indexOf(0xff, i);
+        if (i < 0 || i + 1 >= b.length) return null;
+        const n = b[i + 1];
+        if (n !== 0x00 && n !== 0xff && (n < 0xd0 || n > 0xd7)) break;
+        i++;
+      }
+    }
+    if (i + 1 >= b.length || b[i] !== 0xff) return null;
+    while (i + 2 < b.length && b[i + 1] === 0xff) i++; // işaret öncesi dolgu
+    if (b[i + 1] === 0xd9) return i + 2;
+    if (b[i + 1] < 0xc0 || (b[i + 1] >= 0xd0 && b[i + 1] <= 0xd8)) return null; // tanınmayan yapı: bir şey atılmaz
+  }
+}
+
+/**
+ * JPEG'den Exif, XMP, IPTC (Photoshop) ve çoklu görüntü (MPF) bölümlerini (konum dahil) çıkarır; asıl görüntünün
+ * sonrasına eklenmiş veriyi atar; görüntü verisine dokunmaz.
  * Fotoğrafın yönü Exif'te yazıyorsa döndürülür; yön 1 değilse görüntünün yeniden çizilmesi gerekir.
  */
-export function jpegBilgiSil(b: Uint8Array): { veri: Uint8Array; yon: number } {
+export function jpegBilgiSil(b: Uint8Array): { veri: Uint8Array; yon: number; sonuKesildi?: boolean } {
   if (b[0] !== 0xff || b[1] !== 0xd8) return { veri: b, yon: 1 };
+  let sonuKesildi = false;
   const parcalar: Uint8Array[] = [b.subarray(0, 2)];
   let yon = 1;
   let i = 2;
   while (i + 4 <= b.length) {
     if (b[i] !== 0xff) break;
     const isaret = b[i + 1];
-    if (isaret === 0xda) { parcalar.push(b.subarray(i)); i = b.length; break; } // görüntü verisi başladı
+    if (isaret === 0xda) { // görüntü verisi başladı
+      const sonu = jpegSonu(b, i) ?? b.length;
+      sonuKesildi = sonu < b.length;
+      parcalar.push(b.subarray(i, sonu)); i = b.length; break;
+    }
     const uzunluk = (b[i + 2] << 8) | b[i + 3];
     const son = i + 2 + uzunluk;
     if (son > b.length) break;
     const govde = b.subarray(i + 4, son);
     const exif = isaret === 0xe1 && govde[0] === 0x45 && govde[1] === 0x78 && govde[2] === 0x69 && govde[3] === 0x66; // "Exif"
     const xmp = isaret === 0xe1 && !exif;
+    const mpf = isaret === 0xe2 && govde[0] === 0x4d && govde[1] === 0x50 && govde[2] === 0x46 && govde[3] === 0; // "MPF\0"
+    const iptc = isaret === 0xed; // Photoshop bölümü: IPTC'de şehir, semt, ülke yazar
     if (exif) {
       try {
         const t = 6; // "Exif\0\0"
@@ -71,7 +106,7 @@ export function jpegBilgiSil(b: Uint8Array): { veri: Uint8Array; yon: number } {
         }
       } catch { /* bozuk bilgi: yön 1 sayılır */ }
     }
-    if (!exif && !xmp) parcalar.push(b.subarray(i, son));
+    if (!exif && !xmp && !mpf && !iptc) parcalar.push(b.subarray(i, son));
     i = son;
   }
   if (i < b.length) parcalar.push(b.subarray(i));
@@ -79,7 +114,7 @@ export function jpegBilgiSil(b: Uint8Array): { veri: Uint8Array; yon: number } {
   const veri = new Uint8Array(toplam);
   let o = 0;
   for (const p of parcalar) { veri.set(p, o); o += p.length; }
-  return { veri, yon: yon >= 1 && yon <= 8 ? yon : 1 };
+  return { veri, yon: yon >= 1 && yon <= 8 ? yon : 1, ...(sonuKesildi ? { sonuKesildi } : {}) };
 }
 
 /** PNG'den eXIf ve metin bölümlerini çıkarır. */

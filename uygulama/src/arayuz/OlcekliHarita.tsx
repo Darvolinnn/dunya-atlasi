@@ -1,5 +1,6 @@
 // Ölçekli geometri kipi ve erişim konturları (§8.4, §15-2, §2.2 kural 1 ve 13, §2.3).
 // Yalnızca ilgili görünüm açılınca çalışır; hesaplar Web Worker üzerinden arka planda yürür ve arayüzü dondurmaz.
+import { sayiGirdisi } from '../alan/nicelik';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import { geriAlinabilir } from './onay';
@@ -293,7 +294,7 @@ export function OlcekliHaritaBolumu({
       ) : (
         <p class="kucuk">
           <strong>Ölçek:</strong> ({durum.olcek.p1[0]}, {durum.olcek.p1[1]}) – ({durum.olcek.p2[0]},{' '}
-          {durum.olcek.p2[1]}) arası <strong>{durum.olcek.mesafe} {durum.olcek.birim}</strong>
+          {durum.olcek.p2[1]}) arası <strong>{sayiGirdisi(durum.olcek.mesafe)} {durum.olcek.birim}</strong>
           {durum.olcek.molaVarsayimi ? ` · ${durum.olcek.molaVarsayimi}` : ''}
         </p>
       )}
@@ -324,7 +325,7 @@ export function OlcekliHaritaBolumu({
               .map((k) =>
                 k.svgYolu ? (
                   <path key={k.gun} d={k.svgYolu} class={`olcekli-kontur gun-${k.gun}`}>
-                    <title>{k.gun}. gün erişim alanı ({k.alanBirimKare} {durum?.olcek?.birim ?? 'birim'}²)</title>
+                    <title>{k.gun}. gün erişim alanı ({sayiGirdisi(k.alanBirimKare)} {durum?.olcek?.birim ?? 'birim'}²)</title>
                   </path>
                 ) : null,
               )}
@@ -538,7 +539,7 @@ export function OlcekliHaritaBolumu({
               <li key={a.kod}>
                 <strong>{a.ad}</strong>{' '}
                 <span class="soluk">
-                  ({a.kurallar.map((k) => `${k.ulasim}${k.mevsim ? `/${k.mevsim}` : ''}: ${k.gecilmez ? 'geçilmez' : `${k.gunlukHiz} ${durum.olcek?.birim ?? 'birim'}/gün`}`).join(', ')})
+                  ({a.kurallar.map((k) => `${k.ulasim}${k.mevsim ? `/${k.mevsim}` : ''}: ${k.gecilmez ? 'geçilmez' : `${sayiGirdisi(k.gunlukHiz)} ${durum.olcek?.birim ?? 'birim'}/gün`}`).join(', ')})
                 </span>
                 {a.catismali && <span class="rozet uyari">İki cihazda farklı</span>}
                 {!h.silindi && (
@@ -623,11 +624,11 @@ export function OlcekliHaritaBolumu({
             {olcumSonuc.uyari && <p class="uyari kucuk">{olcumSonuc.uyari}</p>}
             {olcumSonuc.duzMesafe !== null && (
               <p>
-                <strong>Düz mesafe:</strong> {olcumSonuc.duzMesafe} {olcumSonuc.zarf.birim}
+                <strong>Düz mesafe:</strong> {sayiGirdisi(olcumSonuc.duzMesafe)} {olcumSonuc.zarf.birim}
                 {olcumSonuc.enKisaGun !== null && (
                   <>
-                    {' '}· <strong>Araziye göre en kısa süre:</strong> {olcumSonuc.enKisaGun} gün (yol uzunluğu:{' '}
-                    {olcumSonuc.yolMesafesi} {olcumSonuc.zarf.birim})
+                    {' '}· <strong>Araziye göre en kısa süre:</strong> {sayiGirdisi(olcumSonuc.enKisaGun)} gün (yol uzunluğu:{' '}
+                    {sayiGirdisi(olcumSonuc.yolMesafesi)} {olcumSonuc.zarf.birim})
                   </>
                 )}
               </p>
@@ -658,7 +659,7 @@ export function OlcekliHaritaBolumu({
               <ul class="isaret-listesi">
                 {konturSonuc.konturlar.map((k) => (
                   <li key={k.gun}>
-                    <strong>{k.gun}. gün erişim alanı:</strong> {k.hucreler.length} ızgara hücresi (~{k.alanBirimKare}{' '}
+                    <strong>{k.gun}. gün erişim alanı:</strong> {k.hucreler.length} ızgara hücresi (~{sayiGirdisi(k.alanBirimKare)}{' '}
                     {konturSonuc.zarf.birim}²)
                   </li>
                 ))}
@@ -786,7 +787,7 @@ function SonucZarfiGorunumu({
         <li><strong>Mola varsayımı:</strong> {zarf.molaVarsayimi}</li>
         {zarf.izgaraAraligiBirim !== null && (
           <li>
-            <strong>Izgara aralığı:</strong> {zarf.izgaraAraligiBirim} {zarf.birim} ({zarf.izgaraAraligiUzay} harita birimi)
+            <strong>Izgara aralığı:</strong> {sayiGirdisi(zarf.izgaraAraligiBirim)} {zarf.birim} ({sayiGirdisi(zarf.izgaraAraligiUzay)} harita birimi)
           </li>
         )}
         <li><strong>Kapsam:</strong> {zarf.kapsamNotu}</li>

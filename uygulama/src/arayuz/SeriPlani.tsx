@@ -103,7 +103,7 @@ function OkumaYollari({ istemci, evren, p }: { istemci: Istemci; evren: string; 
   const uyeler: KisaKayit[] = [...p.kitaplar, ...p.ekUyeler.filter((x) => !p.kitaplar.some((y) => y.kod === x.kod))];
   const ad = new Map(uyeler.map((x) => [x.kod, x.ad]));
   const yollar: YolTaslagi[] = p.okumaYollari.map((y) => ({ kod: y.kod, ad: y.ad, eserler: y.eserler.map((x) => x.kod) }));
-  const yaz = (l: YolTaslagi[]) => istemci.iste('okumaYollariYaz', { evren, seri: p.seri.kod, yollar: l }).then(() => setHata(null), (e) => setHata(hataYaz(e)));
+  const yaz = (l: YolTaslagi[]) => istemci.iste('okumaYollariYaz', { evren, seri: p.seri.kod, yollar: l }).then(() => { setHata(null); return true; }, (e) => { setHata(hataYaz(e)); return false; });
   const degistir = (i: number, y: YolTaslagi | null) => yaz(y ? yollar.map((x, j) => (j === i ? y : x)) : yollar.filter((_, j) => j !== i));
   if (!uyeler.length) return null;
   return (

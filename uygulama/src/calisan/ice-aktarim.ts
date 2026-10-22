@@ -104,12 +104,27 @@ export function iceAktarimPlani(dosyalar: IceDosya[]): { plan: PlanKaydi[]; rapo
   for (const { k, kod } of hazirlik) {
     for (const [a, d] of Object.entries(k.ozellikler)) if (anahtarAnlami(a) === 'lakaplar') for (const l of listeYap(d)) if (!adlar.has(katla(l))) adlar.set(katla(l), kod);
   }
+  // Obsidian (ve bizim dışa aktarımımız) bağlantıyı dosya adıyla, aynı ad başka klasörde de varsa "Klasör/Ad" yoluyla
+  // yazar. Dosya adı kaydın adından farklı olabilir (adda dosya adına giremeyen işaret, aynı adda ikinci dosya).
+  const MD = /\.(md|markdown|txt)$/i;
+  const yolla = new Map<string, string>();
+  const dosyayla = new Map<string, string | null>(); // aynı dosya adı birden çok klasördeyse belirsiz (null)
+  for (const { k, kod } of hazirlik) {
+    if (!MD.test(k.kaynak)) continue;
+    const yol = katla(k.kaynak.replace(MD, ''));
+    yolla.set(yol, kod);
+    const dosya = yol.split('/').pop()!;
+    dosyayla.set(dosya, dosyayla.has(dosya) ? null : kod);
+  }
   const bahsedilen = new Map<string, string>();
   let baglantiSayisi = 0;
   const hedefKodu = (ad: string) => {
     baglantiSayisi++;
     const k = katla(ad);
-    const bulunan = adlar.get(k) ?? kokAdaylari(ad).map((x) => adlar.get(x)).find(Boolean);
+    const yol = katla(ad.trim().replace(/^\/+/, '').replace(MD, ''));
+    const bulunan = yolla.get(yol) ?? dosyayla.get(yol) ?? adlar.get(k)
+      ?? (yol.includes('/') ? dosyayla.get(yol.split('/').pop()!) ?? adlar.get(yol.split('/').pop()!) : undefined)
+      ?? kokAdaylari(ad).map((x) => adlar.get(x)).find(Boolean);
     if (bulunan) return bulunan;
     // Bağlantı verilmiş ama dosyası olmayan ad: [[ ile doğan kayıt gibi fikir olarak oluşur (§5.1).
     let kod = bahsedilen.get(k);

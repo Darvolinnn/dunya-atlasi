@@ -1,3 +1,4 @@
+import { sayiGirdisi } from '../alan/nicelik';
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import type { EvrenVt } from './evren-vt';
 import type { IslemGirdisi } from '../alan/islem';
@@ -431,7 +432,7 @@ function hizKuraliOzeti(kurallar: OlcekliHizKurali[]): string {
   return kurallar
     .map((k) => {
       const m = k.mevsim ? ` (${k.mevsim})` : '';
-      return `${k.ulasim}${m}: ${k.gecilmez ? 'geçilmez' : `${k.gunlukHiz} birim/gün`}`;
+      return `${k.ulasim}${m}: ${k.gecilmez ? 'geçilmez' : `${sayiGirdisi(k.gunlukHiz)} birim/gün`}`;
     })
     .join(', ');
 }
@@ -440,7 +441,7 @@ function catismaDegerYazisi(alan: string, deger: unknown): string {
   if (alan === 'olcekli_olcek') {
     const o = olcekTemizle(deger);
     if (!o) return '(ölçeksiz)';
-    return `${o.mesafe} ${o.birim}${o.molaVarsayimi ? ` · ${o.molaVarsayimi}` : ''}`;
+    return `${sayiGirdisi(o.mesafe)} ${o.birim}${o.molaVarsayimi ? ` · ${o.molaVarsayimi}` : ''}`;
   }
   if (alan === 'olcekli_varsayilan_hiz') {
     return hizKuraliOzeti(hizKuraliListesiTemizle(deger));

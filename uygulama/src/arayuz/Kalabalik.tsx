@@ -25,7 +25,7 @@ export function KalabalikBolumu({ istemci, evren, kod, tur, surum, saltOkunur }:
   if (!acik && !form && !dosya.gozlemler.length && !dosya.olaylar.length) {
     return saltOkunur ? null : <div class="satir kucuk"><button type="button" class="dugme sade kucuk" onClick={() => setAcik(true)}>Kalabalık sayımı…</button></div>;
   }
-  const kaldir = (bicim: Bicim, k: string, geriYukle: boolean) => istemci.iste('kalabalikKaldir', { evren, kod: k, bicim, geriYukle }).then(() => setHata(''), (e: Error) => setHata(e.message));
+  const kaldir = (bicim: Bicim, k: string, geriYukle: boolean) => istemci.iste('kalabalikKaldir', { evren, kod: k, bicim, geriYukle }).then(() => { setHata(''); return true; }, (e: Error) => { setHata(e.message); return false; });
   const tarihYaz = (s: KalabalikSatiri<KalabalikGozlemi | KalabalikOlayi>) => <>{s.tarih?.olay && <a href={`#/e/${evren}/k/${s.tarih.olay.kod}`}>{s.tarih.olay.ad}: </a>}{s.tarih?.tarih?.ifade ?? s.tanim.tarih.ifade ?? 'Tarihi bilinmiyor'}</>;
   const islemler = (s: KalabalikSatiri<KalabalikGozlemi | KalabalikOlayi>, bicim: Bicim) => <>
     {s.catismali && (saltOkunur ? <p>Bu sayım iki cihazda farklı yazılmış; incelenmesi gerekiyor.</p> : <CatismaListesi istemci={istemci} evren={evren} kod={s.kod} surum={surum} />)}
