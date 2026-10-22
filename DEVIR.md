@@ -86,6 +86,7 @@ Kullanıcı (22 Ekim 20:10, Şablonlar sayfasının ekran görüntüsüyle) "bur
 - **Küçük düzeltme:** haber kanalında katsayı hatasının metni "Hız katsayısı" diyordu, ekranda "Rota süresinin katı" yazıyor (süre çarpanı); hata metni ekrana uyduruldu.
 - **Bilerek değiştirilmeyenler (rapor edildi):** "12 Hasat 412." gibi sonda nokta olan tarih "takvime çevrilemedi" kalır (ekranda görünür, sessiz yanlış değil). Bakımda tam vade günü "gecikmiş olabilir" sayılır. Zaman akışında yaşanan süre (`alan/yasanan-sure.ts`) anlık hesapla kalır; akış yokken ekranda gösterilmez, takvim yaşı kullanılır.
 - **Tasarım:** §3.4 Yaş (takvim günleri), §3.4 "İki tarih arasındaki süre" (yeni madde), §18.1 formülde tarih alanı; `tasarim-gecmisi.md` satırı. Görünüş değişmedi, taslak gerekmedi.
+- **Birleşti:** PR #32 (22 Ekim 20:27; Ubuntu, Windows ve tarayıcı denetimleri yeşil). Kullanıcı "sen hallet" dedi.
 - **Sınamalar:** `test/hesap-denetimi.test.ts` (7: yaşın gün sınırları, aşama süresi, tam rota süresinde uyarı yok, iki olay arası rota denetimi, iyileşmede kalan gün, formülde =, <, <=, >, >=).
 
 ## 1. Önce oku (sırayla)
