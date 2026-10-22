@@ -1,0 +1,14 @@
+{
+  "name": "Dünya Atlası",
+  "short_name": "Dünya Atlası",
+  "lang": "tr",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#4f2331",
+  "theme_color": "#4f2331",
+  "icons": [
+    { "src": "simge-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "simge-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "simge-maskeli-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 22 Ekim 2026, gece (hesapların doğruluk denetimi ve üç sınır hatasının düzeltmesi, aşağıda §0.6). Önceki: 22 Ekim akşam (K32: kısa ve yumuşak arayüz geçişleri, §0.5). Önceki: 22 Ekim gece (K31: bu bilgisayarda günlük yedek ve Windows parola kasasında hatırlanan Google bağlantısı; kullanıcının bilgisayarında çıkan iki sınama sorununun düzeltmesi; aşağıda §0.4). Önceki: 21 Ekim gece (veri güvenliği son kontrolü, #28, §0.3). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 113 dosya, 576 sınama (2'si yalnız `AGIR=1` ile çalışan ağır yük sınaması) ve 11 Rust sınaması (+1 yalnız Windows'ta: gerçek parola kasası); tarayıcıda 43 akış sınaması. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows, Node 22).*
+*Son güncelleme: 22 Ekim 2026, gece (uygulama simgesi, aşağıda §0.7). Önceki: 22 Ekim gece (hesapların doğruluk denetimi ve üç sınır hatasının düzeltmesi, aşağıda §0.6). Önceki: 22 Ekim akşam (K32: kısa ve yumuşak arayüz geçişleri, §0.5). Önceki: 22 Ekim gece (K31: bu bilgisayarda günlük yedek ve Windows parola kasasında hatırlanan Google bağlantısı; kullanıcının bilgisayarında çıkan iki sınama sorununun düzeltmesi; aşağıda §0.4). Önceki: 21 Ekim gece (veri güvenliği son kontrolü, #28, §0.3). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 113 dosya, 576 sınama (2'si yalnız `AGIR=1` ile çalışan ağır yük sınaması) ve 11 Rust sınaması (+1 yalnız Windows'ta: gerçek parola kasası); tarayıcıda 43 akış sınaması. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows, Node 22).*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -88,6 +88,13 @@ Kullanıcı (22 Ekim 20:10, Şablonlar sayfasının ekran görüntüsüyle) "bur
 - **Tasarım:** §3.4 Yaş (takvim günleri), §3.4 "İki tarih arasındaki süre" (yeni madde), §18.1 formülde tarih alanı; `tasarim-gecmisi.md` satırı. Görünüş değişmedi, taslak gerekmedi.
 - **Birleşti:** PR #32 (22 Ekim 20:27; Ubuntu, Windows ve tarayıcı denetimleri yeşil). Kullanıcı "sen hallet" dedi.
 - **Sınamalar:** `test/hesap-denetimi.test.ts` (7: yaşın gün sınırları, aşama süresi, tam rota süresinde uyarı yok, iki olay arası rota denetimi, iyileşmede kalan gün, formülde =, <, <=, >, >=).
+
+## 0.7 Uygulama simgesi (22 Ekim 2026, gece)
+
+Kullanıcı (22 Ekim 20:28) bordo-altın açık kitap ve dağ resmini gönderip "Uygulamanın simgesi bu olsun" dedi; başka boyut gerekmediği, hepsinin bu 2048 piksellik resimden üretildiği söylendi. Kaynak resim ve üretme betiği proje klasöründe (`/mnt/project-files/simge/`, depoda değil): dış gri zemin kırpıldı, köşeler yuvarlak (yarıçap 300 px, kaynak ölçeğinde) maskeyle saydam yapıldı, resim biraz yatay olduğu için kareye üstten ve alttan saydam boşlukla oturtuldu.
+- [x] Windows: `src-tauri/icons/` `icon.ico` (16, 24, 32, 48, 64, 128, 256), `32x32.png`, `128x128.png`, `128x128@2x.png`, `icon.png` (512). Kurulum dosyası, pencere ve görev çubuğu bunları kullanır; `main` derlemesiyle yeni kurulum dosyasına girer.
+- [x] Tarayıcı: `uygulama/public/` `favicon.ico` (16, 32, 48; §0.1'deki 404 iletisi kalktı), `simge-192.png`, `simge-512.png`, `apple-touch-icon.png` (180, bordo `#4f2331` zeminde), `simge-maskeli-512.png` (yüzde 80 güvenli alan) ve `manifest.webmanifest` (ad, simgeler, renk; hizmet çalışanı eklenmedi). `index.html` bunlara bağlandı.
+- [x] Denetim: tür denetimi, 574 sınama, derleme geçti.
 
 ## 1. Önce oku (sırayla)
 
