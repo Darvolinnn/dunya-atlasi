@@ -1,6 +1,6 @@
 # Devir notu: işi devralan ajan için
 
-*Son güncelleme: 23 Ekim 2026, gece (ikinci kapsamlı hata avı: formül, Türkçe sayı, dışa/içe aktarma, fotoğraf bilgisi, teknik iletiler; aşağıda §0.10). Önceki: 22 Ekim gece (kapsamlı hata avı: veri kaybı, eşitleme, dış rapordaki DA-01…DA-05 ve gösterim hataları, §0.9). Önceki: 22 Ekim gece (dış öneri raporunun denetimi ve Windows aygıt adlarının kapatılması, §0.8). Önceki: 22 Ekim gece (uygulama simgesi, §0.7). Önceki: 22 Ekim gece (hesapların doğruluk denetimi ve üç sınır hatasının düzeltmesi, aşağıda §0.6). Önceki: 22 Ekim akşam (K32: kısa ve yumuşak arayüz geçişleri, §0.5). Önceki: 22 Ekim gece (K31: bu bilgisayarda günlük yedek ve Windows parola kasasında hatırlanan Google bağlantısı; kullanıcının bilgisayarında çıkan iki sınama sorununun düzeltmesi; aşağıda §0.4). Önceki: 21 Ekim gece (veri güvenliği son kontrolü, #28, §0.3). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 115 dosya, 609 sınama (2'si yalnız `AGIR=1` ile çalışan ağır yük sınaması) ve 12 Rust sınaması (+1 yalnız Windows'ta: gerçek parola kasası); tarayıcıda 43 akış sınaması. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows, Node 22).*
+*Son güncelleme: 23 Ekim 2026, akşam (tablet için plan, iş başlamadı; §0.11). Önceki: 23 Ekim 2026, gece (ikinci kapsamlı hata avı: formül, Türkçe sayı, dışa/içe aktarma, fotoğraf bilgisi, teknik iletiler; aşağıda §0.10). Önceki: 22 Ekim gece (kapsamlı hata avı: veri kaybı, eşitleme, dış rapordaki DA-01…DA-05 ve gösterim hataları, §0.9). Önceki: 22 Ekim gece (dış öneri raporunun denetimi ve Windows aygıt adlarının kapatılması, §0.8). Önceki: 22 Ekim gece (uygulama simgesi, §0.7). Önceki: 22 Ekim gece (hesapların doğruluk denetimi ve üç sınır hatasının düzeltmesi, aşağıda §0.6). Önceki: 22 Ekim akşam (K32: kısa ve yumuşak arayüz geçişleri, §0.5). Önceki: 22 Ekim gece (K31: bu bilgisayarda günlük yedek ve Windows parola kasasında hatırlanan Google bağlantısı; kullanıcının bilgisayarında çıkan iki sınama sorununun düzeltmesi; aşağıda §0.4). Önceki: 21 Ekim gece (veri güvenliği son kontrolü, #28, §0.3). İzdüşüm sürümü (`IZDUSUM_SURUMU`): **58**. Sınama: 115 dosya, 609 sınama (2'si yalnız `AGIR=1` ile çalışan ağır yük sınaması) ve 12 Rust sınaması (+1 yalnız Windows'ta: gerçek parola kasası); tarayıcıda 43 akış sınaması. GitHub Actions'ta otomatik denetim var (Ubuntu ve Windows, Node 22).*
 
 Bu dosya, projeyi devralan bir yazılım ajanının kullanıcıya hiçbir şey sormadan kaldığı yerden devam edebilmesi için yazıldı. Davranışın tek kaynağı yine `tasarim/dunya-atlasi-tasarim.md` belgesidir; bu not yalnızca **durum, kalan işler ve çalışma yöntemi**dir. Bu dosya ile tasarım çelişirse tasarım geçerlidir.
 
@@ -147,6 +147,14 @@ Kullanıcı (22 Ekim 21:45) en güncel sürümde ikinci bir kapsamlı hata avı 
 
 **Düzeltilmeyenler (bilerek, küçük):** (a) Markdown'a aktarılan paragraf boşlukla başlıyorsa Obsidian onu kod bloğu gösterir; geri içe alınınca baştaki boşluklar düşer. (b) Bağlantının görünen yazısındaki `|` ve `]` Markdown'da atılır (Obsidian sözdizimi taşıyamaz). (c) Birden çok paragraflı alıntı içe aktarınca ayrı alıntılar olur (metin aynı). (d) Ekranlardaki ~20 okuma isteği hatayı yakalamaz; yalnız konsola düşer, kullanıcıya etkisi yok.
 
+## 0.11 Tablet (Galaxy Tab S11 Ultra) için plan (23 Ekim 2026; iş başlamadı)
+
+Kullanıcı Android APK'ya taşımanın süresini sordu; yalnız plan yapıldı, **kod değişmedi ve kullanıcı "başla" diyene kadar başlanmaz** ("gelecekte yapacağım, şimdilik dursun"). Plan: `analiz/tablet-port-plani.md`.
+- Kullanıcının seçimi: arayüz **tamamen dokunmaya ve S Pen'e uyumlu** (taslaklar önce kullanıcıya); **1. sürümde Google yok**, evren yedek dosyasıyla taşınır; Google girişi ve Drive eşitlemesi 2. sürümde.
+- Tahmin: 1. sürüm ~2 hafta (22–32 oturum), Google ile ~3 hafta. İki ayrı Claude hesabıyla paralel çalışılacak: A kabuk (`src-tauri`, APK derlemesi, depolama, yedek), B arayüz; `DEVIR.md`, tasarım belgesi ve `package.json`'un tek sahibi A.
+- Masaüstüne özgü parçalar (Android karşılığı gerekir): `google.rs` (sistem tarayıcısı + yerel dönüş), Windows parola kasası (`keyring`), `yerel_yedek.rs` klasörü, sabit yerel adres (41730). Windows kimliği ve kapı değiştirilmez.
+- Başlarken tasarım belgesinde tablet satırları (§14.3, §17) "ertelendi"den çıkarılır.
+
 ## 1. Önce oku (sırayla)
 
 1. `AGENTS.md`: bağlayıcı kurallar.
@@ -277,7 +285,7 @@ Paralel ajan paketlerinin (`paket/**`) hepsi birleştirildi; bekleyen paket yok.
 6. **Gerçek Drive'da büyük görsel yükleme denemesi:** parça parça ve kaldığı yerden yükleme yalnız sahte Drive'la sınandı. 308 yanıtındaki `Range` başlığı tarayıcıdan okunamazsa ara parçalar ulaşmış sayılır; son parça 308 alırsa durum sorulur ve ulaşan kısım 0 sayılır (doğru ama baştan gönderir; §0.9 DA-01). Gerçek Drive'da başlığın okunduğu görülürse bu yol hiç kullanılmaz. Google hesabı gerektirir.
 7. **Türkçe:** ~5.800 kullanıcıya görünen metnin bilinen kalıpları tarandı (sen hitabı yok, programlama terimi birkaç tane kalmıştı, düzeltildi) ve 70 uzun açıklama örneklemi okundu; çoğu doğal. Tek tek okunmadı. Kullanıcı garip bulduğu ekranları bildirdikçe düzeltilir. `alan/sablon.ts` varsayılan sorudaki "söz" tekrarı ("Söylenmemiş bir söz … tutulmamış bir söz") kayıtlı şablon değeri olduğu için bilerek değiştirilmedi.
 
-**Ertelenen:** tablet ve iPhone (§14.3, kullanıcı 19 Ekim'de süresiz erteledi); ana ekran uygulaması (uygulama tanımı, çevrimdışı katman, Cloudflare Pages yayını, "güncelleme hazır" davranışı).
+**Ertelenen:** tablet ve iPhone (§14.3, kullanıcı 19 Ekim'de süresiz erteledi; tablet için 23 Ekim'de plan yapıldı, başlanmadı: §0.11); ana ekran uygulaması (uygulama tanımı, çevrimdışı katman, Cloudflare Pages yayını, "güncelleme hazır" davranışı).
 
 "Öneri" durumundaki fikirler kodlanmaz; yeni fikir eklenmez (K11).
 
