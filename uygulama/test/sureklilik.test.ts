@@ -155,6 +155,6 @@ describe('süreklilik defteri (§5.6)', () => {
     expect(m.sahneSurekliligi({ evren, sahne }).izler[0].bas.gozlenen).toBe('6');
     (m as unknown as { evren(k: string): { yenidenKur(): void } }).evren(evren).yenidenKur();
     expect(m.sahneSurekliligi({ evren, sahne }).izler[0].bas.gozlenen).toBe('6');
-    expect(m.islemGunlugu({ evren, sinir: 50 }).some((i) => islemAciklamasi(i.tur, i.veri, (k) => (k === sahne ? 'Pusu' : '?')).includes('“Ok sayısı” başta “6” olarak gözlendi'))).toBe(true);
+    expect(m.islemGunlugu({ evren, sinir: 50 }).some((i) => islemAciklamasi(i.tur, i.veri, (k) => (k === sahne ? 'Pusu' : '?')).includes('“Ok sayısı” sahne başında “6” olarak gözlendi'))).toBe(true);
   });
 });

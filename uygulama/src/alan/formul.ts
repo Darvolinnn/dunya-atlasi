@@ -94,7 +94,7 @@ const ANAHTAR = new Set(['ve', 'veya', 'degil', 'yas', ...ILISKI_KELIMELERI.flat
 /** Yazarın formül yazısını okur, adları çözer ve türleri denetler. Hata olursa yeriyle birlikte FormulHatasi atar. */
 export function formulOku(yazi: string, c: FormulCozucu): Formul {
   if (typeof yazi !== 'string') throw new FormulHatasi('Formül okunamadı.', 0);
-  if (yazi.length > EN_UZUN) throw new FormulHatasi(`Formül en çok ${EN_UZUN} harf olabilir.`, EN_UZUN, yazi.length - EN_UZUN);
+  if (yazi.length > EN_UZUN) throw new FormulHatasi(`Formül en çok ${EN_UZUN} karakter olabilir (boşluklar dahil).`, EN_UZUN, yazi.length - EN_UZUN);
   const j = jetonla(yazi);
   if (!j.length) throw new FormulHatasi('Formül boş.', 0, 0);
   let i = 0, parca = 0;

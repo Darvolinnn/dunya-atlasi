@@ -57,7 +57,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
             {!bilgi.bag && <KurguAyari istemci={istemci} bilgi={bilgi} />}
           </>
         )}
-        {baslik && !haritaAcik && <div class="baslik-satiri sayfa-basligi"><h1>{gorunumMu(sekme) ? <><span class="soluk">Grafikler · </span>{baslik}</> : baslik}</h1><SayfaYardimi sayfa={sekme} /></div>}
+        {baslik && !haritaAcik && <div class="baslik-satiri sayfa-basligi"><h1>{gorunumMu(sekme) ? <><span class="soluk">Grafikler ve araçlar · </span>{baslik}</> : baslik}</h1><SayfaYardimi sayfa={sekme} /></div>}
         {sekme === 'inceleme' ? <IncelemeKuyrugu istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><YerelYedekler istemci={istemci} evren={kod} surum={surum} /><MarkdownCiktisi istemci={istemci} evren={kod} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
           : sekme === 'surumler' && !bilgi.bag ? <SurumlerSekmesi istemci={istemci} evren={kod} surum={surum} />
@@ -154,7 +154,7 @@ function KurguAyari({ istemci, bilgi }: { istemci: Istemci; bilgi: EvrenBilgisi 
   return (
     <details class="kurgu-ayari">
       <summary class="kucuk soluk">Ne yazıyorsunuz? {k ? k.ad : 'Seçilmedi'}</summary>
-      <p class="soluk kucuk">Kurgunuza uzak bölümler menüde “Diğer” altına alınır. Gizlenen bölümlerin kayıtları silinmez, yalnızca menüden kalkar.</p>
+      <p class="soluk kucuk">Seçtiğiniz kurgu türünde az kullanılan bölümler menüde “Diğer” altına alınır. Gizlenen bölümlerin kayıtları silinmez, yalnızca menüden kalkar.</p>
       <KurguSecici deger={bilgi.kurguTuru} degis={(kurgu) => istemci.iste('kurguTuruYaz', { evren: bilgi.kod, kurgu }).then(() => setHata(null), (e) => setHata((e as Error).message))} />
       {hata && <p class="hata kucuk">{hata}</p>}
     </details>

@@ -613,7 +613,7 @@ export function konturHesapla(
   if (oran === null || !baglam.olcek) {
     return {
       durum: 'olceksiz',
-      uyari: 'Harita ölçeksiz. Erişim konturları için önce haritanın ölçeğini tanımlayın.',
+      uyari: 'Harita ölçeksiz. Ulaşılabilecek yerleri hesaplamak için önce haritanın ölçeğini tanımlayın.',
       baslangic,
       izgaraEn: 0,
       izgaraBoy: 0,
@@ -775,7 +775,7 @@ export function konturHesapla(
   return {
     durum: 'tamam',
     uyari: bilinmeyenAlanVar
-      ? 'Hızı bilinmeyen alanlar kontur hesabına katılmadı. Yalnızca hızı tanımlı araziler tarandı.'
+      ? 'Hızı bilinmeyen alanlar hesaba katılmadı. Yalnızca hızı tanımlı araziler tarandı.'
       : !erisilenVar
         ? 'Başlangıç noktası, seçilen ulaşım yolu ve mevsimde geçilemeyen bir alanda.'
         : null,

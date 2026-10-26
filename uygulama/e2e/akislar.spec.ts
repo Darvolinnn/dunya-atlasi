@@ -219,7 +219,7 @@ test('yeni evrende "İlk adımlar" yapıldıkça ilerler; gizlenince gizli kalı
   await expect(p.getByRole('status', { name: 'Sıradaki adım' })).toContainText('İlk sahnenizi ekleyin');
   await p.getByRole('link', { name: 'Yaz', exact: true }).click();
   await expect(liste).toContainText('1 / 4 tamam');
-  await liste.getByRole('button', { name: 'Yap: İlk sahnenizi ekleyin' }).click();
+  await liste.getByRole('button', { name: 'Başla: İlk sahnenizi ekleyin' }).click();
   await expect(p.getByPlaceholder('Sahnenin adı', { exact: true })).toBeFocused();
   await p.getByPlaceholder('Sahnenin adı', { exact: true }).fill('Kuşatma');
   const eserAdresi = p.url();
@@ -278,12 +278,12 @@ test('İlk adımlarda yol seçilir; "Geç" adımı yapılmış saymaz; seçim ye
   const liste = p.getByRole('region', { name: 'İlk adımlar' });
   await liste.getByLabel('Bir dünyayla').check();
   await expect(liste).toContainText('Dünyanızın kuralını yazın');
-  await liste.locator('li').nth(1).getByRole('button', { name: 'Geç' }).click();
-  await expect(liste.locator('li').nth(1)).toContainText('Geçildi');
+  await liste.locator('li').nth(1).getByRole('button', { name: 'Şimdilik atla' }).click();
+  await expect(liste.locator('li').nth(1)).toContainText('Atlandı');
   await expect(liste).toContainText('0 / 4 tamam');
   await p.reload();
   await expect(liste.getByLabel('Bir dünyayla')).toBeChecked();
-  await expect(liste.locator('li').nth(1)).toContainText('Geçildi');
+  await expect(liste.locator('li').nth(1)).toContainText('Atlandı');
   await liste.getByLabel('Bir sahneyle').check();
   await expect(liste).toContainText('Bir eser oluşturun');
 });
@@ -346,7 +346,7 @@ test('olay örgüsü masası: boş sahne eklenir, dönüm noktası işaretlenir,
   await expect(secili).toContainText('metni yok (plan sahnesi)');
   await secili.getByRole('button', { name: 'Dönüm noktası olarak işaretle' }).click();
   await expect(tablo.locator('tr', { hasText: 'Dönüm noktaları' }).locator('td').nth(1)).toContainText('dönüm');
-  await secili.getByRole('button', { name: '← Bir öne' }).click();
+  await secili.getByRole('button', { name: '← Öne al' }).click();
   await expect(tablo.locator('thead tr').nth(1).getByRole('button')).toHaveText(['Liman', 'Kuşatma']);
   await expect(p.locator('.orgu-ozet')).toContainText('“Liman” 2. sahneden 1. sahneye geçti.');
   await p.getByRole('button', { name: 'Taşımayı geri al' }).click();
@@ -398,39 +398,39 @@ test('kayıt sayfasında boş alanlar gizli; "+" düğmesiyle açılır', async 
   await expect(main.getByRole('button', { name: '+ Görsel' })).toBeVisible();
 });
 
-test('İlk adımlarda "Yap" işin yerine götürür: sıradaki adım satırından metne ve bağlam paneline', async ({ page: p }) => {
+test('İlk adımlarda "Başla" işin yerine götürür: sıradaki adım satırından metne ve bağlam paneline', async ({ page: p }) => {
   await sahneAc(p);
   const satir = p.getByRole('status', { name: 'Sıradaki adım' });
   await expect(satir).toContainText('Metinde bir adı [[ ile bağlayın');
-  await satir.getByRole('button', { name: 'Yap' }).click();
+  await satir.getByRole('button', { name: 'Başla' }).click();
   await expect(editor(p)).toBeFocused();
-  await satir.getByRole('button', { name: 'Geç' }).click();
+  await satir.getByRole('button', { name: 'Şimdilik atla' }).click();
   await expect(satir).toContainText('Sahneye bir tarih ya da mekân verin');
-  await satir.getByRole('button', { name: 'Yap' }).click();
+  await satir.getByRole('button', { name: 'Başla' }).click();
   await expect(p.getByRole('complementary', { name: 'Sahnenin bağlamı' })).toBeVisible();
   await expect(p.locator('.yaz-baglami input').first()).toBeFocused();
   // Yol değişince Yap başka yere götürür: dünya yolunda Genel bakıştaki Dünya Pusulası sorusuna.
   await p.getByRole('link', { name: 'Yaz', exact: true }).click();
   const liste = p.getByRole('region', { name: 'İlk adımlar' });
   await liste.getByLabel('Bir dünyayla').check();
-  await liste.getByRole('button', { name: 'Yap: Dünyanızın kuralını yazın' }).click();
+  await liste.getByRole('button', { name: 'Başla: Dünyanızın kuralını yazın' }).click();
   await expect(p.getByRole('textbox', { name: 'Hangi kural kırılırsa her şey değişir?' })).toBeFocused();
 });
 
-test('İlk adımlar karakter yolu: "Yap" komut paletini açar, sonra karakterin sorusuna götürür', async ({ page: p }) => {
+test('İlk adımlar karakter yolu: "Başla" komut paletini açar, sonra karakterin sorusuna götürür', async ({ page: p }) => {
   await p.goto('/');
   await p.getByRole('button', { name: 'Yeni evren', exact: true }).click();
   await p.locator('#yeni-evren-adi').fill('Adım Evreni');
   await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
   const liste = p.getByRole('region', { name: 'İlk adımlar' });
   await liste.getByLabel('Bir karakterle').check();
-  await liste.getByRole('button', { name: 'Yap: Bir karakter oluşturun' }).click();
+  await liste.getByRole('button', { name: 'Başla: Bir karakter oluşturun' }).click();
   await p.getByLabel('Kayıt ya da komut ara').fill('Lale');
   await p.getByText('Yeni kayıt: “Lale”').click();
   await p.getByRole('option', { name: /^Karakter/ }).first().click();
   await expect(p.getByRole('textbox', { name: 'Ad' })).toHaveValue('Lale');
   const satir = p.getByRole('status', { name: 'Sıradaki adım' });
   await expect(satir).toContainText('Karakter en çok ne istiyor?');
-  await satir.getByRole('button', { name: 'Yap' }).click();
+  await satir.getByRole('button', { name: 'Başla' }).click();
   await expect(p.getByRole('textbox', { name: 'En çok ne istiyor?' })).toBeFocused();
 });

@@ -43,7 +43,7 @@ function denetle(e: EvrenVt, t: BaglamParcasiTanimi): SakliParca {
     return a.kod as string;
   };
   const not = String(t.not ?? '').replace(/\s+/g, ' ').trim();
-  if (not.length > 300) throw new Error('Not en çok 300 harf olabilir.');
+  if (not.length > 300) throw new Error('Not en çok 300 karakter olabilir (boşluklar dahil).');
   return {
     tarih: { kip: t.tarih.kip, deger: tarih },
     yer: { kip: t.yer.kip, kod: kayit(t.yer, 'Yer') },

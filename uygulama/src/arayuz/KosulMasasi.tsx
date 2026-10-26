@@ -44,7 +44,7 @@ export function KosulMasasiSekmesi({ istemci, evren }: { istemci: Istemci; evren
   return (
     <section class="kosul-masasi" aria-label="Sonuçtan koşullara">
       <h2>Sonuçtan koşullara</h2>
-      <p class="soluk kucuk">Nereden nereye gidileceğini, süre sınırını ve kullanılamayacak yolları yazın; kayıtlı rotalardan uyan planlar listelenir. Program yeni yol ya da süre uydurmaz, evrene de hiçbir şey kaydetmez.</p>
+      <p class="soluk kucuk">Hedefe uyan yolculuk planlarını bulur. Nereden nereye gidileceğini, süre sınırını ve kullanılamayacak yolları yazın; kayıtlı rotalardan uyan planlar listelenir. Program yeni yol ya da süre uydurmaz, evrene de hiçbir şey kaydetmez.</p>
       <form class="kart" onSubmit={ara}>
         <div class="satir">
           <KayitSec istemci={istemci} evren={evren} secili={nereden} etiket="Nereden?" sec={setNereden} />

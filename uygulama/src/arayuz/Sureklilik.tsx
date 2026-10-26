@@ -33,7 +33,7 @@ export function SureklilikDefteri({ istemci, evren, sahne, olaylar, surum }: { i
         <span class="bosluk" />
         {!yeniAcik && <button class="dugme kucuk" onClick={() => setYeniAcik(true)}>Yeni ayrıntı izle</button>}
       </div>
-      <p class="soluk kucuk">İzlemek istediğiniz ayrıntıların (ok sayısı, yaralı el, kimdeki kılıç) sahne başındaki ve sonundaki durumunu yazın. Program metinden tahminde bulunmaz, arada olanları siz kaydedersiniz.</p>
+      <p class="soluk kucuk">İzlemek istediğiniz ayrıntıların (ok sayısı, elin yarası, kılıcın kimde olduğu) sahne başındaki ve sonundaki durumunu yazın. Program metinden tahminde bulunmaz, arada olanları siz kaydedersiniz.</p>
       {yeniAcik && <YeniIzFormu istemci={istemci} evren={evren} kapat={(kod) => { setYeniAcik(false); if (kod) setEk((l) => [...l, kod]); }} />}
       {!veri.tarihli && veri.izler.length > 0 && <p class="soluk kucuk">Sahnenin tarihi olmadığı için önceki sahnelerden gelen durum hesaplanamaz.</p>}
       {veri.izler.map((x) => <IzKarti key={x.iz.kod} istemci={istemci} evren={evren} sahne={sahne} olaylar={olaylar} x={x} />)}

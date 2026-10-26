@@ -38,7 +38,7 @@ export function sozlukYaz(b: Baglam, kod: string | null, t: SozlukTanimi) {
   if (kod) sozlukVar(b.e, kod);
   if (!t || !['yasak', 'hitap', 'teknoloji'].includes(t.tur)) throw new Error('Sözlüğün türünü seçin.');
   const ad = temiz(t.ad);
-  if (!ad || ad.length > 120) throw new Error('Sözlüğün adı bir ile 120 harf arasında olmalı.');
+  if (!ad || ad.length > 120) throw new Error('Sözlüğün adı bir ile 120 karakter arasında olmalı (boşluklar dahil).');
   if (!Array.isArray(t.girdiler) || !t.girdiler.length || t.girdiler.length > 500) throw new Error('Bir ile 500 arasında girdi yazın.');
   const girdiler = t.girdiler.map((g) => {
     const ifade = temiz(g?.ifade), aciklama = temiz(g?.aciklama);

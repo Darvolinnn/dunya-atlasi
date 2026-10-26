@@ -51,9 +51,9 @@ export function HaklarBolumu({ istemci, evren, kod, ad, surum, saltOkunur = fals
     <p>Tanıyan otorite: {s.otorite ? bag(evren, s.otorite) : 'Yazılmamış'}</p>
     {s.tanim.kosul && <p>Koşul: {s.tanim.kosul}</p>}
     {s.secenekler.length > 0 && <div><p>İki cihazda farklı değerler yazılmış; birini seçmeniz gerekiyor:</p><ul>{s.secenekler.map((d) => <li>{d}</li>)}</ul></div>}
-    {s.tanimalar.length > 0 && <><p>Otoritelerin tanımaları:</p><ul>{s.tanimalar.map((t) => <li key={t.kod}>
-      {t.secenekler.length ? <><span>İki cihazda farklı tanımalar yazılmış; birini seçmeniz gerekiyor.</span><ul>{t.secenekler.map((d) => <li>{d}</li>)}</ul></> : <>{bag(evren, t.otorite)}: {TANIMALAR[t.durum]}</>}
-      {!saltOkunur && <label> Tanımayı değiştir <select class="girdi" disabled={mesgul} value={t.durum} onChange={(e) => is(() => istemci.iste('hakTanimaYaz', { evren, hak: s.kod, kod: t.kod, otorite: t.otorite.kod, durum: e.currentTarget.value as HakTanimaDurumu }))}>
+    {s.tanimalar.length > 0 && <><p>Bu hakkı tanıyan ya da tanımayan otoriteler:</p><ul>{s.tanimalar.map((t) => <li key={t.kod}>
+      {t.secenekler.length ? <><span>İki cihazda farklı tutumlar yazılmış; birini seçmeniz gerekiyor.</span><ul>{t.secenekler.map((d) => <li>{d}</li>)}</ul></> : <>{bag(evren, t.otorite)}: {TANIMALAR[t.durum]}</>}
+      {!saltOkunur && <label> Tutumu değiştir <select class="girdi" disabled={mesgul} value={t.durum} onChange={(e) => is(() => istemci.iste('hakTanimaYaz', { evren, hak: s.kod, kod: t.kod, otorite: t.otorite.kod, durum: e.currentTarget.value as HakTanimaDurumu }))}>
         {Object.entries(TANIMALAR).map(([k, ad]) => <option value={k}>{ad}</option>)}
       </select></label>}
     </li>)}</ul></>}
@@ -108,10 +108,10 @@ export function HaklarBolumu({ istemci, evren, kod, ad, surum, saltOkunur = fals
 function TanimaFormu({ istemci, evren, mesgul, kaydet }: { istemci: Istemci; evren: string; mesgul: boolean; kaydet: (otorite: string, durum: HakTanimaDurumu) => Promise<void> }) {
   const [otorite, setOtorite] = useState<Secim | null>(null), [durum, setDurum] = useState<HakTanimaDurumu>('bilinmiyor');
   return <div class="satir">
-    <fieldset disabled={mesgul}><legend>Otoritenin tanımasını ekle</legend>
-      <KayitSec istemci={istemci} evren={evren} secili={otorite} sec={setOtorite} etiket="Tanımayı bildiren otorite" />{' '}
-      <label>Tanıma durumu <select class="girdi" value={durum} onChange={(e) => setDurum(e.currentTarget.value as HakTanimaDurumu)}>{Object.entries(TANIMALAR).map(([k, ad]) => <option value={k}>{ad}</option>)}</select></label>{' '}
-      <button class="dugme" type="button" disabled={!otorite} onClick={() => { if (otorite) void kaydet(otorite.kod, durum); }}>Tanımayı ekle</button>
+    <fieldset disabled={mesgul}><legend>Otoritenin tutumunu ekle</legend>
+      <KayitSec istemci={istemci} evren={evren} secili={otorite} sec={setOtorite} etiket="Tutumu bildiren otorite" />{' '}
+      <label>Tutumu <select class="girdi" value={durum} onChange={(e) => setDurum(e.currentTarget.value as HakTanimaDurumu)}>{Object.entries(TANIMALAR).map(([k, ad]) => <option value={k}>{ad}</option>)}</select></label>{' '}
+      <button class="dugme" type="button" disabled={!otorite} onClick={() => { if (otorite) void kaydet(otorite.kod, durum); }}>Tutumu ekle</button>
     </fieldset>
   </div>;
 }

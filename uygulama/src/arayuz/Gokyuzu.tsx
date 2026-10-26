@@ -80,10 +80,10 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
       <fieldset disabled={bekliyor}><legend>Gökyüzü tanımı</legend>
         {t.aylar.map((a, i) => {
           const ayDegis = (x: Partial<typeof a>) => degis({ ...t, aylar: t.aylar.map((b, j) => j === i ? { ...b, ...x } : b) });
-          return <fieldset key={a.kod}><legend>{i + 1}. ay</legend><div class="satir">
+          return <fieldset key={a.kod}><legend>{i + 1}. uydu</legend><div class="satir">
             <label>Ayın adı <input class="girdi" value={a.ad} onInput={(e) => ayDegis({ ad: e.currentTarget.value })} /></label>
-            <label>Dönem (gün) <input class="girdi" type="number" min="1" step="any" value={a.donem} onInput={(e) => ayDegis({ donem: e.currentTarget.valueAsNumber })} /></label>
-            <label>Başlangıç tarihi <input class="girdi" value={a.baslangic} onInput={(e) => ayDegis({ baslangic: e.currentTarget.value })} /></label>
+            <label>Evre döngüsü (gün) <input class="girdi" type="number" min="1" step="any" value={a.donem} onInput={(e) => ayDegis({ donem: e.currentTarget.valueAsNumber })} /></label>
+            <label>Başlangıç evresinin tarihi <input class="girdi" value={a.baslangic} onInput={(e) => ayDegis({ baslangic: e.currentTarget.value })} /></label>
             <EvreSec etiket={`${i + 1}. ayın başlangıç evresi`} deger={a.evre} sec={(evre) => ayDegis({ evre })} />
             <button class="dugme" onClick={() => { degis({ ...t, aylar: t.aylar.filter((b) => b.kod !== a.kod) }); setKosullar({}); }}>Ayı kaldır</button>
           </div></fieldset>;

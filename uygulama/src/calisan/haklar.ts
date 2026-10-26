@@ -85,8 +85,8 @@ export function hakSil(b: DurumBaglami, kod: string, geri = false) {
 }
 export function hakTanimaYaz(b: DurumBaglami, hak: string, kod: string | null, otorite: string, durum: HakTanimaDurumu) {
   bul(b.e, hak);
-  const o = kayit(b.e, otorite, 'Tanımayı bildiren otoriteyi seçin.');
-  if (!Object.hasOwn(TANIMALAR, durum)) throw new Error('Tanıma durumunu seçin.');
+  const o = kayit(b.e, otorite, 'Tutumu bildiren otoriteyi seçin.');
+  if (!Object.hasOwn(TANIMALAR, durum)) throw new Error('Otoritenin tutumunu seçin.');
   if (kod && (!kodGecerliMi(kod) || !b.e.db.selectValue('SELECT kod FROM hak_tanimalari WHERE kod=? AND hak=?', [kod, hak]))) throw new Error('Tanıma kaydı bulunamadı.');
   const onceki = kod ? b.e.db.selectValue('SELECT otorite FROM hak_tanimalari WHERE kod=?', [kod]) as string : null;
   kod ??= yeniKod();

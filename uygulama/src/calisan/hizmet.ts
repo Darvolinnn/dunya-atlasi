@@ -2429,8 +2429,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     const eski = kod ? z.diger.find((x) => x.kod === kod) : undefined;
     if (kod && !eski) throw new Error('Takvim bulunamadı.');
     const temel = this.takvimTemizle(t, kod ?? yeniKod(), (eski?.surum ?? 0) + 1);
-    if (!String(t.ad ?? '').trim()) throw new Error('Takvimin yıl için kullandığı sözü yazın (örn. “Döngü”).');
-    if (katla(temel.ad) === katla('Yıl')) throw new Error('Paralel takvimin yıl sözü ana takvimdekinden farklı olmalı; “Yıl” dışında bir söz seçin.');
+    if (!String(t.ad ?? '').trim()) throw new Error('Takvimde yılın adını yazın (örn. “Döngü”).');
+    if (katla(temel.ad) === katla('Yıl')) throw new Error('Paralel takvimde yılın adı ana takvimdekinden farklı olmalı; “Yıl” dışında bir ad seçin.');
     const capAna = String(t.cap?.ana ?? '').replace(/\s+/g, ' ').trim();
     const cap = t.cap && capAna ? { yil: Number(t.cap.yil), ana: capAna } : null;
     if (cap) {

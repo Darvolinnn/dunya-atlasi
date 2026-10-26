@@ -79,7 +79,7 @@ function olayBagKontrol(e: EvrenVt, olayGirdi: string, kuralGirdi: string): {
 
 function temizMetin(s: unknown, enCok: number): string {
   const x = String(s ?? '').replace(/\s+/g, ' ').trim();
-  if (x.length > enCok) throw new Error(`Not en çok ${enCok} harf olabilir.`);
+  if (x.length > enCok) throw new Error(`Not en çok ${enCok} karakter olabilir (boşluklar dahil).`);
   return x;
 }
 

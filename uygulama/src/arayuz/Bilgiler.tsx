@@ -44,7 +44,7 @@ export function BilinenlerBolumu({ istemci, evren, kayit }: { istemci: Istemci; 
           <div class="satir">
             <h2>{okur ? 'Okurun öğrendikleri' : 'Bildikleri ve inandıkları'}</h2>
             <span class="bosluk" />
-            {!bilgiEkle && <button class="dugme kucuk" onClick={() => setBilgiEkle(true)}>{okur ? 'Okura açıklanan ekle' : 'Bilgi ekle'}</button>}
+            {!bilgiEkle && <button class="dugme kucuk" onClick={() => setBilgiEkle(true)}>{okur ? 'Okurun öğrendiği bilgiyi ekle' : 'Bilgi ekle'}</button>}
           </div>
           {!bildikleri.length && !bilgiEkle && <p class="soluk kucuk">{okur
             ? 'Okurun hangi sırrı hangi sahnede öğrendiğini buraya yazın. Okur için zaman, okuma sırasına göre ilerler.'
