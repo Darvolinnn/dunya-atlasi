@@ -42,7 +42,7 @@ describe('neden her yerde kullanılmıyor masası (F12)', () => {
     expect(() => h.kullanimMasasiYaz({ evren, kod: kisi, tanim: { alanlar: [] } })).toThrow('büyü, teknoloji');
     expect(() => h.kullanimMasasiYaz({ evren, kod: tek, tanim: { alanlar: [alan({})] } })).toThrow('adını yazın');
     expect(() => h.kullanimMasasiYaz({ evren, kod: tek, tanim: { alanlar: [alan({ kayit: kisi }), alan({ kayit: kisi })] } })).toThrow('iki kez');
-    expect(() => h.kullanimMasasiYaz({ evren, kod: tek, tanim: { alanlar: [alan({ ad: 'Ticaret', yasak: 'x'.repeat(301) })] } })).toThrow('300 harf');
+    expect(() => h.kullanimMasasiYaz({ evren, kod: tek, tanim: { alanlar: [alan({ ad: 'Ticaret', yasak: 'x'.repeat(301) })] } })).toThrow('300 karakter');
 
     h.kullanimMasasiYaz({ evren, kod: tek, tanim: { alanlar: [alan({ ad: 'Ticaret' })] } });
     const b = cihaz(); b.evreniDisaridanKur({ kod: evren, islemler: h.islemleriVer({ evren, gorulen: {} }) });

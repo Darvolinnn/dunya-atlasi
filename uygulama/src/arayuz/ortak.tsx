@@ -18,7 +18,7 @@ export function TurSecici({ deger, onDegis, hepsi, etiket = 'Tür' }: { deger: s
         const l = TURLER.filter((t) => t.grup === g && !uzakTurMu(kurgu, t.kod));
         return l.length > 0 && <optgroup label={g}>{l.map((t) => <option value={t.kod}>{t.ad}</option>)}</optgroup>;
       })}
-      {uzak.length > 0 && <optgroup label="Diğer türler (kurgunuza uzak)">{uzak.map((t) => <option value={t.kod}>{t.ad}</option>)}</optgroup>}
+      {uzak.length > 0 && <optgroup label="Diğer türler">{uzak.map((t) => <option value={t.kod}>{t.ad}</option>)}</optgroup>}
     </select>
   );
 }

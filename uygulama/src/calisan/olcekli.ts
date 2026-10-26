@@ -415,9 +415,9 @@ export function olcekliKonturlar(
   },
 ): OlcekliKonturSonucu {
   const bas = noktaTemizle(a.baslangic);
-  if (!bas) throw new Error('Erişim konturları için geçerli bir başlangıç noktası seçin.');
+  if (!bas) throw new Error('Ulaşılabilecek yerler için geçerli bir başlangıç noktası seçin.');
   const ulasim = typeof a.ulasim === 'string' ? a.ulasim.trim() : '';
-  if (!ulasim) throw new Error('Erişim konturları için ulaşım biçimini belirtin.');
+  if (!ulasim) throw new Error('Ulaşılabilecek yerler için ulaşım biçimini belirtin.');
   const { baglam, katmanlarJson } = geometriBaglamiHazirla(e, a.harita);
   const katmanDonusumu = katmanDonusumuOku(katmanlarJson, a.katman);
   return konturHesapla(baglam, bas as Nokta, ulasim, {

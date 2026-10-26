@@ -29,7 +29,7 @@ const HEDEF_YAZISI: Record<TiklamaHedefi, string> = {
   olcek2: 'ölçeğin 2. noktası',
   olcumBas: 'ölçümün başlangıcı',
   olcumBit: 'ölçümün bitişi',
-  konturBas: 'erişim konturlarının başlangıcı',
+  konturBas: 'ulaşılabilecek yerlerin başlangıç noktası',
   araziNokta: 'arazinin yeni köşesi',
 };
 
@@ -116,7 +116,7 @@ export function OlcekliHaritaBolumu({
     return (
       <div class="satir">
         <button type="button" class="dugme sade kucuk" onClick={() => setAcik(true)}>
-          Ölçekli geometri ve erişim konturları
+          Ölçekli harita ve ulaşılabilecek yerler
         </button>
       </div>
     );
@@ -277,9 +277,9 @@ export function OlcekliHaritaBolumu({
   );
 
   return (
-    <section class="olcekli-harita" aria-label="Ölçekli geometri ve erişim konturları">
+    <section class="olcekli-harita" aria-label="Ölçekli harita ve ulaşılabilecek yerler">
       <div class="satir">
-        <h2>Ölçekli geometri</h2>
+        <h2>Ölçekli harita</h2>
         {durum?.catismali && <span class="rozet uyari">İki cihazda farklı</span>}
         <span class="bosluk" />
         <button type="button" class="dugme sade kucuk" onClick={() => setAcik(false)}>
@@ -307,7 +307,7 @@ export function OlcekliHaritaBolumu({
           viewBox={`0 0 ${h.en} ${h.boy}`}
           onClick={svgTikla}
           role="img"
-          aria-label="Ölçekli harita ve erişim konturları katmanı"
+          aria-label="Ölçekli harita ve ulaşılabilecek yerler katmanı"
         >
           <rect x={0} y={0} width={h.en} height={h.boy} class="olcekli-zemin" />
           {durum?.araziler.map((a) => (
@@ -638,14 +638,14 @@ export function OlcekliHaritaBolumu({
         )}
 
         {/* Erişim konturları */}
-        <h3>1., 2. ve 3. gün erişim konturları</h3>
+        <h3>1., 2. ve 3. günde ulaşılabilecek yerler</h3>
         <div class="satir">
           <span>Başlangıç: ({konturBas[0]}, {konturBas[1]})</span>
           <button type="button" class="dugme sade kucuk" onClick={() => setHedef('konturBas')}>
             Haritadan seç
           </button>
           <button type="button" class="dugme ana kucuk" onClick={konturCalistir}>
-            Konturları hesapla
+            Ulaşılabilecek yerleri hesapla
           </button>
         </div>
         {konturDurum === 'hesaplaniyor' && <p class="soluk">Hesaplanıyor…</p>}
@@ -777,9 +777,9 @@ function SonucZarfiGorunumu({
     <details class="soluk kucuk">
       <summary>Sonuç dayanağı ve varsayımlar</summary>
       <ul class="isaret-listesi">
-        <li><strong>Çalışma kipi:</strong> Ölçekli geometri</li>
+        <li><strong>Çalışma kipi:</strong> Ölçekli harita</li>
         <li><strong>Sonucun türü:</strong> Bu varsayımlara dayanan tahmin</li>
-        <li><strong>Hüküm:</strong> {HUKUM_YAZISI[zarf.hukum]}</li>
+        <li><strong>Sonuç:</strong> {HUKUM_YAZISI[zarf.hukum]}</li>
         <li><strong>Güncellik:</strong> {guncellik === 'guncel' ? 'Güncel' : 'Önceki sonuç'}</li>
         {zarf.olcekOzeti && <li><strong>Ölçek:</strong> {zarf.olcekOzeti}</li>}
         {zarf.ulasim && <li><strong>Ulaşım biçimi:</strong> {zarf.ulasim}</li>}

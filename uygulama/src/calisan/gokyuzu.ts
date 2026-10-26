@@ -21,7 +21,7 @@ export const EVRELER: { kod: AyEvresi; ad: string }[] = [
 export const SINIRLAR = 'Yalnızca takvim döngüleri hesaplanır. Ayların aynı evrede olması tutulma demek değildir; üç dolunay geceyi gündüze çevirmez. Gelgiti hesaplamak için kıyı ve derinlik bilgisi gerekir, burada yalnızca kıyı notu ve tekrar süresi saklanır. Yalnızca yılı bilinen bir tarih için gün uydurulmaz, o yıl içindeki olası evreler gösterilir. Bir hesapta en çok 100.000 gün incelenir. Çakışma araması en çok 50 gün gösterir.';
 const mod = (a: number, b: number) => ((a % b) + b) % b;
 const metin = (x: unknown, ad: string, sinir = 120) => {
-  if (typeof x !== 'string' || !x.trim() || x.length > sinir) throw new Error(`${ad} yazın. En çok ${sinir} harf olabilir.`);
+  if (typeof x !== 'string' || !x.trim() || x.length > sinir) throw new Error(`${ad} yazın. En çok ${sinir} karakter olabilir (boşluklar dahil).`);
   return x.trim();
 };
 const evreMi = (x: unknown): x is AyEvresi => EVRELER.some((e) => e.kod === x);

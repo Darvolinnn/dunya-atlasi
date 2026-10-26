@@ -15,7 +15,11 @@ const IZ_ANAHTARI = 'dunya-atlasi:olay-orgusu-izleri';
 
 const IZLER = [['donum', 'Dönüm noktaları'], ['hat', 'Kurgu hatları'], ['soru', 'Okur soruları'], ['karakter', 'Karakterler'], ['calisma', 'Çalışma durumu']] as const;
 type Iz = typeof IZLER[number][0];
-const NIYET_ADI: Record<string, string> = { ipucu: 'ipucu', yaniltmaca: 'yanıltmaca', destekler: 'işaret', zayiflatir: 'zayıflatır', aciklama: 'açıklama' };
+const NIYET_ADI: Record<string, string> = { ipucu: 'ipucu', yaniltmaca: 'yanıltmaca', destekler: 'destek', zayiflatir: 'zayıflatma', aciklama: 'açıklama' };
+/** Cümle içinde kullanılan adlar ("… sorusundaki ipucu artık …"). */
+const NIYET_OBEGI: Record<string, string> = { ipucu: 'ipucu', yaniltmaca: 'yanıltmaca', destekler: 'destekleyen işaret', zayiflatir: 'zayıflatan işaret', aciklama: 'açıklama' };
+/** Seçili sahnenin her soru için taşıdığı işaret, tam cümle olarak ("… sorusunda ipucu var"). */
+const NIYET_CUMLESI: Record<string, string> = { ipucu: 'ipucu var', yaniltmaca: 'yanıltmaca var', destekler: 'bir açıklamayı destekleyen işaret var', zayiflatir: 'bir açıklamayı zayıflatan işaret var', aciklama: 'cevap açıklanıyor' };
 const calismaAdi = (k: string | null) => SAHNE_CALISMA.find((x) => x.kod === k)?.ad ?? '';
 /** İlk açılışta en çok görünen bu kadar karakter gösterilir; gerisi bir tıkla açılır. */
 const KARAKTER_SINIRI = 6;
@@ -39,7 +43,7 @@ function etkiOzeti(once: OlayOrgusu, sonra: OlayOrgusu, sahne: string, etki: Anl
   if (i === j) return l.length ? l : ['Sahnenin yeri değişmedi.'];
   for (const q of once.sorular) {
     const t = q.hucreler[i];
-    if (t) l.push(`“${q.iddia.soru}” sorusundaki ${NIYET_ADI[t]} artık ${j + 1}. sahnede (önce ${i + 1}.).`);
+    if (t) l.push(`“${q.iddia.soru}” sorusundaki ${NIYET_OBEGI[t]} artık ${j + 1}. sahnede (önce ${i + 1}.).`);
   }
   for (const h of once.hatlar) if (h.hucreler[i] !== null) l.push(`“${h.hat.ad}” hattındaki yeri ${i + 1}. sahneden ${j + 1}. sahneye geçti.`);
   for (const x of etki) {
@@ -197,12 +201,12 @@ export function OlayOrgusuGorunumu({ istemci, evren, eser }: { istemci: Istemci;
         <div class="orgu-secili">
           <p><strong>{s.ad}</strong> · {si + 1}. sahne{seride ? ` · ${s.eser.ad}` : ''}{s.bolum ? ` · ${s.bolum}` : ''}{!s.metinVar && <span class="soluk"> · metni yok (plan sahnesi)</span>}</p>
           {s.olaylar.length > 0 && <p class="kucuk">Anlattığı olay: {s.olaylar.map((x, i) => <>{i > 0 && ', '}<a href={`#/e/${evren}/k/${x.kod}`}>{x.ad}</a></>)}</p>}
-          {o.sorular.filter((q) => q.hucreler[si]).map((q) => <p key={q.iddia.kod} class="kucuk">“{q.iddia.soru}” sorusunda {NIYET_ADI[q.hucreler[si]!]} taşıyor.</p>)}
+          {o.sorular.filter((q) => q.hucreler[si]).map((q) => <p key={q.iddia.kod} class="kucuk">“{q.iddia.soru}” sorusunda {NIYET_CUMLESI[q.hucreler[si]!]}.</p>)}
           <div class="satir">
             <a class="dugme kucuk" href={`#/e/${evren}/yaz/${s.kod}`}>Sahneyi yaz</a>
             <a class="dugme sade kucuk" href={`#/e/${evren}/k/${s.kod}`}>Sayfasını aç</a>
-            <button type="button" class="dugme sade kucuk" disabled={si === 0} onClick={() => tasi(s.kod, -1)}>← Bir öne</button>
-            <button type="button" class="dugme sade kucuk" disabled={si === sutunlar.length - 1} onClick={() => tasi(s.kod, 1)}>Bir sonraya →</button>
+            <button type="button" class="dugme sade kucuk" disabled={si === 0} onClick={() => tasi(s.kod, -1)}>← Öne al</button>
+            <button type="button" class="dugme sade kucuk" disabled={si === sutunlar.length - 1} onClick={() => tasi(s.kod, 1)}>Sonraya al →</button>
             <button type="button" class="dugme sade kucuk" onClick={() => donumYap(s.kod, !s.donum)}>{s.donum ? 'Dönüm noktası değil' : 'Dönüm noktası olarak işaretle'}</button>
           </div>
         </div>

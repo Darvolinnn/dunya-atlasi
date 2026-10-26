@@ -103,7 +103,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   iz_sil: (v, ad) => `${ad(v.konu)}: izlenen ayrıntı kaldırıldı: “${v.ad}”`,
   iz_geri_yukle: (v, ad) => `${ad(v.konu)}: izlenen ayrıntı geri getirildi: “${v.ad}”`,
   alan_boslugu: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” ${({ acik: 'bilerek açık bırakıldı', bilinmiyor: 'evrende bilinmiyor olarak işaretlendi', gecersiz: 'bu kayıt için geçersiz sayıldı' } as Record<string, string>)[String(v.tur)] ?? 'yeniden düşünülecekler arasına alındı'}`,
-  varsayilan_karari: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” için kaynaklar ${({ birlikte: 'birlikte geçerli sayıldı', kapsam: 'kapsamları farklı sayıldı', oncelik: 'arasında öncelik seçildi' } as Record<string, string>)[String((v.karar as { durum?: string } | null)?.durum)] ?? 'arasındaki karar geri alındı'}`,
+  varsayilan_karari: (v, ad) => `${ad(v.kod)}: “${v.ad ?? 'alan'}” için ${({ birlikte: 'kaynaklar birlikte geçerli sayıldı', kapsam: 'kaynakların kapsamları farklı sayıldı', oncelik: 'kaynaklar arasında öncelik seçildi' } as Record<string, string>)[String((v.karar as { durum?: string } | null)?.durum)] ?? 'kaynaklar arasındaki karar geri alındı'}`,
   dayaniklilik_yaz: (v, ad) => `${v.a ? `${ad(v.a)} – ${ad(v.b)}: ` : ''}${v.deger ? 'dayanma süresi ya da ikamesi yazıldı' : 'dayanma süresi kaldırıldı'}`,
   kanal_yaz: (v, ad) => `${ad(v.kod)}: haberleşme bağlantıları değişti`,
   haber_cikis_yaz: (v, ad) => `${ad(v.kod)}: haberin çıkış yeri ${(v.cikis as { yer?: string } | null)?.yer ? `“${ad((v.cikis as { yer: string }).yer)}” olarak ` : ''}kaydedildi`,
@@ -128,8 +128,8 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   metin_kullanim_yaz: (v, ad) => `${ad(v.hedef)}: “${ad(v.kaynak)}” metninin kullanımı kaydedildi${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
   metin_kullanim_sil: (v, ad) => `${ad(v.hedef)}: “${ad(v.kaynak)}” metniyle bağ kaldırıldı`,
   baglam_parcasi_sil: (v, ad) => `${ad(v.kayit)}: sahnedeki bir parçanın bağlamı kaldırıldı`,
-  dair_inanc_yaz: (v, ad) => `${v.konu ? `${ad(v.konu)}: ` : ''}${ad((v.tanim as { sanan?: string } | null)?.sanan)}, ${ad((v.tanim as { hakkinda?: string } | null)?.hakkinda)} hakkında ne sandığı kaydedildi${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
-  dair_inanc_sil: (v, ad) => `${v.konu ? `${ad(v.konu)}: ` : ''}${ad(v.sanan)}, ${ad(v.hakkinda)} hakkında ne sandığı kaldırıldı${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
+  dair_inanc_yaz: (v, ad) => `${v.konu ? `${ad(v.konu)}: başkasının` : 'Başkasının'} bildiğine dair inanç kaydedildi: ${ad((v.tanim as { sanan?: string } | null)?.sanan)}, ${ad((v.tanim as { hakkinda?: string } | null)?.hakkinda)} hakkında${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
+  dair_inanc_sil: (v, ad) => `${v.konu ? `${ad(v.konu)}: başkasının` : 'Başkasının'} bildiğine dair inanç kaldırıldı: ${ad(v.sanan)}, ${ad(v.hakkinda)} hakkında${v.cozum ? ' (iki cihazdaki değerlerden biri seçildi)' : ''}`,
   surec_kurali_olustur: (v, ad) => `${ad(v.sahip)}: süreç kuralı eklendi: “${v.ad}”`,
   surec_kurali_yaz: (v, ad) => `${v.sahip ? `${ad(v.sahip)}: ` : ''}“${(v.tanim as { ad?: string } | null)?.ad ?? 'süreç'}” kuralının tanımı değişti`,
   surec_kurali_sil: (v, ad) => `${ad(v.sahip)}: süreç kuralı kaldırıldı: “${v.ad}”`,
@@ -142,7 +142,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
     const ne = !c ? 'henüz karar verilmedi' : c.durum === 'suruyor' ? 'eski uygulama sürüyor' : c.durum === 'birlikte' ? 'eski ve yeni uygulama birlikte geçerli' : `yeni uygulama ${c.tarih?.ifade ? `${c.tarih.ifade} tarihinde ` : ''}başladı`;
     return `${ad(v.kod)}: “${v.ad ?? 'alan'}” bağlılık değişikliğinden sonra ${ne}`;
   },
-  iz_gozlem: (v, ad) => `${ad(v.sahne)}: “${v.izAd ?? 'ayrıntı'}” ${v.an === 'bas' ? 'başta' : 'sonda'} ${v.deger ? `“${v.deger}” olarak gözlendi` : 'gözlemi kaldırıldı'}`,
+  iz_gozlem: (v, ad) => `${ad(v.sahne)}: “${v.izAd ?? 'ayrıntı'}” ${v.deger ? `sahne ${v.an === 'bas' ? 'başında' : 'sonunda'} “${v.deger}” olarak gözlendi` : `için sahne ${v.an === 'bas' ? 'başındaki' : 'sonundaki'} gözlem kaldırıldı`}`,
   anlati_yerlestir: (v, ad) => v.ust ? `${ad(v.kod)}: ${ad(v.ust)} içinde yeri değişti` : `${ad(v.kod)}: eser yapısından çıkarıldı`,
   durum_ekle: (v, ad) => v.niyet === 'bu_tarihten' ? `${ad(v.konu)}: “${v.ozellik}” yeni tarihten itibaren “${v.hedef ? ad(v.hedef) : v.deger}” oldu` : `${ad(v.konu)}: durum eklendi: “${v.ozellik}: ${v.hedef ? ad(v.hedef) : v.deger}”`,
   durum_degistir: (v, ad) => `${ad(v.konu)}: “${v.ozellik}” durumunun ${({ deger: 'değeri', hedef: 'değeri', kip: 'süresi', baslangic: 'başlangıcı', bitis: 'bitişi', karar: 'karar durumu', ozellik: 'adı' } as Record<string, string>)[String(v.alan)] ?? 'bir alanı'} değişti`,
@@ -155,7 +155,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
     : v.alan === 'silindi' ? `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” ${v.deger ? 'kaldırıldı' : 'geri getirildi'}`
       : v.alan === 'gorsel' ? `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” görseli değişti`
         : `“${v.haritaAd}” haritasında “${v.katmanAd ?? 'katman'}” yeniden hizalandı`,
-  cizim_ekle: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasına ${v.bicim === 'yol' ? 'yol çizildi' : v.kip === 'iddia' ? 'iddia ettiği bölge çizildi' : 'bölgesi çizildi'}`,
+  cizim_ekle: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasına ${v.bicim === 'yol' ? 'yol çizildi' : v.kip === 'iddia' ? 'iddia edilen bölge çizildi' : 'bölge çizildi'}`,
   cizim_degistir: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki ${v.bicim === 'yol' ? 'yolun' : 'bölgenin'} ${({ noktalar: 'sınırı', kayit: 'bağlı olduğu kayıt', kip: 'türü', baslangic: 'başlangıcı', bitis: 'bitişi' } as Record<string, string>)[v.alan as string] ?? 'bilgisi'} değişti`,
   cizim_sil: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki ${v.bicim === 'yol' ? 'yol' : 'bölge'} kaldırıldı`,
   cizim_geri_yukle: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki ${v.bicim === 'yol' ? 'yol' : 'bölge'} geri getirildi`,
@@ -166,8 +166,8 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   harita_geri_yukle: (v) => `“${v.haritaAd}” haritası geri getirildi`,
   isaret_koy: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasında işaretlendi`,
   isaret_degistir: (v, ad) => v.alan === 'konum' ? `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki yeri değişti` : `“${v.haritaAd}” haritasındaki işaret ${ad(v.deger)} kaydına bağlandı`,
-  isaret_sil: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki işareti kaldırıldı`,
-  isaret_geri_yukle: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki işareti geri getirildi`,
+  isaret_sil: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki işaret kaldırıldı`,
+  isaret_geri_yukle: (v, ad) => `${ad(v.kayit)}: “${v.haritaAd}” haritasındaki işaret geri getirildi`,
   kayit_birlestir: (v, ad) => `“${v.kaynakAd}” kaydı ${ad(v.hedef)} ile birleştirildi`,
   birlesme_geri_al: (v, ad) => `“${v.kaynakAd}” ile ${ad(v.hedef)} birleştirmesi geri alındı`,
   inceleme_karari: (v) => v.durum === 'kabul' ? `İnceleme: “${v.baslik}” ${v.istisna === 'kapsam' ? 'bu kuralın kapsamı dışında sayıldı' : 'gerekçesiyle kabul edildi'}` : v.durum === 'ertelendi' ? `İnceleme: “${v.baslik}” ertelendi` : v.durum === 'duzeltildi' ? `İnceleme: “${v.baslik}” düzeltildiği için kapandı` : `İnceleme: “${v.baslik}” yeniden açıldı`,

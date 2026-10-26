@@ -8,7 +8,7 @@ import { geriAlinabilir } from './onay';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const OLAY_ADLARI: Record<KurguMontaji['sorular'][number]['olaylar'][number]['tur'], string> = {
-  ipucu: 'ipucu', yaniltmaca: 'yanıltmaca', destekler: 'destekler', zayiflatir: 'zayıflatır', aciklama: 'açıklama', okur: 'okur öğrenir',
+  ipucu: 'ipucu', yaniltmaca: 'yanıltmaca', destekler: 'destek', zayiflatir: 'zayıflatma', aciklama: 'açıklama', okur: 'okur öğreniyor',
 };
 const NIYETLER: { kod: SahneNiyeti['tur']; ad: string }[] = [{ kod: 'destekler', ad: 'Destekler' }, { kod: 'zayiflatir', ad: 'Zayıflatır' }, { kod: 'aciklar', ad: 'Açıklar' }];
 

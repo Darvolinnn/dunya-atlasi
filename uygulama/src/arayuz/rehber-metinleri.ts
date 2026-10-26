@@ -167,7 +167,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
     neZaman: 'Olaylara tarih vermeye başlamadan önce ya da evrene yeni bir takvim ya da farklı akan bir zaman eklemek istediğinizde.',
     adimlar: [
-      '“Ana takvim”de yıl için kullanılan sözü (ör. “Yıl”) ve bir yılın gün sayısını yazın.',
+      '“Ana takvim”de yılın adını (ör. “Yıl”) ve bir yılın gün sayısını yazın.',
       'Ayları sırayla ekleyip her ayın gün sayısını girin; ay eklerseniz yılın uzunluğu ayların toplamı olur.',
       'Gün bölümlerini virgülle yazın (ör. “sabah, öğle, akşam, gece”) ve mevsimleri hangi aylar arasında olduklarıyla ekleyin.',
       'Çağları (ör. “İkinci Çağ”) ilk yıllarının karşılığıyla tanımlayın.',

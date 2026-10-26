@@ -58,7 +58,7 @@ export function dogrula(e: EvrenVt, sahne: string, plan: YerlesimPlani, ogeler: 
   const yeni = ogeler.map((o) => {
     if (!o || !kodGecerliMi(o.kod) || kodlar.has(o.kod)) throw new Error('Öğelerden biri geçersiz ya da birden çok kez eklenmiş.');
     kodlar.add(o.kod);
-    if (typeof o.ad !== 'string' || o.ad.length > 120) throw new Error('Öğe adı en çok 120 harf olabilir.');
+    if (typeof o.ad !== 'string' || o.ad.length > 120) throw new Error('Öğe adı en çok 120 karakter olabilir (boşluklar dahil).');
     if ('a' in o) {
       if (!['duvar', 'kapi', 'pencere', 'siper'].includes(o.tur) || typeof o.acik !== 'boolean') throw new Error('Engel türünü seçin.');
       nokta(o.a); nokta(o.b);

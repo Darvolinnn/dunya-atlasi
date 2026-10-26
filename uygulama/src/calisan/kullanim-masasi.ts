@@ -37,7 +37,7 @@ export function kullanimMasasiYaz(b: KullanimBaglami, kodGirdi: string, t: Kulla
   if (t.alanlar.length > 30) throw new Error('En çok 30 alan yazılabilir.');
   const temiz = (s: unknown, n: number, ne: string) => {
     const x = String(s ?? '').replace(/\s+/g, ' ').trim();
-    if (x.length > n) throw new Error(`${ne} en çok ${n} harf olabilir.`);
+    if (x.length > n) throw new Error(`${ne} en çok ${n} karakter olabilir (boşluklar dahil).`);
     return x;
   };
   const gorulen = new Set<string>();

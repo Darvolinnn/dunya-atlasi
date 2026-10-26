@@ -52,7 +52,7 @@ test('yeni evrende "Ne yazıyorsunuz?" seçilir; uzak türler en sona katlanır'
   // Boş sayfanın düğmesi sayfanın kendi girdisine götürür.
   await p.getByRole('button', { name: 'Kayıt ekle', exact: true }).click();
   await expect(p.getByPlaceholder('Yeni kaydın adı')).toBeFocused();
-  const uzak = p.locator('optgroup[label="Diğer türler (kurgunuza uzak)"]').first();
+  const uzak = p.locator('optgroup[label="Diğer türler"]').first();
   await expect(uzak.locator('option', { hasText: 'Büyü sistemi' })).toHaveCount(1);
 });
 

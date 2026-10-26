@@ -433,7 +433,7 @@ function AdDuzeltmePaneli({ duzeltme, okunusVar, uygula, kapat }: {
   );
 }
 
-/** Andıkları ve ananlar (§3.2, K28): iki yön yan yana; ikisi de boşsa bölüm görünmez. */
+/** Bağlantı verdikleri ve bağlantı verenler (§3.2, K28): iki yön yan yana; ikisi de boşsa bölüm görünmez. */
 function Baglananlar({ istemci, evren, kod, ad, surum }: { istemci: Istemci; evren: string; kod: string; ad: string; surum: number }) {
   const [ananlar, setAnanlar] = useState<BaglananKayit[] | null>(null);
   const [andiklari, setAndiklari] = useState<BaglananKayit[] | null>(null);
@@ -466,8 +466,8 @@ function Baglananlar({ istemci, evren, kod, ad, surum }: { istemci: Istemci; evr
   );
   return (
     <section class="baglananlar" aria-label="Bağlantılar">
-      {sutun('Bu kaydın andıkları', 'Bu kaydın metninde henüz bağlantı yok.', andiklari, (b) => b.ad)}
-      {sutun('Bu kaydı ananlar', 'Başka bir metin bu kayda henüz bağlanmadı.', ananlar, () => ad)}
+      {sutun('Bu metnin bağlantı verdikleri', 'Bu kaydın metninde henüz bağlantı yok.', andiklari, (b) => b.ad)}
+      {sutun('Bu kayda bağlantı verenler', 'Başka bir metin bu kayda henüz bağlanmadı.', ananlar, () => ad)}
     </section>
   );
 }

@@ -36,7 +36,7 @@ const pusulaYap = (soru: string): Yapici => (ev) => void gitVeYap(`/e/${ev}/masa
 const YOLLAR: { kod: Yol; ad: string; konu: number; adimlar: Adim[] }[] = [
   { kod: 'sahne', ad: 'Bir sahneyle', konu: 20, adimlar: [
     { kod: 'eser', tamam: (d) => d.eser, kisa: 'Bir eser oluşturun', yap: eserYap, metin: <>Bir eser oluşturun: aşağıya romanınızın ya da öykünüzün adını yazın.</> },
-    { kod: 'sahne', tamam: (d) => d.sahne, kisa: 'İlk sahnenizi ekleyin', yap: sahneYap, metin: <>İlk sahnenizi ekleyin: soldaki listede eserin altındaki kutuya sahnenin adını yazın (“Yap” ya da “+ Sahne” açar) ve yazmaya başlayın.</> },
+    { kod: 'sahne', tamam: (d) => d.sahne, kisa: 'İlk sahnenizi ekleyin', yap: sahneYap, metin: <>İlk sahnenizi ekleyin: soldaki listede eserin altındaki kutuya sahnenin adını yazın (“Başla” ya da “+ Sahne” açar) ve yazmaya başlayın.</> },
     { kod: 'baglanti', tamam: (d) => d.baglanti, kisa: 'Metinde bir adı [[ ile bağlayın', yap: (ev, h) => h.sahne ? void gitVeYap(`/e/${ev}/yaz/${h.sahne}`, [{ odak: '.ProseMirror[aria-label="Metin"]' }]) : sahneYap(ev, h),
       metin: <>Metinde bir karakterin ya da yerin adını <strong>[[</strong> ya da <strong>@</strong> ile başlayarak yazın; kaydı yoksa oluşturulur ve metne bağlanır.</> },
     { kod: 'baglam', tamam: (d) => d.baglam, kisa: 'Sahneye bir tarih ya da mekân verin', yap: baglamYap, metin: <>Sahneye bir tarih ya da mekân verin: başlıktaki “Bağlam ekle”ye basın. Bağlam paneli o andaki durumu göstermeye başlar.</> },
@@ -125,9 +125,9 @@ export function IlkAdimlar({ istemci, evren }: { istemci: Istemci; evren: string
         {s.adimlar.map(({ a, durum: dr }, i) => (
           <li key={a.kod} class={dr === 'tamam' ? 'tamam' : dr === 'gecildi' ? 'gecildi' : i === s.sira ? 'sirada' : 'soluk'}>
             {a.metin}{dr === 'tamam' && <span aria-label="tamam"> ✓</span>}
-            {dr === 'gecildi' && <span class="soluk kucuk"> · Geçildi</span>}
-            {dr !== 'tamam' && <> <button class={i === s.sira ? 'dugme ana kucuk' : 'dugme sade kucuk'} aria-label={`Yap: ${a.kisa}`} onClick={() => s.yap(a)}>Yap</button></>}
-            {dr === 'baslanmadi' && <> <button class="dugme sade kucuk" onClick={() => s.gec(a)}>Geç</button></>}
+            {dr === 'gecildi' && <span class="soluk kucuk"> · Atlandı</span>}
+            {dr !== 'tamam' && <> <button class={i === s.sira ? 'dugme ana kucuk' : 'dugme sade kucuk'} aria-label={`Başla: ${a.kisa}`} onClick={() => s.yap(a)}>Başla</button></>}
+            {dr === 'baslanmadi' && <> <button class="dugme sade kucuk" onClick={() => s.gec(a)}>Şimdilik atla</button></>}
           </li>
         ))}
       </ol>
@@ -145,8 +145,8 @@ export function SiradakiAdim({ istemci, evren, yazda = false }: { istemci: Istem
     <div class="siradaki-adim" role="status" aria-label="Sıradaki adım">
       <span class="soluk kucuk">İlk adımlar · {s.yapilan}/{s.adimlar.length}</span>
       <span>Sıradaki: <strong>{a.kisa}</strong></span>
-      <button class="dugme ana kucuk" onClick={() => s.yap(a)}>Yap</button>
-      <button class="dugme sade kucuk" onClick={() => s.gec(a)}>Geç</button>
+      <button class="dugme ana kucuk" onClick={() => s.yap(a)}>Başla</button>
+      <button class="dugme sade kucuk" onClick={() => s.gec(a)}>Şimdilik atla</button>
       <span class="bosluk" />
       <a class="kucuk" href={`#/e/${evren}/yaz`}>Bütün adımlar</a>
       <button class="dugme sade kucuk" aria-label="İlk adımları gizle" onClick={s.gizle}>Gizle</button>
