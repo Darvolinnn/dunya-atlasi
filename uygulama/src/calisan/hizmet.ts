@@ -3135,16 +3135,27 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
   private eserKontrol(e: EvrenVt, eser: string) {
     if (e.db.selectValue("SELECT 1 FROM kayitlar WHERE kod=? AND tur='eser' AND silindi IS NULL", [eser]) === undefined) throw new Error('Eser bulunamadı.');
   }
-  async epubYaz({ evren, eser, sahneBasliklari = false }: { evren: string; eser: string; sahneBasliklari?: boolean }) {
+  /** `sahneler` verilirse çıktıya yalnız onlar girer; boş liste "hiçbiri" demektir (§10.11). */
+  private ciktiSecimi(sahneler?: string[]): ReadonlySet<string> | undefined {
+    if (!sahneler) return undefined;
+    if (!sahneler.length) throw new Error('Çıktıya girecek sahne seçilmedi.');
+    return new Set(sahneler);
+  }
+  async epubYaz({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
     const e = this.evren(evren);
     this.eserKontrol(e, eser);
-    const r = cikti.epubDosyalari(e, eser, !!sahneBasliklari);
+    const r = cikti.epubDosyalari(e, eser, !!sahneBasliklari, new Date(), this.ciktiSecimi(sahneler));
     return { dosyaAdi: `${this.dosyaKoku(r.ad)}.epub`, veri: await zipYaz(r.dosyalar) };
   }
-  eserBaskiSayfasi({ evren, eser, sahneBasliklari = false }: { evren: string; eser: string; sahneBasliklari?: boolean }) {
+  eserBaskiSayfasi({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
     const e = this.evren(evren);
     this.eserKontrol(e, eser);
-    return { html: cikti.eserBaskiSayfasi(e, eser, !!sahneBasliklari) };
+    return { html: cikti.eserBaskiSayfasi(e, eser, !!sahneBasliklari, this.ciktiSecimi(sahneler)) };
+  }
+  ciktiAgaci({ evren, eser }: { evren: string; eser: string }) {
+    const e = this.evren(evren);
+    this.eserKontrol(e, eser);
+    return cikti.ciktiAgaci(e, eser);
   }
   belgeSunumu({ evren, kod }: { evren: string; kod: string }) {
     const e = this.evren(evren);

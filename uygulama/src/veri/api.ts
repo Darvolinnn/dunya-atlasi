@@ -852,6 +852,9 @@ export interface AdDuzeltmesi { kaynak: string; kaynakAd: string; sira: number; 
 /** Anlatı yapısı (§3.3). */
 export interface YapiSahnesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi | null; sira: number }
 export interface YapiBolumu { kod: string; ad: string; karar: string; sira: number; sahneler: YapiSahnesi[] }
+/** Çıktıda seçilebilecek sahne (§10.11): çalışma durumu ve metni olup olmadığı. */
+export interface CiktiSahnesi { kod: string; ad: string; calisma: string | null; metinli: boolean }
+export interface CiktiAgaci { dogrudan: CiktiSahnesi[]; bolumler: { kod: string; ad: string; sahneler: CiktiSahnesi[] }[] }
 export interface EserYapisi { eser: { kod: string; ad: string }; bolumler: YapiBolumu[]; dogrudan: YapiSahnesi[] }
 export interface AnlatiYeri {
   /** Eserin serisi (K28 yol satırı). */
@@ -1446,8 +1449,9 @@ export interface Istekler {
   dallar(a: { evren: string }): EvrenDali[];
   yayimlar(a: { evren: string; eser?: string | null }): Yayim[];
   markdownDisaAktar(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Uint8Array; kayitSayisi: number; eksikGorsel: number }>;
-  epubYaz(a: { evren: string; eser: string; sahneBasliklari?: boolean }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
-  eserBaskiSayfasi(a: { evren: string; eser: string; sahneBasliklari?: boolean }): { html: string };
+  epubYaz(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
+  eserBaskiSayfasi(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): { html: string };
+  ciktiAgaci(a: { evren: string; eser: string }): CiktiAgaci;
   belgeSunumu(a: { evren: string; kod: string }): { sunum: BelgeSunumu; adlar: Record<string, string> };
   belgeSunumuYaz(a: { evren: string; kod: string; sunum: BelgeSunumu }): void;
   belgeCiktisi(a: { evren: string; kod: string }): { html: string };

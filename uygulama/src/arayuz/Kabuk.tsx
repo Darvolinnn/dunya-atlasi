@@ -16,6 +16,14 @@ export const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy
   ['yogunluk', 'Yoğunluk ve boşluk'], ['gokyuzu', 'Gökyüzü'], ['sozluk', 'Sözlük denetimi'], ['sozlesme', 'Anlatı sözleşmesi'],
   ['kosullar', 'Sonuçtan koşullara'], ['kesif', 'Keşif soruları'], ['hatlar', 'Kurgu hatları'], ['orgu', 'Olay örgüsü'], ['matris', 'Bölüm × kayıt'],
   ['gun', 'Sıradan bir gün'], ['karsilastir', 'Karşılaştırmalı okuma'], ['gezinti', 'Gezintiler'], ['pano', 'Görsel panolar']] as const;
+/** Grafik araçlarının amaca göre grupları (taslak 2A, 6 Kasım): menüde ara başlık olarak görünür; başlıklar tıklanmaz. */
+export const GORUNUM_GRUPLARI: readonly (readonly [string, readonly string[]])[] = [
+  ['Zaman', ['cizelge', 'durumlar', 'yogunluk', 'gun', 'gokyuzu']],
+  ['İlişkiler', ['ag', 'soy', 'neden']],
+  ['Kurgu', ['hatlar', 'orgu', 'matris', 'sozlesme', 'karsilastir', 'kosullar', 'kesif']],
+  ['Dil ve derleme', ['sozluk', 'gezinti', 'pano']],
+];
+const GORUNUM_ADI = new Map<string, string>(GORUNUMLER);
 export const gorunumMu = (s: string) => GORUNUMLER.some(([g]) => g === s);
 
 /** Ana sayfalar ve "Diğer" altındakiler; komut paleti de bu listeyi kullanır. */
@@ -73,9 +81,16 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
         {k === 'yaz' && etkin === 'yaz' && <EserAgaci istemci={istemci} evren={evren} acik={acik} surum={surum} saltOkunur={bagli} />}
         {k === 'gorunumler' && gorunumMu(etkin) && (
           <ul class="gezinti-alt">
-            {GORUNUMLER.filter(([g]) => !uzakGorunumMu(kurgu, g) || etkin === g).map(([g, gad]) => (
-              <li key={g}><a class={etkin === g ? 'gezinti-ogesi kucuk secili' : 'gezinti-ogesi kucuk'} aria-current={etkin === g ? 'page' : undefined} href={`#/e/${evren}/${g}`}>{gad}</a></li>
-            ))}
+            {GORUNUM_GRUPLARI.map(([grup, kodlar]) => {
+              const gorunen = kodlar.filter((g) => !uzakGorunumMu(kurgu, g) || etkin === g);
+              if (!gorunen.length) return null;
+              return [
+                <li key={`grup-${grup}`} class="gezinti-grup" aria-hidden="true">{grup}</li>,
+                ...gorunen.map((g) => (
+                  <li key={g}><a class={etkin === g ? 'gezinti-ogesi kucuk secili' : 'gezinti-ogesi kucuk'} aria-current={etkin === g ? 'page' : undefined} href={`#/e/${evren}/${g}`}>{GORUNUM_ADI.get(g)}</a></li>
+                )),
+              ];
+            })}
             {GORUNUMLER.some(([g]) => uzakGorunumMu(kurgu, g) && etkin !== g) && <li><details class="gezinti-uzak">
               <summary class="gezinti-ogesi kucuk">Diğer grafikler</summary>
               <ul class="gezinti-alt">{GORUNUMLER.filter(([g]) => uzakGorunumMu(kurgu, g) && etkin !== g).map(([g, gad]) => (
