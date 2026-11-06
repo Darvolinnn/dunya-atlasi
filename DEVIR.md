@@ -169,6 +169,7 @@ Kullanıcı başka bir ajanın animasyon değerlendirmesini (depoda değil) ve k
 - **Karar (kullanıcı, 6 Kasım):** gece altını paleti **koyu temanın yerine** gelir (ayrı tema değil). Tasarım §1 K33, §12.1.
 - **Kod:** `stil.css` başındaki iki koyu tema bloğu (zemin #14110d, yüzey #1c1813, yüzey-2 #26211a, kenar #0f0d0a, çizgi #3d3426, metin #efe6d4, metin-2 #b3a68e, vurgu #e0a83e, vurgu-zemin #33281a, vurgu-metin #17120a); açık temada vurgu #7d5210, vurgu-zemin #f4e9d3. Odak rengi değişmedi. `.esitleme-seridi` ve `.durum-zayif` ince kenarlık aldı. `karsitlik.test.ts` bütün çiftleri geçiyor.
 - **Görüntüler:** `/mnt/project-files/gece-altini/` (önce/sonra, depoda değil).
+- PR #39 ile `main`'e birleşti (`4ebfef1`); kullanıcının isteğiyle ("bitince bilgisayara kur") yeni kurulum dosyası (SHA-256 denetlendi) kullanıcının bilgisayarına sessizce kuruldu (6 Kasım 18:00, yerel saat). Kullanıcı yeni görünümü "güzelmiş" diye onayladı.
 
 ## 1. Önce oku (sırayla)
 
