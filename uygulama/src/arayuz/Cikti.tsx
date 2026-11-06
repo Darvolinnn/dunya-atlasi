@@ -1,5 +1,5 @@
-// Okunabilir dışa aktarma (§10.11): evrenin Markdown klasörü, eserin EPUB'u ve yazdırılabilir sayfası.
-import { useState } from 'preact/hooks';
+// Okunabilir dışa aktarma (§10.11): evrenin Markdown klasörü; eserin PDF'i, Word dosyası, EPUB'u ve yazdırılabilir sayfası.
+import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 
 const hataYaz = (e: unknown) => (e as Error).message;
@@ -45,26 +45,81 @@ export function MarkdownCiktisi({ istemci, evren }: { istemci: Istemci; evren: s
   );
 }
 
-export function EserCiktisi({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string }) {
+const ACIKLAMA = 'Yalnız eserin metni çıkar: bölümler ve sahneler okuma sırasıyla, sahnelerin arasında ayraç. Kayıtlar ve notlar girmez; vazgeçilmiş sahneler de girmez. Word dosyası Word, LibreOffice ya da Google Dokümanlar\'da düzenlenebilir.';
+
+/** Eserin PDF, Word, EPUB ve yazdırma düğmeleri; eserin sayfasında ve Yedek sekmesinde aynı. */
+function CiktiDugmeleri({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string | null }) {
   const [basliklar, setBasliklar] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
-  const [calisiyor, setCalisiyor] = useState(false);
-  const epub = async () => {
-    setHata(null); setCalisiyor(true);
-    try { const r = await istemci.iste('epubYaz', { evren, eser, sahneBasliklari: basliklar }); indir(r.dosyaAdi, r.veri, 'application/epub+zip'); }
-    catch (e) { setHata(hataYaz(e)); } finally { setCalisiyor(false); }
+  const [calisiyor, setCalisiyor] = useState<string | null>(null);
+  const calistir = (ad: string, is: (eser: string) => Promise<void>) => async () => {
+    if (!eser) return;
+    setHata(null); setCalisiyor(ad);
+    try { await is(eser); } catch (e) { setHata(hataYaz(e)); } finally { setCalisiyor(null); }
   };
-  const pdf = () => istemci.iste('eserBaskiSayfasi', { evren, eser, sahneBasliklari: basliklar }).then((r) => { setHata(null); yazdir(r.html); }, (e) => setHata(hataYaz(e)));
+  const pdf = calistir('pdf', async (eser) => {
+    const r = await istemci.iste('eserKitabi', { evren, eser, sahneBasliklari: basliklar });
+    const [{ pdfYaz }, yt] = await Promise.all([import('../alan/pdf'), import('./yazi-tipleri').then((m) => m.kitapYaziTipleri())]);
+    indir(`${r.dosyaKoku}.pdf`, await pdfYaz(r.kitap, yt), 'application/pdf');
+  });
+  const docx = calistir('docx', async (eser) => {
+    const r = await istemci.iste('docxYaz', { evren, eser, sahneBasliklari: basliklar });
+    indir(r.dosyaAdi, r.veri, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  });
+  const epub = calistir('epub', async (eser) => {
+    const r = await istemci.iste('epubYaz', { evren, eser, sahneBasliklari: basliklar });
+    indir(r.dosyaAdi, r.veri, 'application/epub+zip');
+  });
+  const yazdirma = calistir('yazdir', async (eser) => yazdir((await istemci.iste('eserBaskiSayfasi', { evren, eser, sahneBasliklari: basliklar })).html));
+  const kapali = !eser || !!calisiyor;
+  return (
+    <>
+      <div class="satir">
+        <label class="kucuk"><input type="checkbox" checked={basliklar} onChange={(e) => setBasliklar((e.target as HTMLInputElement).checked)} /> Sahne adlarını başlık olarak yaz</label>
+      </div>
+      <div class="satir">
+        <button class="dugme kucuk" onClick={pdf} disabled={kapali}>{calisiyor === 'pdf' ? 'Hazırlanıyor…' : 'PDF indir'}</button>
+        <button class="dugme kucuk" onClick={docx} disabled={kapali}>{calisiyor === 'docx' ? 'Hazırlanıyor…' : 'Word (.docx) indir'}</button>
+        <button class="dugme kucuk" onClick={epub} disabled={kapali}>{calisiyor === 'epub' ? 'Hazırlanıyor…' : 'EPUB indir'}</button>
+        <button class="dugme kucuk" onClick={yazdirma} disabled={kapali}>Yazdır</button>
+      </div>
+      {hata && <p class="hata kucuk" role="alert">{hata}</p>}
+    </>
+  );
+}
+
+export function EserCiktisi({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string }) {
   return (
     <section class="surecler" aria-label="Eserin çıktısı">
       <h2>Çıktı</h2>
-      <p class="soluk kucuk">Bölümler ve sahneler okuma sırasıyla yazılır, sahnelerin arasına ayraç konur. Vazgeçilmiş sahneler çıktıya girmez. PDF için yazdırma penceresinde “PDF olarak kaydet”i seçin.</p>
-      <div class="satir">
-        <label class="kucuk"><input type="checkbox" checked={basliklar} onChange={(e) => setBasliklar((e.target as HTMLInputElement).checked)} /> Sahne adlarını başlık olarak yaz</label>
-        <button class="dugme kucuk" onClick={epub} disabled={calisiyor}>EPUB indir</button>
-        <button class="dugme kucuk" onClick={pdf}>Yazdır / PDF</button>
-      </div>
-      {hata && <p class="hata kucuk">{hata}</p>}
+      <p class="soluk kucuk">{ACIKLAMA}</p>
+      <CiktiDugmeleri istemci={istemci} evren={evren} eser={eser} />
     </section>
+  );
+}
+
+/** Yedek sekmesinde: bir eser seçilip metni dışa aktarılır. */
+export function EserDisaAktarma({ istemci, evren }: { istemci: Istemci; evren: string }) {
+  const [eserler, setEserler] = useState<{ kod: string; ad: string }[] | null>(null);
+  const [secili, setSecili] = useState<string | null>(null);
+  useEffect(() => {
+    istemci.iste('eserler', { evren }).then((l) => { setEserler(l); setSecili((s) => s && l.some((x) => x.kod === s) ? s : l[0]?.kod ?? null); }, () => setEserler([]));
+  }, [istemci, evren]);
+  return (
+    <div class="kart" style="margin-top:12px">
+      <h3>Eseri dışa aktar (PDF, Word, EPUB)</h3>
+      <p>{ACIKLAMA}</p>
+      {eserler && !eserler.length ? <p class="soluk kucuk">Henüz eser yok. Yaz sayfasından bir eser oluşturun.</p> : (
+        <>
+          {eserler?.length === 1 && <p class="kucuk">Eser: <strong>{eserler[0].ad}</strong></p>}
+          {eserler && eserler.length > 1 && (
+            <div class="satir"><label class="kucuk">Eser <select value={secili ?? ''} onChange={(e) => setSecili((e.target as HTMLSelectElement).value)}>
+              {eserler.map((x) => <option key={x.kod} value={x.kod}>{x.ad}</option>)}
+            </select></label></div>
+          )}
+          <CiktiDugmeleri key={secili ?? ''} istemci={istemci} evren={evren} eser={secili} />
+        </>
+      )}
+    </div>
   );
 }

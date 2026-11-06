@@ -6,6 +6,7 @@ import { iliskiTuruBul, rolAdi } from '../alan/iliski-turleri';
 import { KARARLAR, turBul } from '../alan/turler';
 import { A } from '../alan/automerge';
 import type { ZipDosyasi } from '../alan/zip';
+import { bloklaraCevir, type Kitap, type KitapSahnesi } from '../alan/kitap';
 import { eserYapisi } from './anlati';
 import type { EvrenVt } from './evren-vt';
 import { metinBelgesi } from './izdusum';
@@ -139,6 +140,20 @@ function eserBolumleri(e: EvrenVt, eser: string, sahneBasliklari: boolean): { ad
   const bolumler: Bolum[] = [];
   if (y.dogrudan.length) { const g = sahneHtml(y.dogrudan); if (g) bolumler.push({ baslik: y.bolumler.length ? 'Giriş' : y.eser.ad, govde: g }); }
   for (const b of y.bolumler) if (b.karar !== 'vazgecildi') bolumler.push({ baslik: b.ad, govde: sahneHtml(b.sahneler) });
+  return { ad: y.eser.ad, bolumler };
+}
+
+/** Eserin PDF ve Word çıktısı için okuma düzeni; bölüm ve sahne sırası, vazgeçilenler ve "Giriş" EPUB'la aynı. */
+export function eserKitabi(e: EvrenVt, eser: string, sahneBasliklari: boolean): Kitap {
+  const y = eserYapisi(e, eser);
+  const sahneler = (s: { kod: string; ad: string; karar: string }[]): KitapSahnesi[] => s.filter((x) => x.karar !== 'vazgecildi').map((x) => {
+    const b = metinBelgesi(e.db, x.kod, 'govde');
+    return { baslik: sahneBasliklari ? x.ad : null, bloklar: b ? bloklaraCevir(belgeyeCevir(A.spans(b, ['t']) as unknown[])) : [] };
+  }).filter((x) => x.bloklar.length);
+  const bolumler: Kitap['bolumler'] = [];
+  if (y.dogrudan.length) { const s = sahneler(y.dogrudan); if (s.length) bolumler.push({ baslik: y.bolumler.length ? 'Giriş' : y.eser.ad, sahneler: s }); }
+  for (const b of y.bolumler) if (b.karar !== 'vazgecildi') bolumler.push({ baslik: b.ad, sahneler: sahneler(b.sahneler) });
+  if (!bolumler.some((b) => b.sahneler.length)) throw new Error('Eserde metni olan sahne yok.');
   return { ad: y.eser.ad, bolumler };
 }
 
