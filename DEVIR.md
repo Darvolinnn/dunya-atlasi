@@ -170,6 +170,7 @@ Kullanıcı başka bir ajanın animasyon değerlendirmesini (depoda değil) ve k
 - **Kod:** `stil.css` başındaki iki koyu tema bloğu (zemin #14110d, yüzey #1c1813, yüzey-2 #26211a, kenar #0f0d0a, çizgi #3d3426, metin #efe6d4, metin-2 #b3a68e, vurgu #e0a83e, vurgu-zemin #33281a, vurgu-metin #17120a); açık temada vurgu #7d5210, vurgu-zemin #f4e9d3. Odak rengi değişmedi. `.esitleme-seridi` ve `.durum-zayif` ince kenarlık aldı. `karsitlik.test.ts` bütün çiftleri geçiyor.
 - **Görüntüler:** `/mnt/project-files/gece-altini/` (önce/sonra, depoda değil).
 - PR #39 ile `main`'e birleşti (`4ebfef1`); kullanıcının isteğiyle ("bitince bilgisayara kur") yeni kurulum dosyası (SHA-256 denetlendi) kullanıcının bilgisayarına sessizce kuruldu (6 Kasım 18:00, yerel saat). Kullanıcı yeni görünümü "güzelmiş" diye onayladı.
+- **Bayat kurulum hatası (6 Kasım akşam):** kullanıcı kurulumdan sonra eski görünümü gördü. Kurulu program doğru dosyaydı ama içindeki sayfa ekim sonundan kalmaydı (yerel adresten gelen CSS eski mavi vurguyu taşıyordu, "Grafikler ve araçlar" yerine "Grafikler"). Neden: `windows.yml`'deki Rust önbelleği programı yeniden derlemeden eski gömülü sayfayla paketliyordu; yani 23 Ekim sonrası kurulumların arayüzü güncellenmemiş olabilir. Düzeltme: `tauri build` öncesinde `cargo clean --release -p dunya-atlasi`. Yeni kurulum kullanıcının bilgisayarına kuruldu; WebView önbelleği de temizlendi (veri klasörlerine dokunulmadı).
 
 ## 0.14 Daktilo kipi ve pencere hafızası (K34; kodlama 22 Ekim, birleştirme 6 Kasım 2026)
 

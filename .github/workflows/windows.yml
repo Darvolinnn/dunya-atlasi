@@ -36,6 +36,9 @@ jobs:
       # Google girişi kabuğunun sınamaları (src-tauri/src/google.rs).
       - run: cargo test --manifest-path src-tauri/Cargo.toml
       # Masaüstü Google istemcisi depoda değil, GitHub'daki gizli değerlerden gelir; yoksa program eski girişle derlenir.
+      # Sayfa dosyaları programın içine derleme anında gömülür. Rust önbelleği programı yeniden derlemeyip eski sayfayı
+      # gömebiliyordu (6 Kasım: kurulan program ekimin arayüzünü gösterdi); programın kendi paketi her derlemede temizlenir.
+      - run: cargo clean --release -p dunya-atlasi --manifest-path src-tauri/Cargo.toml
       - run: npx tauri build
         env:
           GOOGLE_MASAUSTU_ISTEMCI: ${{ secrets.GOOGLE_MASAUSTU_ISTEMCI }}
