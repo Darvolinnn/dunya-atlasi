@@ -1296,7 +1296,7 @@ details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] 
 /* Üzerine gelince renk değişimleri. */
 .dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .gezinti-diger summary, .kart { transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, filter 150ms ease; }
 /* Kayıt durumu: durum değişince yazı solarak gelir; kaydedilince başında ✓ (anlam yazıda da var). */
-.kayit-durumu-yazi { display: inline-block; animation: sol-gir 150ms var(--gecis-egri); }
+.kayit-durumu-yazi { animation: sol-gir 150ms var(--gecis-egri); }
 .kayit-durumu-yazi.kayitli::before { content: "✓ "; }
 /* Eser ağacının oku açılınca döner. */
 .agac-ok-isareti { display: inline-block; transition: transform 150ms var(--gecis-egri); }
