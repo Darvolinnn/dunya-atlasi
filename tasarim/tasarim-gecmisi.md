@@ -233,3 +233,5 @@ Bu tablo Sürüm 4'ten olduğu gibi taşındı. Sürüm 6 terim değişiklikleri
 
 
 Sürüm 5'te bu tablodaki bazı çözümler değişti: 20 numaralı satırdaki "claude.ai sayfaları Google'a bağlanamaz" gerekçesi yanlış bulunup kaldırıldı (bkz. §3.2). Güncel davranış her zaman tasarım belgesindedir.
+
+- **6 Kasım 2026, K33:** Koyu temanın mavi vurgusu ve birbirine çok yakın yüzey tonları (zemin, kart ve gezinti arasında fark ~1,1:1) "düz" görünüm şikâyetinin asıl nedeni bulundu; kullanıcının seçtiği gece altını paleti koyu temanın yerine geçti. Ayrı üçüncü tema, az fark için çift bakım olacağından seçilmedi.
