@@ -120,7 +120,7 @@ async fn google_cikis(durum: tauri::State<'_, google::Durum>) -> Result<(), Stri
     Ok(())
 }
 
-/// Pencerenin yeri, boyutu ve ekranı kaplayıp kaplamadığı bu bilgisayarda hatırlanır (K33). Görünürlük ve kenarlık
+/// Pencerenin yeri, boyutu ve ekranı kaplayıp kaplamadığı bu bilgisayarda hatırlanır (K34). Görünürlük ve kenarlık
 /// hatırlanmaz: kayıt bozulsa da pencere her zaman görünür açılır.
 const PENCERE_HAFIZASI: tauri_plugin_window_state::StateFlags = tauri_plugin_window_state::StateFlags::SIZE
     .union(tauri_plugin_window_state::StateFlags::POSITION)
@@ -260,7 +260,7 @@ mod sinama {
         }
     }
 
-    /// Pencere hafızası (K33) yalnız kabukta çalışır; sayfa pencerenin kaydını okuyup yazamaz.
+    /// Pencere hafızası (K34) yalnız kabukta çalışır; sayfa pencerenin kaydını okuyup yazamaz.
     #[test]
     fn pencere_hafizasi_sayfaya_acik_degil() {
         for komut in ["plugin:window-state|save_window_state", "plugin:window-state|restore_state", "plugin:window-state|filename"] {

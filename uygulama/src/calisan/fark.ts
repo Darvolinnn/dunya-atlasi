@@ -68,7 +68,7 @@ function kayitFarki(eski: EvrenVt, yeni: EvrenVt, kod: string, a: Satir | undefi
   koy('lakaplar', 'Lakapları', liste(a!.lakaplar), liste(b!.lakaplar));
   koy('etiketler', 'Etiketleri', liste(a!.etiketler), liste(b!.etiketler));
   const ma = metin(eski.db, kod), mb = metin(yeni.db, kod);
-  if (ma !== mb) alanlar.push({ alan: 'metin', etiket: 'Metni', once: ma ? `${ma.length} harf` : null, sonra: mb ? `${mb.length} harf` : null });
+  if (ma !== mb) alanlar.push({ alan: 'metin', etiket: 'Metni', once: ma ? `${ma.length} karakter` : null, sonra: mb ? `${mb.length} karakter` : null });
   const da = alanDegerleri(eski, kod), db = alanDegerleri(yeni, kod);
   for (const k of new Set([...da.keys(), ...db.keys()])) koy(`alan:${k}`, (db.get(k) ?? da.get(k))!.etiket, da.get(k)?.deger ?? null, db.get(k)?.deger ?? null);
   const sa = durumlar(eski.db, kod), sb = durumlar(yeni.db, kod);

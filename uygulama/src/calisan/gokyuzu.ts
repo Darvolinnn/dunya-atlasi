@@ -8,6 +8,7 @@
 // Tanım isteğe bağlıdır; yazar değiştirir, yeni hesaplar değişen tanımla geçmişi de yeniden hesaplar.
 import { GUN_PARCA, tarihCoz, tarihAciklamasi, yilGunu, type EvrenTarihi, type ZamanSeti } from '../alan/tarih';
 import { kodGecerliMi } from '../alan/kod';
+import { sayiGirdisi } from '../alan/nicelik';
 import type { AyEvresi, GokyuzuTanimi, GokyuzuKosulu, GokyuzuSonucu, GokyuzuCakismalari, GokyuzuZarfi } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
 
@@ -20,7 +21,7 @@ export const EVRELER: { kod: AyEvresi; ad: string }[] = [
 export const SINIRLAR = 'Yalnızca takvim döngüleri hesaplanır. Ayların aynı evrede olması tutulma demek değildir; üç dolunay geceyi gündüze çevirmez. Gelgiti hesaplamak için kıyı ve derinlik bilgisi gerekir, burada yalnızca kıyı notu ve tekrar süresi saklanır. Yalnızca yılı bilinen bir tarih için gün uydurulmaz, o yıl içindeki olası evreler gösterilir. Bir hesapta en çok 100.000 gün incelenir. Çakışma araması en çok 50 gün gösterir.';
 const mod = (a: number, b: number) => ((a % b) + b) % b;
 const metin = (x: unknown, ad: string, sinir = 120) => {
-  if (typeof x !== 'string' || !x.trim() || x.length > sinir) throw new Error(`${ad} yazın. En çok ${sinir} harf olabilir.`);
+  if (typeof x !== 'string' || !x.trim() || x.length > sinir) throw new Error(`${ad} yazın. En çok ${sinir} karakter olabilir (boşluklar dahil).`);
   return x.trim();
 };
 const evreMi = (x: unknown): x is AyEvresi => EVRELER.some((e) => e.kod === x);
@@ -72,7 +73,7 @@ export function tanimOku(e: EvrenVt): GokyuzuTanimi | null {
 export const ilgiliKayitlar = (x: unknown): string[] => [...new Set((x as GokyuzuTanimi | null)?.gelgitler?.map((g) => g.kiyi) ?? [])];
 export const tanimYazisi = (x: unknown): string => {
   const t = x as GokyuzuTanimi | null;
-  return t ? `${t.aylar.map((a) => `${a.ad}: ${a.donem} gün, ${a.baslangic}, ${EVRELER.find((e) => e.kod === a.evre)?.ad}`).join('; ')}; ${t.mevsimler.map((m) => `${m.ad}: ${m.baslangicGunu}. gün`).join('; ')}; ${t.gelgitler.map((g) => `${g.not}, her ${g.saat} saatte`).join('; ')}` : 'Tanım yazılmamış';
+  return t ? `${t.aylar.map((a) => `${a.ad}: ${sayiGirdisi(a.donem)} gün, ${a.baslangic}, ${EVRELER.find((e) => e.kod === a.evre)?.ad}`).join('; ')}; ${t.mevsimler.map((m) => `${m.ad}: ${m.baslangicGunu}. gün`).join('; ')}; ${t.gelgitler.map((g) => `${g.not}, her ${sayiGirdisi(g.saat)} saatte`).join('; ')}` : 'Tanım yazılmamış';
 };
 /** Çözülmemiş tanım/takvim/akış seçeneklerinden gizli seçim yapılmaz (§2.2/15). */
 export function hesapTanimi(e: EvrenVt): GokyuzuTanimi {

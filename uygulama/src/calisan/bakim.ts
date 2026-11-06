@@ -91,7 +91,7 @@ function tanimDogrula(e: EvrenVt, g: BakimTanimi) {
   }
   const ad = String(g.ad ?? '').replace(/\s+/g, ' ').trim();
   if (!ad) throw new Error('Bakım adı boş olamaz.');
-  if (ad.length > 80) throw new Error('Bakım adı en çok 80 harf olabilir.');
+  if (ad.length > 80) throw new Error('Bakım adı en çok 80 karakter olabilir (boşluklar dahil).');
 
   const siklik = sureDogrula(g.siklik, 'Bakım sıklığı');
   const kesintiSuresi = sureDogrula(g.kesintiSuresi, 'Kesinti süresi');
@@ -113,17 +113,17 @@ function tanimDogrula(e: EvrenVt, g: BakimTanimi) {
   const malzemeler: BakimMalzemesi[] = hamMalzemeler.map((m) => {
     if (!m || typeof m !== 'object') throw new Error('Malzeme bilgisi okunamadı.');
     const metin = String(m.metin ?? '').replace(/\s+/g, ' ').trim();
-    if (metin.length > 80) throw new Error('Malzeme açıklaması en çok 80 harf olabilir.');
+    if (metin.length > 80) throw new Error('Malzeme açıklaması en çok 80 karakter olabilir (boşluklar dahil).');
     const kayit = m.kayit ? aktifKayitKontrol(e, m.kayit, 'Malzeme kaydı bulunamadı.').kod : null;
     if (!kayit && !metin) throw new Error('Malzeme için bir kayıt seçin ya da açıklama yazın.');
     return { kayit, metin };
   });
 
   const bedel = String(g.bedel ?? '').replace(/\s+/g, ' ').trim();
-  if (bedel.length > 200) throw new Error('Bedel en çok 200 harf olabilir.');
+  if (bedel.length > 200) throw new Error('Bedel en çok 200 karakter olabilir (boşluklar dahil).');
 
   const kesinti = String(g.kesinti ?? '').replace(/[ \t]+/g, ' ').trim();
-  if (kesinti.length > 500) throw new Error('Kesintideki davranış en çok 500 harf olabilir.');
+  if (kesinti.length > 500) throw new Error('Kesintideki davranış en çok 500 karakter olabilir (boşluklar dahil).');
 
   const karar = g.karar === undefined ? 'kesin' : g.karar;
   if (!kararGecerli(karar)) throw new Error('Geçersiz karar durumu.');
@@ -195,7 +195,7 @@ export function bakimKaydiYaz(
   const yapan = g.yapan ? aktifKayitKontrol(b.e, g.yapan, 'Bakımı yapan kayıt bulunamadı.').kod : null;
   const olay = g.olay ? aktifKayitKontrol(b.e, g.olay, 'Olay kaydı bulunamadı.').kod : null;
   const not = String(g.not ?? '').replace(/\s+/g, ' ').trim();
-  if (not.length > 200) throw new Error('Not en çok 200 harf olabilir.');
+  if (not.length > 200) throw new Error('Not en çok 200 karakter olabilir (boşluklar dahil).');
 
   let k = kod ?? null;
   let olusturma = Date.now();

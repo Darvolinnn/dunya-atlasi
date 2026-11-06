@@ -4,6 +4,7 @@ import type { Istemci } from '../veri/istemci';
 import type { KisaKayit, KosulMasasi } from '../veri/api';
 import { KayitSec } from './KayitBolumleri';
 import { PaketSecimi } from './Haber';
+import { sayiOku } from '../alan/nicelik';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const gun = (n: number) => `${n.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} gün`;
@@ -36,14 +37,14 @@ export function KosulMasasiSekmesi({ istemci, evren }: { istemci: Istemci; evren
   const ara = (e: Event) => {
     e.preventDefault();
     if (!nereden || !nereye) return;
-    istemci.iste('kosulMasasi', { evren, nereden: nereden.kod, nereye: nereye.kod, enCokGun: Number(sinir.replace(',', '.')), cikis: cikis.trim() || null,
+    istemci.iste('kosulMasasi', { evren, nereden: nereden.kod, nereye: nereye.kod, enCokGun: sayiOku(sinir), cikis: cikis.trim() || null,
       kosul: kosul.trim() || null, kisi: kisi?.kod ?? null, yasakRotalar: yasakRota.map((x) => x.kod), yasakYerler: yasakYer.map((x) => x.kod), paket })
       .then((x) => { setM(x); setHata(null); }, (x) => { setM(null); setHata(hataYaz(x)); });
   };
   return (
     <section class="kosul-masasi" aria-label="Sonuçtan koşullara">
       <h2>Sonuçtan koşullara</h2>
-      <p class="soluk kucuk">Nereden nereye gidileceğini, süre sınırını ve kullanılamayacak yolları yazın; kayıtlı rotalardan uyan planlar listelenir. Program yeni yol ya da süre uydurmaz, evrene de hiçbir şey kaydetmez.</p>
+      <p class="soluk kucuk">Hedefe uyan yolculuk planlarını bulur. Nereden nereye gidileceğini, süre sınırını ve kullanılamayacak yolları yazın; kayıtlı rotalardan uyan planlar listelenir. Program yeni yol ya da süre uydurmaz, evrene de hiçbir şey kaydetmez.</p>
       <form class="kart" onSubmit={ara}>
         <div class="satir">
           <KayitSec istemci={istemci} evren={evren} secili={nereden} etiket="Nereden?" sec={setNereden} />

@@ -133,7 +133,7 @@ export function IsaretIncelemeBolumu({ istemci, evren, surum, kayit = null, basl
   const yenile = () => setN((v) => v + 1);
   const karar: Karar = (anahtar, durum, gerekce = '', niyet = null) =>
     istemci.iste('isaretKarari', { evren, anahtar, durum, gerekce, niyet }).then(() => { setHata(null); yenile(); }, (e) => { setHata(hataYaz(e)); throw e; });
-  const kaldir = (kod: string, geriYukle = false) => istemci.iste('metinIsaretiSil', { evren, kod, geriYukle }).then(yenile, (e) => setHata(hataYaz(e)));
+  const kaldir = (kod: string, geriYukle = false) => istemci.iste('metinIsaretiSil', { evren, kod, geriYukle }).then(() => { yenile(); return true; }, (e) => { setHata(hataYaz(e)); return false; });
   if (!x) return null;
   if (!baslikGoster && !x.acik.length) return null;
   return (

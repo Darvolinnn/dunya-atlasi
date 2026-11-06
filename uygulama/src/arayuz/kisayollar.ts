@@ -20,5 +20,5 @@ export const kisayolTusu = (anahtar: string) => KISAYOLLAR.find((k) => k.anahtar
 export const KISAYOL_OLAYI = 'dunya-atlasi:kisayollar';
 /** Odak kipini açar/kapatır (K28, §5.10); detail verilmezse durumu çevirir. */
 export const ODAK_OLAYI = 'dunya-atlasi:odak-kipi';
-/** Daktilo kipini açar/kapatır (K33, §5.10); detail verilmezse durumu çevirir. */
+/** Daktilo kipini açar/kapatır (K34, §5.10); detail verilmezse durumu çevirir. */
 export const DAKTILO_OLAYI = 'dunya-atlasi:daktilo-kipi';

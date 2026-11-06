@@ -49,7 +49,7 @@ function useOdakKipi(): [boolean, (v: boolean) => void] {
 }
 
 const daktiloAnahtari = 'dunya-atlasi:daktilo-kipi';
-/** Daktilo kipi (K33, §5.10): yazılan satır ekranın ortasında kalır; menüden, komut paletinden ya da kısayolla açılır, tercih cihazda. */
+/** Daktilo kipi (K34, §5.10): yazılan satır ekranın ortasında kalır; menüden, komut paletinden ya da kısayolla açılır, tercih cihazda. */
 function useDaktiloKipi(): [boolean, (v: boolean) => void] {
   const [acik, setAcik] = useState(() => okuYerel(daktiloAnahtari) === '1');
   const ayarla = (v: boolean) => { setAcik(v); yazYerel(daktiloAnahtari, v ? '1' : '0'); };
@@ -122,10 +122,11 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const sahneBaglami = useSahneBaglami(istemci, evren, sahne ? kod : null);
   const parcaBaglami = useSahneBaglami(istemci, evren, sahne && imlecParcasi ? kod : null, imlecParcasi);
 
-  if (hata) return <main class="sayfa"><p class="hata">{hata}</p></main>;
-  if (!kayit) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
   // Panel yalnız yazar açınca kayarak gelir; sahne değişince yerinde durur.
   const [baglamKaysin, setBaglamKaysin] = useState(false);
+
+  if (hata) return <main class="sayfa"><p class="hata">{hata}</p></main>;
+  if (!kayit) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
   const baglamAc = (acik: boolean) => { setBaglamKaysin(acik); setBaglamTercihi(!acik); yazYerel(baglamAnahtari, acik ? '0' : '1'); };
   const bos = sahneBaglamiBos(sahneBaglami);
   // Seçilmemişken bağlam okunana kadar panel açılmaz; dolu sahnede okununca açılır.

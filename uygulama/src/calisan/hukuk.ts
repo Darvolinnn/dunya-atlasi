@@ -38,6 +38,7 @@ function kayitTuru(e: EvrenVt, kod: unknown): string {
   if (!t) throw new Error('Kayıt bulunamadı.');
   return t;
 }
+const sade = (s: string) => s.replace(/\s+/g, ' ').trim();
 const metin = (s: unknown, n: number, bos = true) => {
   const x = String(s ?? '').replace(/\s+/g, ' ').trim();
   if (!x && !bos) throw new Error('Boş olamaz.');
@@ -85,9 +86,11 @@ export function hukukKuraliYaz(b: HukukBaglami, kod: string, g: HukukTanimGirdis
     kayitTuru(b.e, x.hedef);
     return { iliski: x.iliski, hedef: x.hedef, degil: !!x.degil };
   });
-  // Formül yazı olarak gelir; gelmezse (ya da saklanan biçimiyle geri gelirse) kuralın formülü değişmez.
+  // Formül yazı olarak gelir; gelmezse (ya da saklanan biçimiyle geri gelirse) kuralın formülü değişmez. Böylece
+  // formülü bozulmuş (kaydı silinmiş) ya da aynı adlı kayıtlara değen bir kuralın öbür bölümleri de kaydedilebilir.
   let formul = k.tanim.formul ?? null;
-  if (typeof g.formul === 'string' || g.formul === null) try { formul = formulCoz(b.e, g.formul); } catch (x) {
+  const ayni = typeof g.formul === 'string' && !!k.tanim.formul && sade(g.formul) === sade(formulGoster(b.e, k.tanim.formul));
+  if (!ayni && (typeof g.formul === 'string' || g.formul === null)) try { formul = formulCoz(b.e, g.formul); } catch (x) {
     if (x instanceof FormulHatasi) throw new Error(`Formül okunamadı: ${x.message}`);
     throw x;
   }

@@ -8,6 +8,7 @@ import automergeWasm from '@automerge/automerge/automerge.wasm?url';
 import { OpfsDeposu, tarayiciIsleyici } from './medya-tarayici';
 import { DriveTasiyici } from './drive';
 import type { AltKlasor, YerelDosya, YerelKlasor } from './klasor-tasiyici';
+import { kullaniciIletisi } from './ileti';
 
 let hizmet: Hizmet | null = null;
 let havuz: { getFileCount(): number; getCapacity(): number; addCapacity(n: number): Promise<number>; unlink(ad: string): boolean; getFileNames(): string[] } | null = null;
@@ -151,6 +152,9 @@ onmessage = async (e: MessageEvent<Gelen>) => {
     const aktar = sonuc && typeof sonuc === 'object' && (sonuc as { veri?: unknown }).veri instanceof Uint8Array ? [((sonuc as { veri: Uint8Array }).veri).buffer] : [];
     postMessage({ no, sonuc }, { transfer: aktar as Transferable[] });
   } catch (err) {
-    postMessage({ no, hata: err instanceof Error ? err.message : String(err) });
+    const hata = kullaniciIletisi(err);
+    // Türkçeleştirilen teknik ileti, sorun aranırken bulunabilsin diye konsola yazılır.
+    if (hata !== (err instanceof Error ? err.message : String(err))) console.error(err);
+    postMessage({ no, hata });
   }
 };

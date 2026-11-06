@@ -176,7 +176,7 @@ export function KitapSonuBolumu({ istemci, evren, eser }: { istemci: Istemci; ev
             <strong>{q.iddia.soru}</strong>
             <span class="soluk kucuk"> · {[q.ipucu && `${q.ipucu} ipucu`, q.yaniltmaca && `${q.yaniltmaca} yanıltmaca`, q.destekler && `${q.destekler} başka işaret`].filter(Boolean).join(', ') || 'işaret yok'}</span>
             {q.sonra ? <span class="kucuk"> · Sonra: <a href={`#/e/${evren}/k/${q.sonra.eser.kod}`}>{q.sonra.eser.ad}</a>, {q.sonra.sira}. sahnede (<a href={`#/e/${evren}/yaz/${q.sonra.sahne.kod}`}>{q.sonra.sahne.ad}</a>) açıklanıyor</span>
-              : k.seride ? <span class="soluk kucuk"> · {k.yol ? 'Bu okuma yolunun' : 'Serinin'} sonraki kitaplarında da açıklanmıyor</span> : null}
+              : k.seride ? <span class="soluk kucuk"> · {k.yol ? 'Bu okuma yolunun' : 'Serinin'} sonraki kitaplarında da açıklama sahnesi işaretlenmemiş</span> : null}
           </li>
         ))}
       </ul>

@@ -27,7 +27,7 @@ export interface SablonAlani {
 }
 export type VarsayilanEkseni = 'kapsama' | 'bagli' | 'kultur' | 'tur';
 export const VARSAYILAN_EKSENLERI: { kod: VarsayilanEkseni; ad: string; ornek: string }[] = [
-  { kod: 'kapsama', ad: 'Fiziksel kapsamadan', ornek: 'iklim, doğa' },
+  { kod: 'kapsama', ad: 'İçinde bulunduğu yerden', ornek: 'iklim, doğa' },
   { kod: 'bagli', ad: 'Siyasi bağlılıktan', ornek: 'resmî para, vergi, hukuk, resmî takvim' },
   { kod: 'kultur', ad: 'Kültürel aidiyetten', ornek: 'dil, hitap, gelenek, mimari' },
   { kod: 'tur', ad: 'Tür tanımından', ornek: 'yaşam süresi, beden, doğal yetenekler' },

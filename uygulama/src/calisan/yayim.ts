@@ -108,7 +108,7 @@ export function yayimCelismeleri(v: EvrenVt, e: EvrenVt, eser: string): Omit<Yay
     for (const [k, x] of fa) if (kesin(k)) ekle(`kayit:${kod}:alan:${k}`, kod, x.etiket, x.deger, fb.get(k)?.deger ?? null);
     if (S.has(kod)) {
       const ma = metinBelgesi(v.db, kod, 'govde')?.t ?? '', mb = metinBelgesi(e.db, kod, 'govde')?.t ?? '';
-      if (ma !== mb) ekle(`metin:${kod}`, kod, 'Sahnenin metni', `${ma.length} harf`, `${mb.length} harf`);
+      if (ma !== mb) ekle(`metin:${kod}`, kod, 'Sahnenin metni', `${ma.length} karakter`, `${mb.length} karakter`);
     }
     // Zamanla değişenler: eserin zamanına dokunanlar.
     const da = new Map(v.db.selectObjects("SELECT * FROM durumlar WHERE konu=? AND silindi IS NULL AND karar='kesin'", [kod]).map((r) => [r.kod as string, r]));

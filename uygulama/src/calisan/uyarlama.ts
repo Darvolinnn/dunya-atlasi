@@ -48,7 +48,7 @@ function etkinKayit(e: EvrenVt, kod: unknown, eser = false): string {
 }
 function dogrula(b: UyarlamaBaglami, t: UyarlamaTanimi): UyarlamaTanimi {
   if (!t || !UYARLAMA_TURLERI.some((x) => x.kod === t.tur)) throw new Error('Eşlemenin türünü seçin.');
-  if (typeof t.not !== 'string' || t.not.length > 2000) throw new Error('Eşleme notu en çok 2.000 harf olabilir.');
+  if (typeof t.not !== 'string' || t.not.length > 2000) throw new Error('Eşleme notu en çok 2.000 karakter olabilir (boşluklar dahil).');
   if (!t.a || !t.b || t.a.dal !== null) throw new Error('İlk taraf ana evrendeki bir eser olmalı.');
   const taraf = (s: UyarlamaTarafi): UyarlamaTarafi => {
     if (s.dal !== null && !kodGecerliMi(s.dal)) throw new Error('Deneme kopyasını seçin.');

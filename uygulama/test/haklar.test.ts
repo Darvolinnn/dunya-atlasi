@@ -128,7 +128,7 @@ describe('haklar ve yükümlülükler (F26)', () => {
     expect(() => ekle({ baslangic: { olay: otorite } })).toThrow(/olay ya da sahne/);
     expect(() => ekle({ baslangic: { fark: '3 gün sonra' } })).toThrow(/olayı seçin/);
     expect(() => h.hakEkle({ evren, hak: { ...girdi(), kapsam: 'x'.repeat(301) } })).toThrow(/kısa/);
-    const hak = ekle(); expect(() => h.hakTanimaYaz({ evren, hak, otorite, durum: 'baska' as never })).toThrow(/Tanıma/);
+    const hak = ekle(); expect(() => h.hakTanimaYaz({ evren, hak, otorite, durum: 'baska' as never })).toThrow(/tutumunu/);
   });
 
   it('iki cihazdaki hak ve tanıma çatışması gösterilir, seçilen değer işlemle çözülür', () => {

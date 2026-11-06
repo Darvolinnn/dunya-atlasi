@@ -46,7 +46,7 @@ export function sozlesmeMaddeleri(e: EvrenVt, cop = false): SozlesmeMaddesi[] {
 export function sozlesmeMaddeYaz(b: Baglam, kod: string | null, t: SozlesmeTanimi) {
   if (kod !== null) maddeVar(b.e, kod);
   const metin = typeof t?.metin === 'string' ? t.metin.trim() : '';
-  if (!metin || [...metin].length > 500) throw new Error('Madde bir ile 500 harf arasında olmalı.');
+  if (!metin || [...metin].length > 500) throw new Error('Madde bir ile 500 karakter arasında olmalı (boşluklar dahil).');
   if (!Object.hasOwn(SOZLESME_TURLERI, t.tur) || !kararGecerli(t.karar)) throw new Error('Maddenin türünü ve karar durumunu seçin.');
   if (!t.kapsam || !['evren', 'eserler'].includes(t.kapsam.tur)) throw new Error('Maddenin kapsamını seçin.');
   let kapsam: SozlesmeTanimi['kapsam'] = { tur: 'evren' };

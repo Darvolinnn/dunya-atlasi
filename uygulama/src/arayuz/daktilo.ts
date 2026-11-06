@@ -1,4 +1,4 @@
-// Daktilo kipi (K33, §5.10): açıkken yazılan satır metin alanının ortasında tutulur, metin yukarı kayar. Yalnız
+// Daktilo kipi (K34, §5.10): açıkken yazılan satır metin alanının ortasında tutulur, metin yukarı kayar. Yalnız
 // klavyeyle yazınca ya da imleç tuşlarla taşınınca ortalanır; fareyle tıklamak ve kaydırarak geriye okumak serbesttir.
 // Kip yazma ekranında `html` öğesindeki sınıfla açılır (YazEkrani); yalnız yazma ekranındaki metne uygulanır.
 import { Plugin } from 'prosemirror-state';

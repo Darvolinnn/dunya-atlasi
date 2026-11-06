@@ -427,7 +427,7 @@ export function kararVer(b: DenetimBaglami, anahtar: string, durum: 'kabul' | 'e
   if (!bulgu && durum) throw new Error('Bu uyarı artık yok.');
   const g = String(gerekce ?? '').replace(/\s+/g, ' ').trim();
   if (durum === 'kabul' && !g) throw new Error('Kabul ederken kısa bir gerekçe yazın.');
-  if (g.length > 500) throw new Error('Gerekçe en çok 500 harf olabilir.');
+  if (g.length > 500) throw new Error('Gerekçe en çok 500 karakter olabilir (boşluklar dahil).');
   if (istisna !== null && istisna !== 'tercih' && istisna !== 'kapsam') throw new Error('Geçersiz istisna.');
   b.yaz([{ tur: 'inceleme_karari', veri: { anahtar, durum, gerekce: g, dayanak: bulgu?.imza ?? '', baslik: bulgu?.baslik ?? '', ...(durum === 'kabul' ? { istisna: istisna ?? 'tercih' } : {}) } }],
     bulgu ? bulgu.kayitlar.map((k) => k.kod) : []);

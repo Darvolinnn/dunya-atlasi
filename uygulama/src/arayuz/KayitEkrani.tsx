@@ -335,15 +335,19 @@ export function AlanGirdisi({ etiket, deger, kaydet, ipucu, buyuk, zorunlu }: {
 
 function Liste({ ogeler, ekle, cikar, ekleEtiketi }: { ogeler: string[]; ekle: (v: string) => Promise<unknown>; cikar: (v: string) => Promise<unknown>; ekleEtiketi: string }) {
   const [yeni, setYeni] = useState('');
+  const [hata, setHata] = useState<string | null>(null);
+  // Eklenemeyen (ör. çok uzun) söz yazıldığı gibi kalır ve nedeni gösterilir.
+  const dene = (p: Promise<unknown>) => p.then(() => { setHata(null); return true; }, (e) => { setHata((e as Error).message); return false; });
   return (
     <div class="liste">
       {ogeler.map((o) => (
-        <span class="cip" key={o}>{o}<button type="button" aria-label={`${o} çıkar`} onClick={() => cikar(o)}>×</button></span>
+        <span class="cip" key={o}>{o}<button type="button" aria-label={`${o} çıkar`} onClick={() => void dene(cikar(o))}>×</button></span>
       ))}
-      <form class="cip-ekle" onSubmit={async (e) => { e.preventDefault(); if (!yeni.trim()) return; await ekle(yeni); setYeni(''); }}>
+      <form class="cip-ekle" onSubmit={async (e) => { e.preventDefault(); if (!yeni.trim()) return; if (await dene(ekle(yeni))) setYeni(''); }}>
         <input class="girdi kucuk-girdi" aria-label={ekleEtiketi} placeholder={ekleEtiketi} value={yeni} lang="tr"
           onInput={(e) => setYeni((e.target as HTMLInputElement).value)} />
       </form>
+      {hata && <span class="hata kucuk">{hata}</span>}
     </div>
   );
 }
@@ -429,7 +433,7 @@ function AdDuzeltmePaneli({ duzeltme, okunusVar, uygula, kapat }: {
   );
 }
 
-/** Andıkları ve ananlar (§3.2, K28): iki yön yan yana; ikisi de boşsa bölüm görünmez. */
+/** Bağlantı verdikleri ve bağlantı verenler (§3.2, K28): iki yön yan yana; ikisi de boşsa bölüm görünmez. */
 function Baglananlar({ istemci, evren, kod, ad, surum }: { istemci: Istemci; evren: string; kod: string; ad: string; surum: number }) {
   const [ananlar, setAnanlar] = useState<BaglananKayit[] | null>(null);
   const [andiklari, setAndiklari] = useState<BaglananKayit[] | null>(null);
@@ -462,8 +466,8 @@ function Baglananlar({ istemci, evren, kod, ad, surum }: { istemci: Istemci; evr
   );
   return (
     <section class="baglananlar" aria-label="Bağlantılar">
-      {sutun('Bu kaydın andıkları', 'Bu kaydın metninde henüz bağlantı yok.', andiklari, (b) => b.ad)}
-      {sutun('Bu kaydı ananlar', 'Başka bir metin bu kayda henüz bağlanmadı.', ananlar, () => ad)}
+      {sutun('Bu metnin bağlantı verdikleri', 'Bu kaydın metninde henüz bağlantı yok.', andiklari, (b) => b.ad)}
+      {sutun('Bu kayda bağlantı verenler', 'Başka bir metin bu kayda henüz bağlanmadı.', ananlar, () => ad)}
     </section>
   );
 }

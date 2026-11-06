@@ -99,7 +99,7 @@ export const ILISKI_TURLERI: IliskiTuru[] = [
   { kod: 'izinli', aIcin: 'Taşıdığı izin / mühür', bIcin: 'Bu izni taşıyan', karsilikli: false, grup: 'Gruplar ve yerler' },
   { kod: 'yolu_bilir', aIcin: 'Bildiği yol', bIcin: 'Bu yolu bilen', karsilikli: false, grup: 'Gruplar ve yerler' },
   { kod: 'haber_surumu', aIcin: 'Sonraki sürümü', bIcin: 'Önceki sürümü', karsilikli: false, grup: 'Sahne ve olay' },
-  { kod: 'dil_kaynagi', aIcin: 'Türediği ya da aldığı dil', bIcin: 'Ondan türeyen ya da alan dil', karsilikli: false, grup: 'Kültür ve dil' },
+  { kod: 'dil_kaynagi', aIcin: 'Türediği ya da sözcük aldığı dil', bIcin: 'Bu dilden türeyen ya da sözcük alan dil', karsilikli: false, grup: 'Kültür ve dil' },
   { kod: 'dil_bilir', aIcin: 'Bildiği dil', bIcin: 'Bu dili bilen', karsilikli: false, grup: 'Kültür ve dil' },
   { kod: 'teknoloji_bilir', aIcin: 'Bildiği teknoloji', bIcin: 'Bu teknolojiyi bilen', karsilikli: false, grup: 'Üretim ve ekoloji' },
   { kod: 'teknoloji_uretir', aIcin: 'Üretebildiği teknoloji', bIcin: 'Bu teknolojiyi üretebilen', karsilikli: false, grup: 'Üretim ve ekoloji' },

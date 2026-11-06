@@ -86,7 +86,7 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
                 onInput={(e) => setYeniAd((e.target as HTMLInputElement).value)} />
             </div>
             <h3 style="margin-top:16px">Ne yazıyorsunuz? <span class="soluk kucuk">(isteğe bağlı)</span></h3>
-            <p class="soluk kucuk">Kurgunuza uzak bölümleri menüde “Diğer” altına alırız. Gizlenen bölümlerin kayıtları silinmez, yalnızca menüden kalkar. Seçimi sonra Genel bakış sayfasından değiştirebilirsiniz.</p>
+            <p class="soluk kucuk">Seçtiğiniz kurgu türünde az kullanılan bölümleri menüde “Diğer” altına alırız. Gizlenen bölümlerin kayıtları silinmez, yalnızca menüden kalkar. Seçimi sonra Genel bakış sayfasından değiştirebilirsiniz.</p>
             <KurguSecici deger={kurgu} degis={setKurgu} />
             <div class="satir" style="margin-top:12px">
               <button class="dugme ana" type="submit" disabled={!yeniAd.trim()}>Oluştur</button>

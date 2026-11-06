@@ -9,6 +9,7 @@ import { GUN_PARCA, siraAnahtari, type EvrenTarihi } from '../alan/tarih';
 import type { IzAdimi, IzGecmisi, IzModeli, IzTanimi, SahneIzi, SahneSurekliligi } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
 import { yonlendir } from './izdusum';
+import { sayiOku } from '../alan/nicelik';
 
 export interface SureklilikBaglami {
   e: EvrenVt;
@@ -88,7 +89,7 @@ export function izGozlem(b: SureklilikBaglami, g: { iz: string; sahne: string; a
   if (g.an !== 'bas' && g.an !== 'son') throw new Error('Gözlem, sahnenin başına ya da sonuna yazılır.');
   let deger = temizAd(g.deger, 200);
   if (deger && iz.model === 'sayi') {
-    const n = Number(deger.replace(',', '.'));
+    const n = sayiOku(deger);
     if (!Number.isFinite(n)) throw new Error('Sayıyla izlenen bir ayrıntının durumunu sayı olarak yazın.');
     deger = String(n);
   }
@@ -208,7 +209,7 @@ function gecenGun(a: EvrenTarihi | null, b: EvrenTarihi | null): [number, number
 function iyilesmeYazisi(iz: IzTanimi, d: Durum, t: EvrenTarihi | null): { deger: string | null; dayanak: string | null } {
   if (!d.baslangic) return { deger: null, dayanak: null };
   const g = gecenGun(d.baslangic.tarih, t);
-  const dayanak = `“${d.baslangic.olay}” olayından sonra, ${iz.sure} günlük iyileşme süresine göre`;
+  const dayanak = `“${d.baslangic.olay}” olayından sonra, ${sayiYaz(iz.sure!)} günlük iyileşme süresine göre`;
   if (!g) return { deger: 'İyileşme süresinin dolup dolmadığı tarihlerden çıkarılamıyor', dayanak };
   if (g[1] < iz.sure!) {
     const kalan = Math.ceil(iz.sure! - g[1]);

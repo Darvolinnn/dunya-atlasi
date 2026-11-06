@@ -1,6 +1,7 @@
 // Takvimler (§3.4) ve zaman çizelgesi (§7): ana takvim ve çağları, paralel takvimler, zaman akışları.
 // Takvim değişince tarihlerin yazılışı korunur, evrendeki yerleri yeniden hesaplanır; kaydetmeden önce hangi
 // tarihlerin yerinin değişeceği gösterilir.
+import { sayiGirdisi } from '../alan/nicelik';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { CizelgeOgesi, KisaKayit, TakvimEtkisi } from '../veri/api';
@@ -50,7 +51,7 @@ export function TakvimSekmesi({ istemci, evren }: { istemci: Istemci; evren: str
       <TakvimDuzenleyici istemci={istemci} evren={evren} z={z} takvim={z.ana} paralel={false} />
 
       <h2>Paralel takvimler</h2>
-      <p class="soluk kucuk">Bir kültürün, kurumun ya da boyutun kendi takvimi. Tarihi o takvimin yıl sözüyle yazarsınız (“Döngü 12”). Ana takvimle eşlemesi biliniyorsa tarih ana sıraya yerleşir ve her tarihin öbür takvimlerdeki karşılığı da gösterilir. Eşleme bilinmiyorsa kesin bir dönüşüm yapılmaz.</p>
+      <p class="soluk kucuk">Bir kültürün, kurumun ya da boyutun kendi takvimi. Tarihi o takvimde yılın adıyla yazarsınız (“Döngü 12”). Ana takvimle eşlemesi biliniyorsa tarih ana sıraya yerleşir ve her tarihin öbür takvimlerdeki karşılığı da gösterilir. Eşleme bilinmiyorsa kesin bir dönüşüm yapılmaz.</p>
       <ul class="takvim-listesi">
         {z.diger.map((p) => (
           <li key={p.kod}>
@@ -87,7 +88,7 @@ export function TakvimSekmesi({ istemci, evren }: { istemci: Istemci; evren: str
   );
 }
 
-const oranYazisi = (o: Akis['oranlar'][number]) => `${o.bas ? `${o.bas} tarihinden itibaren ` : ''}${o.ana ? `${o.akis} gün = ana akışta ${o.ana[0] === o.ana[1] ? o.ana[0] : `${o.ana[0]}–${o.ana[1]}`} gün` : 'oran bilinmiyor'}`;
+const oranYazisi = (o: Akis['oranlar'][number]) => `${o.bas ? `${o.bas} tarihinden itibaren ` : ''}${o.ana ? `${sayiGirdisi(o.akis)} gün = ana akışta ${o.ana[0] === o.ana[1] ? sayiGirdisi(o.ana[0]) : `${sayiGirdisi(o.ana[0])}–${sayiGirdisi(o.ana[1])}`} gün` : 'oran bilinmiyor'}`;
 
 // ---------- Takvim düzenleyici (ana ya da paralel) ----------
 type Taslak = Takvim & { cap?: { yil: number; ana: string } | null; bagli?: string | null };
@@ -171,7 +172,7 @@ function TakvimDuzenleyici({ istemci, evren, z, takvim, paralel, yeni = false, k
         {!ozelMi(takvim) && ' Şu an varsayılan takvim kullanılıyor: ay yok, bir yıl 365 gün.'}</p>}
 
       <div class="alanlar">
-        <label class="alan"><span class="alan-adi">Yıl için kullanılan söz</span>
+        <label class="alan"><span class="alan-adi">Yılın adı</span>
           <input class="girdi" lang="tr" value={taslak.ad} placeholder={paralel ? 'Örn. Döngü' : 'Yıl'} onInput={(e) => guncelle((t) => { t.ad = (e.target as HTMLInputElement).value; })} />
           <span class="soluk kucuk">“{hedef.ad || '…'} 412” biçiminde okunur.</span></label>
         {!taslak.aylar!.length && (
@@ -266,7 +267,7 @@ function TakvimDuzenleyici({ istemci, evren, z, takvim, paralel, yeni = false, k
         <span class="soluk kucuk">{denemeSonucu ? tarihAciklamasi(denemeSonucu, deneSet) : ' '}</span>
         {denemeSonucu && paralelYazilar(denemeSonucu, deneSet).map((p) => <span class="soluk kucuk">{p.takvim}: {p.yazi}</span>)}</label>
 
-      {!gecerli && <p class="hata kucuk">{paralel && !hedef.ad ? 'Yıl için kullanılan sözü yazın. ' : ''}Her ayın, gün bölümünün, mevsimin ve çağın bir adı olmalı. Adlar birbirini tekrar etmemeli ve sayı içermemeli. Gün sayıları 1 ya da daha büyük olmalı. Geriye sayan çağ öbür çağlardan önce başlamalı.</p>}
+      {!gecerli && <p class="hata kucuk">{paralel && !hedef.ad ? 'Yılın adını yazın. ' : ''}Her ayın, gün bölümünün, mevsimin ve çağın bir adı olmalı. Adlar birbirini tekrar etmemeli ve sayı içermemeli. Gün sayıları 1 ya da daha büyük olmalı. Geriye sayan çağ öbür çağlardan önce başlamalı.</p>}
       {hata && <p class="hata kucuk">{hata}</p>}
 
       {etki ? <TakvimEtkiPaneli evren={evren} etki={etki.e} onOnay={() => yaz(etki.hedef)} onVazgec={() => setEtki(null)} />

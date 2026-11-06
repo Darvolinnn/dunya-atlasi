@@ -22,7 +22,7 @@ export function IddiaDosyasiBolumu({ istemci, evren, iddia }: { istemci: Istemci
   if (!d) return null;
   const secenek = (k: string) => d.cevaplar.find((c) => c.secenek.kod === k)?.secenek.metin ?? 'kaldırılmış cevap';
   const ad = (k: string) => { const a = d.anlatimlar.find((x) => x.kod === k); return a ? `${turAdi(a.tur)}${a.kaynakKaydi ? `: ${a.kaynakKaydi.ad}` : ''}` : 'anlatım'; };
-  const kaldir = (kod: string, geri: boolean) => istemci.iste(geri ? 'anlatimGeriYukle' : 'anlatimSil', { evren, kod }).then(() => setHata(null), (e) => setHata(hataYaz(e)));
+  const kaldir = (kod: string, geri: boolean) => istemci.iste(geri ? 'anlatimGeriYukle' : 'anlatimSil', { evren, kod }).then(() => { setHata(null); return true; }, (e) => { setHata(hataYaz(e)); return false; });
   return (
     <div class="iddia-dosyasi">
       <table class="karsilastirma kucuk">

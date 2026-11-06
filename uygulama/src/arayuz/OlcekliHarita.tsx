@@ -1,5 +1,6 @@
 // Ölçekli geometri kipi ve erişim konturları (§8.4, §15-2, §2.2 kural 1 ve 13, §2.3).
 // Yalnızca ilgili görünüm açılınca çalışır; hesaplar Web Worker üzerinden arka planda yürür ve arayüzü dondurmaz.
+import { sayiGirdisi } from '../alan/nicelik';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import { geriAlinabilir } from './onay';
@@ -28,7 +29,7 @@ const HEDEF_YAZISI: Record<TiklamaHedefi, string> = {
   olcek2: 'ölçeğin 2. noktası',
   olcumBas: 'ölçümün başlangıcı',
   olcumBit: 'ölçümün bitişi',
-  konturBas: 'erişim konturlarının başlangıcı',
+  konturBas: 'ulaşılabilecek yerlerin başlangıç noktası',
   araziNokta: 'arazinin yeni köşesi',
 };
 
@@ -115,7 +116,7 @@ export function OlcekliHaritaBolumu({
     return (
       <div class="satir">
         <button type="button" class="dugme sade kucuk" onClick={() => setAcik(true)}>
-          Ölçekli geometri ve erişim konturları
+          Ölçekli harita ve ulaşılabilecek yerler
         </button>
       </div>
     );
@@ -276,9 +277,9 @@ export function OlcekliHaritaBolumu({
   );
 
   return (
-    <section class="olcekli-harita" aria-label="Ölçekli geometri ve erişim konturları">
+    <section class="olcekli-harita" aria-label="Ölçekli harita ve ulaşılabilecek yerler">
       <div class="satir">
-        <h2>Ölçekli geometri</h2>
+        <h2>Ölçekli harita</h2>
         {durum?.catismali && <span class="rozet uyari">İki cihazda farklı</span>}
         <span class="bosluk" />
         <button type="button" class="dugme sade kucuk" onClick={() => setAcik(false)}>
@@ -293,7 +294,7 @@ export function OlcekliHaritaBolumu({
       ) : (
         <p class="kucuk">
           <strong>Ölçek:</strong> ({durum.olcek.p1[0]}, {durum.olcek.p1[1]}) – ({durum.olcek.p2[0]},{' '}
-          {durum.olcek.p2[1]}) arası <strong>{durum.olcek.mesafe} {durum.olcek.birim}</strong>
+          {durum.olcek.p2[1]}) arası <strong>{sayiGirdisi(durum.olcek.mesafe)} {durum.olcek.birim}</strong>
           {durum.olcek.molaVarsayimi ? ` · ${durum.olcek.molaVarsayimi}` : ''}
         </p>
       )}
@@ -306,7 +307,7 @@ export function OlcekliHaritaBolumu({
           viewBox={`0 0 ${h.en} ${h.boy}`}
           onClick={svgTikla}
           role="img"
-          aria-label="Ölçekli harita ve erişim konturları katmanı"
+          aria-label="Ölçekli harita ve ulaşılabilecek yerler katmanı"
         >
           <rect x={0} y={0} width={h.en} height={h.boy} class="olcekli-zemin" />
           {durum?.araziler.map((a) => (
@@ -324,7 +325,7 @@ export function OlcekliHaritaBolumu({
               .map((k) =>
                 k.svgYolu ? (
                   <path key={k.gun} d={k.svgYolu} class={`olcekli-kontur gun-${k.gun}`}>
-                    <title>{k.gun}. gün erişim alanı ({k.alanBirimKare} {durum?.olcek?.birim ?? 'birim'}²)</title>
+                    <title>{k.gun}. gün erişim alanı ({sayiGirdisi(k.alanBirimKare)} {durum?.olcek?.birim ?? 'birim'}²)</title>
                   </path>
                 ) : null,
               )}
@@ -538,7 +539,7 @@ export function OlcekliHaritaBolumu({
               <li key={a.kod}>
                 <strong>{a.ad}</strong>{' '}
                 <span class="soluk">
-                  ({a.kurallar.map((k) => `${k.ulasim}${k.mevsim ? `/${k.mevsim}` : ''}: ${k.gecilmez ? 'geçilmez' : `${k.gunlukHiz} ${durum.olcek?.birim ?? 'birim'}/gün`}`).join(', ')})
+                  ({a.kurallar.map((k) => `${k.ulasim}${k.mevsim ? `/${k.mevsim}` : ''}: ${k.gecilmez ? 'geçilmez' : `${sayiGirdisi(k.gunlukHiz)} ${durum.olcek?.birim ?? 'birim'}/gün`}`).join(', ')})
                 </span>
                 {a.catismali && <span class="rozet uyari">İki cihazda farklı</span>}
                 {!h.silindi && (
@@ -623,11 +624,11 @@ export function OlcekliHaritaBolumu({
             {olcumSonuc.uyari && <p class="uyari kucuk">{olcumSonuc.uyari}</p>}
             {olcumSonuc.duzMesafe !== null && (
               <p>
-                <strong>Düz mesafe:</strong> {olcumSonuc.duzMesafe} {olcumSonuc.zarf.birim}
+                <strong>Düz mesafe:</strong> {sayiGirdisi(olcumSonuc.duzMesafe)} {olcumSonuc.zarf.birim}
                 {olcumSonuc.enKisaGun !== null && (
                   <>
-                    {' '}· <strong>Araziye göre en kısa süre:</strong> {olcumSonuc.enKisaGun} gün (yol uzunluğu:{' '}
-                    {olcumSonuc.yolMesafesi} {olcumSonuc.zarf.birim})
+                    {' '}· <strong>Araziye göre en kısa süre:</strong> {sayiGirdisi(olcumSonuc.enKisaGun)} gün (yol uzunluğu:{' '}
+                    {sayiGirdisi(olcumSonuc.yolMesafesi)} {olcumSonuc.zarf.birim})
                   </>
                 )}
               </p>
@@ -637,14 +638,14 @@ export function OlcekliHaritaBolumu({
         )}
 
         {/* Erişim konturları */}
-        <h3>1., 2. ve 3. gün erişim konturları</h3>
+        <h3>1., 2. ve 3. günde ulaşılabilecek yerler</h3>
         <div class="satir">
           <span>Başlangıç: ({konturBas[0]}, {konturBas[1]})</span>
           <button type="button" class="dugme sade kucuk" onClick={() => setHedef('konturBas')}>
             Haritadan seç
           </button>
           <button type="button" class="dugme ana kucuk" onClick={konturCalistir}>
-            Konturları hesapla
+            Ulaşılabilecek yerleri hesapla
           </button>
         </div>
         {konturDurum === 'hesaplaniyor' && <p class="soluk">Hesaplanıyor…</p>}
@@ -658,7 +659,7 @@ export function OlcekliHaritaBolumu({
               <ul class="isaret-listesi">
                 {konturSonuc.konturlar.map((k) => (
                   <li key={k.gun}>
-                    <strong>{k.gun}. gün erişim alanı:</strong> {k.hucreler.length} ızgara hücresi (~{k.alanBirimKare}{' '}
+                    <strong>{k.gun}. gün erişim alanı:</strong> {k.hucreler.length} ızgara hücresi (~{sayiGirdisi(k.alanBirimKare)}{' '}
                     {konturSonuc.zarf.birim}²)
                   </li>
                 ))}
@@ -776,9 +777,9 @@ function SonucZarfiGorunumu({
     <details class="soluk kucuk">
       <summary>Sonuç dayanağı ve varsayımlar</summary>
       <ul class="isaret-listesi">
-        <li><strong>Çalışma kipi:</strong> Ölçekli geometri</li>
+        <li><strong>Çalışma kipi:</strong> Ölçekli harita</li>
         <li><strong>Sonucun türü:</strong> Bu varsayımlara dayanan tahmin</li>
-        <li><strong>Hüküm:</strong> {HUKUM_YAZISI[zarf.hukum]}</li>
+        <li><strong>Sonuç:</strong> {HUKUM_YAZISI[zarf.hukum]}</li>
         <li><strong>Güncellik:</strong> {guncellik === 'guncel' ? 'Güncel' : 'Önceki sonuç'}</li>
         {zarf.olcekOzeti && <li><strong>Ölçek:</strong> {zarf.olcekOzeti}</li>}
         {zarf.ulasim && <li><strong>Ulaşım biçimi:</strong> {zarf.ulasim}</li>}
@@ -786,7 +787,7 @@ function SonucZarfiGorunumu({
         <li><strong>Mola varsayımı:</strong> {zarf.molaVarsayimi}</li>
         {zarf.izgaraAraligiBirim !== null && (
           <li>
-            <strong>Izgara aralığı:</strong> {zarf.izgaraAraligiBirim} {zarf.birim} ({zarf.izgaraAraligiUzay} harita birimi)
+            <strong>Izgara aralığı:</strong> {sayiGirdisi(zarf.izgaraAraligiBirim)} {zarf.birim} ({sayiGirdisi(zarf.izgaraAraligiUzay)} harita birimi)
           </li>
         )}
         <li><strong>Kapsam:</strong> {zarf.kapsamNotu}</li>

@@ -6,6 +6,7 @@
 // - 1., 2. ve 3. gün erişim konturları aynı ızgaradaki en kısa varış sürelerinin (<=1, <=2, <=3 gün) alt kümeleridir; iç içedir.
 
 import { uygula, type Donusum, type Nokta } from './hizalama';
+import { sayiGirdisi } from './nicelik';
 import type {
   OlcekliHizKurali,
   OlcekliKontur,
@@ -166,7 +167,7 @@ function zarfOlustur(a: {
   const uzayUzakligi = a.olcek ? Math.hypot(a.olcek.p2[0] - a.olcek.p1[0], a.olcek.p2[1] - a.olcek.p1[1]) : 0;
   const olcekOzeti =
     a.olcek && uzayUzakligi > 0
-      ? `${yuvarla(uzayUzakligi, 2)} harita birimi = ${a.olcek.mesafe} ${a.olcek.birim}`
+      ? `${sayiGirdisi(yuvarla(uzayUzakligi, 2))} harita birimi = ${sayiGirdisi(a.olcek.mesafe)} ${a.olcek.birim}`
       : null;
   return {
     kip: 'olcekli_geometri',
@@ -612,7 +613,7 @@ export function konturHesapla(
   if (oran === null || !baglam.olcek) {
     return {
       durum: 'olceksiz',
-      uyari: 'Harita ölçeksiz. Erişim konturları için önce haritanın ölçeğini tanımlayın.',
+      uyari: 'Harita ölçeksiz. Ulaşılabilecek yerleri hesaplamak için önce haritanın ölçeğini tanımlayın.',
       baslangic,
       izgaraEn: 0,
       izgaraBoy: 0,
@@ -774,7 +775,7 @@ export function konturHesapla(
   return {
     durum: 'tamam',
     uyari: bilinmeyenAlanVar
-      ? 'Hızı bilinmeyen alanlar kontur hesabına katılmadı. Yalnızca hızı tanımlı araziler tarandı.'
+      ? 'Hızı bilinmeyen alanlar hesaba katılmadı. Yalnızca hızı tanımlı araziler tarandı.'
       : !erisilenVar
         ? 'Başlangıç noktası, seçilen ulaşım yolu ve mevsimde geçilemeyen bir alanda.'
         : null,

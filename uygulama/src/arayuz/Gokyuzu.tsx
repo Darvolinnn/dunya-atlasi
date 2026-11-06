@@ -1,3 +1,4 @@
+import { sayiGirdisi } from '../alan/nicelik';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AyEvresi, GokyuzuTanimi, GokyuzuSonucu, GokyuzuCakismalari, GokyuzuZarfi } from '../veri/api';
@@ -79,10 +80,10 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
       <fieldset disabled={bekliyor}><legend>Gökyüzü tanımı</legend>
         {t.aylar.map((a, i) => {
           const ayDegis = (x: Partial<typeof a>) => degis({ ...t, aylar: t.aylar.map((b, j) => j === i ? { ...b, ...x } : b) });
-          return <fieldset key={a.kod}><legend>{i + 1}. ay</legend><div class="satir">
+          return <fieldset key={a.kod}><legend>{i + 1}. uydu</legend><div class="satir">
             <label>Ayın adı <input class="girdi" value={a.ad} onInput={(e) => ayDegis({ ad: e.currentTarget.value })} /></label>
-            <label>Dönem (gün) <input class="girdi" type="number" min="1" step="any" value={a.donem} onInput={(e) => ayDegis({ donem: e.currentTarget.valueAsNumber })} /></label>
-            <label>Başlangıç tarihi <input class="girdi" value={a.baslangic} onInput={(e) => ayDegis({ baslangic: e.currentTarget.value })} /></label>
+            <label>Evre döngüsü (gün) <input class="girdi" type="number" min="1" step="any" value={a.donem} onInput={(e) => ayDegis({ donem: e.currentTarget.valueAsNumber })} /></label>
+            <label>Başlangıç evresinin tarihi <input class="girdi" value={a.baslangic} onInput={(e) => ayDegis({ baslangic: e.currentTarget.value })} /></label>
             <EvreSec etiket={`${i + 1}. ayın başlangıç evresi`} deger={a.evre} sec={(evre) => ayDegis({ evre })} />
             <button class="dugme" onClick={() => { degis({ ...t, aylar: t.aylar.filter((b) => b.kod !== a.kod) }); setKosullar({}); }}>Ayı kaldır</button>
           </div></fieldset>;
@@ -96,7 +97,7 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
         </div>)}
         <button class="dugme" onClick={() => degis({ ...t, mevsimler: [...t.mevsimler, { ad: '', baslangicGunu: 1 }] })}>Mevsim ekle</button>
         <h3>Gelgit notları (isteğe bağlı)</h3>
-        <ul>{t.gelgitler.map((g, i) => <li key={i}><a href={`#/e/${evren}/k/${g.kiyi}`}>{kiyilar[g.kiyi] ?? 'Kıyı kaydı'}</a>: {g.not} · {g.saat} saatte bir <button class="dugme" onClick={() => degis({ ...t, gelgitler: t.gelgitler.filter((_, j) => j !== i) })}>Notu kaldır</button></li>)}</ul>
+        <ul>{t.gelgitler.map((g, i) => <li key={i}><a href={`#/e/${evren}/k/${g.kiyi}`}>{kiyilar[g.kiyi] ?? 'Kıyı kaydı'}</a>: {g.not} · {sayiGirdisi(g.saat)} saatte bir <button class="dugme" onClick={() => degis({ ...t, gelgitler: t.gelgitler.filter((_, j) => j !== i) })}>Notu kaldır</button></li>)}</ul>
         <div class="satir"><KayitSec istemci={istemci} evren={evren} secili={kiyi} sec={setKiyi} etiket="Kıyı kaydını seç" />
           <label>Kıyı notu <textarea class="girdi" value={not} onInput={(e) => setNot(e.currentTarget.value)} /></label>
           <label>Kaç saatte bir <input class="girdi" type="number" min="0" step="any" value={saat} onInput={(e) => setSaat(e.currentTarget.value)} /></label>

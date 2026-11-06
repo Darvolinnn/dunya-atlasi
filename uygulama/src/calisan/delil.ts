@@ -71,7 +71,7 @@ export function delilYaz(b: DelilBaglami, kod: string, t: DelilTanimi) {
     const tarih = String(x.tarih ?? '').replace(/\s+/g, ' ').trim();
     if (tarih && !tarihCoz(tarih, z)?.eksen) throw new Error(`Tarih okunamadı: “${tarih}”.`);
     const nasil = String(x.nasil ?? '').replace(/\s+/g, ' ').trim();
-    if (nasil.length > 120) throw new Error('“Nasıl geçti?” en çok 120 harf olabilir.');
+    if (nasil.length > 120) throw new Error('“Nasıl geçti?” en çok 120 karakter olabilir (boşluklar dahil).');
     return { kisi, tarih, nasil };
   });
   const yeni: DelilTanimi = { gercekYazar, aile, elde };

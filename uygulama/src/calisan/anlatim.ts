@@ -39,7 +39,7 @@ export function anlatimYaz(b: AnlatimBaglami, kodGirdi: string | null, t: Anlati
   if (kodGirdi && (!eski || eski.iddia !== iddia.kod)) throw new Error('Anlatım bulunamadı.');
   if (!ANLATIM_TURLERI.some((x) => x.kod === t.tur)) throw new Error('Anlatımın türünü seçin.');
   const ozet = String(t.ozet ?? '').replace(/\s+/g, ' ').trim();
-  if (ozet.length > 300) throw new Error('Kısa açıklama en çok 300 harf olabilir.');
+  if (ozet.length > 300) throw new Error('Kısa açıklama en çok 300 karakter olabilir (boşluklar dahil).');
   let kaynak: string | null = null;
   if (t.kaynak) {
     kaynak = kodGecerliMi(t.kaynak) ? yonlendir(e.db, t.kaynak) : '';

@@ -97,7 +97,9 @@ export function DriveYedekleri({ istemci, evren, surum }: { istemci: Istemci; ev
   const ayarKaydet = async () => {
     if (!ayar) return;
     setHata(null);
-    try { await istemci.iste('yedekAyarlari', { gunSayisi: Number(ayar.gun), aySayisi: Number(ayar.ay) }); setAyar(null); void yukle(); }
+    // Boş bırakılan kutu 0 sayılmaz (0 ay, ay başı yedeklerinin hepsini sildirirdi); geçersiz sayı olarak reddedilir.
+    const sayi = (s: string) => (s.trim() ? Number(s) : NaN);
+    try { await istemci.iste('yedekAyarlari', { gunSayisi: sayi(ayar.gun), aySayisi: sayi(ayar.ay) }); setAyar(null); void yukle(); }
     catch (e) { setHata(hataMetni(e)); }
   };
 

@@ -38,12 +38,13 @@ export function DilBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; ev
     <section class="surecler dil-bolumu" aria-label="Dil tarihi">
       <h2>Ses ve dil tarihi</h2>
       {(b.kaynaklar.length > 0 || b.turevler.length > 0) && (
-        <p class="kucuk">{b.kaynaklar.length > 0 && <>Türediği ya da aldığı dil: {liste(evren, b.kaynaklar)}. </>}{b.turevler.length > 0 && <>Ondan türeyen: {liste(evren, b.turevler)}.</>}</p>
+        <p class="kucuk">{b.kaynaklar.length > 0 && <>Türediği ya da sözcük aldığı dil: {liste(evren, b.kaynaklar)}. </>}{b.turevler.length > 0 && <>Ondan türeyen: {liste(evren, b.turevler)}.</>}</p>
       )}
-      {!b.kaynaklar.length && <p class="soluk kucuk">Bu dilin daha eski bir dönemi ya da kaynağı varsa İlişkiler bölümünden “Türediği ya da aldığı dil” ilişkisini ekleyin. Aşağıdaki kurallar o dilden gelen sözcüklere uygulanır.</p>}
+      {!b.kaynaklar.length && <p class="soluk kucuk">Bu dilin daha eski bir dönemi ya da kaynağı varsa İlişkiler bölümünden “Türediği ya da sözcük aldığı dil” ilişkisini ekleyin. Aşağıdaki kurallar o dilden gelen sözcüklere uygulanır.</p>}
       {hata && <p class="hata kucuk">{hata}</p>}
 
       <h3>Ses paleti</h3>
+      <p class="soluk kucuk">Ad üretirken kullanılacak heceler.</p>
       <p class="kucuk">{t.heceler.length ? t.heceler.map((h) => (
         <span class="rozet" key={h}>{h} <button class="dugme sade kucuk" aria-label={`${h} hecesini kaldır`} onClick={() => yaz({ heceler: t.heceler.filter((x) => x !== h) })}>×</button> </span>
       )) : <span class="soluk">Hece yok.</span>}</p>
@@ -232,7 +233,7 @@ export function KisiDilleriBolumu({ istemci, evren, kod, surum }: { istemci: Ist
   return (
     <section class="surecler" aria-label="Bildiği diller">
       <h2>Bildiği diller</h2>
-      <p class="soluk kucuk">Dil bilgisi tek bir ölçüyle verilmez. Konuşma, anlama, okuma ve yazma ayrı ayrı tutulur. Boş bırakılan beceri bilinmiyor sayılır.</p>
+      <p class="soluk kucuk">Bir dili bilmek tek bir ölçüyle verilmez. Konuşma, anlama, okuma ve yazma ayrı ayrı tutulur. Boş bırakılan beceri bilinmiyor sayılır.</p>
       <ul class="toplanan-listesi">{l.map((x) => (
         <li key={x.iliski}>{bag(evren, x.dil)}
           <div class="satir">

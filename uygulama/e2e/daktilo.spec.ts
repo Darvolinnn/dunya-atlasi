@@ -1,4 +1,4 @@
-// Daktilo kipi (K33, §5.10) ve yazma ekranındaki biçim çubuğu. Örnek metin uydurmadır.
+// Daktilo kipi (K34, §5.10) ve yazma ekranındaki biçim çubuğu. Örnek metin uydurmadır.
 import { test, expect, type Page } from '@playwright/test';
 import { editor, sahneAc } from './yardimci';
 
