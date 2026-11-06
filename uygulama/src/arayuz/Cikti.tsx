@@ -58,9 +58,14 @@ export function EserCiktisi({ istemci, evren, eser }: { istemci: Istemci; evren:
   const [basliklar, setBasliklar] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const [calisiyor, setCalisiyor] = useState(false);
+  // Ağaç gelmeden ya da gelemezse çıktı alınmaz: hatırlanan seçim atlanıp bütün eser çıkmasın.
   const [agac, setAgac] = useState<CiktiAgaci | null>(null);
+  const [agacHatasi, setAgacHatasi] = useState<string | null>(null);
+  const [surum, setSurum] = useState(0);
   const [disarida, setDisarida] = useState<Set<string>>(() => disaridakileriOku(secimAnahtari(evren, eser)));
-  useEffect(() => { istemci.iste('ciktiAgaci', { evren, eser }).then(setAgac, () => setAgac(null)); }, [evren, eser]);
+  useEffect(() => { istemci.iste('ciktiAgaci', { evren, eser }).then((a) => { setAgac(a); setAgacHatasi(null); }, (e) => setAgacHatasi(hataYaz(e))); }, [evren, eser, surum]);
+  // Aynı sayfada sahne eklenir ya da esere taşınırsa ağaç yenilenir; dışarıda bırakılanlar korunur, yeni sahne seçili gelir.
+  useEffect(() => istemci.dinle((d) => { if (d.evren === evren) setSurum((x) => x + 1); }), [evren]);
   useEffect(() => { setDisarida(disaridakileriOku(secimAnahtari(evren, eser))); }, [evren, eser]);
   const kaydet = (d: Set<string>) => { setDisarida(d); try { localStorage.setItem(secimAnahtari(evren, eser), JSON.stringify([...d])); } catch { /* yok */ } };
 
@@ -85,6 +90,7 @@ export function EserCiktisi({ istemci, evren, eser }: { istemci: Istemci; evren:
     </li>
   );
   const bos = tum.length > 0 && !secililer.length;
+  const kapali = !agac || bos;
   return (
     <section class="surecler" aria-label="Eserin çıktısı">
       <h2>Çıktı</h2>
@@ -118,10 +124,12 @@ export function EserCiktisi({ istemci, evren, eser }: { istemci: Istemci; evren:
       )}
       <div class="satir">
         <label class="kucuk"><input type="checkbox" checked={basliklar} onChange={(e) => setBasliklar((e.target as HTMLInputElement).checked)} /> Sahne adlarını başlık olarak yaz</label>
-        <button class="dugme kucuk" onClick={epub} disabled={calisiyor || bos}>EPUB indir</button>
-        <button class="dugme kucuk" onClick={pdf} disabled={bos}>Yazdır / PDF</button>
+        <button class="dugme kucuk" onClick={epub} disabled={calisiyor || kapali}>EPUB indir</button>
+        <button class="dugme kucuk" onClick={pdf} disabled={kapali}>Yazdır / PDF</button>
         {bos && <span class="soluk kucuk">Çıktıya girecek sahne seçilmedi.</span>}
+        {!agac && !agacHatasi && <span class="soluk kucuk">Bölümler okunuyor…</span>}
       </div>
+      {agacHatasi && <p class="hata kucuk">Bölüm ve sahneler okunamadı, çıktı alınamıyor: {agacHatasi}</p>}
       {hata && <p class="hata kucuk">{hata}</p>}
     </section>
   );

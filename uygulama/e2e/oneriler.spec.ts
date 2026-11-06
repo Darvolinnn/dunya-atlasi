@@ -43,6 +43,10 @@ test('yan panel kenarından ve ok tuşlarıyla genişler; genişlik bu cihazda h
   await tutamak.press('End');
   expect(await genislik()).toBe(640);
   expect(await p.evaluate(() => localStorage.getItem('dunya-atlasi:yan-panel-genisligi'))).toBe('640');
+  // Pencere daralınca panel metne en az 360 px bırakır.
+  await p.setViewportSize({ width: 950, height: 850 });
+  expect(await genislik()).toBe(590);
+  await p.setViewportSize({ width: 1400, height: 850 });
   await tutamak.dblclick();
   expect(await genislik()).toBe(380);
 });

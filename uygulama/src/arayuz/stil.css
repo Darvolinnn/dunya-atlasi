@@ -252,9 +252,9 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 /* Çalışma alanı: özet kartı, yan panel, komut paleti (§5.3, §5.4, §5.8) */
 .ozet-karti { position: fixed; z-index: 40; box-shadow: 0 8px 28px rgb(0 0 0 / 0.18); padding: 12px 14px; }
 .ozet-gorseli { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; flex: none; }
-.yan-panel { position: fixed; top: 0; right: 0; bottom: 0; width: var(--yan-panel-genislik, 380px); z-index: 20; background: var(--yuzey); border-left: 1px solid var(--cizgi); display: flex; flex-direction: column; box-shadow: var(--golge); }
+.yan-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(var(--yan-panel-genislik, 380px), calc(100vw - 360px)); z-index: 20; background: var(--yuzey); border-left: 1px solid var(--cizgi); display: flex; flex-direction: column; box-shadow: var(--golge); }
 .yan-panel.kucuk { bottom: auto; }
-.calisma.yan-panel-acik { padding-right: var(--yan-panel-genislik, 380px); }
+.calisma.yan-panel-acik { padding-right: min(var(--yan-panel-genislik, 380px), calc(100vw - 360px)); }
 /* Panelin genişlik tutamağı (taslak 3A): sol kenarda ince şerit; üzerine gelince ya da odaklanınca belirir. */
 .panel-tutamagi { position: absolute; left: -5px; top: 0; bottom: 0; width: 10px; cursor: col-resize; z-index: 1; touch-action: none; display: flex; align-items: center; justify-content: center; }
 .panel-tutamagi::after { content: ""; width: 4px; height: 44px; border-radius: 2px; background: var(--cizgi); transition: background 150ms; }
