@@ -9,6 +9,7 @@ import { akisGecerli, eksenAraligi, farkCoz, farkGecerli, farkYazisi, goreliTari
 import { iliskiTuruBul, iliskiTuruGecerli, rolAdi } from '../alan/iliski-turleri';
 import { icerikAdi, onizlemeAdi, type GorselIsleyici, type MedyaDeposu } from './medya';
 import { iceAktarimPlani, type IceDosya } from './ice-aktarim';
+import { docxDosyalari } from '../alan/docx';
 import { zipAc, zipYaz, zipYazBlob, type ZipArsivi, type ZipDosyasi } from '../alan/zip';
 import { VERI_BICIMI, type Islem } from '../alan/islem';
 import { b64Coz, islemSatiri } from '../alan/paket';
@@ -3140,6 +3141,19 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     this.eserKontrol(e, eser);
     const r = cikti.epubDosyalari(e, eser, !!sahneBasliklari);
     return { dosyaAdi: `${this.dosyaKoku(r.ad)}.epub`, veri: await zipYaz(r.dosyalar) };
+  }
+  /** PDF için okuma düzeni; PDF'i yazı tipleriyle birlikte arayüz yazar (§10.11). */
+  eserKitabi({ evren, eser, sahneBasliklari = false }: { evren: string; eser: string; sahneBasliklari?: boolean }) {
+    const e = this.evren(evren);
+    this.eserKontrol(e, eser);
+    const kitap = cikti.eserKitabi(e, eser, !!sahneBasliklari);
+    return { dosyaKoku: this.dosyaKoku(kitap.ad), kitap };
+  }
+  async docxYaz({ evren, eser, sahneBasliklari = false }: { evren: string; eser: string; sahneBasliklari?: boolean }) {
+    const e = this.evren(evren);
+    this.eserKontrol(e, eser);
+    const kitap = cikti.eserKitabi(e, eser, !!sahneBasliklari);
+    return { dosyaAdi: `${this.dosyaKoku(kitap.ad)}.docx`, veri: await zipYaz(docxDosyalari(kitap)) };
   }
   eserBaskiSayfasi({ evren, eser, sahneBasliklari = false }: { evren: string; eser: string; sahneBasliklari?: boolean }) {
     const e = this.evren(evren);
