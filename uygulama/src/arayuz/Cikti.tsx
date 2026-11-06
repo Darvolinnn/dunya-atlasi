@@ -99,12 +99,12 @@ export function EserCiktisi({ istemci, evren, eser }: { istemci: Istemci; evren:
 }
 
 /** Yedek sekmesinde: bir eser seçilip metni dışa aktarılır. */
-export function EserDisaAktarma({ istemci, evren }: { istemci: Istemci; evren: string }) {
+export function EserDisaAktarma({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
   const [eserler, setEserler] = useState<{ kod: string; ad: string }[] | null>(null);
   const [secili, setSecili] = useState<string | null>(null);
   useEffect(() => {
     istemci.iste('eserler', { evren }).then((l) => { setEserler(l); setSecili((s) => s && l.some((x) => x.kod === s) ? s : l[0]?.kod ?? null); }, () => setEserler([]));
-  }, [istemci, evren]);
+  }, [istemci, evren, surum]);
   return (
     <div class="kart" style="margin-top:12px">
       <h3>Eseri dışa aktar (PDF, Word, EPUB)</h3>
