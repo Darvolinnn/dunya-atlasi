@@ -1,5 +1,6 @@
 // Kayıt sayfasının bölümleri: evren tarihi, görseller, ilişkiler, sahne olayı ve değişimler, notu kayda dönüştürme.
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { useYumusakKapanis } from './kapanis';
 import type { Istemci } from '../veri/istemci';
 import type { DegisimSatiri, IliskiSatiri, Kayit, SahneOlayBilgisi } from '../veri/api';
 import { farkYazisi, paralelYazilar, tarihAciklamasi, tarihCoz, type EvrenTarihi, type ZamanSeti } from '../alan/tarih';
@@ -181,22 +182,23 @@ export function Gorseller({ istemci, evren, kayit }: { istemci: Istemci; evren: 
 }
 
 function GorselGorunumu({ istemci, evren, ad, kapat, cikar, isaretle }: { istemci: Istemci; evren: string; ad: string; kapat: () => void; cikar: () => void; isaretle: () => void }) {
+  const [perdeRef, vazgec] = useYumusakKapanis(kapat);
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => { gorselAdresi(istemci, evren, ad, false).then((x) => setUrl(x.url)); }, [ad]);
   useEffect(() => {
-    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') kapat(); };
+    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') vazgec(); };
     addEventListener('keydown', tus);
     return () => removeEventListener('keydown', tus);
   }, []);
   return (
-    <div class="perde" role="dialog" aria-label="Görsel" onClick={(e) => { if (e.target === e.currentTarget) kapat(); }}>
+    <div class="perde" role="dialog" aria-label="Görsel" ref={perdeRef} onClick={(e) => { if (e.target === e.currentTarget) vazgec(); }}>
       <div class="perde-ic">
         <div class="satir">
           <span class="bosluk" />
           <button class="dugme" onClick={isaretle}>Üzerinde işaretle</button>
           {url && <a class="dugme" href={url} download>İndir</a>}
           <button class="dugme tehlikeli" onClick={cikar}>Kayıttan çıkar</button>
-          <button class="dugme" onClick={kapat} autoFocus>Kapat</button>
+          <button class="dugme" onClick={vazgec} autoFocus>Kapat</button>
         </div>
         {url ? <img src={url} alt="" class="gorsel-buyuk" /> : <p class="soluk">Açılıyor…</p>}
       </div>

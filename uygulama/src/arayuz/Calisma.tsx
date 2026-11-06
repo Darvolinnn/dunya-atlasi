@@ -2,6 +2,7 @@
 // Yan paneldeki kayıtlar ve imleç "kaldığın yer" olarak saklanır ve eşitlemeyle öbür cihazlara gider; panelin
 // açık ya da küçük olması cihaza özeldir.
 import { createContext } from 'preact';
+import { useYumusakKapanis } from './kapanis';
 import { PALET_OLAYI } from './yonlendirme';
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
@@ -420,14 +421,15 @@ function NeredenSatiri({ s, sorgu }: { s: AramaSonucu; sorgu: string }) {
 
 /** "Kısayollar" listesi (§12.2, K28). */
 export function KisayolListesi({ kapat }: { kapat: () => void }) {
+  const [perdeRef, vazgec] = useYumusakKapanis(kapat);
   useLayoutEffect(() => {
-    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); kapat(); } };
+    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); vazgec(); } };
     addEventListener('keydown', tus); return () => removeEventListener('keydown', tus);
   }, []);
   return (
-    <div class="perde palet-perdesi" onClick={(e) => { if (e.target === e.currentTarget) kapat(); }}>
+    <div class="perde palet-perdesi" ref={perdeRef} onClick={(e) => { if (e.target === e.currentTarget) vazgec(); }}>
       <div class="palet kart kisayol-listesi" role="dialog" aria-label="Kısayollar">
-        <div class="satir"><strong>Kısayollar</strong><span class="bosluk" /><button class="dugme sade kucuk" onClick={kapat}>Kapat</button></div>
+        <div class="satir"><strong>Kısayollar</strong><span class="bosluk" /><button class="dugme sade kucuk" onClick={vazgec}>Kapat</button></div>
         <ul>{KISAYOLLAR.map((k) => <li key={k.anahtar}><span>{k.ad}{k.not && <span class="soluk kucuk"> · {k.not}</span>}</span><kbd class="tus">{k.tus}</kbd></li>)}</ul>
         <p class="soluk kucuk">Mac'te Ctrl yerine Cmd kullanılır.</p>
       </div>
@@ -436,6 +438,7 @@ export function KisayolListesi({ kapat }: { kapat: () => void }) {
 }
 
 function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evren: string | null; baglam: PaletBaglami; kapat: () => void }) {
+  const [perdeRef, vazgec] = useYumusakKapanis(kapat);
   const d = useCalisma()!;
   const [sorgu, setSorgu] = useState('');
   const [secili, setSecili] = useState(0);
@@ -513,13 +516,13 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
   };
 
   return (
-    <div class="perde palet-perdesi" onClick={(e) => { if (e.target === e.currentTarget) kapat(); }}>
+    <div class="perde palet-perdesi" ref={perdeRef} onClick={(e) => { if (e.target === e.currentTarget) vazgec(); }}>
       <div class="palet kart" role="dialog" aria-label="Komut paleti">
         <input ref={girdi} class="girdi" lang="tr" value={sorgu} aria-label={turSec !== null ? 'Tür ara' : 'Kayıt ya da komut ara'}
           placeholder={turSec !== null ? `“${turSec}” hangi türden?` : evren ? 'Kayıt aç ya da komut yaz…' : 'Komut yaz…'}
           onInput={(e) => setSorgu((e.target as HTMLInputElement).value)}
           onKeyDown={(e) => {
-            if (e.key === 'Escape') { e.preventDefault(); if (turSec !== null) { setTurSec(null); setSorgu(''); } else kapat(); }
+            if (e.key === 'Escape') { e.preventDefault(); if (turSec !== null) { setTurSec(null); setSorgu(''); } else vazgec(); }
             else if (e.key === 'ArrowDown') { e.preventDefault(); setSecili((i) => Math.min(ogeler.length - 1, i + 1)); }
             else if (e.key === 'ArrowUp') { e.preventDefault(); setSecili((i) => Math.max(0, i - 1)); }
             else if (e.key === 'Enter' && ogeler[secili]) { e.preventDefault(); void calistir(ogeler[secili], e.shiftKey); }

@@ -27,6 +27,11 @@ let sonGorunum = 'cizelge';
 const digerAnahtari = 'dunya-atlasi:diger-acik';
 const oku = (a: string) => { try { return localStorage.getItem(a); } catch { return null; } };
 const yaz = (a: string, v: string) => { try { localStorage.setItem(a, v); } catch { /* yok */ } };
+// Her ekran kendi kabuğunu çizer; ekran değişince kabuk yeniden kurulur. Son okunan evren bilgisi ve eser ağacı
+// burada tutulur ki gezinti yeni bilgi gelene dek boş kalmasın, yerinden oynamasın (yeni bilgi gelince yenilenir).
+const bilgiBellegi = new Map<string, EvrenBilgisi>();
+type AgacVerisi = { eserler: KisaKayit[]; yapilar: Record<string, EserYapisi>; disarida: YapiSahnesi[]; seriler: { kod: string; ad: string; eserler: { kod: string }[] }[] };
+const agacBellegi = new Map<string, AgacVerisi>();
 
 /** Sayfa değişince içerik kısa ve yumuşak belirir; "animasyonları azalt" ayarı açıksa hiç oynamaz. */
 export function useSayfaGecisi(anahtar: string) {
@@ -43,11 +48,11 @@ export function useSayfaGecisi(anahtar: string) {
 export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
   istemci: Istemci; evren: string; etkin: string; acik?: string | null; children: preact.ComponentChildren;
 }) {
-  const [bilgi, setBilgi] = useState<EvrenBilgisi | null>(null);
+  const [bilgi, setBilgi] = useState<EvrenBilgisi | null>(() => bilgiBellegi.get(evren) ?? null);
   const [surum, setSurum] = useState(0);
   const [digerOynat, setDigerOynat] = useState(false);
   const [digerAcik, setDigerAcik] = useState(() => oku(digerAnahtari) === '1' || DIGER_SAYFALAR.some(([k]) => k === etkin));
-  useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then(setBilgi, () => {}); }, [evren, surum]);
+  useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then((b) => { bilgiBellegi.set(evren, b); setBilgi(b); }, () => {}); }, [evren, surum]);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren) setSurum((s) => s + 1); }), [evren]);
   if (gorunumMu(etkin)) sonGorunum = etkin;
   const icRef = useSayfaGecisi(`${etkin}/${acik ?? ''}`);
@@ -107,11 +112,13 @@ const hataYaz = (e: unknown) => (e as Error).message;
 
 /** Gezinti çubuğunda eserler, bölümler ve sahneler; yenileri buradan eklenir. */
 function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istemci; evren: string; acik: string | null; surum: number; saltOkunur: boolean }) {
-  const [eserler, setEserler] = useState<KisaKayit[] | null>(null);
-  const [yapilar, setYapilar] = useState<Record<string, EserYapisi>>({});
-  const [disarida, setDisarida] = useState<YapiSahnesi[]>([]);
+  const [onceki] = useState(() => agacBellegi.get(evren));
+  const [eserler, setEserler] = useState<KisaKayit[] | null>(onceki?.eserler ?? null);
+  const [yapilar, setYapilar] = useState<Record<string, EserYapisi>>(onceki?.yapilar ?? {});
+  const [disarida, setDisarida] = useState<YapiSahnesi[]>(onceki?.disarida ?? []);
   const [yeni, setYeni] = useState<{ ust: string | null; tur: 'eser' | 'bolum' | 'sahne' | 'seri' } | null>(null);
-  const [seriler, setSeriler] = useState<{ kod: string; ad: string; eserler: { kod: string }[] }[]>([]);
+  const [seriler, setSeriler] = useState<AgacVerisi['seriler']>(onceki?.seriler ?? []);
+  useEffect(() => { if (eserler) agacBellegi.set(evren, { eserler, yapilar, disarida, seriler }); }, [evren, eserler, yapilar, disarida, seriler]);
   const [hata, setHata] = useState<string | null>(null);
   useEffect(() => {
     istemci.iste('eserler', { evren }).then(async (l) => {
@@ -157,7 +164,7 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
     setKapanan((s) => { const n = new Set(s); if (a) n.add(k); else n.delete(k); return n; });
   };
   const ok = (k: string, ad: string) => (
-    <button class="agac-ok" aria-expanded={acikMi(k)} aria-label={`${ad}: ${acikMi(k) ? 'kapat' : 'aç'}`} onClick={() => cevir(k)}>{acikMi(k) ? '▾' : '▸'}</button>
+    <button class="agac-ok" aria-expanded={acikMi(k)} aria-label={`${ad}: ${acikMi(k) ? 'kapat' : 'aç'}`} onClick={() => cevir(k)}><span class="agac-ok-isareti" aria-hidden="true">▸</span></button>
   );
 
   const ekle = async (ad: string) => {

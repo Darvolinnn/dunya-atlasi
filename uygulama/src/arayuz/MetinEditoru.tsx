@@ -560,7 +560,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         {v && baglamParcalari && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili parçaya ayrı bir tarih, yer ve bakış açısı verilir" onMouseDown={(e) => e.preventDefault()} onClick={() => parcaFormuAc(null)}>Bağlam ver</button>}
         {v && alan === 'govde' && !saltOkunur && <button type="button" class="arac" title="Başka bir kaydın metni (efsane, mektup, şarkı) buraya alınır" onMouseDown={(e) => e.preventDefault()} onClick={alFormuAc}>Metin al</button>}
         <span class="bosluk" />
-        <span class="kayit-durumu soluk kucuk" aria-live="polite">{durumYazisi(durum)}</span>
+        <span class="kayit-durumu soluk kucuk" aria-live="polite"><span key={durum.tur} class={`kayit-durumu-yazi ${durum.tur}`}>{durumYazisi(durum)}</span></span>
       </div>
       {gorunenIsaretler.length > 0 && (
         <div class="isaret-seridi kucuk" aria-label="İşaretli cümle">

@@ -58,6 +58,8 @@ import { geriAlinabilir, onayla } from './onay';
 const DURUMSUZ = new Set(['sahne', 'bolum', 'eser', 'not']);
 /** Kayıt sayfasında az kullanılan bölümler katlanır (§5.10); açık olup olmadığı bu cihaza özeldir. */
 const DIGER_ANAHTARI = 'dunya-atlasi:kayit-diger-bolumler';
+/** Açılmış kayıtların türü: kayıt yeniden açılırken, kayıt gelmeden gezintide doğru sayfa seçili durur. */
+const turBellegi = new Map<string, string>();
 
 export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
   const [kayit, setKayit] = useState<Kayit | null>(null);
@@ -90,8 +92,17 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   useEffect(() => { setAcilan(new Set()); setIliskiSayisi(null); }, [kod]);
   const ac = (k: string) => setAcilan((s) => new Set(s).add(k));
 
-  if (hata) return <main class="sayfa"><p class="hata">{hata}</p><a href={`#/e/${evren}`}>Kayıtlara dön</a></main>;
-  if (!kayit) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
+  if (kayit) turBellegi.set(`${evren}/${kod}`, kayit.tur);
+  const bilinenTur = kayit?.tur ?? turBellegi.get(`${evren}/${kod}`);
+  const etkin = bilinenTur && YAZMA_TURLERI.includes(bilinenTur) ? 'yaz' : 'kayitlar';
+  // Kayıt gelene dek gezinti yerinde kalır; yalnız sayfanın içi beklenir.
+  if (hata || !kayit) return (
+    <EvrenKabugu istemci={istemci} evren={evren} etkin={etkin} acik={kod}>
+      <main class="sayfa" aria-busy={!hata}>
+        {hata ? <><p class="hata">{hata}</p><a href={`#/e/${evren}`}>Kayıtlara dön</a></> : <p class="soluk gecikmeli">Açılıyor…</p>}
+      </main>
+    </EvrenKabugu>
+  );
 
   const degistir = (alan: DegisebilirAlan, deger: string) => istemci.iste('kayitDegistir', { evren, kod, alan, deger });
   // K27: kesinleşen kaydın vazgeçilmemiş alternatifleri varsa, onları da vazgeçilmiş yapmak yalnız sorularak yapılır.
@@ -117,7 +128,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   ];
 
   return (
-    <EvrenKabugu istemci={istemci} evren={evren} etkin={YAZMA_TURLERI.includes(kayit.tur) ? 'yaz' : 'kayitlar'} acik={kod}>
+    <EvrenKabugu istemci={istemci} evren={evren} etkin={etkin} acik={kod}>
       <main class="sayfa kayit-sayfasi">
         <div class="satir kayit-ust">
           <a class="dugme sade kucuk" href={`#/e/${evren}/kayitlar`}>← {evrenAdi ? `${evrenAdi} · Kayıtlar` : 'Kayıtlar'}</a>
