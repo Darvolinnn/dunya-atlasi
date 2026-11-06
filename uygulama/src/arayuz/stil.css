@@ -8,8 +8,8 @@
   --cizgi: #e0d8c8;
   --metin: #24211c;
   --metin-2: #5b5448;        /* zemin üzerinde 6,9:1, kenar üzerinde 6,2:1 */
-  --vurgu: #2f5677;          /* düğme ve bağlantı, beyaz üzerinde 7,6:1 */
-  --vurgu-zemin: #e4ecf2;
+  --vurgu: #7d5210;          /* kahve-altın (gece altını paletinin açık eşi); beyaz üzerinde 6,8:1 */
+  --vurgu-zemin: #f4e9d3;
   --vurgu-metin: #ffffff;
   --tehlike: #9b2c2c;
   --basari: #2f6b3f;
@@ -26,8 +26,8 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema="acik"]) {
-    --zemin: #1d1b18; --yuzey: #26231f; --yuzey-2: #2f2b26; --kenar: #221f1b; --cizgi: #423c34;
-    --metin: #ece6da; --metin-2: #b8ae9e; --vurgu: #9dbcd6; --vurgu-zemin: #2b3540; --vurgu-metin: #14191e;
+    --zemin: #14110d; --yuzey: #1c1813; --yuzey-2: #26211a; --kenar: #0f0d0a; --cizgi: #3d3426;
+    --metin: #efe6d4; --metin-2: #b3a68e; --vurgu: #e0a83e; --vurgu-zemin: #33281a; --vurgu-metin: #17120a;
     --tehlike: #f19a9a; --basari: #8fd19e; --odak: #9cc0ff; --inanc: #c5a6ee;
     --tg-insan-z: #3b2a20; --tg-insan-y: #f0c3a3; --tg-yer-z: #24321f; --tg-yer-y: #b9d9ae; --tg-kultur-z: #33283b; --tg-kultur-y: #d5bde6;
     --tg-isleyis-z: #222e3b; --tg-isleyis-y: #b2c9e3; --tg-zaman-z: #3a3220; --tg-zaman-y: #e6d39b; --tg-anlati-z: #3c2629; --tg-anlati-y: #efb9c1; --tg-diger-z: #2f2b26; --tg-diger-y: #cfc7b8;
@@ -36,8 +36,8 @@
   }
 }
 :root[data-tema="koyu"] {
-  --zemin: #1d1b18; --yuzey: #26231f; --yuzey-2: #2f2b26; --kenar: #221f1b; --cizgi: #423c34;
-  --metin: #ece6da; --metin-2: #b8ae9e; --vurgu: #9dbcd6; --vurgu-zemin: #2b3540; --vurgu-metin: #14191e;
+  --zemin: #14110d; --yuzey: #1c1813; --yuzey-2: #26211a; --kenar: #0f0d0a; --cizgi: #3d3426;
+  --metin: #efe6d4; --metin-2: #b3a68e; --vurgu: #e0a83e; --vurgu-zemin: #33281a; --vurgu-metin: #17120a;
   --tehlike: #f19a9a; --basari: #8fd19e; --odak: #9cc0ff; --inanc: #c5a6ee;
   --tg-insan-z: #3b2a20; --tg-insan-y: #f0c3a3; --tg-yer-z: #24321f; --tg-yer-y: #b9d9ae; --tg-kultur-z: #33283b; --tg-kultur-y: #d5bde6;
   --tg-isleyis-z: #222e3b; --tg-isleyis-y: #b2c9e3; --tg-zaman-z: #3a3220; --tg-zaman-y: #e6d39b; --tg-anlati-z: #3c2629; --tg-anlati-y: #efb9c1; --tg-diger-z: #2f2b26; --tg-diger-y: #cfc7b8;
@@ -236,7 +236,8 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 
 /* Eşitleme */
 .esitleme-seridi { position: sticky; top: 0; z-index: 20; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
-  background: #e9dcc6; color: #4f3a22; padding: 8px 16px; font-size: 0.95rem; }
+  background: #e9dcc6; color: #4f3a22; padding: 8px 16px; font-size: 0.95rem;
+  border-bottom: 1px solid currentColor; } /* altın vurgudan kenarlıkla ayrılır (gece altını) */
 .esitleme-seridi .hata { color: #7a1010; }
 /* Deve tüyü (kullanıcı seçimi, 19 Ekim 2026); eski sarı fazla göze batıyordu. */
 :root[data-tema="koyu"] .esitleme-seridi { background: #3d3122; color: #ecdcc2; }
@@ -888,7 +889,7 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .durum-satirlari { list-style: none; margin: 6px 0 4px; padding: 0 2px; display: flex; flex-direction: column; gap: 4px; }
 .durum-satirlari .dugme { min-height: 26px; padding: 2px 8px; }
 .durum-ozeti p { margin: 4px 2px 6px; }
-.durum-zayif { background: #e9dcc6; color: #4f3a22; border-radius: 6px; padding: 2px 6px; }
+.durum-zayif { background: #e9dcc6; color: #4f3a22; border-radius: 6px; padding: 1px 5px; border: 1px solid currentColor; }
 :root[data-tema="koyu"] .durum-zayif { background: #3d3122; color: #ecdcc2; }
 @media (prefers-color-scheme: dark) { :root:not([data-tema="acik"]) .durum-zayif { background: #3d3122; color: #ecdcc2; } }
 
@@ -1059,8 +1060,10 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .yaz-ust .anlati-yolu > a:not(.dugme) { overflow: hidden; text-overflow: ellipsis; min-width: 2em; }
 .yaz-ust .anlati-yolu .bosluk { flex: 0 0 4px; }
 .yaz-ust > .dugme, .yaz-ust .kelime-sayaci { flex: none; }
-.yaz-kagidi .arac-cubugu { opacity: 0.55; transition: opacity 150ms; }
-.yaz-kagidi .arac-cubugu:hover, .yaz-kagidi .arac-cubugu:focus-within { opacity: 1; }
+.yaz-kagidi .arac-cubugu > * { opacity: 0.55; transition: opacity 150ms; }
+.yaz-kagidi .arac-cubugu:hover > *, .yaz-kagidi .arac-cubugu:focus-within > * { opacity: 1; }
+/* Daktilo kipi (K34): son satır da ekranın ortasına gelebilsin diye metnin altında boşluk. */
+.daktilo-kipi .yaz-kagidi .metin-editoru { padding-bottom: 50vh; }
 .islem-menusu { position: relative; flex: none; }
 .islem-menusu > summary { list-style: none; cursor: pointer; }
 .islem-menusu > summary::-webkit-details-marker { display: none; }
