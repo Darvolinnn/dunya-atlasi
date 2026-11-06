@@ -22,7 +22,7 @@ import { AnlatiSozlesmesiSekmesi } from './AnlatiSozlesmesi';
 import { KosulMasasiSekmesi } from './KosulMasasi';
 import { KesifSekmesi } from './Kesif';
 import { BagSeridi, SurumlerSekmesi } from './Surumler';
-import { MarkdownCiktisi } from './Cikti';
+import { EserDisaAktarma, MarkdownCiktisi } from './Cikti';
 import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
 
 import { SayfaYardimi } from './SayfaYardimi';
@@ -60,7 +60,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
         )}
         {baslik && !haritaAcik && <div class="baslik-satiri sayfa-basligi"><h1>{gorunumMu(sekme) ? <><span class="soluk">Grafikler ve araçlar · </span>{baslik}</> : baslik}</h1><SayfaYardimi sayfa={sekme} /></div>}
         {sekme === 'inceleme' ? <IncelemeKuyrugu istemci={istemci} evren={kod} surum={surum} />
-          : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><YerelYedekler istemci={istemci} evren={kod} surum={surum} /><MarkdownCiktisi istemci={istemci} evren={kod} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
+          : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><YerelYedekler istemci={istemci} evren={kod} surum={surum} /><EserDisaAktarma istemci={istemci} evren={kod} surum={surum} /><MarkdownCiktisi istemci={istemci} evren={kod} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
           : sekme === 'surumler' && !bilgi.bag ? <SurumlerSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
           : sekme === 'bahsedilen' ? <Bahsedilenler istemci={istemci} evren={kod} surum={surum} />

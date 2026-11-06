@@ -95,6 +95,16 @@ describe('okunabilir dışa aktarma (§10.11)', () => {
     expect(m.has('OEBPS/bolum-002.xhtml')).toBe(false);
     expect(() => h.eserBaskiSayfasi({ evren, eser, sahneler: [] })).toThrow('Çıktıya girecek sahne seçilmedi.');
     expect(() => h.eserBaskiSayfasi({ evren, eser, sahneler: [s4] })).toThrow('Seçtiğiniz sahnelerde metin yok.');
+    // PDF ve Word aynı okuma düzenini kullanır: seçim onlara da uygulanır.
+    const k = h.eserKitabi({ evren, eser, sahneler: [s2, s3] }).kitap;
+    expect(k.bolumler.map((b) => [b.baslik, b.sahneler.length])).toEqual([['Birinci', 1], ['İkinci', 1]]);
+    expect(JSON.stringify(k)).not.toContain('Birinci metin.');
+    expect(h.eserKitabi({ evren, eser, sahneler: [s1] }).kitap.bolumler.map((b) => b.baslik)).toEqual(['Birinci']);
+    expect(() => h.eserKitabi({ evren, eser, sahneler: [s4] })).toThrow('Seçtiğiniz sahnelerde metin yok.');
+    const w = await zipOku((await h.docxYaz({ evren, eser, sahneler: [s3] })).veri);
+    const belge = new TextDecoder().decode(w.get('word/document.xml'));
+    expect(belge).toContain('Üçüncü metin.');
+    expect(belge).not.toContain('Birinci metin.');
     // Süzgeçsiz çıktı değişmedi: iki bölüm de yazılır.
     expect(h.eserBaskiSayfasi({ evren, eser }).html).toContain('<h2>İkinci</h2>');
   });

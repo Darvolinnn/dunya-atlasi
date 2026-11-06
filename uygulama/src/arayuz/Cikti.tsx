@@ -1,4 +1,4 @@
-// Okunabilir dışa aktarma (§10.11): evrenin Markdown klasörü, eserin EPUB'u ve yazdırılabilir sayfası.
+// Okunabilir dışa aktarma (§10.11): evrenin Markdown klasörü; eserin PDF'i, Word dosyası, EPUB'u ve yazdırılabilir sayfası.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { CiktiAgaci, CiktiSahnesi } from '../veri/api';
@@ -47,6 +47,8 @@ export function MarkdownCiktisi({ istemci, evren }: { istemci: Istemci; evren: s
   );
 }
 
+const ACIKLAMA = 'Yalnız eserin metni çıkar: bölümler ve sahneler okuma sırasıyla, sahnelerin arasında ayraç. Kayıtlar ve notlar girmez; vazgeçilmiş sahneler de girmez. Word dosyası Word, LibreOffice ya da Google Dokümanlar\'da düzenlenebilir.';
+
 const secimAnahtari = (evren: string, eser: string) => `dunya-atlasi:cikti-disarida:${evren}:${eser}`;
 /** Çıktı seçimi bu cihazda eser başına hatırlanır; dışarıda bırakılanlar saklanır ki yeni sahneler kendiliğinden girsin. */
 function disaridakileriOku(a: string): Set<string> {
@@ -54,34 +56,51 @@ function disaridakileriOku(a: string): Set<string> {
 }
 const durumAdi = (k: string | null) => SAHNE_CALISMA.find((d) => d.kod === k)?.ad ?? null;
 
-export function EserCiktisi({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string }) {
+/** Eserin PDF, Word, EPUB ve yazdırma düğmeleri, girecek sahnelerin seçimiyle; eserin sayfasında ve Yedek sekmesinde aynı. */
+function CiktiDugmeleri({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string | null }) {
   const [basliklar, setBasliklar] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
-  const [calisiyor, setCalisiyor] = useState(false);
+  const [calisiyor, setCalisiyor] = useState<string | null>(null);
   // Ağaç gelmeden ya da gelemezse çıktı alınmaz: hatırlanan seçim atlanıp bütün eser çıkmasın.
   const [agac, setAgac] = useState<CiktiAgaci | null>(null);
   const [agacHatasi, setAgacHatasi] = useState<string | null>(null);
   const [surum, setSurum] = useState(0);
-  const [disarida, setDisarida] = useState<Set<string>>(() => disaridakileriOku(secimAnahtari(evren, eser)));
-  useEffect(() => { istemci.iste('ciktiAgaci', { evren, eser }).then((a) => { setAgac(a); setAgacHatasi(null); }, (e) => setAgacHatasi(hataYaz(e))); }, [evren, eser, surum]);
+  const [disarida, setDisarida] = useState<Set<string>>(() => eser ? disaridakileriOku(secimAnahtari(evren, eser)) : new Set());
+  useEffect(() => {
+    if (!eser) return;
+    istemci.iste('ciktiAgaci', { evren, eser }).then((a) => { setAgac(a); setAgacHatasi(null); }, (e) => setAgacHatasi(hataYaz(e)));
+  }, [evren, eser, surum]);
   // Aynı sayfada sahne eklenir ya da esere taşınırsa ağaç yenilenir; dışarıda bırakılanlar korunur, yeni sahne seçili gelir.
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren) setSurum((x) => x + 1); }), [evren]);
-  useEffect(() => { setDisarida(disaridakileriOku(secimAnahtari(evren, eser))); }, [evren, eser]);
-  const kaydet = (d: Set<string>) => { setDisarida(d); try { localStorage.setItem(secimAnahtari(evren, eser), JSON.stringify([...d])); } catch { /* yok */ } };
+  useEffect(() => { setDisarida(eser ? disaridakileriOku(secimAnahtari(evren, eser)) : new Set()); }, [evren, eser]);
+  const kaydet = (d: Set<string>) => { setDisarida(d); if (eser) try { localStorage.setItem(secimAnahtari(evren, eser), JSON.stringify([...d])); } catch { /* yok */ } };
 
   const tum = agac ? [...agac.dogrudan, ...agac.bolumler.flatMap((b) => b.sahneler)] : [];
   const secililer = tum.filter((x) => !disarida.has(x.kod));
-  // Bütün sahneler seçiliyse süzgeç gönderilmez: çıktı bugünkü gibi bütün eserdir.
+  // Bütün sahneler seçiliyse süzgeç gönderilmez: çıktı bütün eserdir.
   const sahneler = disarida.size && tum.some((x) => disarida.has(x.kod)) ? secililer.map((x) => x.kod) : undefined;
   const degistir = (kodlar: string[], gir: boolean) => { const d = new Set(disarida); for (const k of kodlar) if (gir) d.delete(k); else d.add(k); kaydet(d); };
   const hizli = (sec: (x: CiktiSahnesi) => boolean) => kaydet(new Set(tum.filter((x) => !sec(x)).map((x) => x.kod)));
 
-  const epub = async () => {
-    setHata(null); setCalisiyor(true);
-    try { const r = await istemci.iste('epubYaz', { evren, eser, sahneBasliklari: basliklar, sahneler }); indir(r.dosyaAdi, r.veri, 'application/epub+zip'); }
-    catch (e) { setHata(hataYaz(e)); } finally { setCalisiyor(false); }
+  const calistir = (ad: string, is: (eser: string) => Promise<void>) => async () => {
+    if (!eser) return;
+    setHata(null); setCalisiyor(ad);
+    try { await is(eser); } catch (e) { setHata(hataYaz(e)); } finally { setCalisiyor(null); }
   };
-  const pdf = () => istemci.iste('eserBaskiSayfasi', { evren, eser, sahneBasliklari: basliklar, sahneler }).then((r) => { setHata(null); yazdir(r.html); }, (e) => setHata(hataYaz(e)));
+  const pdf = calistir('pdf', async (eser) => {
+    const r = await istemci.iste('eserKitabi', { evren, eser, sahneBasliklari: basliklar, sahneler });
+    const [{ pdfYaz }, yt] = await Promise.all([import('../alan/pdf'), import('./yazi-tipleri').then((m) => m.kitapYaziTipleri())]);
+    indir(`${r.dosyaKoku}.pdf`, await pdfYaz(r.kitap, yt), 'application/pdf');
+  });
+  const docx = calistir('docx', async (eser) => {
+    const r = await istemci.iste('docxYaz', { evren, eser, sahneBasliklari: basliklar, sahneler });
+    indir(r.dosyaAdi, r.veri, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  });
+  const epub = calistir('epub', async (eser) => {
+    const r = await istemci.iste('epubYaz', { evren, eser, sahneBasliklari: basliklar, sahneler });
+    indir(r.dosyaAdi, r.veri, 'application/epub+zip');
+  });
+  const yazdirma = calistir('yazdir', async (eser) => yazdir((await istemci.iste('eserBaskiSayfasi', { evren, eser, sahneBasliklari: basliklar, sahneler })).html));
   const sahneSatiri = (x: CiktiSahnesi) => (
     <li key={x.kod}>
       <label><input type="checkbox" checked={!disarida.has(x.kod)} onChange={(e) => degistir([x.kod], (e.target as HTMLInputElement).checked)} /> {x.ad}</label>
@@ -90,12 +109,10 @@ export function EserCiktisi({ istemci, evren, eser }: { istemci: Istemci; evren:
     </li>
   );
   const bos = tum.length > 0 && !secililer.length;
-  const kapali = !agac || bos;
+  const kapali = !eser || !agac || bos || !!calisiyor;
   return (
-    <section class="surecler" aria-label="Eserin çıktısı">
-      <h2>Çıktı</h2>
-      <p class="soluk kucuk">Bölümler ve sahneler okuma sırasıyla yazılır, sahnelerin arasına ayraç konur. Vazgeçilmiş sahneler çıktıya girmez. PDF için yazdırma penceresinde “PDF olarak kaydet”i seçin.</p>
-      {tum.length > 0 && (
+    <>
+      {agac && tum.length > 0 && (
         <details class="cikti-secimi">
           <summary class="kucuk">Nelerin gireceğini seçin <span class="soluk">({secililer.length === tum.length ? `${tum.length} sahnenin hepsi seçili` : `${tum.length} sahneden ${secililer.length} tanesi seçili`})</span></summary>
           <div class="satir kucuk">
@@ -105,8 +122,8 @@ export function EserCiktisi({ istemci, evren, eser }: { istemci: Istemci; evren:
             <button class="dugme sade kucuk" onClick={() => hizli((x) => x.calisma !== 'planlandi')}>“Planlandı” hariç</button>
           </div>
           <ul class="cikti-agaci kucuk">
-            {agac!.dogrudan.length > 0 && <li><strong>{agac!.bolumler.length ? 'Giriş' : 'Sahneler'}</strong><ul>{agac!.dogrudan.map(sahneSatiri)}</ul></li>}
-            {agac!.bolumler.map((b) => {
+            {agac.dogrudan.length > 0 && <li><strong>{agac.bolumler.length ? 'Giriş' : 'Sahneler'}</strong><ul>{agac.dogrudan.map(sahneSatiri)}</ul></li>}
+            {agac.bolumler.map((b) => {
               const kodlar = b.sahneler.map((x) => x.kod);
               const secili = kodlar.filter((k) => !disarida.has(k)).length;
               return (
@@ -124,13 +141,53 @@ export function EserCiktisi({ istemci, evren, eser }: { istemci: Istemci; evren:
       )}
       <div class="satir">
         <label class="kucuk"><input type="checkbox" checked={basliklar} onChange={(e) => setBasliklar((e.target as HTMLInputElement).checked)} /> Sahne adlarını başlık olarak yaz</label>
-        <button class="dugme kucuk" onClick={epub} disabled={calisiyor || kapali}>EPUB indir</button>
-        <button class="dugme kucuk" onClick={pdf} disabled={kapali}>Yazdır / PDF</button>
+      </div>
+      <div class="satir">
+        <button class="dugme kucuk" onClick={pdf} disabled={kapali}>{calisiyor === 'pdf' ? 'Hazırlanıyor…' : 'PDF indir'}</button>
+        <button class="dugme kucuk" onClick={docx} disabled={kapali}>{calisiyor === 'docx' ? 'Hazırlanıyor…' : 'Word (.docx) indir'}</button>
+        <button class="dugme kucuk" onClick={epub} disabled={kapali}>{calisiyor === 'epub' ? 'Hazırlanıyor…' : 'EPUB indir'}</button>
+        <button class="dugme kucuk" onClick={yazdirma} disabled={kapali}>Yazdır</button>
         {bos && <span class="soluk kucuk">Çıktıya girecek sahne seçilmedi.</span>}
-        {!agac && !agacHatasi && <span class="soluk kucuk">Bölümler okunuyor…</span>}
+        {eser && !agac && !agacHatasi && <span class="soluk kucuk">Bölümler okunuyor…</span>}
       </div>
       {agacHatasi && <p class="hata kucuk">Bölüm ve sahneler okunamadı, çıktı alınamıyor: {agacHatasi}</p>}
-      {hata && <p class="hata kucuk">{hata}</p>}
+      {hata && <p class="hata kucuk" role="alert">{hata}</p>}
+    </>
+  );
+}
+
+export function EserCiktisi({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string }) {
+  return (
+    <section class="surecler" aria-label="Eserin çıktısı">
+      <h2>Çıktı</h2>
+      <p class="soluk kucuk">{ACIKLAMA}</p>
+      <CiktiDugmeleri istemci={istemci} evren={evren} eser={eser} />
     </section>
+  );
+}
+
+/** Yedek sekmesinde: bir eser seçilip metni dışa aktarılır. */
+export function EserDisaAktarma({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
+  const [eserler, setEserler] = useState<{ kod: string; ad: string }[] | null>(null);
+  const [secili, setSecili] = useState<string | null>(null);
+  useEffect(() => {
+    istemci.iste('eserler', { evren }).then((l) => { setEserler(l); setSecili((s) => s && l.some((x) => x.kod === s) ? s : l[0]?.kod ?? null); }, () => setEserler([]));
+  }, [istemci, evren, surum]);
+  return (
+    <div class="kart" style="margin-top:12px">
+      <h3>Eseri dışa aktar (PDF, Word, EPUB)</h3>
+      <p>{ACIKLAMA}</p>
+      {eserler && !eserler.length ? <p class="soluk kucuk">Henüz eser yok. Yaz sayfasından bir eser oluşturun.</p> : (
+        <>
+          {eserler?.length === 1 && <p class="kucuk">Eser: <strong>{eserler[0].ad}</strong></p>}
+          {eserler && eserler.length > 1 && (
+            <div class="satir"><label class="kucuk">Eser <select value={secili ?? ''} onChange={(e) => setSecili((e.target as HTMLSelectElement).value)}>
+              {eserler.map((x) => <option key={x.kod} value={x.kod}>{x.ad}</option>)}
+            </select></label></div>
+          )}
+          <CiktiDugmeleri key={secili ?? ''} istemci={istemci} evren={evren} eser={secili} />
+        </>
+      )}
+    </div>
   );
 }

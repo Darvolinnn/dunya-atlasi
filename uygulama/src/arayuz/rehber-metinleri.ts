@@ -307,7 +307,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     baslik: 'Yedek',
     ne: [
       'Evreninizi dosyaya yedeklediğiniz ve başka biçimlerde dışa aktardığınız sayfa.',
-      'Tam yedek, evrenin her şeyini (kayıtlar, metinler, ilişkiler, geçmiş, görseller) tek dosyaya yazar ve hiçbir şey kaybetmeden geri getirilebilir. Markdown çıktısı ise okumak ya da Obsidian gibi programlarda açmak içindir. Google Drive bağlıysa program her gün kendiliğinden de yedek alır.',
+      'Tam yedek, evrenin her şeyini (kayıtlar, metinler, ilişkiler, geçmiş, görseller) tek dosyaya yazar ve hiçbir şey kaybetmeden geri getirilebilir. Eserin metnini (romanın kendisini) PDF, Word ya da EPUB olarak buradan alabilirsiniz. Markdown çıktısı ise bütün evreni okumak ya da Obsidian gibi programlarda açmak içindir. Google Drive bağlıysa program her gün kendiliğinden de yedek alır.',
     ],
     neZaman: 'Düzenli olarak (ör. haftada bir), büyük bir değişiklikten önce ya da evreni başka bir yere taşımak istediğinizde.',
     adimlar: [

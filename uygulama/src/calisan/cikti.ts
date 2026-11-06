@@ -6,6 +6,7 @@ import { iliskiTuruBul, rolAdi } from '../alan/iliski-turleri';
 import { KARARLAR, turBul } from '../alan/turler';
 import { A } from '../alan/automerge';
 import type { ZipDosyasi } from '../alan/zip';
+import { bloklaraCevir, type Kitap, type KitapSahnesi } from '../alan/kitap';
 import { eserYapisi } from './anlati';
 import type { CiktiAgaci, CiktiSahnesi } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
@@ -166,6 +167,25 @@ export function ciktiAgaci(e: EvrenVt, eser: string): CiktiAgaci {
     dogrudan: acik(y.dogrudan).map(sahne),
     bolumler: acik(y.bolumler).map((b) => ({ kod: b.kod, ad: b.ad, sahneler: acik(b.sahneler).map(sahne) })),
   };
+}
+
+/** Eserin PDF ve Word çıktısı için okuma düzeni; bölüm ve sahne sırası, vazgeçilenler ve "Giriş" EPUB'la aynı. */
+export function eserKitabi(e: EvrenVt, eser: string, sahneBasliklari: boolean, secili?: ReadonlySet<string>): Kitap {
+  const y = eserYapisi(e, eser);
+  const sahneler = (s: { kod: string; ad: string; karar: string }[]): KitapSahnesi[] => s.filter((x) => x.karar !== 'vazgecildi' && (!secili || secili.has(x.kod))).map((x) => {
+    const b = metinBelgesi(e.db, x.kod, 'govde');
+    return { baslik: sahneBasliklari ? x.ad : null, bloklar: b ? bloklaraCevir(belgeyeCevir(A.spans(b, ['t']) as unknown[])) : [] };
+  }).filter((x) => x.bloklar.length);
+  const bolumler: Kitap['bolumler'] = [];
+  if (y.dogrudan.length) { const s = sahneler(y.dogrudan); if (s.length) bolumler.push({ baslik: y.bolumler.length ? 'Giriş' : y.eser.ad, sahneler: s }); }
+  for (const b of y.bolumler) {
+    if (b.karar === 'vazgecildi') continue;
+    const s = sahneler(b.sahneler);
+    if (secili && !s.length) continue;
+    bolumler.push({ baslik: b.ad, sahneler: s });
+  }
+  if (!bolumler.some((b) => b.sahneler.length)) throw new Error(secili ? 'Seçtiğiniz sahnelerde metin yok.' : 'Eserde metni olan sahne yok.');
+  return { ad: y.eser.ad, bolumler };
 }
 
 const STIL = `body { font-family: Georgia, "Times New Roman", serif; line-height: 1.55; margin: 0 5%; }
