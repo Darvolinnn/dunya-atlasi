@@ -21,7 +21,8 @@ import { SayfaYardimi } from './SayfaYardimi';
 import { IlkAdimlar } from './IlkAdimlar';
 import { gitVeYap, YENI_SAHNE_OLAYI } from './yonlendirme';
 import { soruSetiBul } from '../alan/sablon';
-import { ODAK_OLAYI } from './kisayollar';
+import { DAKTILO_OLAYI, ODAK_OLAYI } from './kisayollar';
+import { DAKTILO_ACILDI, DAKTILO_SINIFI } from './daktilo';
 
 const PLAN_SORULARI = (soruSetiBul('sahne_plani')?.sorular ?? []).slice(0, 3).map((q) => q.metin);
 
@@ -66,6 +67,28 @@ function useOdakKipi(): [boolean, (v: boolean) => void] {
   return [acik, ayarla];
 }
 
+const daktiloAnahtari = 'dunya-atlasi:daktilo-kipi';
+/** Daktilo kipi (K34, §5.10): yazılan satır ekranın ortasında kalır; menüden, komut paletinden ya da kısayolla açılır, tercih cihazda. */
+function useDaktiloKipi(): [boolean, (v: boolean) => void] {
+  const [acik, setAcik] = useState(() => okuYerel(daktiloAnahtari) === '1');
+  const ayarla = (v: boolean) => { setAcik(v); yazYerel(daktiloAnahtari, v ? '1' : '0'); };
+  const ref = useRef(acik); ref.current = acik;
+  useEffect(() => {
+    const olay = (e: Event) => { const d = (e as CustomEvent<boolean | null>).detail; ayarla(d ?? !ref.current); };
+    const tus = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); ayarla(!ref.current); }
+    };
+    addEventListener(DAKTILO_OLAYI, olay); addEventListener('keydown', tus);
+    return () => { removeEventListener(DAKTILO_OLAYI, olay); removeEventListener('keydown', tus); };
+  }, []);
+  useEffect(() => {
+    document.documentElement.classList.toggle(DAKTILO_SINIFI, acik);
+    if (acik) requestAnimationFrame(() => dispatchEvent(new Event(DAKTILO_ACILDI)));
+    return () => document.documentElement.classList.remove(DAKTILO_SINIFI);
+  }, [acik]);
+  return [acik, ayarla];
+}
+
 /** Sessiz kelime sayacı (K28): "bugün" bu cihazda, gün başındaki sayıya göre; eşitlenmez. */
 function bugunEklenen(evren: string, kod: string, n: number): number {
   const g = new Date(); const gun = `${g.getFullYear()}-${g.getMonth() + 1}-${g.getDate()}`;
@@ -100,6 +123,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const [imlecParcasi, setImlecParcasi] = useState<string | null>(null);
   const [kelime, setKelime] = useState<number | null>(null);
   const [odak, setOdak] = useOdakKipi();
+  const [daktilo, setDaktilo] = useDaktiloKipi();
   const [onceki, setOnceki] = useState<string>('');
   const [sekme, setSekme] = useBaglamSekmesi();
   useEffect(() => { setKelime(null); }, [kod]);
@@ -151,6 +175,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
           {sahne && baglamKapali && !odak && <button class="dugme sade kucuk" onClick={() => baglamAc(true)}>{bos ? 'Bağlam ekle' : 'Bağlamı göster'}</button>}
           <SayfaYardimi sayfa="yaz" />
           <IslemMenusu ad={TUR_ADI[kayit.tur] ?? 'Kayıt'}>
+            <button class="menu-ogesi" aria-pressed={daktilo} title="Yazdığınız satır ekranın ortasında kalır (Ctrl+Shift+D)" onClick={() => setDaktilo(!daktilo)}>{daktilo ? '✓ ' : ''}Daktilo kipi</button>
             <a class="menu-ogesi" href={`#/e/${evren}/k/${kod}`}>Bütün alanlar</a>
             {!kayit.silindi && !saltOkunur && (
               <button class="menu-ogesi tehlikeli" title="Çöp kutusundan geri getirilebilir" onClick={async () => {
