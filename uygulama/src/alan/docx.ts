@@ -8,7 +8,8 @@ import type { ZipDosyasi } from './zip';
 const yazi = (s: string) => new TextEncoder().encode(s);
 const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 const W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
-const YAZI_TIPI = 'Georgia';
+// Yayınevlerinin dosya gönderiminde istediği düzen: A4, Times New Roman 12 punto, 1,5 satır, 2,5 cm kenar.
+const YAZI_TIPI = 'Times New Roman';
 
 /** Bir parça: satır sonu ve sekme Word'ün kendi öğelerine çevrilir. */
 function parcaXml(p: Parca): string {

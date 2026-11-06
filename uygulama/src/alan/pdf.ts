@@ -1,6 +1,6 @@
 // Eserin PDF çıktısı (§10.11): yazdırma penceresine gerek kalmadan doğrudan PDF dosyası. Yazı tipi (Literata)
 // programın içinde gelir ve PDF'e gömülür; ağ gerekmez, Türkçe harfler her cihazda aynı görünür ve metin
-// kopyalanıp aranabilir. Sayfa düzeni yazdırılabilir sayfayla aynıdır: A5, kapak, her bölüm yeni sayfada,
+// kopyalanıp aranabilir. Sayfa düzeni: 13,5×21 cm kitap ölçüsü, kapak, her bölüm yeni sayfada,
 // iki yana yaslı paragraflar, sahneler arasında ayraç, altta sayfa numarası.
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
@@ -10,9 +10,10 @@ import type { Blok, Kitap, Parca } from './kitap';
 export interface YaziTipleri { duz: Uint8Array; egik: Uint8Array; kalin: Uint8Array; kalinEgik: Uint8Array }
 
 const MM = 72 / 25.4;
-const GEN = 148 * MM, YUK = 210 * MM;
-const UST = 18 * MM, ALT = 20 * MM, YAN = 16 * MM;
-const BOY = 11, SATIR = BOY * 1.5, GIRINTI = BOY * 1.5;
+// Türkiye'de romanların yaygın kitap ölçüsü 13,5×21 cm; 11 punto, 1,3 satır aralığı.
+const GEN = 135 * MM, YUK = 210 * MM;
+const UST = 17 * MM, ALT = 20 * MM, YAN = 15 * MM;
+const BOY = 11, SATIR = BOY * 1.3, GIRINTI = BOY * 1.5;
 const ALINTI_GIRINTI = 8 * MM;
 const RENK = rgb(0.1, 0.1, 0.1);
 
