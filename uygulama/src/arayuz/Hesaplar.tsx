@@ -2,6 +2,7 @@
 // Yolculuk, kayıtlı rotalarla en kısa yolu (§15-2) kullanır; takvim hesabı evrenin takvimiyle (§3.4) yapılır.
 // İkisi de evrende hiçbir şey değiştirmez.
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useYumusakKapanis } from './kapanis';
 import type { Istemci } from '../veri/istemci';
 import type { RotaSonucu } from '../veri/api';
 import { anaTakvim, eksenAraligi, farkCoz, gunFarki, kaydir, tarihAciklamasi, tarihCoz, type Takvim } from '../alan/tarih';
@@ -13,18 +14,19 @@ export type HesapTuru = 'yolculuk' | 'takvim';
 type Secim = { kod: string; ad: string };
 
 export function HesapPenceresi({ istemci, evren, tur, kapat }: { istemci: Istemci; evren: string; tur: HesapTuru; kapat: () => void }) {
+  const [perdeRef, vazgec] = useYumusakKapanis(kapat);
   const ic = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     ic.current?.querySelector<HTMLElement>('button, input')?.focus();
-    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('.secici')) kapat(); };
+    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('.secici')) vazgec(); };
     document.addEventListener('keydown', tus);
     return () => document.removeEventListener('keydown', tus);
   }, []);
   const baslik = tur === 'yolculuk' ? 'Yolculuk süresi' : 'Takvim günü hesabı';
   return (
-    <div class="perde palet-perdesi" onClick={(e) => { if (e.target === e.currentTarget) kapat(); }}>
+    <div class="perde palet-perdesi" ref={perdeRef} onClick={(e) => { if (e.target === e.currentTarget) vazgec(); }}>
       <div class="palet kart hesap-penceresi" role="dialog" aria-label={baslik} ref={ic}>
-        <div class="satir"><strong>{baslik}</strong><span class="bosluk" /><button class="dugme sade kucuk" aria-label="Kapat" onClick={kapat}>×</button></div>
+        <div class="satir"><strong>{baslik}</strong><span class="bosluk" /><button class="dugme sade kucuk" aria-label="Kapat" onClick={vazgec}>×</button></div>
         {tur === 'yolculuk' ? <YolculukHesabi istemci={istemci} evren={evren} /> : <TakvimHesabi istemci={istemci} evren={evren} />}
       </div>
     </div>

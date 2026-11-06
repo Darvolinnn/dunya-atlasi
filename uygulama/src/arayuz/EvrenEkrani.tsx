@@ -40,7 +40,8 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
   useEffect(() => istemci.dinle((d) => { if (d.evren === kod) setSurum((s) => s + 1); }), [kod]);
 
   if (hata) return <main class="sayfa"><p class="hata">{hata}</p><a href="#/">Evrenlere dön</a></main>;
-  if (!bilgi) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
+  // Bilgi gelene dek gezinti yerinde kalır; yalnız sayfanın içi beklenir.
+  if (!bilgi) return <EvrenKabugu istemci={istemci} evren={kod} etkin={sekme}><main class="sayfa" aria-busy="true"><p class="soluk gecikmeli">Açılıyor…</p></main></EvrenKabugu>;
   const baslik = sekme === 'masa' ? null : SAYFA_ADLARI.get(sekme) ?? null;
   // Açık harita bütün genişliği kullanır; başlığı haritanın kendi satırındadır (taslak 4A).
   const haritaAcik = sekme === 'haritalar' && !!alt;

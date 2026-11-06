@@ -68,4 +68,44 @@ describe('okunabilir dışa aktarma (§10.11)', () => {
     expect(b).not.toContain('girmemeli');
     expect(h.eserBaskiSayfasi({ evren, eser, sahneBasliklari: true }).html).toContain('<h3>Sahne bir</h3>');
   });
+
+  it('seçimli çıktı: yalnız seçilen sahneler; seçili sahnesi olmayan bölüm yazılmaz; ağaçta çalışma durumu', async () => {
+    const h = cihaz('Deneme');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Kuzey' });
+    const eser = h.kayitOlustur({ evren, ad: 'Fener', tur: 'eser' }).kod;
+    const { kod: b1 } = h.anlatiOlustur({ evren, ust: eser, ad: 'Birinci', tur: 'bolum' });
+    const { kod: b2 } = h.anlatiOlustur({ evren, ust: eser, ad: 'İkinci', tur: 'bolum' });
+    const { kod: s1 } = h.anlatiOlustur({ evren, ust: b1, ad: 'Bir', tur: 'sahne' });
+    const { kod: s2 } = h.anlatiOlustur({ evren, ust: b1, ad: 'İki', tur: 'sahne' });
+    const { kod: s3 } = h.anlatiOlustur({ evren, ust: b2, ad: 'Üç', tur: 'sahne' });
+    const { kod: s4 } = h.anlatiOlustur({ evren, ust: b2, ad: 'Boş', tur: 'sahne' });
+    yaz(h, evren, s1, ['Birinci metin.']); yaz(h, evren, s2, ['İkinci metin.']); yaz(h, evren, s3, ['Üçüncü metin.']);
+    h.kayitAlanYaz({ evren, kod: s1, alan: 'calisma', deger: 'gozden_gecirildi' });
+    const agac = h.ciktiAgaci({ evren, eser });
+    expect(agac.bolumler.map((b) => b.ad)).toEqual(['Birinci', 'İkinci']);
+    expect(agac.bolumler[0].sahneler.map((x) => [x.ad, x.calisma, x.metinli])).toEqual([['Bir', 'gozden_gecirildi', true], ['İki', null, true]]);
+    expect(agac.bolumler[1].sahneler.find((x) => x.kod === s4)!.metinli).toBe(false);
+
+    const html = h.eserBaskiSayfasi({ evren, eser, sahneler: [s1, s4] }).html;
+    expect(html).toContain('Birinci metin.');
+    expect(html).not.toContain('İkinci metin.');
+    expect(html).not.toContain('<h2>İkinci</h2>');
+    const m = await zipOku((await h.epubYaz({ evren, eser, sahneler: [s3] })).veri);
+    expect(metin(m, 'OEBPS/bolum-001.xhtml')).toContain('<h2>İkinci</h2>');
+    expect(m.has('OEBPS/bolum-002.xhtml')).toBe(false);
+    expect(() => h.eserBaskiSayfasi({ evren, eser, sahneler: [] })).toThrow('Çıktıya girecek sahne seçilmedi.');
+    expect(() => h.eserBaskiSayfasi({ evren, eser, sahneler: [s4] })).toThrow('Seçtiğiniz sahnelerde metin yok.');
+    // PDF ve Word aynı okuma düzenini kullanır: seçim onlara da uygulanır.
+    const k = h.eserKitabi({ evren, eser, sahneler: [s2, s3] }).kitap;
+    expect(k.bolumler.map((b) => [b.baslik, b.sahneler.length])).toEqual([['Birinci', 1], ['İkinci', 1]]);
+    expect(JSON.stringify(k)).not.toContain('Birinci metin.');
+    expect(h.eserKitabi({ evren, eser, sahneler: [s1] }).kitap.bolumler.map((b) => b.baslik)).toEqual(['Birinci']);
+    expect(() => h.eserKitabi({ evren, eser, sahneler: [s4] })).toThrow('Seçtiğiniz sahnelerde metin yok.');
+    const w = await zipOku((await h.docxYaz({ evren, eser, sahneler: [s3] })).veri);
+    const belge = new TextDecoder().decode(w.get('word/document.xml'));
+    expect(belge).toContain('Üçüncü metin.');
+    expect(belge).not.toContain('Birinci metin.');
+    // Süzgeçsiz çıktı değişmedi: iki bölüm de yazılır.
+    expect(h.eserBaskiSayfasi({ evren, eser }).html).toContain('<h2>İkinci</h2>');
+  });
 });

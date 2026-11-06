@@ -252,9 +252,15 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 /* Çalışma alanı: özet kartı, yan panel, komut paleti (§5.3, §5.4, §5.8) */
 .ozet-karti { position: fixed; z-index: 40; box-shadow: 0 8px 28px rgb(0 0 0 / 0.18); padding: 12px 14px; }
 .ozet-gorseli { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; flex: none; }
-.yan-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 380px; z-index: 20; background: var(--yuzey); border-left: 1px solid var(--cizgi); display: flex; flex-direction: column; box-shadow: var(--golge); }
+.yan-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(var(--yan-panel-genislik, 380px), calc(100vw - 360px)); z-index: 20; background: var(--yuzey); border-left: 1px solid var(--cizgi); display: flex; flex-direction: column; box-shadow: var(--golge); }
 .yan-panel.kucuk { bottom: auto; }
-.calisma.yan-panel-acik { padding-right: 380px; }
+.calisma.yan-panel-acik { padding-right: min(var(--yan-panel-genislik, 380px), calc(100vw - 360px)); }
+/* Panelin genişlik tutamağı (taslak 3A): sol kenarda ince şerit; üzerine gelince ya da odaklanınca belirir. */
+.panel-tutamagi { position: absolute; left: -5px; top: 0; bottom: 0; width: 10px; cursor: col-resize; z-index: 1; touch-action: none; display: flex; align-items: center; justify-content: center; }
+.panel-tutamagi::after { content: ""; width: 4px; height: 44px; border-radius: 2px; background: var(--cizgi); transition: background 150ms; }
+.panel-tutamagi:hover::after, .panel-tutamagi:focus-visible::after, .panel-surukleniyor .panel-tutamagi::after { background: var(--vurgu); }
+.panel-tutamagi:focus-visible { outline-offset: -2px; }
+.panel-surukleniyor, .panel-surukleniyor * { cursor: col-resize !important; user-select: none; }
 .calisma.yan-panel-acik.yan-panel-kucuk { padding-right: 0; }
 .yan-panel.kucuk { width: auto; left: auto; }
 .yan-panel-basi { display: flex; align-items: center; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--cizgi); }
@@ -271,6 +277,7 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 @media (max-width: 900px) {
   .yan-panel { top: auto; left: 0; width: auto; max-height: 55vh; border-left: none; border-top: 1px solid var(--cizgi); border-radius: 14px 14px 0 0; box-shadow: 0 -6px 24px rgb(0 0 0 / 0.15); }
   .calisma.yan-panel-acik { padding-right: 0; padding-bottom: 55vh; }
+  .panel-tutamagi { display: none; }
   .calisma.yan-panel-acik.yan-panel-kucuk { padding-bottom: 56px; }
 }
 .palet-perdesi { align-items: flex-start; padding-top: 12vh; }
@@ -763,6 +770,9 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .gezinti-evren { font-family: var(--metin-yazi); font-size: 1.25rem; font-weight: 600; margin: 6px 8px 14px; line-height: 1.25; overflow-wrap: anywhere; }
 .gezinti-listesi, .gezinti-alt { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .gezinti-alt { margin: 2px 0 6px 10px; }
+/* Grafik araçlarının grup başlıkları (taslak 2A): yalnız ara başlık; tıklanmaz. */
+.gezinti-grup { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--metin-2); padding: 8px 10px 2px; }
+.gezinti-grup:first-child { padding-top: 2px; }
 .gezinti-ogesi { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; padding: 6px 10px; border-radius: 8px;
   color: var(--metin); text-decoration: none; }
 .gezinti-ogesi:hover { background: var(--yuzey-2); }
@@ -1295,8 +1305,22 @@ details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] 
 .geri-al-seridi { animation: serit-gir 180ms var(--gecis-egri); }
 /* Üzerine gelince renk değişimleri. */
 .dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .gezinti-diger summary, .kart { transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, filter 150ms ease; }
+/* Kayıt durumu: durum değişince yazı solarak gelir; kaydedilince başında ✓ (anlam yazıda da var). */
+.kayit-durumu-yazi { animation: sol-gir 150ms var(--gecis-egri); }
+.kayit-durumu-yazi.kayitli::before { content: "✓ "; }
+/* Eser ağacının oku açılınca döner. */
+.agac-ok-isareti { display: inline-block; transition: transform 150ms var(--gecis-egri); }
+.agac-ok[aria-expanded="true"] .agac-ok-isareti { transform: rotate(90deg); }
+/* Bekleme yazısı hızlı açılışta görünmesin diye geç belirir. */
+.gecikmeli { animation: sol-gir 150ms 300ms both; }
 @media (prefers-reduced-motion: reduce) {
   .sayfa, .perde, .perde > .perde-ic, .perde > .palet, .islem-menusu[open] > .menu-icerik, details[open] > :not(summary), .gezinti-diger.oynat[open] > ul,
-  .yan-panel, .yaz-baglami.kayarak, .harita-cekmece, .baglam-sekme-icerik, .hizli-not, .geri-al-seridi { animation: none; }
-  .dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .gezinti-diger summary, .kart { transition: none; }
+  .yan-panel, .yaz-baglami.kayarak, .harita-cekmece, .baglam-sekme-icerik, .hizli-not, .geri-al-seridi, .kayit-durumu-yazi, .gecikmeli { animation: none; }
+  .dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .gezinti-diger summary, .kart, .agac-ok-isareti { transition: none; }
 }
+
+/* Çıktı seçimi (§10.11): bölüm ve sahne ağacı. */
+.cikti-secimi { margin: 4px 0 10px; }
+.cikti-secimi > .satir { margin: 6px 0; }
+.cikti-agaci, .cikti-agaci ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.cikti-agaci ul { padding-left: 22px; margin-top: 2px; }

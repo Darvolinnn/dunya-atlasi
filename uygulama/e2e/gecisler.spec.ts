@@ -60,3 +60,47 @@ test('"animasyonları azalt" açıkken hiçbir geçiş oynamaz', async ({ page: 
   await expect(p).toHaveURL(/\/kayitlar$/);
   expect(await sayfaGecisleri(p)).toEqual([]);
 });
+
+test('pencereler solarak kapanır; odak kipinde yan alanlar solarak çekilir; ağaç oku döner', async ({ page: p }) => {
+  await kaydet(p);
+  await sahneAc(p);
+  const gecisler = () => p.evaluate(() => (window as unknown as { __gecisler: { sinif: string; sure: number }[] }).__gecisler);
+  await p.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await p.keyboard.press('Control+K');
+  await expect(p.locator('.palet input')).toBeFocused();
+  await p.keyboard.press('Escape');
+  await expect(p.getByRole('dialog', { name: 'Komut paleti' })).toBeHidden();
+  expect((await gecisler()).some((g) => g.sinif.includes('perde') && g.sure === 120)).toBe(true);
+
+  await p.getByRole('button', { name: 'Odak', exact: true }).click();
+  await expect(p.locator('html.odak-kipi')).toHaveCount(1);
+  await expect(p.locator('.gezinti')).toBeHidden();
+  expect((await gecisler()).some((g) => g.sinif.includes('gezinti') && g.sure === 150)).toBe(true);
+  await p.getByRole('button', { name: 'Odaktan çık' }).click();
+  await expect(p.locator('.gezinti')).toBeVisible();
+
+  const ok = p.locator('.agac-ok[aria-expanded="true"] .agac-ok-isareti').first();
+  await expect(ok).toBeVisible();
+  expect(await ok.evaluate((e) => getComputedStyle(e).transform)).not.toBe('none');
+});
+
+test('kayıt açılırken gezinti yerinde kalır', async ({ page: p }) => {
+  await p.addInitScript(() => {
+    const w = window as unknown as { __gezintisiz: number };
+    w.__gezintisiz = 0;
+    new MutationObserver(() => {
+      if (/\/k\//.test(location.hash) && !document.querySelector('.gezinti')) w.__gezintisiz++;
+    }).observe(document, { childList: true, subtree: true });
+  });
+  const sahne = await sahneAc(p);
+  await p.getByRole('link', { name: 'Kayıtlar' }).click();
+  await expect(p).toHaveURL(/\/kayitlar$/);
+  const kayit = new URL(sahne).hash.replace('/yaz/', '/k/');
+  await p.evaluate((h) => { location.hash = h; }, kayit);
+  await expect(p.locator('.kayit-sayfasi')).toBeVisible();
+  await p.evaluate((h) => { location.hash = h.replace(/\/k\/.*$/, '/ag'); }, kayit);
+  await expect(p).toHaveURL(/\/ag$/);
+  await p.evaluate((h) => { location.hash = h; }, kayit);
+  await expect(p.locator('.kayit-sayfasi')).toBeVisible();
+  expect(await p.evaluate(() => (window as unknown as { __gezintisiz: number }).__gezintisiz)).toBe(0);
+});

@@ -2,6 +2,7 @@
 // Yan paneldeki kayıtlar ve imleç "kaldığın yer" olarak saklanır ve eşitlemeyle öbür cihazlara gider; panelin
 // açık ya da küçük olması cihaza özeldir.
 import { createContext } from 'preact';
+import { useYumusakKapanis } from './kapanis';
 import { PALET_OLAYI } from './yonlendirme';
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
@@ -286,6 +287,49 @@ function OzetKarti({ istemci, evren, kod, yer, kapat, yanPanelde }: {
 export const ayirtEtme = (k: Pick<KayitOzeti, 'tur' | 'ozet'>) => [turBul(k.tur).ad, k.ozet].filter(Boolean).join(' · ');
 
 // ---------- Yan panel ----------
+// Genişlik (taslak 3A, 6 Kasım): panelin sol kenarından sürüklenir ya da kenara odaklanıp ok tuşlarıyla değişir; çift
+// tıklama ilk genişliğe döndürür. Bu cihazda hatırlanır, eşitlenmez (§5.9). Dar ekranda panel alttan açılır, tutamak yoktur.
+const PANEL_ANAHTARI = 'dunya-atlasi:yan-panel-genisligi';
+export const PANEL_ILK = 380, PANEL_EN_AZ = 320, PANEL_EN_COK = 640;
+const panelSiniri = (g: number) => Math.round(Math.max(PANEL_EN_AZ, Math.min(PANEL_EN_COK, Math.min(g, innerWidth - 360))));
+function panelGenisligiUygula(g: number) { document.documentElement.style.setProperty('--yan-panel-genislik', `${g}px`); }
+function panelGenisligiOku(): number {
+  try { const g = Number(localStorage.getItem(PANEL_ANAHTARI)); return Number.isFinite(g) && g > 0 ? panelSiniri(g) : PANEL_ILK; } catch { return PANEL_ILK; }
+}
+
+function PanelTutamagi() {
+  const [g, setG] = useState(panelGenisligiOku);
+  useEffect(() => { panelGenisligiUygula(g); }, []);
+  const ayarla = (y: number, kalici = true) => {
+    const s = panelSiniri(y);
+    setG(s); panelGenisligiUygula(s);
+    if (kalici) try { localStorage.setItem(PANEL_ANAHTARI, String(s)); } catch { /* yok */ }
+  };
+  return (
+    <div class="panel-tutamagi" role="separator" aria-orientation="vertical" aria-label="Yan panelin genişliği"
+      aria-valuemin={PANEL_EN_AZ} aria-valuemax={PANEL_EN_COK} aria-valuenow={g} tabIndex={0}
+      title="Sürükleyerek genişletin; çift tıklama ilk genişliğe döndürür"
+      onPointerDown={(e) => {
+        const el = e.currentTarget as HTMLElement;
+        el.setPointerCapture(e.pointerId); e.preventDefault();
+        document.documentElement.classList.add('panel-surukleniyor');
+        const tasi = (m: PointerEvent) => ayarla(innerWidth - m.clientX, false);
+        const birak = (m: PointerEvent) => {
+          ayarla(innerWidth - m.clientX);
+          document.documentElement.classList.remove('panel-surukleniyor');
+          el.removeEventListener('pointermove', tasi); el.removeEventListener('pointerup', birak); el.removeEventListener('pointercancel', birak);
+        };
+        el.addEventListener('pointermove', tasi); el.addEventListener('pointerup', birak); el.addEventListener('pointercancel', birak);
+      }}
+      onDblClick={() => ayarla(PANEL_ILK)}
+      onKeyDown={(e) => {
+        const adim = e.shiftKey ? 64 : 16;
+        const y = e.key === 'ArrowLeft' ? g + adim : e.key === 'ArrowRight' ? g - adim : e.key === 'Home' ? PANEL_EN_AZ : e.key === 'End' ? PANEL_EN_COK : null;
+        if (y === null) return;
+        e.preventDefault(); ayarla(y);
+      }} />
+  );
+}
 function YanPanel({ istemci, evren, kodlar, aktif, sec, kapat, kucuk, kucult }: {
   istemci: Istemci; evren: string; kodlar: string[]; aktif: string; sec: (k: string) => void; kapat: (k?: string) => void;
   kucuk: boolean; kucult: (v: boolean) => void;
@@ -298,6 +342,7 @@ function YanPanel({ istemci, evren, kodlar, aktif, sec, kapat, kucuk, kucult }: 
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren && (!d.kayitlar.length || d.kayitlar.some((k) => kodlar.includes(k)))) { setSurum((s) => s + 1); setAdlar({}); } }), [evren, kodlar.join()]);
   return (
     <aside class={kucuk ? 'yan-panel kucuk' : 'yan-panel'} aria-label="Yan panel">
+      {!kucuk && <PanelTutamagi />}
       <div class="yan-panel-basi">
         <div class="yan-sekmeler" role="tablist">
           {kodlar.map((k) => (
@@ -420,14 +465,15 @@ function NeredenSatiri({ s, sorgu }: { s: AramaSonucu; sorgu: string }) {
 
 /** "Kısayollar" listesi (§12.2, K28). */
 export function KisayolListesi({ kapat }: { kapat: () => void }) {
+  const [perdeRef, vazgec] = useYumusakKapanis(kapat);
   useLayoutEffect(() => {
-    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); kapat(); } };
+    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); vazgec(); } };
     addEventListener('keydown', tus); return () => removeEventListener('keydown', tus);
   }, []);
   return (
-    <div class="perde palet-perdesi" onClick={(e) => { if (e.target === e.currentTarget) kapat(); }}>
+    <div class="perde palet-perdesi" ref={perdeRef} onClick={(e) => { if (e.target === e.currentTarget) vazgec(); }}>
       <div class="palet kart kisayol-listesi" role="dialog" aria-label="Kısayollar">
-        <div class="satir"><strong>Kısayollar</strong><span class="bosluk" /><button class="dugme sade kucuk" onClick={kapat}>Kapat</button></div>
+        <div class="satir"><strong>Kısayollar</strong><span class="bosluk" /><button class="dugme sade kucuk" onClick={vazgec}>Kapat</button></div>
         <ul>{KISAYOLLAR.map((k) => <li key={k.anahtar}><span>{k.ad}{k.not && <span class="soluk kucuk"> · {k.not}</span>}</span><kbd class="tus">{k.tus}</kbd></li>)}</ul>
         <p class="soluk kucuk">Mac'te Ctrl yerine Cmd kullanılır.</p>
       </div>
@@ -436,6 +482,7 @@ export function KisayolListesi({ kapat }: { kapat: () => void }) {
 }
 
 function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evren: string | null; baglam: PaletBaglami; kapat: () => void }) {
+  const [perdeRef, vazgec] = useYumusakKapanis(kapat);
   const d = useCalisma()!;
   const [sorgu, setSorgu] = useState('');
   const [secili, setSecili] = useState(0);
@@ -514,13 +561,13 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
   };
 
   return (
-    <div class="perde palet-perdesi" onClick={(e) => { if (e.target === e.currentTarget) kapat(); }}>
+    <div class="perde palet-perdesi" ref={perdeRef} onClick={(e) => { if (e.target === e.currentTarget) vazgec(); }}>
       <div class="palet kart" role="dialog" aria-label="Komut paleti">
         <input ref={girdi} class="girdi" lang="tr" value={sorgu} aria-label={turSec !== null ? 'Tür ara' : 'Kayıt ya da komut ara'}
           placeholder={turSec !== null ? `“${turSec}” hangi türden?` : evren ? 'Kayıt aç ya da komut yaz…' : 'Komut yaz…'}
           onInput={(e) => setSorgu((e.target as HTMLInputElement).value)}
           onKeyDown={(e) => {
-            if (e.key === 'Escape') { e.preventDefault(); if (turSec !== null) { setTurSec(null); setSorgu(''); } else kapat(); }
+            if (e.key === 'Escape') { e.preventDefault(); if (turSec !== null) { setTurSec(null); setSorgu(''); } else vazgec(); }
             else if (e.key === 'ArrowDown') { e.preventDefault(); setSecili((i) => Math.min(ogeler.length - 1, i + 1)); }
             else if (e.key === 'ArrowUp') { e.preventDefault(); setSecili((i) => Math.max(0, i - 1)); }
             else if (e.key === 'Enter' && ogeler[secili]) { e.preventDefault(); void calistir(ogeler[secili], e.shiftKey); }

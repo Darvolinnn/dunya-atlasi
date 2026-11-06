@@ -1,5 +1,6 @@
 // Gezinti ve görsel pano (§7). Yazarın derlediği listeler; kayıtlar kopyalanmaz, liste onlara bağlanır.
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { useYumusakKapanis } from './kapanis';
 import { BosSayfa, odakla } from './ortak';
 import type { Istemci } from '../veri/istemci';
 import type { Derleme, DerlemeOzeti, Kayit, PanoOgesi } from '../veri/api';
@@ -247,13 +248,14 @@ function PanoBuyuk({ istemci, evren, o, tikla }: { istemci: Istemci; evren: stri
 function PanoOgesiPerdesi({ istemci, evren, d, o, kapat, yaz, ac }: {
   istemci: Istemci; evren: string; d: Derleme; o: PanoOgesi; kapat: () => void; yaz: (l: Oge[]) => Promise<void>; ac: (k: string) => void;
 }) {
+  const [perdeRef, vazgec] = useYumusakKapanis(kapat);
   const [notKipi, setNotKipi] = useState(false);
   const [bekleyen, setBekleyen] = useState<{ x: number; y: number } | null>(null);
   const [metin, setMetin] = useState('');
   const [baslik, setBaslik] = useState(o.baslik);
   useEffect(() => setBaslik(o.baslik), [o.kod]);
   useEffect(() => {
-    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') kapat(); };
+    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') vazgec(); };
     addEventListener('keydown', tus);
     return () => removeEventListener('keydown', tus);
   }, []);
@@ -262,7 +264,7 @@ function PanoOgesiPerdesi({ istemci, evren, d, o, kapat, yaz, ac }: {
   // Aynı kaydın öteki görselleri: gelişim geçmişi.
   const gecmis = o.kayit ? d.ogeler.filter((y) => y.kayit?.kod === o.kayit!.kod && y.kod !== o.kod) : [];
   return (
-    <div class="perde" role="dialog" aria-label="Pano görseli" onClick={(e) => { if (e.target === e.currentTarget) kapat(); }}>
+    <div class="perde" role="dialog" aria-label="Pano görseli" ref={perdeRef} onClick={(e) => { if (e.target === e.currentTarget) vazgec(); }}>
       <div class="perde-ic pano-perde">
         <div class="satir">
           <input class="girdi" lang="tr" aria-label="Başlık" placeholder="Başlık" value={baslik} onInput={(e) => setBaslik((e.target as HTMLInputElement).value)}
@@ -273,7 +275,7 @@ function PanoOgesiPerdesi({ istemci, evren, d, o, kapat, yaz, ac }: {
           <button class={`dugme kucuk${notKipi ? ' ana' : ''}`} onClick={() => { setNotKipi(!notKipi); setBekleyen(null); }}>{notKipi ? 'Not koymayı bitir' : 'Not koy'}</button>
           <span class="bosluk" />
           <button class="dugme sade kucuk" onClick={() => { void yaz(ogeler.filter((y) => y.kod !== o.kod)).then(kapat, () => {}); }}>Panodan çıkar</button>
-          <button class="dugme" onClick={kapat} autoFocus>Kapat</button>
+          <button class="dugme" onClick={vazgec} autoFocus>Kapat</button>
         </div>
         {notKipi && <p class="soluk kucuk">Notun duracağı yere basın.</p>}
         <PanoBuyuk istemci={istemci} evren={evren} o={o} tikla={notKipi ? (x, y) => { setBekleyen({ x, y }); setMetin(''); } : undefined} />

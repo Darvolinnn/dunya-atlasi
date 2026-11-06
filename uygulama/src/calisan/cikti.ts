@@ -8,6 +8,7 @@ import { A } from '../alan/automerge';
 import type { ZipDosyasi } from '../alan/zip';
 import { bloklaraCevir, type Kitap, type KitapSahnesi } from '../alan/kitap';
 import { eserYapisi } from './anlati';
+import type { CiktiAgaci, CiktiSahnesi } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
 import { metinBelgesi } from './izdusum';
 import { kayitSablonu } from './sablon';
@@ -129,31 +130,61 @@ export async function markdownDosyalari(e: EvrenVt, evrenAdi: string, medyaOku: 
 // ---------- Eser: EPUB ve yazdırılabilir sayfa ----------
 interface Bolum { baslik: string; govde: string }
 
-/** Eserin bölümleri; her bölümde sahneler sırayla, aralarında sahne ayracıyla. Vazgeçilmiş sahne girmez. */
-function eserBolumleri(e: EvrenVt, eser: string, sahneBasliklari: boolean): { ad: string; bolumler: Bolum[] } {
+/**
+ * Eserin bölümleri; her bölümde sahneler sırayla, aralarında sahne ayracıyla. Vazgeçilmiş sahne girmez.
+ * `secili` verilirse yalnız oradaki sahneler girer; seçili sahnesi olmayan bölüm hiç yazılmaz.
+ */
+function eserBolumleri(e: EvrenVt, eser: string, sahneBasliklari: boolean, secili?: ReadonlySet<string>): { ad: string; bolumler: Bolum[] } {
   const y = eserYapisi(e, eser);
-  const sahneHtml = (s: { kod: string; ad: string; karar: string }[]) => s.filter((x) => x.karar !== 'vazgecildi').map((x) => {
+  const girer = (x: { kod: string; karar: string }) => x.karar !== 'vazgecildi' && (!secili || secili.has(x.kod));
+  const sahneHtml = (s: { kod: string; ad: string; karar: string }[]) => s.filter(girer).map((x) => {
     const b = metinBelgesi(e.db, x.kod, 'govde');
     const govde = b ? xhtmlYaz(belgeyeCevir(A.spans(b, ['t']) as unknown[])) : '';
     return `${sahneBasliklari ? `<h3>${xmlKacis(x.ad)}</h3>\n` : ''}${govde}`;
   }).filter((x) => x.trim()).join('\n<hr class="ara"/>\n');
   const bolumler: Bolum[] = [];
   if (y.dogrudan.length) { const g = sahneHtml(y.dogrudan); if (g) bolumler.push({ baslik: y.bolumler.length ? 'Giriş' : y.eser.ad, govde: g }); }
-  for (const b of y.bolumler) if (b.karar !== 'vazgecildi') bolumler.push({ baslik: b.ad, govde: sahneHtml(b.sahneler) });
+  for (const b of y.bolumler) {
+    if (b.karar === 'vazgecildi') continue;
+    const g = sahneHtml(b.sahneler);
+    if (secili && !g) continue;
+    bolumler.push({ baslik: b.ad, govde: g });
+  }
   return { ad: y.eser.ad, bolumler };
 }
 
-/** Eserin PDF ve Word çıktısı için okuma düzeni; bölüm ve sahne sırası, vazgeçilenler ve "Giriş" EPUB'la aynı. */
-export function eserKitabi(e: EvrenVt, eser: string, sahneBasliklari: boolean): Kitap {
+/** Çıktıda seçilebilecek bölüm ve sahneler (vazgeçilmişler hariç), sahnenin çalışma durumuyla (§10.11). */
+export function ciktiAgaci(e: EvrenVt, eser: string): CiktiAgaci {
   const y = eserYapisi(e, eser);
-  const sahneler = (s: { kod: string; ad: string; karar: string }[]): KitapSahnesi[] => s.filter((x) => x.karar !== 'vazgecildi').map((x) => {
+  const sahne = (x: { kod: string; ad: string }): CiktiSahnesi => {
+    const d = e.db.selectValue("SELECT deger FROM alan_degerleri WHERE kayit=? AND alan='calisma'", [x.kod]);
+    const b = metinBelgesi(e.db, x.kod, 'govde');
+    const metinli = !!b && (A.spans(b, ['t']) as { type: string; value?: unknown }[]).some((p) => p.type === 'text' && typeof p.value === 'string' && p.value.trim() !== '');
+    return { kod: x.kod, ad: x.ad, calisma: typeof d === 'string' ? JSON.parse(d) as string : null, metinli };
+  };
+  const acik = <T extends { karar: string }>(l: T[]) => l.filter((x) => x.karar !== 'vazgecildi');
+  return {
+    dogrudan: acik(y.dogrudan).map(sahne),
+    bolumler: acik(y.bolumler).map((b) => ({ kod: b.kod, ad: b.ad, sahneler: acik(b.sahneler).map(sahne) })),
+  };
+}
+
+/** Eserin PDF ve Word çıktısı için okuma düzeni; bölüm ve sahne sırası, vazgeçilenler ve "Giriş" EPUB'la aynı. */
+export function eserKitabi(e: EvrenVt, eser: string, sahneBasliklari: boolean, secili?: ReadonlySet<string>): Kitap {
+  const y = eserYapisi(e, eser);
+  const sahneler = (s: { kod: string; ad: string; karar: string }[]): KitapSahnesi[] => s.filter((x) => x.karar !== 'vazgecildi' && (!secili || secili.has(x.kod))).map((x) => {
     const b = metinBelgesi(e.db, x.kod, 'govde');
     return { baslik: sahneBasliklari ? x.ad : null, bloklar: b ? bloklaraCevir(belgeyeCevir(A.spans(b, ['t']) as unknown[])) : [] };
   }).filter((x) => x.bloklar.length);
   const bolumler: Kitap['bolumler'] = [];
   if (y.dogrudan.length) { const s = sahneler(y.dogrudan); if (s.length) bolumler.push({ baslik: y.bolumler.length ? 'Giriş' : y.eser.ad, sahneler: s }); }
-  for (const b of y.bolumler) if (b.karar !== 'vazgecildi') bolumler.push({ baslik: b.ad, sahneler: sahneler(b.sahneler) });
-  if (!bolumler.some((b) => b.sahneler.length)) throw new Error('Eserde metni olan sahne yok.');
+  for (const b of y.bolumler) {
+    if (b.karar === 'vazgecildi') continue;
+    const s = sahneler(b.sahneler);
+    if (secili && !s.length) continue;
+    bolumler.push({ baslik: b.ad, sahneler: s });
+  }
+  if (!bolumler.some((b) => b.sahneler.length)) throw new Error(secili ? 'Seçtiğiniz sahnelerde metin yok.' : 'Eserde metni olan sahne yok.');
   return { ad: y.eser.ad, bolumler };
 }
 
@@ -176,9 +207,9 @@ ${govde}
 </html>
 `;
 
-export function epubDosyalari(e: EvrenVt, eser: string, sahneBasliklari: boolean, zaman = new Date()): { ad: string; dosyalar: ZipDosyasi[] } {
-  const { ad, bolumler } = eserBolumleri(e, eser, sahneBasliklari);
-  if (!bolumler.length) throw new Error('Eserde metni olan sahne yok.');
+export function epubDosyalari(e: EvrenVt, eser: string, sahneBasliklari: boolean, zaman = new Date(), secili?: ReadonlySet<string>): { ad: string; dosyalar: ZipDosyasi[] } {
+  const { ad, bolumler } = eserBolumleri(e, eser, sahneBasliklari, secili);
+  if (!bolumler.length) throw new Error(secili ? 'Seçtiğiniz sahnelerde metin yok.' : 'Eserde metni olan sahne yok.');
   const sayfalar = bolumler.map((b, i) => ({ dosya: `bolum-${String(i + 1).padStart(3, '0')}.xhtml`, ...b }));
   const degisti = zaman.toISOString().replace(/\.\d+Z$/, 'Z');
   const opf = `<?xml version="1.0" encoding="utf-8"?>
@@ -221,9 +252,9 @@ ${sayfalar.map((s) => `<li><a href="${s.dosya}">${xmlKacis(s.baslik)}</a></li>`)
 }
 
 /** Yazdırılabilir sayfa (tarayıcının "PDF olarak kaydet"i ile PDF olur). */
-export function eserBaskiSayfasi(e: EvrenVt, eser: string, sahneBasliklari: boolean): string {
-  const { ad, bolumler } = eserBolumleri(e, eser, sahneBasliklari);
-  if (!bolumler.length) throw new Error('Eserde metni olan sahne yok.');
+export function eserBaskiSayfasi(e: EvrenVt, eser: string, sahneBasliklari: boolean, secili?: ReadonlySet<string>): string {
+  const { ad, bolumler } = eserBolumleri(e, eser, sahneBasliklari, secili);
+  if (!bolumler.length) throw new Error(secili ? 'Seçtiğiniz sahnelerde metin yok.' : 'Eserde metni olan sahne yok.');
   return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><title>${xmlKacis(ad)}</title><style>
 ${STIL}
 @page { size: A5; margin: 18mm 16mm; }

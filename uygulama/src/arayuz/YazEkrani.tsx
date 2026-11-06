@@ -30,6 +30,8 @@ const PLAN_SORULARI = (soruSetiBul('sahne_plani')?.sorular ?? []).slice(0, 3).ma
 // sahnede kapalı, dolu sahnede açık durur.
 const baglamAnahtari = 'dunya-atlasi:yazma-baglami-kapali';
 const odakAnahtari = 'dunya-atlasi:odak-kipi';
+/** Odak kipinde gizlenen alanlar; `stil.css` "Odak kipi" kurallarıyla aynı. */
+const ODAK_GIZLENENLER = '.gezinti, .siradaki-adim, .yaz-baglami, .hizli-not-dugmesi, .yaz-ust .anlati-yolu .dugme, .yaz-ust > a.dugme, .yaz-ust .tehlikeli, .yaz-ust .yardim-dugmesi, .yaz-ust .islem-menusu';
 /** Odak kipi (K28, §5.10): gezinti, eser ağacı, bağlam paneli ve sıradaki adım gizlenir; tercih cihazda. */
 function useOdakKipi(): [boolean, (v: boolean) => void] {
   const [acik, setAcik] = useState(() => okuYerel(odakAnahtari) === '1');
@@ -44,7 +46,24 @@ function useOdakKipi(): [boolean, (v: boolean) => void] {
     addEventListener(ODAK_OLAYI, olay); addEventListener('keydown', tus);
     return () => { removeEventListener(ODAK_OLAYI, olay); removeEventListener('keydown', tus); };
   }, []);
-  useEffect(() => { document.documentElement.classList.toggle('odak-kipi', acik); return () => document.documentElement.classList.remove('odak-kipi'); }, [acik]);
+  // Yan alanlar solarak çekilir, dönüşte solarak gelir (150 ms). Metnin genişliği canlandırılmaz: satırlar her
+  // karede yeniden kırılırdı; alanlar soldıktan sonra yerleşim tek seferde değişir. İlk açılışta ve
+  // "animasyonları azalt" açıkken hareket yoktur.
+  const ilk = useRef(true);
+  useEffect(() => {
+    const kok = document.documentElement;
+    const hareket = !ilk.current && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    ilk.current = false;
+    const alanlar = () => [...document.querySelectorAll<HTMLElement>(ODAK_GIZLENENLER)].filter((el) => el.animate);
+    if (acik && hareket) {
+      const sonmeler = alanlar().map((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: 'ease-out', fill: 'forwards' }));
+      const t = setTimeout(() => { kok.classList.add('odak-kipi'); sonmeler.forEach((a) => a.cancel()); }, 150);
+      return () => { clearTimeout(t); sonmeler.forEach((a) => a.cancel()); kok.classList.remove('odak-kipi'); };
+    }
+    kok.classList.toggle('odak-kipi', acik);
+    if (!acik && hareket) alanlar().forEach((el) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: 'ease-out' }));
+    return () => kok.classList.remove('odak-kipi');
+  }, [acik]);
   return [acik, ayarla];
 }
 
