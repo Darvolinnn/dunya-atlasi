@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { GeriAlSeridi } from './GeriAlSeridi';
 import type { Istemci } from '../veri/istemci';
 import type { KurulumBilgisi } from '../veri/api';
@@ -25,6 +25,22 @@ function yolOku(): Yol {
   if (p[0] === 'e' && p[1]) return { ekran: 'evren', kod: p[1], sekme: p[2] === 'gorunumler' ? 'cizelge' : p[2], alt: p[3] || null };
   return { ekran: 'evrenler' };
 }
+/** Üstteki şeritler (eşitleme, hazırlanma) yer kapladığında yan çubuklar ve sayfa bu yükseklik kadar kısalır;
+ *  böylece şerit çıktı diye pencere aşağı kaydırma istemez. Yükseklik `--serit-yuk` değişkeniyle CSS'e verilir. */
+function UstSeritler({ children }: { children: preact.ComponentChildren }) {
+  const kap = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = kap.current; const kok = document.documentElement;
+    if (!el) return;
+    const yaz = () => kok.style.setProperty('--serit-yuk', `${el.offsetHeight}px`);
+    yaz();
+    const izle = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(yaz);
+    izle?.observe(el);
+    return () => { izle?.disconnect(); kok.style.removeProperty('--serit-yuk'); };
+  }, []);
+  return <div class="ust-seritler" ref={kap}>{children}</div>;
+}
+
 export const git = (yol: string) => { location.hash = yol; };
 
 function useYol(): Yol {
@@ -75,8 +91,10 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
   return (
     <EsitlemeSaglayici istemci={istemci}>
       <CalismaSaglayici istemci={istemci} evren={evren} kayit={acikKayit}>
-      <EsitlemeSeridi />
-      <HazirlanmaSeridi istemci={istemci} />
+      <UstSeritler>
+        <EsitlemeSeridi />
+        <HazirlanmaSeridi istemci={istemci} />
+      </UstSeritler>
       <YazarlikRehberiPaneli />
       {yol.ekran === 'evrenler' ? <EvrenlerEkrani istemci={istemci} />
         : yol.ekran === 'esitleme' ? <EsitlemeEkrani istemci={istemci} />

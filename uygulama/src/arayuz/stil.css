@@ -235,7 +235,10 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .uc-surum > div { border: 1px solid var(--cizgi); border-radius: var(--yaricap); padding: 8px; }
 
 /* Eşitleme */
-.esitleme-seridi { position: sticky; top: 0; z-index: 20; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+/* Şeritler birlikte üstte durur; yükseklikleri --serit-yuk olur (Uygulama.tsx UstSeritler). */
+.ust-seritler { position: sticky; top: 0; z-index: 20; }
+.ust-seritler:empty { display: none; }
+.esitleme-seridi { display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
   background: #e9dcc6; color: #4f3a22; padding: 8px 16px; font-size: 0.95rem;
   border-bottom: 1px solid currentColor; } /* altın vurgudan kenarlıkla ayrılır (gece altını) */
 .esitleme-seridi .hata { color: #7a1010; }
@@ -759,12 +762,12 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 
 
 /* ---------- Kabuk: sol gezinti çubuğu (§5.10, K24) ---------- */
-:root { --gezinti-gen: 252px; --baglam-gen: 304px; }
+:root { --gezinti-gen: 252px; --baglam-gen: 304px; --serit-yuk: 0px; --ekran-yuk: calc(100vh - var(--serit-yuk)); }
 .calisma { flex: 1; display: flex; flex-direction: column; }
-.kabuk { display: flex; flex: 1; min-height: 100vh; background: linear-gradient(to right, var(--kenar) calc(var(--gezinti-gen) - 1px), var(--cizgi) calc(var(--gezinti-gen) - 1px), var(--cizgi) var(--gezinti-gen), transparent var(--gezinti-gen)); }
+.kabuk { display: flex; flex: 1; min-height: var(--ekran-yuk); background: linear-gradient(to right, var(--kenar) calc(var(--gezinti-gen) - 1px), var(--cizgi) calc(var(--gezinti-gen) - 1px), var(--cizgi) var(--gezinti-gen), transparent var(--gezinti-gen)); }
 .kabuk-ic { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .gezinti { width: var(--gezinti-gen); flex: none; box-sizing: border-box; background: var(--kenar); border-right: 1px solid var(--cizgi);
-  padding: 18px 12px 14px; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+  padding: 18px 12px 14px; position: sticky; top: var(--serit-yuk); height: var(--ekran-yuk); overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
 .gezinti-geri { font-size: 0.85rem; color: var(--metin-2); text-decoration: none; padding: 2px 8px; }
 .gezinti-geri:hover { color: var(--metin); }
 .gezinti-evren { font-family: var(--metin-yazi); font-size: 1.25rem; font-weight: 600; margin: 6px 8px 14px; line-height: 1.25; overflow-wrap: anywhere; }
@@ -806,7 +809,7 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 
 /* ---------- Yazma düzeni ---------- */
 .sayfa-basligi { margin-bottom: 16px; }
-.yaz-duzeni { display: flex; flex: 1; min-height: 100vh; }
+.yaz-duzeni { display: flex; flex: 1; min-height: var(--ekran-yuk); }
 .yaz-metni { flex: 1; min-width: 0; padding: 14px 40px 80px; }
 .yaz-ust { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; color: var(--metin-2); margin-bottom: 4px; min-height: 36px; }
 .yaz-ust .anlati-yolu { margin: 0; padding: 0; border: none; background: none; }
@@ -819,7 +822,7 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .yaz-kagidi .metin-editoru { min-height: 60vh; padding: 24px 0 48px; font-size: 1.2rem; line-height: 1.8; }
 .yaz-kagidi .metin-editoru p { margin: 0 0 1em; }
 .yaz-baglami { width: var(--baglam-gen); flex: none; box-sizing: border-box; background: var(--yuzey); border-left: 1px solid var(--cizgi);
-  padding: 16px 18px 24px; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; font-size: 0.92rem; }
+  padding: 16px 18px 24px; position: sticky; top: var(--serit-yuk); height: var(--ekran-yuk); overflow-y: auto; display: flex; flex-direction: column; gap: 14px; font-size: 0.92rem; }
 .yaz-baglami-basi { font-size: 1rem; }
 .yaz-baglami .alan { gap: 3px; }
 .yaz-baglami .baglam-paneli { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--cizgi); }
