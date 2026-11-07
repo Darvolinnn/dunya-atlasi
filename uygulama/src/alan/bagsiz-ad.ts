@@ -22,16 +22,20 @@ export interface BagsizAd {
 const KELIME = /[\p{L}\p{M}\p{N}]+(?:['’][\p{L}\p{M}]+)?/gu;
 const buyukMu = (c: string) => c !== c.toLocaleLowerCase('tr-TR');
 
-interface Hazir { kod: string; parcalar: string[]; buyuk: boolean }
+interface Hazir { kod: string; parcalar: string[]; ayraclar: string[]; buyuk: boolean }
 
 /** Adları ilk kelimelerine göre dizinler; ikiden kısa adlar ("Al") aranmaz. */
 function hazirla(adlar: AranacakAd[]): Map<string, Hazir[]> {
   const m = new Map<string, Hazir[]>();
   for (const a of adlar) {
     const ifade = a.ifade.trim().replace(/\s+/g, ' ');
-    const parcalar = katla(ifade).split(' ').filter(Boolean);
+    // Ad, metindeki gibi kelimelere bölünür: kesme işareti adın içindeyse ("Kael'thas") silinir, tire ("Al-Khem")
+    // iki kelimeyi ayırır ve metinde de aynı ayraç aranır.
+    const katli = katla(ifade).replace(/['’]/g, '');
+    const parcalar = [...katli.matchAll(/[\p{L}\p{M}\p{N}]+/gu)].map((m) => m[0]);
+    const ayraclar = katli.split(/[\p{L}\p{M}\p{N}]+/u).slice(1, -1).map((x) => (/^ +$/.test(x) ? ' ' : x));
     if (!parcalar.length || parcalar.join(' ').length < 3) continue;
-    const h = { kod: a.kod, parcalar, buyuk: buyukMu(ifade[0]) };
+    const h = { kod: a.kod, parcalar, ayraclar, buyuk: buyukMu(ifade[0]) };
     m.set(parcalar[0], [...(m.get(parcalar[0]) ?? []), h]);
   }
   // Uzun adlar önce denensin ("Başkent Arşivi", "Başkent"ten önce).
@@ -66,7 +70,7 @@ export function bagsizAdlar(bloklar: MetinBlogu[], adlar: AranacakAd[], haric: R
   const dizin = hazirla(adlar.filter((a) => !haric.has(a.kod)));
   const sonuc: BagsizAd[] = [];
   bloklar.forEach((b, bi) => {
-    const kelimeler = [...b.metin.matchAll(KELIME)].map((m) => ({ yazi: m[0], bas: m.index!, son: m.index! + m[0].length, katli: katla(m[0]) }));
+    const kelimeler = [...b.metin.matchAll(KELIME)].map((m) => ({ yazi: m[0], bas: m.index!, son: m.index! + m[0].length, katli: katla(m[0].replace(/['’]/g, '')) }));
     for (let i = 0; i < kelimeler.length && sonuc.length < sinir; i++) {
       const ilk = kelimeler[i];
       // İlk kelime tek kelimelik bir adsa çekimli olabilir; çok kelimelilerde yalnız son kelime çekim alır.
@@ -82,14 +86,18 @@ export function bagsizAdlar(bloklar: MetinBlogu[], adlar: AranacakAd[], haric: R
         for (let j = 0; j < n - 1 && tamam; j++) tamam = kelimeler[i + j].katli === h.parcalar[j];
         if (!tamam || !kokler(kelimeler[i + n - 1].yazi).has(h.parcalar[n - 1])) continue;
         if (h.buyuk && !buyukMu(ilk.yazi[0])) continue;
-        // Kelime arasında yalnız boşluk olmalı (satır, noktalama ya da başka harf değil).
-        if (n > 1 && kelimeler.slice(i + 1, i + n).some((k, j) => !/^ +$/.test(b.metin.slice(kelimeler[i + j].son, k.bas)))) continue;
+        // Kelime arasında yalnız boşluk (adda tire varsa tire) olmalı: satır, noktalama ya da başka harf değil.
+        if (n > 1 && kelimeler.slice(i + 1, i + n).some((k, j) => {
+          const ara = b.metin.slice(kelimeler[i + j].son, k.bas);
+          return h.ayraclar[j] === ' ' ? !/^ +$/.test(ara) : ara !== h.ayraclar[j];
+        })) continue;
         eslesen = eslesen && eslesen.n === n ? { h: [...eslesen.h, h], n } : { h: [h], n };
       }
       if (!eslesen) continue;
       const bas = ilk.bas, son = kelimeler[i + eslesen.n - 1].son;
-      i += eslesen.n - 1;
+      // Bağlı bir yere düşen eşleşme atlanır ama sonraki kelimeler yine aranır ("[[Kuzey]] Kalesi" içindeki "Kalesi").
       if (b.bagli.slice(bas, son).some(Boolean)) continue;
+      i += eslesen.n - 1;
       sonuc.push({ kodlar: [...new Set(eslesen.h.map((x) => x.kod))], ifade: b.metin.slice(bas, son), blok: bi, bas, son, cumle: cumleBul(b.metin, bas, son) });
     }
   });

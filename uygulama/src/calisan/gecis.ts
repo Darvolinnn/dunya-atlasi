@@ -65,7 +65,8 @@ export function izinDurumu(e: EvrenVt, kisi: string, izin: string, varis: Aralik
     const bas = aralik(r.baslangic ? JSON.parse(r.baslangic as string) : null), bit = aralik(r.bitis ? JSON.parse(r.bitis as string) : null);
     if (!bas && !bit) return 'gecerli';
     if (!varis) return 'tarih_yok';
-    if ((!bas || bas[1] <= varis[0]) && (!bit || bit[0] >= varis[1])) return 'gecerli';
+    // Başlangıç ve bitiş günleri izne dahildir: "1 Tohum'dan 3 Tohum'a" izinle 1 ya da 3 Tohum'da varan geçer.
+    if ((!bas || bas[0] <= varis[0]) && (!bit || bit[1] >= varis[1])) return 'gecerli';
     if (bit && bit[1] < varis[0]) return 'bitmis';
     if (bas && bas[0] > varis[1]) return 'baslamamis';
     return 'belirsiz';

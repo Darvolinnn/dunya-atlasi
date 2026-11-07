@@ -26,7 +26,8 @@ export function goreliCoz(tarihler: Map<string, EvrenTarihi | null>, ana: Takvim
     if (t.bicim === 'goreli') {
       for (const x of t.kisitlar ?? []) {
         const j = sira.get(kod(x.olay));
-        if (j === undefined || j === i) continue;
+        // Kendine dayanan kısıt ("A'dan 5 yıl sonra", A'nın kendisinde) eksi öz döngüdür: çelişki olarak bulunur.
+        if (j === undefined) continue;
         const d = farkParcasi(x, ana);
         // sonra: d1 ≤ T − X ≤ d2 · önce: d1 ≤ X − T ≤ d2 · miktarsız: T − X ≥ 1 ya da X − T ≥ 1
         const [a, b] = x.yon === 'sonra' ? [j, i] : [i, j];
@@ -41,7 +42,10 @@ export function goreliCoz(tarihler: Map<string, EvrenTarihi | null>, ana: Takvim
   // Bağlı bileşenler: çelişki yalnızca kendi bileşenindeki tarihleri etkiler.
   const ust = Array.from({ length: n }, (_, i) => i);
   const bul = (x: number): number => (ust[x] === x ? x : (ust[x] = bul(ust[x])));
-  for (const e of kenarlar) if (e.u && e.v) ust[bul(e.u)] = bul(e.v);
+  // Kesin tarihli kayıt bir çapadır: ona bağlanan göreli tarihler birbirine bağlı sayılmaz (birindeki çelişki
+  // öbürünü etkilemez). Bileşenler yalnız iki ucu da göreli olan kısıtlarla kurulur.
+  const goreliMi = (x: number) => x > 0 && tarihler.get(kodlar[x - 1])?.bicim === 'goreli';
+  for (const e of kenarlar) if (goreliMi(e.u) && goreliMi(e.v)) ust[bul(e.u)] = bul(e.v);
 
   // Eksi döngü: her yerden sıfırla başlayan Bellman–Ford.
   const d0 = new Array(n).fill(0), onceki: (Kenar | null)[] = new Array(n).fill(null);

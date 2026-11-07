@@ -206,12 +206,14 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       taslakVar = await taslakYaz(depo, anahtar, { spans: pmNodeToSpans(metinSemasi, gorunum.current.state.doc) as Spans, temel, zaman: Date.now() });
     };
 
-    const kaydet = async (): Promise<void> => {
+    /** `son`: editör kapanırken alınan son metin; editör kapandıktan sonra da (önceki kayıt bitince) kaydedilir. */
+    let sonHata = '';
+    const kaydet = async (son?: Spans): Promise<void> => {
       if (zamanlayici) { clearTimeout(zamanlayici); zamanlayici = null; }
       if (suren) { await suren; if (!kirli) return; }
-      if (!kirli || !gorunum.current) return;
+      if (!kirli || (!gorunum.current && !son)) return;
       kirli = false;
-      const spans = pmNodeToSpans(metinSemasi, gorunum.current.state.doc) as Spans;
+      const spans = son ?? pmNodeToSpans(metinSemasi, gorunum.current!.state.doc) as Spans;
       const istekZamani = Date.now();
       setDurum({ tur: 'kaydediliyor' });
       suren = (async () => {
@@ -225,6 +227,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           if (uzaktanGeldi && !kirli) { uzaktanGeldi = false; setTimeout(() => { void metinIslemi.current?.yeniden(); }, 0); }
         } catch (e) {
           kirli = true;
+          sonHata = (e as Error).message;
           await taslakKaydet();
           setDurum({ tur: 'hata', mesaj: (e as Error).message, taslak: taslakVar });
           // Kayıt kendiliğinden yeniden denenir (yer açılınca ya da geçici bir sorun geçince yazı kaydolsun);
@@ -260,9 +263,11 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         const simdiki = temel;
         temel = t.temel;
         v.dispatch(v.state.tr.replaceWith(0, v.state.doc.content.size, belgeYap(t.spans).content));
+        sonHata = '';
         await kaydet();
         // Taslağın temel sürümü bu cihazda yoksa (evren yedekten yeniden kurulmuş) taslak şimdiki metnin yerine yazılır.
-        if (kirli && !iptal) { temel = simdiki; await kaydet(); }
+        // Başka bir hatada (geçici sorun) kayıt kendiliğinden yeniden denenir; birleştirme yerine üzerine yazılmaz.
+        if (kirli && !iptal && sonHata.includes('sürümü bulunamadı')) { temel = simdiki; await kaydet(); }
         if (!kirli) await taslakSil(depo, kurtarmaAnahtari(anahtar));
       },
       yeniden: async () => {
@@ -370,7 +375,8 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       removeEventListener('pagehide', sayfaKapaninca);
       void taslakKaydet();
       setBulunanTaslak(null);
-      void kaydet();
+      // Önceki kayıt hâlâ sürüyorsa bu kayıt onu bekler; o sırada editör kapanmış olur: son metin şimdi alınır.
+      void kaydet(kirli && gorunum.current ? pmNodeToSpans(metinSemasi, gorunum.current.state.doc) as Spans : undefined);
       gorunum.current?.destroy();
       gorunum.current = null;
       if (denetim) denetim.current = null;

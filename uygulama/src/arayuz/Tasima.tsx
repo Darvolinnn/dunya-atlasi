@@ -1,7 +1,7 @@
 // Dosyaya yedek, yedekten geri yükleme ve dışarıdan içe aktarma ekranları (§10.11).
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { DonemselYedekDurumu, DriveYedegi, IceAktarimRaporu, YedekBilgisi, YerelYedekDurumu } from '../veri/api';
+import type { DonemselYedekDurumu, DriveYedegi, GeriYuklemeSonucu, IceAktarimRaporu, YedekBilgisi, YerelYedekDurumu } from '../veri/api';
 import { kabuk, yedekKlasorunuAc } from '../veri/kabuk';
 import { useEsitleme } from './Esitleme';
 import { zamanYaz } from '../alan/islem-metni';
@@ -159,16 +159,19 @@ export function DriveYedekleri({ istemci, evren, surum }: { istemci: Istemci; ev
 
 const saatMetni = (t: number) => new Date(t).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
-type GeriYuklemeSonucu = { kod: string; ayri: boolean; eksikGorseller: string[]; bozukGorseller: string[] };
 
 /** Geri yüklemenin sonucu: gelmeyen görseller sessizce atlanmaz (§10.10). */
 function GorselUyarisi({ sonuc, nerede = 'yedekte' }: { sonuc: GeriYuklemeSonucu; nerede?: string }) {
-  if (!sonuc.eksikGorseller.length && !sonuc.bozukGorseller.length) return null;
+  const dallar = sonuc.gelmeyenDallar ?? [];
+  if (!sonuc.eksikGorseller.length && !sonuc.bozukGorseller.length && !dallar.length) return null;
   return (
-    <p class="uyari kucuk">Kayıtlar ve metinler eksiksiz geldi, ama {[
-      sonuc.eksikGorseller.length ? `${sonuc.eksikGorseller.length} görsel ${nerede} bulunamadı` : '',
-      sonuc.bozukGorseller.length ? `${sonuc.bozukGorseller.length} görsel bozuk olduğu için alınmadı` : '',
-    ].filter(Boolean).join(', ')}. Bu görsellerin yerinde “görsel yok” görünür.</p>
+    <>
+      {(sonuc.eksikGorseller.length > 0 || sonuc.bozukGorseller.length > 0) && <p class="uyari kucuk">Kayıtlar ve metinler eksiksiz geldi, ama {[
+        sonuc.eksikGorseller.length ? `${sonuc.eksikGorseller.length} görsel ${nerede} bulunamadı` : '',
+        sonuc.bozukGorseller.length ? `${sonuc.bozukGorseller.length} görsel bozuk olduğu için alınmadı` : '',
+      ].filter(Boolean).join(', ')}. Bu görsellerin yerinde “görsel yok” görünür.</p>}
+      {dallar.length > 0 && <p class="uyari kucuk">Şu deneme kopyalarındaki değişiklikler geri yüklenemedi: {dallar.join(', ')}. Bu deneme kopyaları açıldıkları andaki hâlleriyle görünür.</p>}
+    </>
   );
 }
 
@@ -308,6 +311,7 @@ export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci
           <p class="kucuk">Yedeğin alındığı an: {zamanYaz(bilgi.tarih)}<br />
             {bilgi.kayitSayisi} kayıt · {bilgi.islemSayisi} değişiklik · {bilgi.medyaSayisi} görsel</p>
           {bilgi.eksikMedya > 0 && <p class="uyari kucuk">Bu yedekte {bilgi.eksikMedya} görsel eksik; bu görseller geri gelmeyecek. Kayıtlar ve metinler yine geri yüklenebilir.</p>}
+          {bilgi.denemeKopyalariEksik && <p class="uyari kucuk">Bu yedek programın eski bir sürümüyle alınmış. Deneme kopyalarında yaptığınız değişiklikler içinde yok; deneme kopyaları açıldıkları andaki hâlleriyle gelir. Ana evrenin kayıtları ve metinleri eksiksiz geri yüklenir.</p>}
           {bilgi.mevcut
             ? <p class="uyari kucuk">Bu evren bu cihazda zaten var (“{bilgi.mevcut.ad}”). Var olan evren değişmez, yedek <strong>ayrı bir evren</strong> olarak açılır. İnceledikten sonra isterseniz asıl evrenin yerine koyabilirsiniz.</p>
             : <p class="kucuk">Bu evren bu cihazda yok, olduğu gibi geri yüklenecek.</p>}

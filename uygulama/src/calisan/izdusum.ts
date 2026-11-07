@@ -73,6 +73,12 @@ export function goreliYenile(db: Database) {
 }
 const json = (v: unknown) => (v ? JSON.stringify(v) : null);
 
+/** İçinde tarih saklayan tanım sütunları: tablo, satır anahtarı, sütun. */
+const TANIMLI_TARIHLER: [string, string, string][] = [['haklar', 'kod', 'tanim'], ['dair_inanclar', 'kod', 'tanim'], ['teknoloji_tanimlari', 'kod', 'tanim'],
+  ['haber_cikislari', 'kod', 'tarih'], ['iz_kayitlari', 'kod', 'bitis'], ['bakim_kayitlari', 'kod', 'tarih'], ['kalabalik_gozlemleri', 'kod', 'deger'],
+  ['kalabalik_olaylari', 'kod', 'deger'], ['delil_gecmisi', 'kod', 'tanim'], ['kullanim_masalari', 'kod', 'tanim'], ['anlatimlar', 'kod', 'tanim'],
+  ['gokyuzu_tanimi', 'kod', 'tanim'], ['harita_kunyeleri', 'harita', 'tanim'], ['donusum_kayitlari', 'kod', 'deger']];
+
 /** Takvim değişti: bütün tarihlerin ekseni yeniden hesaplanır, ifadeler korunur. */
 function tarihleriYenidenHesapla(db: Database) {
   const z = zamanSetiOku(db);
@@ -99,11 +105,27 @@ function tarihleriYenidenHesapla(db: Database) {
     const d = JSON.parse(r.deger as string);
     if (tarihMi(d)) db.exec({ sql: 'UPDATE alan_degerleri SET deger=? WHERE kayit=? AND alan=?', bind: [JSON.stringify(tz(db, d, z)), r.kayit as string, r.alan as string] });
   }
+  // Sonradan eklenen araçların tanımlarındaki tarihler (haklar, teknoloji, haber, iz, bakım, kalabalık, delil, gökyüzü…):
+  // tanımın içindeki her tarih ifadesinden yeniden hesaplanır. Göreli tarihler çözücüye kalır.
+  const derin = (v: unknown): unknown => {
+    if (Array.isArray(v)) return v.map(derin);
+    if (!v || typeof v !== 'object') return v;
+    if (tarihMi(v) && v.bicim !== 'goreli') return tz(db, v, z);
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, derin(x)]));
+  };
+  for (const [tablo, anahtar, sutun] of TANIMLI_TARIHLER) {
+    for (const r of db.selectObjects(`SELECT ${anahtar} AS a, ${sutun} AS v FROM ${tablo} WHERE ${sutun} IS NOT NULL`)) {
+      let eski: unknown;
+      try { eski = JSON.parse(r.v as string); } catch { continue; }
+      const yeni = JSON.stringify(derin(eski));
+      if (yeni !== r.v) db.exec({ sql: `UPDATE ${tablo} SET ${sutun}=? WHERE ${anahtar}=?`, bind: [yeni, r.a as string] });
+    }
+  }
   goreliYenile(db);
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 58;
+export const IZDUSUM_SURUMU = 59;
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -2151,11 +2173,15 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   birlesme_geri_al(db, i) {
     const { kaynak, islem } = i.veri as { kaynak: string; islem: string };
-    if (db.selectValue('SELECT islem FROM yonlendirmeler WHERE kod=?', [kaynak]) !== islem) return;
+    const y = db.selectObject('SELECT islem, hedef FROM yonlendirmeler WHERE kod=?', [kaynak]);
+    if (y?.islem !== islem) return;
+    // Taşınan satır yalnız hâlâ birleştirmenin hedefindeyse (ya da hedefin sonradan birleştiği kayıttaysa) geri döner.
+    // Zincirleme birleştirmede (A→B, B→C) önce A'nınki geri alındıysa satır A'ya dönmüştür; B'ninki onu B'ye çekmez.
+    const simdiki = yonlendir(db, y.hedef as string);
     for (const r of db.selectObjects('SELECT tablo, sutun, kod FROM birlesme_tasinanlar WHERE islem=?', [islem])) {
       const [tablo, sutun] = [r.tablo as string, r.sutun as string];
       if (sutun === 'silindi') db.exec({ sql: 'UPDATE iliskiler SET silindi=NULL WHERE kod=?', bind: [r.kod as string] });
-      else if (BIRLESME_SUTUNLARI.some(([t, s]) => t === tablo && s === sutun)) db.exec({ sql: `UPDATE ${tablo} SET ${sutun}=? WHERE kod=?`, bind: [kaynak, r.kod as string] });
+      else if (BIRLESME_SUTUNLARI.some(([t, s]) => t === tablo && s === sutun)) db.exec({ sql: `UPDATE ${tablo} SET ${sutun}=? WHERE kod=? AND ${sutun}=?`, bind: [kaynak, r.kod as string, simdiki] });
     }
     db.exec({ sql: 'DELETE FROM birlesme_tasinanlar WHERE islem=?', bind: [islem] });
     db.exec({ sql: 'DELETE FROM yonlendirmeler WHERE kod=?', bind: [kaynak] });

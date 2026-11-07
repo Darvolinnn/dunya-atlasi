@@ -94,25 +94,33 @@ export function satirIci(s: string, k: Kayiplar, gomululer: string[]): Parca[] {
 }
 
 function satirIciKacissiz(s: string, k: Kayiplar, gomululer: string[]): Parca[] {
-  const sonuc: Parca[] = [];
-  let son = 0;
-  for (const m of s.matchAll(BAG)) {
-    if (m.index! > son) sonuc.push(...vurgular(s.slice(son, m.index), k));
-    son = m.index! + m[0].length;
-    const gomme = m[0].startsWith('!');
+  // Bağlantılar önce yer tutucuya çevrilir, vurgular bütün satırda aranır: "**[[Kuzey]]**" kalın bir bağlantıdır
+  // (bizim dışa aktarımımız kalın bağlantıyı böyle yazar). Yer tutucular Unicode'un özel kullanım alanındandır.
+  const baglar: Parca[] = [];
+  const yer = s.replace(BAG, (...m: (string | undefined)[]) => {
+    const gomme = m[0]!.startsWith('!');
     if (m[1] !== undefined) {
-      if (gomme) { gomululer.push(m[1].trim()); continue; }
-      const hedef = m[1].trim();
-      sonuc.push({ metin: (m[2] ?? m[1]).trim() + (m[3] ?? ''), hedef });
+      if (gomme) { gomululer.push(m[1].trim()); return ''; }
+      baglar.push({ metin: (m[2] ?? m[1]).trim() + (m[3] ?? ''), hedef: m[1].trim() });
     } else {
-      if (gomme) { gomululer.push(yolCoz(m[5])); continue; }
-      sonuc.push({ metin: m[4] ? `${m[4]} (${m[5]})` : m[5] });
+      if (gomme) { gomululer.push(yolCoz(m[5]!)); return ''; }
+      baglar.push({ metin: m[4] ? `${m[4]} (${m[5]})` : m[5]! });
       say(k, 'dis-baglanti');
     }
+    return String.fromCharCode(YER_TUTUCU + baglar.length - 1);
+  });
+  const sonuc: Parca[] = [];
+  for (const p of vurgular(yer, k)) {
+    for (const parca of p.metin.split(/([\ue000-\uf8ff])/u)) {
+      if (!parca) continue;
+      const i = parca.charCodeAt(0) - YER_TUTUCU;
+      const v = { ...(p.kalin ? { kalin: true } : {}), ...(p.italik ? { italik: true } : {}) };
+      sonuc.push(parca.length === 1 && i >= 0 && i < baglar.length ? { ...baglar[i], ...v } : { metin: parca, ...v });
+    }
   }
-  if (son < s.length) sonuc.push(...vurgular(s.slice(son), k));
   return sonuc.filter((p) => p.metin.length > 0);
 }
+const YER_TUTUCU = 0xe000;
 
 // ---------- Bloklar ----------
 export type Blok = { tur: 'paragraf' | 'baslik' | 'alinti'; seviye?: number; parcalar: Parca[] };

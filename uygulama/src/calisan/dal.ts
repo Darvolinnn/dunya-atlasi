@@ -28,13 +28,22 @@ function kodlar(v: unknown, sonuc: string[] = []): string[] {
   return sonuc;
 }
 
+const SAHIPLI: [string, string][] = [['durumlar', 'konu'], ['bilgiler', 'bilen'], ['iddialar', 'konu'], ['izler', 'konu'], ['bakim_tanimlari', 'kayit'],
+  ['bakim_kayitlari', 'kayit'], ['isaretler', 'kayit'], ['cizimler', 'kayit'], ['metin_isaretleri', 'kayit']];
+
 /** İşlemin ait olduğu birim: bir kayıt, bir ilişki ya da "diğer". */
 function birimAnahtari(dal: EvrenVt, i: Islem): string {
   for (const k of kodlar(i.veri)) {
     if (dal.db.selectValue('SELECT 1 FROM iliskiler WHERE kod=?', [k]) !== undefined) return `iliski:${k}`;
     if (var_(dal, k)) return `kayit:${k}`;
-    const konu = dal.db.selectValue('SELECT konu FROM durumlar WHERE kod=?', [k]) as string | undefined;
-    if (konu) return `kayit:${konu}`;
+    // Bir kayda ait alt satırlar (durum, bilgi, iz, bakım, harita işareti…) o kaydın birimine girer: sonradan yapılan
+    // düzeltme ya da silme de ilk eklemeyle birlikte taşınsın.
+    for (const [tablo, sutun] of SAHIPLI) {
+      const sahip = dal.db.selectValue(`SELECT ${sutun} FROM ${tablo} WHERE kod=?`, [k]) as string | undefined;
+      if (sahip && var_(dal, sahip)) return `kayit:${sahip}`;
+    }
+    const iddia = dal.db.selectValue('SELECT i.konu FROM dair_inanclar d JOIN iddialar i ON i.kod=d.iddia WHERE d.kod=?', [k]) as string | undefined;
+    if (iddia && var_(dal, iddia)) return `kayit:${iddia}`;
   }
   return 'diger';
 }
@@ -138,7 +147,8 @@ export function aktarimGirdileri(u: DalUclari, secilen: string[], eslemeler: Rec
     const dalKaydi = anahtar.split('\u0000')[0];
     const dd = metinBelgesi(u.dal.db, dalKaydi, alan), td = metinBelgesi(u.taban.db, dalKaydi, alan), md = metinBelgesi(u.ana.db, kayit, alan);
     if (!dd || !td || !md) continue;
-    const spans = A.spans(dd, ['t']) as never;
+    // Metindeki bağlantılar da eşlenen kayıtlara gider (dalda doğup ana evrendeki bir kayda eşlenen hedefler).
+    const spans = esle(A.spans(dd, ['t']), m) as never;
     const simdiki = A.getHeads(md);
     const temel = A.getHeads(td);
     let yeni: typeof md;

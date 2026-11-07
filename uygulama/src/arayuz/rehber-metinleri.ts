@@ -299,7 +299,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       'Bir eseri yayımladığınızda “Yayımlandı olarak işaretle” ile baskısını kaydedin.',
     ],
     ipuclari: [
-      'Deneme kopyasındaki değişiklikler yalnızca bu cihazda tutulur; Drive ile eşitlenmez.',
+      'Deneme kopyaları da Drive ile eşitlenir ve dosyaya alınan tam yedeğe girer.',
       'Küçük düşünce deneyleri için konu dosyalarındaki varsayım paketleri yeterlidir.',
     ],
   },

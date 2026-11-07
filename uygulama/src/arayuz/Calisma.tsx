@@ -26,7 +26,7 @@ import { HesapPenceresi, type HesapTuru } from './Hesaplar';
 import type { YasananSure } from '../veri/api';
 import { DAKTILO_OLAYI, KISAYOLLAR, KISAYOL_OLAYI, ODAK_OLAYI, kisayolTusu } from './kisayollar';
 
-export interface PaletBaglami { bagla?: () => void; hesap?: (h: HesapTuru) => void }
+export interface PaletBaglami { bagla?: () => void; hesap?: (h: HesapTuru) => void; /** Kapandıktan sonra başarısız olan komutun hatası: palet onu göstererek yeniden açılır. */ hata?: string }
 
 export interface CalismaDenetimi {
   evren: string | null;
@@ -66,7 +66,8 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
   const [hesap, setHesap] = useState<HesapTuru | null>(null);
   const [kucuk, setKucuk] = useState(() => { try { return localStorage.getItem(panelAnahtari) === '1'; } catch { return false; } });
   const kucult = (v: boolean) => { setKucuk(v); try { localStorage.setItem(panelAnahtari, v ? '1' : '0'); } catch { /* yok */ } };
-  const yer = useRef<{ evren: string; kayit: string | null; konum: number | null; not: string } | null>(null);
+  // yanPanel: kayıtlı yan panel sekmeleri (bu oturumda panel değişmediyse korunur); yuklendi: kayıtlı yer okundu mu.
+  const yer = useRef<{ evren: string; kayit: string | null; konum: number | null; not: string; yanPanel: string[]; yuklendi: boolean } | null>(null);
   const bekleyenKonum = useRef<{ kayit: string; konum: number } | null>(null);
   const yazZamanlayici = useRef<ReturnType<typeof setTimeout> | null>(null);
   const panelRef = useRef(paneller);
@@ -81,19 +82,23 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
       yazZamanlayici.current = null;
       const y = yer.current;
       if (!y) return;
-      void istemci.iste('kaldigiYerYaz', { evren: y.evren, yer: { kayit: y.kayit, konum: y.konum, yanPanel: panelRef.current[y.evren] ?? [], not: y.not } }).catch(() => {});
+      // Kayıtlı yer henüz okunmadıysa beklenir: notu ve yan panel sekmeleri boş değerle ezilmesin.
+      if (!y.yuklendi) { yazPlanla(); return; }
+      void istemci.iste('kaldigiYerYaz', { evren: y.evren, yer: { kayit: y.kayit, konum: y.konum, yanPanel: panelRef.current[y.evren] ?? y.yanPanel, not: y.not } }).catch(() => {});
     }, YAZMA_ARALIGI);
   };
 
   // Evren değişince önceki notu öğren (yeni yazmalar onu korusun).
   useEffect(() => {
     if (!evren) { yer.current = null; return; }
-    yer.current = { evren, kayit: null, konum: null, not: '' };
+    yer.current = { evren, kayit: null, konum: null, not: '', yanPanel: [], yuklendi: false };
     istemci.iste('kaldigiYer', { evren }).then((b) => {
       if (yer.current?.evren !== evren) return;
       yer.current.not = b?.not ?? '';
+      yer.current.yanPanel = b?.yanPanel ?? [];
+      yer.current.yuklendi = true;
       if (!kayit) { yer.current.kayit = b?.kayit ?? null; yer.current.konum = b?.konum ?? null; }
-    }, () => {});
+    }, () => { if (yer.current?.evren === evren) yer.current.yuklendi = true; });
   }, [evren]);
 
   // Açık kayıt sayfası kaldığın yerdir.
@@ -154,10 +159,10 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
   // Sayfadan çıkarken bekleyen yazma hemen yapılır.
   useEffect(() => {
     const cik = () => {
-      if (!yazZamanlayici.current || !yer.current) return;
+      if (!yazZamanlayici.current || !yer.current?.yuklendi) return;
       clearTimeout(yazZamanlayici.current); yazZamanlayici.current = null;
       const y = yer.current;
-      void istemci.iste('kaldigiYerYaz', { evren: y.evren, yer: { kayit: y.kayit, konum: y.konum, yanPanel: panelRef.current[y.evren] ?? [], not: y.not } }).catch(() => {});
+      void istemci.iste('kaldigiYerYaz', { evren: y.evren, yer: { kayit: y.kayit, konum: y.konum, yanPanel: panelRef.current[y.evren] ?? y.yanPanel, not: y.not } }).catch(() => {});
     };
     const gizlenince = () => { if (document.visibilityState === 'hidden') cik(); };
     document.addEventListener('visibilitychange', gizlenince);
@@ -222,7 +227,8 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
       {evren && kart && <OzetKarti istemci={istemci} evren={evren} kod={kart.kod} yer={kart.yer} kapat={() => setKart(null)}
         yanPanelde={() => denetim.yanPanelAc(kart.kod)} />}
       {kisayolAcik && <KisayolListesi kapat={() => setKisayolAcik(false)} />}
-      {palet && <KomutPaleti istemci={istemci} evren={evren} baglam={{ ...palet, hesap: setHesap }} kapat={() => setPalet(null)} />}
+      {palet && <KomutPaleti key={palet.hata ?? ''} istemci={istemci} evren={evren} baglam={{ ...palet, hesap: setHesap }} kapat={() => setPalet(null)}
+        hataylaAc={(hata) => setPalet({ ...palet, hata })} />}
       {evren && hesap && <HesapPenceresi istemci={istemci} evren={evren} tur={hesap} kapat={() => setHesap(null)} />}
     </Baglam.Provider>
   );
@@ -481,7 +487,7 @@ export function KisayolListesi({ kapat }: { kapat: () => void }) {
   );
 }
 
-function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evren: string | null; baglam: PaletBaglami; kapat: () => void }) {
+function KomutPaleti({ istemci, evren, baglam, kapat, hataylaAc }: { istemci: Istemci; evren: string | null; baglam: PaletBaglami; kapat: () => void; hataylaAc: (hata: string) => void }) {
   const [perdeRef, vazgec] = useYumusakKapanis(kapat);
   const d = useCalisma()!;
   const [sorgu, setSorgu] = useState('');
@@ -489,7 +495,7 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
   const [bulunan, setBulunan] = useState<AramaSonucu[]>([]);
   const [son, setSon] = useState<KayitOzeti[]>([]);
   const [turSec, setTurSec] = useState<string | null>(null);
-  const [hata, setHata] = useState<string | null>(null);
+  const [hata, setHata] = useState<string | null>(baglam.hata ?? null);
   const girdi = useRef<HTMLInputElement>(null);
   useEffect(() => { girdi.current?.focus(); }, [turSec]);
   useEffect(() => { if (evren) istemci.iste('kayitlar', { evren }).then((l) => setSon(l.slice(0, 6)), () => {}); }, [evren]);
@@ -556,7 +562,8 @@ function KomutPaleti({ istemci, evren, baglam, kapat }: { istemci: Istemci; evre
     try {
       if (o.anahtar === 'yeni') { await o.yap(yan); return; } // tür seçimine geçer, palet açık kalır
       kapat();
-      await o.yap(yan);
+      // Palet kapandı: komut başarısız olursa hata görünsün diye palet hatayla yeniden açılır.
+      try { await o.yap(yan); } catch (e) { hataylaAc((e as Error).message); }
     } catch (e) { setHata((e as Error).message); }
   };
 
