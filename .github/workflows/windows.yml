@@ -27,18 +27,18 @@ jobs:
           cache: npm
           cache-dependency-path: uygulama/package-lock.json
       - uses: dtolnay/rust-toolchain@stable
+      # Yalnız indirilen kütüphaneler saklanır; derleme klasörü (target) saklanmaz. Saklanan derleme klasörü programa
+      # ekimin eski sayfasını gömüyordu (6–7 Kasım: kurulan program eski görünümü gösterdi, `cargo clean -p` yetmedi).
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: uygulama/src-tauri
+          cache-targets: false
       - run: npm ci
       - run: npm run denetle
       - run: npm test
       # Google girişi kabuğunun sınamaları (src-tauri/src/google.rs).
       - run: cargo test --manifest-path src-tauri/Cargo.toml
       # Masaüstü Google istemcisi depoda değil, GitHub'daki gizli değerlerden gelir; yoksa program eski girişle derlenir.
-      # Sayfa dosyaları programın içine derleme anında gömülür. Rust önbelleği programı yeniden derlemeyip eski sayfayı
-      # gömebiliyordu (6 Kasım: kurulan program ekimin arayüzünü gösterdi); programın kendi paketi her derlemede temizlenir.
-      - run: cargo clean --release -p dunya-atlasi --manifest-path src-tauri/Cargo.toml
       - run: npx tauri build
         env:
           GOOGLE_MASAUSTU_ISTEMCI: ${{ secrets.GOOGLE_MASAUSTU_ISTEMCI }}
