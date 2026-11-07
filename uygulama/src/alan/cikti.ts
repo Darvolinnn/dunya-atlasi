@@ -83,5 +83,6 @@ export function yamlDeger(v: unknown): string {
   if (Array.isArray(v)) return v.length ? `\n${v.map((x) => `  - ${yamlDeger(x)}`).join('\n')}` : '[]';
   if (typeof v === 'number' || typeof v === 'boolean') return String(v);
   const s = String(v ?? '');
-  return /^[\p{L}\p{N} .,'()-]+$/u.test(s) && !/^(true|false|null|yes|no|on|off|[\d.-]+)$/i.test(s) && s.trim() === s && s ? s : JSON.stringify(s);
+  // Tırnakla ya da çizgiyle başlayan değer tırnaklanır: okurken tırnak silinir, baştaki çizgi liste sanılır.
+  return /^[\p{L}\p{N} .,'()-]+$/u.test(s) && !/^(true|false|null|yes|no|on|off|[\d.-]+)$/i.test(s) && !/^['-]/.test(s) && s.trim() === s && s ? s : JSON.stringify(s);
 }

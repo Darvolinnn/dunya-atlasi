@@ -176,4 +176,18 @@ describe('tutarlılık denetimleri (§9.1)', () => {
     d = h.denetimler({ evren });
     expect(d.acik.filter((x) => x.kural === 'yasam')).toHaveLength(1);
   });
+
+  it('silinmiş yere varan yolculuk aşaması konum çelişkisi üretmez', () => {
+    const { h, evren, kayit } = kur();
+    const a = kayit('Liman', 'sehir'), b = kayit('Dağ Kalesi', 'mekan'), c = kayit('Ova', 'mekan');
+    const y = kayit('Kuzeye sefer', 'yolculuk'), k = kayit('Haberci', 'karakter');
+    h.yolculukYaz({ evren, kod: y, asamalar: [{ nereden: a, nereye: b, rota: null, cikis: '1 Tohum 500', varis: '5 Tohum 500', durum: 'gerceklesti' }] });
+    h.iliskiEkle({ evren, tur: 'yolculukta', a: k, b: y, rol: 'yolcu' });
+    const o = kayit('Ovada şölen', 'olay', '5 Tohum 500');
+    h.iliskiEkle({ evren, tur: 'sahne_yeri', a: o, b: c });
+    h.iliskiEkle({ evren, tur: 'olayda', a: k, b: o, rol: 'katilan' });
+    expect(h.denetimler({ evren }).acik.some((x) => x.kural === 'konum')).toBe(true);
+    h.kayitSil({ evren, kod: b });
+    expect(h.denetimler({ evren }).acik.some((x) => x.kural === 'konum')).toBe(false);
+  });
 });

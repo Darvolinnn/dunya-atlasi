@@ -105,6 +105,19 @@ describe('varsayılan değerler (§3.7)', () => {
     expect(m.kayitVarsayilanlari({ evren, kod }).iklim.bosluk).toBe('gecersiz');
   });
 
+  it('fetih: en son biten bağlılık evren tarihine göre seçilir, yazıldığı sıraya göre değil', () => {
+    const h = cihaz('Deneme');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Deneme evreni' });
+    const kayit = (ad: string, tur: string) => h.kayitOlustur({ evren, ad, tur }).kod;
+    const liman = kayit('Taşliman', 'sehir');
+    const imparatorluk = kayit('İmparatorluk', 'siyasi'), krallik = kayit('Eski Krallık', 'siyasi');
+    h.iliskiEkle({ evren, tur: 'bagli', a: liman, b: imparatorluk, baslangic: '300', bitis: '500' });
+    h.iliskiEkle({ evren, tur: 'bagli', a: liman, b: krallik, baslangic: '100', bitis: '200' });
+    h.iliskiEkle({ evren, tur: 'bagli', a: liman, b: kayit('Birlik', 'siyasi'), baslangic: '500' });
+    h.kayitAlanYaz({ evren, kod: imparatorluk, alan: 'resmi_para', deger: 'Altın' });
+    expect(h.kayitVarsayilanlari({ evren, kod: liman }).resmi_para.fetih).toMatchObject({ eski: { ad: 'İmparatorluk' }, bitis: '500' });
+  });
+
   it('fetih: eski yönetimden gelen her alan ayrı sorulur; değer o gün kendiliğinden değişmez', () => {
     const h = cihaz('Deneme');
     const { kod: evren } = h.evrenOlustur({ ad: 'Deneme evreni' });

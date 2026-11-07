@@ -93,8 +93,11 @@ const ayni = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
 /** Kaydın en son biten kendi bağlılığı: fetih ya da siyasi değişiklik (§3.7). Bitişi yazılmış, vazgeçilmemiş ilişki. */
 function sonGecis(e: EvrenVt, kod: string) {
-  const r = e.db.selectObject(`SELECT i.kod, i.b, i.bitis FROM iliskiler i JOIN kayitlar k ON k.kod=i.b WHERE i.a=? AND i.tur='bagli'
-    AND i.silindi IS NULL AND i.bitis IS NOT NULL AND i.karar<>'vazgecildi' AND k.silindi IS NULL ORDER BY i.olusturma DESC LIMIT 1`, [kod]);
+  // En son biten: evren tarihine göre (bitişin en geç ucu); tarihi eksene oturmayanlar ve eşitlikte yazılış sırası.
+  const l = e.db.selectObjects(`SELECT i.kod, i.b, i.bitis, i.olusturma FROM iliskiler i JOIN kayitlar k ON k.kod=i.b WHERE i.a=? AND i.tur='bagli'
+    AND i.silindi IS NULL AND i.bitis IS NOT NULL AND i.karar<>'vazgecildi' AND k.silindi IS NULL ORDER BY i.olusturma DESC`, [kod]);
+  const uc = (h: unknown) => { const x = (JSON.parse(h as string) as EvrenTarihi | null)?.eksen; return x?.enGec ?? x?.enErken ?? -Infinity; };
+  const r = l.reduce<typeof l[number] | undefined>((en, x) => (!en || uc(x.bitis) > uc(en.bitis) ? x : en), undefined);
   if (!r) return null;
   const bitis = JSON.parse(r.bitis as string) as EvrenTarihi | null;
   return { kod: r.kod as string, eski: r.b as string, bitis: bitis?.ifade ?? null };

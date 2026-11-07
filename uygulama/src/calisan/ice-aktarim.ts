@@ -107,28 +107,41 @@ export function iceAktarimPlani(dosyalar: IceDosya[]): { plan: PlanKaydi[]; rapo
   // Obsidian (ve bizim dışa aktarımımız) bağlantıyı dosya adıyla, aynı ad başka klasörde de varsa "Klasör/Ad" yoluyla
   // yazar. Dosya adı kaydın adından farklı olabilir (adda dosya adına giremeyen işaret, aynı adda ikinci dosya).
   const MD = /\.(md|markdown|txt)$/i;
-  const yolla = new Map<string, string>();
+  // Önce yazıldığı gibi (Türkçe harfleriyle) eşleşen aranır; harfleri sadeleştirilmiş eşleşme yalnız tek aday varsa
+  // kullanılır: "Gol" ile "Göl" ayrı dosyalarsa [[Gol]] Göl'e gitmesin.
+  const yolla = new Map<string, string | null>(), yollaTam = new Map<string, string>();
   const dosyayla = new Map<string, string | null>(); // aynı dosya adı birden çok klasördeyse belirsiz (null)
+  const dosyaylaTam = new Map<string, string | null>();
+  const adlarTam = new Map<string, string>();
+  for (const { k, kod } of hazirlik) if (!adlarTam.has(k.ad.trim())) adlarTam.set(k.ad.trim(), kod);
+  const tekli = (m: Map<string, string | null>, a: string, kod: string) => m.set(a, m.has(a) && m.get(a) !== kod ? null : kod);
   for (const { k, kod } of hazirlik) {
     if (!MD.test(k.kaynak)) continue;
-    const yol = katla(k.kaynak.replace(MD, ''));
-    yolla.set(yol, kod);
-    const dosya = yol.split('/').pop()!;
-    dosyayla.set(dosya, dosyayla.has(dosya) ? null : kod);
+    const tam = k.kaynak.replace(MD, '');
+    yollaTam.set(tam, kod);
+    tekli(dosyaylaTam, tam.split('/').pop()!, kod);
+    const yol = katla(tam);
+    tekli(yolla, yol, kod);
+    tekli(dosyayla, yol.split('/').pop()!, kod);
   }
+  // Sadeleştirilmiş adlarda da birden çok kayıt varsa belirsizdir.
+  const sadeAd = new Map<string, string | null>();
+  for (const { k, kod } of hazirlik) tekli(sadeAd, katla(k.ad), kod);
   const bahsedilen = new Map<string, string>();
   let baglantiSayisi = 0;
   const hedefKodu = (ad: string) => {
     baglantiSayisi++;
     const k = katla(ad);
-    const yol = katla(ad.trim().replace(/^\/+/, '').replace(MD, ''));
-    const bulunan = yolla.get(yol) ?? dosyayla.get(yol) ?? adlar.get(k)
+    const tam = ad.trim().replace(/^\/+/, '').replace(MD, '');
+    const yol = katla(tam);
+    const bulunan = yollaTam.get(tam) ?? dosyaylaTam.get(tam) ?? adlarTam.get(tam) ?? yolla.get(yol) ?? dosyayla.get(yol)
+      ?? (sadeAd.get(k) === null ? undefined : adlar.get(k))
       ?? (yol.includes('/') ? dosyayla.get(yol.split('/').pop()!) ?? adlar.get(yol.split('/').pop()!) : undefined)
       ?? kokAdaylari(ad).map((x) => adlar.get(x)).find(Boolean);
     if (bulunan) return bulunan;
     // Bağlantı verilmiş ama dosyası olmayan ad: [[ ile doğan kayıt gibi fikir olarak oluşur (§5.1).
     let kod = bahsedilen.get(k);
-    if (!kod) { kod = yeniKod(); bahsedilen.set(k, kod); adlar.set(k, kod); plan.push(bos(kod, ad.trim())); }
+    if (!kod) { kod = yeniKod(); bahsedilen.set(k, kod); adlar.set(k, kod); plan.push(bos(kod, ad.trim().slice(0, 200))); }
     return kod;
   };
   const bos = (kod: string, ad: string): PlanKaydi => ({

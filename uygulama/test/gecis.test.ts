@@ -54,6 +54,15 @@ describe('mümkün ile erişilebilir (F09)', () => {
     expect(() => h.enKisaRota({ evren, nereden: liman, nereye: kale, cikis: 'bir gün' })).toThrow('okunamadı');
   });
 
+  it('iznin başladığı ve bittiği gün izne dahildir', () => {
+    const { h, evren, kayit, gecit, kale, r2, elci, muhur } = kur();
+    const y = kayit('Elçilik yolculuğu', 'yolculuk');
+    h.iliskiEkle({ evren, tur: 'yolculukta', a: elci, b: y });
+    h.iliskiEkle({ evren, tur: 'izinli', a: elci, b: muhur, baslangic: '5 Tohum 500', bitis: '5 Tohum 500' });
+    h.yolculukYaz({ evren, kod: y, asamalar: [{ nereden: gecit, nereye: kale, rota: r2, cikis: '5 Tohum 500', varis: '7 Tohum 500', durum: 'gerceklesti' }] });
+    expect(h.yolculuk({ evren, kod: y }).asamalar[0].uyari).toBeNull();
+  });
+
   it('yolculuk aşaması yolcunun geçide varıştaki iznini denetler; şartlar doğrulanır ve kaldırılabilir', () => {
     const { h, evren, kayit, gecit, kale, r2, elci, muhur } = kur();
     const y = kayit('Elçilik yolculuğu', 'yolculuk');

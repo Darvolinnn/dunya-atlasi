@@ -117,16 +117,25 @@ function takvimliCoz(ham: string, t: Takvim, yd: (n: number) => number): { enErk
   if (bolum) m = bolum.kalan;
   if (!ay && !mevsim && !bolum) return null;
 
+  // "Hasat 10-15": iki sayı arasındaki çizgi aralıktır, eksi yıl değil; bu biçim desteklenmez.
+  // ("1 Hasat -1" ise eksi yıldır: çizgi sayıya bitişik, öncesinde boşluk var.)
+  if (/\d\s*[–—]\s*-?\d|\d-\d|\d\s+-\s+\d/.test(m)) return 'sembolik';
   let yil: number | null = null, gun: number | null = null;
-  const yilEslesme = m.match(new RegExp(`(?:yil|${kacis(katla(t.ad))})\\s*${SAYI}`)) ?? m.match(new RegExp(`${SAYI}\\s*yili`));
+  const yilEslesme = m.match(new RegExp(`(?:yil|${kacis(katla(t.ad))})\\s*${SAYI}`)) ?? m.match(new RegExp(`${SAYI}\\s*yili\\p{L}*`, "u"));
   if (yilEslesme) { yil = Number(yilEslesme[1]); m = m.replace(yilEslesme[0], ' '); }
   const gunEslesme = m.match(/(\d{1,4})\s*\.\s*(?:gun\p{L}*)?/u) ?? m.match(/(\d{1,4})\s*gun\p{L}*/u);
   if (gunEslesme) { gun = Number(gunEslesme[1]); m = m.replace(gunEslesme[0], ' '); }
   const sayilar = [...m.matchAll(/-?\d{1,7}/g)].map((x) => Number(x[0]));
   if (yil === null && gun === null && ay && sayilar.length === 2) { gun = sayilar[0]; yil = sayilar[1]; }
   else if (yil === null && sayilar.length === 1) yil = sayilar[0];
+  else if (yil !== null && gun === null && ay && sayilar.length === 1) gun = sayilar[0]; // "Yıl 412, 12 Hasat"
   else if (yil === null || sayilar.length) return 'sembolik';
   if (yil === null) return 'sembolik';
+  // Çözülmeyen söz kaldıysa ("yaklaşık", "hükümdarın") tarih kesin sayılmaz: yazarın sözü sembolik kalır (§3.4).
+  const takvimAdi = katla(t.ad).replace(/['’]/g, '');
+  const kalan = m.replace(/-?\d+\p{L}*/gu, ' ').split(/[^\p{L}]+/u).filter(Boolean)
+    .filter((w) => !/^(?:yil|gun|ay)\p{L}*$/u.test(w) && !(takvimAdi && w.startsWith(takvimAdi)));
+  if (kalan.length) return 'sembolik';
   yil = yd(yil);
 
   const yp = yilParcasi(t);
@@ -215,6 +224,19 @@ function tekCoz(ifade: string, t: Takvim): EvrenTarihi | null {
     return once
       ? { ...temel, bicim: 'once', hassasiyet: 'yil', eksen: { enErken: null, enGec: dahil ? yilSon(y, t) : yilBas(y, t) - 1 } }
       : { ...temel, bicim: 'sonra', hassasiyet: 'yil', eksen: { enErken: dahil ? yilBas(y, t) : yilSon(y, t) + 1, enGec: null } };
+  }
+  // "Hasat 412'den önce", "12 Hasat 412 ve sonrası": takvimli tarihin öncesi ya da sonrası.
+  const sinirli = (cag ? k : ham).match(/^(.*?\S)\s+(ve öncesi|ve sonrası|önce|öncesi|sonra|sonrası)$/iu);
+  if (sinirli) {
+    const bas = takvimliCoz(sinirli[1].replace(/['’]?(?:den|dan|ten|tan)$/iu, ''), t, yd);
+    if (bas === 'sembolik') return sembolik;
+    if (bas) {
+      const yon = sinirli[2].toLocaleLowerCase('tr-TR');
+      const dahil = yon.startsWith('ve');
+      return yon.includes('önce')
+        ? { ...temel, bicim: 'once', hassasiyet: bas.hassasiyet, eksen: { enErken: null, enGec: dahil ? bas.enGec : bas.enErken - 1 } }
+        : { ...temel, bicim: 'sonra', hassasiyet: bas.hassasiyet, eksen: { enErken: dahil ? bas.enErken : bas.enGec + 1, enGec: null } };
+    }
   }
   const ayrinti = takvimliCoz(cag ? k : ham, t, yd);
   if (ayrinti === 'sembolik') return sembolik;

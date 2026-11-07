@@ -158,6 +158,8 @@ export function yolculukBulunmalari(e: EvrenVt): YolculukBulunmasi[] {
       if (a.durum !== 'gerceklesti') return;
       for (const [uc, yer, t] of [['cikis', a.nereden, a.cikis], ['varis', a.nereye, a.varis]] as const) {
         if (!yer || !t?.eksen) continue;
+        // Silinmiş ya da vazgeçilmiş yer bulunma sayılmaz (sahte "aynı gün iki yerde" uyarısı çıkmasın).
+        if (e.db.selectValue("SELECT 1 FROM kayitlar WHERE kod=? AND silindi IS NULL AND karar<>'vazgecildi'", [yer]) === undefined) continue;
         // Yolcu yolculuğa sonradan katıldıysa ya da önceden ayrıldıysa o aşamada yoktur (yalnızca kesin olarak).
         if (katilma?.eksen && t.eksen.enGec !== null && katilma.eksen.enErken !== null && t.eksen.enGec < katilma.eksen.enErken) continue;
         if (ayrilma?.eksen && t.eksen.enErken !== null && ayrilma.eksen.enGec !== null && t.eksen.enErken > ayrilma.eksen.enGec) continue;

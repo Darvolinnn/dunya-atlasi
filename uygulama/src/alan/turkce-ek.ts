@@ -61,7 +61,9 @@ export function ekKalibi(onceki: Ses, ek: string): Birim[] {
   }
   for (; i < s.length; i++) {
     const c = s[i];
-    if (c === 'k' && s[i + 1] === 'i' && b.length && b[b.length - 1].t === 'A') { b.push({ t: 'H', h: 'k' }, { t: 'H', h: 'i' }); i++; continue; } // -ki değişmez
+    // -ki değişmez: bulunma ekinden (-dAki) ve ilgi ekinden (-(n)Inki) sonra.
+    const ilgidenSonra = b.length > 1 && b[b.length - 1].t === 'H' && (b[b.length - 1] as { h: string }).h === 'n' && b[b.length - 2].t === 'I';
+    if (c === 'k' && s[i + 1] === 'i' && b.length && (b[b.length - 1].t === 'A' || ilgidenSonra)) { b.push({ t: 'H', h: 'k' }, { t: 'H', h: 'i' }); i++; continue; }
     if (c === 'a' || c === 'e') b.push({ t: 'A' });
     else if (c === 'ı' || c === 'i' || c === 'u' || c === 'ü') b.push({ t: 'I' });
     else if (c === 'd' || c === 't') b.push({ t: 'D' });

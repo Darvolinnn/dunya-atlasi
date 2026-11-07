@@ -464,7 +464,8 @@ function KatmanPaneli({ istemci, evren, h, gizli, setGizli, saydamlik, setSaydam
   hizala: (k: HaritaKatmani) => void; hata: (s: string | null) => void;
 }) {
   const [yukleniyor, setYukleniyor] = useState(false);
-  const iste = (p: Promise<unknown>) => p.then(() => hata(null), (e) => hata(hataYaz(e)));
+  // Hata olursa false döner: "Geri al" şeridi çıkmaz, panel açık kalır.
+  const iste = (p: Promise<unknown>) => p.then(() => { hata(null); return true; }, (e) => { hata(hataYaz(e)); return false as const; });
   const dosyaOku = async (f: File) => ({ dosyaAdi: f.name, tur: f.type, veri: new Uint8Array(await f.arrayBuffer()) });
   const ekle = async (f: File | undefined) => {
     if (!f) return;
@@ -670,7 +671,8 @@ function IsaretGorseli({ i, h, secili, sec }: { i: HaritaIsareti; h: HaritaAyrin
 function IsaretPaneli({ istemci, evren, i, enBuyuk, kapat, tasi, hata, kartli = false }: {
   istemci: Istemci; evren: string; i: HaritaIsareti; enBuyuk: number; kapat: () => void; tasi: (k: 'kesin' | 'yaklasik') => void; hata: (s: string | null) => void; kartli?: boolean;
 }) {
-  const iste = (p: Promise<unknown>) => p.then(() => hata(null), (e) => hata(hataYaz(e)));
+  // Hata olursa false döner: "Geri al" şeridi çıkmaz, panel açık kalır.
+  const iste = (p: Promise<unknown>) => p.then(() => { hata(null); return true; }, (e) => { hata(hataYaz(e)); return false as const; });
   const konumYaz = (k: Partial<IsaretGirdisi>) => iste(istemci.iste('isaretDegistir', { evren, kod: i.kod, alan: 'konum', deger: { ...i.konum, ...k } }));
   const [yaricap, setYaricap] = useState(i.konum.yaricap ?? 0);
   useEffect(() => setYaricap(i.konum.yaricap ?? 0), [i.konum.yaricap]);
@@ -701,7 +703,7 @@ function IsaretPaneli({ istemci, evren, i, enBuyuk, kapat, tasi, hata, kartli = 
         <button class="dugme kucuk" onClick={() => tasi(i.konum.kesinlik === 'yaklasik' ? 'yaklasik' : 'kesin')}>{i.konum.kesinlik === 'bilinmiyor' ? 'Haritada yerini göster' : 'Taşı'}</button>
         <KayitSec istemci={istemci} evren={evren} secili={null} etiket="Başka kayda bağla"
           sec={(s) => { if (s) void iste(istemci.iste('isaretDegistir', { evren, kod: i.kod, alan: 'kayit', deger: s.kod })); }} />
-        <button class="dugme sade kucuk tehlikeli" onClick={() => { void geriAlinabilir('İşaret kaldırıldı.', () => iste(istemci.iste('isaretSil', { evren, kod: i.kod })), () => istemci.iste('isaretSil', { evren, kod: i.kod, geriYukle: true })).catch(() => {}); kapat(); }}>İşareti kaldır</button>
+        <button class="dugme sade kucuk tehlikeli" onClick={() => { void geriAlinabilir('İşaret kaldırıldı.', () => iste(istemci.iste('isaretSil', { evren, kod: i.kod })), () => istemci.iste('isaretSil', { evren, kod: i.kod, geriYukle: true })).then((r) => { if (r !== false) kapat(); }, () => {}); }}>İşareti kaldır</button>
       </div>
     </div>
   );
