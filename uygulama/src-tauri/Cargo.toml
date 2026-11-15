@@ -4,15 +4,16 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
+# Windows programı `main.rs`'ten, Android uygulaması bu kütüphaneden açılır.
+[lib]
+name = "dunya_atlasi_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
-tauri-plugin-localhost = "2"
-tauri-plugin-single-instance = "2"
-# Pencerenin yeri, boyutu ve tam ekran olup olmadığı bu bilgisayarda hatırlanır (K34).
-tauri-plugin-window-state = "2"
 # Google girişi sistem tarayıcısında (google.rs).
 base64 = "0.22"
 open = "5"
@@ -25,6 +26,12 @@ tokio = { version = "1", features = ["net", "io-util", "time", "macros", "rt-mul
 url = "2"
 # Bu bilgisayardaki yedek klasörü: Türkçe harfli dosya adları istek başlığında yüzde kodlu gelir.
 percent-encoding = "2"
+
+# Yalnız masaüstünde: yerel adres, tek pencere ve pencere hafızası (K34: yeri, boyutu, tam ekran olup olmadığı).
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-localhost = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-window-state = "2"
 
 # Google yenileme anahtarı Windows'un parola kasasında (Kimlik Bilgisi Yöneticisi) saklanır (K31).
 [target.'cfg(windows)'.dependencies]

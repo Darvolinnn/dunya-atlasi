@@ -1,0 +1,89 @@
+# Tablet (Android) uygulaması (DEVIR §0.21): aynı kabuk kodundan (src-tauri) APK derlenir ve "android" sürüm sayfasına
+# "Dunya-Atlasi-tablet.apk" adıyla konur. Tablete yalnız bu dosya kurulur.
+# İmza anahtarı GitHub'daki gizli değerlerdendir (ANDROID_IMZA_DEPOSU: anahtar deposu base64, ANDROID_IMZA_PAROLASI).
+# Her sürüm aynı anahtarla imzalanmalı; yoksa tablet güncellemeyi kabul etmez. Anahtar yoksa APK deneme anahtarıyla
+# imzalanır ve yalnız bu işin eki olur, sürüm sayfasına konmaz.
+name: Android uygulaması
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['uygulama/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  derle:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: uygulama
+    env:
+      IMZA_DEPOSU: ${{ secrets.ANDROID_IMZA_DEPOSU }}
+      IMZA_PAROLASI: ${{ secrets.ANDROID_IMZA_PAROLASI }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: uygulama/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - name: Android NDK
+        working-directory: .
+        run: |
+          sdkmanager "ndk;27.2.12479018" > /dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: uygulama/src-tauri
+          cache-targets: false
+      - run: npm ci
+      - run: npm run denetle
+      - name: İmza anahtarı
+        if: env.IMZA_DEPOSU != ''
+        run: |
+          echo "$IMZA_DEPOSU" | base64 -d > src-tauri/gen/android/imza.jks
+          printf 'storeFile=imza.jks\nkeyAlias=dunya-atlasi\npassword=%s\n' "$IMZA_PAROLASI" > src-tauri/gen/android/keystore.properties
+      - name: APK (imzalı)
+        if: env.IMZA_DEPOSU != ''
+        run: npx tauri android build --apk --target aarch64
+      - name: APK (deneme anahtarıyla)
+        if: env.IMZA_DEPOSU == ''
+        run: npx tauri android build --apk --target aarch64 --debug
+      - name: APK'yı adlandır
+        run: |
+          apk=$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -1)
+          cp "$apk" Dunya-Atlasi-tablet.apk
+          rm -f src-tauri/gen/android/imza.jks src-tauri/gen/android/keystore.properties
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Dunya-Atlasi-tablet
+          path: uygulama/Dunya-Atlasi-tablet.apk
+      # `main`'in imzalı derlemesi "android" sayfasına; öteki dallar ve imzasız derleme "android-deneme" sayfasına
+      # (tablette denemek için; ekler oturum açmadan indirilemediği için sürüm sayfası kullanılır).
+      - name: Sürüm sayfasına koy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ] && [ -n "$IMZA_DEPOSU" ]; then
+            etiket=android; baslik="Dünya Atlası (tablet)"
+          else
+            etiket=android-deneme; baslik="Dünya Atlası (tablet, deneme)"
+          fi
+          not="Son derleme: ${{ github.sha }} (${{ github.ref_name }})"
+          if ! gh release view "$etiket" > /dev/null 2>&1; then
+            gh release create "$etiket" --prerelease --title "$baslik" --notes "$not" --target ${{ github.sha }}
+          else
+            gh release edit "$etiket" --notes "$not"
+          fi
+          gh release upload "$etiket" Dunya-Atlasi-tablet.apk --clobber
