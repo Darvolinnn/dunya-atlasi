@@ -50,12 +50,7 @@ android {
             isDebuggable = true
             isJniDebuggable = true
             isMinifyEnabled = false
-            packaging {
-                jniLibs.keepDebugSymbols.add("*/arm64-v8a/*.so")
-                jniLibs.keepDebugSymbols.add("*/armeabi-v7a/*.so")
-                jniLibs.keepDebugSymbols.add("*/x86/*.so")
-                jniLibs.keepDebugSymbols.add("*/x86_64/*.so")
-            }
+            // Hata ayıklama bilgisi APK'ya konmaz: onunla deneme APK'sı ~175 MB oluyor, kullanıcının bağlantısında indirmesi uzun sürüyor.
         }
         getByName("release") {
             signingConfigs.findByName("release")?.let { signingConfig = it }
