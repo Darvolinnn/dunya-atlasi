@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-indirilenlere-kaydet"
+description = "Enables the indirilenlere_kaydet command without any pre-configured scope."
+commands.allow = ["indirilenlere_kaydet"]
+
+[[permission]]
+identifier = "deny-indirilenlere-kaydet"
+description = "Denies the indirilenlere_kaydet command without any pre-configured scope."
+commands.deny = ["indirilenlere_kaydet"]

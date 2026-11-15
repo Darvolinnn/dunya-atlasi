@@ -3,6 +3,8 @@
 // bilgisayardaki geçici bir yerel adrese (127.0.0.1, rastgele kapı) gönderir, program oradan alır (PKCE ile).
 // Uzun süreli yenileme anahtarı Windows'un parola kasasında (Kimlik Bilgisi Yöneticisi) saklanır (K31): program
 // açılınca tarayıcı açılmadan Drive'a bağlanır. "Bağlantıyı kes" anahtarı Google'da geri alır ve kasadan siler.
+// Tablette (Android) aynı yol: izin sayfası tabletin tarayıcısında açılır, yanıt tabletteki yerel adrese gelir; anahtar
+// uygulamanın kendi (başka uygulamaların okuyamadığı) klasöründeki bir dosyada durur (DEVIR §0.21).
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -101,6 +103,26 @@ impl Kasa for KasaYok {
     fn sil(&self) {}
 }
 
+/// Tablette yenileme anahtarı uygulamanın kendi klasöründe bir dosyadadır (Android başka uygulamalara açmaz).
+#[cfg(target_os = "android")]
+pub struct DosyaKasasi(pub std::path::PathBuf);
+
+#[cfg(target_os = "android")]
+impl Kasa for DosyaKasasi {
+    fn oku(&self) -> Option<String> {
+        std::fs::read_to_string(&self.0).ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
+    }
+    fn yaz(&self, anahtar: &str) {
+        if let Some(ust) = self.0.parent() {
+            let _ = std::fs::create_dir_all(ust);
+        }
+        let _ = std::fs::write(&self.0, anahtar);
+    }
+    fn sil(&self) {
+        let _ = std::fs::remove_file(&self.0);
+    }
+}
+
 fn sistem_kasasi() -> Box<dyn Kasa> {
     #[cfg(windows)]
     return Box::new(WindowsKasasi("google-yenileme"));
@@ -154,7 +176,12 @@ fn sorgu_degeri(yol: &str, ad: &str) -> Option<String> {
     d
 }
 
+#[cfg(not(target_os = "android"))]
 const SAYFA_TAMAM: &str = "Google izni alındı. Bu sekmeyi kapatıp Dünya Atlası'na dönebilirsiniz.";
+/// Tablette sayfadaki bağlantı uygulamayı yeniden öne getirir.
+#[cfg(target_os = "android")]
+const SAYFA_TAMAM: &str = "Google izni alındı. <a style=\"color:#e0a83a\" href=\"intent:#Intent;action=android.intent.action.MAIN;\
+     category=android.intent.category.LAUNCHER;package=io.github.darvolinnn.dunyaatlasi;end\">Dünya Atlası'na dönün</a>.";
 const SAYFA_HATA: &str = "Google izni alınamadı. Dünya Atlası'na dönüp yeniden deneyin.";
 
 async fn yanitla(akis: &mut tokio::net::TcpStream, ileti: &str) {

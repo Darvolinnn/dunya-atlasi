@@ -9,6 +9,17 @@ mod yerel_yedek;
 use tauri::ipc::{InvokeBody, Request, Response};
 use tauri::{webview::NewWindowResponse, Manager, WebviewUrl, WebviewWindowBuilder};
 
+/// Google'ın izin sayfası cihazın tarayıcısında açılır.
+fn tarayicida_ac<R: tauri::Runtime>(_app: &tauri::AppHandle<R>, adres: &str) -> Result<(), String> {
+    #[cfg(target_os = "android")]
+    {
+        use tauri_plugin_opener::OpenerExt;
+        _app.opener().open_url(adres, None::<&str>).map_err(|_| "Tarayıcı açılamadı. Tabletin varsayılan tarayıcısını denetleyin.".to_string())
+    }
+    #[cfg(not(target_os = "android"))]
+    open::that_detached(adres).map_err(|_| "Tarayıcı açılamadı. Varsayılan tarayıcınızı denetleyin.".to_string())
+}
+
 /// Drive izni (TK3). Masaüstü istemcisi derlemeye konmamışsa `None` döner; program o zaman eski yoldan bağlanır.
 /// `sessiz` (program açılırken): yalnız saklı anahtarla bağlanır, tarayıcı açılmaz; anahtar yoksa `None`.
 #[tauri::command]
@@ -16,9 +27,7 @@ async fn google_izin<R: tauri::Runtime>(app: tauri::AppHandle<R>, durum: tauri::
     let Some(ist) = google::derlemedeki_istemci() else { return Ok(None) };
     let sessiz = sessiz.unwrap_or(false);
     let izin = durum
-        .izin(&ist, &google::Uclar::default(), eposta, sessiz, |adres| {
-            open::that_detached(adres).map_err(|_| "Tarayıcı açılamadı. Varsayılan tarayıcınızı denetleyin.".to_string())
-        })
+        .izin(&ist, &google::Uclar::default(), eposta, sessiz, |adres| tarayicida_ac(&app, adres))
         .await?;
     // İzin tarayıcıda verildi; program yeniden öne gelsin.
     #[cfg(desktop)]
@@ -210,10 +219,20 @@ pub fn run() {
             .build(),
     );
 
+    // Tablette Google'ın yenileme anahtarı uygulamanın kendi klasöründe bir dosyada saklanır (aşağıda, `setup`).
+    #[cfg(not(target_os = "android"))]
+    let kurucu = kurucu.manage(google::Durum::default());
+    #[cfg(target_os = "android")]
+    let kurucu = kurucu.plugin(tauri_plugin_opener::init());
+
     kurucu
-        .manage(google::Durum::default())
         .invoke_handler(istekler!())
         .setup(|app| {
+            #[cfg(target_os = "android")]
+            {
+                let yer = app.path().app_data_dir()?.join("google-yenileme");
+                app.manage(google::Durum::yeni(Box::new(google::DosyaKasasi(yer))));
+            }
             ana_pencere(app)?;
             Ok(())
         })

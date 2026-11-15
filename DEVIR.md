@@ -271,7 +271,8 @@ Adımlar:
 - [x] "Yedek al" ve dışa aktarmalar (Markdown, PDF, Word, EPUB) tablette indirme yapamıyordu (sayfa görüntüleyicisi indirmeyi yok sayıyor). Kabuğa `indirilenlere_kaydet` eklendi: dosya tabletin İndirilenler klasörüne yazılır, aynı adda dosya varsa "(2)" eki alır, ekranda adı söylenir (`src/veri/indir.ts` `dosyaKaydet`). Yalnız `capabilities/android.json`'da izinli; Windows'ta kapalı (Rust sınaması). Tablette denenecek.
 - [x] Tablette "bu bilgisayar" yazıları "bu tablet" oldu (Yedek sekmesi, eşitleme özeti); tablette "Klasörü aç" gizli (uygulama klasörü Dosyalarım'dan açılamaz).
 - [ ] Tablette "Yazdır" (yazdırılabilir sayfa) denenmedi; sayfa görüntüleyicide yazdırma penceresi açılmayabilir.
-- [ ] **Drive eşitlemesi 1. sürüme alındı (kullanıcı kararı, 15 Kasım):** 2. aşamadan sonra tablette Google girişi. Masaüstündeki yerel adres yöntemi Android'de yok; Google Cloud'da kullanıcının bir Android istemcisi (paket adı `io.github.darvolinnn.dunyaatlasi` + imza SHA-1) açması gerekecek.
+- [x] **Drive eşitlemesi 1. sürüme alındı (kullanıcı kararı, 15 Kasım).** Yol: Windows'takiyle aynı masaüstü istemcisi ve yerel adres yöntemi (izin sayfası tabletin tarayıcısında açılır, Google yanıtı tabletteki 127.0.0.1'e gönderir); Google Cloud'da yeni istemci gerekmedi. Tarayıcıyı `tauri-plugin-opener` açar (yalnız Android). Yenileme anahtarı uygulamanın kendi klasöründe `google-yenileme` dosyasında; Android'in buluta otomatik yedeği kapatıldı (`allowBackup=false`) ki anahtar cihazdan çıkmasın. İzin sayfasında "Dünya Atlası'na dönün" bağlantısı uygulamayı öne getirir. Derlemeye `GOOGLE_MASAUSTU_*` gizli değerleri verilir (`android.yml`).
+- [ ] Tablette Google girişi ve PC ile eşitleme denenecek (kullanıcının hesabıyla; giriş kullanıcının elinde).
 - [ ] 4. aşama: dokunma ve S Pen arayüzü (önce taslaklar).
 - [ ] Tasarım belgesinde tablet satırları (§14.3, §17) "ertelendi"den çıkarılacak.
 
