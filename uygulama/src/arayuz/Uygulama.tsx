@@ -11,7 +11,7 @@ import { CalismaSaglayici } from './Calisma';
 import { EsitlemeEkrani, EsitlemeOzeti, EsitlemeSaglayici, EsitlemeSeridi } from './Esitleme';
 import { HazirlanmaSeridi } from './Hazirlanma';
 import { YazarlikRehberiPaneli } from './YazarlikRehberi';
-import { yedekKlasoruYeri } from '../veri/kabuk';
+import { kabuk, yedekKlasoruYeri } from '../veri/kabuk';
 
 export type Yol = { ekran: 'evrenler' } | { ekran: 'esitleme' } | { ekran: 'evren'; kod: string; sekme: string; alt: string | null } | { ekran: 'kayit'; evren: string; kod: string }
   | { ekran: 'yaz'; evren: string; kod: string | null };
@@ -72,6 +72,8 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
   const [kurulum, setKurulum] = useState<KurulumBilgisi | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const kalici = useKalicilik();
+  // Tablet uygulamasında tarayıcı izni söz konusu değildir; veriler uygulamanın kendi deposundadır.
+  const uygulamada = !!kabuk() && /Android/.test(navigator.userAgent);
 
   useEffect(() => {
     (async () => {
@@ -105,7 +107,7 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
       <GeriAlSeridi />
       {!evren && <footer class="alt" aria-label="Durum">
         <span>Bu cihaza kaydediliyor</span>
-        <span>{kalici === null ? '' : kalici ? 'Tarayıcı verileri kalıcı tutuyor' : 'Tarayıcı kalıcı depolama izni vermedi'}</span>
+        {!uygulamada && <span>{kalici === null ? '' : kalici ? 'Tarayıcı verileri kalıcı tutuyor' : 'Tarayıcı kalıcı depolama izni vermedi'}</span>}
         <span>Kurulum: {kurulum.ad}</span>
         <EsitlemeOzeti />
         <span>Komutlar: Ctrl+K</span>

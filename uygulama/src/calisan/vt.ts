@@ -112,6 +112,8 @@ const ozel = {
 
 function kurulumAdi(): string {
   const ua = navigator.userAgent;
+  // Tablet uygulaması Android'in yerleşik sayfa görüntüleyicisinde açılır ("; wv)"); tarayıcı adı yanıltıcı olur.
+  if (/Android/.test(ua) && /; wv\)/.test(ua)) return 'Android · uygulama';
   const tarayici = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : /Firefox\//.test(ua) ? 'Firefox' : 'Tarayıcı';
   const cihaz = /Windows/.test(ua) ? 'Windows' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iPhone' : /Mac/.test(ua) ? 'Mac' : 'Cihaz';
   return `${cihaz} · ${tarayici}`;

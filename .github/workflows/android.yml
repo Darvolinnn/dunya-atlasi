@@ -51,6 +51,8 @@ jobs:
           cache-targets: false
       - run: npm ci
       - run: npm run denetle
+      - name: İmza değerleri görünüyor mu
+        run: echo "ANDROID_IMZA_DEPOSU ${#IMZA_DEPOSU} harf, ANDROID_IMZA_PAROLASI ${#IMZA_PAROLASI} harf"
       - name: İmza anahtarı
         if: env.IMZA_DEPOSU != ''
         run: |
@@ -62,6 +64,10 @@ jobs:
       - name: APK (deneme anahtarıyla)
         if: env.IMZA_DEPOSU == ''
         run: npx tauri android build --apk --target aarch64 --debug
+        # Hata ayıklama bilgisi olmadan: yoksa APK ~175 MB oluyor.
+        env:
+          CARGO_PROFILE_DEV_DEBUG: '0'
+          CARGO_PROFILE_DEV_STRIP: debuginfo
       - name: APK'yı adlandır
         run: |
           apk=$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -1)
