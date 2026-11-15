@@ -335,8 +335,8 @@ mod sinama {
         assert!(e.contains("not allowed"), "{e}");
         let yer = std::env::temp_dir().join(format!("dunya-atlasi-indir-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&yer);
-        assert_eq!(indirilenlere_yaz(&yer, "seri-yedek.zip", b"bir").unwrap(), "seri-yedek.zip");
-        assert_eq!(indirilenlere_yaz(&yer, "seri-yedek.zip", b"iki").unwrap(), "seri-yedek (2).zip");
+        assert_eq!(super::indirilenlere_yaz(&yer, "seri-yedek.zip", b"bir").unwrap(), "seri-yedek.zip");
+        assert_eq!(super::indirilenlere_yaz(&yer, "seri-yedek.zip", b"iki").unwrap(), "seri-yedek (2).zip");
         assert_eq!(std::fs::read(yer.join("seri-yedek.zip")).unwrap(), b"bir");
         assert_eq!(std::fs::read(yer.join("seri-yedek (2).zip")).unwrap(), b"iki");
         let _ = std::fs::remove_dir_all(&yer);
