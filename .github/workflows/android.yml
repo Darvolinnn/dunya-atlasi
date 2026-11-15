@@ -51,6 +51,8 @@ jobs:
           cache-targets: false
       - run: npm ci
       - run: npm run denetle
+      - name: İmza değerleri görünüyor mu
+        run: echo "ANDROID_IMZA_DEPOSU ${#IMZA_DEPOSU} harf, ANDROID_IMZA_PAROLASI ${#IMZA_PAROLASI} harf"
       - name: İmza anahtarı
         if: env.IMZA_DEPOSU != ''
         run: |
