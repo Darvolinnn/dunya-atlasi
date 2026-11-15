@@ -34,11 +34,13 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
+      # Ubuntu sanal makinesinde Android SDK hazır gelir; yalnız sabit NDK sürümü kurulur.
       - name: Android NDK
         working-directory: .
         run: |
-          sdkmanager "ndk;27.2.12479018" > /dev/null
+          sdk="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$sdk" --licenses > /dev/null || true
+          "$sdk" --install "ndk;27.2.12479018" > /dev/null
           echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
         with:
