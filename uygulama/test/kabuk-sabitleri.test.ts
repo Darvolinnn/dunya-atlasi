@@ -11,7 +11,12 @@ describe('Windows programının veri yeri değişmez', () => {
   it('program kimliği ve yerel adresin kapısı sabittir', () => {
     const ayar = JSON.parse(oku('../src-tauri/tauri.conf.json'));
     expect(ayar.identifier).toBe('io.github.darvolinnn.dunyaatlasi');
-    expect(oku('../src-tauri/src/main.rs')).toMatch(/const KAPI: u16 = 41730;/);
+    expect(oku('../src-tauri/src/lib.rs')).toMatch(/const KAPI: u16 = 41730;/);
+  });
+  it('tablet uygulamasında sayfa hep aynı güvenli adresten gelir (veritabanı deposu adrese bağlıdır)', () => {
+    const kabuk = oku('../src-tauri/src/lib.rs');
+    expect(kabuk).toMatch(/WebviewUrl::App\("index.html".into\(\)\)\)\s*\.use_https_scheme\(true\)/);
+    expect(oku('../src-tauri/gen/android/app/build.gradle.kts')).toMatch(/applicationId = "io.github.darvolinnn.dunyaatlasi"/);
   });
   it('kaldırırken "verileri sil" seçilirse bir kez daha sorulur; varsayılan cevap "Hayır"', () => {
     const ayar = JSON.parse(oku('../src-tauri/tauri.conf.json'));
