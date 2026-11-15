@@ -11,7 +11,8 @@ import { CalismaSaglayici } from './Calisma';
 import { EsitlemeEkrani, EsitlemeOzeti, EsitlemeSaglayici, EsitlemeSeridi } from './Esitleme';
 import { HazirlanmaSeridi } from './Hazirlanma';
 import { YazarlikRehberiPaneli } from './YazarlikRehberi';
-import { kabuk, yedekKlasoruYeri } from '../veri/kabuk';
+import { yedekKlasoruYeri } from '../veri/kabuk';
+import { tabletUygulamasi } from '../veri/indir';
 
 export type Yol = { ekran: 'evrenler' } | { ekran: 'esitleme' } | { ekran: 'evren'; kod: string; sekme: string; alt: string | null } | { ekran: 'kayit'; evren: string; kod: string }
   | { ekran: 'yaz'; evren: string; kod: string | null };
@@ -73,7 +74,7 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
   const [hata, setHata] = useState<string | null>(null);
   const kalici = useKalicilik();
   // Tablet uygulamasında tarayıcı izni söz konusu değildir; veriler uygulamanın kendi deposundadır.
-  const uygulamada = !!kabuk() && /Android/.test(navigator.userAgent);
+  const uygulamada = tabletUygulamasi();
 
   useEffect(() => {
     (async () => {

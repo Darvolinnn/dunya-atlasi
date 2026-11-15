@@ -9,3 +9,4 @@ uygulama/src-tauri/gen/schemas/
 # Android projesi (gen/android) depodadır; derleme çıktıları onun kendi .gitignore dosyalarındadır.
 test-results/
 playwright-report/
+uygulama/src-tauri/google-istemci.txt
