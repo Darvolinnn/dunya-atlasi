@@ -259,8 +259,9 @@ Kullanıcı tableti bilgisayara bağlayıp "başla" dedi. **Plan §0.11 ve `anal
 Adımlar:
 - [x] Tablet bağlantısı, uyku ayarı.
 - [x] Kabuğu Android'e açma (lib.rs, cfg(desktop)), Android projesi, GitHub derlemesi.
-- [ ] 0. aşama: deneme APK'sını tablete kurup açmak; veritabanı (OPFS) ve Automerge tablette çalışıyor mu.
-- [ ] 1. aşama: kalıcı imza anahtarı (kullanıcı gizli değerleri GitHub'a koyar), `main`'den imzalı APK.
+- [x] 0. aşama (15 Kasım 12:56 tablet saati): "android-deneme" APK'sı (deneme anahtarı, 175 MB) `adb install -r` ile kuruldu ve açıldı. Ekran görüntüsüyle doğrulandı: Evrenler sayfası; "Örnek evreni aç" ~30 sn'de kuruldu (veritabanı ve metin birleştirme çalışıyor); uygulama kapatılıp açılınca evren duruyor. Bellek (örnek evren açıkken) PSS ~270 MB. Görülenler: (a) üstteki sistem çubuğu sayfanın üst şeridinin üstüne biniyor (kenardan kenara çizim, boşluk bırakılmalı); (b) alt şeritte "Tarayıcı kalıcı depolama izni vermedi" ve "Kurulum: Android · Chrome" yazıyor (tablet uygulaması için uyarlanmalı); (c) Google ve yedek klasörü henüz Android'e göre değil.
+- [ ] 1. aşama: kalıcı imza anahtarı. **Anahtar kullanıcının bilgisayarında üretildi:** `C:\Users\Kaan\Documents\Dunya-Atlasi-imza\` (`dunya-atlasi-imza.jks`, `ANDROID_IMZA_DEPOSU.txt` base64, `ANDROID_IMZA_PAROLASI.txt`); depo klonunun (`Documents\Writing`) dışında. Kaybolursa tablet güncellemeyi kabul etmez; kullanıcıdan yedeklemesi istendi. Kullanıcı iki değeri GitHub gizli değerlerine koyunca `main`'den imzalı APK "android" sayfasına çıkar. Deneme anahtarlı APK'dan imzalı APK'ya geçerken tablette uygulama bir kez kaldırılıp kurulmalı (içindeki veri gider; şimdilik yalnız örnek evren var).
+- Kullanıcının bilgisayarındaki klon `Documents\Writing` deposudur; tablet denemelik dosyalar `Writing\tablet\` altında, `.git/info/exclude` ile dışarıda tutulur.
 - [ ] 2. aşama: depolama, büyük evrenle ölçüm (4 GB altı), yedek klasörü (Android'de `document_dir` yerine), yedek dosyasıyla taşıma.
 - [ ] 4. aşama: dokunma ve S Pen arayüzü (önce taslaklar).
 - [ ] Tasarım belgesinde tablet satırları (§14.3, §17) "ertelendi"den çıkarılacak.
