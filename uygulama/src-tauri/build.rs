@@ -14,7 +14,7 @@ fn main() {
             .windows_attributes(tauri_build::WindowsAttributes::new_without_app_manifest())
             .app_manifest(tauri_build::AppManifest::new().commands(&[
                 "google_izin", "google_cikis", "yerel_yedek_yeri", "yerel_yedek_listele", "yerel_yedek_oku",
-                "yerel_yedek_yaz", "yerel_yedek_sil", "yerel_yedek_klasoru_ac",
+                "yerel_yedek_yaz", "yerel_yedek_sil", "yerel_yedek_klasoru_ac", "indirilenlere_kaydet",
             ])),
     )
     .expect("derleme hazırlığı başarısız");

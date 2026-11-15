@@ -2,6 +2,7 @@
 // "Eşitleme ve cihazlar" sayfası. Eşitleme açılışta (izin varsa), pencereye dönülünce, açıkken birkaç dakikada
 // bir ve bu cihazda değişiklik yapıldıktan kısa süre sonra çalışır. Anlık eşitleme vaadi verilmez.
 import { createContext } from 'preact';
+import { tabletUygulamasi } from '../veri/indir';
 import { useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { EsitlemeDurumu } from '../veri/api';
@@ -161,7 +162,7 @@ export function EsitlemeOzeti() {
 
 const GUN = 24 * 60 * 60_000;
 const YEDEK_YERI: Record<SonYedek['yer'], string> = {
-  drive: ' (Drive, doğrulandı)', yerel: ' (bu bilgisayarda, doğrulandı)', dosya: ' (dosya hazırlandı, kaydedildiği denetlenemez)',
+  drive: ' (Drive, doğrulandı)', yerel: tabletUygulamasi() ? ' (bu tablette, doğrulandı)' : ' (bu bilgisayarda, doğrulandı)', dosya: ' (dosya hazırlandı, kaydedildiği denetlenemez)',
 };
 
 /** Evren içindeki kayıt, eşitleme ve yedek özeti (§10.8): başlıkta en zayıf halka, açılınca üç ayrı satır. */

@@ -1,10 +1,10 @@
 {
   "identifier": "android",
-  "description": "Android (tablet) uygulaması: sayfa uygulamanın kendi dosyalarından gelir; yedek klasörü isteklerini çağırabilsin. Google girişi 1. sürümde yok (DEVIR §0.21).",
+  "description": "Android (tablet) uygulaması: sayfa uygulamanın kendi dosyalarından gelir; yedek klasörü isteklerini ve İndirilenler klasörüne kaydetmeyi çağırabilsin. Google girişi 1. sürümde yok (DEVIR §0.21).",
   "platforms": ["android"],
   "windows": ["ana"],
   "permissions": [
     "core:default", "allow-yerel-yedek-yeri", "allow-yerel-yedek-listele", "allow-yerel-yedek-oku", "allow-yerel-yedek-yaz",
-    "allow-yerel-yedek-sil"
+    "allow-yerel-yedek-sil", "allow-indirilenlere-kaydet"
   ]
 }

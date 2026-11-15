@@ -104,12 +104,55 @@ async fn yerel_yedek_klasoru_ac<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> 
     open::that_detached(k.kok()).map_err(|_| "Klasör açılamadı.".to_string())
 }
 
+/// Tablet uygulamasında "Yedek al" ve dışa aktarmalar: sayfa görüntüleyicisi indirme yapamadığı için dosya tabletin
+/// İndirilenler klasörüne yazılır (izin gerekmez; Dosyalarım'da görünür). Aynı adda dosya varsa "(2)" gibi bir ek alır.
+/// Dönen değer kaydedilen dosyanın adıdır. Windows'ta bu isteğe izin verilmez (`capabilities/ana.json`).
+#[tauri::command]
+async fn indirilenlere_kaydet<R: tauri::Runtime>(app: tauri::AppHandle<R>, request: Request<'_>) -> Result<String, String> {
+    let ad = request.headers().get("ad").and_then(|v| v.to_str().ok()).ok_or("Dosyanın adı eksik.")?;
+    let ad = percent_encoding::percent_decode_str(ad).decode_utf8().map_err(|_| "Dosyanın adı okunamadı.".to_string())?.into_owned();
+    if ad.is_empty() || ad.starts_with('.') || ad.contains(['/', '\\', '\0']) {
+        return Err("Dosyanın adı geçersiz.".into());
+    }
+    let veri = match request.body() {
+        InvokeBody::Raw(v) => v.clone(),
+        _ => return Err("Dosya boş geldi.".into()),
+    };
+    #[cfg(mobile)]
+    let klasor = app.path().home_dir().map_err(|_| "İndirilenler klasörü bulunamadı.".to_string())?.join("Download");
+    #[cfg(desktop)]
+    let klasor = app.path().download_dir().map_err(|_| "İndirilenler klasörü bulunamadı.".to_string())?;
+    arkada(move || indirilenlere_yaz(&klasor, &ad, &veri)).await
+}
+
+fn indirilenlere_yaz(klasor: &std::path::Path, ad: &str, veri: &[u8]) -> Result<String, String> {
+    use std::io::Write;
+    std::fs::create_dir_all(klasor).map_err(|_| "İndirilenler klasörü açılamadı.".to_string())?;
+    let (kok, uzanti) = match ad.rfind('.') { Some(i) if i > 0 => (&ad[..i], &ad[i..]), _ => (ad, "") };
+    for n in 1..1000 {
+        let aday = if n == 1 { ad.to_string() } else { format!("{kok} ({n}){uzanti}") };
+        // Var olan dosyanın üstüne yazılmaz: yalnız yoksa oluşturulur.
+        match std::fs::OpenOptions::new().write(true).create_new(true).open(klasor.join(&aday)) {
+            Ok(mut f) => {
+                if f.write_all(veri).and_then(|_| f.sync_all()).is_err() {
+                    let _ = std::fs::remove_file(klasor.join(&aday));
+                    return Err("Dosya İndirilenler klasörüne yazılamadı.".into());
+                }
+                return Ok(aday);
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(_) => return Err("Dosya İndirilenler klasörüne yazılamadı.".into()),
+        }
+    }
+    Err("İndirilenler klasöründe bu adda çok fazla dosya var.".into())
+}
+
 /// Kabuğun bütün istekleri; `build.rs` ve `capabilities/ana.json` ile aynı liste olmalı.
 macro_rules! istekler {
     () => {
         tauri::generate_handler![
             google_izin, google_cikis, yerel_yedek_yeri, yerel_yedek_listele, yerel_yedek_oku, yerel_yedek_yaz,
-            yerel_yedek_sil, yerel_yedek_klasoru_ac
+            yerel_yedek_sil, yerel_yedek_klasoru_ac, indirilenlere_kaydet
         ]
     };
 }
@@ -283,6 +326,20 @@ mod sinama {
             let e = cagir("http://localhost:9999", komut).unwrap_err();
             assert!(e.contains("not allowed"), "{komut}: {e}");
         }
+    }
+
+    /// Tablet uygulamasının indirme isteği Windows'ta çağrılamaz; aynı adda dosyanın üstüne yazılmaz.
+    #[test]
+    fn indirilenlere_kaydet_windowsta_kapali_ve_ustune_yazmaz() {
+        let e = cagir("http://localhost:41730", "indirilenlere_kaydet").unwrap_err();
+        assert!(e.contains("not allowed"), "{e}");
+        let yer = std::env::temp_dir().join(format!("dunya-atlasi-indir-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&yer);
+        assert_eq!(indirilenlere_yaz(&yer, "seri-yedek.zip", b"bir").unwrap(), "seri-yedek.zip");
+        assert_eq!(indirilenlere_yaz(&yer, "seri-yedek.zip", b"iki").unwrap(), "seri-yedek (2).zip");
+        assert_eq!(std::fs::read(yer.join("seri-yedek.zip")).unwrap(), b"bir");
+        assert_eq!(std::fs::read(yer.join("seri-yedek (2).zip")).unwrap(), b"iki");
+        let _ = std::fs::remove_dir_all(&yer);
     }
 
     /// Pencere hafızası (K34) yalnız kabukta çalışır; sayfa pencerenin kaydını okuyup yazamaz.

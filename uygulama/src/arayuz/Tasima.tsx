@@ -7,6 +7,8 @@ import { useEsitleme } from './Esitleme';
 import { zamanYaz } from '../alan/islem-metni';
 import { turBul } from '../alan/turler';
 import { git } from './Uygulama';
+import { dosyaKaydet, tabletUygulamasi } from '../veri/indir';
+import { kaydedildiMetni } from './Cikti';
 
 type IceDosya = { yol: string; metin?: string; veri?: Uint8Array; tur?: string };
 
@@ -14,22 +16,13 @@ const METIN = /\.(md|markdown|txt|json)$/i;
 const GORSEL = /\.(jpe?g|png|webp|gif|avif)$/i;
 const EN_BUYUK = 60 * 1024 * 1024;
 
-function indir(ad: string, veri: Uint8Array | Blob, tur = 'application/zip') {
-  const url = URL.createObjectURL(new Blob([veri as BlobPart], { type: tur }));
-  const a = document.createElement('a');
-  a.href = url; a.download = ad;
-  a.style.display = 'none';
-  document.body.append(a);
-  a.click();
-  setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 60_000);
-}
-
 const hataMetni = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 // ---------- Evren ekranındaki "Yedek" sekmesi ----------
 export function YedekSekmesi({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
   const [son, setSon] = useState<number | null>(null);
   const [durum, setDurum] = useState<'bos' | 'aliniyor' | 'alindi'>('bos');
+  const [kaydedilen, setKaydedilen] = useState<string | null>(null);
   const [eksikGorsel, setEksikGorsel] = useState(0);
   const [hata, setHata] = useState<string | null>(null);
   useEffect(() => { istemci.iste('sonYedek', { evren }).then(setSon); }, [evren, surum, durum]);
@@ -38,7 +31,7 @@ export function YedekSekmesi({ istemci, evren, surum }: { istemci: Istemci; evre
     setHata(null); setDurum('aliniyor'); setEksikGorsel(0);
     try {
       const { dosyaAdi, veri, eksikGorsel } = await istemci.iste('yedekAl', { evren });
-      indir(dosyaAdi, veri);
+      setKaydedilen(await dosyaKaydet(dosyaAdi, veri, 'application/zip'));
       setEksikGorsel(eksikGorsel);
       setDurum('alindi');
     } catch (e) { setHata(hataMetni(e)); setDurum('bos'); }
@@ -53,7 +46,8 @@ export function YedekSekmesi({ istemci, evren, surum }: { istemci: Istemci; evre
         <button class="dugme ana" onClick={al} disabled={durum === 'aliniyor'}>{durum === 'aliniyor' ? 'Yedek hazırlanıyor…' : 'Yedek al'}</button>
         <span class="soluk kucuk">{son ? `Son hazırlanan yedek dosyası: ${zamanYaz(son)}` : 'Bu evrenin bu cihazdan alınmış yedeği yok.'}</span>
       </div>
-      {durum === 'alindi' && <p class="kucuk" role="status">Yedek dosyası hazırlandı ve indirme başlatıldı. Dosyanın kaydedildiğini tarayıcının indirilenler klasöründen denetleyin; program bunu göremez.</p>}
+      {durum === 'alindi' && kaydedilen && <p class="kucuk" role="status">Yedek dosyası hazırlandı. {kaydedildiMetni(kaydedilen)}.</p>}
+      {durum === 'alindi' && !kaydedilen && <p class="kucuk" role="status">Yedek dosyası hazırlandı ve indirme başlatıldı. Dosyanın kaydedildiğini tarayıcının indirilenler klasöründen denetleyin; program bunu göremez.</p>}
       {durum === 'alindi' && eksikGorsel > 0 && (
         <p class="uyari kucuk" role="alert">Bu yedek eksik: {eksikGorsel} görsel bu cihazda olmadığı için yedeğe girmedi ve bu dosyadan geri gelmez. Kayıtlar ve metinler eksiksiz. Görsellerin bulunduğu cihazdan yeniden yedek alın.</p>
       )}
@@ -175,7 +169,7 @@ function GorselUyarisi({ sonuc, nerede = 'yedekte' }: { sonuc: GeriYuklemeSonucu
   );
 }
 
-/** Bu bilgisayardaki günlük yedekler (K31, §10.10): yalnız Windows uygulamasında görünür. */
+/** Bu bilgisayardaki günlük yedekler (K31, §10.10): Windows ve tablet uygulamasında görünür (tablette uygulamanın kendi klasörü). */
 export function YerelYedekler({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
   const [d, setD] = useState<YerelYedekDurumu | null>(null);
   const [liste, setListe] = useState<DriveYedegi[] | null>(null);
@@ -212,23 +206,28 @@ export function YerelYedekler({ istemci, evren, surum }: { istemci: Istemci; evr
   };
 
   if (!d?.var) return null;
+  const tablet = tabletUygulamasi();
   return (
     <div class="kart" style="margin-top:12px">
-      <h3>Bu bilgisayardaki yedekler</h3>
-      <p class="soluk kucuk">Program her gün bu bilgisayarın Belgeler klasöründeki “Dünya Atlası yedekleri” klasörüne bu evrenin tam yedeğini alır; internet gerekmez.
-        Görseller bu klasörün içindeki “medya” klasöründe tek kopya olarak saklanır. Günlük yedekler {d.gunSayisi} gün, her ayın ilk yedeği {d.aySayisi} ay saklanır.</p>
+      <h3>{tablet ? 'Bu tabletteki yedekler' : 'Bu bilgisayardaki yedekler'}</h3>
+      {tablet
+        ? <p class="soluk kucuk">Program her gün bu tablette, uygulamanın kendi klasörüne bu evrenin tam yedeğini alır; internet gerekmez.
+          Günlük yedekler {d.gunSayisi} gün, her ayın ilk yedeği {d.aySayisi} ay saklanır. Uygulama tabletten kaldırılırsa bu yedekler de silinir;
+          kalıcı bir kopya için yukarıdaki “Yedek al”ı kullanın.</p>
+        : <p class="soluk kucuk">Program her gün bu bilgisayarın Belgeler klasöründeki “Dünya Atlası yedekleri” klasörüne bu evrenin tam yedeğini alır; internet gerekmez.
+          Görseller bu klasörün içindeki “medya” klasöründe tek kopya olarak saklanır. Günlük yedekler {d.gunSayisi} gün, her ayın ilk yedeği {d.aySayisi} ay saklanır.</p>}
       <label class="kucuk" style="display:flex;gap:8px;align-items:center">
         <input type="checkbox" checked={d.acik} onChange={(e) => void ac((e.target as HTMLInputElement).checked)} /> Her gün kendiliğinden yedek al
       </label>
       <p class="kucuk">{d.son
         ? <>Son yedek: <strong>{zamanYaz(d.son.zaman)}</strong>{d.son.dogrulandi ? ' · geri okunup doğrulandı' : ' · doğrulanamadı'}
           {d.son.eksikGorsel ? ` · ${d.son.eksikGorsel} görsel bu cihazda olmadığı için yedekte yok` : ''}</>
-        : 'Bu evrenin bu bilgisayarda günlük yedeği henüz yok.'}</p>
+        : `Bu evrenin bu ${tablet ? 'tablette' : 'bilgisayarda'} günlük yedeği henüz yok.`}</p>
       {!d.acik && <p class="soluk kucuk">Bu evren için günlük yedek kapalı. Elle yedek yine alınabilir.</p>}
       {d.hata && <p class="uyari kucuk">Son yedekleme denemesi başarısız oldu: {d.hata}</p>}
       <div class="satir" style="margin-top:8px">
         <button class="dugme" onClick={simdi} disabled={!!mesgul}>{mesgul === 'yedekleniyor' ? 'Yedekleniyor…' : 'Şimdi yedekle'}</button>
-        <button class="dugme sade" onClick={klasor} title={d.yer ?? undefined}>Klasörü aç</button>
+        {!tablet && <button class="dugme sade" onClick={klasor} title={d.yer ?? undefined}>Klasörü aç</button>}
       </div>
       {sonuc && (
         <div style="margin-top:12px" role="status">
@@ -296,7 +295,7 @@ export function YedektenGeriYukle({ istemci, kapat, yenile }: { istemci: Istemci
         <>
           <p class="soluk kucuk">“Yedek al” ile indirdiğiniz dosyayı seçin. Önce içinde ne olduğu gösterilir, siz onaylamadan hiçbir şey yazılmaz.</p>
           <label class="dugme">Yedek dosyasını seç<input type="file" accept=".zip,application/zip" style="display:none" onChange={sec} /></label>
-          {kabuk() && (
+          {kabuk() && !tabletUygulamasi() && (
             <div style="margin-top:10px">
               <p class="soluk kucuk">Bu bilgisayarın günlük yedekleri Belgeler › Dünya Atlası yedekleri klasöründedir. Oradaki bir dosyayı seçerseniz görseller de o klasörden alınır.</p>
               <button class="dugme sade" onClick={() => yedekKlasorunuAc().catch((e) => setHata(hataMetni(e)))}>Klasörü aç</button>

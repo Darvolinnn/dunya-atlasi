@@ -3,16 +3,12 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { CiktiAgaci, CiktiSahnesi } from '../veri/api';
 import { SAHNE_CALISMA } from '../alan/sablon';
+import { dosyaKaydet } from '../veri/indir';
+
+/** Tablet uygulamasında dosyanın nereye kaydedildiği söylenir. */
+export const kaydedildiMetni = (ad: string) => `Tabletin İndirilenler klasörüne kaydedildi: ${ad}`;
 
 const hataYaz = (e: unknown) => (e as Error).message;
-function indir(ad: string, veri: Uint8Array, tur: string) {
-  const url = URL.createObjectURL(new Blob([veri as BlobPart], { type: tur }));
-  const a = document.createElement('a');
-  a.href = url; a.download = ad;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
-}
-
 /** Sayfayı görünmez bir çerçevede açıp yazdırma penceresini getirir; oradan "PDF olarak kaydet" seçilir. */
 export function yazdir(html: string) {
   const c = document.createElement('iframe');
@@ -31,8 +27,8 @@ export function MarkdownCiktisi({ istemci, evren }: { istemci: Istemci; evren: s
     setHata(null); setCalisiyor(true);
     try {
       const r = await istemci.iste('markdownDisaAktar', { evren });
-      indir(r.dosyaAdi, r.veri, 'application/zip');
-      setDurum(`${r.kayitSayisi} kayıt indirildi.${r.eksikGorsel ? ` ${r.eksikGorsel} görsel bu cihazda olmadığı için eklenemedi.` : ''}`);
+      const yer = await dosyaKaydet(r.dosyaAdi, r.veri, 'application/zip');
+      setDurum(`${r.kayitSayisi} kayıt ${yer ? `dışa aktarıldı. ${kaydedildiMetni(yer)}.` : 'indirildi.'}${r.eksikGorsel ? ` ${r.eksikGorsel} görsel bu cihazda olmadığı için eklenemedi.` : ''}`);
     } catch (e) { setHata(hataYaz(e)); } finally { setCalisiyor(false); }
   };
   return (
@@ -82,23 +78,24 @@ function CiktiDugmeleri({ istemci, evren, eser }: { istemci: Istemci; evren: str
   const degistir = (kodlar: string[], gir: boolean) => { const d = new Set(disarida); for (const k of kodlar) if (gir) d.delete(k); else d.add(k); kaydet(d); };
   const hizli = (sec: (x: CiktiSahnesi) => boolean) => kaydet(new Set(tum.filter((x) => !sec(x)).map((x) => x.kod)));
 
-  const calistir = (ad: string, is: (eser: string) => Promise<void>) => async () => {
+  const [kaydedilen, setKaydedilen] = useState<string | null>(null);
+  const calistir = (ad: string, is: (eser: string) => Promise<string | null | void>) => async () => {
     if (!eser) return;
-    setHata(null); setCalisiyor(ad);
-    try { await is(eser); } catch (e) { setHata(hataYaz(e)); } finally { setCalisiyor(null); }
+    setHata(null); setKaydedilen(null); setCalisiyor(ad);
+    try { setKaydedilen((await is(eser)) ?? null); } catch (e) { setHata(hataYaz(e)); } finally { setCalisiyor(null); }
   };
   const pdf = calistir('pdf', async (eser) => {
     const r = await istemci.iste('eserKitabi', { evren, eser, sahneBasliklari: basliklar, sahneler });
     const [{ pdfYaz }, yt] = await Promise.all([import('../alan/pdf'), import('./yazi-tipleri').then((m) => m.kitapYaziTipleri())]);
-    indir(`${r.dosyaKoku}.pdf`, await pdfYaz(r.kitap, yt), 'application/pdf');
+    return dosyaKaydet(`${r.dosyaKoku}.pdf`, await pdfYaz(r.kitap, yt), 'application/pdf');
   });
   const docx = calistir('docx', async (eser) => {
     const r = await istemci.iste('docxYaz', { evren, eser, sahneBasliklari: basliklar, sahneler });
-    indir(r.dosyaAdi, r.veri, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    return dosyaKaydet(r.dosyaAdi, r.veri, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   });
   const epub = calistir('epub', async (eser) => {
     const r = await istemci.iste('epubYaz', { evren, eser, sahneBasliklari: basliklar, sahneler });
-    indir(r.dosyaAdi, r.veri, 'application/epub+zip');
+    return dosyaKaydet(r.dosyaAdi, r.veri, 'application/epub+zip');
   });
   const yazdirma = calistir('yazdir', async (eser) => yazdir((await istemci.iste('eserBaskiSayfasi', { evren, eser, sahneBasliklari: basliklar, sahneler })).html));
   const sahneSatiri = (x: CiktiSahnesi) => (
@@ -151,6 +148,7 @@ function CiktiDugmeleri({ istemci, evren, eser }: { istemci: Istemci; evren: str
         {eser && !agac && !agacHatasi && <span class="soluk kucuk">Bölümler okunuyor…</span>}
       </div>
       {agacHatasi && <p class="hata kucuk">Bölüm ve sahneler okunamadı, çıktı alınamıyor: {agacHatasi}</p>}
+      {kaydedilen && <p class="kucuk" role="status">{kaydedildiMetni(kaydedilen)}.</p>}
       {hata && <p class="hata kucuk" role="alert">{hata}</p>}
     </>
   );
