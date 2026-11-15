@@ -55,12 +55,16 @@ jobs:
       - run: npm ci
       - run: npm run denetle
       - name: İmza değerleri görünüyor mu
-        run: echo "ANDROID_IMZA_DEPOSU ${#IMZA_DEPOSU} harf, ANDROID_IMZA_PAROLASI ${#IMZA_PAROLASI} harf"
+        run: echo "ANDROID_IMZA_DEPOSU ${#IMZA_DEPOSU} harf, ANDROID_IMZA_PAROLASI ${#IMZA_PAROLASI} harf, GOOGLE_MASAUSTU_ISTEMCI ${#GOOGLE_MASAUSTU_ISTEMCI} harf"
       - name: İmza anahtarı
         if: env.IMZA_DEPOSU != ''
         run: |
           echo "$IMZA_DEPOSU" | base64 -d > src-tauri/gen/android/imza.jks
           printf 'storeFile=imza.jks\nkeyAlias=dunya-atlasi\npassword=%s\n' "$IMZA_PAROLASI" > src-tauri/gen/android/keystore.properties
+      # Gradle'ın çalıştırdığı cargo'ya ortam değişkenleri ulaşmıyor; değerler dosyayla verilir (build.rs), sonra silinir.
+      - name: Google istemcisi
+        if: env.GOOGLE_MASAUSTU_ISTEMCI != ''
+        run: printf '%s\n%s\n' "$GOOGLE_MASAUSTU_ISTEMCI" "$GOOGLE_MASAUSTU_GIZLI" > src-tauri/google-istemci.txt
       - name: APK (imzalı)
         if: env.IMZA_DEPOSU != ''
         run: npx tauri android build --apk --target aarch64
@@ -75,7 +79,7 @@ jobs:
         run: |
           apk=$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -1)
           cp "$apk" Dunya-Atlasi-tablet.apk
-          rm -f src-tauri/gen/android/imza.jks src-tauri/gen/android/keystore.properties
+          rm -f src-tauri/gen/android/imza.jks src-tauri/gen/android/keystore.properties src-tauri/google-istemci.txt
       - uses: actions/upload-artifact@v4
         with:
           name: Dunya-Atlasi-tablet

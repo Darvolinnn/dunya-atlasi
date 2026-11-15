@@ -77,6 +77,20 @@ async fn yerel_yedek_oku<R: tauri::Runtime>(app: tauri::AppHandle<R>, alt: Strin
     Ok(Response::new(arkada(move || k.oku(&alt, &ad)).await?))
 }
 
+/// İsteğin gövdesindeki baytlar. Sayfa baytları doğrudan gönderir; sayfa görüntüleyicisi o yolu kapatmışsa (tablette
+/// böyle) sayı dizisi olarak gelir.
+fn govde_baytlari(request: &Request<'_>) -> Result<Vec<u8>, &'static str> {
+    match request.body() {
+        InvokeBody::Raw(v) => Ok(v.clone()),
+        InvokeBody::Json(serde_json::Value::Array(d)) => d
+            .iter()
+            .map(|x| x.as_u64().filter(|n| *n <= 255).map(|n| n as u8))
+            .collect::<Option<_>>()
+            .ok_or("bozuk geldi"),
+        _ => Err("boş geldi"),
+    }
+}
+
 /// Dosyanın baytları isteğin gövdesinde, yeri ve adı başlıklarda (Türkçe harfler için yüzde kodlu) gelir.
 #[tauri::command]
 async fn yerel_yedek_yaz<R: tauri::Runtime>(app: tauri::AppHandle<R>, request: Request<'_>) -> Result<(), String> {
@@ -85,16 +99,7 @@ async fn yerel_yedek_yaz<R: tauri::Runtime>(app: tauri::AppHandle<R>, request: R
         percent_encoding::percent_decode_str(h).decode_utf8().map(|s| s.into_owned()).map_err(|_| "Yedek dosyasının adı okunamadı.".to_string())
     };
     let (alt, ad) = (baslik("alt")?, baslik("ad")?);
-    // Sayfa baytları doğrudan gönderir; tarayıcı motoru o yolu kapatmışsa (yedek yol) sayı dizisi olarak gelir.
-    let veri: Vec<u8> = match request.body() {
-        InvokeBody::Raw(v) => v.clone(),
-        InvokeBody::Json(serde_json::Value::Array(d)) => d
-            .iter()
-            .map(|x| x.as_u64().filter(|n| *n <= 255).map(|n| n as u8))
-            .collect::<Option<_>>()
-            .ok_or("Yedek dosyası bozuk geldi.")?,
-        _ => return Err("Yedek dosyası boş geldi.".into()),
-    };
+    let veri = govde_baytlari(&request).map_err(|e| format!("Yedek dosyası {e}."))?;
     let k = yedek_klasoru(&app)?;
     arkada(move || k.yaz(&alt, &ad, &veri)).await
 }
@@ -123,10 +128,7 @@ async fn indirilenlere_kaydet<R: tauri::Runtime>(app: tauri::AppHandle<R>, reque
     if ad.is_empty() || ad.starts_with('.') || ad.contains(['/', '\\', '\0']) {
         return Err("Dosyanın adı geçersiz.".into());
     }
-    let veri = match request.body() {
-        InvokeBody::Raw(v) => v.clone(),
-        _ => return Err("Dosya boş geldi.".into()),
-    };
+    let veri = govde_baytlari(&request).map_err(|e| format!("Dosya {e}."))?;
     #[cfg(mobile)]
     let klasor = app.path().home_dir().map_err(|_| "İndirilenler klasörü bulunamadı.".to_string())?.join("Download");
     #[cfg(desktop)]

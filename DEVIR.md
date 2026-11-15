@@ -272,7 +272,10 @@ Adımlar:
 - [x] Tablette "bu bilgisayar" yazıları "bu tablet" oldu (Yedek sekmesi, eşitleme özeti); tablette "Klasörü aç" gizli (uygulama klasörü Dosyalarım'dan açılamaz).
 - [ ] Tablette "Yazdır" (yazdırılabilir sayfa) denenmedi; sayfa görüntüleyicide yazdırma penceresi açılmayabilir.
 - [x] **Drive eşitlemesi 1. sürüme alındı (kullanıcı kararı, 15 Kasım).** Yol: Windows'takiyle aynı masaüstü istemcisi ve yerel adres yöntemi (izin sayfası tabletin tarayıcısında açılır, Google yanıtı tabletteki 127.0.0.1'e gönderir); Google Cloud'da yeni istemci gerekmedi. Tarayıcıyı `tauri-plugin-opener` açar (yalnız Android). Yenileme anahtarı uygulamanın kendi klasöründe `google-yenileme` dosyasında; Android'in buluta otomatik yedeği kapatıldı (`allowBackup=false`) ki anahtar cihazdan çıkmasın. İzin sayfasında "Dünya Atlası'na dönün" bağlantısı uygulamayı öne getirir. Derlemeye `GOOGLE_MASAUSTU_*` gizli değerleri verilir (`android.yml`).
-- [ ] Tablette Google girişi ve PC ile eşitleme denenecek (kullanıcının hesabıyla; giriş kullanıcının elinde).
+- [x] Tablette ilk deneme (15 Kasım 15:07 tablet saati, e52b080): "Google Drive'a bağlan" tabletin tarayıcısını açtı ama Google "OAuth client was not found" dedi. Sebep: APK'da masaüstü istemcisi yoktu (`.so`'da aranıp bulunamadı); program eski yola (web istemcisi) düştü. Gradle'ın çalıştırdığı cargo'ya işin ortam değişkenleri ulaşmıyor. Düzeltme: derleme işi değerleri depoya girmeyen `src-tauri/google-istemci.txt`'e yazar, `build.rs` derlemeye verir, iş sonunda silinir.
+- [x] Aynı denemede "Yedek al" tablette "Dosya boş geldi" dedi: tablette sayfa baytları kabuğa sayı dizisi olarak gidiyor. `govde_baytlari` iki biçimi de alır (yedek klasörü yazımıyla ortak).
+- [ ] Yeni APK ile ikisi yeniden denenecek; sonra Google girişi kullanıcının elinde, ardından PC ile eşitleme.
+- Not: kurulum adı ilk açılışta saklanır; bu tablette "Android · Chrome" kaldı (Eşitleme ve cihazlar > Bu cihaz > Adı'ndan değiştirilebilir). Yeni kurulumlar "Android · uygulama" alır.
 - [ ] 4. aşama: dokunma ve S Pen arayüzü (önce taslaklar).
 - [ ] Tasarım belgesinde tablet satırları (§14.3, §17) "ertelendi"den çıkarılacak.
 
