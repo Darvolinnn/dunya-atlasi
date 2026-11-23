@@ -286,7 +286,7 @@ export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
           {!e.eposta && !d.bagli && (
             <>
               <p>Evrenler Drive'ınızda programa ayrılmış bir klasöre eşitlenir. Bu klasörü Drive'da göremezsiniz; program da Drive'daki öbür dosyalarınızı göremez. Yedekler ise görebildiğiniz ayrı bir klasöre alınır.</p>
-              <p class="soluk kucuk">Google'ın açtığı pencerede hesabınızı seçip izin verin. İzin yaklaşık bir saat geçerlidir. Süresi dolunca üstte “eşitlemek için tıklayın” uyarısı çıkar ve izin tek tıklamayla yenilenir. Bu arada yazmaya devam edebilirsiniz.</p>
+              <p class="soluk kucuk">Google'ın açtığı pencerede hesabınızı seçip izin verin. {kabuktaMi() && /Windows/.test(navigator.userAgent) ? 'Windows uygulaması izni kendisi yeniler; Google penceresi yalnızca ilk bağlanışta açılır. Yenileme olmazsa üstte “eşitlemek için tıklayın” uyarısı çıkar.' : 'İzin yaklaşık bir saat geçerlidir. Süresi dolunca üstte “eşitlemek için tıklayın” uyarısı çıkar ve izin tek tıklamayla yenilenir.'} Bu arada yazmaya devam edebilirsiniz.</p>
               <button class="dugme ana" onClick={() => void e.baglan()} disabled={e.baglaniyor}>{e.baglaniyor ? 'Google penceresi bekleniyor…' : 'Google Drive\'a bağlan'}</button>
             </>
           )}

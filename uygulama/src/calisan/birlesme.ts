@@ -9,6 +9,7 @@ import type { EvrenVt } from './evren-vt';
 import { yonlendir } from './izdusum';
 import * as sablonlar from './sablon';
 import { sayiDegeriMi, sayiMetni } from '../alan/nicelik';
+import { formulKodlari, type Formul } from '../alan/formul';
 
 export interface BirlesmeBaglami {
   e: EvrenVt;
@@ -63,6 +64,16 @@ function alanlar(e: EvrenVt, kaynak: Satir, hedef: Satir): BirlesmeAlani[] {
   return sonuc;
 }
 
+/** Formülünde (TK8) bu kayıt geçen, silinmemiş hukuk kurallarının sayısı. */
+function formulluKurallar(e: EvrenVt, kod: string): number {
+  let n = 0;
+  for (const r of e.db.selectObjects(`SELECT h.tanim FROM hukuk_kurallari h JOIN kayitlar k ON k.kod=h.sahip WHERE h.silindi IS NULL AND k.silindi IS NULL AND h.tanim LIKE ?`, [`%${kod}%`])) {
+    const f = (JSON.parse(r.tanim as string) as { formul?: Formul | null }).formul;
+    if (f && formulKodlari(f).kayitlar.includes(kod)) n++;
+  }
+  return n;
+}
+
 export function onizle(e: EvrenVt, kaynakKod: string, hedefKod: string): BirlesmeOnizlemesi {
   if (kaynakKod === hedefKod) throw new Error('Bir kayıt kendisiyle birleştirilemez.');
   // Biri ötekinin dönüşümle devamıysa birleşme dönüşümü kendi kendine bağlardı (F25).
@@ -95,6 +106,7 @@ export function onizle(e: EvrenVt, kaynakKod: string, hedefKod: string): Birlesm
     baglantilar: say('SELECT count(DISTINCT b.kaynak) FROM baglantilar b JOIN kayitlar k ON k.kod=b.kaynak WHERE b.hedef=? AND k.silindi IS NULL', kaynakKod),
     gorseller: (JSON.parse(kaynak.gorseller as string) as string[]).filter((g) => !(JSON.parse(hedef.gorseller as string) as string[]).includes(g)).length,
     metinVar: metin.trim().length > 0,
+    formuller: formulluKurallar(e, kaynakKod),
   };
 }
 

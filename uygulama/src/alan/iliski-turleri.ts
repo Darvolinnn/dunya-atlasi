@@ -34,6 +34,8 @@ export const OLAY_ROLLERI = [
   { kod: 'bedensiz', ad: 'Bedensiz kalan' },
   { kod: 'dirilen', ad: 'Dirilen' },
   { kod: 'beden_degisen', ad: 'Bedeni değişen' },
+  // Eşyanın yok edilmesi (§3.8, §9.1): bu olaydan sonra eşya bir olayda ya da sahnede bulunamaz.
+  { kod: 'yok_edilen', ad: 'Yok edilen' },
 ];
 
 /** Yolculukta bulunma (§4.2): yolcu yolculuğun aşamalarında fiziksel olarak bulunur; taşınan eşya da yolculukla gider. */

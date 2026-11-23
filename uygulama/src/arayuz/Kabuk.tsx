@@ -94,7 +94,7 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
               ];
             })}
             {GORUNUMLER.some(([g]) => uzakGorunumMu(kurgu, g) && etkin !== g) && <li><details class="gezinti-uzak">
-              <summary class="gezinti-ogesi kucuk">Diğer grafikler</summary>
+              <summary class="gezinti-ogesi kucuk">Diğer grafikler ve araçlar</summary>
               <ul class="gezinti-alt">{GORUNUMLER.filter(([g]) => uzakGorunumMu(kurgu, g) && etkin !== g).map(([g, gad]) => (
                 <li key={g}><a class="gezinti-ogesi kucuk" href={`#/e/${evren}/${g}`}>{gad}</a></li>))}</ul>
               <p class="soluk kucuk">Gizlenen bölümlerin kayıtları silinmez, yalnızca menüden kalkar.</p>

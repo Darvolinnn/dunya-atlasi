@@ -46,7 +46,7 @@ test('yazma, ağ, zaman çizelgesi ve harita yeni düzenleriyle açılır', asyn
   await expect(liste.getByRole('status')).toContainText('Lale');
   await p.getByRole('button', { name: 'Tablo', exact: true }).click();
   await expect(p.getByRole('heading', { name: 'Kim kimin nesi?' })).toBeVisible();
-  await p.getByRole('button', { name: 'Orhun, Deniz kaydının düşmanı' }).click();
+  await p.getByRole('button', { name: 'Orhun satırı, Deniz sütunu: düşmanı' }).click();
   await expect(p.locator('.secili-bag')).toContainText('Orhun');
   await p.getByRole('button', { name: 'Çizim', exact: true }).click();
 

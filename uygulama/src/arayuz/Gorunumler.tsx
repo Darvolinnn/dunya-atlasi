@@ -540,7 +540,7 @@ function BagTablosu({ evren, r }: { evren: string; r: AgSonucu }) {
                     <td key={sutun.kod}>
                       {l.map((e) => (
                         <button key={e.kod} class={`hucre-bagi bag-${kenarTuru(e)} ${hucre === e.kod ? 'secili' : ''} ${e.gecerlilik === 'belirsiz' || e.karar === 'fikir' ? 'soluk' : ''}`}
-                          aria-pressed={hucre === e.kod} aria-label={`${satir.ad}, ${sutun.ad} kaydının ${kenarEtiketi(e, sutun.kod)}`} onClick={() => setHucre(hucre === e.kod ? null : e.kod)}>
+                          aria-pressed={hucre === e.kod} aria-label={`${satir.ad} satırı, ${sutun.ad} sütunu: ${kenarEtiketi(e, sutun.kod)}`} onClick={() => setHucre(hucre === e.kod ? null : e.kod)}>
                           {kenarEtiketi(e, sutun.kod)}
                         </button>
                       ))}

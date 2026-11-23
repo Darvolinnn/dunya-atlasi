@@ -85,6 +85,8 @@ const ozellikYap = (evren: string, tur: string, ek: Record<string, string> = {})
 
 export class Esitleme {
   constructor(private readonly x: EsitlemeErisimi, private readonly tasiyici: Tasiyici | null) {}
+  /** Bu oturumda içeriği doğrulanmış yerel görseller (`evren:ad`); her eşitlemede yeniden okunmasın. */
+  private readonly dogrulananGorseller = new Set<string>();
 
   private get t(): Tasiyici {
     if (!this.tasiyici) throw new IzinHatasi('Google Drive bağlantısı yok.');
@@ -358,6 +360,14 @@ export class Esitleme {
           // İçerikle adlandırıldığı için bozuk ya da değiştirilmiş görsel kabul edilmez.
           if (dosya === ad && (await icerikAdi(veri)) !== ad) continue;
           await depo.yaz(dosya, veri);
+        } else if (yerelde && d && dosya === ad && !this.dogrulananGorseller.has(`${evren}:${ad}`)) {
+          // Bu cihazdaki görsel bozulmuşsa (içeriği adını tutmuyorsa) Drive'daki sağlam kopyayla değiştirilir.
+          const yerel = await depo.oku(dosya);
+          if (yerel && (await icerikAdi(yerel)) === ad) { this.dogrulananGorseller.add(`${evren}:${ad}`); continue; }
+          const veri = await this.t.indir(d.id);
+          if ((await icerikAdi(veri)) !== ad) continue;
+          await depo.yaz(dosya, veri);
+          this.dogrulananGorseller.add(`${evren}:${ad}`);
         }
       }
     }
