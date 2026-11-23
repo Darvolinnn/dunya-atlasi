@@ -1651,3 +1651,26 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .bilgi-secenekleri button { font: inherit; font-size: 0.9rem; text-align: left; color: var(--metin); background: none; border: 1px solid transparent; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
 .bilgi-secenekleri button:hover { background: var(--yuzey-2); }
 .bilgi-secenekleri button.secili { background: var(--vurgu-zemin); border-color: var(--vurgu); }
+
+/* Akıllı listeler (K38) */
+.kayitlar-duzeni { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 20px; align-items: start; }
+.akilli-listeler { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 12px; }
+.akilli-listeler > .soluk { padding: 0 10px 4px; }
+.akilli-liste-adi { font: inherit; font-size: 0.92rem; text-align: left; color: var(--metin); background: none; border: 1px solid transparent; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+.akilli-liste-adi:hover { background: var(--yuzey-2); }
+.akilli-liste-adi.aktif { background: var(--vurgu-zemin); border-color: var(--vurgu); }
+.akilli-liste-adi.yeni { color: var(--vurgu); }
+.akilli-liste h2, .akilli-liste-formu h2 { margin: 0 0 8px; }
+.akilli-formul { display: block; font-size: 0.95rem; padding: 8px 12px; background: var(--yuzey-2); border: 1px solid var(--cizgi); border-radius: 8px; white-space: pre-wrap; }
+.akilli-grup { margin: 14px 0 0; }
+.akilli-grup h3, .akilli-grup summary { font-size: 0.92rem; margin: 0 0 6px; cursor: default; }
+.akilli-grup summary { cursor: pointer; }
+.akilli-cipler { display: flex; flex-wrap: wrap; gap: 6px; }
+.akilli-cip { font-size: 0.88rem; color: var(--metin); text-decoration: none; background: var(--yuzey-2); border: 1px solid var(--cizgi); border-radius: 999px; padding: 3px 12px; }
+.akilli-cip:hover { border-color: var(--vurgu); }
+.akilli-liste-formu { display: grid; gap: 10px; max-width: 720px; }
+@media (max-width: 760px) {
+  .kayitlar-duzeni { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .akilli-listeler { position: static; flex-direction: row; flex-wrap: wrap; }
+  .akilli-listeler > .soluk { width: 100%; }
+}

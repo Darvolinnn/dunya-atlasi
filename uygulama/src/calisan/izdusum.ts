@@ -426,6 +426,15 @@ CREATE TABLE IF NOT EXISTS metin_isaret_yerleri(
   PRIMARY KEY(kayit, alan, sira)
 );
 CREATE INDEX IF NOT EXISTS metin_isaret_yerleri_isaret ON metin_isaret_yerleri(isaret);
+CREATE TABLE IF NOT EXISTS akilli_listeler(
+  kod TEXT PRIMARY KEY,
+  ad TEXT NOT NULL,
+  tur TEXT NOT NULL DEFAULT '',
+  formul TEXT NOT NULL,
+  tarih TEXT,
+  olusturma INTEGER NOT NULL,
+  silindi INTEGER
+);
 CREATE TABLE IF NOT EXISTS kitap_gorunumleri(
   kod TEXT PRIMARY KEY,
   gorunum TEXT NOT NULL
@@ -840,7 +849,7 @@ CREATE TABLE IF NOT EXISTS olcekli_araziler(
   silindi INTEGER NOT NULL DEFAULT 0
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'kitap_gorunumleri', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'kitap_gorunumleri', 'akilli_listeler', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'gokyuzu_tanimi',
   'sozlukler', 'sozluk_isaretleri',
   'sozlesme_maddeleri', 'sozlesme_disarida',
@@ -1718,6 +1727,16 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     db.exec({ sql: 'INSERT OR REPLACE INTO belge_sunumlari(kod, sunum) VALUES(?,?)', bind: [kod, JSON.stringify(sunum)] });
     alanYaz(db, i, kod, 'belge_sunumu', sunum);
   },
+  /** Akıllı liste (K38): kaydedilmiş sorgu. */
+  akilli_liste_yaz(db, i) {
+    const { kod, ad, tur, formul, tarih } = i.veri as { kod?: unknown; ad?: unknown; tur?: unknown; formul?: unknown; tarih?: unknown };
+    if (typeof kod !== 'string' || typeof ad !== 'string' || !formul || typeof formul !== 'object') return;
+    db.exec({ sql: `INSERT INTO akilli_listeler(kod, ad, tur, formul, tarih, olusturma, silindi) VALUES(?,?,?,?,?,?,NULL)
+      ON CONFLICT(kod) DO UPDATE SET ad=excluded.ad, tur=excluded.tur, formul=excluded.formul, tarih=excluded.tarih`,
+    bind: [kod, ad, typeof tur === 'string' ? tur : '', JSON.stringify(formul), tarih ? JSON.stringify(tarih) : null, i.zaman] });
+  },
+  akilli_liste_sil(db, i) { db.exec({ sql: 'UPDATE akilli_listeler SET silindi=? WHERE kod=?', bind: [i.zaman, String(i.veri.kod)] }); },
+  akilli_liste_geri_yukle(db, i) { db.exec({ sql: 'UPDATE akilli_listeler SET silindi=NULL WHERE kod=?', bind: [String(i.veri.kod)] }); },
   /** Eserin kitap görünümü (K38): çıktı ayarları. */
   kitap_gorunumu_yaz(db, i) {
     const { kod, gorunum } = i.veri as { kod?: unknown; gorunum?: unknown };

@@ -287,6 +287,15 @@ export interface MetinIsareti {
   durum: 'yerinde' | 'metinde_yok' | 'belirsiz';
 }
 export interface IsaretAlani { kod: string; ad: string; grup: string }
+/** Akıllı liste (K38, §7): kaydedilmiş sorgu ve §18 sorgu sözleşmesine göre grupları. */
+export interface AkilliListeOzeti { kod: string; ad: string }
+export interface AkilliListeSatiri { kayit: KisaKayit; neden: string | null }
+export interface AkilliListe {
+  kod: string; ad: string; tur: string; formulYazisi: string; tarih: EvrenTarihi | null;
+  /** Formül artık hesaplanamıyorsa nedeni (gruplar boş kalır). */
+  hata: string | null;
+  uyuyor: AkilliListeSatiri[]; bilgiYok: AkilliListeSatiri[]; celiskili: AkilliListeSatiri[]; konuDisi: AkilliListeSatiri[]; uymuyor: AkilliListeSatiri[];
+}
 /** İşaretli cümlenin incelenmesi (§9.3, F24): bağlı bilgi değişti ya da kritik cümle değişti. */
 export interface IsaretIncelemesi {
   anahtar: string; tur: 'deger' | 'metin'; isaret: MetinIsareti;
@@ -1543,6 +1552,10 @@ export interface Istekler {
   isaretKarari(a: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null; gerekce?: string; niyet?: 'eski_duzelt' | 'bu_tarihten' | 'taslakta' | 'inanc' | null }): void;
   /** Bu kaydın metnindeki "bilgiye dayanıyor" işaretleri (K38, C3). */
   bilgiIsaretKodlari(a: { evren: string; kayit: string }): string[];
+  akilliListeler(a: { evren: string }): AkilliListeOzeti[];
+  akilliListe(a: { evren: string; kod: string }): AkilliListe;
+  akilliListeYaz(a: { evren: string; kod?: string | null; ad: string; tur: string; formul: string; tarih: string }): { kod: string };
+  akilliListeSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   isaretOzetleri(a: { evren: string; kodlar: string[] }): { kod: string; hedef: KisaKayit | null; hedefAlanAdi: string | null; iddia: string; kritik: boolean }[];
   yayimla(a: { evren: string; eser: string; baski: string }): { kod: string };
   yayimSil(a: { evren: string; kod: string }): void;

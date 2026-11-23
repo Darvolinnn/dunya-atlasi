@@ -684,7 +684,7 @@ Bu, programın yazara ne zaman ve nasıl soru sorduğunun tek tanımıdır. Soru
 | **Bağlam karşılaştırma** | Aynı kaydın iki bağlamda yan yana görünümü (§5.2) | Farkın evren zamanından mı, bilgi katmanından mı, taslaktan mı geldiği gösterilir |
 | **Kurgu hatları** | Hat başına sahne ve ipucu dizisi | |
 | **Güç dengesi** | Topluluk × sahip / ihtiyaç / karşısına alamaz · makamlar, resmî ve fiilî güç · bağımlılık çemberi | Kişi ölünce hangi makam boşalır, kim hak iddia eder? Sonucu yazar yazar |
-| **Akıllı listeler** | VE / VEYA / DEĞİL ile kaydedilebilir sorgular | Yalnızca yapılandırılmış alanlar ve ilişkiler üzerinden. Bilinmeyen ve çelişkili değerlerin davranışı §18 sorgu sözleşmesinde; sonuç "doğrulanmış 8, belirsiz 3" biçiminde verilebilir |
+| **Akıllı listeler** | VE / VEYA / DEĞİL ile kaydedilebilir sorgular | Yalnızca yapılandırılmış alanlar ve ilişkiler üzerinden. Bilinmeyen ve çelişkili değerlerin davranışı §18 sorgu sözleşmesinde; sonuç "doğrulanmış 8, belirsiz 3" biçiminde verilebilir. K38: Kayıtlar sayfasının solunda durur. Liste bir ad, kayıt türü (ya da bütün türler), hukuk kurallarındaki formül diliyle yazılmış sorgu (§18.1; aynı yazım kılavuzu ve hata gösterimi) ve isteğe bağlı bir tarihten (yaş bu tarihe göre) oluşur; okunamayan sorgu kaydedilmez. Her açılışta yeniden hesaplanır; gruplar: uyuyor · belirsiz: bilgi eksik · belirsiz: çelişkili · bu kayıt için geçerli değil · uymuyor (kapalı). Formülün dayandığı kayıt silinir ya da alan kaldırılırsa liste "hesaplanamıyor" der. Vazgeçilmiş kayıtlar listeye girmez. |
 | **Sıradan bir gün** | Seçilen mekân, dönem ve statü için barınma, yemek, ulaşım, iş, ibadet, eğlence kayıtları | İki kişinin günü yan yana; anlatı üretilmez |
 | **Karşılaştırmalı okuma** | İki kültürün ölüm anlayışı, üç şehrin yönetimi, bir karakterin farklı dönemleri yan yana | |
 | **Gezinti** | Kullanıcının hazırladığı kayıt dizisi ("Başkentte bir gün") | Uzun aradan sonra evrene dönmek için |
@@ -1377,7 +1377,7 @@ Tarayıcı, yerel veriyi (yerel veritabanı, tarayıcı depolaması) adres klas�
 - Arama yalnızca yazarın kaydettiği veride çalışır; serbest metinden anlam çıkarmaz (K1).
 
 **Kural ve formül dili (TK8):**
-- **Kapsam.** Formül yalnızca hukuk kuralının "kimlere uygulanır" kısmını yazar (§15-11). Bir kural ya koşul listesini ya da formülü kullanır; formül yazılıysa liste kullanılmaz. Süreç kuralları ve öteki hesaplar formül kullanmaz.
+- **Kapsam.** Formül hukuk kuralının "kimlere uygulanır" kısmını (§15-11) ve akıllı listelerin sorgusunu (§7, K38) yazar. Bir kural ya koşul listesini ya da formülü kullanır; formül yazılıysa liste kullanılmaz. Süreç kuralları ve öteki hesaplar formül kullanmaz.
 - **Yapı taşları.** Formülde yalnızca şunlar bulunur; her biri değerlendirildiği kişi için *evet · hayır · belirsiz* verir:
   - *İlişki:* kişinin bir kayda kayıtlı ilişkisi, hukuk koşullarındaki ilişki adlarıyla: `üyesi [Kuzey Loncası]`, `kültüründen [Göçebeler]`, `türünden [...]`, `makamını yürüten [...]`, `hizmetinde [...]`, `orada yaşayan [...]`. Kayıtlı ilişki "evet"tir; kayıt yoksa sonuç "hayır" değil "belirsiz"dir, neden "kayıtlı değil" diye yazılır (§2.2 kural 4).
   - *Seçim alanı:* `{Rütbe} = "Subay"`; *evet / hayır alanı:* `{Mühürlü}`.

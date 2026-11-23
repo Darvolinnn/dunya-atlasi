@@ -77,6 +77,7 @@ import * as cikti from './cikti';
 import * as belgeMod from './belge';
 import * as isaretMod from './metin-isaret';
 import * as bilgiDayanagi from './bilgi-dayanagi';
+import * as akilliListe from './akilli-liste';
 import * as yogunluk from './yogunluk';
 import * as gokyuzu from './gokyuzu';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
@@ -3436,6 +3437,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
   isaretKarari({ evren, anahtar, durum, gerekce = '', niyet = null }: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null; gerekce?: string; niyet?: isaretMod.Niyet | null }) {
     isaretMod.isaretKarari(this.isaretBaglami(evren), String(anahtar), durum, gerekce, niyet);
   }
+  private listeBaglami(evren: string): akilliListe.ListeBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
+  akilliListeler({ evren }: { evren: string }) { return akilliListe.akilliListeler(this.evren(evren)); }
+  akilliListe({ evren, kod }: { evren: string; kod: string }) { return akilliListe.akilliListe(this.evren(evren), kod); }
+  akilliListeYaz({ evren, ...g }: { evren: string; kod?: string | null; ad: string; tur: string; formul: string; tarih: string }) { return akilliListe.akilliListeYaz(this.listeBaglami(evren), g); }
+  akilliListeSil({ evren, kod, geriYukle }: { evren: string; kod: string; geriYukle?: boolean }) { akilliListe.akilliListeSil(this.listeBaglami(evren), kod, !!geriYukle); }
   bilgiIsaretKodlari({ evren, kayit }: { evren: string; kayit: string }) { return bilgiDayanagi.bilgiIsaretKodlari(this.evren(evren), kayit); }
   isaretOzetleri({ evren, kodlar }: { evren: string; kodlar: string[] }) { return isaretMod.isaretOzetleri(this.evren(evren), Array.isArray(kodlar) ? kodlar.slice(0, 50) : []); }
 
