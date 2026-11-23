@@ -854,6 +854,11 @@ export interface EsitlemeDurumu {
   evrenler: EvrenEsitlemeDurumu[];
 }
 export interface DriveYedegi { id: string; gun: string; zaman: number; ad: string; kurulum: string; /** Yedekteki değişiklik sayısı (eski yedeklerde yok). */ islemSayisi?: number }
+/** Bütün yedeklerin doğrulaması (K38): her yedek açılıp okunur, klasördeki her görselin içeriği adıyla karşılaştırılır. */
+export interface YedekDogrulamasi {
+  yedekler: { id: string; gun: string; saglam: boolean; ileti: string | null }[];
+  gorseller: { denetlenen: number; bozuk: string[] };
+}
 /** Bu bilgisayardaki günlük yedekler (K31). var: Windows uygulamasında mı (tarayıcıda klasör yok); acik: bu evren için açık mı. */
 export interface YerelYedekDurumu {
   son: { zaman: number; gun: string; dogrulandi: boolean; eksikGorsel?: number } | null; gunSayisi: number; aySayisi: number; hata: string | null;
@@ -1332,6 +1337,8 @@ export interface Istekler {
   yerelYedekAyari(a: { evren: string; acik: boolean }): YerelYedekDurumu;
   yerelYedekAl(a: { evren: string }): Promise<YerelYedekDurumu>;
   yerelYedekleri(a: { evren: string }): Promise<DriveYedegi[]>;
+  /** K38: bu evrenin bütün yedeklerini ve yedek klasöründeki görselleri doğrular (yer: bu bilgisayar ya da Drive). */
+  yedekleriDogrula(a: { evren: string; yer: 'yerel' | 'drive' }): Promise<YedekDogrulamasi>;
   yereldenGeriYukle(a: { id: string }): Promise<GeriYuklemeSonucu>;
   gunlukYerelYedekler(): Promise<void>;
   esitle(): Promise<EsitlemeDurumu>;

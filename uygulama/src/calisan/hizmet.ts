@@ -560,6 +560,15 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     return this.yerelSirayla(() => y.liste(evren));
   }
 
+  /** K38: bütün yedekleri ve yedek klasöründeki görselleri doğrular; hiçbir şey yazmaz. */
+  async yedekleriDogrula({ evren, yer }: { evren: string; yer: 'yerel' | 'drive' }) {
+    if (typeof evren !== 'string' || !evren) throw new Error('Evren bulunamadı.');
+    if (yer === 'yerel') { const y = this.yerelGerekli(); return this.yerelSirayla(() => y.dogrula(evren)); }
+    if (yer !== 'drive') throw new Error('Geçersiz yedek yeri.');
+    if (!this.donemsel) throw new Error('Önce Google Drive\'a bağlanın.');
+    return this.donemsel.dogrula(evren);
+  }
+
   async yereldenGeriYukle({ id }: { id: string }) {
     const y = this.yerelGerekli();
     if (typeof id !== 'string' || !id) throw new Error('Yedek bulunamadı.');

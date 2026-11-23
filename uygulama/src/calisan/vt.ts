@@ -52,7 +52,7 @@ const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', '
   'olaySurecSorumlulari', 'surecAdimSorumlusuYaz', 'surecEngelEkle', 'surecEngelDegistir', 'surecEngelSil',
   'olayIzleri', 'mekanIzKatmanlari', 'izKaydiYaz', 'izKaydiSil', 'izKaydiGeriYukle',
   'olcekliHaritaDurumu', 'olcekliOlcekYaz', 'olcekliVarsayilanHizYaz', 'olcekliAraziYaz', 'olcekliAraziSil', 'olcekliOlcum', 'olcekliKonturlar',
-  'yerelYedekDurumu', 'yerelYedekAyari', 'yerelYedekAl', 'yerelYedekleri', 'yereldenGeriYukle', 'gunlukYerelYedekler',
+  'yerelYedekDurumu', 'yerelYedekAyari', 'yerelYedekAl', 'yerelYedekleri', 'yedekleriDogrula', 'yereldenGeriYukle', 'gunlukYerelYedekler',
   'jetonVer', 'baglantiyiKes', 'yerelKlasorBagla']);
 
 // Drive izni yalnızca bu çalışanın belleğinde durur; hiçbir yere yazılmaz.
