@@ -23,6 +23,8 @@ import { gitVeYap, YENI_SAHNE_OLAYI } from './yonlendirme';
 import { soruSetiBul } from '../alan/sablon';
 import { DAKTILO_OLAYI, ODAK_OLAYI } from './kisayollar';
 import { DAKTILO_ACILDI, DAKTILO_SINIFI } from './daktilo';
+import { DIYALOG_SINIFI, PARAGRAF_ODAGI_SINIFI } from './okuma-suzgecleri';
+import { DiyalogSeridi } from './DiyalogSeridi';
 
 const PLAN_SORULARI = (soruSetiBul('sahne_plani')?.sorular ?? []).slice(0, 3).map((q) => q.metin);
 
@@ -89,6 +91,17 @@ function useDaktiloKipi(): [boolean, (v: boolean) => void] {
   return [acik, ayarla];
 }
 
+/** Cihazda hatırlanan, `html` öğesine sınıf koyan aç/kapa tercihi (paragraf odağı, yalnız diyaloglar; K38). */
+function useSinifTercihi(anahtar: string, sinif: string): [boolean, (v: boolean) => void] {
+  const [acik, setAcik] = useState(() => okuYerel(anahtar) === '1');
+  const ayarla = (v: boolean) => { setAcik(v); yazYerel(anahtar, v ? '1' : '0'); };
+  useEffect(() => {
+    document.documentElement.classList.toggle(sinif, acik);
+    return () => document.documentElement.classList.remove(sinif);
+  }, [acik]);
+  return [acik, ayarla];
+}
+
 /** Sessiz kelime sayacı (K28): "bugün" bu cihazda, gün başındaki sayıya göre; eşitlenmez. */
 function bugunEklenen(evren: string, kod: string, n: number): number {
   const g = new Date(); const gun = `${g.getFullYear()}-${g.getMonth() + 1}-${g.getDate()}`;
@@ -124,6 +137,8 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const [kelime, setKelime] = useState<number | null>(null);
   const [odak, setOdak] = useOdakKipi();
   const [daktilo, setDaktilo] = useDaktiloKipi();
+  const [paragrafOdagi, setParagrafOdagi] = useSinifTercihi('dunya-atlasi:paragraf-odagi', PARAGRAF_ODAGI_SINIFI);
+  const [diyalog, setDiyalog] = useSinifTercihi('dunya-atlasi:yalniz-diyalog', DIYALOG_SINIFI);
   const [onceki, setOnceki] = useState<string>('');
   const [sekme, setSekme] = useBaglamSekmesi();
   useEffect(() => { setKelime(null); }, [kod]);
@@ -173,9 +188,12 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
           {kelime !== null && <span class="kelime-sayaci" aria-live="off">{sahne ? 'Bu sahne ' : ''}{sayiYaz(kelime)} kelime{bugun ? ` · bugün ${bugun > 0 ? '+' : '−'}${sayiYaz(Math.abs(bugun))}` : ''}</span>}
           <button class={odak ? 'dugme kucuk odak-dugmesi secili' : 'dugme sade kucuk odak-dugmesi'} aria-pressed={odak} title="Odak kipi (Ctrl+Shift+F); çıkmak için Esc" onClick={() => setOdak(!odak)}>{odak ? 'Odaktan çık' : 'Odak'}</button>
           {sahne && baglamKapali && !odak && <button class="dugme sade kucuk" onClick={() => baglamAc(true)}>{bos ? 'Bağlam ekle' : 'Bağlamı göster'}</button>}
+          {diyalog && <button class="dugme kucuk secili" title="Yalnız diyaloglar süzgecini kapat" onClick={() => setDiyalog(false)}>Yalnız diyaloglar ✕</button>}
           <SayfaYardimi sayfa="yaz" />
           <IslemMenusu ad={TUR_ADI[kayit.tur] ?? 'Kayıt'}>
             <button class="menu-ogesi" aria-pressed={daktilo} title="Yazdığınız satır ekranın ortasında kalır (Ctrl+Shift+D)" onClick={() => setDaktilo(!daktilo)}>{daktilo ? '✓ ' : ''}Daktilo kipi</button>
+            <button class="menu-ogesi" aria-pressed={paragrafOdagi} title="İmlecin olduğu paragraf parlak kalır, ötekiler soluklaşır" onClick={() => setParagrafOdagi(!paragrafOdagi)}>{paragrafOdagi ? '✓ ' : ''}Paragraf odağı</button>
+            <button class="menu-ogesi" aria-pressed={diyalog} title="Konuşmayla başlayan paragraflar öne çıkar" onClick={() => setDiyalog(!diyalog)}>{diyalog ? '✓ ' : ''}Yalnız diyaloglar</button>
             <a class="menu-ogesi" href={`#/e/${evren}/k/${kod}`}>Bütün alanlar</a>
             {!kayit.silindi && !saltOkunur && (
               <button class="menu-ogesi tehlikeli" title="Çöp kutusundan geri getirilebilir" onClick={async () => {
@@ -192,6 +210,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
           <div class="yaz-baslik">
             <AlanGirdisi etiket="Başlık" deger={kayit.ad} buyuk zorunlu kaydet={(v) => istemci.iste('kayitDegistir', { evren, kod, alan: 'ad', deger: v })} />
           </div>
+          {diyalog && sahne && <DiyalogSeridi istemci={istemci} evren={evren} baglam={sahneBaglami} />}
           <MetinEditoru saltOkunur={saltOkunur} key={kod} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} baslangic={baslangic}
             baglamParcalari={sahne} parcaDegisti={setImlecParcasi} kelimeDegisti={setKelime} bosYardim={bosYardim} />
           {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}

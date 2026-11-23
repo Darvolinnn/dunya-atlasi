@@ -97,3 +97,29 @@ test('büyük harita görseli döşemeyle gösterilir; yakınlaşınca yalnız e
   const cozulen = await doseme.locator('img.doseme-parca[src]').count();
   expect(cozulen).toBeLessThan(toplam);
 });
+
+test('paragraf odağı ve yalnız diyaloglar görünüşü değiştirir, metne dokunmaz', async ({ page: p }) => {
+  await sahneAc(p);
+  await yaz(p, 'Kapı gıcırdadı.');
+  await p.keyboard.press('Enter');
+  await p.keyboard.type('— Kim var orada?');
+  await p.keyboard.press('Enter');
+  await p.keyboard.type('Kimse cevap vermedi.');
+  const paragraflar = editor(p).locator('> p');
+  const saydamlik = (i: number) => paragraflar.nth(i).evaluate((e) => Number(getComputedStyle(e).opacity));
+  await p.locator('.islem-menusu summary').click();
+  await p.getByRole('button', { name: 'Paragraf odağı' }).click();
+  await expect.poll(() => saydamlik(0)).toBeLessThan(0.5);
+  await expect.poll(() => saydamlik(2)).toBe(1); // imleç son paragrafta
+  await p.locator('.islem-menusu summary').click();
+  await p.getByRole('button', { name: /Paragraf odağı/ }).click();
+  await p.locator('.islem-menusu summary').click();
+  await p.getByRole('button', { name: 'Yalnız diyaloglar' }).click();
+  await expect(p.getByRole('region', { name: 'Sahnedekilerin dilleri ve hitaplar' })).toBeVisible();
+  await expect.poll(() => saydamlik(0)).toBeLessThan(0.5);
+  await expect(paragraflar.nth(1)).toHaveClass(/diyalog-paragrafi/);
+  await expect.poll(() => saydamlik(1)).toBe(1);
+  await p.getByRole('button', { name: 'Yalnız diyaloglar ✕' }).click();
+  await expect.poll(() => saydamlik(0)).toBe(1);
+  await expect(editor(p)).toHaveText('Kapı gıcırdadı.— Kim var orada?Kimse cevap vermedi.');
+});

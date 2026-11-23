@@ -1554,3 +1554,12 @@ details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] 
 /* Kapanışta bekleme (K38): Windows uygulaması kapanırken süren kayıt bitene dek. */
 .kapanis-perdesi { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; background: rgb(0 0 0 / 0.25); }
 .kapanis-perdesi .kart { padding: 14px 22px; }
+
+/* Okuma süzgeçleri (K38): paragraf odağı ve yalnız diyaloglar; metne bir şey eklenmez. */
+.yaz-kagidi .ProseMirror > * { transition: opacity 0.2s ease; }
+html.paragraf-odagi .yaz-kagidi .ProseMirror > :not(.etkin-paragraf) { opacity: 0.32; }
+html.yalniz-diyalog .yaz-kagidi .ProseMirror > :not(.diyalog-paragrafi) { opacity: 0.32; }
+html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; border-left: 3px solid var(--vurgu); padding-left: 12px; margin-left: -15px; }
+@media (prefers-reduced-motion: reduce) { .yaz-kagidi .ProseMirror > * { transition: none; } }
+.diyalog-seridi { background: var(--yuzey-2); border: 1px solid var(--cizgi); border-radius: 10px; padding: 8px 14px; font-size: 0.9rem; margin: 4px 0 16px; }
+.diyalog-seridi p { margin: 2px 0; }
