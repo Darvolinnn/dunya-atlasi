@@ -18,7 +18,7 @@ import { adDegistir, ayrilmaYazisi, kokAdaylari } from '../alan/turkce-ek';
 import { aramaKokleri, kokluSozcukYeri } from '../alan/arama-dizini';
 import { bagGorunumuGecerli, bagGorunumuOku, bagVarsayilanMi, type BagGorunumu } from '../alan/bag-gorunumu';
 import { kararGecerli, kurguTuruGecerli, turBul, turGecerli } from '../alan/turler';
-import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, TuvalOgesi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, TuvalOgesi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import type { DriveSecenekleri, YuklemeIlerlemesi } from './drive';
@@ -1495,7 +1495,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     if (!iliski && alan === 'yerlesim') {
       this.kayitVarMi(e, nesne);
       const v = deger as SahneYerlesimi;
-      this.yaz(evren, [{ tur: 'yerlesim_yaz', veri: { sahne: nesne, plan: v.plan, ogeler: v.ogeler, cozum: true } }], [nesne]); return;
+      const ek = yerlesim.ekiAyir(v);
+      this.yaz(evren, [{ tur: 'yerlesim_yaz', veri: { sahne: nesne, plan: v.plan, ogeler: v.ogeler, ...(ek ? { ek } : {}), cozum: true } }], [nesne]); return;
     }
     if (!iliski && alan === 'niyetler') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'sahne_niyeti_yaz', veri: { sahne: nesne, niyetler: deger ?? [], cozum: true } }], [nesne]); return; }
     if (!iliski && alan.startsWith('hedef:')) { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'montaj_hedefi_yaz', veri: { eser: nesne, iddia: alan.slice(6), hedef: deger, cozum: true } }], [nesne]); return; }
@@ -3221,10 +3222,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       catismali: this.catismalar({ evren, kod: s }).some((c) => c.tur === 'alan' && c.alan === 'yerlesim') };
   }
   yerlesimPlanlari({ evren }: { evren: string }) { return yerlesim.planlar(this.evren(evren)); }
-  yerlesimYaz({ evren, sahne, plan, ogeler }: { evren: string; sahne: string; plan: YerlesimPlani; ogeler: YerlesimOgesi[] }) {
+  yerlesimYaz({ evren, sahne, ...y }: { evren: string; sahne: string } & SahneYerlesimi) {
     const e = this.evren(evren), s = yonlendir(e.db, sahne);
-    const v = yerlesim.dogrula(e, s, plan, ogeler, this.sahneBaglami({ evren, sahne: s }).katilimcilar.map((k) => k.kod));
-    this.yaz(evren, [{ tur: 'yerlesim_yaz', veri: { sahne: s, plan: v.plan, ogeler: v.ogeler } }], [s]);
+    const v = yerlesim.dogrula(e, s, y, this.sahneBaglami({ evren, sahne: s }).katilimcilar.map((k) => k.kod));
+    const ek = yerlesim.ekiAyir(v);
+    this.yaz(evren, [{ tur: 'yerlesim_yaz', veri: { sahne: s, plan: v.plan, ogeler: v.ogeler, ...(ek ? { ek } : {}) } }], [s]);
   }
   yogunluk({ evren, ...s }: { evren: string } & YogunlukIstegi) {
     return yogunluk.oku(this.evren(evren), s, () => this.zamanCizelgesi({ evren }), (kod) => this.harita({ evren, kod }));

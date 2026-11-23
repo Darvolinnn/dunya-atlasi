@@ -741,6 +741,8 @@ Harita görseli değişince (yeniden çizim, kırpma, büyütme) görsel harita 
 
 Kapılar, pencereler, katlar, görüşü kapatan unsurlar. Bir sahne için karakterlerin geçici konumları yerleştirilir; bu yerleşim binanın kalıcı planını değiştirmez. Eski sahne, kullandığı plan sürümünü korur. "Bunu duyabilir miydi?" yazarın kendi incelemesi içindir, program kesin yargı vermez (§15-6).
 
+- **Sahne içi anlar ve katlar (K38):** sahne yerleşiminde sahne boyu "anlar" vardır (Başlangıç, 2. an…; adları yazar verir). Her anda her karakterin katı, yeri ve bakış yönü ayrı tutulur; bir anda yeri yazılmayan karakter önceki andaki yerindedir. Görüş ve ses sonuçları seçilen ana göre hesaplanır; önceki andan gelişi kesik çizgiyle görünür. Eskiden karakter başına tutulan hareket adımları ilk "An ekle"de anlara dönüşür. Bir sahnede ilk katın yanında en çok 12 kat planı daha olabilir (her kat mekânın kayıtlı görsellerinden seçilir; en çok 60 an). Başka kattaki karakter görülmez. "Merdiven ya da açıklık" bir katı başka bir kata aynı oranlı yerde bağlar ve öbür katta kesik çerçeveyle görünür. Ses öbür kata yalnız bunlardan geçer: kaynaktan geçide, geçitten hedefe olan uzaklıklar ve arada kalan engeller toplanır, her kat değişiminde sesin "her kat değişiminde düşülecek miktarı" (yazılmamışsa engel miktarı) eklenir; en az kayıplı yol seçilir. Sonuç kaç kat değiştirildiğini ve gürültü varsayımını gösterir.
+
 ### 8.7 Tablet kalemi
 
 Sayfayı kaydırma ile işaret taşıma birbirine karışmaz; kalem kipleri (seçme, çizme, taşıma) arasında görünür biçimde geçilir (§12.2).

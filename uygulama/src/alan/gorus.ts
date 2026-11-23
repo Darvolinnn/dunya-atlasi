@@ -34,3 +34,71 @@ export function sesUlasir(y: SahneYerlesimi, ses: Extract<YerlesimOgesi, { tur: 
   const kalan = ses.uzaklik - engelSayisi(y, ses.konum, hedef) * ses.azaltma;
   return kalan >= 0 && Math.hypot(b.x - a.x, b.y - a.y) <= kalan + EPS;
 }
+
+// ——— Katlar ve sahne içi anlar (K38) ———
+type Karakter = Extract<YerlesimOgesi, { tur: 'karakter' }>;
+type Ses = Extract<YerlesimOgesi, { tur: 'ses' }>;
+export interface KarakterAni { kat: string | null; konum: Nokta; yon: number }
+
+/** Bir katın planı ve öğeleri; karakterler yalnız ilk katın listesinde durur, burada çıkarılır. */
+export function katYerlesimi(y: SahneYerlesimi, kat: string | null): SahneYerlesimi {
+  if (kat === null) return { plan: y.plan, ogeler: y.ogeler.filter((o) => o.tur !== 'karakter') };
+  const k = y.ekKatlar?.find((x) => x.kod === kat);
+  return k ? { plan: k.plan, ogeler: k.ogeler } : { plan: y.plan, ogeler: [] };
+}
+export const katAdi = (y: SahneYerlesimi, kat: string | null) => kat === null ? (y.katAdi || 'İlk kat') : y.ekKatlar?.find((k) => k.kod === kat)?.ad ?? 'Kaldırılmış kat';
+
+/** Karakterin n. andaki katı, yeri ve yönü; anı yazılmamışsa önceki anlardaki ya da yerleşimdeki yeri. */
+export function karakterAni(y: SahneYerlesimi, k: Karakter, an: number): KarakterAni {
+  let d: KarakterAni = { kat: null, konum: k.konum, yon: k.yon };
+  for (let i = 0; i <= an && i < (y.anlar?.length ?? 0); i++) { const x = y.anlar![i].konumlar[k.kod]; if (x) d = x; }
+  return d;
+}
+
+/** Karakterin o andaki hâliyle görüş: farklı kattakiler görülmez. */
+export function andaGorur(y: SahneYerlesimi, k: Karakter, an: number, hedef: KarakterAni): boolean {
+  const a = karakterAni(y, k, an);
+  if (a.kat !== hedef.kat) return false;
+  return gorusHatti(katYerlesimi(y, a.kat), { ...k, konum: a.konum, yon: a.yon }, hedef.konum);
+}
+
+export interface SesSonucu { ulasir: boolean | null; katDegisimi: number; kalan: number | null }
+/**
+ * Sesin başka bir kattaki noktaya ulaşması: kaynaktan bir geçide, geçitten öbür kata (her kat değişiminde
+ * `katAzaltma` düşülür), oradan hedefe. Her katta o katın engelleri sayılır; uzaklık birimi o katın planının enidir.
+ * En az kayıplı yol seçilir. Uzaklık ya da gürültü varsayımı yoksa hesap belirsizdir.
+ */
+export function sesKatlarArasi(y: SahneYerlesimi, ses: Ses, sesKati: string | null, hedef: { kat: string | null; konum: Nokta }): SesSonucu {
+  if (ses.uzaklik === null || !ses.gurultu.trim()) return { ulasir: null, katDegisimi: 0, kalan: null };
+  const katKaybi = ses.katAzaltma ?? ses.azaltma;
+  const bacak = (kat: string | null, a: Nokta, b: Nokta) => {
+    const ky = katYerlesimi(y, kat), p = nokta(ky, a), q = nokta(ky, b);
+    return Math.hypot(q.x - p.x, q.y - p.y) + engelSayisi(ky, a, b) * ses.azaltma;
+  };
+  // Geçitler: her biri iki katı aynı oranlı yerde bağlar.
+  const katlar: (string | null)[] = [null, ...(y.ekKatlar ?? []).map((k) => k.kod)];
+  const gecitler: { a: string | null; b: string | null; konum: Nokta }[] = [];
+  for (const kat of katlar) for (const o of katYerlesimi(y, kat).ogeler) if (o.tur === 'gecit' && o.kat !== kat && katlar.includes(o.kat)) gecitler.push({ a: kat, b: o.kat, konum: o.konum });
+  // Dijkstra: düğüm = (kat, nokta); başlangıç kaynak, bitiş hedef.
+  type Dugum = { kat: string | null; konum: Nokta; maliyet: number; deg: number };
+  const anahtar = (d: { kat: string | null; konum: Nokta }) => `${d.kat}:${d.konum.x}:${d.konum.y}`;
+  const en = new Map<string, number>();
+  const kuyruk: Dugum[] = [{ kat: sesKati, konum: ses.konum, maliyet: 0, deg: 0 }];
+  let iyi: { maliyet: number; deg: number } | null = null;
+  while (kuyruk.length) {
+    kuyruk.sort((a, b) => a.maliyet - b.maliyet);
+    const d = kuyruk.shift()!;
+    if (iyi && d.maliyet >= iyi.maliyet) break;
+    if ((en.get(anahtar(d)) ?? Infinity) <= d.maliyet && d.maliyet > 0) continue;
+    en.set(anahtar(d), d.maliyet);
+    if (d.kat === hedef.kat) { const m = d.maliyet + bacak(d.kat, d.konum, hedef.konum); if (!iyi || m < iyi.maliyet) iyi = { maliyet: m, deg: d.deg }; }
+    for (const g of gecitler) {
+      const ote = g.a === d.kat ? g.b : g.b === d.kat ? g.a : undefined;
+      if (ote === undefined) continue;
+      kuyruk.push({ kat: ote, konum: g.konum, maliyet: d.maliyet + bacak(d.kat, d.konum, g.konum) + katKaybi, deg: d.deg + 1 });
+    }
+  }
+  if (!iyi) return { ulasir: false, katDegisimi: 0, kalan: null };
+  const kalan = ses.uzaklik - iyi.maliyet;
+  return { ulasir: kalan >= -EPS, katDegisimi: iyi.deg, kalan };
+}

@@ -1783,13 +1783,15 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     alanYaz(db, i, kod, 'kullanim_masasi', tanim);
   },
   yerlesim_yaz(db, i) {
-    const v = i.veri as unknown as { sahne: string; plan: import('../veri/api').YerlesimPlani; ogeler: import('../veri/api').YerlesimOgesi[] };
+    // `ek`: katlar ve anlar (K38); yoksa eski biçim. Plan sütununda `ek` altında saklanır (tablo değişmedi).
+    const v = i.veri as unknown as { sahne: string; plan: import('../veri/api').YerlesimPlani; ogeler: import('../veri/api').YerlesimOgesi[]; ek?: Record<string, unknown> };
     if (typeof v.sahne !== 'string' || !v.plan || !Array.isArray(v.ogeler)) return;
     const sahne = yonlendir(db, v.sahne);
     const plan = { ...v.plan, mekan: yonlendir(db, v.plan.mekan) };
     const ogeler = v.ogeler.map((o) => o.tur === 'karakter' ? { ...o, kisi: yonlendir(db, o.kisi) } : o);
-    const deger = { plan, ogeler };
-    db.exec({ sql: 'INSERT OR REPLACE INTO sahne_yerlesimleri(kod, plan, ogeler) VALUES(?,?,?)', bind: [sahne, JSON.stringify(plan), JSON.stringify(ogeler)] });
+    const ek = v.ek && typeof v.ek === 'object' ? v.ek : undefined;
+    const deger = { plan, ogeler, ...(ek ?? {}) };
+    db.exec({ sql: 'INSERT OR REPLACE INTO sahne_yerlesimleri(kod, plan, ogeler) VALUES(?,?,?)', bind: [sahne, JSON.stringify(ek ? { ...plan, ek } : plan), JSON.stringify(ogeler)] });
     alanYaz(db, i, sahne, 'yerlesim', deger);
   },
   sozlesme_madde_yaz(db, i) {

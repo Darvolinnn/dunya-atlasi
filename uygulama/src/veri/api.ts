@@ -334,9 +334,19 @@ export type YerlesimOgesi = { kod: string; ad: string } & (
   | { tur: 'duvar' | 'kapi' | 'pencere' | 'siper'; a: YerlesimNoktasi; b: YerlesimNoktasi; acik: boolean }
   | { tur: 'karakter'; kisi: string; konum: YerlesimNoktasi; yon: number; aci: number; uzaklik: number; adimlar: YerlesimNoktasi[] }
   | { tur: 'isik'; konum: YerlesimNoktasi; yaricap: number }
-  | { tur: 'ses'; konum: YerlesimNoktasi; duzey: string; uzaklik: number | null; azaltma: number; gurultu: string }
+  | { tur: 'ses'; konum: YerlesimNoktasi; duzey: string; uzaklik: number | null; azaltma: number; gurultu: string; /** Her kat değişiminde uzaklıktan düşülen (K38); yoksa engel azaltması. */ katAzaltma?: number }
+  /** Merdiven ya da açıklık (K38): ses buradan `kat` katına geçer; öbür katta aynı oranlı yerde varsayılır. null ilk kattır. */
+  | { tur: 'gecit'; konum: YerlesimNoktasi; kat: string | null }
 );
-export interface SahneYerlesimi { plan: YerlesimPlani; ogeler: YerlesimOgesi[] }
+/** Mekânın ikinci, üçüncü… kat planı (K38). Karakterler katta değil sahnede tutulur; hangi katta oldukları anlara göre değişir. */
+export interface YerlesimKati { kod: string; ad: string; plan: YerlesimPlani; ogeler: YerlesimOgesi[] }
+/** Sahne içi an (K38): karakterlerin o andaki katı, yeri ve bakış yönü. Yazılmayan karakter önceki andaki yerindedir. */
+export interface YerlesimAni { kod: string; ad: string; konumlar: Record<string, { kat: string | null; konum: YerlesimNoktasi; yon: number }> }
+export interface SahneYerlesimi {
+  plan: YerlesimPlani; ogeler: YerlesimOgesi[];
+  /** İlk katın adı ("Zemin kat"); başka kat yoksa gösterilmez. */
+  katAdi?: string; ekKatlar?: YerlesimKati[]; anlar?: YerlesimAni[];
+}
 export interface YerlesimOkumasi { yerlesim: SahneYerlesimi | null; katilimcilar: KisaKayit[]; catismali: boolean }
 export interface YerlesimPlanSecimi extends YerlesimPlani { ad: string }
 
@@ -1497,7 +1507,7 @@ export interface Istekler {
   sozlesmeHatirlatmalari(a: { evren: string; kayit: string }): SozlesmeHatirlatmasi[];
   yerlesim(a: { evren: string; sahne: string }): YerlesimOkumasi;
   yerlesimPlanlari(a: { evren: string }): YerlesimPlanSecimi[];
-  yerlesimYaz(a: { evren: string; sahne: string; plan: YerlesimPlani; ogeler: YerlesimOgesi[] }): void;
+  yerlesimYaz(a: { evren: string; sahne: string } & SahneYerlesimi): void;
   gundelikYaz(a: { evren: string; yer: string; kartlar: { kod?: string | null; konu: string; donem: string | null; statu: string | null; metin: string }[] }): void;
   siradanGun(a: { evren: string; yer: string; donem?: string | null; statu?: string | null }): SiradanGun;
   karsilastirmaliOkuma(a: { evren: string; sutunlar: { kayit: string; tarih: string | null }[] }): KarsilastirmaliOkuma;
