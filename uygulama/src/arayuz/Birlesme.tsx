@@ -82,6 +82,7 @@ function BirlesmePaneli({ istemci, evren, kayit, onceKaydet, kapat }: { istemci:
             {o.adlar.length > 0 && <li>Lakap olarak kalacak adlar: {o.adlar.join(', ')}</li>}
             {tasinan.length > 0 && <li>Taşınacaklar: {tasinan.map(([n, ad]) => `${n} ${ad}`).join(', ')}</li>}
             {o.baglantilar > 0 && <li>Metinlerdeki {o.baglantilar} bağlantı “{o.hedef.ad}” kaydını açacak. Metinde yazılanlar değişmez.</li>}
+            {o.formuller > 0 && <li>{o.formuller} hukuk kuralının formülünde geçiyor; formül bundan sonra “{o.hedef.ad}” kaydına bakar.</li>}
             {o.aradakiIliskiler > 0 && <li>İki kayıt arasındaki {o.aradakiIliskiler} ilişki kaldırılacak (bir kayıt kendisiyle ilişkili olamaz).</li>}
             {dolan.length > 0 && <li>“{o.hedef.ad}” kaydında boş olup doldurulacak alanlar: {dolan.map((a) => `${a.etiket} (${a.kaynak})`).join(', ')}</li>}
             {o.metinVar && <li>“{o.kaynak.ad}” kaydının metni kendi sayfasında okunur kalır; istediğiniz kısmı taşıyabilirsiniz.</li>}

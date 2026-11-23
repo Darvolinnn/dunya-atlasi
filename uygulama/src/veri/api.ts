@@ -1078,6 +1078,8 @@ export interface BirlesmeOnizlemesi {
   kaynak: KisaKayit; hedef: KisaKayit; adlar: string[]; alanlar: BirlesmeAlani[];
   iliskiler: number; aradakiIliskiler: number; durumlar: number; isaretler: number; haritalar: number; degisimler: number;
   baglantilar: number; gorseller: number; metinVar: boolean;
+  /** Formülünde kaynak kayıt geçen hukuk kuralları; birleşmeden sonra formül hedef kayda bakar. */
+  formuller: number;
 }
 /** Sağlık taraması (§9.4) ve inceleme kararları (§9.3). */
 export interface IncelemeKarari {

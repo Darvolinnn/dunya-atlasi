@@ -38,7 +38,7 @@ export function DilBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; ev
     <section class="surecler dil-bolumu" aria-label="Dil tarihi">
       <h2>Ses ve dil tarihi</h2>
       {(b.kaynaklar.length > 0 || b.turevler.length > 0) && (
-        <p class="kucuk">{b.kaynaklar.length > 0 && <>Türediği ya da sözcük aldığı dil: {liste(evren, b.kaynaklar)}. </>}{b.turevler.length > 0 && <>Ondan türeyen: {liste(evren, b.turevler)}.</>}</p>
+        <p class="kucuk">{b.kaynaklar.length > 0 && <>Türediği ya da sözcük aldığı dil: {liste(evren, b.kaynaklar)}. </>}{b.turevler.length > 0 && <>Bu dilden türeyen ya da sözcük alan diller: {liste(evren, b.turevler)}.</>}</p>
       )}
       {!b.kaynaklar.length && <p class="soluk kucuk">Bu dilin daha eski bir dönemi ya da kaynağı varsa İlişkiler bölümünden “Türediği ya da sözcük aldığı dil” ilişkisini ekleyin. Aşağıdaki kurallar o dilden gelen sözcüklere uygulanır.</p>}
       {hata && <p class="hata kucuk">{hata}</p>}

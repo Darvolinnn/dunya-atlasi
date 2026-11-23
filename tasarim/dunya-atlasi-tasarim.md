@@ -403,7 +403,7 @@ Mekân ile siyasi varlık ayrı kayıt türleridir. **Bölge** bir mekândır (c
 
 ### 3.8 Eşya, sahiplik, makam ve kafile
 
-- **Eşya** için ayrı tutulanlar: *sahibi · elinde bulunduranı · konumu · durumu* (sağlam, kırık, kayıp, yok edilmiş). Hepsinin geçmişi vardır (§3.5). Kılıcı bir haberciye vermek taşıyanı değiştirir, sahibini değiştirmez.
+- **Eşya** için ayrı tutulanlar: *sahibi · elinde bulunduranı · konumu · durumu* (sağlam, kırık, kayıp, yok edilmiş). Hepsinin geçmişi vardır (§3.5). Kılıcı bir haberciye vermek taşıyanı değiştirir, sahibini değiştirmez. Eşyanın yok edilmesi, onu yok eden olaya **"Yok edilen"** katılım rolüyle bağlanarak kaydedilir; tutarlılık denetimi (§9.1) bu tarihe bakar.
 - **Sahiplik:** Eşya açıkça "tek sahipli" işaretlendiyse yeni sahip girilince önceki sahip o tarihten itibaren düşer. Aksi hâlde sahiplik iddiası, hukuken tanınan hak, fiilî kontrol, taşıma ve kullanım hakkı ayrı tutulur; ortak mülk, hisseli gemi, rehin ve rakip mirasçılar mümkündür. Haklar için F26.
 - **Tekil ve bölünebilir:** Kılıç gibi tekil nesne ile yüz çuval tahıl gibi bölünebilir miktar aynı envanter davranışına zorlanmaz. Miktarların anlamı §18 nicelik sözleşmesindedir.
 - **Makam ile kişi ayrıdır:** Kuzey Valiliği kalıcı bir makam kaydıdır; belirli tarihlerde farklı kişiler yürütür. Makamın nasıl kazanıldığı §3.10'daki süreç kuralıyla tanımlanır.
@@ -753,7 +753,7 @@ Her denetim sonucu sonuç zarfıyla anlatılır (§2.3): hüküm (*açık çeli�
 | Yaşam süresi | Doğumdan önce ya da ölümden sonra bir olayda **fiziksel olarak bulunma**. Kişisel kronoloji (F45, Öneri) tasarıma alınır ve açılırsa evren tarihi yerine kişinin yaşadığı sıra kullanılır. |
 | Döngüsel tarih | Göreli tarihlerde A < B < C < A gibi imkânsız döngü |
 | Konum ve rota | Aynı aralıkta, fiziksel kapsamayla birbirini içermeyen iki yerde bulunma (handa olmak ile aynı şehirde olmak, limandaki gemide olmak ile limanda olmak çelişmez; §3.7), ya da kayıtlı rota süresinden kısa sürede yer değiştirme. Tarihlerin hassasiyeti iki yeri ayırmaya yetmiyorsa sonuç "olası uyuşmazlık" olur (§3.4). |
-| Eşya | Tek sahipli ya da tekil bir eşyanın aynı anda iki kişide bulunması, yok edildikten sonra kullanılması |
+| Eşya | Tek sahipli ya da tekil bir eşyanın aynı anda iki kişide bulunması, yok edildikten ("Yok edilen" rolüyle bağlı olaydan) kesin olarak sonra bir olayda, sahnede ya da yolculukta bulunması |
 | Bilgi | Karakterin bir bilgiyi öğrenmeden önce ona göre davranması (yalnızca kullanıcının kurduğu bilgi kayıtları üzerinden) |
 | Süreç | Bir olayın, bağlı süreç kuralının önkoşuluyla çelişmesi (§3.10) |
 | Alternatifler | Birbirinin alternatifi diye bağlanmış iki kaydın ikisinin de kesinleşmiş olması (olası uyuşmazlık; K27, §3.6) |

@@ -19,7 +19,7 @@ export interface DenetimBaglami {
 
 /** Fiziksel bulunma sayılan katılım rolleri. Adı anılmak, hatırlanmak, emri vermek ya da sonradan öğrenmek sayılmaz. */
 const SAHNEDE_FIZIKSEL = ['bulunuyor'];
-const OLAYDA_FIZIKSEL = ['baslatan', 'katilan', 'tanik', 'zarar', 'olen', 'dirilen', 'beden_degisen'];
+const OLAYDA_FIZIKSEL = ['baslatan', 'katilan', 'tanik', 'zarar', 'olen', 'dirilen', 'beden_degisen', 'yok_edilen'];
 
 type Ham = Omit<DenetimBulgusu, 'karar'> & { imza: string };
 type Aralik = { enErken: number | null; enGec: number | null };
@@ -38,7 +38,7 @@ const ortusur = (a: Aralik, b: Aralik) => (a.enErken === null || b.enGec === nul
 const tirnak = (t: EvrenTarihi) => `“${t.ifade}”`;
 const gunYaz = (n: number) => `${n.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} gün`;
 
-const ROL_ADI: Record<string, string> = { yolcu: 'yolcu', bulunuyor: 'sahnede bulunuyor', baslatan: 'başlatan', katilan: 'katılan', tanik: 'tanık', zarar: 'zarar gören', olen: 'ölen', dirilen: 'dirilen', beden_degisen: 'bedeni değişen' };
+const ROL_ADI: Record<string, string> = { yolcu: 'yolcu', bulunuyor: 'sahnede bulunuyor', baslatan: 'başlatan', katilan: 'katılan', tanik: 'tanık', zarar: 'zarar gören', olen: 'ölen', dirilen: 'dirilen', beden_degisen: 'bedeni değişen', yok_edilen: 'yok edilen' };
 
 /** Kişilerin fiziksel olarak bulunduğu olay ve sahneler. Sahnenin tarihi yoksa kendi sahne olayından alınır. */
 function bulunmalar(e: EvrenVt): Bulunma[] {
@@ -287,7 +287,7 @@ function konum(e: EvrenVt, b: Bulunma[], p: PaketEtkisi | null): { bulgular: Ham
 }
 
 /** Eşya: aynı dönemde iki ayrı sahibi görünen eşya. Ortak sahiplik olabileceği için olası uyuşmazlıktır. */
-function esya(e: EvrenVt): { bulgular: Ham[]; denetlenen: number } {
+function esya(e: EvrenVt, b: Bulunma[]): { bulgular: Ham[]; denetlenen: number } {
   const satirlar = e.db.selectObjects(`SELECT i.kod ik, i.karar ikarar, i.baslangic, i.bitis, p.kod, p.ad, p.tur, p.karar pkarar, s.kod s_kod, s.ad s_ad, s.tur s_tur, s.karar skarar
     FROM iliskiler i JOIN kayitlar p ON p.kod=i.a JOIN kayitlar s ON s.kod=i.b
     WHERE i.tur='sahip' AND s.tur='esya' AND i.silindi IS NULL AND p.silindi IS NULL AND s.silindi IS NULL
@@ -317,6 +317,25 @@ function esya(e: EvrenVt): { bulgular: Ham[]; denetlenen: number } {
         kayitlar: [esyaK, kisa(x), kisa(y)],
         fikir: [x, y].some((r) => r.ikarar === 'fikir' || r.pkarar === 'fikir') || x.skarar === 'fikir',
         imza: JSON.stringify([bx.eksen, by.eksen, sx?.eksen ?? null, sy?.eksen ?? null]),
+      });
+    }
+  }
+  // Yok edildikten sonra bulunma (§9.1): eşya bir olayda "Yok edilen" ise, kesin olarak daha sonraki bir olayda,
+  // sahnede ya da yolculukta bulunamaz. Tarihler birbirini ayıramıyorsa bulgu yoktur.
+  const yokEdilme = new Map<string, Bulunma[]>();
+  for (const x of b) if (x.rol === 'yok_edilen' && x.kisi.tur === 'esya' && x.tarih?.eksen) yokEdilme.set(x.kisi.kod, [...(yokEdilme.get(x.kisi.kod) ?? []), x]);
+  for (const [kod, yoklar] of yokEdilme) {
+    denetlenen++;
+    for (const x of b) {
+      if (x.kisi.kod !== kod || x.rol === 'yok_edilen' || !x.tarih?.eksen) continue;
+      const y = yoklar.find((z) => karsilastir(x.tarih!, z.tarih!) === 'sonra');
+      if (!y) continue;
+      bulgular.push({
+        anahtar: `denetim:esya-yok:${y.iliski}:${x.iliski}`, kural: 'esya', hukum: 'celiski',
+        baslik: `“${x.kisi.ad}”, yok edildikten sonra “${x.olay.ad}” içinde bulunuyor`,
+        dayanak: `“${y.olay.ad}” ${tirnak(y.tarih!)} olayında yok edildi; “${x.olay.ad}” ${tirnak(x.tarih)}, eşya burada ${ROL_ADI[x.rol] ?? 'katılımcı'}.`,
+        kayitlar: [x.kisi, y.olay, x.olay], fikir: x.fikir || y.fikir,
+        imza: JSON.stringify([y.tarih!.eksen, x.tarih.eksen, x.rol]),
       });
     }
   }
@@ -364,7 +383,7 @@ function hesapla(e: EvrenVt, p: PaketEtkisi | null = null): { bulgular: Ham[]; k
     return { kisi: x.kisi, olay: x.yolculuk, iliski: x.iliski, rol: 'yolcu', tarih: x.tarih, fikir: x.fikir, sahneOlayi: null,
       yer: yer ? { kod: yer.kod as string, ad: yer.ad as string, tur: yer.tur as string } : { kod: x.yer, ad: 'Silinmiş kayıt', tur: 'diger' } };
   })], p);
-  const y = yasam(e, b), d = dongu(e), k = konum(e, b, p), s = esya(e);
+  const y = yasam(e, b), d = dongu(e), k = konum(e, b, p), s = esya(e, b);
   const sr = surecDenetimi(e);
   const al = alternatif(e);
   const srH: Ham[] = sr.bulgular.map((x) => ({ ...x, kural: 'surec' as const }));
@@ -382,8 +401,8 @@ function hesapla(e: EvrenVt, p: PaketEtkisi | null = null): { bulgular: Ham[]; k
     ozet('konum', 'Konum', 'Aynı zamanda, biri ötekinin parçası olmayan iki yerde fiziksel olarak bulunma.', k,
       'Aynı kişinin tarihli ve yeri belli iki olayı ya da sahnesi yok.',
       `${k.denetlenen} olay çifti denetlendi${k.rotaDenetlenen ? `; ${k.rotaDenetlenen} çift kayıtlı rota süresiyle karşılaştırıldı` : ''}.${k.yersiz ? ` ${k.yersiz} bulunmanın tarihi ya da yeri olmadığı için denetlenemedi.` : ''} Rota süreleri yalnızca kayıtlı rotalar için geçerlidir.`),
-    ozet('esya', 'Eşya', 'Bir eşyanın aynı dönemde iki ayrı sahibinin görünmesi.', s,
-      'İki ya da daha çok sahibi kayıtlı eşya yok.', `${s.denetlenen} eşya denetlendi. Başlangıcı yazılmamış sahiplikler denetlenmez. Eşyanın yok edilmesi henüz denetlenmiyor.`),
+    ozet('esya', 'Eşya', 'Bir eşyanın aynı dönemde iki ayrı sahibinin görünmesi ya da yok edildikten sonra bir olayda bulunması.', s,
+      'İki ya da daha çok sahibi kayıtlı ya da bir olayda yok edilen eşya yok.', `${s.denetlenen} eşya denetlendi. Başlangıcı yazılmamış sahiplikler denetlenmez. Yok edilme, olaydaki “Yok edilen” rolüyle kaydedilir.`),
     { kural: 'bilgi', ad: 'Bilgi', tanim: 'Karakterin bir bilgiyi öğrenmeden önce ona göre davranması.', sonuc: 'denetlenemiyor', denetlenen: 0,
       not: 'Bir karakterin bir bilgiye göre davrandığını gösteren bir kayıt henüz yok. Program bunu metinden çıkarmaz.' },
     ozet('surec', 'Süreç', 'Bir olayda bir adımın, bağlı süreç kuralındaki önkoşul adımı yapılmadan gerçekleşmesi.', { bulgular: srH, denetlenen: sr.denetlenen },
