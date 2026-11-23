@@ -54,7 +54,7 @@ import * as seriPlan from './seri';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
 import type { AdDizini, AracTanitimDayanaklari, IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi, YerelYedekDurumu } from '../veri/api';
-import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
+import type { BirlesmeGeri, SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
 import * as bakim from './bakim';
 import * as sozluk from './sozluk';
@@ -95,6 +95,7 @@ import { SANILAN_DURUMLAR } from '../alan/bilgi';
 import * as kimlik from './kimlik';
 import * as parca from './baglam-parcasi';
 import * as metinKul from './metin-kullanim';
+import * as cerrahi from './sahne-cerrahisi';
 import * as gecis from './gecis';
 import type { BaglamParcasiTanimi, GecisSartiGirdisi, KullanimBicimi } from '../veri/api';
 import type { DairInancTanimi } from '../veri/api';
@@ -2940,6 +2941,27 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       },
     };
   }
+  // ---------- Sahneyi bölme ve birleştirme (K38) ----------
+  private cerrahiBaglami(evren: string): cerrahi.CerrahiBaglami {
+    const k = this.kullanimBaglami(evren);
+    return {
+      e: k.e, yaz: k.yaz, kayitGirdileri: (kod, v) => this.kayitGirdileri(kod, v),
+      metin: (kayit) => { const d = this.belge(k.e, kayit, 'govde'); return { spans: A.spans(d, ['t']) as Spans, basliklar: A.getHeads(d) }; },
+      metinGirdisi: (kayit, spans) => k.metinGirdisi(kayit, 'govde', spans),
+    };
+  }
+  sahneBolOnizle({ evren, sahne, konum, temel }: { evren: string; sahne: string; konum: number; temel: Basliklar }) { return cerrahi.bolmeOnizle(this.cerrahiBaglami(evren), sahne, konum, temel); }
+  sahneBol({ evren, sahne, konum, temel, ad, sonGozlemler }: { evren: string; sahne: string; konum: number; temel: Basliklar; ad?: string; sonGozlemler: 'kalsin' | 'gecsin' }) {
+    if (sonGozlemler !== 'kalsin' && sonGozlemler !== 'gecsin') throw new Error('Sahne sonu gözlemlerinin nereye gideceğini seçin.');
+    return cerrahi.bol(this.cerrahiBaglami(evren), sahne, konum, temel, { ad, sonGozlemler });
+  }
+  sonrakiSahne({ evren, sahne }: { evren: string; sahne: string }) { return cerrahi.sonrakiSahne(this.evren(evren), sahne); }
+  sahneBirlestirOnizle({ evren, sahne }: { evren: string; sahne: string }) { return cerrahi.birlesmeOnizle(this.cerrahiBaglami(evren), sahne); }
+  sahneBirlestir({ evren, sahne, ikinci, bitisik = false }: { evren: string; sahne: string; ikinci?: string; bitisik?: boolean }) {
+    return cerrahi.birlestir(this.cerrahiBaglami(evren), sahne, { ikinci, bitisik: !!bitisik });
+  }
+  sahneBirlesmesiniGeriAl({ evren, geri }: { evren: string; geri: BirlesmeGeri }) { cerrahi.birlesmeyiGeriAl(this.cerrahiBaglami(evren), geri); }
+
   metinKullanimlari({ evren, hedef }: { evren: string; hedef: string }) { return metinKul.kullanimlar(this.kullanimBaglami(evren), hedef); }
   metinKullanildigiYerler({ evren, kaynak }: { evren: string; kaynak: string }) { return metinKul.kullanildigiYerler(this.kullanimBaglami(evren), kaynak); }
   metinKullanimOlustur({ evren, kaynak, hedef, alan, bicim }: { evren: string; kaynak: string; hedef: string; alan: string; bicim: KullanimBicimi }) {

@@ -1626,6 +1626,12 @@ export interface Istekler {
   metinKullanimGuncelle(a: { evren: string; kod: string }): void;
   metinKullanimTurev(a: { evren: string; kod: string }): void;
   metinKullanimTasi(a: { evren: string; kod: string; hedef: string }): void;
+  sahneBolOnizle(a: { evren: string; sahne: string; konum: number; temel: string[] }): BolmeOnizlemesi;
+  sahneBol(a: { evren: string; sahne: string; konum: number; temel: string[]; ad?: string; sonGozlemler: 'kalsin' | 'gecsin' }): { yeni: string; bitisik: boolean };
+  sonrakiSahne(a: { evren: string; sahne: string }): { kod: string; ad: string } | null;
+  sahneBirlestirOnizle(a: { evren: string; sahne: string }): SahneBirlesmeOnizlemesi;
+  sahneBirlestir(a: { evren: string; sahne: string; ikinci?: string; bitisik?: boolean }): BirlesmeGeri;
+  sahneBirlesmesiniGeriAl(a: { evren: string; geri: BirlesmeGeri }): void;
   metinKullanimSil(a: { evren: string; kod: string }): void;
   donusumListesi(a: { evren: string; kayit: string }): DonusumOkumasi[];
   donusumSecenekleri(a: { evren: string }): DonusumSecenekleri;
@@ -1675,6 +1681,18 @@ export interface Istekler {
 }
 
 export type IstekAdi = keyof Istekler;
+/** Sahneyi bölmeden önce gösterilen (K38). */
+export interface BolmeOnizlemesi {
+  paragraf: number; kelime: number; ad: string;
+  tarih: string | null; yer: string | null; bakis: string | null; sahnedekiler: number;
+  baglanti: number; isaret: number; parca: number; kullanim: number; sonGozlem: number;
+}
+export interface SahneBirlesmeOnizlemesi { ikinci: { kod: string; ad: string }; paragraf: number; kelime: number; katilimci: number; olay: number; isaret: number; parca: number; kullanim: number }
+/** Birleştirmeyi geri almak için gerekenler (yalnız bu cihazda, kısa süre tutulur). */
+export interface BirlesmeGeri {
+  sahne: string; ikinci: string; konum: number; basliklar: string[];
+  iliskiler: string[]; ogeler: { isaret: string[]; parca: string[]; kullanim: string[] }; gozlemler: { iz: string; deger: string | null }[];
+}
 export type IstekArg<K extends IstekAdi> = Parameters<Istekler[K]>[0];
 export type IstekSonuc<K extends IstekAdi> = Awaited<ReturnType<Istekler[K]>>;
 

@@ -1563,3 +1563,11 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 @media (prefers-reduced-motion: reduce) { .yaz-kagidi .ProseMirror > * { transition: none; } }
 .diyalog-seridi { background: var(--yuzey-2); border: 1px solid var(--cizgi); border-radius: 10px; padding: 8px 14px; font-size: 0.9rem; margin: 4px 0 16px; }
 .diyalog-seridi p { margin: 2px 0; }
+
+/* Sahneyi bölme ve birleştirme (K38) */
+.sahne-bolme { width: min(560px, 100%); }
+.sahne-bolme h3 { margin: 0; }
+.sahne-bolme p { margin: 0; }
+.sahne-bolme .alan { display: flex; flex-direction: column; gap: 4px; }
+.sahne-bolme-secim { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.sahne-bolme .satir.sag { justify-content: flex-end; }

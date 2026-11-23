@@ -63,7 +63,13 @@ const KISAYOLLAR: Record<string, Command> = {
 
 type Durum = { tur: 'kayitli'; zaman: number | null } | { tur: 'bekliyor' } | { tur: 'kaydediliyor' } | { tur: 'hata'; mesaj: string; taslak?: boolean };
 
-export interface EditorDenetimi { kaydet(): Promise<void> }
+export interface EditorDenetimi {
+  kaydet(): Promise<void>;
+  /** İmlecin yeri ve kaydedilmiş metnin sürümü (sahneyi bölmek için; önce kaydedilir). */
+  imlec(): { konum: number; temel: string[] } | null;
+  /** Metni kaydedilmiş hâlinden yeniden okur. */
+  yenile(): Promise<void>;
+}
 
 export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, baslangic, saltOkunur = false, baglamParcalari = false, parcaDegisti, kelimeDegisti, bosYardim }: {
   istemci: Istemci; evren: string; kayit: string; alan?: string; denetim?: { current: EditorDenetimi | null };
@@ -265,7 +271,11 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       taslakZamanlayici ??= setTimeout(() => { void taslakKaydet(); }, 300);
     };
 
-    if (denetim) denetim.current = { kaydet };
+    if (denetim) denetim.current = {
+      kaydet,
+      imlec: () => (gorunum.current && !kirli && !suren ? { konum: gorunum.current.state.selection.head, temel: [...temel] } : null),
+      yenile: async () => { await metinIslemi.current?.yeniden(); },
+    };
     metinIslemi.current = {
       kaydet,
       // Kurtarılan taslak kendi temel sürümüyle yazılır: o zamandan beri kaydedilenle birleşir, üzerine yazmaz.

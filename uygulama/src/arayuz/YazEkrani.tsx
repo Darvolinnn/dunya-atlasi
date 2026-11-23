@@ -8,6 +8,7 @@ import type { EserYapisi, EvrenBilgisi, Kayit, KaldigiYerBilgisi, KisaKayit, Sah
 import { zamanYaz } from '../alan/islem-metni';
 import { EvrenKabugu } from './Kabuk';
 import { MetinEditoru, type EditorDenetimi } from './MetinEditoru';
+import { SahneBirlestirPenceresi, SahneBolPenceresi } from './SahneBolme';
 import { SahnePlani } from './Sablon';
 import { AnlatiYolu, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, SahneBilgileri, sahneBaglamiBos, useSahneBaglami } from './Anlati';
 import { SureklilikDefteri } from './Sureklilik';
@@ -141,7 +142,10 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const [diyalog, setDiyalog] = useSinifTercihi('dunya-atlasi:yalniz-diyalog', DIYALOG_SINIFI);
   const [onceki, setOnceki] = useState<string>('');
   const [sekme, setSekme] = useBaglamSekmesi();
-  useEffect(() => { setKelime(null); }, [kod]);
+  const [cerrahi, setCerrahi] = useState<{ tur: 'bol'; konum: number; temel: string[] } | { tur: 'birlestir' } | null>(null);
+  const [cerrahiHata, setCerrahiHata] = useState<string | null>(null);
+  const [sonraki, setSonraki] = useState<{ kod: string; ad: string } | null>(null);
+  useEffect(() => { setKelime(null); setCerrahi(null); setCerrahiHata(null); }, [kod]);
 
   useEffect(() => { istemci.iste('kayit', { evren, kod }).then((k) => { setKayit(k); setHata(null); }, (e) => setHata(e.message)); }, [evren, kod, surum]);
   useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then((b) => setBag(b.bag ?? null), () => {}); }, [evren]);
@@ -153,6 +157,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
     if (!sahne) return;
     istemci.iste('anlatiYeri', { evren, kod }).then((y) => y.onceki ? istemci.iste('sonParagraf', { evren, kod: y.onceki.kod }) : '').then(setOnceki, () => {});
   }, [evren, kod, sahne]);
+  useEffect(() => { setSonraki(null); if (sahne) istemci.iste('sonrakiSahne', { evren, sahne: kod }).then(setSonraki, () => {}); }, [evren, kod, sahne, surum]);
   const sahneBaglami = useSahneBaglami(istemci, evren, sahne ? kod : null);
   const parcaBaglami = useSahneBaglami(istemci, evren, sahne && imlecParcasi ? kod : null, imlecParcasi);
 
@@ -194,6 +199,19 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
             <button class="menu-ogesi" aria-pressed={daktilo} title="Yazdığınız satır ekranın ortasında kalır (Ctrl+Shift+D)" onClick={() => setDaktilo(!daktilo)}>{daktilo ? '✓ ' : ''}Daktilo kipi</button>
             <button class="menu-ogesi" aria-pressed={paragrafOdagi} title="İmlecin olduğu paragraf parlak kalır, ötekiler soluklaşır" onClick={() => setParagrafOdagi(!paragrafOdagi)}>{paragrafOdagi ? '✓ ' : ''}Paragraf odağı</button>
             <button class="menu-ogesi" aria-pressed={diyalog} title="Konuşmayla başlayan paragraflar öne çıkar" onClick={() => setDiyalog(!diyalog)}>{diyalog ? '✓ ' : ''}Yalnız diyaloglar</button>
+            {sahne && !kayit.silindi && !saltOkunur && <>
+              <button class="menu-ogesi" title="İmleçten sonraki metin hemen ardından gelen yeni bir sahneye taşınır" onClick={async () => {
+                setCerrahiHata(null);
+                await denetim.current?.kaydet();
+                const i = denetim.current?.imlec();
+                if (i) setCerrahi({ tur: 'bol', ...i }); else setCerrahiHata('Metin kaydedilemedi; biraz sonra yeniden deneyin.');
+              }}>İmleçten sonrasını yeni sahneye böl</button>
+              <button class="menu-ogesi" disabled={!sonraki} title={sonraki ? `“${sonraki.ad}” bu sahnenin sonuna eklenir` : 'Bu bölümde bundan sonra sahne yok'} onClick={async () => {
+                setCerrahiHata(null);
+                await denetim.current?.kaydet();
+                setCerrahi({ tur: 'birlestir' });
+              }}>Sonraki sahneyle birleştir</button>
+            </>}
             <a class="menu-ogesi" href={`#/e/${evren}/k/${kod}`}>Bütün alanlar</a>
             {!kayit.silindi && !saltOkunur && (
               <button class="menu-ogesi tehlikeli" title="Çöp kutusundan geri getirilebilir" onClick={async () => {
@@ -204,6 +222,11 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
             )}
           </IslemMenusu>
         </div>
+        {cerrahiHata && <p class="hata">{cerrahiHata}</p>}
+        {cerrahi?.tur === 'bol' && <SahneBolPenceresi istemci={istemci} evren={evren} sahne={kod} konum={cerrahi.konum} temel={cerrahi.temel}
+          kapat={() => setCerrahi(null)} bitti={() => { setCerrahi(null); void denetim.current?.yenile(); setSurum((x) => x + 1); }} />}
+        {cerrahi?.tur === 'birlestir' && <SahneBirlestirPenceresi istemci={istemci} evren={evren} sahne={kod}
+          kapat={() => setCerrahi(null)} bitti={() => { setCerrahi(null); void denetim.current?.yenile(); setSurum((x) => x + 1); }} />}
         {kayit.silindi && <p class="uyari">Bu kayıt çöp kutusunda. Geri getirmek için <a href={`#/e/${evren}/k/${kod}`}>kayıt sayfasını</a> açın.</p>}
         <CatismaListesi istemci={istemci} evren={evren} kod={kod} surum={surum} />
         <article class="yaz-kagidi">

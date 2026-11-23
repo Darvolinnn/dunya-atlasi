@@ -1466,6 +1466,18 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   baglam_parcasi_sil(db, i) {
     db.exec({ sql: 'UPDATE baglam_parcalari SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
   },
+  /** Sahne bölünüp birleşince metinle giden işaret ve bağlam parçası başka kayda geçer (K38). */
+  metin_ogesi_tasi(db, i) {
+    const { tur, kod, kayit } = i.veri as { tur?: unknown; kod?: unknown; kayit?: unknown };
+    if (typeof kod !== 'string' || typeof kayit !== 'string') return;
+    const hedef = yonlendir(db, kayit);
+    if (tur === 'isaret') {
+      isaretinMetniniUygula(db, kod);
+      const r = db.selectObject('SELECT alan FROM metin_isaretleri WHERE kod=?', [kod]);
+      if (r) bekleyeniUygula(db, hedef + '\u0000' + (r.alan as string));
+      db.exec({ sql: 'UPDATE metin_isaretleri SET kayit=?, duzenleme=? WHERE kod=?', bind: [hedef, i.zaman, kod] });
+    } else if (tur === 'parca') db.exec({ sql: 'UPDATE baglam_parcalari SET kayit=? WHERE kod=?', bind: [hedef, kod] });
+  },
   /** Rotanın geçiş şartları (F09). */
   rota_sart_yaz(db, i) {
     const { rota, sartlar } = i.veri as { rota: string; sartlar: unknown };
