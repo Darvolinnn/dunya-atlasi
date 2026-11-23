@@ -5,7 +5,10 @@
     <!-- AndroidTV support -->
     <uses-feature android:name="android.software.leanback" android:required="false" />
 
+    <!-- Android'in buluta otomatik yedeği kapalı: Google bağlantı anahtarı (google.rs) cihazdan çıkmasın; evrenlerin
+         yedeği programın kendi yedekleri ve Drive eşitlemesidir (DEVIR §0.21). -->
     <application
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/Theme.dunya_atlasi"
