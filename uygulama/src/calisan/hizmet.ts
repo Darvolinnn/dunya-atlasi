@@ -17,7 +17,7 @@ import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ayrilmaYazisi, kokAdaylari } from '../alan/turkce-ek';
 import { bagGorunumuGecerli, bagGorunumuOku, bagVarsayilanMi, type BagGorunumu } from '../alan/bag-gorunumu';
 import { kararGecerli, kurguTuruGecerli, turBul, turGecerli } from '../alan/turler';
-import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, TuvalOgesi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import type { DriveSecenekleri, YuklemeIlerlemesi } from './drive';
@@ -68,6 +68,7 @@ import * as kosulMod from './kosul-masasi';
 import * as baglamMod from './baglam';
 import * as yerlesim from './yerlesim';
 import * as derlemeMod from './derleme';
+import * as tuvalMod from './tuval';
 import * as fark from './fark';
 import * as dalMod from './dal';
 import * as yayimMod from './yayim';
@@ -891,7 +892,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       }
       const dlr = iliski || dr ? undefined : e.db.selectObject('SELECT ad, tur FROM derlemeler WHERE kod=?', [nesne]);
       if (dlr) {
-        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: `“${dlr.ad}” ${dlr.tur === 'pano' ? 'görsel panosu' : 'gezintisi'}`,
+        sonuc.push({ tur: 'alan', nesne, alan, nesneTuru: 'evren', kayit: null, baslik: `“${dlr.ad}” ${dlr.tur === 'pano' ? 'görsel panosu' : dlr.tur === 'tuval' ? 'panosu' : 'gezintisi'}`,
           alanEtiketi: alan === 'ad' ? 'Adı' : dlr.tur === 'pano' ? 'Görselleri' : 'Adımları',
           degerler: degerler.map((d) => ({ ...d, yazi: Array.isArray(d.deger) ? `${d.deger.length} öge` : d.deger === null ? '(boş)' : String(d.deger) })) });
         continue;
@@ -3432,6 +3433,9 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     if (girdiler.length) this.yaz(evren, girdiler, []);
     return { ad };
   }
+  tuval({ evren, kod }: { evren: string; kod: string }) { return tuvalMod.tuval(this.evren(evren), kod); }
+  tuvalOgeYaz({ evren, kod, ogeler }: { evren: string; kod: string; ogeler: Partial<TuvalOgesi>[] }) { tuvalMod.tuvalOgeYaz(this.derlemeBaglami(evren), kod, ogeler); }
+  tuvalOgeSil({ evren, kod, idler }: { evren: string; kod: string; idler: string[] }) { tuvalMod.tuvalOgeSil(this.derlemeBaglami(evren), kod, idler); }
   derlemeSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { derlemeMod.derlemeSil(this.derlemeBaglami(evren), kod, !!geriYukle); }
   kayitDerlemeleri({ evren, kod }: { evren: string; kod: string }) { return derlemeMod.kayitDerlemeleri(this.evren(evren), kod); }
 

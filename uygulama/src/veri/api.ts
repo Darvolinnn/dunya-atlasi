@@ -775,11 +775,19 @@ export interface AktarimBirimi {
   ozet: string[];
 }
 export interface DalFarki { dalda: EvrenFarki; anada: EvrenFarki; birimler: AktarimBirimi[] }
-export interface DerlemeOzeti { kod: string; tur: 'gezinti' | 'pano'; ad: string; ogeSayisi: number; duzenleme: number }
+export interface DerlemeOzeti { kod: string; tur: 'gezinti' | 'pano' | 'tuval'; ad: string; ogeSayisi: number; duzenleme: number }
 export interface GezintiAdimi { kayit: string; not: string }
 export interface PanoNotu { x: number; y: number; metin: string }
 export interface PanoOgesi { kod: string; gorsel: string; kayit: KisaKayit | null; baslik: string; durum: 'guncel' | 'eski' | null; notlar: PanoNotu[]; eksik: boolean }
 export interface Derleme { kod: string; tur: 'gezinti' | 'pano'; ad: string; adimlar: { kayit: KisaKayit; not: string }[]; ogeler: PanoOgesi[] }
+/** Pano (K37): serbest tuval öğesi. x, y, g, h tuval birimidir; kalem çizgisi kutunun içinde 0–1000 arası. */
+export type TuvalOgeTuru = 'kart' | 'not' | 'yazi' | 'balon' | 'sekil' | 'ok' | 'gorsel' | 'cikartma' | 'kalem';
+export interface TuvalOgesi {
+  id: string; tur: TuvalOgeTuru; x: number; y: number; g: number; h: number; aci: number; sira: number; renk: string; metin: string;
+  kayit: string | null; gorsel: string | null; sekil: 'dikdortgen' | 'elips' | null; cizgi: number[] | null; bas: string | null; son: string | null; kalin: number;
+}
+export interface TuvalKarti { kod: string; ad: string; tur: string; ozet: string; gorsel: string | null; silindi: boolean }
+export interface Tuval { kod: string; ad: string; ogeler: TuvalOgesi[]; kartlar: Record<string, TuvalKarti> }
 export interface PaketOzeti { kod: string; ad: string; aciklama: string; varsayimSayisi: number; duzenleme: number }
 export interface Paket extends PaketOzeti { varsayimlar: VarsayimSatiri[]; masalar: { kod: string; ad: string }[] }
 export interface MasaOzeti { kod: string; ad: string; amac: string; duzenleme: number; uyeSayisi: number }
@@ -1470,7 +1478,10 @@ export interface Istekler {
   siradanGun(a: { evren: string; yer: string; donem?: string | null; statu?: string | null }): SiradanGun;
   karsilastirmaliOkuma(a: { evren: string; sutunlar: { kayit: string; tarih: string | null }[] }): KarsilastirmaliOkuma;
   baglamKarsilastir(a: { evren: string; kayit: string; baglamlar: BaglamSecimi[] }): BaglamKarsilastirmasi;
-  derlemeler(a: { evren: string; tur: 'gezinti' | 'pano' }): DerlemeOzeti[];
+  derlemeler(a: { evren: string; tur: 'gezinti' | 'pano' | 'tuval' }): DerlemeOzeti[];
+  tuval(a: { evren: string; kod: string }): Tuval;
+  tuvalOgeYaz(a: { evren: string; kod: string; ogeler: Partial<TuvalOgesi>[] }): void;
+  tuvalOgeSil(a: { evren: string; kod: string; idler: string[] }): void;
   surumler(a: { evren: string }): EvrenSurumu[];
   surumOlustur(a: { evren: string; ad: string; aciklama?: string }): { kod: string };
   surumYaz(a: { evren: string; kod: string; alan: 'ad' | 'aciklama'; deger: string }): void;
@@ -1505,7 +1516,7 @@ export interface Istekler {
   dalFarki(a: { evren: string; dal: string }): DalFarki;
   dalAktar(a: { evren: string; dal: string; birimler: string[]; eslemeler: Record<string, string> }): { aktarilan: number; birakilan: string[] };
   derleme(a: { evren: string; kod: string }): Derleme;
-  derlemeOlustur(a: { evren: string; tur: 'gezinti' | 'pano'; ad: string }): { kod: string };
+  derlemeOlustur(a: { evren: string; tur: 'gezinti' | 'pano' | 'tuval'; ad: string }): { kod: string };
   derlemeAdYaz(a: { evren: string; kod: string; ad: string }): void;
   gezintiYaz(a: { evren: string; kod: string; adimlar: GezintiAdimi[] }): void;
   panoYaz(a: { evren: string; kod: string; ogeler: (Omit<PanoOgesi, 'kayit' | 'eksik'> & { kayit: string | null })[] }): void;

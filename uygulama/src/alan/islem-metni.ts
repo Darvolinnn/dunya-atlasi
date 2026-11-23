@@ -2,6 +2,7 @@
 import { KARARLAR, KURGU_TURLERI, turBul } from './turler';
 import { iliskiTuruBul } from './iliski-turleri';
 
+const derlemeAdi = (t: unknown) => t === 'pano' ? 'görsel panosu' : t === 'tuval' ? 'panosu' : 'gezintisi';
 type Aciklayici = (veri: Record<string, unknown>, ad: (kod: unknown) => string) => string;
 
 const ALAN_ADI: Record<string, string> = { ad: 'Ad', tur: 'Tür', ozet: 'Kısa özet', okunus: 'Okunuş', karar: 'Karar durumu' };
@@ -88,9 +89,11 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   bakim_kaydi_yaz: () => 'Bakım kaydedildi',
   bakim_kaydi_sil: () => 'Bakım kaydı kaldırıldı',
   bakim_kaydi_geri_yukle: () => 'Bakım kaydı geri getirildi',
-  derleme_yaz: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'}: ${v.alan === 'ad' ? (v.derlemeAd === v.deger ? 'oluşturuldu' : `adı “${v.deger}” oldu`) : v.derlemeTuru === 'pano' ? 'görseller değişti' : 'adımlar değişti'}`,
-  derleme_sil: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'} kaldırıldı`,
-  derleme_geri_yukle: (v) => `“${v.derlemeAd}” ${v.derlemeTuru === 'pano' ? 'görsel panosu' : 'gezintisi'} geri getirildi`,
+  derleme_yaz: (v) => `“${v.derlemeAd}” ${derlemeAdi(v.derlemeTuru)}: ${v.alan === 'ad' ? (v.derlemeAd === v.deger ? 'oluşturuldu' : `adı “${v.deger}” oldu`) : v.derlemeTuru === 'pano' ? 'görseller değişti' : 'adımlar değişti'}`,
+  derleme_sil: (v) => `“${v.derlemeAd}” ${derlemeAdi(v.derlemeTuru)} kaldırıldı`,
+  tuval_oge: (v) => `“${v.derlemeAd}” panosu: ${Array.isArray(v.ogeler) && v.ogeler.length > 1 ? `${v.ogeler.length} öğe değişti` : 'bir öğe değişti'}`,
+  tuval_oge_sil: (v) => `“${v.derlemeAd}” panosu: ${Array.isArray(v.idler) && v.idler.length > 1 ? `${v.idler.length} öğe kaldırıldı` : 'bir öğe kaldırıldı'}`,
+  derleme_geri_yukle: (v) => `“${v.derlemeAd}” ${derlemeAdi(v.derlemeTuru)} geri getirildi`,
   masa_olustur: (v) => `Konu dosyası kuruldu: “${v.ad}”`,
   masa_yaz: (v) => `“${v.masaAd}” konu dosyası: ${({ ad: 'adı', amac: 'çözmeye çalışılan soru', notlar: 'notlar', bas: 'tarih aralığının başı', bit: 'tarih aralığının sonu', paket: 'seçili varsayım paketi', uyeler: 'bağlı kayıtlar' } as Record<string, string>)[String(v.alan)] ?? 'bir alanı'} değişti`,
   masa_sil: (v) => `“${v.masaAd}” konu dosyası kaldırıldı`,

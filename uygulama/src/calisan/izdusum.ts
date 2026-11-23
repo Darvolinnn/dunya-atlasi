@@ -911,6 +911,9 @@ function cizimNoktalari(db: Database, harita: string, bicim: string, n: unknown)
   return l.length >= (bicim === 'bolge' ? 3 : 2) ? l : null;
 }
 
+const tuvalListesi = (ham: string): { id: string; tur?: string; bas?: unknown; son?: unknown }[] => {
+  try { const x = JSON.parse(ham) as unknown; return Array.isArray(x) ? x.filter((o) => o && typeof o.id === 'string') : []; } catch { return []; }
+};
 const evrenAlani = (db: Database, k: string, v: unknown) =>
   db.exec({ sql: 'INSERT INTO evren(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v', bind: [k, String(v)] });
 
@@ -1882,12 +1885,29 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   /** Gezinti ve görsel pano (§7): yazarın derlediği listeler. İlk yazım derlemeyi kurar. */
   derleme_yaz(db, i) {
     const { kod, derlemeTuru, alan, deger } = i.veri as { kod?: unknown; derlemeTuru?: unknown; alan?: unknown; deger?: unknown };
-    if (typeof kod !== 'string' || (derlemeTuru !== 'gezinti' && derlemeTuru !== 'pano')) return;
+    if (typeof kod !== 'string' || (derlemeTuru !== 'gezinti' && derlemeTuru !== 'pano' && derlemeTuru !== 'tuval')) return;
     db.exec({ sql: 'INSERT OR IGNORE INTO derlemeler(kod, tur, ad, olusturma, duzenleme) VALUES(?,?,?,?,?)', bind: [kod, derlemeTuru, '', i.zaman, i.zaman] });
     if (alan === 'ad') db.exec({ sql: 'UPDATE derlemeler SET ad=?, duzenleme=? WHERE kod=?', bind: [String(deger ?? '').slice(0, 120), i.zaman, kod] });
     else if (alan === 'ogeler') db.exec({ sql: 'UPDATE derlemeler SET ogeler=?, duzenleme=? WHERE kod=?', bind: [JSON.stringify(Array.isArray(deger) ? deger.slice(0, 300) : []), i.zaman, kod] });
     else return;
     alanYaz(db, i, kod, alan, deger ?? null);
+  },
+  /** Pano (K37): öğeler kimliğe göre birleşir; aynı öğede günlükte sonra gelen geçerlidir. */
+  tuval_oge(db, i) {
+    const { kod, ogeler } = i.veri as { kod?: unknown; ogeler?: unknown };
+    const r = typeof kod === 'string' ? db.selectObject("SELECT ogeler FROM derlemeler WHERE kod=? AND tur='tuval'", [kod]) : undefined;
+    if (!r || !Array.isArray(ogeler)) return;
+    const m = new Map(tuvalListesi(r.ogeler as string).map((o) => [o.id, o]));
+    for (const o of ogeler as { id?: unknown }[]) if (o && typeof o.id === 'string') m.set(o.id, o as { id: string });
+    db.exec({ sql: 'UPDATE derlemeler SET ogeler=?, duzenleme=? WHERE kod=?', bind: [JSON.stringify([...m.values()].slice(0, 2000)), i.zaman, kod as string] });
+  },
+  tuval_oge_sil(db, i) {
+    const { kod, idler } = i.veri as { kod?: unknown; idler?: unknown };
+    const r = typeof kod === 'string' ? db.selectObject("SELECT ogeler FROM derlemeler WHERE kod=? AND tur='tuval'", [kod]) : undefined;
+    if (!r || !Array.isArray(idler)) return;
+    const s = new Set(idler.map(String));
+    const kalan = tuvalListesi(r.ogeler as string).filter((o) => !s.has(o.id) && !(o.tur === 'ok' && (s.has(String(o.bas)) || s.has(String(o.son)))));
+    db.exec({ sql: 'UPDATE derlemeler SET ogeler=?, duzenleme=? WHERE kod=?', bind: [JSON.stringify(kalan), i.zaman, kod as string] });
   },
   derleme_sil(db, i) {
     db.exec({ sql: 'UPDATE derlemeler SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });

@@ -28,7 +28,7 @@ const GORUNUM_ADI = new Map<string, string>(GORUNUMLER);
 export const gorunumMu = (s: string) => GORUNUMLER.some(([g]) => g === s);
 
 /** Ana sayfalar ve "Diğer" altındakiler; komut paleti de bu listeyi kullanır. */
-export const ANA_SAYFALAR = [['yaz', 'Yaz'], ['masa', 'Genel bakış'], ['kayitlar', 'Kayıtlar'], ['terimler', 'Sözlük'], ['haritalar', 'Haritalar'], ['takvim', 'Takvim'], ['gorunumler', 'Grafikler ve araçlar'], ['inceleme', 'Uyarılar']] as const;
+export const ANA_SAYFALAR = [['yaz', 'Yaz'], ['masa', 'Genel bakış'], ['kayitlar', 'Kayıtlar'], ['terimler', 'Sözlük'], ['haritalar', 'Haritalar'], ['takvim', 'Takvim'], ['tuval', 'Pano'], ['gorunumler', 'Grafikler ve araçlar'], ['inceleme', 'Uyarılar']] as const;
 export const DIGER_SAYFALAR = [['masalar', 'Konu dosyaları'], ['meseleler', 'Karar bekleyenler'], ['sablonlar', 'Şablonlar'], ['gorunum', 'Görünüm'], ['bahsedilen', 'Henüz yazılmayanlar'],
   ['cop', 'Çöp kutusu'], ['gecmis', 'Değişiklik geçmişi'], ['surumler', 'Kayıtlı anlar'], ['yedek', 'Yedek']] as const;
 

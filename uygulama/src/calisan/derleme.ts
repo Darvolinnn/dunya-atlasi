@@ -13,8 +13,8 @@ export interface DerlemeBaglami {
   e: EvrenVt;
   yaz(girdiler: IslemGirdisi[], kayitlar: string[]): void;
 }
-export type DerlemeTuru = 'gezinti' | 'pano';
-const TURLER: DerlemeTuru[] = ['gezinti', 'pano'];
+export type DerlemeTuru = 'gezinti' | 'pano' | 'tuval';
+const TURLER: DerlemeTuru[] = ['gezinti', 'pano', 'tuval'];
 export type SakliOge = Omit<PanoOgesi, 'kayit' | 'eksik'> & { kayit: string | null };
 
 const temiz = (s: unknown, n: number) => String(s ?? '').replace(/[ \t]+/g, ' ').trim().slice(0, n);
@@ -40,6 +40,7 @@ function bul(e: EvrenVt, kod: unknown) {
 export function derleme(e: EvrenVt, kod: string): Derleme {
   const r = bul(e, kod);
   const tur = r.tur as DerlemeTuru;
+  if (tur === 'tuval') throw new Error('Bu bir pano; Pano sayfasından açın.');
   const ham = JSON.parse(r.ogeler as string) as unknown[];
   const medya = (ad: string) => e.db.selectValue('SELECT 1 FROM medya WHERE ad=?', [ad]) !== undefined;
   if (tur === 'gezinti') {
