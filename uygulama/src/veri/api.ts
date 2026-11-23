@@ -1035,7 +1035,20 @@ export interface HaritaKatmani {
   gozdenGecir: { kod: string; ad: string }[];
 }
 export interface HaritaOzeti { kod: string; ad: string; en: number; boy: number; yer: KisaKayit | null; gorsel: string | null; isaretSayisi: number }
-export interface HaritaIsareti { kod: string; kayit: KisaKayit; karar: string; konum: IsaretGirdisi; altHarita: string | null; /** Bakış açısında: yalnızca o bilenin inancında var. */ inanc?: boolean }
+export interface HaritaIsareti { kod: string; kayit: KisaKayit; karar: string; konum: IsaretGirdisi; altHarita: string | null; /** Bakış açısında: yalnızca o bilenin inancında var. */ inanc?: boolean;
+  /** Kaydın kuruluş ve yıkılış tarihi; tarih seçiliyse o tarihteki durumu (K38). */
+  varlik?: { durum: 'var' | 'henuz-yok' | 'yikilmis' | 'belirsiz'; kurulus: string | null; yikilis: string | null };
+}
+/** Seçilen tarihte süren yolculuk aşaması, rotası bu haritada çiziliyse yol üstündeki yaklaşık yeriyle (K38, §8.2). */
+export interface HaritaKafilesi {
+  yolculuk: KisaKayit; yolcular: string[]; nereden: string; nereye: string; rota: string | null; cikis: string; varis: string; planlanan: boolean;
+  /** Yolun alınan kısmı [en az, en çok] (0–1); tarih eksikse null. */
+  oran: [number, number] | null;
+  /** Aralık dar ise tek nokta, genişse yol üstünde bir parça; rota çizilmemişse ikisi de null. */
+  nokta: [number, number] | null; aralik: [number, number][] | null;
+  /** Kaçıncı gün / toplam gün (yaklaşık). */
+  gun: { kacinci: number; toplam: number } | null;
+}
 export interface HaritaAyrintisi {
   kod: string; ad: string; en: number; boy: number; silindi: boolean; yer: { kod: string; ad: string } | null;
   katmanlar: HaritaKatmani[];
@@ -1048,6 +1061,8 @@ export interface HaritaAyrintisi {
   zamanAraligi: { enKucuk: number; enBuyuk: number } | null;
   /** Seçilen tarihte, yeri bu haritada işaretli olay ve sahneler. */
   buTarihte: { kod: string; ad: string; tur: string; tarih: string; yer: string }[];
+  /** Seçilen tarihte süren yolculuklar (K38). */
+  kafileler: HaritaKafilesi[];
 }
 /** Haritada bölge (çokgen) ya da yol çizgisi (§8.2). Bölge fiilî denetim ya da iddiadır; tartışmalı toprakta her taraf ayrı çizilir. */
 export interface HaritaCizimi {

@@ -1606,3 +1606,17 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .kitap-sayfa .bas-harfli::first-letter { float: left; font-size: 2.9em; line-height: 0.9; margin: 2px 4px 0 0; color: #7d5210; }
 .kitap-sayfa .soluk { color: #7a6c55; }
 @media (max-width: 760px) { .kitap-gorunumu-ic { grid-template-columns: 1fr; } }
+/* Haritada zaman (K38, §8.2): kaydın tarihine göre işaret, yoldaki kafile */
+.harita-isaret.varlik-henuz-yok { opacity: 0.55; background: var(--yuzey); border-style: dashed; border-color: var(--vurgu); }
+.harita-isaret.varlik-henuz-yok .harita-etiket { border: 1px dashed var(--vurgu); }
+.harita-isaret.varlik-yikilmis { opacity: 0.6; background: var(--metin-2); }
+.harita-isaret.varlik-yikilmis .harita-etiket { text-decoration: line-through; }
+.harita-isaret.varlik-belirsiz { opacity: 0.7; }
+.varlik-eki { font-weight: normal; }
+.harita-kafile { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--vurgu); border: 3px solid #17120a;
+  box-shadow: 0 0 0 4px rgb(224 168 62 / 0.35); pointer-events: none; z-index: 2; }
+.harita-kafile.aralikta { width: 14px; height: 14px; margin: -7px 0 0 -7px; border-width: 2px; }
+.harita-kafile .harita-etiket { position: absolute; left: 26px; top: 50%; transform: translateY(-50%); white-space: nowrap; background: #17120a; color: #f6ead2; padding: 1px 6px; border-radius: 4px; font-size: 0.78rem; }
+.harita-cizimler .kafile-araligi { fill: none; stroke: var(--vurgu); stroke-width: 9; stroke-linecap: round; opacity: 0.45; pointer-events: none; }
+.bu-tarihte-satiri { margin: 0 0 6px; padding-bottom: 6px; border-bottom: 1px solid var(--cizgi); }
+.bu-tarihte-satiri p { margin: 0; }

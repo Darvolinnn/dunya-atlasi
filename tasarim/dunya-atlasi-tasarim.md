@@ -708,6 +708,7 @@ Bu, programın yazara ne zaman ve nasıl soru sorduğunun tek tanımıdır. Soru
 
 - **Katmanlar:** iklim, su, yollar, doğal kaynaklar, bölgeler, kayıt türleri (şehirler, hizipler, yaratıklar, inanç, dil, ticaret); her biri açılıp kapatılır.
 - **Bölgeler** çokgen olarak çizilir ve örtüşebilir (tartışmalı topraklar). Hiçbir egemenliğe bağlı olmayan alanlar olabilir. Tartışmalı toprakta her tarafın iddiası ayrı kaydedilir; sınır kasabaları, kaçakçılık yolları ve kültür karışması bu bölgelere bağlanabilir. Bölgeler zamanla değişir (§3.5); **zaman kaydırıcısı** haritayı seçilen yıldaki hâliyle gösterir.
+- **Haritada zaman (K38):** zaman kaydırıcısı işaretleri de süzer. Mekân, şehir ve siyasi yapı kayıtlarında "Kuruluş tarihi" ve "Yıkılış tarihi" alanları vardır (program bu alanları kullanır; kaldırılamaz). Seçilen tarihte henüz kurulmamış yer soluk ve kesik çerçeveli, yıkılmış yer üstü çizili görünür; tarih ayrışmıyorsa soluk. Tarihi girilmemiş yer her tarihte görünür. O tarihte süren bir yolculuk aşamasının rotası haritada çiziliyse kafilenin yaklaşık yeri yol üstünde gösterilir: sabit hızla gidildiği varsayılır; çıkış, varış ve seçilen tarih günü gününe biliniyorsa tek nokta, değilse yol üstünde olası bir aralık çizilir. Rotası çizilmemiş yolculuk yalnız çekmecedeki "Bu tarihte" listesinde yazılır.
 
 ### 8.3 Haritalar da iddia taşır
 

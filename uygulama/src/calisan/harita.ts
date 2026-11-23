@@ -13,6 +13,10 @@ import type { HaritaCizimi, SinirGirdisi } from '../veri/api';
 import { sinirBilgisi, sinirCoz, type DurumBaglami, type SinirVerisi } from './durum';
 import { zamanSetiOku } from './izdusum';
 import { asamalarOku } from './yol';
+import { tarihDegeri } from './sablon';
+import { cizgiParcasi, cizgiUstunde, varlikDurumu, yolOrani } from '../alan/harita-zaman';
+import { GUN_PARCA } from '../alan/tarih';
+import type { HaritaKafilesi } from '../veri/api';
 
 export interface HaritaBaglami {
   e: EvrenVt;
@@ -161,9 +165,57 @@ export function harita(b: HaritaBaglami, kod: string, bakis: string | null = nul
       });
     }
   }
+  // Kaydın kuruluş ve yıkılışı (K38): tarih seçiliyse işaretin o tarihteki durumu.
+  for (const i of isaretler) {
+    const kurulus = tarihDegeri(e, i.kayit.kod, 'kurulus'), yikilis = tarihDegeri(e, i.kayit.kod, 'yikilis');
+    const k = kurulus?.eksen ? kurulus : null, y = yikilis?.eksen ? yikilis : null;
+    if (!k && !y) continue;
+    for (const t of [k, y]) if (t?.eksen?.enErken != null) yillar.push(eksenYili(t.eksen.enErken, z));
+    (i as typeof i & { varlik?: unknown }).varlik = { durum: varlikDurumu(k, y, an), kurulus: k?.ifade ?? null, yikilis: y?.ifade ?? null };
+  }
+  // Süren yolculuklar: rotası bu haritada çizilmişse kafilenin yol üstündeki yaklaşık yeri (sabit hız varsayılır).
+  const kafileler: HaritaKafilesi[] = [];
+  if (an?.eksen) {
+    const yollar = new Map<string, [number, number][]>();
+    for (const c of cizimler) if (c.bicim === 'yol' && c.gecerli !== 'hayir' && !yollar.has(c.kayit.kod)) yollar.set(c.kayit.kod, c.noktalar);
+    const konum = new Map(isaretler.filter((i) => i.konum.x !== null).map((i) => [i.kayit.kod, [i.konum.x!, i.konum.y!] as [number, number]]));
+    const ad = (k: string | null) => (k ? (e.db.selectValue('SELECT ad FROM kayitlar WHERE kod=?', [k]) as string | undefined) ?? '?' : '?');
+    for (const y of e.db.selectObjects(`SELECT y.kod, k.ad, k.tur FROM yolculuklar y JOIN kayitlar k ON k.kod=y.kod WHERE k.silindi IS NULL AND k.karar<>'vazgecildi' ORDER BY k.ad`)) {
+      const asamalar = asamalarOku(e, y.kod as string);
+      const yolcular = asamalar.length ? e.db.selectObjects(`SELECT k.ad FROM iliskiler i JOIN kayitlar k ON k.kod=i.a WHERE i.tur='yolculukta' AND i.b=? AND (i.rol IS NULL OR i.rol='yolcu')
+          AND i.silindi IS NULL AND k.silindi IS NULL ORDER BY k.ad`, [y.kod]).map((r) => r.ad as string) : [];
+      for (const a of asamalar) {
+        if (!a.cikis?.eksen || !(yerler.has(a.nereden ?? '') || yerler.has(a.nereye ?? '') || (a.rota && yollar.has(a.rota)))) continue;
+        const bas = a.cikis.eksen.enErken, bit = a.varis?.eksen?.enGec ?? a.cikis.eksen.enGec;
+        if (bas === null || bit === null || an.eksen.enGec! < bas || an.eksen.enErken! > bit) continue;
+        const oran = yolOrani(a.cikis, a.varis, an);
+        let cizgi = a.rota ? yollar.get(a.rota) ?? null : null;
+        // Çizginin yönü: başı çıkış yerine yakın olmalı.
+        if (cizgi && cizgi.length >= 2) {
+          const c = a.nereden ? konum.get(a.nereden) : undefined, v = a.nereye ? konum.get(a.nereye) : undefined;
+          const uzak = (p: [number, number], q?: [number, number]) => (q ? Math.hypot(p[0] - q[0], p[1] - q[1]) : 0);
+          const ters = c ? uzak(cizgi[0], c) > uzak(cizgi[cizgi.length - 1], c) : v ? uzak(cizgi[cizgi.length - 1], v) > uzak(cizgi[0], v) : false;
+          if (ters) cizgi = [...cizgi].reverse();
+        } else cizgi = null;
+        // Çıkış, varış ve seçilen tarih günü gününe biliniyorsa tek nokta (± 1 gün); değilse yol üstünde aralık.
+        const gunlu = (t: EvrenTarihi | null) => !!t?.eksen && t.eksen.enErken !== null && t.eksen.enGec !== null && t.eksen.enGec - t.eksen.enErken < GUN_PARCA;
+        const dar = !!oran && gunlu(a.cikis) && gunlu(a.varis) && gunlu(an);
+        const toplam = a.varis?.eksen?.enGec != null ? Math.max(1, Math.round((a.varis.eksen.enGec + 1 - bas) / GUN_PARCA)) : null;
+        const kacinci = toplam ? Math.min(toplam, Math.max(1, Math.round(((an.eksen.enErken! + an.eksen.enGec!) / 2 - bas) / GUN_PARCA) + 1)) : null;
+        kafileler.push({
+          yolculuk: { kod: y.kod as string, ad: y.ad as string, tur: y.tur as string }, yolcular,
+          nereden: ad(a.nereden), nereye: ad(a.nereye), rota: a.rota ? ad(a.rota) : null,
+          cikis: a.cikis.ifade, varis: a.varis?.ifade ?? '', planlanan: a.durum === 'plan', oran,
+          nokta: cizgi && oran && dar ? cizgiUstunde(cizgi, (oran[0] + oran[1]) / 2) : null,
+          aralik: cizgi && oran && !dar ? cizgiParcasi(cizgi, oran[0], oran[1]) : null,
+          gun: toplam && kacinci ? { kacinci, toplam } : null,
+        });
+      }
+    }
+  }
   const zamanAraligi = yillar.length ? { enKucuk: Math.min(...yillar), enBuyuk: Math.max(...yillar) } : null;
   return { kod, ad: h.ad, en: h.en, boy: h.boy, silindi: h.silindi, yer: h.yer ? { kod: h.yer, ad: yerAd ?? 'Silinmiş kayıt' } : null, katmanlar, isaretler, ustHaritalar, bakis: bk.kisa,
-    cizimler, an: an ? { ifade: an.ifade, gecerli: !!an.eksen } : null, zamanAraligi, buTarihte };
+    cizimler, an: an ? { ifade: an.ifade, gecerli: !!an.eksen } : null, zamanAraligi, buTarihte, kafileler };
 }
 
 export function haritaDegistir(b: HaritaBaglami, kod: string, alan: 'ad' | 'yer', deger: unknown) {

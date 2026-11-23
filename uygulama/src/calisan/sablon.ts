@@ -20,7 +20,11 @@ export interface SablonBaglami {
 
 export function sablonOku(e: EvrenVt, tur: string): Sablon {
   const ham = e.db.selectValue('SELECT veri FROM sablonlar WHERE tur=?', [tur]) as string | undefined;
-  return ham ? JSON.parse(ham) : varsayilanSablon(tur);
+  if (!ham) return varsayilanSablon(tur);
+  // Sonradan eklenen sabit alanlar (ör. yerin kuruluş tarihi) yazarın değiştirdiği şablonda da bulunur; sabit alan kaldırılamaz.
+  const s = JSON.parse(ham) as Sablon;
+  const eksik = varsayilanSablon(tur).alanlar.filter((a) => a.sabit && !s.alanlar.some((x) => x.kod === a.kod));
+  return eksik.length ? { ...s, alanlar: [...s.alanlar, ...eksik] } : s;
 }
 
 export function sablonBilgisi(e: EvrenVt, tur: string): SablonBilgisi {

@@ -18,7 +18,7 @@ const z: ZamanSeti = { ana: VARSAYILAN_TAKVIM, diger: [], akislar: [] };
 const istek: YogunlukIstegi = { baslangic: '0', bitis: '19', adim: 10 };
 const k = (kod: string, tarih: string | null, tur = 'olay', kelime = 0): SayimKaydi => ({ kod, ad: `Uydurma ${kod}`, tur, kelime, tarih: tarih ? tarihCoz(tarih)! : null, yerler: [] });
 const kare: [number, number][] = [[0, 0], [100, 0], [100, 100], [0, 100]];
-const hBos = (): HaritaAyrintisi => ({ kod: 'deneme', ad: 'Uydurma harita', en: 800, boy: 500, silindi: false, yer: null, katmanlar: [], isaretler: [], ustHaritalar: [], bakis: null, cizimler: [{ kod: 'bolge', kayit: { kod: 'yer', ad: 'Uydurma Güney', tur: 'mekan' }, karar: 'kesin', bicim: 'bolge', kip: null, noktalar: kare, baslangic: null, bitis: null, gecerli: null }], an: null, zamanAraligi: null, buTarihte: [] });
+const hBos = (): HaritaAyrintisi => ({ kod: 'deneme', ad: 'Uydurma harita', en: 800, boy: 500, silindi: false, yer: null, katmanlar: [], isaretler: [], ustHaritalar: [], bakis: null, cizimler: [{ kod: 'bolge', kayit: { kod: 'yer', ad: 'Uydurma Güney', tur: 'mekan' }, karar: 'kesin', bicim: 'bolge', kip: null, noktalar: kare, baslangic: null, bitis: null, gecerli: null }], an: null, zamanAraligi: null, buTarihte: [], kafileler: [] });
 function hazirla() { const h = cihaz(); const { kod: evren } = h.evrenOlustur({ ad: 'Yoğunluk denemesi' }); return { h, evren }; }
 const metin = (h: Hizmet, evren: string, kayit: string, yazi: string) => h.metinKaydet({ evren, kayit, alan: 'govde', temel: h.metinAc({ evren, kayit, alan: 'govde' }).basliklar, spans: duzMetindenSpans(yazi) as Spans });
 
