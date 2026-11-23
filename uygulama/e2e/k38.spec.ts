@@ -66,3 +66,34 @@ test('Windows uygulamasında kapatırken yazılmamış metin kaydedilir, sonra p
   await p.reload();
   await expect(editor(p)).toContainText('Kapı kapanmadan önce yazılan son cümle.');
 });
+
+test('büyük harita görseli döşemeyle gösterilir; yakınlaşınca yalnız ekrandaki parçalar çözülür', async ({ page: p }) => {
+  test.setTimeout(150_000);
+  await p.setViewportSize({ width: 1400, height: 900 });
+  const ev = await ornekEvren(p);
+  await p.goto(`/#/e/${ev}/haritalar`);
+  // 6000×3000 piksellik uydurma bir harita: dama deseni.
+  const b64 = await p.evaluate(async () => {
+    const c = new OffscreenCanvas(6000, 3000); const x = c.getContext('2d')!;
+    for (let i = 0; i < 60; i++) for (let j = 0; j < 30; j++) { x.fillStyle = (i + j) % 2 ? '#d9c9a3' : '#efe6d4'; x.fillRect(i * 100, j * 100, 100, 100); }
+    const v = new Uint8Array(await (await c.convertToBlob({ type: 'image/png' })).arrayBuffer());
+    let s = ''; for (let i = 0; i < v.length; i += 0x8000) s += String.fromCharCode(...v.subarray(i, i + 0x8000));
+    return btoa(s);
+  });
+  await p.getByRole('button', { name: 'Harita yükle' }).click();
+  await p.getByLabel('Harita görseli').setInputFiles({ name: 'kita.png', mimeType: 'image/png', buffer: Buffer.from(b64, 'base64') });
+  await p.getByLabel('Haritanın adı').fill('Büyük kıta');
+  await p.locator('form.harita-yukle').getByRole('button', { name: 'Yükle', exact: true }).click();
+  const doseme = p.locator('.harita-katman .doseme');
+  await expect(doseme).toBeVisible({ timeout: 30_000 });
+  await expect(doseme.locator('img.doseme-kaba')).toHaveAttribute('src', /^blob:/);
+  // Sığdırılmış hâlde kaba görsel yeter; yakınlaşınca ince seviye parçaları gelir.
+  const tuval = p.locator('.harita-tuval');
+  const k = (await tuval.boundingBox())!;
+  await p.mouse.move(k.x + k.width * 0.4, k.y + k.height * 0.4);
+  for (let i = 0; i < 8; i++) await p.mouse.wheel(0, -400);
+  await expect.poll(() => doseme.locator('img.doseme-parca[src]').count(), { timeout: 20_000 }).toBeGreaterThan(0);
+  const toplam = await doseme.locator('img.doseme-parca').count();
+  const cozulen = await doseme.locator('img.doseme-parca[src]').count();
+  expect(cozulen).toBeLessThan(toplam);
+});

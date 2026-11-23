@@ -319,7 +319,7 @@ Kullanıcı (23 Kasım 18:09) §0.24'te sunulan "doğru ve hâlâ açık" listes
 - [ ] Kitap çıktısı: kapak görseli, bölüm başı süsü, ayraç seçimi, ekler (A5; taslak)
 - [ ] Akıllı listeler (§7; formül üzerine kaydedilen sorgular; taslak)
 - [ ] Ölçekli çizim harita görselinin üstünde (B1; taslak)
-- [ ] Büyük harita döşemesi (B2, §8.1)
+- [x] Büyük harita döşemesi (B2, §8.1): `arayuz/doseme.ts` (saf hesap: `DOSEME_SINIRI` 4096, 512'lik parçalar, `dosemeSeviyesi`), `arayuz/doseme-calisani.ts` (görseli bir kez çözer, parçayı WebP olarak üretir), `arayuz/DosemeliGorsel.tsx` (kaba hâl + IntersectionObserver ile yalnız görünen parçalar; en çok 400 parça bellekte). `Harita.tsx` katmanı büyükse bunu kullanır. Parçalar diske yazılmaz. Sınamalar `test/k38-doseme.test.ts`, `e2e/k38.spec.ts` (6000×3000 görsel).
 - [ ] Kat planında sahne içi adımlar ve katlar arası ses (B4; taslak)
 - [ ] Etimoloji ağacı ve birleşik ad üretici (C5; taslak)
 - [ ] Arama dizini (D1), program güncellemesinde yerinde dönüştürme (D2), ağır hesaplar için ikinci çalışan (D4)

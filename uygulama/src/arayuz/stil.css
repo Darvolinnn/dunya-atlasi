@@ -402,6 +402,10 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .harita-katmanlar { position: absolute; inset: 0; overflow: hidden; }
 .harita-katman { position: absolute; pointer-events: none; }
 .harita-katman img { display: block; width: 100%; height: auto; user-select: none; }
+/* Büyük katmanın döşemesi (§8.1, K38): kaba hâl altta, ekrandaki parçalar üstte. */
+.harita-katman .doseme { position: relative; width: 100%; }
+.harita-katman .doseme img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.harita-katman .doseme img.doseme-parca:not([src]) { visibility: hidden; }
 /* Katmanlar ve hizalama (§8.1, §8.5) */
 .harita-yuzey.hizalama .harita-isaret { pointer-events: none; }
 /* Bölgeler ve yollar (§8.2) */

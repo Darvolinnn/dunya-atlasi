@@ -5,6 +5,8 @@ import type { Istemci } from '../veri/istemci';
 import type { HaritaAyrintisi, HaritaCizimi, HaritaIsareti, HaritaKatmani, HaritaOzeti, IliskiSatiri, IsaretGirdisi, Kayit, KayitHaritalari } from '../veri/api';
 import { anaTakvim, yilYazisi } from '../alan/tarih';
 import { useTakvim } from './Takvim';
+import { DosemeliGorsel } from './DosemeliGorsel';
+import { doselenir } from './doseme';
 import { EN_AZ_YAKINLIK, EN_COK_YAKINLIK, useHaritaYakinlik } from './harita-yakinlik';
 import { SinirAlani } from './Anlati';
 import { hizala, ters, uygula, type Donusum, type KontrolCifti, type Nokta } from '../alan/hizalama';
@@ -331,7 +333,10 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
             <div class="harita-katmanlar">{h.katmanlar.filter((k) => !k.silindi && !gizli.has(k.kod)).map((k) => (
               <div key={k.kod} class={`harita-katman${kip.tur === 'hizala' && kip.katman === k.kod ? ' hizalanan' : ''}`}
                 style={katmanStili(k, onizleme(k), h, kip.tur === 'hizala' && kip.katman === k.kod ? 0.6 : saydamlik[k.kod] ?? 1)}>
-                <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} onizleme={false} alt={k.ad} />
+                {doselenir(k.en, k.boy)
+                  ? <DosemeliGorsel istemci={istemci} evren={evren} ad={k.gorsel} en={k.en} boy={k.boy} alt={k.ad}
+                    olcek={(sigan * yakinlik / h.en) * Math.sqrt(Math.abs(onizleme(k)[0] * onizleme(k)[3] - onizleme(k)[1] * onizleme(k)[2])) || 1} />
+                  : <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} onizleme={false} alt={k.ad} />}
               </div>
             ))}</div>
             {kip.tur === 'hizala' && (() => {
