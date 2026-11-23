@@ -1602,6 +1602,9 @@ export interface Istekler {
   adTuret(a: { evren: string; dil: string; bicim: string; kayit?: string | null }): TuretilenBicim[];
   adUret(a: { evren: string; dil: string; kip: 'hece' | 'bicim'; enAz: number; enCok: number; adet: number }): UretilenAd[];
   adBicimleri(a: { evren: string; kod: string }): AdBicimi[];
+  /** Köken ağacı (K38, C5). */
+  dilAdlari(a: { evren: string; dil: string }): { kayit: KisaKayit; bicim: string }[];
+  kokenAgaci(a: { evren: string; dil: string; bicim?: string | null; kayit?: string | null }): { kok: { dil: KisaKayit; bicim: string; anlam: string }; dallar: TuretilenBicim[] };
   adBicimiYaz(a: { evren: string; kod: string; dil: string; bicim: string | null; kaynakDil?: string | null; kaynakBicim?: string | null }): void;
   kisiDilleri(a: { evren: string; kod: string }): KisiDili[];
   dilYeterliligiYaz(a: { evren: string; iliski: string; deger: DilYeterliligi | null }): void;

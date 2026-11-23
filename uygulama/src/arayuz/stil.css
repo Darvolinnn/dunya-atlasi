@@ -1674,3 +1674,20 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
   .akilli-listeler { position: static; flex-direction: row; flex-wrap: wrap; }
   .akilli-listeler > .soluk { width: 100%; }
 }
+
+/* Köken ağacı ve birleşik ad (K38 C5) */
+.koken-bolumleri { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; margin-top: 12px; align-items: start; }
+.koken-ciz { overflow-x: auto; padding: 12px 0; }
+.koken-dugum { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.koken-kutu { display: flex; flex-direction: column; align-items: center; padding: 6px 14px; border: 1px solid var(--cizgi); border-radius: 8px; background: var(--yuzey); white-space: nowrap; }
+.koken-kutu strong { font-family: var(--metin-yazi); font-size: 1.05rem; }
+.koken-kutu.secili { border-color: var(--vurgu); background: var(--vurgu-zemin); }
+.koken-cocuklar { display: flex; gap: 18px; justify-content: center; align-items: flex-start; }
+.koken-dal { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.koken-kural { max-width: 220px; text-align: center; }
+.birlesik-parcalar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.birlesik-tablo { width: 100%; border-collapse: collapse; font-size: 0.92rem; margin: 8px 0; }
+.birlesik-tablo th { text-align: left; font-weight: 500; font-size: 0.8rem; color: var(--metin-2); padding: 4px 8px; border-bottom: 1px solid var(--cizgi); }
+.birlesik-tablo td { padding: 6px 8px; border-bottom: 1px solid var(--cizgi); }
+@media (max-width: 760px) { .koken-bolumleri { grid-template-columns: minmax(0, 1fr); } }
+.baglanti-dugmesi:disabled { opacity: 0.45; cursor: not-allowed; text-decoration: none; }

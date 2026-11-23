@@ -261,7 +261,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           {SUREC_SAHIPLERI.includes(kayit.tur) && <SurecKurallariBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           {HUKUK_SAHIPLERI.includes(kayit.tur) && <HukukKurallariBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           {kayit.tur === 'karakter' && <UygulananKurallarAraci istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-          {kayit.tur === 'dil' && <DilBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {kayit.tur === 'dil' && <DilBolumu istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} surum={surum} />}
           {kayit.tur === 'karakter' && <KisiDilleriBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           {kayit.tur === 'teknoloji' && <TeknolojiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           {kayit.tur === 'motif' && <MotifBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}

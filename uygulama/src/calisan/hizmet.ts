@@ -3058,6 +3058,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     return dilMod.adUret(this.evren(evren), dil, kip, enAz, enCok, adet);
   }
   adBicimleri({ evren, kod }: { evren: string; kod: string }) { return dilMod.adBicimleriOku(this.evren(evren), kod); }
+  dilAdlari({ evren, dil }: { evren: string; dil: string }) { return dilMod.dilAdlari(this.evren(evren), dil); }
+  kokenAgaci({ evren, dil, bicim, kayit }: { evren: string; dil: string; bicim?: string | null; kayit?: string | null }) { return dilMod.kokenAgaci(this.evren(evren), dil, { bicim, kayit }); }
   adBicimiYaz({ evren, kod, dil, bicim, kaynakDil, kaynakBicim }: { evren: string; kod: string; dil: string; bicim: string | null; kaynakDil?: string | null; kaynakBicim?: string | null }) {
     dilMod.adBicimiYaz(this.dilBaglami(evren), kod, dil, bicim, kaynakDil ?? null, kaynakBicim ?? null);
   }
