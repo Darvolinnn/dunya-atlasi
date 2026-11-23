@@ -4,7 +4,7 @@
 import { sayiGirdisi } from '../alan/nicelik';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { CizelgeOgesi, KisaKayit, TakvimEtkisi } from '../veri/api';
+import type { CizelgeOgesi, KisaKayit, TakvimEtkisi, YasamSeridi } from '../veri/api';
 import { anaTakvim, cagYili, eksenYili, paralelYazilar, takvimGecerli, takvimKaymasi, tarihAciklamasi, tarihCoz, VARSAYILAN_TAKVIM, yilGunu, yilParcasi, yilYazisi,
   type Akis, type ParalelTakvim, type Takvim, type TakvimYa, type ZamanSeti } from '../alan/tarih';
 import { turBul } from '../alan/turler';
@@ -13,6 +13,7 @@ import { KararRozeti } from './ortak';
 import { BakisAciklamasi, BakisSecici } from './Bilgiler';
 import type { Secim } from './BaglantiSecici';
 import { KayitSec } from './KayitBolumleri';
+import { AyGorunumu } from './TakvimAy';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const BOS_SET: ZamanSeti = { ana: VARSAYILAN_TAKVIM, diger: [], akislar: [] };
@@ -37,6 +38,22 @@ export function takvimOrnegi(x: TakvimYa): string {
   const ay = t.aylar?.[0]?.ad;
   const cag = t.caglar?.find((c) => !c.ters)?.ad;
   return ay ? `Örn. 412, ${ay} 412, 12 ${ay} 412, 410–415${cag ? `, ${cag} 12` : ''}` : `Örn. 412, yaklaşık 300, 410–415${cag ? `, ${cag} 12` : ''}`;
+}
+
+// ---------- Takvim sayfası: ay görünümü ve ayarlar (K37) ----------
+const takvimSekmesiAnahtari = 'dunya-atlasi:takvim-sekmesi';
+export function TakvimSayfasi({ istemci, evren }: { istemci: Istemci; evren: string }) {
+  const [sekme, setSekmeDurumu] = useState<'ay' | 'ayar'>(() => (okuYerel(takvimSekmesiAnahtari) === 'ayar' ? 'ayar' : 'ay'));
+  const setSekme = (v: 'ay' | 'ayar') => { setSekmeDurumu(v); yazYerel(takvimSekmesiAnahtari, v); };
+  return (
+    <>
+      <div class="sekmeler" role="tablist" aria-label="Takvim">
+        <button class="sekme" role="tab" aria-selected={sekme === 'ay'} onClick={() => setSekme('ay')}>Ay görünümü</button>
+        <button class="sekme" role="tab" aria-selected={sekme === 'ayar'} onClick={() => setSekme('ayar')}>Takvim ayarları</button>
+      </div>
+      {sekme === 'ay' ? <AyGorunumu istemci={istemci} evren={evren} /> : <TakvimSekmesi istemci={istemci} evren={evren} />}
+    </>
+  );
 }
 
 // ---------- Takvimler sekmesi ----------
@@ -414,6 +431,17 @@ const uclari = (o: CizelgeOgesi): [number, number] => {
   return [enErken ?? enGec!, enGec ?? enErken!];
 };
 const yaziGen = (s: string) => s.length * 7 + 14;
+const seritAnahtari = 'dunya-atlasi:cizelge-seritleri';
+const KARAKTER_SINIRI = 6;
+/** Karakter şeridindeki öğe (K37): aynı olay birden çok karakterin şeridinde görünebilir. */
+type SeritOgesi = CizelgeOgesi & { serit?: string; asilAd?: string };
+interface Omur { bas: number; son: number | null; yazi: string }
+/** "23 yaşında" → "Yaş 23"; öbür açıklamalar ("Bu tarihte ölmüş") olduğu gibi kalır. */
+export const yasKisa = (m: string | null) => {
+  if (!m) return null;
+  const x = m.match(/^(\d+(?:–\d+)?) yaşında(.*)$/);
+  return x ? `Yaş ${x[1]}${x[2]}` : m;
+};
 
 /** Zaman çizelgesi (§7, taslak 3A ve 3B): çağlar arka planda bant, olaylar ve her eser kendi şeridinde; uzun boş
  *  süreler kırık eksenle kısalır. Altta bütün zamanın özet çizgisi ve seçilen aralık. Dar ekranda kendiliğinden
@@ -431,6 +459,10 @@ export function ZamanCizelgesi({ istemci, evren }: { istemci: Istemci; evren: st
   const [secim, setSecimDurumu] = useState<'cizelge' | 'defter' | null>(() => { const v = okuYerel(cizelgeAnahtari); return v === 'cizelge' || v === 'defter' ? v : null; });
   const setSecim = (v: 'cizelge' | 'defter') => { setSecimDurumu(v); yazYerel(cizelgeAnahtari, v); };
   const [gen, setGen] = useState(900);
+  const [kipKarakter, setKipKarakterDurumu] = useState(() => okuYerel(seritAnahtari) === 'karakter');
+  const setKipKarakter = (v: boolean) => { setKipKarakterDurumu(v); yazYerel(seritAnahtari, v ? 'karakter' : 'eser'); };
+  const [yasamlar, setYasamlar] = useState<YasamSeridi[] | null>(null);
+  const [secKarakter, setSecKarakter] = useState<string[] | null>(null);
   const kap = useRef<HTMLDivElement>(null);
   const [n, setN] = useState(0);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren) setN((x) => x + 1); }), [evren]);
@@ -438,6 +470,9 @@ export function ZamanCizelgesi({ istemci, evren }: { istemci: Istemci; evren: st
     istemci.iste('zamanCizelgesi', { evren, bakis: bakis?.kod ?? null }).then(setOgeler, () => setOgeler([]));
     istemci.iste('eserler', { evren }).then(setEserler, () => {});
   }, [evren, bakis?.kod, n]);
+  useEffect(() => {
+    if (kipKarakter) istemci.iste('yasamSeritleri', { evren, bakis: bakis?.kod ?? null }).then(setYasamlar, () => setYasamlar([]));
+  }, [evren, bakis?.kod, n, kipKarakter]);
   useLayoutEffect(() => {
     const k = kap.current; if (!k) return;
     const olc = () => setGen(k.clientWidth || 900);
@@ -468,11 +503,35 @@ export function ZamanCizelgesi({ istemci, evren }: { istemci: Istemci; evren: st
     return y1 === y2 ? yaz(y1) : `${yaz(y1)}–${cagYili(y2, olcekTakvimi)?.n ?? y2}`;
   };
   const defter = (secim ?? (gen < 720 ? 'defter' : 'cizelge')) === 'defter';
+  // Karakter şeritleri (K37): seçilen her karakterin şeridinde yaşam çizgisi ve katıldığı olaylar, o anki yaşıyla.
+  const karakterler = yasamlar ?? [];
+  const seciliKarakter = secKarakter ?? karakterler.slice(0, KARAKTER_SINIRI).map((k) => k.kod);
+  const gosterilen = karakterler.filter((k) => seciliKarakter.includes(k.kod));
+  const karakterOgeleri: SeritOgesi[] = gosterilen.flatMap((k) => k.olaylar
+    .filter((o) => (!tur || o.tur === tur) && (!akis || (akis === 'ana' ? !o.tarih.akis : o.tarih.akis === akis)))
+    .map((o) => { const y = yasKisa(o.yas); return { kod: o.kod, ad: y ? `${o.ad} · ${y}` : o.ad, asilAd: o.ad, tur: o.tur, karar: o.karar, tarih: o.tarih, eser: null, serit: k.kod }; }));
+  const omurler: Record<string, Omur> = {};
+  for (const k of gosterilen) {
+    const d = k.dogum?.eksen?.enErken ?? k.dogum?.eksen?.enGec ?? null;
+    if (d === null) continue;
+    const o = k.olum?.eksen ? (k.olum.eksen.enGec ?? k.olum.eksen.enErken) : null;
+    omurler[k.kod] = { bas: d, son: o, yazi: `Yaşam çizgisi: ${k.ad} · ${k.dogum!.ifade} → ${k.olum ? k.olum.ifade : 'ölümü yazılmamış'}` };
+  }
+  const karakterSeritleri = gosterilen.map((k) => ({ kod: k.kod, ad: `${k.ad}${k.olum ? ' †' : ''}`, href: `#/e/${evren}/k/${k.kod}`,
+    alt: k.dogum ? `${k.dogum.ifade} →${k.olum ? ` ${k.olum.ifade}` : ''}` : 'doğumu yazılmamış' }));
 
   const ust = (
     <>
       <div class="satir cizelge-suzgec" role="group" aria-label="Süz">
-        {seritler.map((s) => {
+        <span class="dugme-grubu" role="group" aria-label="Şeritler">
+          <button class={`dugme kucuk ${!kipKarakter ? 'ana' : ''}`} aria-pressed={!kipKarakter} onClick={() => setKipKarakter(false)}>Eserler</button>
+          <button class={`dugme kucuk ${kipKarakter ? 'ana' : ''}`} aria-pressed={kipKarakter} onClick={() => setKipKarakter(true)}>Karakterler</button>
+        </span>
+        {kipKarakter && karakterler.map((k) => {
+          const acik = seciliKarakter.includes(k.kod);
+          return <button key={k.kod} class={`cip bag-cipi ${acik ? 'aktif' : ''}`} aria-pressed={acik} onClick={() => setSecKarakter(acik ? seciliKarakter.filter((x) => x !== k.kod) : [...seciliKarakter, k.kod])}>{k.ad}</button>;
+        })}
+        {!kipKarakter && seritler.map((s) => {
           const acik = !gizli.includes(s.kod);
           return <button key={s.kod} class={`cip bag-cipi ${acik ? 'aktif' : ''}`} aria-pressed={acik} onClick={() => setGizli(acik ? [...gizli, s.kod] : gizli.filter((x) => x !== s.kod))}>{s.ad}</button>;
         })}
@@ -508,11 +567,16 @@ export function ZamanCizelgesi({ istemci, evren }: { istemci: Istemci; evren: st
     <div class="cizelge" ref={kap}>
       {ust}
       {!ogeler.length && <p class="soluk">Henüz evren tarihi verilmiş kayıt yok. Bir kaydın sayfasında “Evren tarihi” alanına yazabilirsiniz.</p>}
-      {ogeler.length > 0 && !suzulmus.length && <p class="soluk">Bu süzgece uyan kayıt yok.</p>}
-      {yerlesen.length > 0 && (defter
+      {!kipKarakter && ogeler.length > 0 && !suzulmus.length && <p class="soluk">Bu süzgece uyan kayıt yok.</p>}
+      {kipKarakter && yasamlar && !karakterler.length && <p class="soluk">Doğum tarihi yazılmış ya da tarihli bir olaya katılmış karakter yok. Karakterin sayfasında doğum tarihini yazabilir, olaylara katılanları ekleyebilirsiniz.</p>}
+      {kipKarakter && karakterler.length > 0 && !gosterilen.length && <p class="soluk">Göstermek için yukarıdan karakter seçin.</p>}
+      {kipKarakter && gosterilen.length > 0 && (defter
+        ? <TarihDefteri evren={evren} z={z} ogeler={karakterOgeleri.filter((o, i, l) => l.findIndex((x) => x.kod === o.kod) === i).map((o) => ({ ...o, ad: o.asilAd ?? o.ad }))} eserler={eserler} yilYaz={yilYaz} />
+        : <SeritliCizelge evren={evren} z={z} ogeler={karakterOgeleri} seritler={karakterSeritleri} omurler={omurler} gen={gen} yilYaz={yilYaz} aralik={aralik} setAralik={setAralik} />)}
+      {!kipKarakter && yerlesen.length > 0 && (defter
         ? <TarihDefteri evren={evren} z={z} ogeler={yerlesen} eserler={eserler} yilYaz={yilYaz} />
         : <SeritliCizelge evren={evren} z={z} ogeler={yerlesen} seritler={seritler.filter((s) => !gizli.includes(s.kod))} gen={gen} yilYaz={yilYaz} aralik={aralik} setAralik={setAralik} />)}
-      {yerlesmeyen.length > 0 && (
+      {!kipKarakter && yerlesmeyen.length > 0 && (
         <section>
           <h2>Sıralamaya yerleşmeyenler</h2>
           <p class="soluk kucuk">Bu tarihler takvime çevrilemedi, bilinmiyor, ana takvimle eşlemesi olmayan bir takvimde yazıldı ya da kısıtları birbiriyle çelişiyor. Yazdığınız hâliyle saklanıyorlar.</p>
@@ -532,19 +596,24 @@ function ogeAciklamasi(o: CizelgeOgesi, z: ZamanSeti) {
   return `${o.ad} · ${turBul(o.tur).ad} · ${aciklama}${paralel ? ` · ${paralel}` : ''}${o.karar === 'fikir' ? ' · fikir' : ''}${o.inanc ? ' · yalnızca inanç' : ''}`;
 }
 
-function SeritliCizelge({ evren, z, ogeler, seritler, gen, yilYaz, aralik, setAralik }: {
-  evren: string; z: ZamanSeti; ogeler: CizelgeOgesi[]; seritler: { kod: string; ad: string }[]; gen: number;
+function SeritliCizelge({ evren, z, ogeler, seritler, omurler = {}, gen, yilYaz, aralik, setAralik }: {
+  evren: string; z: ZamanSeti; ogeler: SeritOgesi[]; seritler: { kod: string; ad: string; href?: string; alt?: string }[]; omurler?: Record<string, Omur>; gen: number;
   yilYaz: (x: number, kisa?: boolean) => string; aralik: [number, number] | null; setAralik: (a: [number, number] | null) => void;
 }) {
   const genislik = Math.max(320, gen - SERIT_ADI_GEN - 24);
-  const tumUclar = ogeler.map(uclari);
+  // Yaşam çizgileri de eksene girer; ölümü yazılmamışsa açık uç son olaya kadar uzar.
+  const omurUclari = Object.values(omurler).map((o): [number, number] => [o.bas, o.son ?? o.bas]);
+  const tumUclar = [...ogeler.map(uclari), ...omurUclari];
   const bas = Math.min(...tumUclar.map((u) => u[0])), son = Math.max(...tumUclar.map((u) => u[1]));
   const gorunen = aralik ? ogeler.filter((o) => { const [a, b] = uclari(o); return b >= aralik[0] && a <= aralik[1]; }) : ogeler;
-  const eksen = kirikEksen(gorunen.length ? gorunen.map(uclari) : [[bas, son]], genislik - 16);
+  const gorunenOmur = aralik ? omurUclari.filter(([a, b]) => b >= aralik[0] && a <= aralik[1]) : omurUclari;
+  // Karakter şeritlerinde en sağdaki olayın yazısı (adı ve yaşı) kesilmesin diye sağda yer bırakılır.
+  const sagPay = omurUclari.length || seritler.some((s) => s.alt) ? Math.min(240, Math.max(0, ...gorunen.map((o) => yaziGen(o.ad)))) : 0;
+  const eksen = kirikEksen(gorunen.length || gorunenOmur.length ? [...gorunen.map(uclari), ...gorunenOmur] : [[bas, son]], genislik - 16 - sagPay);
   const x = (t: number) => 8 + eksen.konum(t);
   // Her şeritte öğeler, yazılarıyla birlikte çakışmayacak satırlara dağılır.
   const satirlar = seritler.map((s) => {
-    const l = gorunen.filter((o) => (o.eser ?? OLAY_SERIDI) === s.kod);
+    const l = gorunen.filter((o) => (o.serit ?? o.eser ?? OLAY_SERIDI) === s.kod);
     const geo = l.map((o) => {
       const [a, b] = uclari(o);
       const x0 = x(a), x1 = Math.max(x(b), x0);
@@ -555,11 +624,11 @@ function SeritliCizelge({ evren, z, ogeler, seritler, gen, yilYaz, aralik, setAr
     });
     const sira = satirlaraDagit(geo.map((g) => [g.x0 - 6, g.son]));
     const adet = Math.max(1, ...sira.map((r) => r + 1));
-    return { s, geo: geo.map((g, i) => ({ ...g, satir: sira[i] })), adet };
+    return { s, geo: geo.map((g, i) => ({ ...g, satir: sira[i] })), adet, yuk: Math.max(adet * SATIR_YUK + 14, s.alt ? 58 : 0) };
   });
   const EKSEN_YUK = 34;
   let y = EKSEN_YUK;
-  const seritY = satirlar.map((r) => { const y0 = y; y += r.adet * SATIR_YUK + 14; return y0; });
+  const seritY = satirlar.map((r) => { const y0 = y; y += r.yuk; return y0; });
   const yukseklik = y + 4;
   const yp = yilParcasi(z.ana);
   const caglar = cagAraliklari(z.ana);
@@ -580,18 +649,32 @@ function SeritliCizelge({ evren, z, ogeler, seritler, gen, yilYaz, aralik, setAr
       <div class="cizelge-cerceve" role="region" aria-label="Zaman çizelgesi çizimi">
         <div class="cizelge-seritadlari" style={{ width: `${SERIT_ADI_GEN}px` }}>
           {satirlar.map((r, i) => (
-            <div key={r.s.kod} class="cizelge-seritadi" style={{ top: `${seritY[i]}px`, height: `${r.adet * SATIR_YUK + 14}px` }}>
-              {r.s.kod ? <a href={`#/e/${evren}/yaz/${r.s.kod}`}>{r.s.ad}</a> : r.s.ad}
+            <div key={r.s.kod} class="cizelge-seritadi" style={{ top: `${seritY[i]}px`, height: `${r.yuk}px` }}>
+              {r.s.kod ? <a href={r.s.href ?? `#/e/${evren}/yaz/${r.s.kod}`}>{r.s.ad}</a> : r.s.ad}
+              {r.s.alt && <span class="cizelge-seritalti">{r.s.alt}</span>}
             </div>
           ))}
         </div>
         <svg class="cizelge-svg" width={genislik} height={yukseklik} viewBox={`0 0 ${genislik} ${yukseklik}`}>
+          <defs><linearGradient id="omur-acik" x1="0" x2="1" y1="0" y2="0"><stop offset="0.75" class="omur-dur" /><stop offset="1" class="omur-dur bitis" /></linearGradient></defs>
           {caglar.map((c, i) => {
             const a = Math.max(0, c.bas === null ? 0 : x(c.bas)), b = Math.min(genislik, c.son === null ? genislik : x(c.son));
             if (b <= a) return null;
             return <g key={i} class={`cizelge-cagbandi cag-${i % 3}`}><rect x={a} y={0} width={b - a} height={yukseklik} /><text x={a + 6} y={14}>{c.ad}</text></g>;
           })}
           {satirlar.map((r, i) => <line key={r.s.kod} class="cizelge-serit-cizgisi" x1={0} x2={genislik} y1={seritY[i] - 6} y2={seritY[i] - 6} />)}
+          {satirlar.map((r, i) => {
+            const o = omurler[r.s.kod];
+            if (!o) return null;
+            const a = Math.max(0, x(o.bas)), b = o.son === null ? genislik : Math.min(genislik, x(o.son));
+            if (b <= a) return null;
+            return (
+              <rect key={`omur-${r.s.kod}`} class={`cizelge-omur${o.son === null ? ' acik' : ''}`} x={a} y={seritY[i] - 2} width={b - a} height={r.yuk - 8} rx={4}
+                fill={o.son === null ? 'url(#omur-acik)' : undefined}>
+                <title>{o.yazi}</title>
+              </rect>
+            );
+          })}
           {cizgiler.map((c, i) => <g key={i} class="cizelge-yil"><line x1={c.x} x2={c.x} y1={18} y2={yukseklik} /><text x={c.x + 3} y={30}>{c.yazi}</text></g>)}
           {eksen.kiriklar.map((k, i) => {
             const yil = Math.round((k.son - k.bas) / yp);
@@ -622,7 +705,7 @@ function SeritliCizelge({ evren, z, ogeler, seritler, gen, yilYaz, aralik, setAr
         </svg>
       </div>
       <OzetCizgisi ogeler={ogeler} bas={bas} son={son} genislik={genislik} aralik={aralik} setAralik={setAralik} yilYaz={yilYaz} />
-      <p class="soluk kucuk">Kesin tarih nokta, aralık ve belirsiz tarih bant, “önce” ve “sonra” ok olarak görünür; kesik çizgili bant bir olaya göre verilmiş tarihtir. Uzun boş aralıklar “≈” ile kısaltılır.</p>
+      <p class="soluk kucuk">Kesin tarih nokta, aralık ve belirsiz tarih bant, “önce” ve “sonra” ok olarak görünür; kesik çizgili bant bir olaya göre verilmiş tarihtir. Uzun boş aralıklar “≈” ile kısaltılır.{Object.keys(omurler).length > 0 && ' Karakter şeridinin arkasındaki açık bant doğumdan ölüme yaşam çizgisidir; ölümü yazılmamışsa sağa doğru açık kalır.'}</p>
     </>
   );
 }

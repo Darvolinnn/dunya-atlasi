@@ -1327,3 +1327,47 @@ details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] 
 .cikti-secimi > .satir { margin: 6px 0; }
 .cikti-agaci, .cikti-agaci ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
 .cikti-agaci ul { padding-left: 22px; margin-top: 2px; }
+
+/* Karakter şeritleri ve yaşam çizgisi (K37) */
+.cizelge-seritadi { flex-direction: column; gap: 2px; }
+.cizelge-seritalti { font-weight: 400; font-size: 0.78rem; color: var(--metin-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.cizelge-omur { fill: color-mix(in srgb, var(--tg-insan-y) 7%, transparent); stroke: color-mix(in srgb, var(--tg-insan-y) 28%, transparent); stroke-width: 1; }
+.cizelge-omur.acik { stroke: none; }
+.omur-dur { stop-color: var(--tg-insan-y); stop-opacity: 0.08; }
+.omur-dur.bitis { stop-opacity: 0; }
+
+/* Takvimin ay görünümü (K37) */
+.takvim-ay { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.takvim-ay.cekmeceli { grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); }
+.takvim-ay-ust { gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.takvim-ay-adi { font-family: var(--metin-yazi); font-size: 1.25rem; margin: 0 8px; min-width: 9em; }
+.takvim-ay-genel { margin: 0 0 8px; }
+.takvim-izgara { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--cizgi); border-radius: var(--yaricap); overflow: hidden; background: var(--yuzey); }
+.takvim-gun { min-height: 92px; padding: 4px 5px; border-right: 1px solid var(--cizgi); border-bottom: 1px solid var(--cizgi); display: flex; flex-direction: column; gap: 3px; cursor: pointer; min-width: 0; }
+.takvim-gun:nth-child(7n) { border-right: none; }
+.takvim-gun:hover { background: var(--vurgu-zemin); }
+.takvim-gun.secili { outline: 2px solid var(--vurgu); outline-offset: -2px; }
+.takvim-gun.dis { background: var(--zemin); cursor: default; }
+.takvim-gun-no { font-size: 0.78rem; color: var(--metin-2); }
+.takvim-olay { display: block; width: calc(100% + 0px); text-align: left; font: inherit; font-size: 0.78rem; line-height: 1.35; padding: 1px 6px; border: none; border-radius: 5px; background: var(--tgz, var(--yuzey-2)); color: var(--tg, var(--metin)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.takvim-olay.uzun.surer { border-top-right-radius: 0; border-bottom-right-radius: 0; margin-right: -6px; width: calc(100% + 6px); }
+.takvim-olay.uzun.devam { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -6px; width: calc(100% + 6px); }
+.takvim-olay.uzun.devam.surer { margin-left: -6px; margin-right: -6px; width: calc(100% + 12px); }
+.takvim-cekmece { position: sticky; top: 12px; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--yaricap); box-shadow: var(--golge); padding: 14px 16px; max-height: calc(100vh - 24px); overflow-y: auto; animation: sagdan-gir 180ms var(--gecis-egri); }
+.takvim-cekmece-kapat { float: right; margin: -4px -6px 0 0; }
+.takvim-cekmece h3 { font-family: var(--metin-yazi); font-size: 1.2rem; margin: 2px 0 2px; }
+.olay-karti-baslik { font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--metin-2); font-weight: 600; margin: 14px 0 6px; }
+.olay-katilanlar { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.olay-katilanlar li { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 8px; }
+.olay-katilanlar li:hover { background: var(--vurgu-zemin); }
+.olay-rozet { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 0.75rem; background: var(--tgz); color: var(--tg); flex: none; }
+.gun-paneli .yigin { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.gun-kayitlari { margin: 4px 0 0; padding-left: 18px; }
+.sarmal { flex-wrap: wrap; gap: 4px; }
+@media (prefers-reduced-motion: reduce) { .takvim-cekmece { animation: none; } }
+@media (max-width: 900px) {
+  .takvim-ay.cekmeceli { grid-template-columns: minmax(0, 1fr); }
+  .takvim-cekmece { position: static; max-height: none; }
+  .takvim-gun { min-height: 64px; }
+}
+.takvim-olay.uzun.surer:not(.devam), .takvim-olay.uzun.surer.hafta-basi { position: relative; z-index: 1; overflow: visible; text-overflow: clip; }

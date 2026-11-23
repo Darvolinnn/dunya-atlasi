@@ -103,6 +103,7 @@ import * as haritaKunye from './harita-kunye';
 import type { HaritaKunyeTanimi } from '../veri/api';
 import * as surecSorumlu from './surec-sorumlu';
 import type { SurecEngelTuru } from '../veri/api';
+import type { OlayKarti, OlayKatilani, TakvimOlayiGirdisi, YasamSeridi } from '../veri/api';
 import * as kaliciIz from './kalici-iz';
 import type { KaliciIzTuru } from '../veri/api';
 import * as olcekli from './olcekli';
@@ -2581,6 +2582,82 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       .map((r) => ({ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string, karar: r.karar as string, tarih: this.tarihGoster(e, r.tarih)!, eser: eserOf.get(r.kod as string) ?? null,
         ...(bk.kisa && bk.inanc(r.gorunurluk) ? { inanc: true } : {}) }))
       .sort((a, b) => siraAnahtari(a.tarih) - siraAnahtari(b.tarih) || turkceKarsilastir(a.ad, b.ad));
+  }
+
+  /** Takvimde bir olayın ya da sahnenin kartı (K37): tarihi, yeri ve katılanların o andaki yaşı. */
+  olayKarti({ evren, kod }: { evren: string; kod: string }): OlayKarti {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kod);
+    kod = yonlendir(e.db, kod);
+    const r = e.db.selectObject('SELECT kod, ad, tur, karar, ozet FROM kayitlar WHERE kod=?', [kod])!;
+    const an = this.olayTarihi(e, kod);
+    const z = zamanSetiOku(e.db);
+    const sahneOlayi = e.db.selectValue('SELECT sahne_olayi FROM kayitlar WHERE kod=?', [kod]) as string | null;
+    const yerSatiri = e.db.selectObject(`SELECT y.kod, y.ad, y.tur FROM iliskiler i JOIN kayitlar y ON y.kod=i.b
+      WHERE i.tur='sahne_yeri' AND i.a IN (?, ?) AND i.silindi IS NULL AND y.silindi IS NULL ORDER BY i.olusturma LIMIT 1`, [kod, sahneOlayi ?? kod]);
+    const gorulen = new Set<string>();
+    const katilanlar: OlayKatilani[] = [];
+    for (const x of e.db.selectObjects(`SELECT k.kod, k.ad, k.tur, i.tur itur, i.rol FROM iliskiler i JOIN kayitlar k ON k.kod=i.a
+        WHERE i.tur IN ('olayda','sahnede') AND i.b IN (?, ?) AND i.silindi IS NULL AND k.silindi IS NULL ORDER BY i.olusturma`, [kod, sahneOlayi ?? kod])) {
+      if (gorulen.has(x.kod as string)) continue;
+      gorulen.add(x.kod as string);
+      const yas = x.tur === 'karakter'
+        ? yasHesapla(sablonlar.tarihDegeri(e, x.kod as string, 'dogum'), an, sablonlar.tarihDegeri(e, x.kod as string, 'olum'), z)?.metin ?? null : null;
+      katilanlar.push({ kod: x.kod as string, ad: x.ad as string, tur: x.tur as string, rol: rolAdi(x.itur as string, (x.rol as string) ?? null) ?? null, yas });
+    }
+    return { kod, ad: r.ad as string, tur: r.tur as string, karar: r.karar as string, ozet: (r.ozet as string) ?? '', tarih: an,
+      mekan: yerSatiri ? { kod: yerSatiri.kod as string, ad: yerSatiri.ad as string, tur: yerSatiri.tur as string } : null, katilanlar };
+  }
+
+  /** Takvimde bir güne olay ekler (K37): olay kaydı, tarihi, katılanları ve yeri tek işlem grubudur. */
+  takvimOlayiEkle({ evren, olay }: { evren: string; olay: TakvimOlayiGirdisi }) {
+    const e = this.evren(evren);
+    const ad = temizle(olay?.ad);
+    const bas = temizle(olay?.tarih), bit = temizle(olay?.bitis, { bos: true });
+    const z = zamanSetiOku(e.db);
+    const tarih = tarihCoz(bit ? `${bas} ile ${bit} arası` : bas, z);
+    if (!tarih?.eksen) throw new Error(bit ? 'Bitiş tarihi okunamadı. “24 Ekim 412” gibi yazın.' : 'Tarih okunamadı.');
+    const katilanlar = [...new Set((Array.isArray(olay.katilanlar) ? olay.katilanlar : []).map((k) => yonlendir(e.db, String(k))))];
+    if (katilanlar.length > 50) throw new Error('En çok 50 katılan seçilebilir.');
+    for (const k of katilanlar) this.kayitVarMi(e, k);
+    const mekan = olay.mekan ? yonlendir(e.db, String(olay.mekan)) : null;
+    if (mekan) this.kayitVarMi(e, mekan);
+    const kod = yeniKod();
+    const girdiler: IslemGirdisi[] = [
+      ...this.kayitGirdileri(kod, { ad, tur: 'olay', karar: 'kesin', ozet: temizle(olay.ozet, { bos: true, uzunluk: 500 }) }),
+      { tur: 'kayit_tarih', veri: { kod, tarih, onceki: null } },
+      ...katilanlar.map((k): IslemGirdisi => ({ tur: 'iliski_ekle', veri: { kod: yeniKod(), tur: 'olayda', a: k, b: kod, rol: 'katilan', karar: 'kesin', aciklama: '', baslangic: null, bitis: null } })),
+      ...(mekan ? [{ tur: 'iliski_ekle', veri: { kod: yeniKod(), tur: 'sahne_yeri', a: kod, b: mekan, karar: 'kesin', aciklama: '', baslangic: null, bitis: null } } as IslemGirdisi] : []),
+    ];
+    this.yaz(evren, girdiler, [kod, ...katilanlar, ...(mekan ? [mekan] : [])]);
+    return { kod };
+  }
+
+  /** Zaman çizelgesinin karakter şeritleri (K37): doğum, ölüm ve tarihi bilinen olay ve sahneler, o andaki yaşla. */
+  yasamSeritleri({ evren, bakis = null }: { evren: string; bakis?: string | null }): YasamSeridi[] {
+    const e = this.evren(evren);
+    const bk = gorunum.bakisHazirla(e, bakis);
+    const z = zamanSetiOku(e.db);
+    const sonuc: YasamSeridi[] = [];
+    for (const k of e.db.selectObjects(`SELECT kod, ad, tur, gorunurluk FROM kayitlar WHERE tur='karakter' AND silindi IS NULL`)) {
+      if (!bk.gorur(k.gorunurluk)) continue;
+      const kod = k.kod as string;
+      const dogum = sablonlar.tarihDegeri(e, kod, 'dogum'), olum = sablonlar.tarihDegeri(e, kod, 'olum');
+      const olaylar: YasamSeridi['olaylar'] = [];
+      const gorulen = new Set<string>();
+      for (const o of e.db.selectObjects(`SELECT o.kod, o.ad, o.tur, o.karar, o.gorunurluk FROM iliskiler i JOIN kayitlar o ON o.kod=i.b
+          WHERE i.a=? AND i.tur IN ('olayda','sahnede') AND i.silindi IS NULL AND o.silindi IS NULL`, [kod])) {
+        if (gorulen.has(o.kod as string) || !bk.gorur(o.gorunurluk)) continue;
+        gorulen.add(o.kod as string);
+        const t = this.olayTarihi(e, o.kod as string);
+        if (!t?.eksen || (t.eksen.enErken === null && t.eksen.enGec === null)) continue;
+        olaylar.push({ kod: o.kod as string, ad: o.ad as string, tur: o.tur as string, karar: o.karar as string, tarih: t, yas: yasHesapla(dogum, t, olum, z)?.metin ?? null });
+      }
+      if (!dogum?.eksen && !olaylar.length) continue;
+      olaylar.sort((a, b) => siraAnahtari(a.tarih) - siraAnahtari(b.tarih));
+      sonuc.push({ kod, ad: k.ad as string, tur: 'karakter', dogum, olum, olaylar });
+    }
+    return sonuc.sort((a, b) => b.olaylar.length - a.olaylar.length || turkceKarsilastir(a.ad, b.ad));
   }
 
   // ---------- İnceleme görünümleri (§7) ----------

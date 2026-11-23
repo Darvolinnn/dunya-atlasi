@@ -185,6 +185,21 @@ export function yilYazisi(y: number, t: Takvim): string {
   return c ? `${c.cag.ad} ${c.n}` : `${t.ad} ${y}`;
 }
 
+/** Takvimin bir gününün, tarih alanına yazıldığında aynı güne çözülen ifadesi ("9 Ekim 412", "9 Ekim Üçüncü Çağ 12").
+ *  `ay` sıfırdan sayılır. Aylar tanımlı değilse null. */
+export function gunIfadesi(t: Takvim, yil: number, ay: number, gun: number): string | null {
+  const a = t.aylar?.[ay];
+  if (!a) return null;
+  const c = cagYili(yil, t);
+  return `${gun} ${a.ad} ${c ? `${c.cag.ad} ${c.n}` : yil}`;
+}
+
+/** Bir ayın eksendeki ilk ve son parçası. */
+export function ayAraligi(t: Takvim, yil: number, ay: number): [number, number] {
+  const bas = yil * yilParcasi(t) + ayBasGun(t, ay) * GUN_PARCA;
+  return [bas, bas + (t.aylar?.[ay]?.gun ?? 0) * GUN_PARCA - 1];
+}
+
 /** Yazarın ifadesini çözer. Çözülemeyen ifade kaybolmaz: sembolik kalır (eksen yok). */
 export function tarihCoz(ifade: string, t: TakvimYa = VARSAYILAN_TAKVIM): EvrenTarihi | null {
   return setMi(t) ? setleCoz(ifade, t) : tekCoz(ifade, t);
@@ -195,6 +210,18 @@ function tekCoz(ifade: string, t: Takvim): EvrenTarihi | null {
   if (!ham) return null;
   let k = ham.toLocaleLowerCase('tr-TR');
   const temel = { ifade: ham, takvim: t.kod, takvimSurumu: t.surum };
+  // "9 Ekim 412 ile 11 Ekim 412 arası", "9 Ekim 412 – 11 Ekim 412": takvimli iki tarihin arası (gün ya da ay
+  // düzeyinde aralık, K37). İki uç da ayrı ayrı çözülür; ikisi de yalnızca yıl ise aşağıdaki yıl aralığı kuralı geçerlidir.
+  const iki = ham.match(/^(.+?\S)(?:\s+ile\s+|\s+[-–—]\s+|\s*[–—]\s*)(.+?)(?:\s+arası(?:nda)?)?$/iu);
+  if (iki) {
+    const a = tekCoz(iki[1], t), b = tekCoz(iki[2], t);
+    if (a?.bicim === 'kesin' && b?.bicim === 'kesin' && a.eksen && b.eksen && (a.hassasiyet !== 'yil' || b.hassasiyet !== 'yil')) {
+      const [x, y] = a.eksen.enErken! <= b.eksen.enErken! ? [a, b] : [b, a];
+      const ince = ['yil', 'mevsim', 'ay', 'gun', 'bolum'] as const;
+      const hassasiyet = ince[Math.min(ince.indexOf(x.hassasiyet as Hassasiyet), ince.indexOf(y.hassasiyet as Hassasiyet))];
+      return { ...temel, bicim: 'aralik', hassasiyet, eksen: { enErken: x.eksen!.enErken, enGec: Math.max(x.eksen!.enGec!, y.eksen!.enGec!) } };
+    }
+  }
   // Çağ adı geçiyorsa yıllar o çağın içinde sayılır ("Üçüncü Çağ 412", "Kuruluş öncesi 30").
   let cag: Cag | null = null;
   for (const c of [...(t.caglar ?? [])].sort((a, b) => b.ad.length - a.ad.length)) {
@@ -396,7 +423,7 @@ export function gunFarki(a: EvrenTarihi | null, b: EvrenTarihi | null): { enAz: 
 export const eksenYili = (n: number, t: TakvimYa = VARSAYILAN_TAKVIM) => Math.floor(n / yilParcasi(anaTakvim(t)));
 
 /** Eksendeki noktanın takvimdeki yeri (ay ve gün; aylar tanımlıysa). */
-function eksenYeri(n: number, t: Takvim) {
+export function eksenYeri(n: number, t: Takvim) {
   const yil = eksenYili(n, t);
   const yildaParca = n - yil * yilParcasi(t);
   const gun = Math.floor(yildaParca / GUN_PARCA);
@@ -467,7 +494,14 @@ function tekAciklama(t: EvrenTarihi, takvim: Takvim): string {
   const y = (g: number) => (takvim.caglar?.length ? yilYazisi(eksenYili(g, takvim), takvim) : String(eksenYili(g, takvim)));
   switch (t.bicim) {
     case 'yaklasik': return `${y(t.eksen!.enErken!)}–${y(t.eksen!.enGec!)} arası sayılıyor (±${t.pay} yıl)`;
-    case 'aralik': return `${y(t.eksen!.enErken!)} ile ${y(t.eksen!.enGec!)} arası`;
+    case 'aralik': {
+      if (t.hassasiyet && t.hassasiyet !== 'yil' && takvim.aylar?.length) {
+        // Gün ya da ay düzeyinde aralık (K37): iki ucun kendi okunuşu.
+        const uc = (n: number) => tekAciklama({ ...t, bicim: 'kesin', hassasiyet: t.hassasiyet === 'mevsim' ? 'ay' : t.hassasiyet, eksen: { enErken: n, enGec: n } }, takvim);
+        return `${uc(t.eksen!.enErken!)} ile ${uc(t.eksen!.enGec!)} arası`;
+      }
+      return `${y(t.eksen!.enErken!)} ile ${y(t.eksen!.enGec!)} arası`;
+    }
     case 'once': return `${y(t.eksen!.enGec!)} ve öncesi`;
     case 'sonra': return `${y(t.eksen!.enErken!)} ve sonrası`;
     case 'kesin': {
