@@ -744,6 +744,16 @@ export interface OlcekliKonturSonucu {
   bilinmeyenAlanVar: boolean;
   zarf: OlcekliSonucZarfi;
 }
+/** Takvimde bir olayın kartı (K37): katılanlar olay anındaki yaşlarıyla. */
+export interface OlayKatilani extends KisaKayit { rol: string | null; yas: string | null }
+export interface OlayKarti extends KisaKayit { karar: string; ozet: string; tarih: EvrenTarihi | null; mekan: KisaKayit | null; katilanlar: OlayKatilani[] }
+export interface TakvimOlayiGirdisi { ad: string; tarih: string; bitis?: string; katilanlar?: string[]; mekan?: string | null; ozet?: string }
+/** Zaman çizelgesinde bir karakterin şeridi (K37): doğumdan ölüme yaşam çizgisi ve katıldığı olaylar. */
+export interface YasamSeridi extends KisaKayit {
+  dogum: EvrenTarihi | null; olum: EvrenTarihi | null;
+  olaylar: { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi; yas: string | null }[];
+}
+
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1352,6 +1362,9 @@ export interface Istekler {
   akisYaz(a: { evren: string; kod?: string | null; akis: Akis | null }): { kod: string };
   akisEtkisi(a: { evren: string; kod: string; akis: Akis | null }): TakvimEtkisi;
   zamanCizelgesi(a: { evren: string; bakis?: string | null }): CizelgeOgesi[];
+  olayKarti(a: { evren: string; kod: string }): OlayKarti;
+  takvimOlayiEkle(a: { evren: string; olay: TakvimOlayiGirdisi }): { kod: string };
+  yasamSeritleri(a: { evren: string; bakis?: string | null }): YasamSeridi[];
   soyAgaci(a: { evren: string; odak: string; an?: string | null; bakis?: string | null }): SoyAgaci;
   ag(a: { evren: string; merkez?: string | null; derinlik?: number; iliskiTurleri?: string[] | null; kayitTurleri?: string[] | null; an?: string | null; baglantilar?: boolean; vazgecilmis?: boolean; bakis?: string | null }): AgSonucu;
   kayitIddialari(a: { evren: string; kod: string }): IddiaSatiri[];
