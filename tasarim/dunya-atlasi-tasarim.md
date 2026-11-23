@@ -726,6 +726,7 @@ Bir rota ya da erişim sorusu, eldeki bilgiye göre üç kipten biriyle cevaplan
 
 - Ölçeği tanımlanmamış bir görselden kilometre ya da süre üretilmez; ama aynı yerler arasındaki elle girilmiş süreler hesapta kullanılır. Ölçek birimi evrene özeldir (fersah, menzil).
 - Rota süresi yalnızca uzunluktan oluşmaz: mevsim, ulaşım biçimi, geçiş izni, kapı saatleri ve kapasite gibi koşullar rotaya bağlanabilir. Koşullar yola çıkış anında değil, **ilgili noktaya varış anında** değerlendirilir; yola çıkışta geçerli bir izin sınıra varıldığında bitmiş olabilir. Ayrıntılı zamanlı geçitler F39'da öneridir.
+- **Ölçekli çizim haritanın üstündedir (K38):** ölçek çizgisi ve yuvarlak uzunluklu ölçek çubuğu, araziler, iki nokta arası en kısa yol ve 1.–2.–3. gün erişim sınırları haritanın kendi görselinin üstünde yarı saydam bir katman olarak çizilir; ayrı bir kutu yoktur. Ölçeğin noktaları, ölçümün uçları, erişimin başlangıcı ve arazinin köşeleri doğrudan büyük haritaya tıklanarak seçilir. Katmanın parçaları Katmanlar sekmesinden açılıp kapatılır; çekmece kapansa da katman kalır. Hesap, hüküm ve varsayım metni çekmecede kalır.
 - **Rota ve yolculuk ayrıdır** (§4.2). Harita üzerinden "burada kim vardı, ne oldu, yolculuğun hangi aşamasındaydılar?" sorulur.
 
 ### 8.5 Harita hizalama

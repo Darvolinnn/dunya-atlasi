@@ -19,7 +19,7 @@ import { git } from './Uygulama';
 import { BakisAciklamasi, BakisSecici } from './Bilgiler';
 import type { Secim } from './BaglantiSecici';
 import { HaritaKunyeBolumu } from './HaritaKunye';
-import { OlcekliHaritaBolumu } from './OlcekliHarita';
+import { OlcekliHaritaBolumu, OlcekliKatmanCizimi, olcekliTikla, useOlcekliKatman } from './OlcekliHarita';
 import { geriAlinabilir } from './onay';
 import { SayfaYardimi } from './SayfaYardimi';
 
@@ -168,6 +168,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
     return () => g.disconnect();
   }, [!!h]);
   useHaritaYakinlik(tuval, yakinlik, setYakinlik, kip.tur === 'gez');
+  const olcekli = useOlcekliKatman(istemci, evren, h);
   useEffect(() => { istemci.iste('harita', { evren, kod, bakis: bakis?.kod ?? null, an: an || null }).then((x) => { setH(x); setHata(null); }, (e) => setHata(hataYaz(e))); }, [kod, bakis?.kod, n, an]);
   useEffect(() => {
     const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { setKip((k) => (k.tur === 'hizala' && k.bekleyen ? { ...k, bekleyen: null } : { tur: 'gez' })); setYeni(null); setCizimKaydi(null); } };
@@ -183,6 +184,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
     return { x: ((e.clientX - r.left) / r.width) * h.en, y: ((e.clientY - r.top) / r.height) * h.boy };
   };
   const tikla = async (e: MouseEvent) => {
+    if (kip.tur === 'gez' && olcekliTikla(olcekli, (({ x, y }) => [x, y] as [number, number])(uzayNoktasi(e)))) return;
     if (kip.tur === 'gez') { setSecili(null); setSeciliCizim(null); return; }
     const p = uzayNoktasi(e);
     if (kip.tur === 'ciz') { setKip({ ...kip, noktalar: [...kip.noktalar, [p.x, p.y]] }); return; }
@@ -319,7 +321,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
               ))}
             </fieldset>
           )}
-          <OlcekliHaritaBolumu istemci={istemci} evren={evren} h={h} />
+          <OlcekliHaritaBolumu istemci={istemci} evren={evren} h={h} d={olcekli} />
         </>}
         {cekmeceSekmesi === 'kunye' && <>
           <HaritaKunyeBolumu istemci={istemci} evren={evren} harita={h.kod} saltOkunur={h.silindi} />
@@ -340,7 +342,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
 
       <div class={`harita-sahne${cekmece ? ' cekmeceli' : ''}`}>
         <div class="harita-tuval" ref={tuval}>
-          <div ref={yuzey} class={`harita-yuzey${kip.tur !== 'gez' ? ' isaretleme' : ''}${kip.tur === 'hizala' ? ' hizalama' : ''}`} style={yuzeyStili}
+          <div ref={yuzey} class={`harita-yuzey${kip.tur !== 'gez' ? ' isaretleme' : ''}${kip.tur === 'hizala' ? ' hizalama' : ''}${olcekli.k.acik && olcekli.k.hedef !== 'yok' && kip.tur === 'gez' ? ' olcekli-secim' : ''}`} style={yuzeyStili}
             onClick={(e) => { if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.harita-katmanlar')) void tikla(e); }}>
             <div class="harita-katmanlar">{h.katmanlar.filter((k) => !k.silindi && !gizli.has(k.kod)).map((k) => (
               <div key={k.kod} class={`harita-katman${kip.tur === 'hizala' && kip.katman === k.kod ? ' hizalanan' : ''}`}
@@ -385,6 +387,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
               const [x, y] = c.noktalar.reduce((t, p) => [t[0] + p[0] / c.noktalar.length, t[1] + p[1] / c.noktalar.length], [0, 0]);
               return <span key={c.kod} class={`cizim-etiketi${c.kip === 'iddia' ? ' iddia' : ''}`} style={{ left: yuzde(x, h.en), top: yuzde(y, h.boy) }} aria-hidden="true">{c.kayit.ad}{c.kip === 'iddia' ? ' (iddia)' : ''}</span>;
             })}
+            <OlcekliKatmanCizimi h={h} d={olcekli} />
             {yerlesen.map((i) => (
               <IsaretGorseli key={i.kod} i={i} h={h} secili={i.kod === secili} sec={() => { if (kip.tur === 'gez') { setSecili(i.kod); setCekmece(true); } }} />
             ))}

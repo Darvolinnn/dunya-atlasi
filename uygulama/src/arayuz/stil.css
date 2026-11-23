@@ -761,19 +761,28 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 
 /* Ölçekli geometri ve erişim konturları (§8.4, §15-2) */
 .olcekli-harita { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
-.olcekli-onizleme-kutu { border: 1px solid var(--cizgi, #ccc); border-radius: 6px; padding: 4px; background: var(--yuzey-2, #f8f6f2); }
-.olcekli-svg { width: 100%; height: auto; display: block; cursor: crosshair; }
-.olcekli-zemin { fill: rgba(0, 0, 0, 0.03); }
-.olcekli-arazi-cokgen { fill: rgba(110, 140, 95, 0.25); stroke: rgba(80, 110, 65, 0.75); stroke-width: 2; vector-effect: non-scaling-stroke; }
-.olcekli-kontur { stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-.olcekli-kontur.gun-3 { fill: rgba(210, 165, 75, 0.22); stroke: rgba(185, 135, 45, 0.75); }
-.olcekli-kontur.gun-2 { fill: rgba(95, 155, 195, 0.26); stroke: rgba(65, 125, 165, 0.8); }
-.olcekli-kontur.gun-1 { fill: rgba(75, 165, 115, 0.32); stroke: rgba(45, 130, 85, 0.85); }
-.olcekli-yol { fill: none; stroke: #b84a39; stroke-width: 2.5; stroke-dasharray: 5 3; vector-effect: non-scaling-stroke; }
-.olcekli-olcek-cizgi { stroke: #555; stroke-width: 1.5; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.olcekli-katman { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.olcekli-arazi-cokgen { fill: rgba(90, 140, 70, 0.38); stroke: rgba(70, 120, 55, 0.85); stroke-width: 2; }
+.olcekli-arazi-taslak { fill: none; stroke: rgba(70, 120, 55, 0.95); stroke-width: 2; stroke-dasharray: 4 3; }
+.olcekli-kontur { stroke: none; fill: rgba(120, 160, 225, 0.04); }
+.olcekli-kontur-kenar { stroke: none; }
+.olcekli-kontur-kenar.gun-3 { fill: rgba(110, 150, 220, 0.55); }
+.olcekli-kontur-kenar.gun-2 { fill: rgba(100, 145, 220, 0.75); }
+.olcekli-kontur-kenar.gun-1 { fill: rgba(85, 135, 215, 0.95); }
+.olcekli-yol { fill: none; stroke: #e0707a; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.olcekli-olcek-cizgi { stroke: #4a4030; stroke-width: 1.5; stroke-dasharray: 3 3; }
+.olcek-cubugu { fill: none; stroke: #17120a; stroke-width: 3; }
 .olcekli-nokta.bas { fill: #2b7a4b; stroke: #fff; stroke-width: 1.5; }
 .olcekli-nokta.bit { fill: #b84a39; stroke: #fff; stroke-width: 1.5; }
 .olcekli-nokta.kontur-merkez { fill: #3b6ea5; stroke: #fff; stroke-width: 1.5; }
+.olcekli-etiket { position: absolute; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap; font-size: 0.75rem; }
+.olcekli-etiket.gun { color: #4a78c8; transform: translate(4px, 4px); }
+.olcekli-etiket.yol { color: #a3262f; font-weight: 600; transform: translate(8px, -50%); }
+.olcekli-etiket.arazi { color: #fff; text-shadow: 0 1px 2px rgb(0 0 0 / 0.6); }
+.olcekli-etiket.cubuk { color: #17120a; font-weight: 600; }
+.harita-yuzey.olcekli-secim { cursor: crosshair; }
+.harita-yuzey.olcekli-secim .harita-cizimler, .harita-yuzey.olcekli-secim .harita-cizimler *, .harita-yuzey.olcekli-secim .harita-isaret { pointer-events: none; }
+.olcekli-goster { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .olcekli-sonuc { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--cizgi, #ccc); }
 
 /* Formül yazımı (TK8) */

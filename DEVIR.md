@@ -318,7 +318,7 @@ Kullanıcı (23 Kasım 18:09) §0.24'te sunulan "doğru ve hâlâ açık" listes
 - [ ] Bilgi denetimi: davranışın dayandığı bilgiyi işaretleme (C3; taslak)
 - [x] Kitap çıktısı: kapak görseli, bölüm başı süsü, ayraç seçimi, içindekiler, ekler (A5). Ayar kaydı `kitap_gorunumleri` (işlem `kitap_gorunumu_yaz`), PDF/Word/EPUB/yazdırma aynı ayarı okur; ekran `arayuz/KitapGorunumu.tsx`; testler `test/k38-kitap-gorunumu.test.ts`, e2e `k38.spec.ts`.
 - [ ] Akıllı listeler (§7; formül üzerine kaydedilen sorgular; taslak)
-- [ ] Ölçekli çizim harita görselinin üstünde (B1; taslak)
+- [x] Ölçekli çizim harita görselinin üstünde (B1): `OlcekliHarita.tsx` paylaşılan durum `useOlcekliKatman` (Harita'da tutulur; çekmece kapansa da kalır), `olcekliTikla` (bekleyen noktayı haritaya tıklamadan alır), `OlcekliKatmanCizimi` (haritanın yüzeyinde SVG + etiketler; erişim alanı satır dikdörtgenlerinden oluştuğu için dış kenarı `feMorphology` süzgeciyle çizilir; ölçek çubuğu 1-2-5 yuvarlak uzunluk). Ayrı önizleme kutusu kaldırıldı; "Haritanın üstünde göster" onay kutuları. Sınama `e2e/k38.spec.ts`; tarayıcıda örnek evrende bakıldı.
 - [x] Büyük harita döşemesi (B2, §8.1): `arayuz/doseme.ts` (saf hesap: `DOSEME_SINIRI` 4096, 512'lik parçalar, `dosemeSeviyesi`), `arayuz/doseme-calisani.ts` (görseli bir kez çözer, parçayı WebP olarak üretir), `arayuz/DosemeliGorsel.tsx` (kaba hâl + IntersectionObserver ile yalnız görünen parçalar; en çok 400 parça bellekte). `Harita.tsx` katmanı büyükse bunu kullanır. Parçalar diske yazılmaz. Sınamalar `test/k38-doseme.test.ts`, `e2e/k38.spec.ts` (6000×3000 görsel).
 - [ ] Kat planında sahne içi adımlar ve katlar arası ses (B4; taslak)
 - [ ] Etimoloji ağacı ve birleşik ad üretici (C5; taslak)

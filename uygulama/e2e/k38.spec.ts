@@ -211,3 +211,28 @@ test('kitap görünümü eser başına saklanır, önizlenir ve PDF ile Word ç�
   const [docx] = await Promise.all([p.waitForEvent('download'), kart.getByRole('button', { name: 'Word (.docx) indir' }).click()]);
   expect(readFileSync((await docx.path())!).subarray(0, 2).toString()).toBe('PK');
 });
+
+test('ölçekli çizim haritanın kendi görselinin üstünde; noktalar büyük haritaya tıklanarak seçilir', async ({ page: p }) => {
+  const ev = await ornekEvren(p);
+  await p.goto(`/#/e/${ev}/haritalar`);
+  await p.getByRole('link', { name: 'Başkent planı' }).first().click();
+  await p.getByRole('tab', { name: 'Katmanlar' }).click();
+  await p.getByRole('button', { name: 'Ölçekli harita ve ulaşılabilecek yerler' }).click();
+  await p.getByRole('button', { name: 'Ölçek tanımla' }).click();
+  await p.getByRole('button', { name: 'Haritadan seç' }).first().click();
+  const y = (await p.locator('.harita-yuzey').boundingBox())!;
+  // Harita 800×500; çekmecenin ve tarih şeridinin altında kalmayan iki nokta.
+  const tikla = (x: number, yy: number) => p.mouse.click(y.x + (x / 800) * y.width, y.y + (yy / 500) * y.height);
+  await tikla(100, 400); await tikla(300, 400);
+  await expect(p.getByLabel('Ölçek 1. nokta X')).toHaveValue(/^(99|100)(\.\d)?$/);
+  await expect(p.getByLabel('Ölçek 2. nokta X')).toHaveValue(/^(299|300)(\.\d)?$/);
+  await p.getByRole('button', { name: 'Kaydet', exact: true }).click();
+  await expect(p.locator('.harita-yuzey .olcekli-katman line.olcekli-olcek-cizgi')).toHaveCount(1);
+  await expect(p.locator('.harita-yuzey .olcekli-etiket.cubuk')).toContainText('fersah');
+  // Katman kapatılınca çizgi kalkar; çekmece kapansa da katman kalır.
+  await p.getByLabel('Ölçek çizgisi').uncheck();
+  await expect(p.locator('.olcekli-katman line.olcekli-olcek-cizgi')).toHaveCount(0);
+  await p.getByLabel('Ölçek çizgisi').check();
+  await p.getByRole('button', { name: 'Çekmeceyi kapat' }).click();
+  await expect(p.locator('.olcekli-katman line.olcekli-olcek-cizgi')).toHaveCount(1);
+});
