@@ -305,11 +305,11 @@ Kullanıcı A–F kategorili uzun bir dış öneri raporu gönderdi (depoda değ
 
 ## 0.25 Öneri raporundaki açıkların hepsi (K38, 23 Kasım 2026'da başladı)
 
-Kullanıcı (23 Kasım 18:09) §0.24'te sunulan "doğru ve hâlâ açık" listesine "Hepsini yapalım" dedi. Çok oturumlu iş: her adımdan sonra bu liste güncellenir. Görünüşü değiştiren her madde önce taslak resmiyle kullanıcıya gösterilir (`/mnt/project-files/taslaklar/k38/`), onaydan sonra kodlanır. Yayın paketinin (K20) dahil olup olmadığı kullanıcıya soruldu (öneri: dahil değil). Dal `claude/project-thread-ir3oyk`.
+Kullanıcı (23 Kasım 18:09) §0.24'te sunulan "doğru ve hâlâ açık" listesine "Hepsini yapalım" dedi. Çok oturumlu iş: her adımdan sonra bu liste güncellenir. Görünüşü değiştiren her madde önce taslak resmiyle kullanıcıya gösterilir (`/mnt/project-files/taslaklar/k38/`), onaydan sonra kodlanır. **Kullanıcı kararı (18:16): yayın paketi (K20) de dahil, en sona** (K20 kalktı). Dal `claude/project-thread-ir3oyk`.
 - [ ] Paragraf soldurma (A3; yazma ekranı, taslak)
 - [ ] Yalnız diyaloglar süzgeci ve katılımcıların hitap/dil şeridi (A4; taslak)
-- [ ] Haritada tekerlek ve iki parmakla imleç merkezli yakınlaştırma, sürükleyerek kaydırma (B2'nin ilk kısmı)
-- [ ] Windows'ta kapanışta süren kaydın, yedeğin ya da yüklemenin bitmesini beklemek (E2)
+- [x] Haritada tekerlek ve iki parmakla imleç merkezli yakınlaştırma, sürükleyerek kaydırma (B2'nin ilk kısmı): `arayuz/harita-yakinlik.ts` `useHaritaYakinlik` (dinleyiciler belgede, olay anında tuvale bakar; sürüklemeden sonraki tıklama yutulur; Shift+tekerlek yana kaydırır); rehber metni. Sınama `e2e/k38.spec.ts`.
+- [x] Windows'ta kapanışta bekleme (E2): `lib.rs` `kapanisi_beklet` kapatmayı durdurup sayfaya `dunya-atlasi:kapanis` olayını gönderir, en çok 5 sn sonra yine kapatır, ikinci kapat beklemez; yeni istek `pencereyi_kapat` (`build.rs`, `ana.json`; Rust sınaması `pencereyi_kapat_yalniz_programin_sayfasina_acik`). Sayfa: `Uygulama.tsx` `KapanisBekcisi` ("Değişiklikler kaydediliyor…", `Istemci.bekleyenSayisi` sıfırlanana dek en çok 4 sn), `MetinEditoru` aynı olayla yazılmamış metni kaydeder. Bulutta Rust derlenemiyor (GTK yok); GitHub'ın Windows işi derler. Sınama `e2e/k38.spec.ts` (sahte kabukla).
 - [ ] Bütün yedekleri ve görselleri doğrulama (E2)
 - [ ] Sürüm geçmişinde fark görünümü ve tek paragrafı geri alma (A1; taslak)
 - [ ] Sahneyi imleçten bölme ve sonraki sahneyle birleştirme (A2; taslak)
@@ -322,6 +322,7 @@ Kullanıcı (23 Kasım 18:09) §0.24'te sunulan "doğru ve hâlâ açık" listes
 - [ ] Kat planında sahne içi adımlar ve katlar arası ses (B4; taslak)
 - [ ] Etimoloji ağacı ve birleşik ad üretici (C5; taslak)
 - [ ] Arama dizini (D1), program güncellemesinde yerinde dönüştürme (D2), ağır hesaplar için ikinci çalışan (D4)
+- [ ] Yayın paketi (§11, E3): okur yayın paketi (sınıra göre süzme, okur kodları, sızıntı taraması) ve evren içi belge tasarımcısı (§11.5); taslaklarla, en sonda
 
 ## 1. Önce oku (sırayla)
 

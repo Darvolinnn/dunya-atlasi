@@ -1,6 +1,7 @@
 // Serbest metin editörü (ProseMirror). Metin çalışana parça listesi olarak gider; çalışan bunu Automerge
 // belgesine tek değişiklik olarak yazar (TK2). Otomatik kaydetme: yazmaya ara verilince ya da en geç
 // birkaç saniyede bir; sekme gizlenince hemen. Kayda geçmemiş yazı ayrıca kurtarma taslağında durur (§10.7).
+import { KAPANIS_OLAYI } from '../veri/kabuk';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { EditorState, TextSelection, type Command, type Transaction } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
@@ -376,13 +377,16 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     const gizlenince = () => { if (document.visibilityState === 'hidden') { void taslakKaydet(); void kaydet(); } };
     const ayrilirken = (e: BeforeUnloadEvent) => { if (kirli || suren) { void taslakKaydet(); void kaydet(); e.preventDefault(); } };
     const sayfaKapaninca = () => { void taslakKaydet(); };
+    const kapanirken = () => { void taslakKaydet(); void kaydet(); };
     document.addEventListener('visibilitychange', gizlenince);
+    addEventListener(KAPANIS_OLAYI, kapanirken);
     addEventListener('beforeunload', ayrilirken);
     addEventListener('pagehide', sayfaKapaninca);
     return () => {
       iptal = true;
       birakDinle();
       document.removeEventListener('visibilitychange', gizlenince);
+      removeEventListener(KAPANIS_OLAYI, kapanirken);
       removeEventListener('beforeunload', ayrilirken);
       removeEventListener('pagehide', sayfaKapaninca);
       void taslakKaydet();

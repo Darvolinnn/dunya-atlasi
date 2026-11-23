@@ -3,6 +3,14 @@
 type Kabuk = { invoke<T>(komut: string, arg?: unknown, secenek?: { headers?: Record<string, string> }): Promise<T> };
 export const kabuk = (): Kabuk | undefined => (globalThis as { window?: { __TAURI_INTERNALS__?: Kabuk } }).window?.__TAURI_INTERNALS__;
 
+/** Windows uygulamasında kapat düğmesine basılınca kabuğun sayfaya gönderdiği olay (K38). */
+export const KAPANIS_OLAYI = 'dunya-atlasi:kapanis';
+
+/** Sayfa işini bitirdi; kabuk pencereyi kapatır. */
+export async function pencereyiKapat(): Promise<void> {
+  await kabuk()?.invoke('pencereyi_kapat').catch(() => {});
+}
+
 /** Çalışanın isteyebildiği klasör istekleri; başkası iletilmez. */
 const KLASOR_ISTEKLERI = new Set(['yerel_yedek_listele', 'yerel_yedek_oku', 'yerel_yedek_yaz', 'yerel_yedek_sil']);
 

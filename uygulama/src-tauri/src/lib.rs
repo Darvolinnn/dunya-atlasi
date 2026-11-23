@@ -104,12 +104,47 @@ async fn yerel_yedek_klasoru_ac<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> 
     open::that_detached(k.kok()).map_err(|_| "Klasör açılamadı.".to_string())
 }
 
+/// Sayfa süren kaydını bitirince pencereyi kapatır (K38, kapanışta bekleme). Pencereyi yalnız kendisi kapatabilir.
+#[tauri::command]
+fn pencereyi_kapat<R: tauri::Runtime>(window: tauri::WebviewWindow<R>) {
+    let _ = window.destroy();
+}
+
+/// Windows: kapat düğmesine basılınca pencere hemen kapanmaz; sayfaya haber verilir, sayfa süren metin kaydını,
+/// yedeği ya da yüklemeyi bitirip `pencereyi_kapat` ister. Sayfa yanıt vermezse en çok `KAPANIS_SINIRI` sonra kapanır;
+/// ikinci kapat isteği beklemeden kapatır.
+#[cfg(desktop)]
+const KAPANIS_SINIRI: std::time::Duration = std::time::Duration::from_secs(5);
+
+#[cfg(desktop)]
+fn kapanisi_beklet<R: tauri::Runtime>(w: &tauri::WebviewWindow<R>) {
+    let kapaniyor = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let pencere = w.clone();
+    w.on_window_event(move |olay| {
+        if let tauri::WindowEvent::CloseRequested { api, .. } = olay {
+            if kapaniyor.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                return;
+            }
+            api.prevent_close();
+            if pencere.eval("window.dispatchEvent(new Event('dunya-atlasi:kapanis'))").is_err() {
+                let _ = pencere.destroy();
+                return;
+            }
+            let p = pencere.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(KAPANIS_SINIRI);
+                let _ = p.destroy();
+            });
+        }
+    });
+}
+
 /// Kabuğun bütün istekleri; `build.rs` ve `capabilities/ana.json` ile aynı liste olmalı.
 macro_rules! istekler {
     () => {
         tauri::generate_handler![
             google_izin, google_cikis, yerel_yedek_yeri, yerel_yedek_listele, yerel_yedek_oku, yerel_yedek_yaz,
-            yerel_yedek_sil, yerel_yedek_klasoru_ac
+            yerel_yedek_sil, yerel_yedek_klasoru_ac, pencereyi_kapat
         ]
     };
 }
@@ -200,7 +235,8 @@ fn ana_pencere(app: &mut tauri::App) -> tauri::Result<()> {
                 NewWindowResponse::Deny
             }
         })
-        .build()?;
+        .build()
+        .map(|w| kapanisi_beklet(&w))?;
     Ok(())
 }
 
@@ -283,6 +319,14 @@ mod sinama {
             let e = cagir("http://localhost:9999", komut).unwrap_err();
             assert!(e.contains("not allowed"), "{komut}: {e}");
         }
+    }
+
+    /// Kapanışta bekleme (K38): sayfa işini bitirince pencereyi kapatabilir; başka adresten gelen sayfa kapatamaz.
+    #[test]
+    fn pencereyi_kapat_yalniz_programin_sayfasina_acik() {
+        cagir("http://localhost:41730", "pencereyi_kapat").unwrap();
+        let e = cagir("http://localhost:9999", "pencereyi_kapat").unwrap_err();
+        assert!(e.contains("not allowed"), "{e}");
     }
 
     /// Pencere hafızası (K34) yalnız kabukta çalışır; sayfa pencerenin kaydını okuyup yazamaz.

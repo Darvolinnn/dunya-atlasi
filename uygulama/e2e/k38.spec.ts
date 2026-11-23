@@ -1,5 +1,6 @@
 // K38: öneri raporundaki açıklar (örnek evrende; adlar uydurmadır).
 import { test, expect, type Page } from '@playwright/test';
+import { editor, sahneAc, yaz } from './yardimci';
 
 async function ornekEvren(p: Page): Promise<string> {
   await p.goto('/');
@@ -46,4 +47,22 @@ test('haritada tekerlek imlecin altındaki noktayı tutarak yakınlaştırır; s
   // Düğmeler yine çalışır.
   await p.getByRole('button', { name: 'Uzaklaştır' }).click();
   await expect(yuzde).toHaveText(`%${Math.round(deger / 1.5)}`);
+});
+
+test('Windows uygulamasında kapatırken yazılmamış metin kaydedilir, sonra pencere kapanır', async ({ page: p }) => {
+  // Kabuğun yerine sahtesi: istekleri kaydeder, kapatma isteğinin zamanını tutar.
+  await p.addInitScript(() => {
+    const w = window as unknown as { __TAURI_INTERNALS__: unknown; kabukIstekleri: string[] };
+    w.kabukIstekleri = [];
+    w.__TAURI_INTERNALS__ = { invoke: async (komut: string) => { w.kabukIstekleri.push(komut); return null; } };
+  });
+  await sahneAc(p);
+  await yaz(p, 'Kapı kapanmadan önce yazılan son cümle.');
+  await p.evaluate(() => dispatchEvent(new Event('dunya-atlasi:kapanis')));
+  await expect(p.getByText('Değişiklikler kaydediliyor…')).toBeVisible();
+  await expect.poll(() => p.evaluate(() => (window as unknown as { kabukIstekleri: string[] }).kabukIstekleri.includes('pencereyi_kapat'))).toBe(true);
+  // Kapatma istendiğinde metin veritabanına yazılmıştı: taslağı silinmiş sayfada yeniden açınca metin duruyor.
+  await p.evaluate(() => localStorage.clear());
+  await p.reload();
+  await expect(editor(p)).toContainText('Kapı kapanmadan önce yazılan son cümle.');
 });
