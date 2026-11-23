@@ -23,6 +23,8 @@ import { TurSecici } from './ortak';
 import { BaglamParcasiFormu, parcaYazisi } from './BaglamParcasi';
 import { KullanimSeridi, MetinAlFormu } from './MetinKullanim';
 import { BagsizAdlar } from './BagsizAdlar';
+import { sozlukAnahtari, sozlukEklentisi } from './sozluk-eklentisi';
+import { TerimKarti, useSozlukBilgisi } from './TerimKarti';
 import { daktiloEklentisi } from './daktilo';
 import { acilistaTaslak, kayittanSonraTemel, kurtarmaAnahtari, taslakAnahtari, taslakSil, taslakYaz, type Taslak, type TaslakDeposu } from './taslak';
 
@@ -96,6 +98,15 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   useEffect(() => { if (hazir && durum.tur === 'kayitli' && gorunum.current) setKayitliBelge(gorunum.current.state.doc); }, [hazir, durum]);
   const [aracDurumu, setAracDurumu] = useState(0);
   const gorunum = useRef<EditorView | null>(null);
+  // Sözlük kelimeleri ve bağlantıların kısa kartı (K37).
+  const sozluk = useSozlukBilgisi(istemci, evren, hazir, (adlar) => { const v = gorunum.current; if (v) v.dispatch(v.state.tr.setMeta(sozlukAnahtari, adlar).setMeta('addToHistory', false)); });
+  const [terimKarti, setTerimKarti] = useState<{ kod: string; yer: DOMRect } | null>(null);
+  const kartZamani = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const kartAc = (kod: string | null, yer?: DOMRect) => {
+    if (kartZamani.current) clearTimeout(kartZamani.current);
+    if (kod && yer) setTerimKarti({ kod, yer });
+    else kartZamani.current = setTimeout(() => setTerimKarti(null), 250);
+  };
   type AcikSecici = SeciciIstegi & { konum: { left: number; top: number }; canli?: boolean };
   const [secici, setSeciciDurumu] = useState<AcikSecici | null>(null);
   const seciciRef = useRef<AcikSecici | null>(null);
@@ -318,6 +329,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
             yeniKayit: async (ad, tur, ozet) => (await istemci.iste('kayitOlustur', { evren, ad, tur, ozet, karar: 'fikir' })).kod,
           }),
           daktiloEklentisi(),
+          sozlukEklentisi(kartAc),
           history(), keymap({ ...KISAYOLLAR, 'Mod-k': () => { if (calismaRef.current) calismaRef.current.paletAc({ bagla }); else bagla(); return true; } }), keymap(baseKeymap),
         ],
       });
@@ -661,6 +673,8 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           return true;
         }} />
       )}
+      {terimKarti && sozluk.bilgi(terimKarti.kod) && <TerimKarti evren={evren} bilgi={sozluk.bilgi(terimKarti.kod)!} yer={terimKarti.yer}
+        ustunde={(b) => { if (kartZamani.current) clearTimeout(kartZamani.current); if (!b) kartAc(null); }} />}
       {secici && <BaglantiSecici key={`${secici.from}-${secici.canli ? '' : secici.sorgu}`} istemci={istemci} evren={evren} sorgu={secici.sorgu} konum={secici.konum}
         satirIci={secici.satirIci} tutamak={tutamak} kendiligindenTek={secici.kendiligindenBagla}
         sec={(s) => baglantiKur(seciciRef.current ?? secici, s)} kapat={seciciKapat} />}

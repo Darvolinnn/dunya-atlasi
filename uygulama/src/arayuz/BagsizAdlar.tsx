@@ -54,7 +54,8 @@ export function BagsizAdlar({ istemci, evren, kayit, belge, bagla }: {
   const bl = useMemo(() => (belge ? bloklar(belge) : []), [belge]);
   const liste = useMemo(() => {
     if (!dizin || !belge) return [];
-    const adlar = dizin.adlar.flatMap((a) => a.ifadeler.map((ifade) => ({ kod: a.kod, ifade })));
+    // Sözlük terimleri metinde zaten noktalı çizgiyle işaretlenir (K37); bağlantı önerisine girmez.
+    const adlar = dizin.adlar.filter((a) => a.tur !== 'terim').flatMap((a) => a.ifadeler.map((ifade) => ({ kod: a.kod, ifade })));
     const atla = new Set(dizin.atla);
     return bagsizAdlar(bl, adlar, new Set([kayit, ...dizin.hic])).filter((x) => !x.kodlar.every((k) => atla.has(yerAnahtari(kayit, k, x.cumle))));
   }, [dizin, bl, kayit]);

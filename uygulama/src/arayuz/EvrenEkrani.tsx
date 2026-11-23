@@ -10,6 +10,7 @@ import { Bahsedilenler, CopKutusu, KayitListesi } from './KayitListesi';
 import { Masa } from './Masa';
 import { MasalarSekmesi } from './Masalar';
 import { TakvimSayfasi, ZamanCizelgesi } from './Takvim';
+import { TerimSozlugu } from './TerimSozlugu';
 import { HaritalarSekmesi } from './Harita';
 import { AgGorunumu, BolumMatrisiGorunumu, DurumGecmisiSekmesi, KurguHatlariGorunumu, NedenSonucGorunumu, SoyAgaciGorunumu } from './Gorunumler';
 import { IncelemeKuyrugu } from './Inceleme';
@@ -87,6 +88,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           : sekme === 'kesif' ? <KesifSekmesi istemci={istemci} evren={kod} />
           : sekme === 'gezinti' || sekme === 'pano' ? <DerlemeSekmesi istemci={istemci} evren={kod} tur={sekme} secili={alt} surum={surum} />
           : sekme === 'takvim' ? <TakvimSayfasi istemci={istemci} evren={kod} />
+          : sekme === 'terimler' ? <TerimSozlugu istemci={istemci} evren={kod} />
           : sekme === 'sablonlar' ? <SablonlarSekmesi istemci={istemci} evren={kod} tur={alt} />
           : <Masa istemci={istemci} evren={kod} surum={surum} ekler={<MasaPusulasi istemci={istemci} evren={kod} kayitSayisi={bilgi.kayitSayisi} />} />}
       </main>

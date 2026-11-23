@@ -754,6 +754,12 @@ export interface YasamSeridi extends KisaKayit {
   olaylar: { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi; yas: string | null }[];
 }
 
+/** Sözlükte bir kelime (K37): terim kaydı, "sözlük" etiketli kayıt ya da bir dilin sözcüğü. */
+export interface TerimGirdisi {
+  kod: string; ad: string; tur: string; anlam: string; kaynak: 'terim' | 'isaret' | 'dil';
+  sozcukTuru: string | null; dil: string | null; ifadeler: string[]; gecis: number | null;
+}
+
 export interface EvrenDali { kod: string; ad: string; aciklama: string; olusturma: number }
 export interface AktarimBirimi {
   anahtar: string; tur: 'kayit' | 'iliski' | 'diger'; baslik: string; kayitTuru: string | null; durum: 'yeni' | 'silindi' | 'degisti';
@@ -1363,6 +1369,8 @@ export interface Istekler {
   akisEtkisi(a: { evren: string; kod: string; akis: Akis | null }): TakvimEtkisi;
   zamanCizelgesi(a: { evren: string; bakis?: string | null }): CizelgeOgesi[];
   olayKarti(a: { evren: string; kod: string }): OlayKarti;
+  terimSozlugu(a: { evren: string }): TerimGirdisi[];
+  sozlukIpuclari(a: { evren: string }): TerimGirdisi[];
   takvimOlayiEkle(a: { evren: string; olay: TakvimOlayiGirdisi }): { kod: string };
   yasamSeritleri(a: { evren: string; bakis?: string | null }): YasamSeridi[];
   soyAgaci(a: { evren: string; odak: string; an?: string | null; bakis?: string | null }): SoyAgaci;

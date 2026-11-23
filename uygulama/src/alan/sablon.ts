@@ -222,6 +222,13 @@ export const NOT_DURUMLARI: Secenek[] = [
 ];
 /** Karar bekleyenler sayfasında da listelenen not türü (K28). */
 export const CELISKI_NOTU = 'celiski';
+/** Sözlükteki kelimenin türü (K37). Anlamı kaydın özetidir. */
+export const SOZCUK_TURLERI: Secenek[] = [
+  { kod: 'ad', ad: 'ad' }, { kod: 'fiil', ad: 'fiil' }, { kod: 'sifat', ad: 'sıfat' }, { kod: 'zarf', ad: 'zarf' },
+  { kod: 'unvan', ad: 'unvan' }, { kod: 'deyim', ad: 'deyim' }, { kod: 'unlem', ad: 'ünlem' }, { kod: 'diger', ad: 'diğer' },
+];
+/** Bu etiketi taşıyan kayıt, türü ne olursa olsun sözlükte görünür (K37). */
+export const SOZLUK_ETIKETI = 'sözlük';
 /** Alıntının türü (K29, §4.6). */
 export const ALINTI_TURLERI: Secenek[] = [
   { kod: 'soz', ad: 'Söz' }, { kod: 'sarki', ad: 'Şarkı' }, { kod: 'kehanet', ad: 'Kehanet' },
@@ -287,6 +294,7 @@ VARSAYILANLAR.mekan.alanlar.push(IKLIM, PARA, HUKUK, DIL, MIMARI);
 VARSAYILANLAR.sehir.alanlar.push(IKLIM, PARA, HUKUK, DIL, MIMARI);
 VARSAYILANLAR.siyasi.alanlar.push(PARA, HUKUK);
 VARSAYILANLAR.kultur.alanlar.push({ ...DIL, varsayilan: undefined }, { ...MIMARI, varsayilan: undefined });
+VARSAYILANLAR.terim = { alanlar: [{ kod: 'sozcuk_turu', ad: 'Sözcük türü', tur: 'secim', secenekler: SOZCUK_TURLERI }, { ...DIL, varsayilan: undefined }], sorular: [] };
 VARSAYILANLAR.canli = { alanlar: [{ ...YASAM, varsayilan: undefined }], sorular: sorular('canli') };
 // Eşyanın ve motifin gerçek geçmişi ile anlatılan efsanesi ayrıdır (§4.6).
 const GERCEK: SablonAlani = { kod: 'gercek_gecmis', ad: 'Gerçek geçmişi', tur: 'uzun' };
