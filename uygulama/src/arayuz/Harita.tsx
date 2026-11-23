@@ -5,6 +5,7 @@ import type { Istemci } from '../veri/istemci';
 import type { HaritaAyrintisi, HaritaCizimi, HaritaIsareti, HaritaKatmani, HaritaOzeti, IliskiSatiri, IsaretGirdisi, Kayit, KayitHaritalari } from '../veri/api';
 import { anaTakvim, yilYazisi } from '../alan/tarih';
 import { useTakvim } from './Takvim';
+import { EN_AZ_YAKINLIK, EN_COK_YAKINLIK, useHaritaYakinlik } from './harita-yakinlik';
 import { SinirAlani } from './Anlati';
 import { hizala, ters, uygula, type Donusum, type KontrolCifti, type Nokta } from '../alan/hizalama';
 import { turBul } from '../alan/turler';
@@ -164,6 +165,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
     const g = new ResizeObserver(olc); g.observe(t);
     return () => g.disconnect();
   }, [!!h]);
+  useHaritaYakinlik(tuval, yakinlik, setYakinlik, kip.tur === 'gez');
   useEffect(() => { istemci.iste('harita', { evren, kod, bakis: bakis?.kod ?? null, an: an || null }).then((x) => { setH(x); setHata(null); }, (e) => setHata(hataYaz(e))); }, [kod, bakis?.kod, n, an]);
   useEffect(() => {
     const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { setKip((k) => (k.tur === 'hizala' && k.bekleyen ? { ...k, bekleyen: null } : { tur: 'gez' })); setYeni(null); setCizimKaydi(null); } };
@@ -379,9 +381,9 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
         {(durumYazisi || hata) && <div class="harita-durum" role="status">{hata ? <span class="hata">{hata}</span> : durumYazisi}</div>}
         <div class="harita-alt-sol"><ZamanKaydirici h={h} an={an} setAn={setAn} yilYaz={(y) => yilYazisi(y, anaTakvim(z))} /></div>
         <div class="harita-yakinlik" role="group" aria-label="Yakınlık">
-          <button class="dugme kucuk" aria-label="Uzaklaştır" disabled={yakinlik <= 0.25} onClick={() => setYakinlik((x) => Math.max(0.25, x / 1.5))}>−</button>
+          <button class="dugme kucuk" aria-label="Uzaklaştır" disabled={yakinlik <= EN_AZ_YAKINLIK} onClick={() => setYakinlik((x) => Math.max(EN_AZ_YAKINLIK, x / 1.5))}>−</button>
           <span class="kucuk">%{Math.round(yakinlik * 100)}</span>
-          <button class="dugme kucuk" aria-label="Yakınlaştır" disabled={yakinlik >= 12} onClick={() => setYakinlik((x) => Math.min(12, x * 1.5))}>+</button>
+          <button class="dugme kucuk" aria-label="Yakınlaştır" disabled={yakinlik >= EN_COK_YAKINLIK} onClick={() => setYakinlik((x) => Math.min(EN_COK_YAKINLIK, x * 1.5))}>+</button>
           <button class="dugme kucuk" onClick={() => setYakinlik(1)}>Sığdır</button>
         </div>
         {cekmece ? (

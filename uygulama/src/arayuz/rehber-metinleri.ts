@@ -155,6 +155,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ipuclari: [
       'Sağdaki çekmecenin üç sekmesi vardır: İşaretler (aranabilir liste), Katmanlar ve Künye (haritayı kim, ne zaman, ne amaçla yaptı; haritayı kaldırma da buradadır). Çekmeceyi ✕ ile kapatınca harita genişler.',
       'Haritanın altındaki lejant işaretlerin ve çizgilerin anlamını gösterir. Sağ alttaki “Sığdır” haritayı ekrana bütünüyle sığdırır.',
+      'Fare tekerleğiyle ya da iki parmakla imlecin altındaki yere yakınlaşırsınız; “Gez ve seç”teyken haritayı sürükleyerek kaydırırsınız.',
       '“Katmanlar” ile eski bir haritayı ya da eskizi aynı haritanın üstüne bindirebilirsiniz. İşaretler görsele değil haritaya bağlı olduğundan görsel değişince yerinden oynamaz.',
       'Tartışmalı topraklarda her tarafın iddiasını ayrı bölge olarak çizin; “fiilî denetim” ile “iddia edilen” ayrımını yapabilirsiniz.',
       'Fotoğraflardaki konum bilgisi yüklenirken silinir.',

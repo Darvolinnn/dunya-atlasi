@@ -398,6 +398,7 @@ a.arac { display: inline-flex; align-items: center; text-decoration: none; color
 .harita-tuval { overflow: auto; max-height: 75vh; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey-2); }
 .harita-yuzey { position: relative; min-width: 100%; touch-action: pan-x pan-y; }
 .harita-yuzey.isaretleme { cursor: crosshair; }
+.harita-tuval.surukleniyor, .harita-tuval.surukleniyor .harita-yuzey { cursor: grabbing; user-select: none; }
 .harita-katmanlar { position: absolute; inset: 0; overflow: hidden; }
 .harita-katman { position: absolute; pointer-events: none; }
 .harita-katman img { display: block; width: 100%; height: auto; user-select: none; }
