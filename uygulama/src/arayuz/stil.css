@@ -1286,9 +1286,12 @@ a.defter-karti.belirsiz { border-left-style: dashed; }
 @media (min-width: 861px) {
   .gezinti { overflow: hidden; overscroll-behavior: contain; }
   .gezinti > * { flex: none; }
-  .gezinti > .gezinti-listesi { flex: 0 1 auto; min-height: 0; }
+  /* Ana öğeler doğrudan çubuğun öğesi olur: sıkışınca yalnız eser ağacı ve "Diğer" kendi alanında küçülür. */
+  .gezinti > .gezinti-listesi { display: contents; }
   .gezinti > .gezinti-listesi > li { flex: none; }
   .gezinti > .gezinti-listesi > li:has(> .eser-agaci), .gezinti > .gezinti-listesi > li:has(> .gezinti-alt) { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  /* Ağaç küçülse de adının altındaki en az 60 piksellik alanı kalır; yoksa alttaki öğelerin üstüne biner. */
+  .gezinti > .gezinti-listesi > li:has(> .eser-agaci), .gezinti > .gezinti-listesi > li:has(> .gezinti-alt) { min-height: 108px; }
   .gezinti > .gezinti-listesi > li > .eser-agaci, .gezinti > .gezinti-listesi > li > .gezinti-alt { flex: 0 1 auto; min-height: 60px; max-height: none; overflow-y: auto; overscroll-behavior: contain; }
   .gezinti > .gezinti-diger { flex: 0 1 auto; min-height: 36px; overflow-y: auto; overscroll-behavior: contain; }
 }
