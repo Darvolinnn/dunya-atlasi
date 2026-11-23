@@ -1582,3 +1582,27 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .fark-paragrafi.ayni > div:not(.fark-eylem) { opacity: 0.6; }
 .fark-eylem { font-size: 0.8125rem; color: var(--metin-2); text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 @media (max-width: 700px) { .fark-paragrafi, .yan-yana .fark-paragrafi { grid-template-columns: 1fr; } .fark-eylem { align-items: flex-start; text-align: left; } }
+/* Kitap görünümü (K38, §10.11) */
+.kitap-gorunumu { margin: 4px 0 10px; }
+.kitap-gorunumu-ic { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 330px); gap: 16px 24px; margin-top: 8px; }
+.kitap-ayarlari { display: grid; gap: 12px; align-content: start; }
+.kitap-ayari { display: grid; gap: 6px; }
+.kitap-ayari > label { display: block; }
+.cip.kitap-cipi { font: inherit; font-size: 0.85rem; color: var(--metin); padding: 4px 12px; min-height: 32px; cursor: pointer; }
+.cip.kitap-cipi.aktif { border-color: var(--vurgu); background: var(--vurgu-zemin); }
+.kapak-secenekleri { display: flex; flex-wrap: wrap; gap: 8px; }
+.kapak-secenekleri button { padding: 2px; border: 2px solid var(--cizgi); border-radius: 8px; background: var(--yuzey); cursor: pointer; width: 72px; height: 96px; }
+.kapak-secenekleri button.aktif { border-color: var(--vurgu); }
+.kapak-secenekleri img, .kapak-secenekleri .gorsel-yer { width: 100%; height: 100%; object-fit: cover; border-radius: 5px; display: block; }
+.kitap-onizleme { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: start; }
+.kitap-kapak { position: relative; aspect-ratio: 2 / 3; border-radius: 6px; overflow: hidden; border: 1px solid var(--cizgi); background: linear-gradient(160deg, var(--yuzey-2), var(--kenar)); display: flex; align-items: flex-end; padding: 8px; }
+.kitap-kapak .kitap-kapak-gorseli { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.kitap-kapak strong { position: relative; font-family: var(--metin-yazi); font-size: 0.8rem; color: var(--vurgu); overflow-wrap: anywhere; }
+.kitap-kapak-gorseli + strong { color: #fff; text-shadow: 0 1px 3px rgb(0 0 0 / 0.8); }
+.kitap-sayfa { background: #f7f1e3; color: #2a251d; border-radius: 4px; padding: 18px 16px; font-family: var(--metin-yazi); font-size: 0.72rem; line-height: 1.55; box-shadow: var(--golge); min-height: 240px; }
+.kitap-sayfa h4 { text-align: center; font-size: 1rem; margin: 0 0 6px; }
+.kitap-sayfa .kitap-numara { text-align: center; letter-spacing: 0.25em; text-transform: uppercase; font-size: 0.6rem; color: #7a6c55; margin: 18px 0 4px; }
+.kitap-sayfa .kitap-sus, .kitap-sayfa .kitap-ayrac { text-align: center; color: #7d5210; margin: 6px 0; }
+.kitap-sayfa .bas-harfli::first-letter { float: left; font-size: 2.9em; line-height: 0.9; margin: 2px 4px 0 0; color: #7d5210; }
+.kitap-sayfa .soluk { color: #7a6c55; }
+@media (max-width: 760px) { .kitap-gorunumu-ic { grid-template-columns: 1fr; } }

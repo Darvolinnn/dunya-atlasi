@@ -1,5 +1,6 @@
 // K38: öneri raporundaki açıklar (örnek evrende; adlar uydurmadır).
 import { test, expect, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { editor, kaydedildi, sahneAc, yaz } from './yardimci';
 
 async function ornekEvren(p: Page): Promise<string> {
@@ -186,4 +187,27 @@ test('sürüm geçmişinde fark görünür ve tek paragraf geri alınır', async
   await fark.getByRole('button', { name: 'Bu paragrafı geri al' }).click();
   await expect(fark).toContainText('fark yok');
   await expect(editor(p)).toHaveText('Merdivenler buz gibiydi.Lale girdi.');
+});
+
+test('kitap görünümü eser başına saklanır, önizlenir ve PDF ile Word çıktısına girer', async ({ page: p }) => {
+  const adres = await sahneAc(p);
+  await yaz(p, 'Vergi günü arşivin taş merdivenleri soğuktu.');
+  await kaydedildi(p);
+  const evren = /#\/e\/([^/]+)/.exec(adres)![1];
+  await p.goto(`/#/e/${evren}/yedek`);
+  const kg = p.locator('.kitap-gorunumu');
+  await expect(kg).toContainText('Kitap görünümü');
+  await kg.getByRole('button', { name: 'Büyük baş harf' }).click();
+  await kg.getByRole('button', { name: 'Bölüm numarası yazıyla (“Birinci Bölüm”)' }).click();
+  await kg.getByRole('button', { name: 'Bölümler', exact: true }).click();
+  await expect(kg.locator('.kitap-sayfa .bas-harfli')).toContainText('Vergi günü');
+  if (process.env.EKRAN) await kg.screenshot({ path: process.env.EKRAN });
+  await p.reload();
+  await expect(p.locator('.kitap-gorunumu').getByRole('button', { name: 'Büyük baş harf' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(p.locator('.kitap-gorunumu').getByRole('button', { name: 'Bölümler', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const kart = p.locator('.kart').filter({ has: p.getByRole('heading', { name: 'Eseri dışa aktar (PDF, Word, EPUB)' }) });
+  const [pdf] = await Promise.all([p.waitForEvent('download'), kart.getByRole('button', { name: 'PDF indir' }).click()]);
+  expect(readFileSync((await pdf.path())!).subarray(0, 5).toString()).toBe('%PDF-');
+  const [docx] = await Promise.all([p.waitForEvent('download'), kart.getByRole('button', { name: 'Word (.docx) indir' }).click()]);
+  expect(readFileSync((await docx.path())!).subarray(0, 2).toString()).toBe('PK');
 });

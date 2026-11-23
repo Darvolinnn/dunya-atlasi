@@ -426,6 +426,10 @@ CREATE TABLE IF NOT EXISTS metin_isaret_yerleri(
   PRIMARY KEY(kayit, alan, sira)
 );
 CREATE INDEX IF NOT EXISTS metin_isaret_yerleri_isaret ON metin_isaret_yerleri(isaret);
+CREATE TABLE IF NOT EXISTS kitap_gorunumleri(
+  kod TEXT PRIMARY KEY,
+  gorunum TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS belge_sunumlari(
   kod TEXT PRIMARY KEY,
   sunum TEXT NOT NULL
@@ -836,7 +840,7 @@ CREATE TABLE IF NOT EXISTS olcekli_araziler(
   silindi INTEGER NOT NULL DEFAULT 0
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'kitap_gorunumleri', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'gokyuzu_tanimi',
   'sozlukler', 'sozluk_isaretleri',
   'sozlesme_maddeleri', 'sozlesme_disarida',
@@ -1713,6 +1717,12 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (typeof kod !== 'string' || !sunum || typeof sunum !== 'object') return;
     db.exec({ sql: 'INSERT OR REPLACE INTO belge_sunumlari(kod, sunum) VALUES(?,?)', bind: [kod, JSON.stringify(sunum)] });
     alanYaz(db, i, kod, 'belge_sunumu', sunum);
+  },
+  /** Eserin kitap görünümü (K38): çıktı ayarları. */
+  kitap_gorunumu_yaz(db, i) {
+    const { kod, gorunum } = i.veri as { kod?: unknown; gorunum?: unknown };
+    if (typeof kod !== 'string' || !gorunum || typeof gorunum !== 'object') return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO kitap_gorunumleri(kod, gorunum) VALUES(?,?)', bind: [kod, JSON.stringify(gorunum)] });
   },
   gokyuzu_yaz(db, i) {
     const { tanim } = i.veri;

@@ -100,6 +100,7 @@ import { EditorState } from 'prosemirror-state';
 import type { Node as PmNode } from 'prosemirror-model';
 import { pmDocFromSpans, pmNodeToSpans } from '@automerge/prosemirror';
 import { metinSemasi } from '../alan/metin-sema';
+import { gorunumDuzelt, type Kitap, type KitapEki, type KitapGorseli, type KitapGorunumu } from '../alan/kitap';
 import * as gecis from './gecis';
 import type { BaglamParcasiTanimi, GecisSartiGirdisi, KullanimBicimi } from '../veri/api';
 import type { DairInancTanimi } from '../veri/api';
@@ -3328,29 +3329,80 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     if (!sahneler.length) throw new Error('Çıktıya girecek sahne seçilmedi.');
     return new Set(sahneler);
   }
-  async epubYaz({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
+  /** Kitabın görseli: PNG ve JPEG olduğu gibi, öbürleri JPEG'e çevrilir; bu cihazda yoksa ya da çevrilemezse null. */
+  private async kitapGorseli(e: EvrenVt, ad: string | null): Promise<KitapGorseli | null> {
+    if (!ad || !this.medya) return null;
+    const r = e.db.selectObject('SELECT tur, en, boy FROM medya WHERE ad=?', [ad]);
+    const veri = r ? await this.medya.oku(ad) : null;
+    if (!r || !veri) return null;
+    const en = Number(r.en) || 0, boy = Number(r.boy) || 0;
+    if (r.tur === 'image/png' || r.tur === 'image/jpeg') return { veri, tur: r.tur, en, boy };
+    if (typeof OffscreenCanvas === 'undefined' || typeof createImageBitmap === 'undefined') return null;
+    try {
+      const resim = await createImageBitmap(new Blob([veri as BlobPart], { type: r.tur as string }));
+      const t = new OffscreenCanvas(resim.width, resim.height);
+      const c = t.getContext('2d')!;
+      c.fillStyle = '#fff'; c.fillRect(0, 0, t.width, t.height);
+      c.drawImage(resim, 0, 0);
+      resim.close();
+      return { veri: new Uint8Array(await (await t.convertToBlob({ type: 'image/jpeg', quality: 0.92 })).arrayBuffer()), tur: 'image/jpeg', en: t.width, boy: t.height };
+    } catch { return null; }
+  }
+  /** Kitabın kapağı ve sonundaki ekler (K38). */
+  private async kitapEkleri(e: EvrenVt, g: KitapGorunumu, sahneKodlari: string[]): Promise<cikti.KitapEkVerisi> {
+    const ekler: KitapEki[] = [];
+    if (g.kisiler || g.terimler) {
+      const r = cikti.gecenKayitlar(e, sahneKodlari);
+      if (g.kisiler && r.kisiler.length) ekler.push({ baslik: 'Kişiler', girdiler: r.kisiler });
+      if (g.terimler && r.terimler.length) ekler.push({ baslik: 'Terimler', girdiler: r.terimler });
+    }
+    if (g.takvim) ekler.push(cikti.takvimEki(e));
+    const h = g.harita ? cikti.haritaGorseli(e, g.harita) : null;
+    if (h) { const gorsel = await this.kitapGorseli(e, h.gorsel); if (gorsel) ekler.push({ baslik: h.ad, girdiler: [], gorsel }); }
+    return { kapak: await this.kitapGorseli(e, g.kapak), ekler };
+  }
+  private async kitapHazirla(evren: string, eser: string, sahneBasliklari: boolean, sahneler?: string[]): Promise<Kitap> {
     const e = this.evren(evren);
     this.eserKontrol(e, eser);
-    const r = cikti.epubDosyalari(e, eser, !!sahneBasliklari, new Date(), this.ciktiSecimi(sahneler));
+    const { sahneKodlari, ...kitap } = cikti.eserKitabi(e, eser, sahneBasliklari, this.ciktiSecimi(sahneler));
+    return { ...kitap, ...(await this.kitapEkleri(e, kitap.gorunum!, sahneKodlari)) };
+  }
+  async epubYaz({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
+    const k = await this.kitapHazirla(evren, eser, !!sahneBasliklari, sahneler);
+    const r = cikti.epubDosyalari(this.evren(evren), eser, !!sahneBasliklari, new Date(), this.ciktiSecimi(sahneler), { kapak: k.kapak ?? null, ekler: k.ekler ?? [] });
     return { dosyaAdi: `${this.dosyaKoku(r.ad)}.epub`, veri: await zipYaz(r.dosyalar) };
   }
   /** PDF için okuma düzeni; PDF'i yazı tipleriyle birlikte arayüz yazar (§10.11). */
-  eserKitabi({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
-    const e = this.evren(evren);
-    this.eserKontrol(e, eser);
-    const kitap = cikti.eserKitabi(e, eser, !!sahneBasliklari, this.ciktiSecimi(sahneler));
+  async eserKitabi({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
+    const kitap = await this.kitapHazirla(evren, eser, !!sahneBasliklari, sahneler);
     return { dosyaKoku: this.dosyaKoku(kitap.ad), kitap };
   }
   async docxYaz({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
-    const e = this.evren(evren);
-    this.eserKontrol(e, eser);
-    const kitap = cikti.eserKitabi(e, eser, !!sahneBasliklari, this.ciktiSecimi(sahneler));
+    const kitap = await this.kitapHazirla(evren, eser, !!sahneBasliklari, sahneler);
     return { dosyaAdi: `${this.dosyaKoku(kitap.ad)}.docx`, veri: await zipYaz(docxDosyalari(kitap)) };
   }
-  eserBaskiSayfasi({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
+  async eserBaskiSayfasi({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
+    const k = await this.kitapHazirla(evren, eser, !!sahneBasliklari, sahneler);
+    return { html: cikti.eserBaskiSayfasi(this.evren(evren), eser, !!sahneBasliklari, this.ciktiSecimi(sahneler), { kapak: k.kapak ?? null, ekler: k.ekler ?? [] }) };
+  }
+  /** Kitap görünümü ayarları ve seçenekleri: kapak olabilecek görseller, haritalar, çıktıda geçen kişi ve terim sayısı. */
+  kitapGorunumu({ evren, eser, sahneler }: { evren: string; eser: string; sahneler?: string[] }) {
     const e = this.evren(evren);
     this.eserKontrol(e, eser);
-    return { html: cikti.eserBaskiSayfasi(e, eser, !!sahneBasliklari, this.ciktiSecimi(sahneler)) };
+    let sayilar = { kisiler: 0, terimler: 0 };
+    try { const k = cikti.eserKitabi(e, eser, false, this.ciktiSecimi(sahneler)); const r = cikti.gecenKayitlar(e, k.sahneKodlari); sayilar = { kisiler: r.kisiler.length, terimler: r.terimler.length }; } catch { /* metin yok */ }
+    const gorseller = e.db.selectObjects(`SELECT k.kod, k.ad, j.value gorsel FROM kayitlar k, json_each(k.gorseller) j WHERE k.silindi IS NULL ORDER BY (k.kod=?) DESC, k.ad`, [eser])
+      .map((r) => ({ kayit: r.kod as string, ad: r.ad as string, gorsel: r.gorsel as string }));
+    return {
+      gorunum: cikti.gorunumOku(e, eser), gorseller,
+      haritalar: e.db.selectObjects('SELECT kod, ad FROM haritalar WHERE silindi IS NULL ORDER BY ad').map((r) => ({ kod: r.kod as string, ad: r.ad as string })),
+      sayilar, takvimVar: !!takvimOku(e.db).aylar?.length,
+    };
+  }
+  kitapGorunumuYaz({ evren, eser, gorunum }: { evren: string; eser: string; gorunum: KitapGorunumu }) {
+    const e = this.evren(evren);
+    this.eserKontrol(e, eser);
+    this.yaz(evren, [{ tur: 'kitap_gorunumu_yaz', veri: { kod: eser, gorunum: gorunumDuzelt(gorunum) } }], [eser]);
   }
   ciktiAgaci({ evren, eser }: { evren: string; eser: string }) {
     const e = this.evren(evren);

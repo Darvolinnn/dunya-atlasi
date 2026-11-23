@@ -2,7 +2,7 @@
 // gerekmez. Bölümler yeni sayfada başlar ve Word'ün gezinti bölmesinde görünür (Başlık 1); sahneler ayraçla ayrılır;
 // sayfa altında sayfa numarası vardır. Metin UTF-8'dir, dil Türkçe işaretlenir (yazım denetimi ve tireleme için).
 import { xmlKacis } from './cikti';
-import type { Blok, Kitap, Parca } from './kitap';
+import { AYRAC_METNI, SUS, VARSAYILAN_GORUNUM, type Blok, type Kitap, type KitapGorseli, type Parca } from './kitap';
 import type { ZipDosyasi } from './zip';
 
 const yazi = (s: string) => new TextEncoder().encode(s);
@@ -21,25 +21,78 @@ function parcaXml(p: Parca): string {
 const paragraf = (stil: string, parcalar: Parca[]) => `<w:p><w:pPr><w:pStyle w:val="${stil}"/></w:pPr>${parcalar.map(parcaXml).join('')}</w:p>`;
 const duz = (stil: string, metin: string) => paragraf(stil, [{ metin }]);
 
-function belge(k: Kitap): string {
-  const g: string[] = [duz('KitapAdi', k.ad)];
+const EMU = 9525; // bir pikselin (96 dpi) EMU karşılığı
+/** Satır içi görsel; en çok `enCm` genişliğinde, oranı korunur. */
+function gorselXml(no: number, g: KitapGorseli, enCm: number, boyCm: number): string {
+  const en = g.en || 1, boy = g.boy || 1;
+  const o = Math.min((enCm * 360000) / (en * EMU), (boyCm * 360000) / (boy * EMU));
+  const cx = Math.round(en * EMU * o), cy = Math.round(boy * EMU * o);
+  return `<w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${no}" name="Görsel ${no}"/>`
+    + `<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">`
+    + `<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${no}" name="gorsel${no}"/><pic:cNvPicPr/></pic:nvPicPr>`
+    + `<pic:blipFill><a:blip r:embed="rIdGorsel${no}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>`
+    + `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+}
+const SAYFA_SONU = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+const SUS_RUN = `<w:r><w:rPr><w:rFonts w:ascii="Segoe UI Symbol" w:hAnsi="Segoe UI Symbol"/><w:sz w:val="32"/></w:rPr><w:t>${SUS}</w:t></w:r>`;
+
+/** Bölümün ilk paragrafının büyük baş harfi: Word'ün kendi "baş harf" çerçevesi (üç satır). */
+function basHarfli(parcalar: Parca[]): string {
+  const ilk = Array.from(parcalar[0]?.metin ?? '')[0];
+  if (!ilk || !/\p{L}/u.test(ilk)) return paragraf('IlkParagraf', parcalar);
+  const p0 = parcalar[0];
+  const harf = `<w:p><w:pPr><w:pStyle w:val="IlkParagraf"/><w:keepNext/><w:framePr w:dropCap="drop" w:lines="3" w:wrap="around" w:vAnchor="text" w:hAnchor="text"/><w:spacing w:line="1080" w:lineRule="exact"/><w:textAlignment w:val="baseline"/></w:pPr>`
+    + `<w:r><w:rPr>${p0.kalin ? '<w:b/>' : ''}${p0.egik ? '<w:i/>' : ''}<w:position w:val="-10"/><w:sz w:val="118"/><w:szCs w:val="118"/></w:rPr><w:t>${xmlKacis(ilk)}</w:t></w:r></w:p>`;
+  return harf + paragraf('IlkParagraf', [{ ...p0, metin: p0.metin.slice(ilk.length) }, ...parcalar.slice(1)]);
+}
+
+function belge(k: Kitap, gorselNo: Map<KitapGorseli, number>): string {
+  const g = k.gorunum ?? VARSAYILAN_GORUNUM;
+  const out: string[] = [];
+  if (k.kapak && gorselNo.has(k.kapak)) out.push(`<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${gorselXml(gorselNo.get(k.kapak)!, k.kapak, 16, 24)}</w:p>`, SAYFA_SONU);
+  out.push(duz('KitapAdi', k.ad));
+  if (g.icindekiler !== 'yok') {
+    const duzey = g.icindekiler === 'sahneler' ? '1-2' : '1-1';
+    const girdiler = [
+      ...k.bolumler.flatMap((b) => [{ m: b.numara ? `${b.numara}: ${b.baslik}` : b.baslik, d: 1 }, ...(g.icindekiler === 'sahneler' ? b.sahneler.map((x) => ({ m: x.ad ?? x.baslik ?? '', d: 2 })) : [])]),
+      ...(k.ekler ?? []).map((x) => ({ m: x.baslik, d: 1 })),
+    ];
+    out.push(SAYFA_SONU, duz('IcindekilerBasligi', 'İçindekiler'));
+    // Alan Word'de açılışta güncellenir (sayfa numaraları); önceden yazılan satırlar o zamana kadar görünür.
+    out.push(`<w:p><w:r><w:fldChar w:fldCharType="begin" w:dirty="true"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \\o "1-1" \\l "${duzey}" \\h \\z </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r></w:p>`);
+    for (const x of girdiler) out.push(duz(x.d === 1 ? 'TOC1' : 'TOC2', x.m));
+    out.push('<w:p><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>');
+  }
+  const ayrac = g.ayrac === 'bos' ? '<w:p><w:pPr><w:pStyle w:val="Ayrac"/></w:pPr></w:p>'
+    : g.ayrac === 'sus' ? `<w:p><w:pPr><w:pStyle w:val="Ayrac"/></w:pPr>${SUS_RUN}</w:p>` : duz('Ayrac', AYRAC_METNI[g.ayrac].replace(/ {3}/g, ' '));
   for (const b of k.bolumler) {
-    g.push(duz('Heading1', b.baslik));
-    let ilk = true;
+    if (b.numara) out.push(duz('BolumNumarasi', b.numara), `<w:p><w:pPr><w:pStyle w:val="Heading1"/><w:pageBreakBefore w:val="0"/><w:spacing w:before="120"/></w:pPr>${parcaXml({ metin: b.baslik })}</w:p>`);
+    else out.push(duz('Heading1', b.baslik));
+    if (g.sus) out.push(`<w:p><w:pPr><w:pStyle w:val="Ayrac"/></w:pPr>${SUS_RUN}</w:p>`);
+    let ilk = true, bolumunIlki = true;
     b.sahneler.forEach((s, i) => {
-      if (i > 0) { g.push(duz('Ayrac', '* * *')); ilk = true; }
-      if (s.baslik) { g.push(duz('Heading2', s.baslik)); ilk = true; }
+      if (i > 0) { out.push(ayrac); ilk = true; }
+      // Sahneler içindekilerde (başlığı yazılmasa da) gizli bir girdiyle yer alır.
+      const tc = g.icindekiler === 'sahneler' ? `<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> TC "${xmlKacis((s.ad ?? s.baslik ?? '').replace(/"/g, '”'))}" \\l 2 </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>` : '';
+      if (s.baslik) { out.push(`<w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr>${tc}${parcaXml({ metin: s.baslik })}</w:p>`); ilk = true; }
+      else if (tc) out.push(`<w:p><w:pPr><w:pStyle w:val="Gizli"/></w:pPr>${tc}</w:p>`);
       for (const bl of s.bloklar as Blok[]) {
-        if (bl.tur === 'baslik') { g.push(paragraf('Heading3', bl.parcalar)); ilk = true; }
-        else if (bl.tur === 'alinti') { g.push(paragraf('Alinti', bl.parcalar)); ilk = true; }
-        else { g.push(paragraf(ilk ? 'IlkParagraf' : 'Normal', bl.parcalar)); ilk = false; }
+        if (bl.tur === 'baslik') { out.push(paragraf('Heading3', bl.parcalar)); ilk = true; }
+        else if (bl.tur === 'alinti') { out.push(paragraf('Alinti', bl.parcalar)); ilk = true; }
+        else { out.push(g.basHarf && bolumunIlki ? basHarfli(bl.parcalar) : paragraf(ilk ? 'IlkParagraf' : 'Normal', bl.parcalar)); ilk = false; bolumunIlki = false; }
       }
     });
+  }
+  for (const ek of k.ekler ?? []) {
+    out.push(duz('Heading1', ek.baslik));
+    if (ek.gorsel && gorselNo.has(ek.gorsel)) out.push(`<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${gorselXml(gorselNo.get(ek.gorsel)!, ek.gorsel, 16, 22)}</w:p>`);
+    for (const x of ek.girdiler) out.push(paragraf('EkGirdisi', [{ metin: x.ad, kalin: true }, ...(x.aciklama ? [{ metin: ` — ${x.aciklama}` }] : [])]));
+    if (ek.not) out.push(paragraf('EkGirdisi', [{ metin: ek.not, egik: true }]));
   }
   // A4, 2,5 cm kenar boşluğu; sayfa numarası altta ortada.
   const bolum = '<w:sectPr><w:footerReference w:type="default" r:id="rIdAlt"/><w:pgSz w:w="11906" w:h="16838"/>'
     + '<w:pgMar w:top="1418" w:right="1418" w:bottom="1418" w:left="1418" w:header="709" w:footer="709" w:gutter="0"/><w:titlePg/></w:sectPr>';
-  return `${XML}<w:document ${W}><w:body>${g.join('')}${bolum}</w:body></w:document>`;
+  return `${XML}<w:document ${W}><w:body>${out.join('')}${bolum}</w:body></w:document>`;
 }
 
 const STILLER = `${XML}<w:styles ${W}>
@@ -53,6 +106,12 @@ const STILLER = `${XML}<w:styles ${W}>
 <w:style w:type="paragraph" w:styleId="Heading3"><w:name w:val="heading 3"/><w:basedOn w:val="Normal"/><w:next w:val="IlkParagraf"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120"/><w:ind w:firstLine="0"/><w:jc w:val="left"/><w:outlineLvl w:val="2"/></w:pPr><w:rPr><w:b/><w:bCs/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="Alinti"><w:name w:val="Quote"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:before="120" w:after="120"/><w:ind w:left="567" w:right="567" w:firstLine="0"/></w:pPr><w:rPr><w:i/><w:iCs/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="Ayrac"><w:name w:val="Sahne ayracı"/><w:basedOn w:val="Normal"/><w:next w:val="IlkParagraf"/><w:pPr><w:keepNext/><w:spacing w:before="240" w:after="240"/><w:ind w:firstLine="0"/><w:jc w:val="center"/></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="BolumNumarasi"><w:name w:val="Bölüm numarası"/><w:basedOn w:val="Normal"/><w:next w:val="Heading1"/><w:pPr><w:keepNext/><w:pageBreakBefore/><w:spacing w:before="1000" w:after="0"/><w:ind w:firstLine="0"/><w:jc w:val="center"/></w:pPr><w:rPr><w:caps/><w:spacing w:val="40"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="IcindekilerBasligi"><w:name w:val="TOC Heading"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="600" w:after="400"/><w:ind w:firstLine="0"/><w:jc w:val="center"/></w:pPr><w:rPr><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="TOC1"><w:name w:val="toc 1"/><w:basedOn w:val="Normal"/><w:pPr><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="9060"/></w:tabs><w:ind w:firstLine="0"/><w:jc w:val="left"/></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="TOC2"><w:name w:val="toc 2"/><w:basedOn w:val="Normal"/><w:pPr><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="9060"/></w:tabs><w:ind w:left="425" w:firstLine="0"/><w:jc w:val="left"/></w:pPr><w:rPr><w:i/><w:iCs/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="EkGirdisi"><w:name w:val="Ek girdisi"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="80"/><w:ind w:firstLine="0"/><w:jc w:val="left"/></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="Gizli"><w:name w:val="İçindekiler işareti"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:line="20" w:lineRule="exact"/><w:ind w:firstLine="0"/></w:pPr><w:rPr><w:sz w:val="2"/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="Footer"><w:name w:val="footer"/><w:basedOn w:val="Normal"/><w:pPr><w:ind w:firstLine="0"/><w:jc w:val="center"/></w:pPr><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:style>
 </w:styles>`;
 
@@ -61,10 +120,15 @@ const ALT = `${XML}<w:ftr ${W}><w:p><w:pPr><w:pStyle w:val="Footer"/></w:pPr><w:
 /** Eserin .docx dosyasını oluşturan dosyalar (ZIP'lenmeye hazır). */
 export function docxDosyalari(k: Kitap, zaman = new Date()): ZipDosyasi[] {
   const tarih = zaman.toISOString().replace(/\.\d+Z$/, 'Z');
+  const gorseller = [k.kapak, ...(k.ekler ?? []).map((x) => x.gorsel)].filter((x): x is KitapGorseli => !!x);
+  const gorselNo = new Map(gorseller.map((x, i) => [x, i + 1]));
+  const uz = (x: KitapGorseli) => (x.tur === 'image/png' ? 'png' : 'jpeg');
   return [
     { ad: '[Content_Types].xml', veri: yazi(`${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
 <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
 <Default Extension="xml" ContentType="application/xml"/>
+<Default Extension="png" ContentType="image/png"/>
+<Default Extension="jpeg" ContentType="image/jpeg"/>
 <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
 <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
 <Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>
@@ -86,10 +150,12 @@ export function docxDosyalari(k: Kitap, zaman = new Date()): ZipDosyasi[] {
 <Relationship Id="rIdStil" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 <Relationship Id="rIdAyar" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>
 <Relationship Id="rIdAlt" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
+${gorseller.map((x, i) => `<Relationship Id="rIdGorsel${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/gorsel${i + 1}.${uz(x)}"/>`).join('\n')}
 </Relationships>`) },
+    ...gorseller.map((x, i) => ({ ad: `word/media/gorsel${i + 1}.${uz(x)}`, veri: x.veri })),
     { ad: 'word/settings.xml', veri: yazi(`${XML}<w:settings ${W}><w:defaultTabStop w:val="709"/><w:autoHyphenation/><w:themeFontLang w:val="tr-TR"/><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat></w:settings>`) },
     { ad: 'word/styles.xml', veri: yazi(STILLER) },
     { ad: 'word/footer1.xml', veri: yazi(ALT) },
-    { ad: 'word/document.xml', veri: yazi(belge(k)) },
+    { ad: 'word/document.xml', veri: yazi(belge(k, gorselNo)) },
   ];
 }

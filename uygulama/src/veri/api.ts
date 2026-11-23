@@ -7,7 +7,7 @@ import type { Sablon, Soru, SoruDurumu } from '../alan/sablon';
 import type { Formul } from '../alan/formul';
 import type { BilgiEtiketi, BilgiKaynagi, Inanc, SanilanDurum } from '../alan/bilgi';
 import type { Gorunurluk } from '../alan/gorunurluk';
-import type { Kitap } from '../alan/kitap';
+import type { Kitap, KitapGorunumu } from '../alan/kitap';
 import type { YasananSure } from '../alan/yasanan-sure';
 
 export interface KurulumBilgisi { kod: string; ad: string; sqlite: string }
@@ -1500,8 +1500,10 @@ export interface Istekler {
   yayimlar(a: { evren: string; eser?: string | null }): Yayim[];
   markdownDisaAktar(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Uint8Array; kayitSayisi: number; eksikGorsel: number }>;
   epubYaz(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
-  eserBaskiSayfasi(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): { html: string };
-  eserKitabi(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): { dosyaKoku: string; kitap: Kitap };
+  eserBaskiSayfasi(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): Promise<{ html: string }>;
+  eserKitabi(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): Promise<{ dosyaKoku: string; kitap: Kitap }>;
+  kitapGorunumu(a: { evren: string; eser: string; sahneler?: string[] }): { gorunum: KitapGorunumu; gorseller: { kayit: string; ad: string; gorsel: string }[]; haritalar: { kod: string; ad: string }[]; sayilar: { kisiler: number; terimler: number }; takvimVar: boolean };
+  kitapGorunumuYaz(a: { evren: string; eser: string; gorunum: KitapGorunumu }): void;
   docxYaz(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
   ciktiAgaci(a: { evren: string; eser: string }): CiktiAgaci;
   belgeSunumu(a: { evren: string; kod: string }): { sunum: BelgeSunumu; adlar: Record<string, string> };

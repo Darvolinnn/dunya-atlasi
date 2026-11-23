@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { CiktiAgaci, CiktiSahnesi } from '../veri/api';
 import { SAHNE_CALISMA } from '../alan/sablon';
+import { KitapGorunumuAyarlari } from './KitapGorunumu';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 function indir(ad: string, veri: Uint8Array, tur: string) {
@@ -139,6 +140,7 @@ function CiktiDugmeleri({ istemci, evren, eser }: { istemci: Istemci; evren: str
           <p class="soluk kucuk">Seçim bu cihazda bu eser için hatırlanır. Sonradan eklenen sahneler kendiliğinden seçili gelir.</p>
         </details>
       )}
+      {eser && agac && tum.length > 0 && !bos && <KitapGorunumuAyarlari istemci={istemci} evren={evren} eser={eser} sahneler={sahneler} />}
       <div class="satir">
         <label class="kucuk"><input type="checkbox" checked={basliklar} onChange={(e) => setBasliklar((e.target as HTMLInputElement).checked)} /> Sahne adlarını başlık olarak yaz</label>
       </div>

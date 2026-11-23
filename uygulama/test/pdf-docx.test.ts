@@ -50,9 +50,9 @@ function eser() {
 }
 
 describe('eserin PDF ve Word çıktısı (§10.11)', () => {
-  it('okuma düzeni: yalnız eserin metni; vazgeçilen girmez; biçim korunur', () => {
+  it('okuma düzeni: yalnız eserin metni; vazgeçilen girmez; biçim korunur', async () => {
     const { h, evren, eser: e } = eser();
-    const { kitap, dosyaKoku } = h.eserKitabi({ evren, eser: e, sahneBasliklari: true });
+    const { kitap, dosyaKoku } = await h.eserKitabi({ evren, eser: e, sahneBasliklari: true });
     expect(dosyaKoku).toBe('seyh-aga-kizi');
     expect(kitap.bolumler.map((b) => b.baslik)).toEqual(['Birinci bölüm']);
     expect(kitap.bolumler[0].sahneler.map((s) => s.baslik)).toEqual(['Sahne bir', 'Sahne iki']);
@@ -82,7 +82,7 @@ describe('eserin PDF ve Word çıktısı (§10.11)', () => {
 
   it('PDF: yazı tipi gömülü, sayfalara bölünür, Türkçe harfler metin olarak çıkar', async () => {
     const { h, evren, eser: e } = eser();
-    const { kitap } = h.eserKitabi({ evren, eser: e, sahneBasliklari: true });
+    const { kitap } = await h.eserKitabi({ evren, eser: e, sahneBasliklari: true });
     const veri = await pdfYaz(kitap, yt, new Date(0));
     expect(new TextDecoder().decode(veri.slice(0, 5))).toBe('%PDF-');
     const d = await PDFDocument.load(veri);
@@ -100,7 +100,7 @@ describe('eserin PDF ve Word çıktısı (§10.11)', () => {
     if (process.env.PDF_ORNEK) {
       const { h, evren, eser: e } = eser();
       const { writeFileSync } = await import('node:fs');
-      writeFileSync(process.env.PDF_ORNEK, await pdfYaz(h.eserKitabi({ evren, eser: e, sahneBasliklari: true }).kitap, yt));
+      writeFileSync(process.env.PDF_ORNEK, await pdfYaz((await h.eserKitabi({ evren, eser: e, sahneBasliklari: true })).kitap, yt));
       writeFileSync(process.env.PDF_ORNEK.replace(/\.pdf$/, '.docx'), (await h.docxYaz({ evren, eser: e, sahneBasliklari: true })).veri);
     }
   });
