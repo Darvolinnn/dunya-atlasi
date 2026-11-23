@@ -28,6 +28,7 @@ import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
 
 import { SayfaYardimi } from './SayfaYardimi';
 import { OlayOrgusuGorunumu } from './OlayOrgusu';
+import { GorunumSayfasi } from './BagGorunumu';
 import { ANA_SAYFALAR, DIGER_SAYFALAR, EvrenKabugu, GORUNUMLER, gorunumMu } from './Kabuk';
 
 const SAYFA_ADLARI = new Map<string, string>([...ANA_SAYFALAR, ...DIGER_SAYFALAR, ...GORUNUMLER]);
@@ -89,6 +90,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           : sekme === 'gezinti' || sekme === 'pano' ? <DerlemeSekmesi istemci={istemci} evren={kod} tur={sekme} secili={alt} surum={surum} />
           : sekme === 'takvim' ? <TakvimSayfasi istemci={istemci} evren={kod} />
           : sekme === 'terimler' ? <TerimSozlugu istemci={istemci} evren={kod} />
+          : sekme === 'gorunum' ? <GorunumSayfasi istemci={istemci} evren={kod} kayitli={bilgi.bagGorunumu} saltOkunur={bilgi.bag?.tur === 'surum'} />
           : sekme === 'sablonlar' ? <SablonlarSekmesi istemci={istemci} evren={kod} tur={alt} />
           : <Masa istemci={istemci} evren={kod} surum={surum} ekler={<MasaPusulasi istemci={istemci} evren={kod} kayitSayisi={bilgi.kayitSayisi} />} />}
       </main>

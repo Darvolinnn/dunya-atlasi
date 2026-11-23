@@ -15,6 +15,7 @@ import { VERI_BICIMI, type Islem } from '../alan/islem';
 import { b64Coz, islemSatiri } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ayrilmaYazisi, kokAdaylari } from '../alan/turkce-ek';
+import { bagGorunumuGecerli, bagGorunumuOku, bagVarsayilanMi, type BagGorunumu } from '../alan/bag-gorunumu';
 import { kararGecerli, kurguTuruGecerli, turBul, turGecerli } from '../alan/turler';
 import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
@@ -397,6 +398,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     this.kurulum.evrenAdi(evren, temiz);
   }
 
+  /** Bağlantı görünümü (K37); null varsayılana döndürür. */
+  bagGorunumuYaz({ evren, gorunum }: { evren: string; gorunum: BagGorunumu | null }) {
+    if (gorunum !== null && !bagGorunumuGecerli(gorunum)) throw new Error('Geçersiz seçim.');
+    this.yaz(evren, [{ tur: 'bag_gorunumu', veri: { gorunum: gorunum && !bagVarsayilanMi(gorunum) ? gorunum : null } }]);
+  }
+
   evrenBilgisi({ evren }: { evren: string }) {
     const e = this.evren(evren);
     const b = this.bagli.get(evren);
@@ -409,6 +416,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     return {
       ...oz, ad, bag, islemSayisi: e.islemSayisi(),
       kurguTuru: (e.db.selectValue("SELECT v FROM evren WHERE k='kurgu_turu'") as string | undefined) ?? null,
+      bagGorunumu: bagGorunumuOku(e.db.selectValue("SELECT v FROM evren WHERE k='bag_gorunumu'") as string | undefined),
       kayitSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NULL')),
       copSayisi: Number(e.db.selectValue('SELECT count(*) FROM kayitlar WHERE silindi IS NOT NULL AND kod NOT IN (SELECT kod FROM yonlendirmeler)')),
       catismaSayisi: this.catismaSayisi({ evren }),

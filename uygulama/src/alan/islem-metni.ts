@@ -13,6 +13,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   bagsiz_ad_ayari: (v, ad) => String(v.anahtar).startsWith('hic:')
     ? (v.deger ? `“${ad(String(v.anahtar).slice(4))}” bağlantısız ad olarak artık önerilmeyecek` : `“${ad(String(v.anahtar).slice(4))}” yeniden önerilecek`)
     : (v.deger ? 'Bir bağlantısız ad önerisi geçildi' : 'Geçilen bir bağlantısız ad önerisi geri alındı'),
+  bag_gorunumu: (v) => v.gorunum ? 'Bağlantı görünümü değişti' : 'Bağlantı görünümü varsayılana döndü',
   evren_adlandir: (v) => `Evrenin adı “${v.ad}” oldu`,
   seri_okuma_yollari: (v, ad) => `${ad(v.seri)}: okuma yolları değişti`,
   evren_kurgu_turu: (v) => v.kurgu ? `Ne yazdığınız: ${KURGU_TURLERI.find((k) => k.kod === v.kurgu)?.ad ?? v.kurgu}` : 'Ne yazdığınız seçimi kaldırıldı',

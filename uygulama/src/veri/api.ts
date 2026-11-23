@@ -1,5 +1,6 @@
 // Arayüz ile veritabanı çalışanı arasındaki istekler. Arayüz veritabanına yalnızca bunlarla erişir.
 import type { Islem } from '../alan/islem';
+import type { BagGorunumu } from '../alan/bag-gorunumu';
 import type { Akis, EvrenTarihi, Fark, Karsilastirma, ParalelTakvim, Takvim, ZamanSeti } from '../alan/tarih';
 import type { DurumKipi, Gecerlilik } from '../alan/durum';
 import type { Sablon, Soru, SoruDurumu } from '../alan/sablon';
@@ -15,6 +16,8 @@ export interface EvrenBilgisi extends EvrenOzeti {
   islemSayisi: number; kayitSayisi: number; copSayisi: number; catismaSayisi: number; sorunSayisi: number;
   /** "Ne yazıyorsunuz?" seçimi (K28); seçilmediyse null. */
   kurguTuru: string | null;
+  /** Bağlantı görünümü (K37); varsayılansa null. */
+  bagGorunumu: BagGorunumu | null;
   /** Adlandırılmış sürüm (salt okunur) ya da deneme kopyasıysa bağlı olduğu evren (§9.7). */
   bag?: { tur: 'surum' | 'dal'; evren: string; evrenAdi: string; ad: string } | null;
 }
@@ -1227,6 +1230,7 @@ export interface Istekler {
   evrenler(): EvrenOzeti[];
   evrenOlustur(a: { ad: string; kurgu?: string | null }): { kod: string };
   kurguTuruYaz(a: { evren: string; kurgu: string | null }): void;
+  bagGorunumuYaz(a: { evren: string; gorunum: BagGorunumu | null }): void;
   /** Bağlantısız ad önerisi için aranacak adlar ve "önerme" ayarları (K29, §5.1). */
   adDizini(a: { evren: string }): AdDizini;
   /** "Bu adı hiç önerme" (anahtar `hic:<kod>`) ya da "Bu sefer değil" (anahtar `atla:<yer>`); deger false geri alır. */

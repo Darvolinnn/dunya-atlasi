@@ -8,6 +8,7 @@ import { katla } from '../alan/turkce';
 import { siraGecerli } from '../alan/sira';
 import { sablonGecerli } from '../alan/sablon';
 import { kurguTuruGecerli } from '../alan/turler';
+import { bagGorunumuGecerli } from '../alan/bag-gorunumu';
 import { etkiAc } from './etki';
 import { gorunurlukGecerli, sadeGercekMi } from '../alan/gorunurluk';
 import { BILGI_ALANLARI, IDDIA_ALANLARI, bilgiDegeri, iddiaDegeri } from '../alan/bilgi';
@@ -1157,6 +1158,11 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   evren_kurgu_turu(db, i) {
     if (i.veri.kurgu === null) db.exec({ sql: "DELETE FROM evren WHERE k='kurgu_turu'" });
     else if (kurguTuruGecerli(i.veri.kurgu)) evrenAlani(db, 'kurgu_turu', i.veri.kurgu);
+  },
+  // Bağlantı görünümü (K37): metindeki bağlantıların rengi ve biçimi. Günlükte sonra gelen geçerlidir.
+  bag_gorunumu(db, i) {
+    if (i.veri.gorunum === null) db.exec({ sql: "DELETE FROM evren WHERE k='bag_gorunumu'" });
+    else if (bagGorunumuGecerli(i.veri.gorunum)) evrenAlani(db, 'bag_gorunumu', JSON.stringify(i.veri.gorunum));
   },
   // Bağlantısız ad önerisinde "hiç önerme" ve "bu sefer değil" (K29). Günlükte sonra gelen geçerlidir.
   bagsiz_ad_ayari(db, i) {
