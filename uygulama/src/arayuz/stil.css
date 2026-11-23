@@ -1371,3 +1371,25 @@ details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] 
   .takvim-gun { min-height: 64px; }
 }
 .takvim-olay.uzun.surer:not(.devam), .takvim-olay.uzun.surer.hafta-basi { position: relative; z-index: 1; overflow: visible; text-overflow: clip; }
+
+/* Sözlük (K37) */
+.sozluk-ust { gap: 8px; flex-wrap: wrap; }
+.sozluk-ust input[type="search"] { width: min(280px, 100%); }
+.harf-cubugu { display: flex; flex-wrap: wrap; gap: 2px 8px; margin: 14px 0 6px; font-size: 0.85rem; color: var(--metin-2); }
+.harf-cubugu span { opacity: 0.45; }
+.harf-cubugu a { color: var(--vurgu); font-weight: 600; text-decoration: none; }
+.sozluk-harfi h2 { font-family: var(--metin-yazi); color: var(--vurgu); font-size: 1.3rem; margin: 18px 0 2px; scroll-margin-top: 12px; }
+.sozluk-harfi dl { margin: 0; }
+.sozluk-girdisi { display: grid; grid-template-columns: minmax(140px, 220px) minmax(0, 1fr); gap: 4px 18px; padding: 10px 0; border-bottom: 1px solid var(--cizgi); }
+.sozluk-girdisi dt a { font-family: var(--metin-yazi); font-size: 1.08rem; color: var(--metin); text-decoration: none; }
+.sozluk-girdisi dt a:hover { color: var(--vurgu); }
+.sozluk-girdisi dd { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.sozluk-gecis { margin-left: auto; white-space: nowrap; }
+.kelime-ekle { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+@media (max-width: 640px) { .sozluk-girdisi { grid-template-columns: minmax(0, 1fr); } }
+/* Metinde sözlük kelimesi ve bağlantı kartı */
+.metin-editoru .sozluk-terimi { text-decoration: underline dotted; text-decoration-color: color-mix(in srgb, var(--vurgu) 70%, transparent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.terim-karti { position: fixed; z-index: 30; width: min(320px, calc(100vw - 16px)); background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--yaricap); box-shadow: 0 8px 28px rgb(0 0 0 / 0.22); padding: 10px 12px; font-family: var(--yazi); font-size: 0.92rem; animation: asagi-gir 150ms var(--gecis-egri); }
+.terim-karti strong { font-family: var(--metin-yazi); font-size: 1.05rem; }
+.terim-karti p { margin: 4px 0 8px; }
+@media (prefers-reduced-motion: reduce) { .terim-karti { animation: none; } }

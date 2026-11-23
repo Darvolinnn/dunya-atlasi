@@ -272,12 +272,16 @@ Adımlar:
 ## 0.23 Yazar.io tanıtımlarından dört özellik (K37, 23 Kasım 2026)
 
 Kullanıcı başka bir yazarlık programının (yazar.io) dört Instagram tanıtım videosunu gönderip "incele" dedi; karşılaştırmadan sonra **dördünü de, önerilen sırayla** istedi (23 Kasım 13:39): 1) takvim, 2) sözlük, 3) bağlantı görünümü, 4) pano. Her biri için önce resimli taslak (`/mnt/project-files/taslaklar/yazario/`, depoda değil), kullanıcı onayı, sonra kod. Dal `claude/project-thread-k5ukib`. (Not: açık PR #49 §0.21'i kullanıyor ve §0.22'ye çevrilecek; bu yüzden bu bölüm §0.23.)
-- [x] **Takvim** (taslak 23 Kasım'da gösterildi; kullanıcı onayı bekleniyor, önerilen seçenekle kodlandı). Tasarım §3.4 "Takvim sayfası", §7 "Karakter şeritleri".
+- [x] **Takvim** (taslak ve kodlanmış hâlin ekran resimleri kullanıcıca onaylandı; PR #53 ile `main`'de). Tasarım §3.4 "Takvim sayfası", §7 "Karakter şeritleri".
   - `alan/tarih.ts`: `gunIfadesi` (takvimin bir gününün yeniden aynı güne çözülen yazısı, çağlı yıllarda da), `ayAraligi`, `eksenYeri` dışa açıldı; iki takvimli tarihin arası gün/ay düzeyinde `aralik` ("9 Hasat 412 ile 11 Hasat 412 arası", "… – …"); açıklaması iki ucun gün okunuşuyla.
   - İstekler (`hizmet.ts`, `vt.ts` IZINLI): `olayKarti` (tarih, yer `sahne_yeri`, katılanlar `olayda`/`sahnede` ve karakterlerin o andaki yaşı `yasHesapla`), `takvimOlayiEkle` (olay kaydı + `kayit_tarih` + `olayda` rol `katilan` + `sahne_yeri`, tek işlem grubu; yeni işlem türü yok, izdüşüm sürümü değişmedi), `yasamSeritleri` (doğum, ölüm, tarihli olay/sahneler ve yaş; bakış açısı süzgeci).
   - Arayüz: `arayuz/TakvimAy.tsx` (`AyGorunumu`, gün paneli, olay kartı), `Takvim.tsx` `TakvimSayfasi` (sekmeler "Ay görünümü" / "Takvim ayarları", seçim tarayıcıda hatırlanır) ve `ZamanCizelgesi`'nde "Şeritler: Eserler | Karakterler" (karakter kipinde `SeritliCizelge` `omurler` ve şerit alt yazısıyla; sağda olay yazısına yer bırakılır). CSS `stil.css` sonunda "Karakter şeritleri" ve "Takvimin ay görünümü".
   - Sınama `test/takvim-ay.test.ts` (4). Bütün sınamalar: 634 geçti. Tarayıcıda örnek evrende denendi (ay görünümü, güne olay ekleme, kart, karakter şeritleri).
-- [ ] Sözlük (taslak).
+- [x] **Sözlük** (taslak 23 Kasım; kullanıcı "ikisi birden"i seçti: yeni `terim` türü + her kayda "sözlük" etiketi). Tasarım §4.3 "Terim / kelime", §5.1 "Sözlük".
+  - `alan/turler.ts` `terim`; `alan/sablon.ts` `SOZCUK_TURLERI`, `SOZLUK_ETIKETI` ('sözlük'), terim şablonu (`sozcuk_turu`, `dil`).
+  - `calisan/terim-sozlugu.ts`: `sozlukKayitlari` (terim + etiketli kayıtlar; terimin adları küçük harfe çevrilip aranır), `sozlukListesi` (+ dil sözcükleri, sahne metinlerinde `bagsizAdlar` ile geçiş sayısı). İstekler `terimSozlugu`, `sozlukIpuclari`. Eski `calisan/sozluk.ts` anakronizm denetimidir (F20), karıştırma; API tipi `TerimGirdisi` (eski `SozlukGirdisi` başka şey).
+  - Arayüz: `arayuz/TerimSozlugu.tsx` (sayfa, adres `terimler`, ana gezintide "Sözlük"; GORUNUMLER'deki `sozluk` "Sözlük denetimi"dir), `arayuz/sozluk-eklentisi.ts` (ProseMirror süslemesi `.sozluk-terimi`, üstüne gelme/dokunma), `arayuz/TerimKarti.tsx` (kart ve `useSozlukBilgisi`; bağlantılarda kart `adDizini` özetinden). `BagsizAdlar.tsx` terimleri öneriye almaz.
+  - Sınama `test/terim-sozlugu.test.ts` (2). Bütün sınamalar 636 geçti; tarayıcıda örnek evrende denendi (sayfa, Kayıttan al, metinde altı çizgi ve kart).
 - [ ] Bağlantı görünümü (taslak).
 - [ ] Pano (taslak).
 

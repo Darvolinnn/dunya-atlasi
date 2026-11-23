@@ -103,7 +103,8 @@ import * as haritaKunye from './harita-kunye';
 import type { HaritaKunyeTanimi } from '../veri/api';
 import * as surecSorumlu from './surec-sorumlu';
 import type { SurecEngelTuru } from '../veri/api';
-import type { OlayKarti, OlayKatilani, TakvimOlayiGirdisi, YasamSeridi } from '../veri/api';
+import type { OlayKarti, OlayKatilani, TerimGirdisi, TakvimOlayiGirdisi, YasamSeridi } from '../veri/api';
+import * as terimSozlugu from './terim-sozlugu';
 import * as kaliciIz from './kalici-iz';
 import type { KaliciIzTuru } from '../veri/api';
 import * as olcekli from './olcekli';
@@ -2583,6 +2584,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
         ...(bk.kisa && bk.inanc(r.gorunurluk) ? { inanc: true } : {}) }))
       .sort((a, b) => siraAnahtari(a.tarih) - siraAnahtari(b.tarih) || turkceKarsilastir(a.ad, b.ad));
   }
+
+  /** Evrenin sözlüğü (K37): terimler, "sözlük" etiketli kayıtlar ve dillerin sözcükleri; metinde geçiş sayılarıyla. */
+  terimSozlugu({ evren }: { evren: string }): TerimGirdisi[] { return terimSozlugu.sozlukListesi(this.evren(evren)); }
+  /** Yazarken metinde işaretlenecek sözlük kelimeleri (geçiş sayısı hesaplanmaz). */
+  sozlukIpuclari({ evren }: { evren: string }): TerimGirdisi[] { return terimSozlugu.sozlukKayitlari(this.evren(evren)); }
 
   /** Takvimde bir olayın ya da sahnenin kartı (K37): tarihi, yeri ve katılanların o andaki yaşı. */
   olayKarti({ evren, kod }: { evren: string; kod: string }): OlayKarti {

@@ -21,6 +21,7 @@ export const TURLER: Tur[] = [
   { kod: 'inanc', ad: 'İnanç / mezhep', grup: 'Kültür ve inanç', kisa: 'İn' },
   { kod: 'rituel', ad: 'Ritüel', grup: 'Kültür ve inanç', kisa: 'Ri' },
   { kod: 'dil', ad: 'Dil', grup: 'Kültür ve inanç', kisa: 'Di' },
+  { kod: 'terim', ad: 'Terim / kelime', grup: 'Kültür ve inanç', kisa: 'Tm' },
   { kod: 'evren_kurali', ad: 'Evren kuralı', grup: 'Evrenin işleyişi', kisa: 'Ek' },
   { kod: 'buyu_sistemi', ad: 'Büyü sistemi', grup: 'Evrenin işleyişi', kisa: 'Bs' },
   { kod: 'buyu_uygulamasi', ad: 'Büyü uygulaması', grup: 'Evrenin işleyişi', kisa: 'Bu' },
