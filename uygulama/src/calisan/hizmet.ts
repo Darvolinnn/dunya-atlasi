@@ -76,6 +76,7 @@ import * as yayimMod from './yayim';
 import * as cikti from './cikti';
 import * as belgeMod from './belge';
 import * as isaretMod from './metin-isaret';
+import * as bilgiDayanagi from './bilgi-dayanagi';
 import * as yogunluk from './yogunluk';
 import * as gokyuzu from './gokyuzu';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
@@ -3435,6 +3436,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
   isaretKarari({ evren, anahtar, durum, gerekce = '', niyet = null }: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null; gerekce?: string; niyet?: isaretMod.Niyet | null }) {
     isaretMod.isaretKarari(this.isaretBaglami(evren), String(anahtar), durum, gerekce, niyet);
   }
+  bilgiIsaretKodlari({ evren, kayit }: { evren: string; kayit: string }) { return bilgiDayanagi.bilgiIsaretKodlari(this.evren(evren), kayit); }
   isaretOzetleri({ evren, kodlar }: { evren: string; kodlar: string[] }) { return isaretMod.isaretOzetleri(this.evren(evren), Array.isArray(kodlar) ? kodlar.slice(0, 50) : []); }
 
   // ---------- Yayımlanmış eser kilidi (F18) ----------

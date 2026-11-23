@@ -54,7 +54,9 @@ function imlectekiIsaretler(state: EditorState): string[] {
   return [...kodlar].sort();
 }
 type IsaretOzeti = { kod: string; hedef: KisaKayit | null; hedefAlanAdi: string | null; iddia: string; kritik: boolean };
-type IsaretFormu = { from: number; to: number; belge: PmNode; hedef: Secim | null; alanlar: IsaretAlani[]; hedefAlan: string; iddia: string; kritik: boolean; hata: string | null };
+type IsaretFormu = { from: number; to: number; belge: PmNode; hedef: Secim | null; alanlar: IsaretAlani[]; hedefAlan: string; iddia: string; kritik: boolean; hata: string | null;
+  /** "Bilgiye dayanıyor" (K38, C3): kişi ve onun bilgi kayıtlarından biri seçilir. */
+  bilgi?: boolean };
 
 const KISAYOLLAR: Record<string, Command> = {
   'Mod-z': undo, 'Mod-y': redo, 'Shift-Mod-z': redo,
@@ -128,6 +130,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   const [isaretFormu, setIsaretFormu] = useState<IsaretFormu | null>(null);
   const [isaretOzet, setIsaretOzet] = useState<{ anahtar: string; liste: IsaretOzeti[] }>({ anahtar: '', liste: [] });
   const [hedefSecici, setHedefSecici] = useState<{ left: number; top: number } | null>(null);
+  /** Bu metindeki "bilgiye dayanıyor" işaretleri ayrı renkle çizilir. */
+  const [bilgiKodlari, setBilgiKodlari] = useState<string[]>([]);
+  const [bilgiSurumu, setBilgiSurumu] = useState(0);
+  useEffect(() => { let iptal = false; istemci.iste('bilgiIsaretKodlari', { evren, kayit }).then((l) => { if (!iptal) setBilgiKodlari(l); }, () => {}); return () => { iptal = true; }; }, [evren, kayit, bilgiSurumu]);
   /** Sahne içinde bağlam parçaları (F29). */
   const [parcalar, setParcalar] = useState<BaglamParcasi[]>([]);
   const [parcaFormu, setParcaFormu] = useState<{ from: number; to: number; belge: PmNode; onceki: BaglamParcasi | null } | null>(null);
@@ -446,11 +452,11 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     } catch (x) { setAyirma({ ...ayirma, hata: (x as Error).message }); }
   }
 
-  function isaretFormuAc() {
+  function isaretFormuAc(bilgi = false) {
     const v = gorunum.current;
     if (!v || v.state.selection.empty) return;
     const { from, to } = v.state.selection;
-    setIsaretFormu({ from, to, belge: v.state.doc, hedef: null, alanlar: [], hedefAlan: '', iddia: '', kritik: false, hata: null });
+    setIsaretFormu({ from, to, belge: v.state.doc, hedef: null, alanlar: [], hedefAlan: '', iddia: '', kritik: false, hata: null, bilgi });
   }
   function hedefSec(s: Secim) {
     setHedefSecici(null);
@@ -462,12 +468,14 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
     const v = gorunum.current, f = isaretFormu;
     if (!v || !f) return;
     if (v.state.doc !== f.belge) { setIsaretFormu({ ...f, hata: 'Metin bu arada değişti; cümleyi yeniden seçin.' }); return; }
+    if (f.bilgi && !f.hedefAlan.startsWith('bilgi:')) { setIsaretFormu({ ...f, hata: f.hedef ? 'Kişinin bilgi kayıtlarından birini seçin.' : 'Önce kişiyi seçin.' }); return; }
     try {
       const { kod: ik } = await istemci.iste('metinIsaretiOlustur', { evren, kayit, alan, hedef: f.hedef?.kod ?? null, hedefAlan: f.hedefAlan || null, iddia: f.iddia, kritik: f.kritik });
       const g = gorunum.current;
       if (g) g.dispatch(isaretKodu(g.state.tr, f.from, f.to, ik, true));
       setIsaretFormu(null);
       setIsaretOzet({ anahtar: '', liste: [] });
+      if (f.bilgi) setBilgiSurumu((n) => n + 1);
       g?.focus();
     } catch (x) { setIsaretFormu({ ...f, hata: (x as Error).message }); }
   }
@@ -592,7 +600,8 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => uygula((s, d) => { d?.(s.tr.removeMark(bag.from, bag.to, bagTuru)); return true; })}>Bağlantıyı kaldır</button>
         </>}
         {v && !v.state.selection.empty && alan === 'govde' && <button type="button" class="arac" title="Seçili parça yeni bir kayda dönüşür; yerinde o kayda bağlantı kalır" onMouseDown={(e) => e.preventDefault()} onClick={ayirmaAc}>Yeni kayda ayır</button>}
-        {v && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili cümle bir kayda, bir değere ya da bir soruya bağlanır" onMouseDown={(e) => e.preventDefault()} onClick={isaretFormuAc}>İşaretle</button>}
+        {v && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili cümle bir kayda, bir değere ya da bir soruya bağlanır" onMouseDown={(e) => e.preventDefault()} onClick={() => isaretFormuAc()}>İşaretle</button>}
+        {v && !v.state.selection.empty && !saltOkunur && alan === 'govde' && <button type="button" class="arac" title="Seçili parçadaki davranış bir karakterin bildiği bir şeye dayanıyor; denetim, karakterin bunu daha önce öğrenip öğrenmediğine bakar" onMouseDown={(e) => e.preventDefault()} onClick={() => isaretFormuAc(true)}>Bilgiye dayanıyor</button>}
         {v && baglamParcalari && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili parçaya ayrı bir tarih, yer ve bakış açısı verilir" onMouseDown={(e) => e.preventDefault()} onClick={() => parcaFormuAc(null)}>Bağlam ver</button>}
         {v && alan === 'govde' && !saltOkunur && <button type="button" class="arac" title="Başka bir kaydın metni (efsane, mektup, şarkı) buraya alınır" onMouseDown={(e) => e.preventDefault()} onClick={alFormuAc}>Metin al</button>}
         <span class="bosluk" />
@@ -624,7 +633,27 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           metin={parcaFormu.onceki ? parcaFormu.onceki.metin.join(' ') : parcaFormu.belge.textBetween(parcaFormu.from, parcaFormu.to, ' ')}
           kaydet={parcaKaydet} vazgec={() => setParcaFormu(null)} />
       )}
-      {isaretFormu && (
+      {isaretFormu?.bilgi && (() => { const bilgiler = isaretFormu.alanlar.filter((a) => a.kod.startsWith('bilgi:')); return (
+        <form class="kart ayirma bilgi-dayanagi" onSubmit={isaretle} aria-label="Bilgiye dayanıyor">
+          <strong>Bilgiye dayanıyor</strong>
+          <p class="kucuk soluk" style="margin:2px 0 6px">“{isaretFormu.belge.textBetween(isaretFormu.from, isaretFormu.to, ' ').slice(0, 120)}” işaretlenecek. Metne bir şey eklenmez.</p>
+          <span class="kucuk soluk">Kim?</span>
+          <button type="button" class="dugme kucuk bilgi-kim" onClick={(e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setHedefSecici({ left: r.left, top: r.bottom + 4 }); }}>{isaretFormu.hedef?.ad ?? 'Karakter seç'}</button>
+          {isaretFormu.hedef && <>
+            <span class="kucuk soluk">Hangi bilgiye? ({isaretFormu.hedef.ad} adlı kaydın bilgi kayıtları)</span>
+            {bilgiler.length ? <div class="bilgi-secenekleri" role="radiogroup" aria-label="Bilgi kaydı">
+              {bilgiler.map((a) => { const [bas, ...geri] = a.ad.split(' · '); return <button key={a.kod} type="button" role="radio" aria-checked={isaretFormu.hedefAlan === a.kod} class={isaretFormu.hedefAlan === a.kod ? 'secili' : ''}
+                onClick={() => setIsaretFormu({ ...isaretFormu, hedefAlan: a.kod, hata: null })}>{bas}{geri.length ? <span class="soluk"> · {geri.join(' · ')}</span> : null}</button>; })}
+            </div> : <p class="kucuk soluk">Bu kaydın bilgi kaydı yok. Kayıt sayfasında “Bilinenler” bölümünden ekleyebilirsiniz.</p>}
+          </>}
+          <div class="satir" style="justify-content:flex-end">
+            <button type="button" class="dugme sade kucuk" onClick={() => setIsaretFormu(null)}>Vazgeç</button>
+            <button class="dugme ana kucuk" disabled={!isaretFormu.hedefAlan}>İşaretle</button>
+          </div>
+          {isaretFormu.hata && <p class="hata kucuk">{isaretFormu.hata}</p>}
+        </form>); })()}
+      {bilgiKodlari.length > 0 && <style>{bilgiKodlari.map((k) => `.metin-editoru [data-isaret~="${k}"]`).join(',')}{'{text-decoration-color:var(--inanc);text-decoration-style:dotted}'}</style>}
+      {isaretFormu && !isaretFormu.bilgi && (
         <form class="kart ayirma" onSubmit={isaretle} aria-label="Cümleyi işaretle">
           <p class="kucuk" style="margin:0 0 6px">“{isaretFormu.belge.textBetween(isaretFormu.from, isaretFormu.to, ' ').slice(0, 120)}” işaretlenecek. Metin değişmez, yalnızca bağlantı kurulur.</p>
           <div class="satir">

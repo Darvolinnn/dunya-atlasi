@@ -11,6 +11,7 @@ import type { DenetimBulgusu, DenetimKurali, DenetimOzeti, Denetimler, IncelemeK
 import type { EvrenVt } from './evren-vt';
 import type { PaketEtkisi } from './masa';
 import { surecDenetimi } from './surec';
+import { bilgiDenetimi } from './bilgi-dayanagi';
 
 export interface DenetimBaglami {
   e: EvrenVt;
@@ -386,6 +387,8 @@ function hesapla(e: EvrenVt, p: PaketEtkisi | null = null): { bulgular: Ham[]; k
   const y = yasam(e, b), d = dongu(e), k = konum(e, b, p), s = esya(e, b);
   const sr = surecDenetimi(e);
   const al = alternatif(e);
+  const bi = bilgiDenetimi(e);
+  const biH: Ham[] = bi.bulgular.map((x) => ({ ...x, kural: 'bilgi' as const }));
   const srH: Ham[] = sr.bulgular.map((x) => ({ ...x, kural: 'surec' as const }));
   k.bulgular.push(...asamaDenetimi(e, p));
   const ozet = (kural: DenetimKurali, ad: string, tanim: string, x: { bulgular: Ham[]; denetlenen: number }, bos: string, not: string): DenetimOzeti => ({
@@ -403,14 +406,16 @@ function hesapla(e: EvrenVt, p: PaketEtkisi | null = null): { bulgular: Ham[]; k
       `${k.denetlenen} olay çifti denetlendi${k.rotaDenetlenen ? `; ${k.rotaDenetlenen} çift kayıtlı rota süresiyle karşılaştırıldı` : ''}.${k.yersiz ? ` ${k.yersiz} bulunmanın tarihi ya da yeri olmadığı için denetlenemedi.` : ''} Rota süreleri yalnızca kayıtlı rotalar için geçerlidir.`),
     ozet('esya', 'Eşya', 'Bir eşyanın aynı dönemde iki ayrı sahibinin görünmesi ya da yok edildikten sonra bir olayda bulunması.', s,
       'İki ya da daha çok sahibi kayıtlı ya da bir olayda yok edilen eşya yok.', `${s.denetlenen} eşya denetlendi. Başlangıcı yazılmamış sahiplikler denetlenmez. Yok edilme, olaydaki “Yok edilen” rolüyle kaydedilir.`),
-    { kural: 'bilgi', ad: 'Bilgi', tanim: 'Karakterin bir bilgiyi öğrenmeden önce ona göre davranması.', sonuc: 'denetlenemiyor', denetlenen: 0,
-      not: 'Bir karakterin bir bilgiye göre davrandığını gösteren bir kayıt henüz yok. Program bunu metinden çıkarmaz.' },
+    bi.denetlenen || biH.length ? ozet('bilgi', 'Bilgi', 'Karakterin bir bilgiyi öğrenmeden önce ona göre davranması.', { bulgular: biH, denetlenen: bi.denetlenen }, '',
+      `${bi.denetlenen} “bilgiye dayanıyor” işareti denetlendi.${bi.denetlenemeyen ? ` ${bi.denetlenemeyen} işaretin sahnesi ya da bilginin başladığı an tarihsiz ve okuma sırası da karşılaştırılamadığı için denetlenemedi.` : ''} Yalnızca metinde “Bilgiye dayanıyor” diye işaretlediğiniz yerler denetlenir; program bunu metinden çıkarmaz.`)
+      : { kural: 'bilgi', ad: 'Bilgi', tanim: 'Karakterin bir bilgiyi öğrenmeden önce ona göre davranması.', sonuc: bi.denetlenemeyen ? 'denetlenemiyor' : 'konu_degil', denetlenen: 0,
+        not: bi.denetlenemeyen ? `${bi.denetlenemeyen} “bilgiye dayanıyor” işareti var, ama sahnenin ya da bilginin başladığı anın tarihi yok ve okuma sırası da karşılaştırılamıyor.` : 'Metinde “Bilgiye dayanıyor” diye işaretlenmiş bir yer yok. Program bunu metinden çıkarmaz.' },
     ozet('surec', 'Süreç', 'Bir olayda bir adımın, bağlı süreç kuralındaki önkoşul adımı yapılmadan gerçekleşmesi.', { bulgular: srH, denetlenen: sr.denetlenen },
       'Önkoşullu adımı olan bir süreç kuralına bağlı olay yok.', `${sr.denetlenen} olay–kural bağı denetlendi. Kaydedilmemiş adım “olmadı” sayılmaz; yalnızca “yapılmadı” ya da “yarıda kaldı” diye işaretlenen önkoşullar denetlenir.`),
     ozet('alternatif', 'Alternatifler', 'Birbirinin alternatifi diye bağlanmış iki kaydın ikisinin de kesinleşmiş olması.', al,
       'Birbirinin alternatifi diye bağlanmış kayıt yok.', `${al.denetlenen} alternatif bağı denetlendi.`),
   ];
-  return { bulgular: [...y.bulgular, ...d.bulgular, ...k.bulgular, ...s.bulgular, ...srH, ...al.bulgular], kurallar };
+  return { bulgular: [...y.bulgular, ...d.bulgular, ...k.bulgular, ...s.bulgular, ...srH, ...al.bulgular, ...biH], kurallar };
 }
 
 const sirala = (l: DenetimBulgusu[]) => l.sort((a, b) => (a.hukum === b.hukum ? 0 : a.hukum === 'celiski' ? -1 : 1)

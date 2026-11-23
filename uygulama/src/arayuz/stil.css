@@ -1643,3 +1643,11 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .yerlesim-sonuclari ul { margin: 0; padding-left: 18px; }
 .yerlesim-sonuclari li { margin: 3px 0; }
 @media (max-width: 760px) { .yerlesim-govde { grid-template-columns: minmax(0, 1fr); } }
+
+/* Bilgiye dayanıyor (K38 C3) */
+.bilgi-dayanagi { display: flex; flex-direction: column; gap: 6px; max-width: 440px; }
+.bilgi-dayanagi .bilgi-kim { align-self: stretch; text-align: left; }
+.bilgi-secenekleri { display: flex; flex-direction: column; gap: 4px; }
+.bilgi-secenekleri button { font: inherit; font-size: 0.9rem; text-align: left; color: var(--metin); background: none; border: 1px solid transparent; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+.bilgi-secenekleri button:hover { background: var(--yuzey-2); }
+.bilgi-secenekleri button.secili { background: var(--vurgu-zemin); border-color: var(--vurgu); }

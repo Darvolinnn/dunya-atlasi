@@ -1541,6 +1541,8 @@ export interface Istekler {
   kayitIsaretleri(a: { evren: string; kod: string }): { metindekiler: MetinIsareti[]; buKayda: MetinIsareti[] };
   isaretIncelemeleri(a: { evren: string; kayit?: string | null }): IsaretIncelemeleri;
   isaretKarari(a: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null; gerekce?: string; niyet?: 'eski_duzelt' | 'bu_tarihten' | 'taslakta' | 'inanc' | null }): void;
+  /** Bu kaydın metnindeki "bilgiye dayanıyor" işaretleri (K38, C3). */
+  bilgiIsaretKodlari(a: { evren: string; kayit: string }): string[];
   isaretOzetleri(a: { evren: string; kodlar: string[] }): { kod: string; hedef: KisaKayit | null; hedefAlanAdi: string | null; iddia: string; kritik: boolean }[];
   yayimla(a: { evren: string; eser: string; baski: string }): { kod: string };
   yayimSil(a: { evren: string; kod: string }): void;
