@@ -220,6 +220,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     return new EvrenVt(db, this.kurulum.kod, (d) => this.ilerle({ evren: kod, ad, ...d }));
   }
 
+  /** İkinci hesap çalışanına kopyalanacak veritabanları (K38, D4); listede olmayan (sürüm, deneme kopyası) evrende null. */
+  hesapVeritabanlari(kod: string): { evren: Database; kurulum: Database } | null {
+    if (!kodGecerliMi(kod) || !this.kurulum.evrenler().some((x) => x.kod === kod)) return null;
+    return { evren: this.evren(kod).db, kurulum: this.kurulum.db };
+  }
+
   private evren(kod: string): EvrenVt {
     if (!kodGecerliMi(kod)) throw new Error('Evren bulunamadı.');
     let e = this.acik.get(kod);

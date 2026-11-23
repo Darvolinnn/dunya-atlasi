@@ -9,10 +9,51 @@ import { OpfsDeposu, tarayiciIsleyici } from './medya-tarayici';
 import { DriveTasiyici } from './drive';
 import type { AltKlasor, YerelDosya, YerelKlasor } from './klasor-tasiyici';
 import { kullaniciIletisi } from './ileti';
+import { AGIR_ISTEKLER, kopyaAl, kopyaDamgasi } from './hesap-kopyasi';
 
 let hizmet: Hizmet | null = null;
 let havuz: { getFileCount(): number; getCapacity(): number; addCapacity(n: number): Promise<number>; unlink(ad: string): boolean; getFileNames(): string[] } | null = null;
 let hazirlik: Promise<Hizmet> | null = null;
+let sqlite: Awaited<ReturnType<typeof sqlite3InitModule>> | null = null;
+
+// İkinci hesap çalışanı (K38, D4): ağır ve yalnız okuyan istekler evrenin kopyası üzerinde orada yürür; bu çalışan
+// o sırada metin kaydına bakar. Çalışan kurulamazsa ya da bozulursa hesap burada yapılır.
+let hesap: Worker | null | false = null;
+let hesapNo = 0;
+const hesapBekleyen = new Map<number, { ok: (v: unknown) => void; no: (e: Error) => void }>();
+const hesapDamgalari = new Map<string, string>();
+function hesapCalisani(): Worker | null {
+  if (hesap === false) return null;
+  if (hesap) return hesap;
+  try {
+    const w = new Worker(new URL('./hesap-calisani.ts', import.meta.url), { type: 'module' });
+    w.onmessage = (e: MessageEvent<{ no: number; sonuc?: unknown; hata?: string }>) => {
+      const b = hesapBekleyen.get(e.data.no);
+      hesapBekleyen.delete(e.data.no);
+      if (typeof e.data.hata === 'string') b?.no(new Error(e.data.hata)); else b?.ok(e.data.sonuc);
+    };
+    w.onerror = () => { hesap = false; hesapDamgalari.clear(); for (const b of hesapBekleyen.values()) b.no(new HesapYok()); hesapBekleyen.clear(); };
+    hesap = w;
+    return w;
+  } catch { hesap = false; return null; }
+}
+class HesapYok extends Error {}
+async function ayriHesapla(h: Hizmet, ad: IstekAdi, arg: { evren?: unknown }): Promise<{ sonuc: unknown } | null> {
+  const evren = typeof arg?.evren === 'string' ? arg.evren : '';
+  const v = sqlite ? h.hesapVeritabanlari(evren) : null;
+  const damga = kopyaDamgasi(v);
+  const w = v && damga ? hesapCalisani() : null;
+  if (!w || !v || !damga || !sqlite) return null;
+  if (hesapDamgalari.get(evren) !== damga) {
+    const k = kopyaAl(sqlite, evren, v, damga);
+    w.postMessage({ tur: 'kopya', kopya: k }, [k.evrenVeri.buffer, k.kurulumVeri.buffer]);
+    hesapDamgalari.set(evren, damga);
+  }
+  const no = ++hesapNo;
+  try {
+    return { sonuc: await new Promise((ok, red) => { hesapBekleyen.set(no, { ok, no: red }); w.postMessage({ tur: 'istek', no, ad, arg }); }) };
+  } catch (e) { if (e instanceof HesapYok) return null; throw e; }
+}
 
 // Arayüzün çağırabildiği istekler; başka hiçbir yöntem dışarıdan çağrılamaz.
 const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', 'evrenOlustur', 'evrenKaldir', 'ilkAdimlar', 'aracTanitimlari', 'seriler', 'alternatifler', 'kitapSonuAciklar', 'etkinCalisma', 'etkinCalismaYaz', 'simdi', 'karakterYollari', 'evrenAdlandir', 'kurguTuruYaz', 'tuval', 'tuvalOgeYaz', 'tuvalOgeSil', 'bagGorunumuYaz', 'adDizini', 'bagsizAdAyari', 'evrenBilgisi', 'islemGunlugu',
@@ -121,6 +162,7 @@ function kurulumAdi(): string {
 
 async function hazirla(): Promise<Hizmet> {
   const [sqlite3] = await Promise.all([sqlite3InitModule(), automergeHazirla(automergeWasm)]);
+  sqlite = sqlite3;
   const h = await sqlite3.installOpfsSAHPoolVfs({ name: 'dunya-atlasi', directory: '/dunya-atlasi', initialCapacity: 16 });
   havuz = h as never;
   const ac = (ad: string) => new h.OpfsSAHPoolDb(ad);
@@ -147,7 +189,8 @@ onmessage = async (e: MessageEvent<Gelen>) => {
     // Her veritabanı dosyası ve günlüğü havuzda bir yer tutar; yeni evren için yer kalsın.
     if (havuz && havuz.getFileCount() + 6 > havuz.getCapacity()) await havuz.addCapacity(16);
     if (!IZINLI.has(ad)) throw new Error('Bilinmeyen istek: ' + ad);
-    const sonuc = ad === 'jetonVer' || ad === 'baglantiyiKes' || ad === 'yerelKlasorBagla'
+    const ayri = AGIR_ISTEKLER.has(ad) ? await ayriHesapla(hizmet, ad, arg as { evren?: unknown }) : null;
+    const sonuc = ayri ? ayri.sonuc : ad === 'jetonVer' || ad === 'baglantiyiKes' || ad === 'yerelKlasorBagla'
       ? await ozel[ad](hizmet, arg as never)
       : await (hizmet as unknown as Record<string, (a: unknown) => unknown>)[ad].call(hizmet, arg);
     // Görsel baytları kopyalanmadan aktarılır.
