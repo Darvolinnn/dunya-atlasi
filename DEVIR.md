@@ -322,7 +322,9 @@ Kullanıcı (23 Kasım 18:09) §0.24'te sunulan "doğru ve hâlâ açık" listes
 - [x] Büyük harita döşemesi (B2, §8.1): `arayuz/doseme.ts` (saf hesap: `DOSEME_SINIRI` 4096, 512'lik parçalar, `dosemeSeviyesi`), `arayuz/doseme-calisani.ts` (görseli bir kez çözer, parçayı WebP olarak üretir), `arayuz/DosemeliGorsel.tsx` (kaba hâl + IntersectionObserver ile yalnız görünen parçalar; en çok 400 parça bellekte). `Harita.tsx` katmanı büyükse bunu kullanır. Parçalar diske yazılmaz. Sınamalar `test/k38-doseme.test.ts`, `e2e/k38.spec.ts` (6000×3000 görsel).
 - [ ] Kat planında sahne içi adımlar ve katlar arası ses (B4; taslak)
 - [ ] Etimoloji ağacı ve birleşik ad üretici (C5; taslak)
-- [ ] Arama dizini (D1), program güncellemesinde yerinde dönüştürme (D2), ağır hesaplar için ikinci çalışan (D4)
+- [x] Arama dizini (D1): yeni tablo `arama_dizini(kok, kayit)` (IZDUSUM 60; gövde metninin sözcük kökleri, `alan/arama-dizini.ts` `dizinKokleri`), `izdusum.ts` `aramaDizininiYaz` metin her uygulandığında yalnız farkı yazar. `hizmet.ts` `ara`: metinler belleğe alınmaz; düz eşleşme `instr(katli)`, tek sözcükte kökle eşleşme dizinden (puan 15, en az 4 harflik ortak kök). Satır sırası geçmişe bağlı olduğu için tablo karşılaştıran sınamalarda `SIRASIZ`. Sınama `test/k38-arama-dizini.test.ts`.
+- [x] Yerinde dönüştürme (D2): `izdusum.ts` `YERINDE_GECISLER` (varılan sürüm → doldurma işlevi; yalnız yeni tablo ekleyen sürümler). `evren-vt.ts`: aradaki her sürümün girdisi varsa tablolar silinmez, şema kurulur, doldurulur, görüntüler silinir. 59 → 60 böyle geçer. Kural: yeni sürüm var olan tabloyu değiştiriyorsa girdi eklenmez.
+- [ ] Ağır hesaplar için ikinci çalışan (D4)
 - [ ] Yayın paketi (§11, E3): okur yayın paketi (sınıra göre süzme, okur kodları, sızıntı taraması) ve evren içi belge tasarımcısı (§11.5); taslaklarla, en sonda
 
 ## 1. Önce oku (sırayla)

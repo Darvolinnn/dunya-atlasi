@@ -1,5 +1,6 @@
 // İşlemlerin görünen tablolara uygulanması. Her işlem türünün tek uygulayıcısı buradadır.
 // Uygulayıcılar belirlenimcidir: aynı günlük her cihazda aynı tabloları üretir.
+import { dizinKokleri } from '../alan/arama-dizini';
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { gorduMu, type Islem } from '../alan/islem';
 import { A } from '../alan/automerge';
@@ -126,7 +127,17 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 59;
+export const IZDUSUM_SURUMU = 60;
+/**
+ * Tabloları silmeden geçilebilen sürümler (K38, D2): anahtar, varılan sürümdür. Yalnız var olan tablolara dokunmadan
+ * yeni tablo ekleyen ve yeni tabloyu var olan tablolardan doldurabilen sürüm buraya yazılır; öbür her değişiklikte
+ * tablolar günlükten baştan kurulur. Yeni tablolar şemayla (`CREATE ... IF NOT EXISTS`) önceden kurulmuş olur.
+ */
+export const YERINDE_GECISLER: Record<number, (db: Database) => void> = {
+  60: (db) => {
+    for (const r of db.selectObjects("SELECT kayit, duz FROM metinler WHERE alan='govde'")) aramaDizininiYaz(db, r.kayit as string, r.duz as string);
+  },
+};
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -543,6 +554,13 @@ CREATE TABLE IF NOT EXISTS metinler(
   duzenleme INTEGER NOT NULL,
   PRIMARY KEY(kayit, alan)
 );
+-- Metin arama dizini (K38, D1): sözcüklerin olası kökleri. Yalnız gövde metni; metinler tablosundan türer.
+CREATE TABLE IF NOT EXISTS arama_dizini(
+  kok TEXT NOT NULL,
+  kayit TEXT NOT NULL,
+  PRIMARY KEY(kok, kayit)
+);
+CREATE INDEX IF NOT EXISTS arama_dizini_kayit ON arama_dizini(kayit);
 CREATE TABLE IF NOT EXISTS baglantilar(
   kaynak TEXT NOT NULL,
   alan TEXT NOT NULL,
@@ -827,6 +845,7 @@ export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar'
 
 IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi', 'kullanim_masalari');
 IZDUSUM_TABLOLARI.push('bakim_tanimlari', 'bakim_kayitlari');
+IZDUSUM_TABLOLARI.push('arama_dizini');
 IZDUSUM_TABLOLARI.push('kural_ornekleri');
 IZDUSUM_TABLOLARI.push('uyarlama_eslemeleri');
 IZDUSUM_TABLOLARI.push('dair_inanclar');
@@ -1006,6 +1025,13 @@ function ikiliBirlestir(l: Islem[]): Uint8Array {
   for (const i of l) { v.set(i.ikili!, o); o += i.ikili!.length; }
   return v;
 }
+/** Gövde metninin dizin köklerini günceller: yalnız eklenen ve çıkan kökler yazılır (K38, D1). */
+export function aramaDizininiYaz(db: Database, kayit: string, duz: string) {
+  const yeni = dizinKokleri(duz);
+  const eski = new Set(db.selectValues('SELECT kok FROM arama_dizini WHERE kayit=?', [kayit]) as string[]);
+  for (const k of eski) if (!yeni.has(k)) db.exec({ sql: 'DELETE FROM arama_dizini WHERE kok=? AND kayit=?', bind: [k, kayit] });
+  for (const k of yeni) if (!eski.has(k)) db.exec({ sql: 'INSERT INTO arama_dizini(kok, kayit) VALUES(?,?)', bind: [k, kayit] });
+}
 /** Bir metin alanına bir ya da birden çok işlemin değişikliklerini uygular ve türetilenleri yazar. */
 function metniUygula(db: Database, kayit: string, alan: string, l: Islem[], duzenlemeYaz: boolean) {
   const son = l[l.length - 1];
@@ -1019,6 +1045,7 @@ function metniUygula(db: Database, kayit: string, alan: string, l: Islem[], duze
           ON CONFLICT(kayit, alan) DO UPDATE SET belge=excluded.belge, duz=excluded.duz, katli=excluded.katli, duzenleme=excluded.duzenleme`,
     bind: [kayit, alan, A.save(yeni), duz, katla(duz), son.zaman],
   });
+  if (alan === 'govde') aramaDizininiYaz(db, kayit, duz);
   db.exec({ sql: 'DELETE FROM baglantilar WHERE kaynak=? AND alan=?', bind: [kayit, alan] });
   baglantilar(spans).forEach((b, sira) => db.exec({
     sql: 'INSERT INTO baglantilar(kaynak, alan, sira, hedef, metin) VALUES(?,?,?,?,?)', bind: [kayit, alan, sira, b.hedef, b.metin],

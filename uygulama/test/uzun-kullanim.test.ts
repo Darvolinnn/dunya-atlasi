@@ -39,7 +39,7 @@ const metinYaz = (h: Hizmet, evren: string, kayit: string, p: string[]) => h.met
   spans: pmNodeToSpans(metinSemasi, sema.node('doc', null, p.map((x) => sema.node('paragraph', null, x ? [sema.text(x)] : [])))) as never,
   temel: h.metinAc({ evren, kayit, alan: 'govde' }).basliklar });
 const vt = (h: Hizmet, evren: string) => (h as unknown as { evren(k: string): EvrenVt }).evren(evren);
-const SIRASIZ = new Set(['metin_yazanlari', 'metin_catismalari']);
+const SIRASIZ = new Set(['metin_yazanlari', 'metin_catismalari', 'arama_dizini']); // arama dizininin satır sırası geçmişe bağlı, anlamı yok
 const tablolar = (h: Hizmet, evren: string) => {
   const db = vt(h, evren).db;
   return Object.fromEntries(IZDUSUM_TABLOLARI.map((t) => {

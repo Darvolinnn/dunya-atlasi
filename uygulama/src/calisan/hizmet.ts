@@ -15,6 +15,7 @@ import { VERI_BICIMI, type Islem } from '../alan/islem';
 import { b64Coz, islemSatiri } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ayrilmaYazisi, kokAdaylari } from '../alan/turkce-ek';
+import { aramaKokleri, kokluSozcukYeri } from '../alan/arama-dizini';
 import { bagGorunumuGecerli, bagGorunumuOku, bagVarsayilanMi, type BagGorunumu } from '../alan/bag-gorunumu';
 import { kararGecerli, kurguTuruGecerli, turBul, turGecerli } from '../alan/turler';
 import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, TuvalOgesi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
@@ -1877,8 +1878,30 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     const kelimeSinirinda = (s: string) => s.startsWith(q) || s.includes(' ' + q) || s.includes('-' + q);
     const sonuc: (AramaSonucu & { puan: number })[] = [];
     const satirlar = e.db.selectObjects(
-      `SELECT k.kod, k.tur, k.ad, k.ozet, k.karar, k.lakaplar, k.onceki_adlar, k.okunus, m.duz, m.katli
-       FROM kayitlar k LEFT JOIN metinler m ON m.kayit=k.kod AND m.alan='govde' WHERE k.silindi IS NULL`);
+      'SELECT k.kod, k.tur, k.ad, k.ozet, k.karar, k.lakaplar, k.onceki_adlar, k.okunus FROM kayitlar k WHERE k.silindi IS NULL');
+    // Metinler belleğe alınmaz: düz eşleşme veritabanında, kökle eşleşme arama dizininde aranır (K38, D1).
+    const metindeGecen = new Set<string>();
+    const kokluGecen = new Set<string>();
+    let aranacakKokler: string[] = [];
+    if (metinde) {
+      for (const k of e.db.selectValues("SELECT kayit FROM metinler WHERE alan='govde' AND instr(katli, ?) > 0", [q])) metindeGecen.add(k as string);
+      if (parcalar.length === 1) {
+        aranacakKokler = aramaKokleri(metin);
+        if (aranacakKokler.length) {
+          for (const k of e.db.selectValues(`SELECT DISTINCT kayit FROM arama_dizini WHERE kok IN (${aranacakKokler.map(() => '?').join(',')})`, aranacakKokler)) kokluGecen.add(k as string);
+        }
+      }
+    }
+    const metinParcasi = (kod: string, koklu: boolean): string | undefined => {
+      const r = e.db.selectObject("SELECT duz, katli FROM metinler WHERE kayit=? AND alan='govde'", [kod]);
+      if (!r) return undefined;
+      const duz = r.duz as string, katli = r.katli as string;
+      const yer = koklu ? kokluSozcukYeri(katli, aranacakKokler) : { i: katli.indexOf(q), uzunluk: q.length };
+      if (!yer || yer.i < 0) return undefined;
+      const i = duzKonumu(duz, yer.i);
+      const bas = Math.max(0, i - 40);
+      return (bas > 0 ? '…' : '') + duz.slice(bas, i + yer.uzunluk + 60).replace(/\s+/g, ' ') + (i + yer.uzunluk + 60 < duz.length ? '…' : '');
+    };
     for (const r of satirlar) {
       const adlar: [AramaSonucu['nereden']['tur'], string][] = [['ad', r.ad as string]];
       for (const l of JSON.parse(r.lakaplar as string) as string[]) adlar.push(['lakap', l]);
@@ -1897,12 +1920,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
         else if (k.includes(q)) dene(40 + ek, { tur, metin: ad });
       }
       if (!en && katla(r.ozet as string).includes(q)) dene(30, { tur: 'ozet', metin: r.ozet as string });
-      if (!en && metinde && r.katli && (r.katli as string).includes(q)) {
-        const duz = r.duz as string;
-        const i = duzKonumu(duz, (r.katli as string).indexOf(q));
-        const bas = Math.max(0, i - 40);
-        const parca = (bas > 0 ? '…' : '') + duz.slice(bas, i + q.length + 60).replace(/\s+/g, ' ') + (i + q.length + 60 < duz.length ? '…' : '');
-        dene(20, { tur: 'metin', metin: '' }, false, parca);
+      if (!en && metindeGecen.has(r.kod as string)) dene(20, { tur: 'metin', metin: '' }, false, metinParcasi(r.kod as string, false));
+      else if (!en && kokluGecen.has(r.kod as string)) {
+        const parca = metinParcasi(r.kod as string, true);
+        if (parca) dene(15, { tur: 'metin', metin: '' }, false, parca);
       }
       if (en) {
         const b = en as { puan: number; nereden: AramaSonucu['nereden']; tam: boolean; parca?: string };

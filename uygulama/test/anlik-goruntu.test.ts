@@ -27,7 +27,7 @@ const esitle = (a: Hizmet, b: Hizmet, evren: string) => {
 };
 /** Metin çatışma kayıtları sahne sahne işlendiğinden sahneler arası eklenme sırası yola göre değişebilir; yalnızca
  *  sahne içinde okunur (çatışma listesi kendi sütunlarına göre sıralanır). Bu ikisi içeriğe göre karşılaştırılır. */
-const SIRASIZ = new Set(['metin_yazanlari', 'metin_catismalari']);
+const SIRASIZ = new Set(['metin_yazanlari', 'metin_catismalari', 'arama_dizini']); // arama dizininin satır sırası geçmişe bağlı, anlamı yok
 /** Bütün sonuç tabloları, satır sırasıyla; ikili sütunlar (paketlenmiş belge) yok sayılır. */
 const goruntu = (h: Hizmet, evren: string) => {
   const db = vt(h, evren).db;
