@@ -1,6 +1,6 @@
 // K38: öneri raporundaki açıklar (örnek evrende; adlar uydurmadır).
 import { test, expect, type Page } from '@playwright/test';
-import { editor, sahneAc, yaz } from './yardimci';
+import { editor, kaydedildi, sahneAc, yaz } from './yardimci';
 
 async function ornekEvren(p: Page): Promise<string> {
   await p.goto('/');
@@ -159,4 +159,31 @@ test('sahne imleçten bölünür, geri al ile birleşir; sonraki sahneyle birle�
   await expect(b).toContainText('“Arşiv (2)” sahnesinin metni');
   await b.getByRole('button', { name: 'Birleştir' }).click();
   await expect(editor(p)).toHaveText('Lale çekmeceyi açtı.Masada bir şişe duruyordu.Kimse yoktu.');
+});
+
+test('sürüm geçmişinde fark görünür ve tek paragraf geri alınır', async ({ page: p }) => {
+  const adres = await sahneAc(p, 'Arşiv');
+  await yaz(p, 'Merdivenler buz gibiydi.');
+  await p.keyboard.press('Enter');
+  await p.keyboard.type('Lale girdi.');
+  await kaydedildi(p);
+  // İkinci sürüm: ilk paragraf değişir.
+  await editor(p).locator('> p').first().click();
+  await p.keyboard.press('End');
+  for (let i = 0; i < 'buz gibiydi.'.length; i++) await p.keyboard.press('Backspace');
+  await p.keyboard.type('soğuktu.');
+  await kaydedildi(p);
+  await p.goto(adres.replace(/\/yaz\//, '/k/'));
+  await p.getByRole('button', { name: 'Sürüm geçmişi' }).click();
+  // En yeni ikinci sürüm; ondan önceki metin sürümü.
+  await p.locator('.surum-gecmisi').getByRole('button', { name: 'Metni göster' }).nth(1).click();
+  const fark = p.locator('.surum-farki');
+  await expect(fark.locator('del')).toHaveText('buz gibiydi.');
+  await expect(fark.locator('ins')).toHaveText('soğuktu.');
+  await expect(fark).toContainText('1 paragraf değişmiş');
+  await fark.getByRole('tab', { name: 'Yan yana' }).click();
+  await expect(fark).toHaveClass(/yan-yana/);
+  await fark.getByRole('button', { name: 'Bu paragrafı geri al' }).click();
+  await expect(fark).toContainText('fark yok');
+  await expect(editor(p)).toHaveText('Merdivenler buz gibiydi.Lale girdi.');
 });

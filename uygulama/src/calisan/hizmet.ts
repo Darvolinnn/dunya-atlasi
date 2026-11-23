@@ -96,6 +96,10 @@ import * as kimlik from './kimlik';
 import * as parca from './baglam-parcasi';
 import * as metinKul from './metin-kullanim';
 import * as cerrahi from './sahne-cerrahisi';
+import { EditorState } from 'prosemirror-state';
+import type { Node as PmNode } from 'prosemirror-model';
+import { pmDocFromSpans, pmNodeToSpans } from '@automerge/prosemirror';
+import { metinSemasi } from '../alan/metin-sema';
 import * as gecis from './gecis';
 import type { BaglamParcasiTanimi, GecisSartiGirdisi, KullanimBicimi } from '../veri/api';
 import type { DairInancTanimi } from '../veri/api';
@@ -1869,6 +1873,31 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       this.yaz(evren, [{ tur: 'metin', veri: { kayit, alan, basliklar: sonra, temel: simdiki, geriYukleme: true }, ikili }], [kayit]);
       return { basliklar: sonra, degisti: true };
     } finally { A.free(yeni); }
+  }
+
+  /**
+   * Tek paragrafı eski sürümdeki hâline döndürür (K38): `eski` ve `yeni` ikisi verilirse şimdiki `yeni`. paragraf
+   * eski `eski`. paragrafla değişir; yalnız `yeni` verilirse o paragraf kaldırılır; yalnız `eski` verilirse eski
+   * paragraf şimdiki metnin `yer`. sırasına geri konur. Metnin geri kalanına dokunulmaz.
+   */
+  metinParagrafGeriAl({ evren, kayit, alan, basliklar, temel, eski = null, yeni = null, yer = null }: {
+    evren: string; kayit: string; alan: string; basliklar: Basliklar; temel: Basliklar; eski?: number | null; yeni?: number | null; yer?: number | null;
+  }) {
+    const d = this.belge(this.evren(evren), kayit, alan);
+    if (!Array.isArray(temel) || JSON.stringify([...A.getHeads(d)].sort()) !== JSON.stringify([...temel].sort())) throw new Error('Metin bu arada değişti; karşılaştırmayı yeniden açın.');
+    if (!Array.isArray(basliklar) || !basliklar.every((h) => typeof h === 'string' && A.hasHeads(d, [h]))) throw new Error('Metnin sürümü bulunamadı.');
+    const belgeYap = (x: Spans) => pmDocFromSpans(metinSemasi, x as never);
+    const simdi = belgeYap(A.spans(d, ['t']) as Spans), once = belgeYap(A.spans(A.view(d, basliklar), ['t']) as Spans);
+    const sira = (n: number | null, b: PmNode, ust = 0) => (n !== null && Number.isInteger(n) && n >= 0 && n < b.childCount + ust ? n : null);
+    const e = sira(eski, once), y = sira(yeni, simdi), r = sira(yer, simdi, 1);
+    const konum = (b: PmNode, n: number) => { let k = 0; for (let i = 0; i < n; i++) k += b.child(i).nodeSize; return k; };
+    let tr = EditorState.create({ doc: simdi }).tr;
+    if (e !== null && y !== null) tr = tr.replaceWith(konum(simdi, y), konum(simdi, y + 1), once.child(e));
+    else if (y !== null) tr = simdi.childCount > 1 ? tr.delete(konum(simdi, y), konum(simdi, y + 1)) : tr.replaceWith(0, simdi.content.size, metinSemasi.schema.node('paragraph'));
+    else if (e !== null && r !== null) tr = tr.insert(konum(simdi, r), once.child(e));
+    else throw new Error('Geri alınacak paragraf bulunamadı.');
+    const g = this.kullanimBaglami(evren).metinGirdisi(kayit, alan, pmNodeToSpans(metinSemasi, tr.doc) as Spans);
+    if (g) this.yaz(evren, [g], [kayit]);
   }
 
   // ---------- Arama (§18 arama ve sıralama) ----------

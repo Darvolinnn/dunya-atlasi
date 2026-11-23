@@ -1626,6 +1626,7 @@ export interface Istekler {
   metinKullanimGuncelle(a: { evren: string; kod: string }): void;
   metinKullanimTurev(a: { evren: string; kod: string }): void;
   metinKullanimTasi(a: { evren: string; kod: string; hedef: string }): void;
+  metinParagrafGeriAl(a: { evren: string; kayit: string; alan: string; basliklar: string[]; temel: string[]; eski?: number | null; yeni?: number | null; yer?: number | null }): void;
   sahneBolOnizle(a: { evren: string; sahne: string; konum: number; temel: string[] }): BolmeOnizlemesi;
   sahneBol(a: { evren: string; sahne: string; konum: number; temel: string[]; ad?: string; sonGozlemler: 'kalsin' | 'gecsin' }): { yeni: string; bitisik: boolean };
   sonrakiSahne(a: { evren: string; sahne: string }): { kod: string; ad: string } | null;

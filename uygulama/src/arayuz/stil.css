@@ -1571,3 +1571,14 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .sahne-bolme .alan { display: flex; flex-direction: column; gap: 4px; }
 .sahne-bolme-secim { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .sahne-bolme .satir.sag { justify-content: flex-end; }
+
+/* Sürüm farkı (K38) */
+.surum-farki { display: flex; flex-direction: column; gap: 8px; }
+.surum-farki del { color: var(--tehlike); text-decoration: line-through; background: color-mix(in srgb, var(--tehlike) 10%, transparent); }
+.surum-farki ins { color: var(--basari); text-decoration: none; background: color-mix(in srgb, var(--basari) 12%, transparent); border-bottom: 1px solid var(--basari); }
+.fark-metni { font: 1.0625rem/1.7 var(--metin-yazi); }
+.fark-paragrafi { display: grid; grid-template-columns: 1fr 150px; gap: 14px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--cizgi); }
+.yan-yana .fark-paragrafi { grid-template-columns: 1fr 1fr 150px; }
+.fark-paragrafi.ayni > div:not(.fark-eylem) { opacity: 0.6; }
+.fark-eylem { font-size: 0.8125rem; color: var(--metin-2); text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+@media (max-width: 700px) { .fark-paragrafi, .yan-yana .fark-paragrafi { grid-template-columns: 1fr; } .fark-eylem { align-items: flex-start; text-align: left; } }

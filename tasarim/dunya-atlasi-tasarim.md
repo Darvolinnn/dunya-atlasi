@@ -912,6 +912,7 @@ Dört sürüm ayrıdır: **uygulama sürümü**, **veri biçimi sürümü**, **k
 - **Geri almanın türleri:** yerel geri al · eşitlenmiş bir değişikliğin tersini yeni işlem olarak yapmak (başka cihazın sonraki doğru işlemleri silinmez) · eski bir yedeği önce ayrı bir **kurtarma alanında** açıp incelemek ve ancak sonra mevcut evrenin yerine koymak. Dışarı yayımlanmış bir wikinin kopyası geri al düğmesiyle geri çağrılamaz.
 - **Çevrimdışı hazırlık:** "Bu evren bu cihazda tam hazır mı?" sorusu cevaplanır: metinler, haritalar, görseller ve ekler indirilmiş mi (cihaz politikası §10.12)? İndirilmemiş harita ile silinmiş harita aynı mesajı vermez.
 - **Kayıt başına sürüm geçmişi** ve **çöp kutusu:** Silinen kayıt bağlantıları ve ilişkileriyle geri gelir.
+- **Sürüm farkı (K38):** sürüm geçmişinde metnin eski bir hâli seçilince şimdiki metinle karşılaştırılır: paragraflar önce bütün olarak eşlenir, aradaki değişenler sırayla eşleşip sözcük sözcük gösterilir (silinen kırmızı ve üstü çizili, eklenen yeşil). "İç içe" ve "Yan yana" görünüş; seçim cihazda hatırlanır. Değişen paragrafın yanında "Bu paragrafı geri al", yeni paragrafın yanında "Kaldır", silinmiş paragrafın yanında "Geri koy" durur; yalnız o paragraf değişir, geri kalanına dokunulmaz, iş yeni bir sürüm olarak eklenir. "Bütün sahneyi bu sürüme döndür" eskisi gibidir.
 
 ### 10.9 Tarayıcı depolaması
 
