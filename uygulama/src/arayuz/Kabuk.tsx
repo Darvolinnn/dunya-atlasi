@@ -10,6 +10,7 @@ import { git } from './Uygulama';
 import { DurumOzeti } from './Esitleme';
 import { uzakGorunumMu } from '../alan/turler';
 import { KurguBaglami } from './kurgu';
+import { useBagGorunumuUygula } from './BagGorunumu';
 
 /** İnceleme görünümleri (§7): aynı verinin farklı çizimleri. */
 export const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy', 'Soy ağacı'], ['neden', 'Neden–sonuç'], ['durumlar', 'Durum geçmişi'],
@@ -27,8 +28,8 @@ const GORUNUM_ADI = new Map<string, string>(GORUNUMLER);
 export const gorunumMu = (s: string) => GORUNUMLER.some(([g]) => g === s);
 
 /** Ana sayfalar ve "Diğer" altındakiler; komut paleti de bu listeyi kullanır. */
-export const ANA_SAYFALAR = [['yaz', 'Yaz'], ['masa', 'Genel bakış'], ['kayitlar', 'Kayıtlar'], ['terimler', 'Sözlük'], ['haritalar', 'Haritalar'], ['takvim', 'Takvim'], ['gorunumler', 'Grafikler ve araçlar'], ['inceleme', 'Uyarılar']] as const;
-export const DIGER_SAYFALAR = [['masalar', 'Konu dosyaları'], ['meseleler', 'Karar bekleyenler'], ['sablonlar', 'Şablonlar'], ['bahsedilen', 'Henüz yazılmayanlar'],
+export const ANA_SAYFALAR = [['yaz', 'Yaz'], ['masa', 'Genel bakış'], ['kayitlar', 'Kayıtlar'], ['terimler', 'Sözlük'], ['haritalar', 'Haritalar'], ['takvim', 'Takvim'], ['tuval', 'Pano'], ['gorunumler', 'Grafikler ve araçlar'], ['inceleme', 'Uyarılar']] as const;
+export const DIGER_SAYFALAR = [['masalar', 'Konu dosyaları'], ['meseleler', 'Karar bekleyenler'], ['sablonlar', 'Şablonlar'], ['gorunum', 'Görünüm'], ['bahsedilen', 'Henüz yazılmayanlar'],
   ['cop', 'Çöp kutusu'], ['gecmis', 'Değişiklik geçmişi'], ['surumler', 'Kayıtlı anlar'], ['yedek', 'Yedek']] as const;
 
 let sonGorunum = 'cizelge';
@@ -62,6 +63,7 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
   const [digerAcik, setDigerAcik] = useState(() => oku(digerAnahtari) === '1' || DIGER_SAYFALAR.some(([k]) => k === etkin));
   useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then((b) => { bilgiBellegi.set(evren, b); setBilgi(b); }, () => {}); }, [evren, surum]);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren) setSurum((s) => s + 1); }), [evren]);
+  useBagGorunumuUygula(istemci, evren, bilgi?.bagGorunumu, surum);
   if (gorunumMu(etkin)) sonGorunum = etkin;
   const icRef = useSayfaGecisi(`${etkin}/${acik ?? ''}`);
 

@@ -28,6 +28,8 @@ import { MasaPusulasi, MeseleSekmesi, SablonlarSekmesi } from './Sablon';
 
 import { SayfaYardimi } from './SayfaYardimi';
 import { OlayOrgusuGorunumu } from './OlayOrgusu';
+import { GorunumSayfasi } from './BagGorunumu';
+import { TuvalSayfasi } from './Tuval';
 import { ANA_SAYFALAR, DIGER_SAYFALAR, EvrenKabugu, GORUNUMLER, gorunumMu } from './Kabuk';
 
 const SAYFA_ADLARI = new Map<string, string>([...ANA_SAYFALAR, ...DIGER_SAYFALAR, ...GORUNUMLER]);
@@ -45,7 +47,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
   if (!bilgi) return <EvrenKabugu istemci={istemci} evren={kod} etkin={sekme}><main class="sayfa" aria-busy="true"><p class="soluk gecikmeli">Açılıyor…</p></main></EvrenKabugu>;
   const baslik = sekme === 'masa' ? null : SAYFA_ADLARI.get(sekme) ?? null;
   // Açık harita bütün genişliği kullanır; başlığı haritanın kendi satırındadır (taslak 4A).
-  const haritaAcik = sekme === 'haritalar' && !!alt;
+  const haritaAcik = (sekme === 'haritalar' && !!alt) || sekme === 'tuval';
 
   return (
     <EvrenKabugu istemci={istemci} evren={kod} etkin={sekme}>
@@ -89,6 +91,8 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           : sekme === 'gezinti' || sekme === 'pano' ? <DerlemeSekmesi istemci={istemci} evren={kod} tur={sekme} secili={alt} surum={surum} />
           : sekme === 'takvim' ? <TakvimSayfasi istemci={istemci} evren={kod} />
           : sekme === 'terimler' ? <TerimSozlugu istemci={istemci} evren={kod} />
+          : sekme === 'tuval' ? <TuvalSayfasi istemci={istemci} evren={kod} secili={alt} />
+          : sekme === 'gorunum' ? <GorunumSayfasi istemci={istemci} evren={kod} kayitli={bilgi.bagGorunumu} saltOkunur={bilgi.bag?.tur === 'surum'} />
           : sekme === 'sablonlar' ? <SablonlarSekmesi istemci={istemci} evren={kod} tur={alt} />
           : <Masa istemci={istemci} evren={kod} surum={surum} ekler={<MasaPusulasi istemci={istemci} evren={kod} kayitSayisi={bilgi.kayitSayisi} />} />}
       </main>

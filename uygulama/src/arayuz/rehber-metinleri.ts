@@ -560,4 +560,38 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
     ipuclari: ['Dosyadan eklenen görsel hiçbir kayda bağlanmaz.'],
   },
+  terimler: {
+    baslik: 'Sözlük',
+    ne: ['Evreninizde uydurduğunuz kelimeler tek sayfada, alfabe sırasıyla. Üç yerden gelir: “Terim / kelime” türündeki kayıtlar, “sözlük” etiketi taşıyan herhangi bir kayıt ve dil kayıtlarının sözcükleri.', 'Yazarken sözlükteki kelimelerin altı noktalı çizilir; üstüne gelince (tablette dokununca) anlamı küçük bir kartta görünür.'],
+    neZaman: 'Bir kelimeyi uydurduğunuzda, ya da bir kelimenin ne anlama geldiğini ve metinde ne kadar geçtiğini görmek istediğinizde.',
+    adimlar: [
+      '“+ Kelime ekle” ile kelimeyi, sözcük türünü, varsa dilini ve anlamını yazın.',
+      'Var olan bir kaydı (eşya, yer, ritüel) sözlükte göstermek için “Kayıttan al…” ile seçin.',
+      'Üstteki harflere dokunarak o harfe gidin; arama kutusu kelimede ve anlamında arar.',
+    ],
+    ipuclari: ['Kelime metinde ekli de yazılsa (velaşinini) bulunur.', '“Sözlükten çıkar” kaydı silmez, yalnız sözlükten kaldırır.'],
+  },
+  gorunum: {
+    baslik: 'Görünüm',
+    ne: ['Metindeki bağlantıların rengini ve biçimini seçtiğiniz sayfa. Seçim evrene yazılır; bütün cihazlarınızda aynı görünür.'],
+    neZaman: 'Bağlantılar metinde fazla ya da az göze çarpıyorsa, ya da kişileri, yerleri ayrı renkte görmek istediğinizde.',
+    adimlar: [
+      'Bir renk seçin; “Türüne göre” her bağlantıyı bağlandığı kaydın tür grubunun rengiyle boyar.',
+      'Vurgulu zemin, kalın ve altı çizili biçimlerinden istediklerinizi işaretleyin.',
+      'Açık ve koyu temadaki önizlemeye bakıp “Kaydet”e basın.',
+    ],
+    ipuclari: ['PDF ve Word çıktısı bu seçimden etkilenmez.'],
+  },
+  tuval: {
+    baslik: 'Pano',
+    ne: ['Serbest bir tuval: kayıt kartlarını, not kâğıtlarını, yazıyı, konuşma balonlarını, şekilleri, okları, görselleri, çıkartmaları ve kalemle çizimi istediğiniz yere koyarsınız. Evrende istediğiniz kadar pano olabilir.'],
+    neZaman: 'Bir sırrı, bir kuşatmayı ya da karakterlerin birbirine ne yaptığını gözünüzün önünde düşünmek istediğinizde.',
+    adimlar: [
+      'Alttaki çubuktan bir araç seçin: “Not”, “Yazı”, “Balon” ve “Şekil” için boş bir yere dokunun; “Kart” bir kayıt seçtirir.',
+      'Bir öğeyi sürükleyerek taşıyın; köşelerinden boyutlayın, üstteki yuvarlak tutamakla döndürün. Yazıyı değiştirmek için iki kez dokunun.',
+      '“Ok” ile önce okun çıkacağı, sonra gideceği öğeye dokunun; okun yazısını sağdaki panelden yazın.',
+      '“Kalem” ile fareyle ya da kalemle çizin.',
+    ],
+    ipuclari: ['Ok yalnız panodadır; kayıtlar arasında ilişki kurmaz.', 'Boş yeri sürükleyince pano kayar; tekerlekle ya da iki parmakla yakınlaşır. “Sığdır” her şeyi ekrana getirir.', 'Ctrl+Z son değişikliği geri alır, Delete seçili öğeyi kaldırır.'],
+  },
 };
