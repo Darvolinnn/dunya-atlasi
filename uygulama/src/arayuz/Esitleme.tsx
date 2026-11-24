@@ -359,7 +359,7 @@ export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
                   try { await istemci.iste('evreniIndir', { kod: u.kod }); git(`/e/${u.kod}`); } finally { setIndiriliyor(null); }
                 })}>{indiriliyor === u.kod ? 'İndiriliyor…' : 'Bu cihaza indir'}</button>
                 <button class="dugme sade kucuk" disabled={!!indiriliyor} onClick={() => {
-                  if (!onayla(`“${u.ad}” Drive'dan silinsin mi?\n\nHiçbir cihazda olmadığı için evren tamamen silinir ve geri getirilemez.`)) return;
+                  if (!onayla(`“${u.ad}” Drive'dan silinsin mi?\n\nDrive'daki kopyası, deneme kopyaları ve Drive yedekleri silinir; geri getirilemez. Uzun süredir açılmayan bir cihazda kopyası kalmışsa o kopya durur.`)) return;
                   void calistir(async () => { await istemci.iste('uzakEvreniSil', { kod: u.kod }); setUzak((x) => x && x.filter((y) => y.kod !== u.kod)); });
                 }}>Drive'dan sil</button>
               </div>
