@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { Hizmet } from '../src/calisan/hizmet';
 import { EvrenVt } from '../src/calisan/evren-vt';
 import { BellekTasiyici } from '../src/calisan/bellek-tasiyici';
+import { SILME_BEKLEMESI } from '../src/calisan/esitleme';
 
 let sqlite3: Awaited<ReturnType<typeof sqlite3InitModule>>;
 beforeAll(async () => { sqlite3 = await sqlite3InitModule(); });
@@ -141,7 +142,11 @@ describe('deneme kopyalarının eşitlenmesi (§9.7, §10)', () => {
     await m.h.esitle();
     await expect(m.h.uzakEvreniSil({ kod: evren })).rejects.toThrow(/bu cihazda/);
     expect((await t.h.uzakEvrenler()).map((u) => u.ad).sort()).toEqual(['Fazla', 'Kalan']);
-    await t.h.uzakEvreniSil({ kod: evren });
+    // Masaüstü az önce eşitledi: evren orada hâlâ olabilir, silinmez.
+    await expect(t.h.uzakEvreniSil({ kod: evren })).rejects.toThrow(/eşitlendi; orada hâlâ/);
+    const gercek = Date.now.bind(Date);
+    const zaman = vi.spyOn(Date, 'now').mockImplementation(() => gercek() + SILME_BEKLEMESI + 1000);
+    try { await t.h.uzakEvreniSil({ kod: evren }); } finally { zaman.mockRestore(); }
     expect((await t.h.uzakEvrenler()).map((u) => u.ad)).toEqual(['Kalan']);
     expect((await drive.listele({})).some((d) => d.ozellikler.evren === evren || d.ozellikler.ana === evren)).toBe(false);
     expect((await drive.listele({ evren: kalan })).length).toBeGreaterThan(0);
