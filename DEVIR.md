@@ -383,7 +383,7 @@ Kullanıcı 23 Kasım'da sıradaki işleri sıraladı, 24 Kasım'da "bunları s�
 - Arayüz: Eşitleme sayfasında tablet için tek cümle ("Google sayfası tarayıcıda açılır; izin verdikten sonra “Dünya Atlası'na dön” düğmesine dokunun…").
 - [x] Kod, Rust sınaması (`tablet_kasasi_dosyada_saklar_okur_siler`).
 - [x] APK derlemesi (`main` `1d25876`, doğru istemci kimliği gömülü) tablete kuruldu (24 Kasım 18:18 tablet saati).
-- [ ] Tablette Google girişi ve eşitleme denemesi (kullanıcının dokunması gerekir: Google hesabı ve izin).
+- [x] Tablette Google girişi (24 Kasım 18:36 tablet saati, `b7bfbe8` deneme sürümü): "bağlı", Drive'daki evrenler "Drive'da olup bu cihazda olmayan evrenler" listesinde görünüyor (ekrandan doğrulandı). [ ] Bir evreni tablete indirip iki yönlü eşitleme denemesi.
 - 24 Kasım 18:24 (tablet saati) denemesi: tarayıcı (Samsung Internet) açıldı, izin verildi, kod uygulamaya geldi; ama jeton isteği "Google'a ulaşılamadı" verdi. Neden: Android 17 arka plandaki uygulamanın internetini keser (`dumpsys netpolicy`: `blocked=APP_BACKGROUND`, logcat "Destroyed live tcp sockets for uids={10429}"). Düzeltme: `google.rs` izin kodunu aldıktan sonra bağlantı hatasında jeton isteğini 3 dakikaya kadar 2 sn arayla yeniler (`BAGLANTI_BEKLEME`); kullanıcı "Dünya Atlası'na dön"e dokununca uygulama öne gelir ve istek geçer.
 
 **2. Çalışma devri (F47, kayıtlı veriye dayanan kısmı; tasarım §5.9):**
