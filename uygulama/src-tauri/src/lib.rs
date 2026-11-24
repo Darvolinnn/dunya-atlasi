@@ -16,9 +16,7 @@ async fn google_izin<R: tauri::Runtime>(app: tauri::AppHandle<R>, durum: tauri::
     let Some(ist) = google::derlemedeki_istemci() else { return Ok(None) };
     let sessiz = sessiz.unwrap_or(false);
     let izin = durum
-        .izin(&ist, &google::Uclar::default(), eposta, sessiz, |adres| {
-            open::that_detached(adres).map_err(|_| "Tarayıcı açılamadı. Varsayılan tarayıcınızı denetleyin.".to_string())
-        })
+        .izin(&ist, &google::Uclar::default(), eposta, sessiz, |adres| tarayicida_ac(&app, adres))
         .await?;
     // İzin tarayıcıda verildi; program yeniden öne gelsin.
     #[cfg(desktop)]
@@ -29,6 +27,19 @@ async fn google_izin<R: tauri::Runtime>(app: tauri::AppHandle<R>, durum: tauri::
         }
     }
     Ok(izin)
+}
+
+/// Google'ın izin sayfası cihazın tarayıcısında açılır. Android'de uygulamanın kendi sayfasında açılamaz (Google izin
+/// vermez); tarayıcı uygulaması açılır, izin verilince sayfa uygulamaya geri götürür.
+#[cfg(desktop)]
+fn tarayicida_ac<R: tauri::Runtime>(_: &tauri::AppHandle<R>, adres: &str) -> Result<(), String> {
+    open::that_detached(adres).map_err(|_| "Tarayıcı açılamadı. Varsayılan tarayıcınızı denetleyin.".to_string())
+}
+
+#[cfg(mobile)]
+fn tarayicida_ac<R: tauri::Runtime>(app: &tauri::AppHandle<R>, adres: &str) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    app.opener().open_url(adres, None::<&str>).map_err(|_| "Tarayıcı açılamadı. Tablette bir tarayıcı (Chrome) kurulu olmalı.".to_string())
 }
 
 /// Sınamalarda yedek klasörü Belgeler yerine buradadır.
@@ -202,10 +213,17 @@ pub fn run() {
             .build(),
     );
 
+    #[cfg(mobile)]
+    let kurucu = kurucu.plugin(tauri_plugin_opener::init());
+
     kurucu
-        .manage(google::Durum::default())
         .invoke_handler(istekler!())
         .setup(|app| {
+            // Google yenileme anahtarı: Windows'ta parola kasası; tablette uygulamanın kendi veri klasörü.
+            #[cfg(mobile)]
+            app.manage(google::Durum::yeni(Box::new(google::DosyaKasasi(app.path().app_data_dir()?.join("google-yenileme")))));
+            #[cfg(desktop)]
+            app.manage(google::Durum::default());
             ana_pencere(app)?;
             Ok(())
         })

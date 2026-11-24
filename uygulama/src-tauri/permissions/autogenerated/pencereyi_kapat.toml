@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-pencereyi-kapat"
+description = "Enables the pencereyi_kapat command without any pre-configured scope."
+commands.allow = ["pencereyi_kapat"]
+
+[[permission]]
+identifier = "deny-pencereyi-kapat"
+description = "Denies the pencereyi_kapat command without any pre-configured scope."
+commands.deny = ["pencereyi_kapat"]

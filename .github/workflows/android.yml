@@ -21,6 +21,9 @@ jobs:
       run:
         working-directory: uygulama
     env:
+      # Google girişi (masaüstü istemcisi; Windows ile aynı, google.rs). Yoksa tablette Google girişi çalışmaz.
+      GOOGLE_MASAUSTU_ISTEMCI: ${{ secrets.GOOGLE_MASAUSTU_ISTEMCI }}
+      GOOGLE_MASAUSTU_GIZLI: ${{ secrets.GOOGLE_MASAUSTU_GIZLI }}
       IMZA_DEPOSU: ${{ secrets.ANDROID_IMZA_DEPOSU }}
       IMZA_PAROLASI: ${{ secrets.ANDROID_IMZA_PAROLASI }}
     steps:
