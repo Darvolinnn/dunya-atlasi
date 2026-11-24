@@ -47,7 +47,7 @@ export function DegisiklikMasasiPaneli({ istemci, evren, kayit, kapat }: { istem
       {m && <>
         <p class="kucuk">{m.olay.ad}: {m.once} → <strong>{m.sonra}</strong></p>
         <div class="etki-grubu">
-          <strong class="kucuk">Hesapla değişenler ({m.hesap.length})</strong>
+          <strong class="kucuk">Yeniden hesaplanan tarihler ve yaşlar ({m.hesap.length})</strong>
           <p class="soluk kucuk">Bu olaya bağlı tarihler ve yaşlar. Korumak istediklerinizi işaretleyin. Korunan tarih, şimdiki değeriyle yazılı bir tarih olarak kalır.</p>
           {m.hesap.length > 0 && <ul class="kucuk masa-listesi">{m.hesap.map((x, i) => (
             <li key={(x.anahtar ?? x.kod) + i}>

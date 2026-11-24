@@ -572,7 +572,7 @@ function YazarKaydiFormu({ istemci, evren, tur, bagla = null }: { istemci: Istem
   const [ad, setAd] = useState('');
   const [onemli, setOnemli] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
-  const ipucu = tur === 'acik_mesele' ? 'Yeni açık mesele (soru olarak)' : 'Hangi soruya karar verdiniz?';
+  const ipucu = tur === 'acik_mesele' ? 'Yeni açık mesele (soru olarak)' : 'Hangi konuda karar verdiniz?';
   return (
     <form class="satir" onSubmit={(e) => {
       e.preventDefault();

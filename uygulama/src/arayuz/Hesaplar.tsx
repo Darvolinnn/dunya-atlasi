@@ -67,7 +67,7 @@ const gunYazisi = (n: number) => `${Math.abs(n).toLocaleString('tr-TR')} gün`;
 const aralikGun = (f: { enAz: number; enCok: number }) => {
   const once = f.enCok < 0;
   const [a, b] = once ? [-f.enCok, -f.enAz] : [f.enAz, f.enCok];
-  if (f.enAz < 0 && f.enCok > 0) return `Hangisinin önce geldiği belli değil: ikinci tarih ilkinden ${gunYazisi(-f.enAz)} önce ile ${gunYazisi(f.enCok)} sonra arasında olabilir.`;
+  if (f.enAz < 0 && f.enCok > 0) return `Hangisinin önce olduğu belli değil. İkinci tarih, ilk tarihin ${gunYazisi(-f.enAz)} öncesiyle ${gunYazisi(f.enCok)} sonrası arasında olabilir.`;
   const sayi = a === b ? gunYazisi(a) : `${a.toLocaleString('tr-TR')}–${gunYazisi(b)}`;
   return `${sayi} ${once ? 'önce' : 'sonra'}`;
 };

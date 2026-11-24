@@ -48,7 +48,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       'Başka bir cihazda oluşturduğunuz evren “Drive’da olup bu cihazda olmayan evrenler” altında görünür; buradan bu cihaza alabilirsiniz.',
     ],
     ipuclari: [
-      'Google izni yaklaşık bir saat geçerlidir. Süresi dolunca ekranın üstünde “eşitlemek için tıklayın” uyarısı çıkar; bu arada yazmaya devam edebilirsiniz, hiçbir şey kaybolmaz.',
+      'Windows ve tablet uygulaması Google bağlantısını hatırlar ve izni kendisi yeniler; yenileyemezse ekranın üstünde “eşitlemek için tıklayın” uyarısı çıkar. Tarayıcıda izin yaklaşık bir saat geçerlidir; süresi dolunca aynı uyarı çıkar. Bu arada yazmaya devam edebilirsiniz; değişiklikler bu cihazda kaydedilir.',
       'Aynı bilgisayardaki iki farklı tarayıcı ayrı cihaz sayılır.',
       'İki cihazda aynı şey farklı değiştirilirse program birini seçmez; Uyarılar sayfasında ikisini yan yana gösterir, siz seçersiniz.',
     ],
@@ -212,7 +212,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       '“Bugün burada neyi çözmeye çalışıyorum?” sorusuna kısa bir cevap yazın.',
       'İsterseniz bir tarih aralığı seçin; dosya bu aralıktaki olayları gösterir.',
       'Kayıtları ve haritaları dosyaya bağlayın, notlarınızı yazın.',
-      'Bir varsayımı denemek için bir varsayım paketi oluşturup dosyaya seçin; hesaplar o varsayımlarla yapılır.',
+      'Bir varsayımı denemek için bir varsayım paketi oluşturup bu konu dosyası için seçin; hesaplar o varsayımlarla yapılır.',
     ],
     ipuclari: [
       'İki seçenekten yalnızca biri doğru olabiliyorsa (ör. köprü açık ya da kapalı) onları iki ayrı pakette tutun.',
@@ -421,7 +421,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
     neZaman: 'Bir sahnenin gecesinde ayın nasıl göründüğünü bilmek ya da önemli bir gök olayına uygun tarih aramak istediğinizde.',
     adimlar: [
-      '“Gökyüzü tanımı”nda her ay için adını, dönemini (kaç günde bir dolunay olduğu) ve bilinen bir başlangıç tarihini girin.',
+      '“Gökyüzü tanımı”nda her uydu için adını, evre döngüsünü (kaç günde bir dolunay olduğu) ve bilinen bir başlangıç tarihini girin.',
       'İsterseniz mevsimleri ve gelgit notlarını ekleyin, sonra “Tanımı kaydet”e basın.',
       '“Tarihteki gökyüzü” bölümüne bir tarih yazıp “Gökyüzünü göster”e basın.',
       '“Çakışma ara” ile bir tarih aralığında istediğiniz koşulların birlikte olduğu günleri bulun.',
