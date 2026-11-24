@@ -233,6 +233,8 @@ export interface KitapSonuAciklar {
   sorular: { iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null }; ipucu: number; yaniltmaca: number; destekler: number;
     sonra: { eser: KisaKayit; sahne: KisaKayit; sira: number } | null }[];
 }
+/** Kesintisiz okumada bir sahne (K39). */
+export interface OkumaParcasi { sahne: KisaKayit; bolum: { kod: string; ad: string; sira: number } | null; spans: Spans }
 /** Kitap sonunda durum (K39): eserin son sahnesinin tarihinde kayıtlı olanlar. */
 export interface KitapSonuDurumu {
   sonSahne: KisaKayit | null; tarih: EvrenTarihi | null;
@@ -1332,6 +1334,7 @@ export interface Istekler {
   alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
   kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;
   kitapSonuDurumu(a: { evren: string; eser: string }): KitapSonuDurumu;
+  okumaMetni(a: { evren: string; kapsam: string }): OkumaParcasi[];
   etkinCalisma(a: { evren: string }): KisaKayit | null;
   etkinCalismaYaz(a: { evren: string; kod: string | null }): void;
   simdi(a: { evren: string }): SimdiOnerisi[];

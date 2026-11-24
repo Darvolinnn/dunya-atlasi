@@ -1800,3 +1800,11 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
   border-radius: var(--yaricap); box-shadow: 0 8px 28px rgb(0 0 0 / 0.16); padding: 10px 14px; font-family: var(--metin-yazi, inherit); }
 .onceki-son-kutu p { margin: 0 0 6px; }
 .onceki-son-kutu p:last-child { margin: 0; font-style: italic; }
+
+/* Kesintisiz okuma (K39 #1) */
+.kesintisiz-okuma { max-width: 44rem; }
+.okuma-sahnesi { margin: 0 0 1.6rem; }
+.okuma-bolumu { font-family: var(--metin-yazi); font-size: 1.15rem; margin: 2rem 0 0.8rem; }
+.okuma-sahne-basi { font-size: 0.8rem; letter-spacing: 0.04em; margin: 0 0 0.3rem; }
+.okuma-sahne-basi a { color: var(--metin-2); }
+.okuma-sahnesi + .okuma-sahnesi { border-top: 1px solid var(--cizgi); padding-top: 1rem; }

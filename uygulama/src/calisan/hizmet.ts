@@ -121,7 +121,7 @@ import * as kaliciIz from './kalici-iz';
 import type { KaliciIzTuru } from '../veri/api';
 import * as olcekli from './olcekli';
 import type { OlcekliAraziGirdisi, OlcekliHizKurali, OlcekliOlcekTanimi } from '../veri/api';
-import type { KitapSonuDurumu, MetinEslesmesi, YapiSahnesi } from '../veri/api';
+import type { KitapSonuDurumu, MetinEslesmesi, OkumaParcasi, YapiSahnesi } from '../veri/api';
 import { sayiDegeriMi, sayiGirdisi, sayiMetni } from '../alan/nicelik';
 import { kullaniciIletisi } from './ileti';
 
@@ -2111,6 +2111,20 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       return eser ? anlati.eserYapisi(e, eser.kod).bolumler.find((b) => b.kod === kapsam)?.sahneler ?? [] : [];
     }
     throw new Error('Bir eser ya da bölüm seçin.');
+  }
+  /** Kesintisiz okuma (K39, öneri 1): eserin ya da bölümün sahneleri okuma sırasıyla, metinleriyle. */
+  okumaMetni({ evren, kapsam }: { evren: string; kapsam: string }): OkumaParcasi[] {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kapsam);
+    const tur = e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=?', [kapsam]);
+    const eser = tur === 'eser' ? kapsam : tur === 'bolum' ? anlati.anlatiYeri(e, kapsam).eser?.kod : null;
+    if (!eser) throw new Error('Bir eser ya da bölüm seçin.');
+    const y = anlati.eserYapisi(e, eser);
+    const l: { s: YapiSahnesi; bolum: { kod: string; ad: string; sira: number } | null }[] = [
+      ...(tur === 'eser' ? y.dogrudan.map((s) => ({ s, bolum: null })) : []),
+      ...y.bolumler.filter((b) => tur === 'eser' || b.kod === kapsam).flatMap((b) => b.sahneler.map((s) => ({ s, bolum: { kod: b.kod, ad: b.ad, sira: b.sira } }))),
+    ];
+    return l.map(({ s, bolum }) => ({ sahne: { kod: s.kod, ad: s.ad, tur: 'sahne' }, bolum, spans: A.spans(this.belge(e, s.kod, 'govde'), ['t']) as Spans }));
   }
   /** Düz metin eşleşmeleri; anlam çıkarılmaz (K1). Biçim ya da bağlantı sınırını aşan eşleşme alınmaz. */
   private metinEslesmeleri(e: EvrenVt, kapsam: string, aranan: string, harfDuyarli: boolean) {

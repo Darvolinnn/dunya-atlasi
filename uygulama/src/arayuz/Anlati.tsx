@@ -13,6 +13,7 @@ import { BakisBilgileri } from './Bilgiler';
 import { useTakvim } from './Takvim';
 import { zamanFarki } from '../alan/okuma-zamani';
 import { BulDegistir } from './BulDegistir';
+import { KesintisizOkuma } from './KesintisizOkuma';
 import { git } from './Uygulama';
 import type { AnBilgisi, SahneOkurSirasi } from '../veri/api';
 import { geriAlinabilir } from './onay';
@@ -277,6 +278,7 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
   const [hata, setHata] = useState<string | null>(null);
   const [yeniBolum, setYeniBolum] = useState('');
   const [bulAcik, setBulAcik] = useState(false);
+  const [okuma, setOkuma] = useState(false);
   const takvim = useTakvim(istemci, evren);
   if (!y) return null;
   // Okuma sırasında bir önceki sahnenin tarihi (bölüm sınırını da aşar).
@@ -310,7 +312,13 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
 
   return (
     <section class="eser-yapisi" aria-label="Eserin yapısı">
-      <h2>Bölümler ve sahneler</h2>
+      <div class="satir"><h2 style="margin:0">Bölümler ve sahneler</h2><span class="bosluk" />
+        <div class="secim-grubu" role="group" aria-label="Yapı ya da okuma">
+          <button class="dugme sade kucuk" aria-pressed={!okuma} onClick={() => setOkuma(false)}>Yapı</button>
+          <button class="dugme sade kucuk" aria-pressed={okuma} onClick={() => setOkuma(true)}>Okuma</button>
+        </div>
+      </div>
+      {okuma ? <KesintisizOkuma istemci={istemci} evren={evren} kapsam={vurgu ?? y.eser.kod} /> : <>
       <p class="soluk kucuk">Buradaki sıra okuma sırasıdır ve bölüm numaraları buna göre verilir. Bir sahneyi taşımak evren tarihini değiştirmez.
         {' '}<a href={`#/e/${evren}/orgu/${y.eser.kod}`}>Olay örgüsü masasında aç</a>
         {' · '}<a href="#" onClick={(e) => { e.preventDefault(); setBulAcik(true); }}>{vurgu ? 'Bölümün' : 'Eserin'} metninde bul ve değiştir</a></p>
@@ -353,6 +361,7 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
           </ul>
         </details>
       )}
+      </>}
     </section>
   );
 }

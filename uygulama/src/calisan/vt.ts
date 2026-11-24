@@ -56,7 +56,7 @@ async function ayriHesapla(h: Hizmet, ad: IstekAdi, arg: { evren?: unknown }): P
 }
 
 // Arayüzün çağırabildiği istekler; başka hiçbir yöntem dışarıdan çağrılamaz.
-const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', 'evrenOlustur', 'evrenKaldir', 'ilkAdimlar', 'aracTanitimlari', 'seriler', 'alternatifler', 'kitapSonuAciklar', 'kitapSonuDurumu', 'etkinCalisma', 'etkinCalismaYaz', 'simdi', 'karakterYollari', 'evrenAdlandir', 'kurguTuruYaz', 'tuval', 'tuvalOgeYaz', 'metinBul', 'metinDegistir', 'metinleriGeriYukle', 'gorselOdakYaz', 'gorselOdaklari', 'tuvalOgesiniKaydet', 'tuvalOgeSil', 'bagGorunumuYaz', 'adDizini', 'bagsizAdAyari', 'evrenBilgisi', 'islemGunlugu',
+const IZINLI: ReadonlySet<IstekAdi> = new Set<IstekAdi>(['baslat', 'evrenler', 'evrenOlustur', 'evrenKaldir', 'ilkAdimlar', 'aracTanitimlari', 'seriler', 'alternatifler', 'kitapSonuAciklar', 'kitapSonuDurumu', 'okumaMetni', 'etkinCalisma', 'etkinCalismaYaz', 'simdi', 'karakterYollari', 'evrenAdlandir', 'kurguTuruYaz', 'tuval', 'tuvalOgeYaz', 'metinBul', 'metinDegistir', 'metinleriGeriYukle', 'gorselOdakYaz', 'gorselOdaklari', 'tuvalOgesiniKaydet', 'tuvalOgeSil', 'bagGorunumuYaz', 'adDizini', 'bagsizAdAyari', 'evrenBilgisi', 'islemGunlugu',
   'yogunluk',
   'sozlesmeMaddeleri', 'sozlesmeMaddeYaz', 'sozlesmeMaddeSil', 'sozlesmeMaddeGeriYukle', 'sozlesmeDisaridaYaz', 'eserSozlesmesi', 'sozlesmeHatirlatmalari',
   'haklar', 'hakEkle', 'hakDegistir', 'hakSil', 'hakGeriYukle', 'hakTanimaYaz',
