@@ -254,7 +254,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           {KULLANIM_SAHIPLERI.includes(kayit.tur) && <KullanimMasasiBolumu istemci={istemci} evren={evren} kod={kod} saltOkunur={!!bag} />}
           {kayit.tur === 'eser' && <EserCiktisi istemci={istemci} evren={evren} eser={kod} />}
           {kayit.tur === 'eser' && <YayimBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
-          {kayit.tur === 'eser' && <KurguMontajiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {(kayit.tur === 'eser' || kayit.tur === 'seri') && <KurguMontajiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           {kayit.tur === 'eser' && <UyarlamaBolumu istemci={istemci} evren={evren} eser={kod} surum={surum} />}
           {kayit.tur === 'sahne' && <SahneNiyetleriBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           {kayit.tur === 'makam' && <MakamYurutenleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}

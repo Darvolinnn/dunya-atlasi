@@ -260,9 +260,12 @@ export interface OlayOrgusu {
   karakterler: { kisi: KisaKayit; hucreler: boolean[]; sayi: number }[];
 }
 export interface KurguMontaji {
-  eser: KisaKayit; sahneler: { kod: string; ad: string; sira: number; bolum: string | null }[];
+  /** `seride`: kapsam bir seri; `eser` o zaman serinin kaydıdır, `bolum` "Kitap · Bölüm" biçimindedir. */
+  eser: KisaKayit; seride: boolean; sahneler: { kod: string; ad: string; sira: number; bolum: string | null }[];
   sorular: {
     iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null }; hedef: MontajHedefi | null; okurOgrenir: number | null; uyarilar: string[];
+    /** Okura işaret verilmiş ama bu kapsamda açıklama sahnesi işaretlenmemiş. */
+    askida: boolean;
     olaylar: { sira: number; sahne: KisaKayit; tur: 'ipucu' | 'yaniltmaca' | 'destekler' | 'zayiflatir' | 'aciklama' | 'okur'; secenek: string | null; inanc?: string; gercegi?: boolean }[];
   }[];
   izler: { kayit: KisaKayit; siralar: number[]; enUzunAra: number; sondan: number }[];

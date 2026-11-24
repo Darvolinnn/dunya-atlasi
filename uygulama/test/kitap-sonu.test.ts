@@ -71,3 +71,37 @@ describe('kitap sonunda durum (K39)', () => {
     expect(h.kitapSonuDurumu({ evren, eser: k('Boş', 'eser') }).sonSahne).toBeNull();
   });
 });
+
+describe('kurgu montajı seri kapsamında (K39)', () => {
+  it('kitaplar art arda numaralanır; açıklaması olmayan işaretli soru askıdadır', () => {
+    const dosyalar = new Map<string, Database>();
+    const h = new Hizmet((d) => { let x = dosyalar.get(d); if (!x) { x = new sqlite3.oo1.DB(':memory:'); dosyalar.set(d, x); } return x; }, 'Deneme', 'x');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Hatıra' });
+    const k = (ad: string, tur: string) => h.kayitOlustur({ evren, ad, tur }).kod;
+    const seri = k('Hatıra İmparatorluğu', 'seri');
+    const i = k('Unutulanlar', 'eser'), ii = k('Hatırlayanlar', 'eser');
+    for (const x of [i, ii]) h.anlatiYerlestir({ evren, kod: x, ust: seri });
+    const deniz = k('Deniz', 'karakter');
+    const s = (ad: string, ust: string) => h.anlatiOlustur({ evren, ust, ad, tur: 'sahne' }).kod;
+    const [a1, a2] = [s('Arşivde', i), s('Mühür', i)];
+    const b1 = s('Dönüş', ii);
+    const { kod: q } = h.iddiaEkle({ evren, konu: deniz, soru: 'Deniz’e ne oldu?', secenekler: ['İsyancılarla', 'Öldü'], gercek: 0 });
+    const sec = h.iddialar({ evren }).find((x) => x.kod === q)!.secenekler;
+    h.sahneNiyetleriYaz({ evren, sahne: a1, niyetler: [{ iddia: q, secenek: sec[0].kod, tur: 'destekler' }] });
+    h.iliskiEkle({ evren, tur: 'sahnede', a: deniz, b: a1 });
+    h.iliskiEkle({ evren, tur: 'sahnede', a: deniz, b: b1 });
+    expect(h.kurguMontaji({ evren, eser: i }).sorular[0].askida).toBe(true);
+    let m = h.kurguMontaji({ evren, eser: seri });
+    expect(m.seride).toBe(true);
+    expect(m.sahneler.map((x) => [x.sira, x.ad, x.bolum])).toEqual([[1, 'Arşivde', 'Unutulanlar'], [2, 'Mühür', 'Unutulanlar'], [3, 'Dönüş', 'Hatırlayanlar']]);
+    expect(m.sorular[0].askida).toBe(true);
+    // Yokluk kitap sınırını geçer: Deniz 2. sahnede yok, 3. sahnede (ikinci kitap) yeniden var.
+    expect(m.yokluk[0].hucreler).toEqual([0, 1, 0]);
+    h.sahneNiyetleriYaz({ evren, sahne: b1, niyetler: [{ iddia: q, secenek: sec[0].kod, tur: 'aciklar' }] });
+    m = h.kurguMontaji({ evren, eser: seri });
+    expect(m.sorular[0].askida).toBe(false);
+    expect(m.sorular[0].olaylar.map((o) => [o.sira, o.tur])).toEqual([[1, 'ipucu'], [3, 'aciklama']]);
+    expect(h.kurguMontaji({ evren, eser: i }).sorular[0].askida).toBe(true);
+    void a2;
+  });
+});
