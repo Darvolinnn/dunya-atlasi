@@ -311,13 +311,13 @@ Kullanıcı (23 Kasım) başka bir ajanın 16 maddelik öneri raporunu (I yazma,
 
 Sıra ve adımlar:
 - [ ] **Tablet hataları** (tablet 4. aşamasıyla birlikte): #13 Pano'da kalem aracında parmak da çiziyor (`Tuval.tsx` `asagi`; §12.2'ye aykırı), kalem yan tuşuyla silme; haritada kalemle sürükleyerek bölge/yol çizimi; kat planı ince çizgilere dokunma payı (`SahneYerlesimi.tsx`). #14 bağlantıya dokununca terim kartı + 450 ms sonra özet kartı (tablette doğrulanacak; `sozluk-eklentisi.ts`, `Calisma.tsx`), `[[` listesi alta sığmayınca üste çevrilmiyor (`MetinEditoru.tsx` `konumu`, `BaglantiSecici.tsx`). #15 dikey tablette bağlam paneli metnin altına iniyor (`stil.css` 1100px; çekmece olacak), olay örgüsünde dokunmayla sürükleme.
-- [ ] #5 sahne bağlamında "bu kitapta ilk kez" rozeti, önceki kitapların değişimleri katlı (`Anlati.tsx` `SahneBaglamPaneli`).
-- [ ] #7 okuma sırasında tarih farkı etiketi (aynı gün, +3g, geriye giderse ve geriye dönüş parçası yoksa uyarı rengi; `OlayOrgusu.tsx`, `EserYapisiBolumu`).
-- [ ] #16 pano notunu, yazısını, balonunu ya da şeklini kayda dönüştürme; yeri, boyu ve okları korunur (`Tuval.tsx`; Notlar'daki `nottanKayit` gibi).
-- [ ] #10 yan panelden kayda hızlı ekleme: başka ad, durum, kısa not (`Calisma.tsx` `YanPanel`).
+- [~] (taslak kodlandı, onay bekliyor: `/mnt/project-files/taslaklar/k39/5-kitapta-ilk-kez.png`; `montaj.ts` `seriGorunusu`, `SahneKatilimcisi.kitabaDonus`, `degisimler[].oncekiKitap`) #5 sahne bağlamında "bu kitapta ilk kez" rozeti, önceki kitapların değişimleri katlı (`Anlati.tsx` `SahneBaglamPaneli`).
+- [~] (taslak kodlandı, onay bekliyor: `7-zaman-farki.png`; `alan/okuma-zamani.ts`, `Anlati.tsx` `ZamanEtiketi`, olay örgüsü sütununda `tarih`) #7 okuma sırasında tarih farkı etiketi (aynı gün, +3g, geriye giderse ve geriye dönüş parçası yoksa uyarı rengi; `OlayOrgusu.tsx`, `EserYapisiBolumu`).
+- [~] (taslak kodlandı, onay bekliyor: `16-pano-kayda-donustur.png`; istek `tuvalOgesiniKaydet`, tek işlem grubu) #16 pano notunu, yazısını, balonunu ya da şeklini kayda dönüştürme; yeri, boyu ve okları korunur (`Tuval.tsx`; Notlar'daki `nottanKayit` gibi).
+- [~] (taslak kodlandı, onay bekliyor: `10-yan-panel.png`; `Calisma.tsx` `YanPanelEkle`; ayrıca yan panel sekme adı değişiklikten sonra "…" kalıyordu, düzeltildi) #10 yan panelden kayda hızlı ekleme: başka ad, durum, kısa not (`Calisma.tsx` `YanPanel`).
 - [ ] #2 `-- ` yazınca `— ` (geri alınabilir); önceki sahnenin son paragrafı yazmaya başlayınca da üst şeritten açılabilir.
 - [ ] #1 bölüm/eser için kesintisiz okuma ("Yapı · Okuma"; paragrafa çift tıklayınca o sahneye gider).
-- [ ] #9 görsel odak noktası (küçük karelerde `object-position`; yeni veri alanı, işlem günlüğünden).
+- [~] (taslak kodlandı, onay bekliyor: `9-portre-odagi.png`; işlem `gorsel_odak` evren tablosunda `gorsel_odak:<ad>`, izdüşüm sürümü değişmedi; `gorsel.tsx` `useGorselOdaklari`) #9 görsel odak noktası (küçük karelerde `object-position`; yeni veri alanı, işlem günlüğünden).
 - [ ] #4 eser ya da bölüm içinde düz metin bul ve önizlemeli değiştir; ağaçta sahne durum noktası (istek genişletilmeli).
 - [ ] #6 kitap sonunda durum özeti: odak karakterlerin son yeri ve açık durumları, eşyaların son sahibi, süreklilik defterinde kapanmamış izler.
 - [ ] #3 kalanı: kesilen parçalar çekmecesi ve adlı sürüm.
