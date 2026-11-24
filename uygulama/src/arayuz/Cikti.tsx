@@ -62,6 +62,7 @@ function CiktiDugmeleri({ istemci, evren, eser }: { istemci: Istemci; evren: str
   const [basliklar, setBasliklar] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const [calisiyor, setCalisiyor] = useState<string | null>(null);
+  const [eksikHarf, setEksikHarf] = useState<string[]>([]);
   // Ağaç gelmeden ya da gelemezse çıktı alınmaz: hatırlanan seçim atlanıp bütün eser çıkmasın.
   const [agac, setAgac] = useState<CiktiAgaci | null>(null);
   const [agacHatasi, setAgacHatasi] = useState<string | null>(null);
@@ -85,13 +86,17 @@ function CiktiDugmeleri({ istemci, evren, eser }: { istemci: Istemci; evren: str
 
   const calistir = (ad: string, is: (eser: string) => Promise<void>) => async () => {
     if (!eser) return;
-    setHata(null); setCalisiyor(ad);
+    setHata(null); setEksikHarf([]); setCalisiyor(ad);
     try { await is(eser); } catch (e) { setHata(hataYaz(e)); } finally { setCalisiyor(null); }
   };
   const pdf = calistir('pdf', async (eser) => {
     const r = await istemci.iste('eserKitabi', { evren, eser, sahneBasliklari: basliklar, sahneler });
-    const [{ pdfYaz }, yt] = await Promise.all([import('../alan/pdf'), import('./yazi-tipleri').then((m) => m.kitapYaziTipleri())]);
+    const [{ pdfYaz, pdfdeOlmayanlar }, m] = await Promise.all([import('../alan/pdf'), import('./yazi-tipleri')]);
+    let yt = await m.kitapYaziTipleri();
+    // Literata'da olmayan harf varsa (ses yazısı işaretleri gibi) yedek yazı tipi de gömülür.
+    if (pdfdeOlmayanlar(r.kitap, yt).length) yt = { ...yt, yedek: await m.yedekYaziTipleri() };
     indir(`${r.dosyaKoku}.pdf`, await pdfYaz(r.kitap, yt), 'application/pdf');
+    setEksikHarf(pdfdeOlmayanlar(r.kitap, yt));
   });
   const docx = calistir('docx', async (eser) => {
     const r = await istemci.iste('docxYaz', { evren, eser, sahneBasliklari: basliklar, sahneler });
@@ -154,6 +159,7 @@ function CiktiDugmeleri({ istemci, evren, eser }: { istemci: Istemci; evren: str
       </div>
       {agacHatasi && <p class="hata kucuk">Bölüm ve sahneler okunamadı, çıktı alınamıyor: {agacHatasi}</p>}
       {hata && <p class="hata kucuk" role="alert">{hata}</p>}
+      {eksikHarf.length > 0 && <p class="soluk kucuk" role="status">PDF'in yazı tipinde olmayan karakterler boş çıktı: {eksikHarf.slice(0, 12).join(' ')}{eksikHarf.length > 12 ? ' …' : ''}. Word ve EPUB çıktısında görünürler.</p>}
     </>
   );
 }

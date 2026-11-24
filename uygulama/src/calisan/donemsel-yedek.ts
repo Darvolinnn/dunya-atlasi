@@ -162,7 +162,7 @@ export class DonemselYedek {
     this.x.kurulum.ayarYaz(`${this.onek}_gun:${evren}`, son.gun);
   }
 
-  /** Evrenin bu yerdeki bütün yedeklerini siler (K41: evren Drive'dan silinirken). */
+  /** Evrenin bu yerdeki bütün yedeklerini siler (K42: evren Drive'dan silinirken). */
   async evreninYedekleriniSil(evren: string) {
     for (const d of await this.t.listele({ uygulama: UYGULAMA, tur: 'yedek', evren })) await this.t.sil(d.id);
   }

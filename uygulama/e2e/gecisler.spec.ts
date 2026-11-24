@@ -1,5 +1,5 @@
 // Arayüz geçişleri: kısa ve yumuşak; "animasyonları azalt" açıkken hiç oynamaz. Örnek adlar uydurmadır.
-// Geçişler 200 ms'den kısa sürdüğü için oynarken yakalanmaya çalışılmaz: CSS geçişi öğenin hesaplanmış
+// Geçişler 250 ms'den kısa sürdüğü için oynarken yakalanmaya çalışılmaz: CSS geçişi öğenin hesaplanmış
 // biçiminden, sayfa geçişi (Element.animate) sayfa açılmadan kurulan bir kayıttan okunur.
 import { test, expect, type Page } from '@playwright/test';
 import { sahneAc } from './yardimci';
@@ -26,7 +26,7 @@ const css = (p: Page, secici: string) => p.locator(secici).first().evaluate((e) 
 test('komut paleti, sahne menüsü ve sayfa değişimi kısa bir geçişle açılır', async ({ page: p }) => {
   await kaydet(p);
   await sahneAc(p);
-  expect(await sayfaGecisleri(p)).toContain(180);
+  expect(await sayfaGecisleri(p)).toContain(240); // K41: 240 ms
   await p.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await p.keyboard.press('Control+K');
   await expect(p.getByRole('dialog', { name: 'Komut paleti' })).toBeVisible();
@@ -43,7 +43,7 @@ test('komut paleti, sahne menüsü ve sayfa değişimi kısa bir geçişle açı
   await p.getByRole('link', { name: 'Kayıtlar' }).click();
   await expect(p).toHaveURL(/\/kayitlar$/);
   await expect.poll(async () => (await sayfaGecisleri(p)).length).toBeGreaterThan(once);
-  expect((await sayfaGecisleri(p)).every((s) => s >= 150 && s <= 200)).toBe(true);
+  expect((await sayfaGecisleri(p)).every((s) => s >= 150 && s <= 250)).toBe(true);
 });
 
 test('"animasyonları azalt" açıkken hiçbir geçiş oynamaz', async ({ page: p }) => {
@@ -103,4 +103,43 @@ test('kayıt açılırken gezinti yerinde kalır', async ({ page: p }) => {
   await p.evaluate((h) => { location.hash = h; }, kayit);
   await expect(p.locator('.kayit-sayfasi')).toBeVisible();
   expect(await p.evaluate(() => (window as unknown as { __gezintisiz: number }).__gezintisiz)).toBe(0);
+});
+
+const kayitlar = (p: Page) => p.evaluate(() => (window as unknown as { __gecisler: { sinif: string; sure: number }[] }).__gecisler);
+
+test('gezintide altın vurgu kayar, sekme çizgisi kayar, kapanan panel kayarak çekilir (K41)', async ({ page: p }) => {
+  await kaydet(p);
+  await sahneAc(p);
+  await p.getByRole('link', { name: 'Kayıtlar' }).click();
+  await expect(p).toHaveURL(/\/kayitlar$/);
+  await p.getByRole('link', { name: 'Takvim' }).click();
+  await expect(p).toHaveURL(/\/takvim$/);
+  expect((await kayitlar(p)).some((g) => g.sinif === 'gezinti-vurgu' && g.sure === 240)).toBe(true);
+  // Gezintide simgeler var ama adlar değişmedi.
+  await expect(p.locator('.gezinti .gezinti-simge').first()).toBeVisible();
+
+  const sekmeler = p.locator('.sekmeler [role="tab"]');
+  await sekmeler.nth(1).click();
+  await expect(sekmeler.nth(1)).toHaveAttribute('aria-selected', 'true');
+  await expect.poll(async () => (await kayitlar(p)).some((g) => g.sinif === 'sekme-cizgisi')).toBe(true);
+
+  await p.locator('.yardim-dugmesi').first().click();
+  await expect(p.locator('.rehber-paneli:not(.cikis-hayaleti)')).toBeVisible();
+  await p.keyboard.press('Escape');
+  await expect(p.locator('.rehber-paneli:not(.cikis-hayaleti)')).toHaveCount(0);
+  expect((await kayitlar(p)).some((g) => g.sinif.includes('cikis-hayaleti') && g.sure === 180)).toBe(true);
+  await expect(p.locator('.cikis-hayaleti')).toHaveCount(0);
+});
+
+test('"animasyonları azalt" açıkken kayan vurgu, sekme çizgisi ve panel kapanışı da oynamaz (K41)', async ({ page: p }) => {
+  await p.emulateMedia({ reducedMotion: 'reduce' });
+  await kaydet(p);
+  await sahneAc(p);
+  await p.getByRole('link', { name: 'Kayıtlar' }).click();
+  await p.getByRole('link', { name: 'Takvim' }).click();
+  await p.locator('.sekmeler [role="tab"]').nth(1).click();
+  await p.locator('.yardim-dugmesi').first().click();
+  await p.keyboard.press('Escape');
+  await expect(p.locator('.rehber-paneli')).toHaveCount(0);
+  expect(await kayitlar(p)).toEqual([]);
 });

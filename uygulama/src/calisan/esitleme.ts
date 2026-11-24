@@ -84,7 +84,7 @@ export interface EvrenEsitlemeDurumu {
 
 const ozellikYap = (evren: string, tur: string, ek: Record<string, string> = {}) => ({ uygulama: UYGULAMA, evren, tur, ...ek });
 
-/** Bir cihazda bu süre içinde eşitlenmiş evren Drive'dan silinmez (K41): o cihazda hâlâ olabilir. */
+/** Bir cihazda bu süre içinde eşitlenmiş evren Drive'dan silinmez (K42): o cihazda hâlâ olabilir. */
 export const SILME_BEKLEMESI = 14 * 24 * 60 * 60_000;
 
 export class Esitleme {
@@ -118,7 +118,7 @@ export class Esitleme {
   }
 
   /**
-   * Hiçbir cihazda olmayan bir evrenin Drive'daki bütün dosyalarını (deneme kopyaları dahil) siler (K41). Bu cihazdaki
+   * Hiçbir cihazda olmayan bir evrenin Drive'daki bütün dosyalarını (deneme kopyaları dahil) siler (K42). Bu cihazdaki
    * evren silinmez; son `SILME_BEKLEMESI` içinde bir cihazda eşitlenmiş evren de silinmez (o cihazda hâlâ olabilir).
    * `once`, eşitleme dosyalarından önce silinecekleri (Drive yedekleri) siler. Kurulum dosyaları en son silinir:
    * yarıda kalırsa evren listede kalır, silme yeniden denenebilir.

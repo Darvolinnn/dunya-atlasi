@@ -27,7 +27,14 @@ function bul(f: () => HTMLElement | null, sure = BEKLEME): Promise<HTMLElement |
 }
 
 function ac(x: HTMLElement) {
-  for (let d = x.closest('details'); d; d = d.parentElement?.closest('details') ?? null) d.open = true;
+  // Katlanan bölümün açılış geçişi (K41) bu açılışta oynamaz: içindeki kutu hemen odak alabilsin.
+  for (let d = x.closest('details'); d; d = d.parentElement?.closest('details') ?? null) {
+    if (d.open) continue;
+    const k = d;
+    k.classList.add('aninda');
+    k.open = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => k.classList.remove('aninda')));
+  }
   x.scrollIntoView({ block: 'center' });
 }
 

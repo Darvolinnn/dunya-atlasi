@@ -24,6 +24,8 @@ test('yan panel kenarından ve ok tuşlarıyla genişler; genişlik bu cihazda h
   await p.locator('.palet input').press('Shift+Enter');
   const panel = p.locator('.yan-panel');
   await expect(panel).toBeVisible();
+  // Panel kayarak gelir (K41); ölçmeden önce geçiş bitsin.
+  await panel.evaluate((e) => Promise.all(e.getAnimations().map((a) => a.finished)));
   const genislik = async () => Math.round((await panel.boundingBox())!.width);
   expect(await genislik()).toBe(380);
   const tutamak = p.getByRole('separator', { name: 'Yan panelin genişliği' });
