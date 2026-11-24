@@ -26,3 +26,18 @@ export function temaYaz(t: Tema) {
   try { localStorage.setItem(ANAHTAR, t); } catch { /* yalnızca bu açılışta geçerli olur */ }
   temaUygula(t);
 }
+
+/** stil.css'teki hareket değişkenleri; JS ile oynatılan geçişler (sayfa, evrene giriş, kayan vurgu) bunları okur. */
+export function hareketDegerleri() {
+  const s = getComputedStyle(document.documentElement);
+  const sayi = (ad: string, yedek: number) => { const v = parseFloat(s.getPropertyValue(ad)); return Number.isFinite(v) ? v : yedek; };
+  return {
+    sure: sayi('--hz-sure', 200),
+    mesafe: sayi('--hz-mesafe', 8),
+    olcek: sayi('--hz-olcek', 0.985),
+    egri: s.getPropertyValue('--hz-egri').trim() || 'cubic-bezier(0.2, 0.7, 0.3, 1)',
+  };
+}
+
+/** "Animasyonları azalt" açık mı (cihaz ayarı). */
+export const hareketAzMi = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;

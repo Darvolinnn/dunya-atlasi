@@ -12,6 +12,7 @@ import { zamanYaz } from '../alan/islem-metni';
 import { BosSayfa, KararRozeti, TurSecici, odakla } from './ortak';
 import { AkilliListeGorunumu, AkilliListelerMenusu } from './AkilliListe';
 import { git } from './Uygulama';
+import { useBasamakli } from './kapanis';
 
 export function YeniKayit({ istemci, evren }: { istemci: Istemci; evren: string }) {
   const [ad, setAd] = useState('');
@@ -48,6 +49,7 @@ function neredenYazisi(n: AramaSonucu['nereden']): string | null {
 
 export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evren: string; surum: number }) {
   const [kayitlar, setKayitlar] = useState<KayitOzeti[] | null>(null);
+  const basamak = useBasamakli(kayitlar !== null);
   const [arama, setArama] = useState('');
   const [tur, setTur] = useState('');
   const [siralama, setSiralama] = useState<Siralama>('son');
@@ -127,7 +129,7 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
           </div>
           <p class="soluk kucuk">{gorunen.length === kayitlar.length ? `${kayitlar.length} kayıt` : `${kayitlar.length} kayıttan ${gorunen.length} tanesi`}</p>
           {tur === 'not' && !bulunan && !kok ? <NotPanosu istemci={istemci} evren={evren} surum={surum} /> : gorunen.length === 0 ? <div class="bos"><p>Aramaya ya da seçimlere uyan kayıt yok.</p></div> : (
-            <ul class="kayit-listesi">
+            <ul class={`kayit-listesi${basamak}`}>
               {gorunen.map(({ k, nereden, parca }) => <KayitSatiri key={k.kod} k={k} evren={evren} nereden={nereden} parca={parca} istemci={istemci} />)}
             </ul>
           )}

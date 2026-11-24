@@ -4,6 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { NotSatiri } from '../veri/api';
 import { NOT_DURUMLARI, NOT_TURLERI } from '../alan/sablon';
+import { useBasamakli } from './kapanis';
 const hataYaz = (e: unknown) => (e as Error).message;
 
 const durumAdi = (k: string) => NOT_DURUMLARI.find((d) => d.kod === k)?.ad ?? k;
@@ -13,6 +14,7 @@ export function NotPanosu({ istemci, evren, surum }: { istemci: Istemci; evren: 
   const [notlar, setNotlar] = useState<NotSatiri[] | null>(null);
   const [tur, setTur] = useState<string | null>(null);
   const [hata, setHata] = useState<string | null>(null);
+  const basamak = useBasamakli(notlar !== null);
   useEffect(() => { istemci.iste('notPanosu', { evren }).then(setNotlar, () => {}); }, [evren, surum]);
   if (!notlar) return null;
   if (!notlar.length) return null;
@@ -44,7 +46,7 @@ export function NotPanosu({ istemci, evren, surum }: { istemci: Istemci; evren: 
         {sayi(null) > 0 && <button class={tur === '' ? 'suzgec-cipi secili' : 'suzgec-cipi'} aria-pressed={tur === ''} onClick={() => setTur('')}>Türü seçilmemiş · {sayi(null)}</button>}
       </div>
       {hata && <p class="hata kucuk">{hata}</p>}
-      <div class="not-sutunlari">
+      <div class={`not-sutunlari${basamak}`}>
         {NOT_DURUMLARI.filter((d) => d.kod !== 'arsiv').map((d) => {
           const liste = gorunen.filter((n) => n.notDurumu === d.kod);
           return (

@@ -6,6 +6,7 @@ import { git } from './Uygulama';
 import { SayfaYardimi } from './SayfaYardimi';
 import { IceAktar, YedektenGeriYukle } from './Tasima';
 import { onayla, sonYedekZamani } from './onay';
+import { useBasamakli } from './kapanis';
 import { BosSayfa, KurguSecici, YeniKarti } from './ortak';
 import { ORNEK_EVREN_ADI } from '../calisan/ornek-evren';
 
@@ -16,6 +17,7 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
   const [aciliyor, setAciliyor] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const [panel, setPanel] = useState<'yok' | 'yedek' | 'ice'>('yok');
+  const basamak = useBasamakli(evrenler !== null);
 
   const yukle = () => istemci.iste('evrenler').then(setEvrenler, (e) => setHata(e.message));
   useEffect(() => { yukle(); return istemci.dinle((d) => { if (d.uzaktan) yukle(); }); }, []);
@@ -108,7 +110,7 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
           </p>
         )}
         {evrenler && evrenler.length > 0 && (
-          <div class="kartlar">
+          <div class={`kartlar${basamak}`}>
             {evrenler.map((e) => (
               <div class="evren-karti" key={e.kod}>
                 <button class="kart" onClick={() => git(`/e/${e.kod}`)}>
