@@ -233,6 +233,15 @@ export interface KitapSonuAciklar {
   sorular: { iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null }; ipucu: number; yaniltmaca: number; destekler: number;
     sonra: { eser: KisaKayit; sahne: KisaKayit; sira: number } | null }[];
 }
+/** Kesintisiz okumada bir sahne (K39). */
+export interface OkumaParcasi { sahne: KisaKayit; bolum: { kod: string; ad: string; sira: number } | null; spans: Spans }
+/** Kitap sonunda durum (K39): eserin son sahnesinin tarihinde kayıtlı olanlar. */
+export interface KitapSonuDurumu {
+  sonSahne: KisaKayit | null; tarih: EvrenTarihi | null;
+  karakterler: (KisaKayit & { sahne: KisaKayit; sira: number; yer: KisaKayit | null; durumlar: DurumSatiri[] })[];
+  esyalar: (KisaKayit & { sahne: KisaKayit; sira: number; sahipler: KisaKayit[]; durumlar: DurumSatiri[] })[];
+  izler: { iz: IzTanimi; deger: string; sahne: KisaKayit; sira: number; sondaMi: boolean }[];
+}
 /** Serinin okuma yolu (K27): okurun kitapları izleyebileceği adlandırılmış sıra. */
 export interface OkumaYolu { kod: string; ad: string; eserler: KisaKayit[] }
 /** Seri sayfasının planı (K27). `bag` seriye bağlayan ilişkinin kodudur (çıkarmak için). */
@@ -246,16 +255,19 @@ export interface SeriPlani {
 export interface OlayOrgusu {
   /** Masanın kapsamı: bir eser ya da bir seri (seride sütunlar bütün kitapların sahneleri). */
   kapsam: KisaKayit;
-  sutunlar: { kod: string; ad: string; sira: number; eser: KisaKayit; ust: string; bolum: string | null; calisma: string | null; metinVar: boolean; donum: boolean; olaylar: KisaKayit[] }[];
+  sutunlar: { kod: string; ad: string; sira: number; tarih: EvrenTarihi | null; eser: KisaKayit; ust: string; bolum: string | null; calisma: string | null; metinVar: boolean; donum: boolean; olaylar: KisaKayit[] }[];
   /** Hücre: hatta bağlı değilse null; bağlıysa rolün adı (rolsüz bağ için boş). */
   hatlar: { hat: KisaKayit; hucreler: (string | null)[] }[];
   sorular: { iddia: { kod: string; soru: string }; hucreler: ('ipucu' | 'yaniltmaca' | 'destekler' | 'zayiflatir' | 'aciklama' | null)[]; acikKaliyor: boolean }[];
   karakterler: { kisi: KisaKayit; hucreler: boolean[]; sayi: number }[];
 }
 export interface KurguMontaji {
-  eser: KisaKayit; sahneler: { kod: string; ad: string; sira: number; bolum: string | null }[];
+  /** `seride`: kapsam bir seri; `eser` o zaman serinin kaydıdır, `bolum` "Kitap · Bölüm" biçimindedir. */
+  eser: KisaKayit; seride: boolean; sahneler: { kod: string; ad: string; sira: number; bolum: string | null }[];
   sorular: {
     iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null }; hedef: MontajHedefi | null; okurOgrenir: number | null; uyarilar: string[];
+    /** Okura işaret verilmiş ama bu kapsamda açıklama sahnesi işaretlenmemiş. */
+    askida: boolean;
     olaylar: { sira: number; sahne: KisaKayit; tur: 'ipucu' | 'yaniltmaca' | 'destekler' | 'zayiflatir' | 'aciklama' | 'okur'; secenek: string | null; inanc?: string; gercegi?: boolean }[];
   }[];
   izler: { kayit: KisaKayit; siralar: number[]; enUzunAra: number; sondan: number }[];
@@ -931,7 +943,9 @@ export interface KaldigiYerBilgisi extends KaldigiYer {
 export interface BaglananKayit { kod: string; ad: string; tur: string; ifadeler: string[] }
 export interface AdDuzeltmesi { kaynak: string; kaynakAd: string; sira: number; eski: string; yeni: string }
 /** Anlatı yapısı (§3.3). */
-export interface YapiSahnesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi | null; sira: number }
+/** Eser metninde bulunan bir yer (K39). */
+export interface MetinEslesmesi { sahne: KisaKayit; anahtar: string; once: string; eslesen: string; sonra: string; /** Bağlantılı ifadenin içinde (varsayılan seçilmez). */ bagli: boolean }
+export interface YapiSahnesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi | null; sira: number; calisma?: string | null; kelime?: number }
 export interface YapiBolumu { kod: string; ad: string; karar: string; sira: number; sahneler: YapiSahnesi[] }
 /** Çıktıda seçilebilecek sahne (§10.11): çalışma durumu ve metni olup olmadığı. */
 export interface CiktiSahnesi { kod: string; ad: string; calisma: string | null; metinli: boolean }
@@ -979,7 +993,9 @@ export interface SahneKatilimcisi extends KisaKayit {
   durumlar: DurumSatiri[];
   iliskiler: (IliskiSatiri & { gecerli: Gecerlilik })[];
   /** Sahneden önce (ya da belki önce) geçirdiği değişimler. */
-  degisimler: (DegisimSatiri & { sira: Karsilastirma })[];
+  degisimler: (DegisimSatiri & { sira: Karsilastirma; oncekiKitap?: boolean })[];
+  /** Seride bu kitapta ilk kez bu sahnede görünüyor; önceki kitaplarda en son görüldüğü yer (K39). */
+  kitabaDonus?: { eser: KisaKayit; sahne: KisaKayit } | null;
   /** Doğum tarihi biliniyorsa sahnenin tarihindeki yaşı. */
   yas: string | null;
   yasananSure: YasananSure | null;
@@ -1305,6 +1321,8 @@ export interface Istekler {
   evrenOlustur(a: { ad: string; kurgu?: string | null }): { kod: string };
   kurguTuruYaz(a: { evren: string; kurgu: string | null }): void;
   bagGorunumuYaz(a: { evren: string; gorunum: BagGorunumu | null }): void;
+  gorselOdakYaz(a: { evren: string; ad: string; odak: { x: number; y: number } | null }): void;
+  gorselOdaklari(a: { evren: string }): Record<string, { x: number; y: number }>;
   /** Bağlantısız ad önerisi için aranacak adlar ve "önerme" ayarları (K29, §5.1). */
   adDizini(a: { evren: string }): AdDizini;
   /** "Bu adı hiç önerme" (anahtar `hic:<kod>`) ya da "Bu sefer değil" (anahtar `atla:<yer>`); deger false geri alır. */
@@ -1315,6 +1333,13 @@ export interface Istekler {
   aracTanitimlari(a: { evren: string }): AracTanitimDayanaklari;
   alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
   kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;
+  kitapSonuDurumu(a: { evren: string; eser: string }): KitapSonuDurumu;
+  okumaMetni(a: { evren: string; kapsam: string }): OkumaParcasi[];
+  kesilenParcaEkle(a: { evren: string; sahne: string; metin: string; kod?: string | null }): { kod: string };
+  kesilenParcaSil(a: { evren: string; sahne: string; kod: string }): void;
+  kesilenParcalar(a: { evren: string; sahne: string }): { kod: string; metin: string; zaman: number }[];
+  surumAdiYaz(a: { evren: string; islem: string; ad: string | null }): void;
+  surumAdlari(a: { evren: string; kayit: string }): Record<string, string>;
   etkinCalisma(a: { evren: string }): KisaKayit | null;
   etkinCalismaYaz(a: { evren: string; kod: string | null }): void;
   simdi(a: { evren: string }): SimdiOnerisi[];
@@ -1549,6 +1574,11 @@ export interface Istekler {
   derlemeler(a: { evren: string; tur: 'gezinti' | 'pano' | 'tuval' }): DerlemeOzeti[];
   tuval(a: { evren: string; kod: string }): Tuval;
   tuvalOgeYaz(a: { evren: string; kod: string; ogeler: Partial<TuvalOgesi>[] }): void;
+  metinBul(a: { evren: string; kapsam: string; aranan: string; harfDuyarli?: boolean }): MetinEslesmesi[];
+  metinDegistir(a: { evren: string; kapsam: string; aranan: string; yeni: string; harfDuyarli?: boolean; secilenler: string[] }): { degisen: number; sahne: number; onceki: { kayit: string; basliklar: string[] }[] };
+  metinleriGeriYukle(a: { evren: string; onceki: { kayit: string; basliklar: string[] }[] }): void;
+  /** Not, yazı, balon ya da şekli kayda dönüştürür; öğe yerinde kayıt kartı olur, okları korunur (K39). */
+  tuvalOgesiniKaydet(a: { evren: string; kod: string; id: string; tur: string }): { kod: string; ad: string };
   tuvalOgeSil(a: { evren: string; kod: string; idler: string[] }): void;
   surumler(a: { evren: string }): EvrenSurumu[];
   surumOlustur(a: { evren: string; ad: string; aciklama?: string }): { kod: string };

@@ -46,7 +46,7 @@ import { BirlesmeBilgisi, BirlestirDugmesi } from './Birlesme';
 import { KarakterYollariBolumu, KayitMeseleleri, SablonAlanlari, SoruBolumu, useKayitSablonu } from './Sablon';
 import { BilinenlerBolumu, GorunurlukAlani, GorunurlukRozeti } from './Bilgiler';
 import { SeriPlaniBolumleri } from './SeriPlani';
-import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, KitapSonuBolumu, SeriBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
+import { AnlatiYolu, DurumGecmisi, EserYapisiBolumu, KitapSonuBolumu, KitapSonuDurumBolumu, SeriBolumu, SahneAlanlari, SahneBaglamPaneli, useSahneBaglami } from './Anlati';
 import { UyarlamaBolumu } from './Uyarlama';
 import { KimlikBolumu } from './Kimlik';
 import { KullanildigiYerler } from './MetinKullanim';
@@ -224,6 +224,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
 
         {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         {kayit.tur === 'eser' && <KitapSonuBolumu istemci={istemci} evren={evren} eser={kod} />}
+        {kayit.tur === 'eser' && <KitapSonuDurumBolumu istemci={istemci} evren={evren} eser={kod} />}
         {(kayit.tur === 'eser' || kayit.tur === 'seri') && <KarakterYollariBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         {kayit.tur === 'seri' && <><SeriBolumu istemci={istemci} evren={evren} kayit={kayit} /><SeriPlaniBolumleri istemci={istemci} evren={evren} kayit={kayit} /><SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} acik /></>}
         {kayit.tur === 'sahne' && <SahneBaglamPaneli evren={evren} baglam={imlecParcasi && parcaBaglami ? parcaBaglami : sahneBaglami} parca={!!(imlecParcasi && parcaBaglami)} />}
@@ -254,7 +255,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           {KULLANIM_SAHIPLERI.includes(kayit.tur) && <KullanimMasasiBolumu istemci={istemci} evren={evren} kod={kod} saltOkunur={!!bag} />}
           {kayit.tur === 'eser' && <EserCiktisi istemci={istemci} evren={evren} eser={kod} />}
           {kayit.tur === 'eser' && <YayimBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />}
-          {kayit.tur === 'eser' && <KurguMontajiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {(kayit.tur === 'eser' || kayit.tur === 'seri') && <KurguMontajiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           {kayit.tur === 'eser' && <UyarlamaBolumu istemci={istemci} evren={evren} eser={kod} surum={surum} />}
           {kayit.tur === 'sahne' && <SahneNiyetleriBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           {kayit.tur === 'makam' && <MakamYurutenleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}
@@ -370,6 +371,8 @@ function SurumGecmisi({ istemci, evren, kayit, surum, geriGetir, degisti }: {
   const [satirlar, setSatirlar] = useState<GunlukSatiri[] | null>(null);
   const [secili, setSecili] = useState<{ satir: GunlukSatiri; spans: Spans } | null>(null);
   useEffect(() => { istemci.iste('kayitGecmisi', { evren, kod: kayit.kod }).then(setSatirlar); }, [kayit.kod, surum]);
+  const [adlar, setAdlar] = useState<Record<string, string>>({});
+  useEffect(() => { istemci.iste('surumAdlari', { evren, kayit: kayit.kod }).then(setAdlar, () => setAdlar({})); }, [kayit.kod, surum]);
   if (!satirlar) return null;
   const metinSurumleri = satirlar.filter((s) => s.tur === 'metin' && !gizliAdimMi(s.tur, s.veri));
   const enYeni = metinSurumleri[0]?.kod;
@@ -384,7 +387,7 @@ function SurumGecmisi({ istemci, evren, kayit, surum, geriGetir, degisti }: {
       {secili && (
         <div class="onizleme">
           <div class="satir">
-            <strong style="flex:1">{zamanYaz(secili.satir.zaman)} tarihindeki metin</strong>
+            <strong style="flex:1">{adlar[secili.satir.kod] ? `“${adlar[secili.satir.kod]}”, ` : ''}{zamanYaz(secili.satir.zaman)} tarihindeki metin</strong>
             <button class="dugme" onClick={() => setSecili(null)}>Kapat</button>
           </div>
           {secili.satir.kod === enYeni ? <MetinGorunumu spans={secili.spans} /> : (
@@ -397,7 +400,7 @@ function SurumGecmisi({ istemci, evren, kayit, surum, geriGetir, degisti }: {
       <ul class="gunluk">
         {satirlar.filter((s) => !gizliAdimMi(s.tur, s.veri)).map((s) => (
           <li key={s.kod}>
-            <span>{islemAciklamasi(s.tur, s.veri, () => kayit.ad)}</span>
+            <span>{adlar[s.kod] && <strong class="surum-adi">{adlar[s.kod]} · </strong>}{islemAciklamasi(s.tur, s.veri, () => kayit.ad)}</span>
             <span class="satir">
               <span class="soluk kucuk">{zamanYaz(s.zaman)}</span>
               {s.tur === 'metin' && <button class="dugme sade kucuk" onClick={() => goster(s)}>Metni göster</button>}

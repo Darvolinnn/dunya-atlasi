@@ -183,6 +183,29 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
     const r = yuzey.current!.getBoundingClientRect();
     return { x: ((e.clientX - r.left) / r.width) * h.en, y: ((e.clientY - r.top) / r.height) * h.boy };
   };
+  // Çizim kipinde kalemle sürükleyerek de bölge ya da yol çizilir (§12.2); noktalar belli aralıkla eklenir.
+  const kalemCizgi = useRef<[number, number] | null>(null);
+  const kalemCizdi = useRef(false);
+  const kalemBasla = (e: PointerEvent) => {
+    if (kip.tur !== 'ciz' || e.pointerType !== 'pen' || e.button !== 0) return;
+    if (!(e.target === e.currentTarget || (e.target as HTMLElement).closest('.harita-katmanlar'))) return;
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    const p = uzayNoktasi(e);
+    kalemCizgi.current = [p.x, p.y];
+    kalemCizdi.current = false;
+    setKip((k) => (k.tur === 'ciz' ? { ...k, noktalar: [...k.noktalar, [p.x, p.y]] } : k));
+  };
+  const kalemSur = (e: PointerEvent) => {
+    const son = kalemCizgi.current;
+    if (!son || kip.tur !== 'ciz') return;
+    const p = uzayNoktasi(e);
+    if (Math.hypot(p.x - son[0], p.y - son[1]) < Math.max(h.en, h.boy) / (120 * yakinlik)) return;
+    kalemCizgi.current = [p.x, p.y];
+    kalemCizdi.current = true;
+    setKip((k) => (k.tur === 'ciz' ? { ...k, noktalar: [...k.noktalar, [p.x, p.y]] } : k));
+  };
+  const kalemBitir = () => { if (kalemCizgi.current) { kalemCizgi.current = null; kalemCizdi.current = true; } };
   const tikla = async (e: MouseEvent) => {
     if (kip.tur === 'gez' && olcekliTikla(olcekli, (({ x, y }) => [x, y] as [number, number])(uzayNoktasi(e)))) return;
     if (kip.tur === 'gez') { setSecili(null); setSeciliCizim(null); return; }
@@ -219,7 +242,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
   const sigan = Math.max(120, Math.min(tuvalBoyu.w, tuvalBoyu.h * (h.en / h.boy)));
   const yuzeyStili = { width: `${sigan * yakinlik}px`, aspectRatio: `${h.en} / ${h.boy}` };
 
-  const durumYazisi = kip.tur === 'ciz' ? `${kip.bicim === 'bolge' ? 'Bölgenin sınırı' : 'Yol'} boyunca haritaya sırayla tıklayın. Bitince sağdaki düğmeye basın. Vazgeçmek için Esc tuşuna basın.`
+  const durumYazisi = kip.tur === 'ciz' ? `${kip.bicim === 'bolge' ? 'Bölgenin sınırı' : 'Yol'} boyunca haritaya sırayla tıklayın ya da kalemle çizin. Bitince sağdaki düğmeye basın. Vazgeçmek için Esc tuşuna basın.`
     : kip.tur === 'hizala' ? (kip.bekleyen ? 'Şimdi bu noktanın haritada olması gereken yere tıklayın.' : 'Hizalanan görselde tanıdık bir noktaya tıklayın (bir kıyı köşesi, bir kale gibi).')
     : kip.tur === 'koy' ? 'Haritada bir yere tıklayın, sonra bağlanacak kaydı seçin. Bitirmek için “Gez ve seç”e ya da Esc tuşuna basın.'
     : kip.tur === 'tasi' ? `“${h.isaretler.find((x) => x.kod === kip.isaret)?.kayit.ad}” için yeni yere tıklayın. Vazgeçmek için Esc tuşuna basın.`
@@ -343,7 +366,8 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
       <div class={`harita-sahne${cekmece ? ' cekmeceli' : ''}`}>
         <div class="harita-tuval" ref={tuval}>
           <div ref={yuzey} class={`harita-yuzey${kip.tur !== 'gez' ? ' isaretleme' : ''}${kip.tur === 'hizala' ? ' hizalama' : ''}${olcekli.k.acik && olcekli.k.hedef !== 'yok' && kip.tur === 'gez' ? ' olcekli-secim' : ''}`} style={yuzeyStili}
-            onClick={(e) => { if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.harita-katmanlar')) void tikla(e); }}>
+            onPointerDown={kalemBasla} onPointerMove={kalemSur} onPointerUp={kalemBitir} onPointerCancel={kalemBitir}
+            onClick={(e) => { if (kalemCizdi.current) { kalemCizdi.current = false; return; } if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.harita-katmanlar')) void tikla(e); }}>
             <div class="harita-katmanlar">{h.katmanlar.filter((k) => !k.silindi && !gizli.has(k.kod)).map((k) => (
               <div key={k.kod} class={`harita-katman${kip.tur === 'hizala' && kip.katman === k.kod ? ' hizalanan' : ''}`}
                 style={katmanStili(k, onizleme(k), h, kip.tur === 'hizala' && kip.katman === k.kod ? 0.6 : saydamlik[k.kod] ?? 1)}>

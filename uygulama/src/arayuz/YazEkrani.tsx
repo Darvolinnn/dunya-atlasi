@@ -26,6 +26,7 @@ import { DAKTILO_OLAYI, ODAK_OLAYI } from './kisayollar';
 import { DAKTILO_ACILDI, DAKTILO_SINIFI } from './daktilo';
 import { DIYALOG_SINIFI, PARAGRAF_ODAGI_SINIFI } from './okuma-suzgecleri';
 import { DiyalogSeridi } from './DiyalogSeridi';
+import { KesilenParcalar, SurumAdiFormu } from './Kesilenler';
 
 const PLAN_SORULARI = (soruSetiBul('sahne_plani')?.sorular ?? []).slice(0, 3).map((q) => q.metin);
 
@@ -141,6 +142,8 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const [paragrafOdagi, setParagrafOdagi] = useSinifTercihi('dunya-atlasi:paragraf-odagi', PARAGRAF_ODAGI_SINIFI);
   const [diyalog, setDiyalog] = useSinifTercihi('dunya-atlasi:yalniz-diyalog', DIYALOG_SINIFI);
   const [onceki, setOnceki] = useState<string>('');
+  const [adVer, setAdVer] = useState(false);
+  useEffect(() => setAdVer(false), [kod]);
   const [sekme, setSekme] = useBaglamSekmesi();
   const [cerrahi, setCerrahi] = useState<{ tur: 'bol'; konum: number; temel: string[] } | { tur: 'birlestir' } | null>(null);
   const [cerrahiHata, setCerrahiHata] = useState<string | null>(null);
@@ -169,7 +172,9 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const baglamAc = (acik: boolean) => { setBaglamKaysin(acik); setBaglamTercihi(!acik); yazYerel(baglamAnahtari, acik ? '0' : '1'); };
   const bos = sahneBaglamiBos(sahneBaglami);
   // Seçilmemişken bağlam okunana kadar panel açılmaz; dolu sahnede okununca açılır.
-  const baglamKapali = baglamTercihi ?? (!sahneBaglami || bos);
+  // Dar ekranda panel metnin üstüne çekmece olarak açılır; bu yüzden yazar açmadıkça kendiliğinden açılmaz.
+  const dar = typeof matchMedia === 'function' && matchMedia('(max-width: 1100px)').matches;
+  const baglamKapali = baglamTercihi ?? (dar || !sahneBaglami || bos);
   const baglamGorunur = sahne && !baglamKapali && !odak;
   const bugun = kelime !== null ? bugunEklenen(evren, kod, kelime) : 0;
   const planAc = () => { baglamAc(true); setOdak(false); setSekme('plan'); void gitVeYap(null, [{ odak: '.sahne-plani textarea' }]); };
@@ -192,6 +197,13 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
           <span class="bosluk" />
           {kelime !== null && <span class="kelime-sayaci" aria-live="off">{sahne ? 'Bu sahne ' : ''}{sayiYaz(kelime)} kelime{bugun ? ` · bugün ${bugun > 0 ? '+' : '−'}${sayiYaz(Math.abs(bugun))}` : ''}</span>}
           <button class={odak ? 'dugme kucuk odak-dugmesi secili' : 'dugme sade kucuk odak-dugmesi'} aria-pressed={odak} title="Odak kipi (Ctrl+Shift+F); çıkmak için Esc" onClick={() => setOdak(!odak)}>{odak ? 'Odaktan çık' : 'Odak'}</button>
+          {sahne && !odak && !saltOkunur && <KesilenParcalar istemci={istemci} evren={evren} sahne={kod} denetim={denetim} />}
+          {sahne && onceki && !odak && (
+            <details class="onceki-son">
+              <summary class="dugme sade kucuk" title="Önceki sahnenin son paragrafı">Önceki sahnenin sonu</summary>
+              <div class="onceki-son-kutu" role="note"><p class="soluk kucuk">Önceki sahne şöyle bitti:</p><p>“{onceki}”</p></div>
+            </details>
+          )}
           {sahne && baglamKapali && !odak && <button class="dugme sade kucuk" onClick={() => baglamAc(true)}>{bos ? 'Bağlam ekle' : 'Bağlamı göster'}</button>}
           {diyalog && <button class="dugme kucuk secili" title="Yalnız diyaloglar süzgecini kapat" onClick={() => setDiyalog(false)}>Yalnız diyaloglar ✕</button>}
           <SayfaYardimi sayfa="yaz" />
@@ -212,6 +224,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
                 setCerrahi({ tur: 'birlestir' });
               }}>Sonraki sahneyle birleştir</button>
             </>}
+            {!kayit.silindi && !saltOkunur && <button class="menu-ogesi" title="Metnin şimdiki hâli bu adla sürüm geçmişinde bulunur" onClick={() => setAdVer(true)}>Bu hâle ad ver…</button>}
             <a class="menu-ogesi" href={`#/e/${evren}/k/${kod}`}>Bütün alanlar</a>
             {!kayit.silindi && !saltOkunur && (
               <button class="menu-ogesi tehlikeli" title="Çöp kutusundan geri getirilebilir" onClick={async () => {
@@ -222,6 +235,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
             )}
           </IslemMenusu>
         </div>
+        {adVer && <SurumAdiFormu istemci={istemci} evren={evren} kayit={kod} denetim={denetim} kapat={() => setAdVer(false)} />}
         {cerrahiHata && <p class="hata">{cerrahiHata}</p>}
         {cerrahi?.tur === 'bol' && <SahneBolPenceresi istemci={istemci} evren={evren} sahne={kod} konum={cerrahi.konum} temel={cerrahi.temel}
           kapat={() => setCerrahi(null)} bitti={() => { setCerrahi(null); void denetim.current?.yenile(); setSurum((x) => x + 1); }} />}

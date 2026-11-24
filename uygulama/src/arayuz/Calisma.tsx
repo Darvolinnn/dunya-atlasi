@@ -18,6 +18,7 @@ import { katla } from '../alan/turkce';
 import { KararRozeti } from './ortak';
 import { Gorsel } from './gorsel';
 import { MetinGorunumu } from './MetinEditoru';
+import { duzMetindenSpans } from '../alan/metin-sema';
 import { git } from './Uygulama';
 import { ANA_SAYFALAR, DIGER_SAYFALAR, GORUNUMLER } from './Kabuk';
 import { yazarlikRehberiAc } from './YazarlikRehberi';
@@ -190,10 +191,12 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
   useEffect(() => {
     let zamanlayici: ReturnType<typeof setTimeout> | null = null;
     const bagBul = (t: EventTarget | null) => (t instanceof Element ? t.closest('a.bag[data-kayit]') as HTMLElement | null : null);
-    const uzerine = (e: MouseEvent) => {
+    // Parmakla dokunuş da "üzerine gelme" olayı üretir; o zaman özet kartı açılmaz (dokunuşta terim kartı ya da
+    // bağlantının kendisi yeter, kart basılı tutunca ya da bilgi düğmesiyle açılır). Kalemle üzerine gelmek kartı açar.
+    const uzerine = (e: PointerEvent) => {
       const a = bagBul(e.target);
       if (zamanlayici) { clearTimeout(zamanlayici); zamanlayici = null; }
-      if (!a || !dRef.current.evren) return;
+      if (!a || !dRef.current.evren || e.pointerType === 'touch') return;
       zamanlayici = setTimeout(() => dRef.current.ozetAc(a.dataset.kayit!, a.getBoundingClientRect()), 450);
     };
     const basiliTut = (e: MouseEvent) => {
@@ -209,10 +212,10 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
       e.preventDefault();
       dRef.current.yanPanelAc(a.dataset.kayit!);
     };
-    document.addEventListener('mouseover', uzerine);
+    document.addEventListener('pointerover', uzerine);
     document.addEventListener('contextmenu', basiliTut);
     document.addEventListener('click', tikla);
-    return () => { document.removeEventListener('mouseover', uzerine); document.removeEventListener('contextmenu', basiliTut); document.removeEventListener('click', tikla); };
+    return () => { document.removeEventListener('pointerover', uzerine); document.removeEventListener('contextmenu', basiliTut); document.removeEventListener('click', tikla); };
   }, []);
 
   return (
@@ -344,7 +347,8 @@ function YanPanel({ istemci, evren, kodlar, aktif, sec, kapat, kucuk, kucult }: 
   const [surum, setSurum] = useState(0);
   useEffect(() => {
     for (const k of kodlar) if (!adlar[k]) istemci.iste('kayit', { evren, kod: k }).then((x) => setAdlar((a) => ({ ...a, [k]: x.ad })), () => setAdlar((a) => ({ ...a, [k]: 'Bulunamadı' })));
-  }, [kodlar.join()]);
+    // Kayıt değişince adlar silinir; yeniden okunmazsa sekme adı "…" kalıyordu.
+  }, [kodlar.join(), surum]);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren && (!d.kayitlar.length || d.kayitlar.some((k) => kodlar.includes(k)))) { setSurum((s) => s + 1); setAdlar({}); } }), [evren, kodlar.join()]);
   return (
     <aside class={kucuk ? 'yan-panel kucuk' : 'yan-panel'} aria-label="Yan panel">
@@ -366,17 +370,31 @@ function YanPanel({ istemci, evren, kodlar, aktif, sec, kapat, kucuk, kucult }: 
   );
 }
 
-function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
+/** Aynı adlı, tarihsiz ilişkiler tek satırda toplanır ("Yer aldığı sahne: Arşiv, Mühür"); tarihli olan kendi satırındadır. */
+function iliskiGruplari(l: IliskiSatiri[]): IliskiSatiri[][] {
+  const gruplar: IliskiSatiri[][] = [];
+  const yer = new Map<string, IliskiSatiri[]>();
+  for (const i of l) {
+    if (i.baslangic || i.bitis) { gruplar.push([i]); continue; }
+    const g = yer.get(i.etiket);
+    if (g) g.push(i); else { const y = [i]; yer.set(i.etiket, y); gruplar.push(y); }
+  }
+  return gruplar;
+}
+
+/** Yan paneldeki kayıt görünümü; konu dosyasında kart olarak da kullanılır (K39, öneri 12, §3.1 birleşik çalışma sayfası). */
+export function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
   const d = useCalisma();
   const [k, setK] = useState<Kayit | null>(null);
   const [metin, setMetin] = useState<Spans | null>(null);
   const [iliskiler, setIliskiler] = useState<IliskiSatiri[]>([]);
   const [hata, setHata] = useState<string | null>(null);
+  const [yenile, setYenile] = useState(0);
   useEffect(() => {
     istemci.iste('kayit', { evren, kod }).then(setK, (e) => setHata((e as Error).message));
     istemci.iste('metinAc', { evren, kayit: kod, alan: 'govde' }).then((m) => setMetin(m.spans), () => {});
     istemci.iste('iliskiler', { evren, kod }).then(setIliskiler, () => {});
-  }, [kod]);
+  }, [kod, yenile]);
   // Ana alanda bir sahne ya da olay açıksa kayıt o anın evren tarihindeki hâliyle gösterilir (§3.5).
   const ana = d?.acikKayit && d.acikKayit !== kod ? d.acikKayit : null;
   const [an, setAn] = useState<{ ad: string; tarih: EvrenTarihi | null } | null>(null);
@@ -392,7 +410,7 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
       setDurumlar(anli ? r.durumlar.filter((x) => x.gecerli !== 'hayir') : r.durumlar);
     })().catch(() => {});
     return () => { iptal = true; };
-  }, [kod, ana]);
+  }, [kod, ana, yenile]);
   const ks = useKayitSablonu(istemci, evren, kod);
   const takvim = useTakvim(istemci, evren);
   const [yasanan, setYasanan] = useState<YasananSure | null>(null);
@@ -438,17 +456,71 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
       )}
       {iliskiler.length > 0 && (
         <ul class="yan-iliskiler">
-          {iliskiler.filter((i) => !an?.tarih || gecerlilik('aralik', i.baslangic ?? 'acik', i.bitis ?? 'acik', an.tarih) !== 'hayir').map((i) => (
-            <li key={i.kod}>
-              <span class="soluk">{i.etiket}:</span>{' '}
-              <a href={`#/e/${evren}/k/${i.karsi.kod}`} onClick={(e) => { e.preventDefault(); d?.yanPanelAc(i.karsi.kod); }}>{i.karsi.ad}</a>
-              {(i.baslangic || i.bitis) && <span class="soluk kucuk"> ({i.baslangic?.ifade ?? '…'} – {i.bitis?.ifade ?? '…'})</span>}
+          {iliskiGruplari(iliskiler.filter((i) => !an?.tarih || gecerlilik('aralik', i.baslangic ?? 'acik', i.bitis ?? 'acik', an.tarih) !== 'hayir')).map((g) => (
+            <li key={g[0].kod}>
+              <span class="soluk">{g[0].etiket}:</span>{' '}
+              {g.map((i, j) => <>{j > 0 && ', '}<a href={`#/e/${evren}/k/${i.karsi.kod}`} onClick={(e) => { e.preventDefault(); d?.yanPanelAc(i.karsi.kod); }}>{i.karsi.ad}</a></>)}
+              {(g[0].baslangic || g[0].bitis) && <span class="soluk kucuk"> ({g[0].baslangic?.ifade ?? '…'} – {g[0].bitis?.ifade ?? '…'})</span>}
             </li>
           ))}
         </ul>
       )}
       {metin && <MetinGorunumu spans={metin} />}
+      <YanPanelEkle istemci={istemci} evren={evren} kod={k.kod} ana={an ? { kod: ana!, ad: an.ad } : null} eklendi={() => setYenile((x) => x + 1)} />
       <p><a href={`#/e/${evren}/k/${k.kod}`}>Sayfasını aç</a></p>
+    </div>
+  );
+}
+
+/** K39: yazma ekranından ayrılmadan yan paneldeki kayda başka ad, durum ya da kısa not ekleme. */
+function YanPanelEkle({ istemci, evren, kod, ana, eklendi }: { istemci: Istemci; evren: string; kod: string; ana: { kod: string; ad: string } | null; eklendi: () => void }) {
+  const [kip, setKip] = useState<'ad' | 'durum' | 'not' | null>(null);
+  const [a, setA] = useState('');
+  const [b, setB] = useState('');
+  const [bilgi, setBilgi] = useState('');
+  const [hata, setHata] = useState('');
+  useEffect(() => { setKip(null); setA(''); setB(''); setBilgi(''); setHata(''); }, [kod]);
+  const sec = (k: typeof kip) => { setKip(k); setA(''); setB(''); setHata(''); setBilgi(''); };
+  const gonder = async (e: Event) => {
+    e.preventDefault();
+    try {
+      if (kip === 'ad') await istemci.iste('kayitListe', { evren, kod, liste: 'lakap', ekle: a.trim() });
+      else if (kip === 'durum') await istemci.iste('durumEkle', { evren, kod, durum: { ozellik: a.trim(), deger: b.trim(), hedef: null, kip: 'sonraki', baslangic: ana ? { olay: ana.kod } : null, bitis: null } });
+      else if (kip === 'not') {
+        const m = await istemci.iste('metinAc', { evren, kayit: kod, alan: 'govde' });
+        await istemci.iste('metinKaydet', { evren, kayit: kod, alan: 'govde', spans: [...m.spans, ...duzMetindenSpans(a.trim())] as Spans, temel: m.basliklar });
+      }
+      setBilgi(kip === 'ad' ? 'Başka ad eklendi.' : kip === 'durum' ? 'Durum eklendi.' : 'Not metnin sonuna eklendi.');
+      setKip(null); setA(''); setB(''); setHata(''); eklendi();
+    } catch (x) { setHata((x as Error).message); }
+  };
+  return (
+    <div class="yan-ekle">
+      <div class="satir kucuk">
+        <span class="soluk">Bu kayda ekle:</span>
+        {([['ad', 'Başka ad'], ['durum', 'Durum'], ['not', 'Not']] as const).map(([k, ad]) => (
+          <button key={k} type="button" class={kip === k ? 'dugme kucuk secili' : 'dugme sade kucuk'} aria-pressed={kip === k} onClick={() => sec(kip === k ? null : k)}>+ {ad}</button>
+        ))}
+      </div>
+      {kip && (
+        <form class="yan-ekle-formu" onSubmit={gonder}>
+          {kip === 'ad' && <input class="girdi" lang="tr" autoFocus aria-label="Başka ad" placeholder="Ör. Demir Kartal" value={a} onInput={(e) => setA((e.target as HTMLInputElement).value)} />}
+          {kip === 'durum' && <>
+            <div class="satir">
+              <input class="girdi" lang="tr" autoFocus style="flex:1;min-width:90px" aria-label="Özellik" placeholder="Özellik (Sağlık…)" value={a} onInput={(e) => setA((e.target as HTMLInputElement).value)} />
+              <input class="girdi" lang="tr" style="flex:2;min-width:120px" aria-label="Değer" placeholder="Değer (Sol omzu yaralı)" value={b} onInput={(e) => setB((e.target as HTMLInputElement).value)} />
+            </div>
+            <span class="soluk kucuk">{ana ? `“${ana.ad}” anından itibaren geçerli olur.` : 'Başlangıç tarihi olmadan eklenir; kayıt sayfasından tarih verebilirsiniz.'}</span>
+          </>}
+          {kip === 'not' && <textarea class="girdi" lang="tr" autoFocus rows={3} aria-label="Kısa not" placeholder="Kaydın metninin sonuna eklenir" value={a} onInput={(e) => setA((e.target as HTMLTextAreaElement).value)} />}
+          <div class="satir">
+            <button class="dugme ana kucuk" type="submit" disabled={!a.trim() || (kip === 'durum' && !b.trim())}>Ekle</button>
+            <button class="dugme kucuk" type="button" onClick={() => sec(null)}>Vazgeç</button>
+          </div>
+          {hata && <p class="hata kucuk">{hata}</p>}
+        </form>
+      )}
+      {bilgi && !kip && <p class="soluk kucuk" role="status">{bilgi}</p>}
     </div>
   );
 }

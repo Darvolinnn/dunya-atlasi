@@ -2,7 +2,7 @@
 import { KayitDurumSeritleri } from './Gorunumler';
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { AnlatiEtkisi, AnlatiYeri, KitapSonuAciklar, DurumAlani, DurumSatiri, EserYapisi, Kayit, KisaKayit, SahneAlani, SahneBaglami, SinirBilgisi, SinirGirdisi, YapiSahnesi } from '../veri/api';
+import type { AnlatiEtkisi, AnlatiYeri, KitapSonuAciklar, KitapSonuDurumu, DurumAlani, DurumSatiri, EserYapisi, Kayit, KisaKayit, SahneAlani, SahneBaglami, SinirBilgisi, SinirGirdisi, YapiSahnesi } from '../veri/api';
 import { DURUM_KIPLERI } from '../alan/durum';
 import { farkYazisi, tarihAciklamasi } from '../alan/tarih';
 import { turBul } from '../alan/turler';
@@ -11,6 +11,9 @@ import { KayitSec, SatirGirdisi } from './KayitBolumleri';
 import type { Secim } from './BaglantiSecici';
 import { BakisBilgileri } from './Bilgiler';
 import { useTakvim } from './Takvim';
+import { zamanFarki } from '../alan/okuma-zamani';
+import { BulDegistir } from './BulDegistir';
+import { KesintisizOkuma } from './KesintisizOkuma';
 import { git } from './Uygulama';
 import type { AnBilgisi, SahneOkurSirasi } from '../veri/api';
 import { geriAlinabilir } from './onay';
@@ -184,6 +187,57 @@ export function KitapSonuBolumu({ istemci, evren, eser }: { istemci: Istemci; ev
   );
 }
 
+/** Eser sayfasında "Kitap sonunda durum" (K39): son sahnenin evren tarihinde kayıtlı durumlar, eşyaların sahibi ve
+ *  süreklilik defterindeki son hâller. Yalnız girilmiş veriden; gösterecek bir şey yoksa görünmez. */
+export function KitapSonuDurumBolumu({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string }) {
+  const [k] = useYukle<KitapSonuDurumu>(istemci, evren, () => istemci.iste('kitapSonuDurumu', { evren, eser }), [eser]);
+  const z = useTakvim(istemci, evren);
+  if (!k?.sonSahne || (!k.karakterler.length && !k.esyalar.length && !k.izler.length)) return null;
+  const sahne = (s: KisaKayit) => <a href={`#/e/${evren}/yaz/${s.kod}`}>{s.ad}</a>;
+  return (
+    <section class="kitap-sonu kitap-sonu-durum" aria-label="Kitap sonunda durum">
+      <h2>Kitap sonunda durum</h2>
+      <p class="soluk kucuk">Son sahne {sahne(k.sonSahne)}{k.tarih ? <>, {z ? tarihAciklamasi(k.tarih, z) : k.tarih.ifade}</> : ''}. Yalnız girdiğiniz durumlar ve bağlar gösterilir.
+        {!k.tarih && ' Son sahnenin evren tarihi olmadığı için o andaki durumlar hesaplanamadı.'}</p>
+      {k.karakterler.length > 0 && <>
+        <h3>Karakterler</h3>
+        <ul class="kitap-sonu-liste">
+          {k.karakterler.map((c) => (
+            <li key={c.kod}>
+              <strong>{bag(evren, c)}</strong>
+              <span class="soluk kucuk"> · son görüldüğü sahne {sahne(c.sahne)} ({c.sira}.){c.yer && <> · {bag(evren, c.yer)}</>}</span>
+              <DurumOzeti durumlar={c.durumlar} evren={evren} />
+            </li>
+          ))}
+        </ul>
+      </>}
+      {k.esyalar.length > 0 && <>
+        <h3>Eşyalar</h3>
+        <ul class="kitap-sonu-liste">
+          {k.esyalar.map((x) => (
+            <li key={x.kod}>
+              <strong>{bag(evren, x)}</strong>
+              <span class="soluk kucuk"> · {x.sahipler.length ? <>sahibi {x.sahipler.map((s, i) => <>{i > 0 && ', '}{bag(evren, s)}</>)}</> : 'sahibi girilmemiş'} · son geçtiği sahne {sahne(x.sahne)} ({x.sira}.)</span>
+              <DurumOzeti durumlar={x.durumlar} evren={evren} />
+            </li>
+          ))}
+        </ul>
+      </>}
+      {k.izler.length > 0 && <>
+        <h3>Süreklilik defteri</h3>
+        <ul class="kitap-sonu-liste">
+          {k.izler.map((x) => (
+            <li key={x.iz.kod}>
+              <span class="soluk">{x.iz.konu.ad} · {x.iz.ad}:</span> {x.deger}
+              {!x.sondaMi && <span class="soluk kucuk"> · son bilgi {sahne(x.sahne)} ({x.sira}.) sahnesinde</span>}
+            </li>
+          ))}
+        </ul>
+      </>}
+    </section>
+  );
+}
+
 /** Eser sayfasında serisi (K27): bir seriye koymak, başka seriye taşımak ya da seriden çıkarmak. */
 function EserinSerisi({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string }) {
   const [l] = useYukle<SeriListesi>(istemci, evren, () => istemci.iste('seriler', { evren }), [eser]);
@@ -223,7 +277,13 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
   const [etki, setEtki] = useState<AnlatiEtkisi[] | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const [yeniBolum, setYeniBolum] = useState('');
+  const [bulAcik, setBulAcik] = useState(false);
+  const [okuma, setOkuma] = useState(false);
+  const takvim = useTakvim(istemci, evren);
   if (!y) return null;
+  // Okuma sırasında bir önceki sahnenin tarihi (bölüm sınırını da aşar).
+  const okumaSirasi = [...y.dogrudan, ...y.bolumler.flatMap((b) => b.sahneler)];
+  const oncekiTarih = new Map(okumaSirasi.slice(1).map((s, i) => [s.kod, okumaSirasi[i].tarih]));
   const tasi = (kod: string, ust: string | null, sira?: number) =>
     istemci.iste('anlatiYerlestir', { evren, kod, ust, sira: sira ?? null }).then((r) => { setEtki(r.etki); setHata(null); }, (e) => setHata(hataYaz(e)));
   const olustur = (ust: string, ad: string, tur: 'bolum' | 'sahne') => istemci.iste('anlatiOlustur', { evren, ust, ad, tur }).then(() => setHata(null), (e) => setHata(hataYaz(e)));
@@ -236,6 +296,7 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
           <span class="soluk kucuk yapi-no">{s.sira}.</span>
           {bag(evren, s)} <KararRozeti karar={s.karar} />
           {s.tarih && <span class="soluk kucuk">{s.tarih.ifade}</span>}
+          {oncekiTarih.has(s.kod) && <ZamanEtiketi f={zamanFarki(oncekiTarih.get(s.kod)!, s.tarih, takvim)} />}
           <span class="bosluk" />
           <button class="dugme sade kucuk" disabled={i === 0} aria-label={`${s.ad}: yukarı`} onClick={() => tasi(s.kod, ust, i - 1)}>↑</button>
           <button class="dugme sade kucuk" disabled={i === sahneler.length - 1} aria-label={`${s.ad}: aşağı`} onClick={() => tasi(s.kod, ust, i + 1)}>↓</button>
@@ -251,9 +312,17 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
 
   return (
     <section class="eser-yapisi" aria-label="Eserin yapısı">
-      <h2>Bölümler ve sahneler</h2>
+      <div class="satir"><h2 style="margin:0">Bölümler ve sahneler</h2><span class="bosluk" />
+        <div class="secim-grubu" role="group" aria-label="Yapı ya da okuma">
+          <button class="dugme sade kucuk" aria-pressed={!okuma} onClick={() => setOkuma(false)}>Yapı</button>
+          <button class="dugme sade kucuk" aria-pressed={okuma} onClick={() => setOkuma(true)}>Okuma</button>
+        </div>
+      </div>
+      {okuma ? <KesintisizOkuma istemci={istemci} evren={evren} kapsam={vurgu ?? y.eser.kod} /> : <>
       <p class="soluk kucuk">Buradaki sıra okuma sırasıdır ve bölüm numaraları buna göre verilir. Bir sahneyi taşımak evren tarihini değiştirmez.
-        {' '}<a href={`#/e/${evren}/orgu/${y.eser.kod}`}>Olay örgüsü masasında aç</a></p>
+        {' '}<a href={`#/e/${evren}/orgu/${y.eser.kod}`}>Olay örgüsü masasında aç</a>
+        {' · '}<a href="#" onClick={(e) => { e.preventDefault(); setBulAcik(true); }}>{vurgu ? 'Bölümün' : 'Eserin'} metninde bul ve değiştir</a></p>
+      {bulAcik && <BulDegistir istemci={istemci} evren={evren} kapsam={vurgu ?? y.eser.kod} kapsamAdi={vurgu ? y.bolumler.find((b) => b.kod === vurgu)?.ad ?? 'Bölüm' : y.eser.ad} kapat={() => setBulAcik(false)} />}
       {hata && <p class="hata kucuk">{hata}</p>}
       {etki && <EtkiOzeti evren={evren} etki={etki} kapat={() => setEtki(null)} />}
       {y.dogrudan.length > 0 && sahneListesi(y.eser.kod, y.dogrudan)}
@@ -292,6 +361,7 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
           </ul>
         </details>
       )}
+      </>}
     </section>
   );
 }
@@ -370,7 +440,9 @@ export function SahneBaglamPaneli({ evren, baglam, parca = false, bos = false, b
       {!bilgisiz && <SahneBilgileri evren={evren} baglam={baglam} />}
       {katilimcilar.map((k) => (
         <div class="baglam-kaydi" key={k.kod}>
-          <div class="satir">{bag(evren, k)} <span class="soluk kucuk">{k.roller.join(', ')}</span>{k.yas && !k.yasananSure?.takvimBelirsiz && <span class="kucuk">· {k.yas}</span>}</div>
+          <div class="satir">{bag(evren, k)} <span class="soluk kucuk">{k.roller.join(', ')}</span>
+            {k.kitabaDonus && <span class="rozet kitapta-ilk" title={`Bu kitapta ilk kez burada görünüyor. En son “${k.kitabaDonus.eser.ad}” kitabında, “${k.kitabaDonus.sahne.ad}” sahnesinde görünmüştü; okur onu hatırlamayabilir.`}>Bu kitapta ilk kez</span>}
+            {k.yas && !k.yasananSure?.takvimBelirsiz && <span class="kucuk">· {k.yas}</span>}</div>
           {k.yasananSure?.goster && <p class="kucuk">{k.yasananSure.metin} <span class="soluk">({k.yasananSure.tarih ?? 'tarih yazılmamış'} itibarıyla)</span></p>}
           <DurumOzeti durumlar={k.durumlar} evren={evren} />
           {k.iliskiler.length > 0 && (
@@ -380,12 +452,12 @@ export function SahneBaglamPaneli({ evren, baglam, parca = false, bos = false, b
               ))}
             </ul>
           )}
-          {k.degisimler.length > 0 && (
-            <ul class="baglam-listesi">
-              {k.degisimler.map((d) => (
-                <li key={d.kod}><span class="soluk">Önceden:</span> {d.metin} <span class="soluk kucuk">({d.sahne ? bag(evren, d.sahne) : bag(evren, d.olay)}{d.tarih ? `, ${d.tarih.ifade}` : ''})</span> {d.sira === 'belirsiz' && <span class="rozet">belki sonra</span>}</li>
-              ))}
-            </ul>
+          {k.degisimler.some((d) => !d.oncekiKitap) && <DegisimListesi evren={evren} l={k.degisimler.filter((d) => !d.oncekiKitap)} />}
+          {k.degisimler.some((d) => d.oncekiKitap) && (
+            <details class="onceki-kitaplar">
+              <summary class="kucuk soluk">Önceki kitaplardan ({k.degisimler.filter((d) => d.oncekiKitap).length} değişim)</summary>
+              <DegisimListesi evren={evren} l={k.degisimler.filter((d) => d.oncekiKitap)} />
+            </details>
           )}
           {!k.durumlar.length && !k.iliskiler.length && !k.degisimler.length && <p class="soluk kucuk">Bu tarih için kayıtlı bir durum yok.</p>}
         </div>
@@ -688,4 +760,20 @@ function SahneOkurPaneli({ evren, baglam }: { evren: string; baglam: SahneBaglam
     {siralar.map((s) => <OkurSirasiTablosu key={s.kod} sira={s} baglam={baglam} evren={evren} />)}
     {baglam.bakis && <p class="soluk kucuk">Yan yana gösterim yalnızca kaydedilmiş iki listeyi karşılaştırır. “Kayıtlı bilgi yok” yazması, “bilmiyor” demek değildir.</p>}
   </section>;
+}
+
+/** Okuma sırasında önceki sahneye göre geçen zaman (K39); tarih geriye gidiyorsa uyarı renginde. */
+export function ZamanEtiketi({ f }: { f: ReturnType<typeof zamanFarki> }) {
+  if (!f) return null;
+  return <span class={f.geri ? 'zaman-farki geri' : 'zaman-farki'} title={f.aciklama}>{f.yazi}</span>;
+}
+
+function DegisimListesi({ evren, l }: { evren: string; l: SahneBaglami['katilimcilar'][number]['degisimler'] }) {
+  return (
+    <ul class="baglam-listesi">
+      {l.map((d) => (
+        <li key={d.kod}><span class="soluk">Önceden:</span> {d.metin} <span class="soluk kucuk">({d.sahne ? bag(evren, d.sahne) : bag(evren, d.olay)}{d.tarih ? `, ${d.tarih.ifade}` : ''})</span> {d.sira === 'belirsiz' && <span class="rozet">belki sonra</span>}</li>
+      ))}
+    </ul>
+  );
 }
