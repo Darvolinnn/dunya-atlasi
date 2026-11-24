@@ -392,6 +392,11 @@ Kullanıcı 23 Kasım'da sıradaki işleri sıraladı, 24 Kasım'da "bunları s�
 - Taslak resimleri `/mnt/project-files/taslaklar/f47/` (depoda değil). [ ] Kullanıcı onayı bekleniyor (24 Kasım 14:10 UTC).
 - Sınama: `test/esitleme.test.ts` "çalışma devri (F47)".
 
+**3. Açık uçlar:** [x] PR #49'un notu §0.22 olarak alındı, PR kapatıldı. [x] §0.19'daki eski dallar silinmiş (işlendi). [ ] İki "Deneme 1" ve kullanıcının bilgisayarındaki `Writing` klonunda kenara alınan (stash) 4 DEVIR satırı: bilgisayar ve kullanıcı gerekir.
+
+**4. Büyük evren (24 Kasım, bulut, Node, `AGIR=1 npx vitest run test/agir-yuk.test.ts --silent=false`):** 201.761 değişiklik / 3.880 kayıt: kurma 120 sn, dosyaya yedek 11,4 MB 5,2 sn, geri yükleme 48,7 sn, Drive'a ilk gönderme 13 dosya 22,8 MB 8,4 sn, yeni cihaza indirme 46,2 sn, yığın 43,6 MB. 270.001 değişiklik (611 milyon harflik günlük): yedek 12,8 sn, geri yükleme 31,6 sn. [ ] Tablette gerçek bellek ve süre: `/mnt/project-files/tablet/olcum-yedek.zip` (aynı 201.761 değişiklikli uydurma evren) tablette "Yedekten geri yükle" ile açılıp `adb shell dumpsys meminfo io.github.darvolinnn.dunyaatlasi` ile ölçülecek (4 GB altı şart). Tablet kilitliyken yapılamıyor; kullanıcı gerekir.
+- APK (`ad0d50d`) tablete kuruldu: `lastUpdateTime=2026-11-24 17:09:21` (tablet saati). Açılış denenemedi: ekran kilitli.
+
 ## 1. Önce oku (sırayla)
 
 1. `AGENTS.md`: bağlayıcı kurallar.
