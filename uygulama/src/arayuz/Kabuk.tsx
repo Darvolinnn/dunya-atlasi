@@ -11,6 +11,7 @@ import { DurumOzeti } from './Esitleme';
 import { uzakGorunumMu } from '../alan/turler';
 import { KurguBaglami } from './kurgu';
 import { useBagGorunumuUygula } from './BagGorunumu';
+import { SAHNE_CALISMA } from '../alan/sablon';
 
 /** İnceleme görünümleri (§7): aynı verinin farklı çizimleri. */
 export const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy', 'Soy ağacı'], ['neden', 'Neden–sonuç'], ['durumlar', 'Durum geçmişi'],
@@ -210,7 +211,18 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
   const dal = (k: { kod: string; ad: string }, sinif: string) => (
     <a class={k.kod === acik ? `${sinif} secili` : sinif} aria-current={k.kod === acik ? 'page' : undefined} href={`#/e/${evren}/yaz/${k.kod}`}>{k.ad}</a>
   );
-  const sahneler = (l: YapiSahnesi[]) => l.map((s) => <li key={s.kod}>{dal(s, 'agac-sahne')}</li>);
+  // Durum noktası (K39): boş halka metinsiz, yarım nokta yazılıyor, dolu nokta gözden geçirildi.
+  const durumNoktasi = (s: YapiSahnesi) => {
+    const n = s.kelime ?? 0;
+    const sinif = !n ? 'nokta-bos' : s.calisma === 'gozden_gecirildi' ? 'nokta-tam' : 'nokta-yarim';
+    const durum = SAHNE_CALISMA.find((x) => x.kod === s.calisma)?.ad;
+    return <span class={`agac-nokta ${sinif}`} title={[n ? `${n.toLocaleString('tr-TR')} kelime` : 'Metni yok', durum].filter(Boolean).join(' · ')} aria-hidden="true" />;
+  };
+  const sahneler = (l: YapiSahnesi[]) => l.map((s) => (
+    <li key={s.kod}>
+      <a class={s.kod === acik ? 'agac-sahne secili' : 'agac-sahne'} aria-current={s.kod === acik ? 'page' : undefined} href={`#/e/${evren}/yaz/${s.kod}`}>{durumNoktasi(s)}{s.ad}</a>
+    </li>
+  ));
 
   // Seriler (K27): eserler serinin altında önerilen okuma sırasıyla; serisi olmayanlar en üst düzeyde.
   const seride = new Set(seriler.flatMap((s) => s.eserler.map((x) => x.kod)));

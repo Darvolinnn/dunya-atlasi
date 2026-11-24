@@ -30,6 +30,16 @@ export function eserYapisi(e: EvrenVt, eser: string): EserYapisi {
   const bolumler = ust.filter((r) => r.tur === 'bolum').map((b, i) => ({
     kod: b.kod, ad: b.ad, karar: b.karar, sira: i + 1, sahneler: cocuklar(e, b.kod).filter((r) => r.tur !== 'bolum').map((r) => sahne(r, ++n)),
   }));
+  // Ağaçtaki durum noktası (K39): çalışma durumu ve metnin kelime sayısı (boşluklarla yaklaşık).
+  const hepsi = [...dogrudan, ...bolumler.flatMap((b) => b.sahneler)];
+  if (hepsi.length) {
+    const yer = hepsi.map(() => '?').join(',');
+    const kodlar = hepsi.map((s) => s.kod);
+    const calisma = new Map(e.db.selectObjects(`SELECT kayit, deger FROM alan_degerleri WHERE alan='calisma' AND kayit IN (${yer})`, kodlar).map((r) => [r.kayit as string, JSON.parse(r.deger as string) as string]));
+    const kelime = new Map(e.db.selectObjects(`SELECT kayit, CASE WHEN length(trim(duz))=0 THEN 0 ELSE length(trim(duz)) - length(replace(replace(trim(duz),char(10),' '),' ','')) + 1 END n
+      FROM metinler WHERE alan='govde' AND kayit IN (${yer})`, kodlar).map((r) => [r.kayit as string, Number(r.n)]));
+    for (const s of hepsi) { s.calisma = calisma.get(s.kod) ?? null; s.kelime = kelime.get(s.kod) ?? 0; }
+  }
   return { eser: { kod: eser, ad }, bolumler, dogrudan };
 }
 

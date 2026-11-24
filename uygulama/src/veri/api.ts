@@ -882,7 +882,7 @@ export interface KaldigiYerBilgisi extends KaldigiYer {
 export interface BaglananKayit { kod: string; ad: string; tur: string; ifadeler: string[] }
 export interface AdDuzeltmesi { kaynak: string; kaynakAd: string; sira: number; eski: string; yeni: string }
 /** Anlatı yapısı (§3.3). */
-export interface YapiSahnesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi | null; sira: number }
+export interface YapiSahnesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi | null; sira: number; calisma?: string | null; kelime?: number }
 export interface YapiBolumu { kod: string; ad: string; karar: string; sira: number; sahneler: YapiSahnesi[] }
 /** Çıktıda seçilebilecek sahne (§10.11): çalışma durumu ve metni olup olmadığı. */
 export interface CiktiSahnesi { kod: string; ad: string; calisma: string | null; metinli: boolean }

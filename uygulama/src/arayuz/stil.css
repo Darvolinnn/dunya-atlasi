@@ -1564,3 +1564,8 @@ details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] 
 .odak-isareti { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 2px rgba(0,0,0,.55); pointer-events: none; }
 .odak-secimi { gap: 10px; margin: 6px 0; }
 .odak-onizleme img, .odak-onizleme .gorsel-yer { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; display: block; }
+/* Ağaçta sahne durum noktası (K39): satır yüksekliğini değiştirmez. */
+.agac-nokta { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin: 0 6px 1px 0; vertical-align: middle; box-sizing: border-box; }
+.agac-nokta.nokta-bos { border: 1px solid var(--metin-2); opacity: .7; }
+.agac-nokta.nokta-yarim { background: var(--metin-2); opacity: .55; }
+.agac-nokta.nokta-tam { background: var(--vurgu); }
