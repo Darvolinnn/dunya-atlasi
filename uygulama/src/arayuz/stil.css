@@ -1569,3 +1569,13 @@ details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] 
 .agac-nokta.nokta-bos { border: 1px solid var(--metin-2); opacity: .7; }
 .agac-nokta.nokta-yarim { background: var(--metin-2); opacity: .55; }
 .agac-nokta.nokta-tam { background: var(--vurgu); }
+/* Metinde bul ve değiştir (K39) */
+.bul-degistir { width: min(760px, 94vw); display: grid; gap: 10px; }
+.bul-satiri { gap: 8px; flex-wrap: wrap; align-items: center; }
+.bul-satiri .girdi { flex: 1; min-width: 160px; }
+.bul-sonuclari { max-height: 50vh; overflow: auto; border: 1px solid var(--cizgi); border-radius: 8px; padding: 4px 12px; }
+.bul-sonuclari h3 { font-size: .95rem; margin: 10px 0 4px; }
+.bul-eslesme { display: flex; gap: 8px; align-items: baseline; padding: 4px 0; font-size: .92rem; line-height: 1.5; }
+.bul-eslesme mark { background: var(--vurgu-zemin); color: var(--vurgu-metin); border-radius: 3px; padding: 0 1px; }
+.bul-eslesme del { color: var(--tehlike); }
+.bul-eslesme ins { text-decoration: none; background: var(--vurgu-zemin); color: var(--vurgu-metin); border-radius: 3px; padding: 0 1px; }

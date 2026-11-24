@@ -318,7 +318,7 @@ Sıra ve adımlar:
 - [ ] #2 `-- ` yazınca `— ` (geri alınabilir); önceki sahnenin son paragrafı yazmaya başlayınca da üst şeritten açılabilir.
 - [ ] #1 bölüm/eser için kesintisiz okuma ("Yapı · Okuma"; paragrafa çift tıklayınca o sahneye gider).
 - [~] (taslak kodlandı, onay bekliyor: `9-portre-odagi.png`; işlem `gorsel_odak` evren tablosunda `gorsel_odak:<ad>`, izdüşüm sürümü değişmedi; `gorsel.tsx` `useGorselOdaklari`) #9 görsel odak noktası (küçük karelerde `object-position`; yeni veri alanı, işlem günlüğünden).
-- [ ] #4 eser ya da bölüm içinde düz metin bul ve önizlemeli değiştir; ağaçta sahne durum noktası (istek genişletilmeli).
+- [~] (taslak kodlandı, onay bekliyor: `4-agac-noktasi.png`, `4-bul-degistir.png`; `eserYapisi` sahnelere `calisma` ve yaklaşık `kelime` ekler; `Kabuk.tsx` `durumNoktasi`; `BulDegistir.tsx`, istekler `metinBul`/`metinDegistir`/`metinleriGeriYukle`, değiştirme tek işlem grubu ve geri alınabilir; bağlantı yazısındaki eşleşmeler rozetli ve seçilmemiş gelir) #4 eser ya da bölüm içinde düz metin bul ve önizlemeli değiştir; ağaçta sahne durum noktası.
 - [ ] #6 kitap sonunda durum özeti: odak karakterlerin son yeri ve açık durumları, eşyaların son sahibi, süreklilik defterinde kapanmamış izler.
 - [ ] #3 kalanı: kesilen parçalar çekmecesi ve adlı sürüm.
 - [ ] #8 karakter yokluk haritası ve kurgu montajında seri kapsamı; askıda kalan ipucu satırı (kitap sonu kutusu soruları zaten seri boyunca izliyor).

@@ -111,6 +111,7 @@ import * as kaliciIz from './kalici-iz';
 import type { KaliciIzTuru } from '../veri/api';
 import * as olcekli from './olcekli';
 import type { OlcekliAraziGirdisi, OlcekliHizKurali, OlcekliOlcekTanimi } from '../veri/api';
+import type { MetinEslesmesi, YapiSahnesi } from '../veri/api';
 import { sayiDegeriMi, sayiGirdisi, sayiMetni } from '../alan/nicelik';
 import { kullaniciIletisi } from './ileti';
 
@@ -2027,6 +2028,94 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     }
     if (girdiler.length) this.yaz(evren, girdiler, [kod, ...kaynaga.keys()]);
     return { degisen: [...kaynaga.values()].reduce((n, l) => n + l.length, 0) };
+  }
+
+  // ---------- Eser metninde bul ve değiştir (K39) ----------
+  /** Eserin ya da bölümün sahneleri, okuma sırasıyla. */
+  private kapsamSahneleri(e: EvrenVt, kapsam: string): YapiSahnesi[] {
+    const tur = e.db.selectValue('SELECT tur FROM kayitlar WHERE kod=? AND silindi IS NULL', [kapsam]);
+    if (tur === 'eser') { const y = anlati.eserYapisi(e, kapsam); return [...y.dogrudan, ...y.bolumler.flatMap((b) => b.sahneler)]; }
+    if (tur === 'bolum') {
+      const eser = anlati.anlatiYeri(e, kapsam).eser;
+      return eser ? anlati.eserYapisi(e, eser.kod).bolumler.find((b) => b.kod === kapsam)?.sahneler ?? [] : [];
+    }
+    throw new Error('Bir eser ya da bölüm seçin.');
+  }
+  /** Düz metin eşleşmeleri; anlam çıkarılmaz (K1). Biçim ya da bağlantı sınırını aşan eşleşme alınmaz. */
+  private metinEslesmeleri(e: EvrenVt, kapsam: string, aranan: string, harfDuyarli: boolean) {
+    const a = String(aranan ?? '');
+    if (!a.trim()) throw new Error('Aranacak metni yazın.');
+    if (a.length > 200) throw new Error('Aranacak metin çok uzun.');
+    const kucuk = (s: string) => (harfDuyarli ? s : s.toLocaleLowerCase('tr'));
+    const ak = kucuk(a);
+    const sonuc: { sahne: KisaKayit; anahtar: string; once: string; eslesen: string; sonra: string; bagli: boolean; parca: number; yer: number }[] = [];
+    for (const s of this.kapsamSahneleri(e, kapsam)) {
+      const d = metinBelgesi(e.db, s.kod, 'govde');
+      if (!d) continue;
+      (A.spans(d, ['t']) as { type: string; value: unknown; marks?: Record<string, unknown> }[]).forEach((p, i) => {
+        if (p.type !== 'text' || typeof p.value !== 'string') return;
+        const v = p.value, vk = kucuk(v);
+        if (vk.length !== v.length) return;
+        for (let j = vk.indexOf(ak); j >= 0 && sonuc.length < 2000; j = vk.indexOf(ak, j + ak.length)) {
+          sonuc.push({ sahne: { kod: s.kod, ad: s.ad, tur: 'sahne' }, anahtar: `${s.kod}:${i}:${j}`, parca: i, yer: j,
+            bagli: !!p.marks?.bag, once: v.slice(Math.max(0, j - 50), j), eslesen: v.slice(j, j + a.length), sonra: v.slice(j + a.length, j + a.length + 50) });
+        }
+      });
+    }
+    return sonuc;
+  }
+  metinBul({ evren, kapsam, aranan, harfDuyarli = false }: { evren: string; kapsam: string; aranan: string; harfDuyarli?: boolean }): MetinEslesmesi[] {
+    return this.metinEslesmeleri(this.evren(evren), kapsam, aranan, harfDuyarli).map(({ parca, yer, ...x }) => x);
+  }
+  /** Seçilen eşleşmeleri değiştirir; bütün sahneler tek işlem grubudur. Geri almak için önceki hâller döner. */
+  metinDegistir({ evren, kapsam, aranan, yeni, harfDuyarli = false, secilenler }: {
+    evren: string; kapsam: string; aranan: string; yeni: string; harfDuyarli?: boolean; secilenler: string[];
+  }) {
+    const e = this.evren(evren);
+    if (String(yeni ?? '').length > 200 || /\n/.test(String(yeni ?? ''))) throw new Error('Yeni metin tek satır ve kısa olmalı.');
+    const secili = new Set(secilenler);
+    const sahneye = new Map<string, { parca: number; yer: number; uzunluk: number }[]>();
+    for (const x of this.metinEslesmeleri(e, kapsam, aranan, harfDuyarli)) {
+      if (!secili.has(x.anahtar)) continue;
+      sahneye.set(x.sahne.kod, [...(sahneye.get(x.sahne.kod) ?? []), { parca: x.parca, yer: x.yer, uzunluk: x.eslesen.length }]);
+    }
+    const girdiler = [];
+    const onceki: { kayit: string; basliklar: Basliklar }[] = [];
+    let sayi = 0;
+    for (const [kayit, liste] of sahneye) {
+      const d = metinBelgesi(e.db, kayit, 'govde')!;
+      const spans = (A.spans(d, ['t']) as { type: string; value: unknown; marks?: unknown }[]).map((x) => ({ ...x }));
+      // Sondan başa: aynı parçadaki önceki konumlar kaymasın.
+      for (const x of [...liste].sort((a, b) => b.parca - a.parca || b.yer - a.yer)) {
+        const v = spans[x.parca].value as string;
+        spans[x.parca].value = v.slice(0, x.yer) + yeni + v.slice(x.yer + x.uzunluk);
+        sayi++;
+      }
+      const temel = A.getHeads(d);
+      const yeniBelge = A.change(A.clone(d, { actor: this.aktor }), (y) => A.updateSpans(y, ['t'], spans.filter((p) => p.type !== 'text' || p.value !== '') as never, spanAyari()));
+      try {
+        onceki.push({ kayit, basliklar: temel });
+        girdiler.push({ tur: 'metin', veri: { kayit, alan: 'govde', basliklar: A.getHeads(yeniBelge), temel, topluDegistirme: true }, ikili: A.saveSince(yeniBelge, temel) });
+      } finally { A.free(yeniBelge); }
+    }
+    if (girdiler.length) this.yaz(evren, girdiler, [...sahneye.keys()]);
+    return { degisen: sayi, sahne: sahneye.size, onceki };
+  }
+  /** Toplu değiştirmenin geri alınması: her sahne önceki hâline döner (yeni sürüm olarak); tek işlem grubu. */
+  metinleriGeriYukle({ evren, onceki }: { evren: string; onceki: { kayit: string; basliklar: Basliklar }[] }) {
+    const e = this.evren(evren);
+    const girdiler = [];
+    for (const o of onceki) {
+      const d = this.belge(e, o.kayit, 'govde');
+      const simdiki = A.getHeads(d);
+      const eski = A.spans(A.view(d, o.basliklar), ['t']);
+      const yeni = A.change(A.clone(d, { actor: this.aktor }), (x) => A.updateSpans(x, ['t'], eski as never, spanAyari()));
+      try {
+        const sonra = A.getHeads(yeni);
+        if (JSON.stringify(sonra) !== JSON.stringify(simdiki)) girdiler.push({ tur: 'metin', veri: { kayit: o.kayit, alan: 'govde', basliklar: sonra, temel: simdiki, geriYukleme: true }, ikili: A.saveSince(yeni, simdiki) });
+      } finally { A.free(yeni); }
+    }
+    if (girdiler.length) this.yaz(evren, girdiler, onceki.map((o) => o.kayit));
   }
 
   // ---------- İlişkiler (§3.2) ----------

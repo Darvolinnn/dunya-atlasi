@@ -12,6 +12,7 @@ import type { Secim } from './BaglantiSecici';
 import { BakisBilgileri } from './Bilgiler';
 import { useTakvim } from './Takvim';
 import { zamanFarki } from '../alan/okuma-zamani';
+import { BulDegistir } from './BulDegistir';
 import { git } from './Uygulama';
 import type { AnBilgisi, SahneOkurSirasi } from '../veri/api';
 import { geriAlinabilir } from './onay';
@@ -224,6 +225,7 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
   const [etki, setEtki] = useState<AnlatiEtkisi[] | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const [yeniBolum, setYeniBolum] = useState('');
+  const [bulAcik, setBulAcik] = useState(false);
   const takvim = useTakvim(istemci, evren);
   if (!y) return null;
   // Okuma sırasında bir önceki sahnenin tarihi (bölüm sınırını da aşar).
@@ -259,7 +261,9 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
     <section class="eser-yapisi" aria-label="Eserin yapısı">
       <h2>Bölümler ve sahneler</h2>
       <p class="soluk kucuk">Buradaki sıra okuma sırasıdır ve bölüm numaraları buna göre verilir. Bir sahneyi taşımak evren tarihini değiştirmez.
-        {' '}<a href={`#/e/${evren}/orgu/${y.eser.kod}`}>Olay örgüsü masasında aç</a></p>
+        {' '}<a href={`#/e/${evren}/orgu/${y.eser.kod}`}>Olay örgüsü masasında aç</a>
+        {' · '}<a href="#" onClick={(e) => { e.preventDefault(); setBulAcik(true); }}>{vurgu ? 'Bölümün' : 'Eserin'} metninde bul ve değiştir</a></p>
+      {bulAcik && <BulDegistir istemci={istemci} evren={evren} kapsam={vurgu ?? y.eser.kod} kapsamAdi={vurgu ? y.bolumler.find((b) => b.kod === vurgu)?.ad ?? 'Bölüm' : y.eser.ad} kapat={() => setBulAcik(false)} />}
       {hata && <p class="hata kucuk">{hata}</p>}
       {etki && <EtkiOzeti evren={evren} etki={etki} kapat={() => setEtki(null)} />}
       {y.dogrudan.length > 0 && sahneListesi(y.eser.kod, y.dogrudan)}

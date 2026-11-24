@@ -882,6 +882,8 @@ export interface KaldigiYerBilgisi extends KaldigiYer {
 export interface BaglananKayit { kod: string; ad: string; tur: string; ifadeler: string[] }
 export interface AdDuzeltmesi { kaynak: string; kaynakAd: string; sira: number; eski: string; yeni: string }
 /** Anlatı yapısı (§3.3). */
+/** Eser metninde bulunan bir yer (K39). */
+export interface MetinEslesmesi { sahne: KisaKayit; anahtar: string; once: string; eslesen: string; sonra: string; /** Bağlantılı ifadenin içinde (varsayılan seçilmez). */ bagli: boolean }
 export interface YapiSahnesi { kod: string; ad: string; tur: string; karar: string; tarih: EvrenTarihi | null; sira: number; calisma?: string | null; kelime?: number }
 export interface YapiBolumu { kod: string; ad: string; karar: string; sira: number; sahneler: YapiSahnesi[] }
 /** Çıktıda seçilebilecek sahne (§10.11): çalışma durumu ve metni olup olmadığı. */
@@ -1487,6 +1489,9 @@ export interface Istekler {
   derlemeler(a: { evren: string; tur: 'gezinti' | 'pano' | 'tuval' }): DerlemeOzeti[];
   tuval(a: { evren: string; kod: string }): Tuval;
   tuvalOgeYaz(a: { evren: string; kod: string; ogeler: Partial<TuvalOgesi>[] }): void;
+  metinBul(a: { evren: string; kapsam: string; aranan: string; harfDuyarli?: boolean }): MetinEslesmesi[];
+  metinDegistir(a: { evren: string; kapsam: string; aranan: string; yeni: string; harfDuyarli?: boolean; secilenler: string[] }): { degisen: number; sahne: number; onceki: { kayit: string; basliklar: string[] }[] };
+  metinleriGeriYukle(a: { evren: string; onceki: { kayit: string; basliklar: string[] }[] }): void;
   /** Not, yazı, balon ya da şekli kayda dönüştürür; öğe yerinde kayıt kartı olur, okları korunur (K39). */
   tuvalOgesiniKaydet(a: { evren: string; kod: string; id: string; tur: string }): { kod: string; ad: string };
   tuvalOgeSil(a: { evren: string; kod: string; idler: string[] }): void;
