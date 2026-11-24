@@ -2339,8 +2339,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
 
     // Sahne yapısı ve yazarlık bağları (açık mesele, gerekçe, not) evrenin o anki hâli değildir.
     const SAHNE_TURLERI = new Set(['anlatir', 'sahnede', 'olayda', 'sahne_yeri', 'bakis', 'anlatici', 'odak', 'mesele_konusu', 'gerekce_konusu', 'nottan']);
+    const seriden = montaj.seriGorunusu(e, sahne);
     const katilimcilar: SahneKatilimcisi[] = [...katilim.values()].map((k) => ({
       ...k,
+      kitabaDonus: seriden?.donus.get(k.kod) ?? null,
       durumlar: durum.durumlar(db, k.kod, an).filter(gorunur),
       iliskiler: this.iliskiler({ evren, kod: k.kod })
         .filter((i) => !SAHNE_TURLERI.has(i.tur))
@@ -2348,7 +2350,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
         .filter(gorunur),
       degisimler: an ? this.kayitDegisimleri({ evren, kod: k.kod })
         .filter((d) => d.sahne?.kod !== sahne)
-        .map((d) => ({ ...d, sira: karsilastir(d.tarih, an) }))
+        .map((d) => ({ ...d, sira: karsilastir(d.tarih, an), oncekiKitap: !!d.sahne && !!seriden?.oncekiSahneler.has(d.sahne.kod) }))
         .filter((d) => d.sira !== 'sonra') : [],
       yas: yasHesapla(sablonlar.tarihDegeri(e, k.kod, 'dogum'), an, sablonlar.tarihDegeri(e, k.kod, 'olum'), zamanSetiOku(e.db))?.metin ?? null,
       yasananSure: kisiYasananSure(db, k.kod, an, sahne),

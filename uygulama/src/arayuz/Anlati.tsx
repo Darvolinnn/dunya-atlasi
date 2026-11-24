@@ -11,6 +11,7 @@ import { KayitSec, SatirGirdisi } from './KayitBolumleri';
 import type { Secim } from './BaglantiSecici';
 import { BakisBilgileri } from './Bilgiler';
 import { useTakvim } from './Takvim';
+import { zamanFarki } from '../alan/okuma-zamani';
 import { git } from './Uygulama';
 import type { AnBilgisi, SahneOkurSirasi } from '../veri/api';
 import { geriAlinabilir } from './onay';
@@ -223,7 +224,11 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
   const [etki, setEtki] = useState<AnlatiEtkisi[] | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const [yeniBolum, setYeniBolum] = useState('');
+  const takvim = useTakvim(istemci, evren);
   if (!y) return null;
+  // Okuma sırasında bir önceki sahnenin tarihi (bölüm sınırını da aşar).
+  const okumaSirasi = [...y.dogrudan, ...y.bolumler.flatMap((b) => b.sahneler)];
+  const oncekiTarih = new Map(okumaSirasi.slice(1).map((s, i) => [s.kod, okumaSirasi[i].tarih]));
   const tasi = (kod: string, ust: string | null, sira?: number) =>
     istemci.iste('anlatiYerlestir', { evren, kod, ust, sira: sira ?? null }).then((r) => { setEtki(r.etki); setHata(null); }, (e) => setHata(hataYaz(e)));
   const olustur = (ust: string, ad: string, tur: 'bolum' | 'sahne') => istemci.iste('anlatiOlustur', { evren, ust, ad, tur }).then(() => setHata(null), (e) => setHata(hataYaz(e)));
@@ -236,6 +241,7 @@ function EserAnahatti({ istemci, evren, eser, vurgu }: { istemci: Istemci; evren
           <span class="soluk kucuk yapi-no">{s.sira}.</span>
           {bag(evren, s)} <KararRozeti karar={s.karar} />
           {s.tarih && <span class="soluk kucuk">{s.tarih.ifade}</span>}
+          {oncekiTarih.has(s.kod) && <ZamanEtiketi f={zamanFarki(oncekiTarih.get(s.kod)!, s.tarih, takvim)} />}
           <span class="bosluk" />
           <button class="dugme sade kucuk" disabled={i === 0} aria-label={`${s.ad}: yukarı`} onClick={() => tasi(s.kod, ust, i - 1)}>↑</button>
           <button class="dugme sade kucuk" disabled={i === sahneler.length - 1} aria-label={`${s.ad}: aşağı`} onClick={() => tasi(s.kod, ust, i + 1)}>↓</button>
@@ -370,7 +376,9 @@ export function SahneBaglamPaneli({ evren, baglam, parca = false, bos = false, b
       {!bilgisiz && <SahneBilgileri evren={evren} baglam={baglam} />}
       {katilimcilar.map((k) => (
         <div class="baglam-kaydi" key={k.kod}>
-          <div class="satir">{bag(evren, k)} <span class="soluk kucuk">{k.roller.join(', ')}</span>{k.yas && !k.yasananSure?.takvimBelirsiz && <span class="kucuk">· {k.yas}</span>}</div>
+          <div class="satir">{bag(evren, k)} <span class="soluk kucuk">{k.roller.join(', ')}</span>
+            {k.kitabaDonus && <span class="rozet kitapta-ilk" title={`Bu kitapta ilk kez burada görünüyor. En son “${k.kitabaDonus.eser.ad}” kitabında, “${k.kitabaDonus.sahne.ad}” sahnesinde görünmüştü; okur onu hatırlamayabilir.`}>Bu kitapta ilk kez</span>}
+            {k.yas && !k.yasananSure?.takvimBelirsiz && <span class="kucuk">· {k.yas}</span>}</div>
           {k.yasananSure?.goster && <p class="kucuk">{k.yasananSure.metin} <span class="soluk">({k.yasananSure.tarih ?? 'tarih yazılmamış'} itibarıyla)</span></p>}
           <DurumOzeti durumlar={k.durumlar} evren={evren} />
           {k.iliskiler.length > 0 && (
@@ -380,12 +388,12 @@ export function SahneBaglamPaneli({ evren, baglam, parca = false, bos = false, b
               ))}
             </ul>
           )}
-          {k.degisimler.length > 0 && (
-            <ul class="baglam-listesi">
-              {k.degisimler.map((d) => (
-                <li key={d.kod}><span class="soluk">Önceden:</span> {d.metin} <span class="soluk kucuk">({d.sahne ? bag(evren, d.sahne) : bag(evren, d.olay)}{d.tarih ? `, ${d.tarih.ifade}` : ''})</span> {d.sira === 'belirsiz' && <span class="rozet">belki sonra</span>}</li>
-              ))}
-            </ul>
+          {k.degisimler.some((d) => !d.oncekiKitap) && <DegisimListesi evren={evren} l={k.degisimler.filter((d) => !d.oncekiKitap)} />}
+          {k.degisimler.some((d) => d.oncekiKitap) && (
+            <details class="onceki-kitaplar">
+              <summary class="kucuk soluk">Önceki kitaplardan ({k.degisimler.filter((d) => d.oncekiKitap).length} değişim)</summary>
+              <DegisimListesi evren={evren} l={k.degisimler.filter((d) => d.oncekiKitap)} />
+            </details>
           )}
           {!k.durumlar.length && !k.iliskiler.length && !k.degisimler.length && <p class="soluk kucuk">Bu tarih için kayıtlı bir durum yok.</p>}
         </div>
@@ -688,4 +696,20 @@ function SahneOkurPaneli({ evren, baglam }: { evren: string; baglam: SahneBaglam
     {siralar.map((s) => <OkurSirasiTablosu key={s.kod} sira={s} baglam={baglam} evren={evren} />)}
     {baglam.bakis && <p class="soluk kucuk">Yan yana gösterim yalnızca kaydedilmiş iki listeyi karşılaştırır. “Kayıtlı bilgi yok” yazması, “bilmiyor” demek değildir.</p>}
   </section>;
+}
+
+/** Okuma sırasında önceki sahneye göre geçen zaman (K39); tarih geriye gidiyorsa uyarı renginde. */
+export function ZamanEtiketi({ f }: { f: ReturnType<typeof zamanFarki> }) {
+  if (!f) return null;
+  return <span class={f.geri ? 'zaman-farki geri' : 'zaman-farki'} title={f.aciklama}>{f.yazi}</span>;
+}
+
+function DegisimListesi({ evren, l }: { evren: string; l: SahneBaglami['katilimcilar'][number]['degisimler'] }) {
+  return (
+    <ul class="baglam-listesi">
+      {l.map((d) => (
+        <li key={d.kod}><span class="soluk">Önceden:</span> {d.metin} <span class="soluk kucuk">({d.sahne ? bag(evren, d.sahne) : bag(evren, d.olay)}{d.tarih ? `, ${d.tarih.ifade}` : ''})</span> {d.sira === 'belirsiz' && <span class="rozet">belki sonra</span>}</li>
+      ))}
+    </ul>
+  );
 }

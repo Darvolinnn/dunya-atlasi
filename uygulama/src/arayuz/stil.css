@@ -1545,3 +1545,11 @@ details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] 
 .tuval-paneli .tv-renk-dugme { --tv-yuzey: var(--zemin); --tv-sari: #f1d77a; --tv-pembe: #f3b8c0; --tv-yesil: #b9d9ae; --tv-mavi: #b2c9e3; --tv-mor: #d5bde6; --tv-turuncu: #f0c3a3; --tv-krem: #efe6d4; }
 .tv-sekil-secimi, .tv-panel-dugmeler { gap: 6px; margin-top: 8px; }
 @media (max-width: 760px) { .tuval-paneli { left: 10px; right: 10px; top: auto; bottom: 66px; width: auto; max-height: 45%; } .tuval-ipucu { max-width: calc(100% - 28px); } }
+
+/* ---------- Okuma sırasında zaman farkı (K39) ---------- */
+.zaman-farki { display: block; font-size: 11px; font-weight: 400; color: var(--metin-2); white-space: nowrap; margin-top: 2px; }
+.yapi-sahneler .zaman-farki { display: inline; margin: 0 0 0 6px; }
+.zaman-farki.geri { color: var(--uyari, #b7791f); }
+.rozet.kitapta-ilk { margin-left: 6px; }
+.onceki-kitaplar { margin: 4px 0 0; }
+.onceki-kitaplar > summary { cursor: pointer; }

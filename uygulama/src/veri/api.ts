@@ -246,7 +246,7 @@ export interface SeriPlani {
 export interface OlayOrgusu {
   /** Masanın kapsamı: bir eser ya da bir seri (seride sütunlar bütün kitapların sahneleri). */
   kapsam: KisaKayit;
-  sutunlar: { kod: string; ad: string; sira: number; eser: KisaKayit; ust: string; bolum: string | null; calisma: string | null; metinVar: boolean; donum: boolean; olaylar: KisaKayit[] }[];
+  sutunlar: { kod: string; ad: string; sira: number; tarih: EvrenTarihi | null; eser: KisaKayit; ust: string; bolum: string | null; calisma: string | null; metinVar: boolean; donum: boolean; olaylar: KisaKayit[] }[];
   /** Hücre: hatta bağlı değilse null; bağlıysa rolün adı (rolsüz bağ için boş). */
   hatlar: { hat: KisaKayit; hucreler: (string | null)[] }[];
   sorular: { iddia: { kod: string; soru: string }; hucreler: ('ipucu' | 'yaniltmaca' | 'destekler' | 'zayiflatir' | 'aciklama' | null)[]; acikKaliyor: boolean }[];
@@ -930,7 +930,9 @@ export interface SahneKatilimcisi extends KisaKayit {
   durumlar: DurumSatiri[];
   iliskiler: (IliskiSatiri & { gecerli: Gecerlilik })[];
   /** Sahneden önce (ya da belki önce) geçirdiği değişimler. */
-  degisimler: (DegisimSatiri & { sira: Karsilastirma })[];
+  degisimler: (DegisimSatiri & { sira: Karsilastirma; oncekiKitap?: boolean })[];
+  /** Seride bu kitapta ilk kez bu sahnede görünüyor; önceki kitaplarda en son görüldüğü yer (K39). */
+  kitabaDonus?: { eser: KisaKayit; sahne: KisaKayit } | null;
   /** Doğum tarihi biliniyorsa sahnenin tarihindeki yaşı. */
   yas: string | null;
   yasananSure: YasananSure | null;
