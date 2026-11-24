@@ -399,6 +399,17 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     this.kurulum.evrenAdi(evren, temiz);
   }
 
+  /** Görselin küçük resimlerde görünen yeri (K39): yüzde olarak; null ortaya döndürür. */
+  gorselOdakYaz({ evren, ad, odak }: { evren: string; ad: string; odak: { x: number; y: number } | null }) {
+    if (!/^[0-9a-f]{64}$/.test(String(ad))) throw new Error('Geçersiz görsel.');
+    if (odak !== null && !(odak.x >= 0 && odak.x <= 100 && odak.y >= 0 && odak.y <= 100)) throw new Error('Odak görselin içinde olmalı.');
+    this.yaz(evren, [{ tur: 'gorsel_odak', veri: { ad, odak: odak && { x: Math.round(odak.x), y: Math.round(odak.y) } } }]);
+  }
+  gorselOdaklari({ evren }: { evren: string }): Record<string, { x: number; y: number }> {
+    const l = this.evren(evren).db.selectObjects("SELECT k, v FROM evren WHERE k LIKE 'gorsel_odak:%'") as { k: string; v: string }[];
+    return Object.fromEntries(l.map((r) => [r.k.slice('gorsel_odak:'.length), JSON.parse(r.v)]));
+  }
+
   /** Bağlantı görünümü (K37); null varsayılana döndürür. */
   bagGorunumuYaz({ evren, gorunum }: { evren: string; gorunum: BagGorunumu | null }) {
     if (gorunum !== null && !bagGorunumuGecerli(gorunum)) throw new Error('Geçersiz seçim.');

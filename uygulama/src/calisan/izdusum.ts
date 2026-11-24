@@ -1162,6 +1162,16 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     if (i.veri.kurgu === null) db.exec({ sql: "DELETE FROM evren WHERE k='kurgu_turu'" });
     else if (kurguTuruGecerli(i.veri.kurgu)) evrenAlani(db, 'kurgu_turu', i.veri.kurgu);
   },
+  // Görselin küçük resimlerdeki odak noktası (K39); görselin adına (içeriğine) bağlıdır. Sonra gelen geçerlidir.
+  gorsel_odak(db, i) {
+    const ad = String(i.veri.ad ?? '');
+    if (!/^[0-9a-f]{64}$/.test(ad)) return;
+    const o = i.veri.odak as { x: unknown; y: unknown } | null;
+    if (o === null) { db.exec({ sql: 'DELETE FROM evren WHERE k=?', bind: [`gorsel_odak:${ad}`] }); return; }
+    const x = Number(o?.x), y = Number(o?.y);
+    if (!(x >= 0 && x <= 100 && y >= 0 && y <= 100)) return;
+    evrenAlani(db, `gorsel_odak:${ad}`, JSON.stringify({ x: Math.round(x), y: Math.round(y) }));
+  },
   // Bağlantı görünümü (K37): metindeki bağlantıların rengi ve biçimi. Günlükte sonra gelen geçerlidir.
   bag_gorunumu(db, i) {
     if (i.veri.gorunum === null) db.exec({ sql: "DELETE FROM evren WHERE k='bag_gorunumu'" });

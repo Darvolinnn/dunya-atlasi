@@ -1243,6 +1243,8 @@ export interface Istekler {
   evrenOlustur(a: { ad: string; kurgu?: string | null }): { kod: string };
   kurguTuruYaz(a: { evren: string; kurgu: string | null }): void;
   bagGorunumuYaz(a: { evren: string; gorunum: BagGorunumu | null }): void;
+  gorselOdakYaz(a: { evren: string; ad: string; odak: { x: number; y: number } | null }): void;
+  gorselOdaklari(a: { evren: string }): Record<string, { x: number; y: number }>;
   /** Bağlantısız ad önerisi için aranacak adlar ve "önerme" ayarları (K29, §5.1). */
   adDizini(a: { evren: string }): AdDizini;
   /** "Bu adı hiç önerme" (anahtar `hic:<kod>`) ya da "Bu sefer değil" (anahtar `atla:<yer>`); deger false geri alır. */

@@ -8,7 +8,7 @@ import { ILISKI_SECENEKLERI, iliskiTuruBul } from '../alan/iliski-turleri';
 import { turBul } from '../alan/turler';
 import { BaglantiSecici, type Secim } from './BaglantiSecici';
 import { KararRozeti, KararSecici, TurSecici } from './ortak';
-import { Gorsel, gorselAdresi } from './gorsel';
+import { Gorsel, gorselAdresi, useGorselOdaklari } from './gorsel';
 import { git } from './Uygulama';
 import { takvimOrnegi, useTakvim } from './Takvim';
 import { gorseldeIsaretle } from './Harita';
@@ -184,6 +184,8 @@ export function Gorseller({ istemci, evren, kayit }: { istemci: Istemci; evren: 
 function GorselGorunumu({ istemci, evren, ad, kapat, cikar, isaretle }: { istemci: Istemci; evren: string; ad: string; kapat: () => void; cikar: () => void; isaretle: () => void }) {
   const [perdeRef, vazgec] = useYumusakKapanis(kapat);
   const [url, setUrl] = useState<string | null>(null);
+  const [odakSec, setOdakSec] = useState(false);
+  const odak = useGorselOdaklari(istemci, evren)[ad];
   useEffect(() => { gorselAdresi(istemci, evren, ad, false).then((x) => setUrl(x.url)); }, [ad]);
   useEffect(() => {
     const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') vazgec(); };
@@ -195,12 +197,31 @@ function GorselGorunumu({ istemci, evren, ad, kapat, cikar, isaretle }: { istemc
       <div class="perde-ic">
         <div class="satir">
           <span class="bosluk" />
+          <button class={odakSec ? 'dugme secili' : 'dugme'} aria-pressed={odakSec} title="Küçük resimlerde görselin hangi yerinin görüneceği" onClick={() => setOdakSec(!odakSec)}>Küçük resim odağı</button>
           <button class="dugme" onClick={isaretle}>Üzerinde işaretle</button>
           {url && <a class="dugme" href={url} download>İndir</a>}
           <button class="dugme tehlikeli" onClick={cikar}>Kayıttan çıkar</button>
           <button class="dugme" onClick={vazgec} autoFocus>Kapat</button>
         </div>
-        {url ? <img src={url} alt="" class="gorsel-buyuk" /> : <p class="soluk">Açılıyor…</p>}
+        {odakSec && (
+          <div class="satir odak-secimi">
+            <span class="soluk kucuk">Görselde küçük resimlerde görünmesini istediğiniz yere tıklayın (ör. yüz).</span>
+            <span class="bosluk" />
+            <span class="odak-onizleme" aria-hidden="true"><Gorsel istemci={istemci} evren={evren} ad={ad} /></span>
+            {odak && <button class="dugme sade kucuk" onClick={() => void istemci.iste('gorselOdakYaz', { evren, ad, odak: null })}>Ortaya döndür</button>}
+          </div>
+        )}
+        {url ? (
+          <div class={odakSec ? 'gorsel-buyuk-kap odak-kipi' : 'gorsel-buyuk-kap'}>
+            <img src={url} alt="" class="gorsel-buyuk" onClick={(e) => {
+              if (!odakSec) return;
+              const r = (e.currentTarget as HTMLImageElement).getBoundingClientRect();
+              const x = Math.min(100, Math.max(0, (e.clientX - r.left) / r.width * 100)), y = Math.min(100, Math.max(0, (e.clientY - r.top) / r.height * 100));
+              void istemci.iste('gorselOdakYaz', { evren, ad, odak: { x, y } });
+            }} />
+            {odakSec && odak && <span class="odak-isareti" style={{ left: `${odak.x}%`, top: `${odak.y}%` }} aria-hidden="true" />}
+          </div>
+        ) : <p class="soluk">Açılıyor…</p>}
       </div>
     </div>
   );
