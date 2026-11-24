@@ -39,10 +39,21 @@ jobs:
       # Google girişi kabuğunun sınamaları (src-tauri/src/google.rs).
       - run: cargo test --manifest-path src-tauri/Cargo.toml
       # Masaüstü Google istemcisi depoda değil, GitHub'daki gizli değerlerden gelir; yoksa program eski girişle derlenir.
-      - run: npx tauri build
+      # Google istemcisi yalnız doğru biçimdeyse derlemeye verilir (…apps.googleusercontent.com). 24 Kasım'da bu gizli
+      # değerlerde yanlışlıkla imza parolası ve anahtar deposu vardı ve kurulum dosyalarına gömülmüştü (DEVIR §0.27).
+      - name: Google istemcisini denetle
+        shell: bash
         env:
-          GOOGLE_MASAUSTU_ISTEMCI: ${{ secrets.GOOGLE_MASAUSTU_ISTEMCI }}
-          GOOGLE_MASAUSTU_GIZLI: ${{ secrets.GOOGLE_MASAUSTU_GIZLI }}
+          ISTEMCI: ${{ secrets.GOOGLE_MASAUSTU_ISTEMCI }}
+          GIZLI: ${{ secrets.GOOGLE_MASAUSTU_GIZLI }}
+        run: |
+          if [[ "$ISTEMCI" =~ ^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$ ]] && [[ "$GIZLI" =~ ^[A-Za-z0-9_-]{20,64}$ ]]; then
+            { echo "GOOGLE_MASAUSTU_ISTEMCI=$ISTEMCI"; echo "GOOGLE_MASAUSTU_GIZLI=$GIZLI"; } >> "$GITHUB_ENV"
+            echo "Google istemcisi doğru biçimde."
+          else
+            echo "::warning::GOOGLE_MASAUSTU_ISTEMCI / GOOGLE_MASAUSTU_GIZLI yok ya da biçimi yanlış; program Google girişi olmadan derleniyor."
+          fi
+      - run: npx tauri build
       - name: Kurulum dosyasını adlandır
         shell: pwsh
         run: |

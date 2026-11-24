@@ -51,6 +51,20 @@ jobs:
           cache-targets: false
       - run: npm ci
       - run: npm run denetle
+      # Google istemcisi yalnız doğru biçimdeyse derlemeye verilir (…apps.googleusercontent.com). 24 Kasım'da bu gizli
+      # değerlerde yanlışlıkla imza parolası ve anahtar deposu vardı ve kurulum dosyalarına gömülmüştü (DEVIR §0.27).
+      - name: Google istemcisini denetle
+        shell: bash
+        env:
+          ISTEMCI: ${{ secrets.GOOGLE_MASAUSTU_ISTEMCI }}
+          GIZLI: ${{ secrets.GOOGLE_MASAUSTU_GIZLI }}
+        run: |
+          if [[ "$ISTEMCI" =~ ^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$ ]] && [[ "$GIZLI" =~ ^[A-Za-z0-9_-]{20,64}$ ]]; then
+            { echo "GOOGLE_MASAUSTU_ISTEMCI=$ISTEMCI"; echo "GOOGLE_MASAUSTU_GIZLI=$GIZLI"; } >> "$GITHUB_ENV"
+            echo "Google istemcisi doğru biçimde."
+          else
+            echo "::warning::GOOGLE_MASAUSTU_ISTEMCI / GOOGLE_MASAUSTU_GIZLI yok ya da biçimi yanlış; program Google girişi olmadan derleniyor."
+          fi
       - name: İmza değerleri görünüyor mu
         run: echo "ANDROID_IMZA_DEPOSU ${#IMZA_DEPOSU} harf, ANDROID_IMZA_PAROLASI ${#IMZA_PAROLASI} harf"
       - name: İmza anahtarı

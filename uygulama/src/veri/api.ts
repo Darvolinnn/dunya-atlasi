@@ -939,6 +939,13 @@ export interface KaldigiYerBilgisi extends KaldigiYer {
   cihaz: string | null;
   kayitAdi: string | null; kayitTuru: string | null;
   yanPanelKayitlari: { kod: string; ad: string; tur: string }[];
+  /**
+   * Çalışma devri (F47, K40): öbür cihazda bırakılan yerin dayandığı değişiklikler bu cihaza henüz gelmediyse true
+   * (o cihazda yazılanların bir kısmı burada yok; önce eşitlenmeli).
+   */
+  eksik: boolean;
+  /** Öbür cihazda en son açık olan kayıt (son 30 dakikada): aynı sahne iki yerde açıksa bilgi olarak gösterilir; kilit yoktur. */
+  baskaCihazda: { cihaz: string; kayit: string; zaman: number } | null;
 }
 export interface BaglananKayit { kod: string; ad: string; tur: string; ifadeler: string[] }
 export interface AdDuzeltmesi { kaynak: string; kaynakAd: string; sira: number; eski: string; yeni: string }

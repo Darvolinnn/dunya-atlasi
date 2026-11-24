@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { KaldigiYerBilgisi, KayitOzeti, KisaKayit, SimdiOnerisi, SonCalisma } from '../veri/api';
-import { goreceZaman } from './Esitleme';
+import { goreceZaman, useEsitleme } from './Esitleme';
 import { turBul, grupSinifi } from '../alan/turler';
 import { zamanYaz } from '../alan/islem-metni';
 import { useCalisma } from './Calisma';
@@ -31,6 +31,7 @@ export function Masa({ istemci, evren, surum, ekler }: { istemci: Istemci; evren
               <a href={`#/e/${evren}/k/${kaldigi.kayit}`}><strong>{kaldigi.kayitAdi}</strong></a>
               <span class="soluk kucuk"> · {turBul(kaldigi.kayitTuru ?? '').ad} · {zamanYaz(kaldigi.zaman)}{kaldigi.cihaz ? ` · ${kaldigi.cihaz} cihazında` : ''}</span>
             </p>
+            <DevirUyarisi kaldigi={kaldigi} />
             {kaldigi.yanPanelKayitlari.length > 0 && (
               <p class="soluk kucuk" style="margin:0 0 6px">Yan panelde: {kaldigi.yanPanelKayitlari.map((k) => k.ad).join(', ')}</p>
             )}
@@ -166,5 +167,20 @@ function SonCalismaOzeti({ istemci, evren, surum }: { istemci: Istemci; evren: s
         <li class="soluk kucuk">Toplam {o.degisiklikSayisi} değişiklik · <a href={`#/e/${evren}/gecmis`}>Değişiklik geçmişi</a></li>
       </ul>
     </section>
+  );
+}
+
+/**
+ * Çalışma devri (F47, K40): öbür cihazda bırakılan yerin dayandığı değişiklikler bu cihaza henüz gelmediyse söylenir.
+ * Devam etmek engellenmez; yalnız önce eşitlemek önerilir.
+ */
+export function DevirUyarisi({ kaldigi }: { kaldigi: KaldigiYerBilgisi }) {
+  const esitleme = useEsitleme() as ReturnType<typeof useEsitleme> | null;
+  if (!kaldigi.eksik || !kaldigi.cihaz) return null;
+  return (
+    <p class="devir-uyarisi kucuk" role="note">
+      {kaldigi.cihaz} cihazında yazılanların bir kısmı bu cihaza henüz gelmedi. Devam etmeden önce eşitleyin.
+      {esitleme?.durum?.bagli && <> <button class="dugme kucuk" disabled={esitleme.durum.calisiyor} onClick={() => void esitleme.esitle()}>{esitleme.durum.calisiyor ? 'Eşitleniyor…' : 'Şimdi eşitle'}</button></>}
+    </p>
   );
 }
