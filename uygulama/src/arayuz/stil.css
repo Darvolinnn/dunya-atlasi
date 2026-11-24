@@ -21,6 +21,7 @@
   /* Bağlantı renkleri (K37): açıkta yüzey üzerinde en az 6:1. */
   --bag-altin: #7d5210; --bag-kirmizi: #a3262f; --bag-gul: #9c2758; --bag-mor: #6b3fa0; --bag-mavi: #2456a8; --bag-deniz: #1d6b62; --bag-yesil: #3d6a1e;
   --golge: 0 1px 2px rgb(60 45 20 / 0.05), 0 2px 10px rgb(60 45 20 / 0.05);
+  --golge-yuksek: 0 2px 4px rgb(60 45 20 / 0.06), 0 10px 24px rgb(60 45 20 / 0.10);
   --yaricap: 12px;
   --yazi: "Source Sans 3 Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   --metin-yazi: "Literata Variable", Georgia, "Iowan Old Style", "Times New Roman", serif;
@@ -34,7 +35,9 @@
     --tg-insan-z: #3b2a20; --tg-insan-y: #f0c3a3; --tg-yer-z: #24321f; --tg-yer-y: #b9d9ae; --tg-kultur-z: #33283b; --tg-kultur-y: #d5bde6;
     --tg-isleyis-z: #222e3b; --tg-isleyis-y: #b2c9e3; --tg-zaman-z: #3a3220; --tg-zaman-y: #e6d39b; --tg-anlati-z: #3c2629; --tg-anlati-y: #efb9c1; --tg-diger-z: #2f2b26; --tg-diger-y: #cfc7b8;
     --bag-altin: #e0a83e; --bag-kirmizi: #f08a8a; --bag-gul: #ef8fb6; --bag-mor: #bba0f0; --bag-mavi: #8fb3f2; --bag-deniz: #72cfbf; --bag-yesil: #a3d27e;
-    --golge: 0 1px 2px rgb(0 0 0 / 0.3);
+    /* Koyu temada kartın üst kenarında çok hafif bir ışık ve yumuşak katman gölgesi (K41). */
+    --golge: inset 0 1px 0 rgb(255 236 200 / 0.05), 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 14px rgb(0 0 0 / 0.18);
+    --golge-yuksek: inset 0 1px 0 rgb(255 236 200 / 0.07), 0 2px 4px rgb(0 0 0 / 0.4), 0 12px 28px rgb(0 0 0 / 0.35);
     color-scheme: dark;
   }
 }
@@ -45,7 +48,8 @@
   --tg-insan-z: #3b2a20; --tg-insan-y: #f0c3a3; --tg-yer-z: #24321f; --tg-yer-y: #b9d9ae; --tg-kultur-z: #33283b; --tg-kultur-y: #d5bde6;
   --tg-isleyis-z: #222e3b; --tg-isleyis-y: #b2c9e3; --tg-zaman-z: #3a3220; --tg-zaman-y: #e6d39b; --tg-anlati-z: #3c2629; --tg-anlati-y: #efb9c1; --tg-diger-z: #2f2b26; --tg-diger-y: #cfc7b8;
   --bag-altin: #e0a83e; --bag-kirmizi: #f08a8a; --bag-gul: #ef8fb6; --bag-mor: #bba0f0; --bag-mavi: #8fb3f2; --bag-deniz: #72cfbf; --bag-yesil: #a3d27e;
-  --golge: 0 1px 2px rgb(0 0 0 / 0.3);
+  --golge: inset 0 1px 0 rgb(255 236 200 / 0.05), 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 14px rgb(0 0 0 / 0.18);
+  --golge-yuksek: inset 0 1px 0 rgb(255 236 200 / 0.07), 0 2px 4px rgb(0 0 0 / 0.4), 0 12px 28px rgb(0 0 0 / 0.35);
   color-scheme: dark;
 }
 
@@ -813,6 +817,10 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .gezinti-ogesi.kucuk { min-height: 30px; padding: 4px 10px; font-size: 0.9rem; }
 .gezinti-ogesi.kucuk.secili { background: var(--yuzey); color: var(--metin); box-shadow: var(--golge); }
 .gezinti-sayi { font-size: 0.8rem; color: var(--metin-2); }
+.gezinti-ad { display: inline-flex; align-items: center; gap: 9px; min-width: 0; }
+.gezinti-simge { flex: none; opacity: 0.72; }
+.gezinti-ogesi:hover .gezinti-simge, .gezinti-ogesi.secili .gezinti-simge, .gezinti-diger summary:hover .gezinti-simge { opacity: 1; }
+.ayar-alt-baslik { margin: 14px 0 4px; font-size: 0.95rem; }
 .gezinti-ogesi.secili .gezinti-sayi { color: inherit; }
 .gezinti-diger summary { list-style: none; cursor: pointer; min-height: 36px; padding: 6px 10px; border-radius: 8px; color: var(--metin-2); display: flex; align-items: center; gap: 6px; }
 .gezinti-diger summary::-webkit-details-marker { display: none; }
@@ -1318,30 +1326,72 @@ a.defter-karti.belirsiz { border-left-style: dashed; }
   .gezinti-alti { padding-top: 8px; }
 }
 
-/* ---------- Geçişler: kısa ve yumuşak (150–200 ms), gösterişsiz; "animasyonları azalt" açıkken hiç oynamaz ---------- */
-:root { --gecis-egri: cubic-bezier(0.2, 0.7, 0.3, 1); }
+/* ---------- Geçişler (K32, K41) ----------
+   Bütün süreler, mesafeler ve eğriler aşağıdaki --hz-* değişkenlerindedir; JS ile oynatılanlar (sayfa geçişi, evrene
+   giriş, kayan vurgu, sekme çizgisi, katlanan ağaç, panel kapanışı) da bunları okur. "Sakin" ve "Belirgin" deneme
+   içindir (Eşitleme ve cihazlar > Görünüm > Hareket). "Animasyonları azalt" açıkken hiçbiri oynamaz. */
+:root {
+  --gecis-egri: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --hz-sure: 200ms; --hz-mesafe: 8px; --hz-olcek: 0.985; --hz-egri: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --hz-panel-mesafe: 16px; --hz-akordeon: 200ms; --hz-basamak: 18ms;
+  interpolate-size: allow-keywords;
+}
+:root[data-hareket="belirgin"] {
+  --hz-sure: 240ms; --hz-mesafe: 12px; --hz-olcek: 0.97; --hz-egri: cubic-bezier(0.3, 1.25, 0.5, 1);
+  --hz-panel-mesafe: 24px; --hz-akordeon: 240ms;
+}
 @keyframes sol-gir { from { opacity: 0; } to { opacity: 1; } }
 @keyframes asagi-gir { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @keyframes yukari-gir { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-@keyframes sagdan-gir { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@keyframes sayfa-gir { from { opacity: 0; transform: translateY(var(--hz-mesafe)); } to { opacity: 1; transform: none; } }
+@keyframes sagdan-gir { from { opacity: 0; transform: translateX(var(--hz-panel-mesafe)); } to { opacity: 1; transform: none; } }
 @keyframes pencere-gir { from { opacity: 0; transform: translateY(6px) scale(0.985); } to { opacity: 1; transform: none; } }
 @keyframes serit-gir { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translateX(-50%); } }
+@keyframes basamak-gir { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 /* Evrenin dışındaki sayfalar (Evrenler, Eşitleme) açılırken; evrenin içindeki sayfa değişimi Kabuk.tsx useSayfaGecisi. */
-.sayfa:not(.kabuk-ic .sayfa) { animation: yukari-gir 180ms var(--gecis-egri); }
+.sayfa:not(.kabuk-ic .sayfa) { animation: sayfa-gir var(--hz-sure) var(--hz-egri); }
 /* Pencereler, komut paleti ve kısayol listesi. */
 .perde { animation: sol-gir 150ms ease-out; }
 .perde > .perde-ic, .perde > .palet { animation: pencere-gir 180ms var(--gecis-egri); }
-/* Açılır menüler ve katlanan bölümler. */
-.islem-menusu[open] > .menu-icerik { animation: asagi-gir 150ms var(--gecis-egri); transform-origin: top right; }
-/* Gezinti çubuğundakiler her sayfada yeniden çizildiği için yalnız yazar açınca oynar. */
-details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] > ul { animation: asagi-gir 160ms var(--gecis-egri); }
-/* Kenardan gelen paneller. */
-.yan-panel, .yaz-baglami.kayarak, .harita-cekmece { animation: sagdan-gir 180ms var(--gecis-egri); }
+/* Açılır menüler: açılırken aşağı kayarak gelir, kapanırken solarak çekilir (::details-content). */
+.islem-menusu[open] > .menu-icerik, .coklu-secim[open] > .coklu-secim-icerik { animation: asagi-gir 150ms var(--gecis-egri); transform-origin: top right; }
+.islem-menusu::details-content, .coklu-secim::details-content {
+  opacity: 0; translate: 0 -4px; transition: opacity 120ms ease-in, translate 120ms ease-in, content-visibility 120ms allow-discrete; }
+.islem-menusu[open]::details-content, .coklu-secim[open]::details-content { opacity: 1; translate: none; }
+/* Katlanan bölümler (akordeon): yükseklik pürüzsüzce uzar ve kısalır; içerik solarak gelir. İlk çizimde oynamaz. */
+details:not(.islem-menusu, .coklu-secim)::details-content {
+  block-size: 0; overflow: clip; opacity: 0;
+  transition: block-size var(--hz-akordeon) cubic-bezier(0.4, 0, 0.2, 1), opacity var(--hz-akordeon) ease, content-visibility var(--hz-akordeon) allow-discrete; }
+details[open]:not(.islem-menusu, .coklu-secim)::details-content { block-size: auto; opacity: 1; }
+details.aninda::details-content { transition: none; }
+/* Kenardan gelen paneller; kapanırken kopyaları geldikleri yöne çekilir (kapanis.ts cikisHayaletleriniKur). */
+.yan-panel, .yaz-baglami.kayarak, .harita-cekmece { animation: sagdan-gir var(--hz-sure) var(--hz-egri); }
+.rehber-paneli { animation: sagdan-gir var(--hz-sure) var(--hz-egri); }
+.cikis-hayaleti { animation: none !important; pointer-events: none; }
 .baglam-sekme-icerik { animation: sol-gir 150ms ease-out; }
-.hizli-not { animation: yukari-gir 180ms var(--gecis-egri); }
+.hizli-not { animation: yukari-gir var(--hz-sure) var(--hz-egri); }
 .geri-al-seridi { animation: serit-gir 180ms var(--gecis-egri); }
 /* Üzerine gelince renk değişimleri. */
-.dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .gezinti-diger summary, .kart { transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, filter 150ms ease; }
+.dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .gezinti-diger summary, .kart, .not-karti, .kurgu-karti { transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 180ms ease, filter 150ms ease, transform 180ms var(--gecis-egri); }
+/* Kartlarda yükselme: tıklanan kartlar fareyle üzerine gelince 2 piksel kalkar, gölgesi derinleşir, kenarı altına döner.
+   Dokunmatik ekranda üzerine gelme olmadığı için yalnız fare varken. */
+@media (hover: hover) {
+  button.kart:hover, a.kart:hover, a.eser-karti:hover, .harita-karti:hover, .not-karti:hover, .kurgu-karti:hover, a.defter-karti:hover {
+    transform: translateY(-2px); box-shadow: var(--golge-yuksek); border-color: color-mix(in srgb, var(--vurgu) 60%, var(--cizgi)); }
+}
+/* Düğmelerde basılma hissi. */
+.dugme:active:not(:disabled), .arac:active:not(:disabled), .harita-araci:active:not(:disabled), .tuval-araclar button:active:not(:disabled), .tuval-yakinlik button:active { transform: scale(0.97); transition-duration: 60ms; }
+.arac, .harita-araci, .tuval-araclar button, .tuval-yakinlik button { transition: background-color 150ms ease, color 150ms ease, transform 120ms var(--gecis-egri); }
+/* Basamaklı liste belirmesi: liste ilk açıldığında öğeler arka arkaya (en çok ilk 14 öğe beklenir). */
+.basamakli > *, .not-sutunlari.basamakli li { animation: basamak-gir 220ms var(--gecis-egri) both; animation-delay: calc((min(sibling-index(), 15) - 1) * var(--hz-basamak)); }
+/* Kayan seçim vurgusu (gezinti): altın zemin eski satırdan yeni satıra kayar (Kabuk.tsx useGezintiHareketleri). */
+.gezinti-vurgu { position: absolute; z-index: 0; border-radius: 8px; background: var(--vurgu); transform-origin: top; pointer-events: none; }
+.gezinti-listesi > li, .gezinti-diger > summary { position: relative; z-index: 1; }
+.vurgu-kayiyor .gezinti-ogesi.secili:not(.kucuk) { background: transparent; color: var(--metin); }
+/* Sekme çizgisi kayar (kapanis.ts sekmeCizgisiniKur). */
+.sekmeler { position: relative; }
+.sekme-cizgisi { position: absolute; height: 2px; background: var(--vurgu); transform-origin: left; pointer-events: none; }
+.sekme.cizgi-geliyor[aria-selected="true"] { border-bottom-color: transparent; }
 /* Kayıt durumu: durum değişince yazı solarak gelir; kaydedilince başında ✓ (anlam yazıda da var). */
 .kayit-durumu-yazi { animation: sol-gir 150ms var(--gecis-egri); }
 .kayit-durumu-yazi.kayitli::before { content: "✓ "; }
@@ -1350,11 +1400,25 @@ details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] 
 .agac-ok[aria-expanded="true"] .agac-ok-isareti { transform: rotate(90deg); }
 /* Bekleme yazısı hızlı açılışta görünmesin diye geç belirir. */
 .gecikmeli { animation: sol-gir 150ms 300ms both; }
-@media (prefers-reduced-motion: reduce) {
-  .sayfa, .perde, .perde > .perde-ic, .perde > .palet, .islem-menusu[open] > .menu-icerik, details[open] > :not(summary), .gezinti-diger.oynat[open] > ul,
-  .yan-panel, .yaz-baglami.kayarak, .harita-cekmece, .baglam-sekme-icerik, .hizli-not, .geri-al-seridi, .kayit-durumu-yazi, .gecikmeli { animation: none; }
-  .dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .gezinti-diger summary, .kart, .agac-ok-isareti { transition: none; }
+/* Buzlu cam ve katman derinliği: perdeler, komut paleti, harita ve panodaki yüzen çubuklar. */
+.perde { background: rgb(0 0 0 / 0.5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.palet, .harita-araclar, .tuval-yuzen {
+  background: color-mix(in srgb, var(--yuzey) 86%, transparent); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); }
+@media (prefers-reduced-transparency: reduce) {
+  .palet, .harita-araclar, .tuval-yuzen { background: var(--yuzey); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
+@media (prefers-reduced-motion: reduce) {
+  .sayfa, .perde, .perde > .perde-ic, .perde > .palet, .islem-menusu[open] > .menu-icerik, .coklu-secim[open] > .coklu-secim-icerik, details[open] > :not(summary),
+  .yan-panel, .yaz-baglami.kayarak, .harita-cekmece, .rehber-paneli, .baglam-sekme-icerik, .hizli-not, .geri-al-seridi, .kayit-durumu-yazi, .gecikmeli,
+  .basamakli > *, .not-sutunlari.basamakli li { animation: none; }
+  .dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .gezinti-diger summary, .kart, .not-karti, .kurgu-karti, .agac-ok-isareti,
+  .arac, .harita-araci, .tuval-araclar button, .tuval-yakinlik button { transition: none; }
+  details::details-content { transition: none !important; }
+  button.kart:hover, a.kart:hover, a.eser-karti:hover, .harita-karti:hover, .not-karti:hover, .kurgu-karti:hover, a.defter-karti:hover,
+  .dugme:active, .arac:active, .harita-araci:active, .tuval-araclar button:active, .tuval-yakinlik button:active { transform: none; }
+}
+/* Yazarken tam sessizlik: yazma kâğıdının içinde hiçbir şey kalkmaz ya da esnemez. */
+.yaz-kagidi .dugme:active, .yaz-kagidi .arac:active { transform: none; }
 
 /* Çıktı seçimi (§10.11): bölüm ve sahne ağacı. */
 .cikti-secimi { margin: 4px 0 10px; }

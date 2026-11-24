@@ -8,7 +8,7 @@ import type { EsitlemeDurumu } from '../veri/api';
 import { zamanYaz, saatYaz } from '../alan/islem-metni';
 import { epostaKaydet, googleHazirla, izinAl, izniGeriAl, kabuktaMi, kayitliEposta, sessizIzin } from './google';
 import { SayfaYardimi } from './SayfaYardimi';
-import { TEMALAR, temaOku, temaYaz, type Tema } from './tema';
+import { TEMALAR, temaOku, temaYaz, type Tema, HAREKETLER, hareketOku, hareketYaz, type Hareket } from './tema';
 import { git } from './Uygulama';
 
 const YOKLAMA = 3 * 60_000;
@@ -370,6 +370,7 @@ export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
 /** Görünüm: koyu (varsayılan), açık ya da cihazın ayarı. Bu cihazda tutulur. */
 function GorunumAyari() {
   const [tema, setTema] = useState<Tema>(temaOku);
+  const [hareket, setHareket] = useState<Hareket>(hareketOku);
   return (
     <div class="kart" style="margin-top:12px">
       <h3>Görünüm</h3>
@@ -379,6 +380,13 @@ function GorunumAyari() {
         ))}
       </div>
       <p class="soluk kucuk">Yalnızca bu cihazda geçerlidir. “Cihazın ayarı”, Windows'ta seçili açık ya da koyu görünümü izler.</p>
+      <h4 class="ayar-alt-baslik">Hareket</h4>
+      <div class="satir" role="radiogroup" aria-label="Hareket">
+        {HAREKETLER.map((h) => (
+          <label key={h.kod}><input type="radio" name="hareket" checked={hareket === h.kod} onChange={() => { setHareket(h.kod); hareketYaz(h.kod); }} /> {h.ad}</label>
+        ))}
+      </div>
+      <p class="soluk kucuk">{HAREKETLER.find((h) => h.kod === hareket)?.aciklama}. Deneme içindir; ikisini de gezinerek karşılaştırın. Cihazda “animasyonları azalt” açıksa hiçbiri oynamaz.</p>
     </div>
   );
 }

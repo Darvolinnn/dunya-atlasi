@@ -12,6 +12,8 @@ import { uzakGorunumMu } from '../alan/turler';
 import { KurguBaglami } from './kurgu';
 import { useBagGorunumuUygula } from './BagGorunumu';
 import { SAHNE_CALISMA } from '../alan/sablon';
+import { hareketAzMi, hareketDegerleri } from './tema';
+import { GezintiSimgesi } from './simgeler';
 
 /** İnceleme görünümleri (§7): aynı verinin farklı çizimleri. */
 export const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy', 'Soy ağacı'], ['neden', 'Neden–sonuç'], ['durumlar', 'Durum geçmişi'],
@@ -44,16 +46,107 @@ const bilgiBellegi = new Map<string, EvrenBilgisi>();
 type AgacVerisi = { eserler: KisaKayit[]; yapilar: Record<string, EserYapisi>; disarida: YapiSahnesi[]; seriler: { kod: string; ad: string; eserler: { kod: string }[] }[] };
 const agacBellegi = new Map<string, AgacVerisi>();
 
-/** Sayfa değişince içerik kısa ve yumuşak belirir; "animasyonları azalt" ayarı açıksa hiç oynamaz. */
+/** Sayfa değişince içerik yumuşakça belirir (K32, K41: süre, mesafe ve eğri stil.css'teki --hz-* değişkenlerinden);
+ * "animasyonları azalt" ayarı açıksa hiç oynamaz. */
 export function useSayfaGecisi(anahtar: string) {
   const ref = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el?.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const a = el.animate([{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 180, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
+    if (!el?.animate || hareketAzMi()) return;
+    const { sure, mesafe, egri } = hareketDegerleri();
+    const a = el.animate([{ opacity: 0, transform: `translateY(${mesafe}px)` }, { opacity: 1, transform: 'none' }], { duration: sure, easing: egri });
     return () => a.cancel();
   }, [anahtar]);
   return ref;
+}
+
+/** Bir öğenin gezinti çubuğu içindeki konumu (çubuk kaydırılmış olsa da). */
+function gezintideKonum(el: HTMLElement, nav: HTMLElement) {
+  const r = el.getBoundingClientRect();
+  const n = nav.getBoundingClientRect();
+  return { ust: r.top - n.top + nav.scrollTop, sol: r.left - n.left, en: r.width, boy: r.height };
+}
+// Kayan seçim vurgusu (K41): kabuk her ekranda yeniden kurulduğu için seçili satırın son konumu burada tutulur;
+// yeni ekranda altın zemin eski satırdan yeni satıra kayar.
+let sonVurgu: { evren: string; ust: number; boy: number } | null = null;
+// Evrene giriş (K41): Evrenler sayfasından bir evrene girilince kabuk hafif bir derinlik geçişiyle gelir.
+let sonKabukEvreni: string | null = null;
+let kabukSonGorulme = 0;
+
+function useGezintiHareketleri(evren: string, etkin: string) {
+  const navRef = useRef<HTMLElement>(null);
+  const kabukRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    // Kabuk bir an kalkıp aynı evrende yeniden kurulursa (ekran değişimi) giriş geçişi oynamaz; yalnız evrene girerken.
+    const girdi = sonKabukEvreni !== evren || performance.now() - kabukSonGorulme > 1500;
+    sonKabukEvreni = evren;
+    const el = kabukRef.current;
+    if (girdi) sonVurgu = null;
+    if (!girdi || !el?.animate || hareketAzMi()) return;
+    const { sure, olcek, egri } = hareketDegerleri();
+    const a = el.animate([{ opacity: 0, transform: `scale(${olcek})` }, { opacity: 1, transform: 'none' }], { duration: Math.round(sure * 1.15), easing: egri });
+    return () => a.cancel();
+  }, [evren]);
+  useEffect(() => () => { kabukSonGorulme = performance.now(); }, []);
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const sec = nav.querySelector<HTMLElement>(':scope > .gezinti-listesi > li > .gezinti-ogesi.secili, :scope > .gezinti-diger > .gezinti-listesi > li > .gezinti-ogesi.secili');
+    if (!sec) { sonVurgu = null; return; }
+    const yeni = gezintideKonum(sec, nav);
+    const eski = sonVurgu;
+    sonVurgu = { evren, ust: yeni.ust, boy: yeni.boy };
+    if (!eski || eski.evren !== evren || Math.abs(eski.ust - yeni.ust) < 1 || !sec.animate || hareketAzMi()) return;
+    const v = document.createElement('div');
+    v.className = 'gezinti-vurgu';
+    v.setAttribute('aria-hidden', 'true');
+    Object.assign(v.style, { top: `${yeni.ust}px`, left: `${yeni.sol}px`, width: `${yeni.en}px`, height: `${yeni.boy}px` });
+    nav.appendChild(v);
+    nav.classList.add('vurgu-kayiyor');
+    const { sure, egri } = hareketDegerleri();
+    const a = v.animate([{ transform: `translateY(${eski.ust - yeni.ust}px) scaleY(${eski.boy / yeni.boy})` }, { transform: 'none' }], { duration: sure, easing: egri });
+    const bitir = () => { v.remove(); nav.classList.remove('vurgu-kayiyor'); };
+    a.onfinish = bitir; a.oncancel = bitir;
+    return () => a.cancel();
+  }, [evren, etkin]);
+  return { navRef, kabukRef };
+}
+
+/** Katlanan liste (K41): açılırken yüksekliği uzar, kapanırken kısalır; kapanış bitene dek içerik yerinde kalır.
+ * İlk çizimde oynamaz. "Animasyonları azalt" açıksa anlık. */
+export function Katlanir({ acik, children }: { acik: boolean; children: (ref: preact.RefObject<HTMLUListElement>) => preact.ComponentChildren }) {
+  const ref = useRef<HTMLUListElement>(null);
+  const [cizili, setCizili] = useState(acik);
+  const ilk = useRef(true);
+  const ilkAcilis = useRef(true);
+  const oynayan = useRef<Animation | null>(null);
+  useLayoutEffect(() => {
+    if (ilk.current) { ilk.current = false; return; }
+    if (acik) setCizili(true);
+    const el = ref.current;
+    if (!acik && (!el?.animate || hareketAzMi())) { setCizili(false); return; }
+    if (!acik && el) {
+      oynayan.current?.cancel();
+      const { sure } = hareketDegerleri();
+      const a = el.animate([{ height: `${el.offsetHeight}px`, opacity: 1 }, { height: '0px', opacity: 0 }], { duration: Math.round(sure * 0.8), easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
+      el.style.overflow = 'hidden';
+      oynayan.current = a;
+      a.onfinish = () => { setCizili(false); oynayan.current = null; };
+    }
+  }, [acik]);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (ilkAcilis.current) { ilkAcilis.current = false; return; }
+    if (!acik || !cizili || !el) return;
+    if (!el.animate || hareketAzMi()) return;
+    if (oynayan.current) { oynayan.current.cancel(); oynayan.current = null; }
+    el.style.overflow = 'hidden';
+    const { sure, egri } = hareketDegerleri();
+    const a = el.animate([{ height: '0px', opacity: 0 }, { height: `${el.scrollHeight}px`, opacity: 1 }], { duration: sure, easing: egri });
+    const bitir = () => { el.style.overflow = ''; };
+    a.onfinish = bitir; a.oncancel = bitir;
+  }, [acik, cizili]);
+  return <>{(acik || cizili) && children(ref)}</>;
 }
 
 export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
@@ -61,13 +154,13 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
 }) {
   const [bilgi, setBilgi] = useState<EvrenBilgisi | null>(() => bilgiBellegi.get(evren) ?? null);
   const [surum, setSurum] = useState(0);
-  const [digerOynat, setDigerOynat] = useState(false);
   const [digerAcik, setDigerAcik] = useState(() => oku(digerAnahtari) === '1' || DIGER_SAYFALAR.some(([k]) => k === etkin));
   useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then((b) => { bilgiBellegi.set(evren, b); setBilgi(b); }, () => {}); }, [evren, surum]);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren) setSurum((s) => s + 1); }), [evren]);
   useBagGorunumuUygula(istemci, evren, bilgi?.bagGorunumu, surum);
   if (gorunumMu(etkin)) sonGorunum = etkin;
   const icRef = useSayfaGecisi(`${etkin}/${acik ?? ''}`);
+  const { navRef, kabukRef } = useGezintiHareketleri(evren, etkin);
 
   const sayi = (k: string) => !bilgi ? '' : k === 'kayitlar' ? bilgi.kayitSayisi : k === 'cop' ? bilgi.copSayisi
     : k === 'inceleme' ? (bilgi.catismaSayisi + bilgi.sorunSayisi || '') : '';
@@ -80,7 +173,7 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
       <li key={k}>
         <a class={secili ? 'gezinti-ogesi secili' : 'gezinti-ogesi'} aria-current={secili ? 'page' : undefined}
           href={`#/e/${evren}/${k === 'gorunumler' ? sonGorunum : k}`}>
-          <span>{ad}</span>{n !== '' && <span class="gezinti-sayi">{n}</span>}
+          <span class="gezinti-ad"><GezintiSimgesi kod={k} />{ad}</span>{n !== '' && <span class="gezinti-sayi">{n}</span>}
         </a>
         {k === 'yaz' && etkin === 'yaz' && <EserAgaci istemci={istemci} evren={evren} acik={acik} surum={surum} saltOkunur={bagli} />}
         {k === 'gorunumler' && gorunumMu(etkin) && (
@@ -108,13 +201,13 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
   };
 
   return (
-    <div class="kabuk">
-      <nav class="gezinti" aria-label="Evrende gezinti">
+    <div class="kabuk" ref={kabukRef}>
+      <nav class="gezinti" aria-label="Evrende gezinti" ref={navRef}>
         <a class="gezinti-geri" href="#/">← Evrenler</a>
         <div class="gezinti-evren" title={bilgi?.ad}>{bilgi?.ad ?? '…'}</div>
         <ul class="gezinti-listesi">{ANA_SAYFALAR.map(([k, ad]) => oge(k, ad))}</ul>
-        <details class={digerOynat ? 'gezinti-diger oynat' : 'gezinti-diger'} open={digerAcik} onToggle={(e) => { const v = (e.target as HTMLDetailsElement).open; setDigerAcik(v); yaz(digerAnahtari, v ? '1' : '0'); }}>
-          <summary onClick={() => setDigerOynat(true)}>Diğer</summary>
+        <details class="gezinti-diger" open={digerAcik} onToggle={(e) => { const v = (e.target as HTMLDetailsElement).open; setDigerAcik(v); yaz(digerAnahtari, v ? '1' : '0'); }}>
+          <summary><span class="gezinti-ad"><GezintiSimgesi kod="diger" />Diğer</span></summary>
           <ul class="gezinti-listesi">{DIGER_SAYFALAR.filter(([k]) => !bagli || !['surumler', 'yedek'].includes(k)).map(([k, ad]) => oge(k, ad))}</ul>
         </details>
         <div class="gezinti-alti">
@@ -233,22 +326,22 @@ function EserAgaci({ istemci, evren, acik, surum, saltOkunur }: { istemci: Istem
         return (
           <div key={e.kod} class="agac-eser">
             <div class="agac-satir">{ok(e.kod, e.ad)}{dal(e, 'agac-eser-ad')}</div>
-            {y && acikMi(e.kod) && (
-              <ul class="agac-liste">
+            {y && <Katlanir acik={acikMi(e.kod)}>{(ref) => (
+              <ul class="agac-liste" ref={ref}>
                 {sahneler(y.dogrudan)}
                 {y.bolumler.map((b) => (
                   <li key={b.kod}>
                     <div class="agac-satir">{ok(b.kod, b.ad)}{dal({ kod: b.kod, ad: `${b.sira}. ${b.ad}` }, 'agac-bolum')}</div>
-                    {acikMi(b.kod) && <ul class="agac-liste">
+                    <Katlanir acik={acikMi(b.kod)}>{(ref) => <ul class="agac-liste" ref={ref}>
                       {sahneler(b.sahneler)}
                       <li>{yeniSatir(b.kod, 'sahne', '+ Sahne')}</li>
-                    </ul>}
+                    </ul>}</Katlanir>
                   </li>
                 ))}
                 {!y.bolumler.length && <li>{yeniSatir(e.kod, 'sahne', '+ Sahne')}</li>}
                 <li>{yeniSatir(e.kod, 'bolum', '+ Bölüm')}</li>
               </ul>
-            )}
+            )}</Katlanir>}
           </div>
         );
   };
