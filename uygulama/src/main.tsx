@@ -5,11 +5,10 @@ import '@fontsource-variable/source-sans-3';
 import './arayuz/stil.css';
 import { Istemci, tekSekmeKilidi } from './veri/istemci';
 import { Uygulama, BaskaSekme } from './arayuz/Uygulama';
-import { temaUygula, hareketUygula } from './arayuz/tema';
+import { temaUygula } from './arayuz/tema';
 import { cikisHayaletleriniKur } from './arayuz/kapanis';
 
 temaUygula();
-hareketUygula();
 cikisHayaletleriniKur();
 
 const kok = document.getElementById('uygulama')!;

@@ -26,7 +26,7 @@ const css = (p: Page, secici: string) => p.locator(secici).first().evaluate((e) 
 test('komut paleti, sahne menüsü ve sayfa değişimi kısa bir geçişle açılır', async ({ page: p }) => {
   await kaydet(p);
   await sahneAc(p);
-  expect(await sayfaGecisleri(p)).toContain(240); // varsayılan "Belirgin" (K41)
+  expect(await sayfaGecisleri(p)).toContain(240); // K41: 240 ms
   await p.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await p.keyboard.press('Control+K');
   await expect(p.getByRole('dialog', { name: 'Komut paleti' })).toBeVisible();
@@ -106,19 +106,6 @@ test('kayıt açılırken gezinti yerinde kalır', async ({ page: p }) => {
 });
 
 const kayitlar = (p: Page) => p.evaluate(() => (window as unknown as { __gecisler: { sinif: string; sure: number }[] }).__gecisler);
-
-test('"Sakin" seçilince sayfa geçişi 200 ms; seçim cihazda hatırlanır (K41)', async ({ page: p }) => {
-  await kaydet(p);
-  await sahneAc(p);
-  await p.goto('/#/esitleme');
-  await p.getByRole('radio', { name: 'Sakin' }).check();
-  await expect(p.locator('html[data-hareket="sakin"]')).toHaveCount(1);
-  await p.reload();
-  await expect(p.locator('html[data-hareket="sakin"]')).toHaveCount(1);
-  await p.goBack();
-  await p.getByRole('link', { name: 'Kayıtlar' }).click();
-  await expect.poll(async () => (await sayfaGecisleri(p)).at(-1)).toBe(200);
-});
 
 test('gezintide altın vurgu kayar, sekme çizgisi kayar, kapanan panel kayarak çekilir (K41)', async ({ page: p }) => {
   await kaydet(p);

@@ -27,29 +27,6 @@ export function temaYaz(t: Tema) {
   temaUygula(t);
 }
 
-// Hareket düzeyi (K41, deneme): "Belirgin" (önerilen değerler: 240 ms, 12 piksel, yaylı eğri) ya da "Sakin"
-// (200 ms, 8 piksel, yaysız). Değerler stil.css'teki --hz-* değişkenlerindedir; seçim bu cihazda tutulur.
-export type Hareket = 'belirgin' | 'sakin';
-export const HAREKETLER: { kod: Hareket; ad: string; aciklama: string }[] = [
-  { kod: 'belirgin', ad: 'Belirgin', aciklama: 'sayfalar biraz daha uzun ve yaylı bir hareketle gelir' },
-  { kod: 'sakin', ad: 'Sakin', aciklama: 'sayfalar kısa ve düz bir hareketle gelir' },
-];
-const HAREKET_ANAHTARI = 'dunya-atlasi:hareket';
-
-export function hareketOku(): Hareket {
-  try { if (localStorage.getItem(HAREKET_ANAHTARI) === 'sakin') return 'sakin'; } catch { /* yok */ }
-  return 'belirgin';
-}
-
-export function hareketUygula(h: Hareket = hareketOku()) {
-  document.documentElement.dataset.hareket = h;
-}
-
-export function hareketYaz(h: Hareket) {
-  try { localStorage.setItem(HAREKET_ANAHTARI, h); } catch { /* yalnızca bu açılışta geçerli olur */ }
-  hareketUygula(h);
-}
-
 /** stil.css'teki hareket değişkenleri; JS ile oynatılan geçişler (sayfa, evrene giriş, kayan vurgu) bunları okur. */
 export function hareketDegerleri() {
   const s = getComputedStyle(document.documentElement);

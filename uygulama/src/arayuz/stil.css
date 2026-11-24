@@ -820,7 +820,7 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .gezinti-ad { display: inline-flex; align-items: center; gap: 9px; min-width: 0; }
 .gezinti-simge { flex: none; opacity: 0.72; }
 .gezinti-ogesi:hover .gezinti-simge, .gezinti-ogesi.secili .gezinti-simge, .gezinti-diger summary:hover .gezinti-simge { opacity: 1; }
-.ayar-alt-baslik { margin: 14px 0 4px; font-size: 0.95rem; }
+
 .gezinti-ogesi.secili .gezinti-sayi { color: inherit; }
 .gezinti-diger summary { list-style: none; cursor: pointer; min-height: 36px; padding: 6px 10px; border-radius: 8px; color: var(--metin-2); display: flex; align-items: center; gap: 6px; }
 .gezinti-diger summary::-webkit-details-marker { display: none; }
@@ -1328,17 +1328,13 @@ a.defter-karti.belirsiz { border-left-style: dashed; }
 
 /* ---------- Geçişler (K32, K41) ----------
    Bütün süreler, mesafeler ve eğriler aşağıdaki --hz-* değişkenlerindedir; JS ile oynatılanlar (sayfa geçişi, evrene
-   giriş, kayan vurgu, sekme çizgisi, katlanan ağaç, panel kapanışı) da bunları okur. "Sakin" ve "Belirgin" deneme
-   içindir (Eşitleme ve cihazlar > Görünüm > Hareket). "Animasyonları azalt" açıkken hiçbiri oynamaz. */
+   giriş, kayan vurgu, sekme çizgisi, katlanan ağaç, panel kapanışı) da bunları okur. Kullanıcı denemede "Belirgin"
+   ölçüyü seçti (24 Kasım): 240 ms, 12 piksel, hafif yaylı eğri. "Animasyonları azalt" açıkken hiçbiri oynamaz. */
 :root {
   --gecis-egri: cubic-bezier(0.2, 0.7, 0.3, 1);
-  --hz-sure: 200ms; --hz-mesafe: 8px; --hz-olcek: 0.985; --hz-egri: cubic-bezier(0.2, 0.7, 0.3, 1);
-  --hz-panel-mesafe: 16px; --hz-akordeon: 200ms; --hz-basamak: 18ms;
-  interpolate-size: allow-keywords;
-}
-:root[data-hareket="belirgin"] {
   --hz-sure: 240ms; --hz-mesafe: 12px; --hz-olcek: 0.97; --hz-egri: cubic-bezier(0.3, 1.25, 0.5, 1);
-  --hz-panel-mesafe: 24px; --hz-akordeon: 240ms;
+  --hz-panel-mesafe: 24px; --hz-akordeon: 240ms; --hz-basamak: 18ms;
+  interpolate-size: allow-keywords;
 }
 @keyframes sol-gir { from { opacity: 0; } to { opacity: 1; } }
 @keyframes asagi-gir { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
