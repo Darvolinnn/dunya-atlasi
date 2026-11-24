@@ -131,4 +131,19 @@ describe('deneme kopyalarının eşitlenmesi (§9.7, §10)', () => {
     await t.h.evreniIndir({ kod: evren });
     expect(t.h.kayitlar({ evren: dal }).map((k) => k.ad).sort()).toEqual(['Danışman Orin', 'Kral Aldren', 'Kâhya Nesa', 'Varis Elin']);
   });
+  it('bu cihazda olmayan evren Drive\'dan deneme kopyalarıyla birlikte silinir; bu cihazdaki silinmez', async () => {
+    const drive = new BellekTasiyici();
+    const m = cihaz('Masaüstü', drive), t = cihaz('Tablet', drive);
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Fazla' });
+    const { kod: kalan } = m.h.evrenOlustur({ ad: 'Kalan' });
+    m.h.kayitOlustur({ evren, ad: 'Uydurma', tur: 'karakter' });
+    m.h.dalOlustur({ evren, ad: 'Kopya' });
+    await m.h.esitle();
+    await expect(m.h.uzakEvreniSil({ kod: evren })).rejects.toThrow(/bu cihazda/);
+    expect((await t.h.uzakEvrenler()).map((u) => u.ad).sort()).toEqual(['Fazla', 'Kalan']);
+    await t.h.uzakEvreniSil({ kod: evren });
+    expect((await t.h.uzakEvrenler()).map((u) => u.ad)).toEqual(['Kalan']);
+    expect((await drive.listele({})).some((d) => d.ozellikler.evren === evren || d.ozellikler.ana === evren)).toBe(false);
+    expect((await drive.listele({ evren: kalan })).length).toBeGreaterThan(0);
+  });
 });

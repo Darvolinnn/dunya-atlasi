@@ -774,6 +774,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     return { kod };
   }
 
+  async uzakEvreniSil({ kod }: { kod: string }) {
+    if (!this.esitleme) throw new Error('Önce Google Drive\'a bağlanın.');
+    await this.esitleme.uzakEvreniSil(kod);
+  }
+
   evrenEsitlemeAyari({ evren, esitlenir }: { evren: string; esitlenir: boolean }) {
     this.evren(evren);
     this.kurulum.ayarYaz(`esitle:${evren}`, esitlenir ? '1' : '0');

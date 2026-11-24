@@ -114,6 +114,17 @@ export class Esitleme {
   }
 
   /**
+   * Bu cihazda olmayan bir evrenin Drive'daki bütün dosyalarını (deneme kopyaları ve Drive yedekleri dahil) siler.
+   * Bu cihazdaki evrenler buradan silinmez: önce bu cihazdan kaldırılmalıdır.
+   */
+  async uzakEvreniSil(evren: string) {
+    if (!kodGecerliMi(evren)) throw new Error('Evren bulunamadı.');
+    if (this.x.evrenler().some((e) => e.kod === evren)) throw new Error('Bu evren bu cihazda. Drive\'dan silmek için önce bu cihazdan kaldırın.');
+    const dallar = new Set((await this.t.listele({ uygulama: UYGULAMA, ana: evren })).map((d) => d.ozellikler.evren).filter((k) => kodGecerliMi(k) && k !== evren));
+    for (const kod of [...dallar, evren]) for (const d of await this.t.listele({ uygulama: UYGULAMA, evren: kod })) await this.t.sil(d.id);
+  }
+
+  /**
    * Drive'daki bir evreni bu cihaza indirir. Görüntüdeki işlemler parti parti alınır (çok büyük evren belleğe tek
    * seferde alınmaz); evren ilk partiyle kurulur. İndirme yarıda kalırsa evren bir sonraki eşitlemede tamamlanır.
    */
