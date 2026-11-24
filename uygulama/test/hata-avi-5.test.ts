@@ -97,7 +97,11 @@ describe('Markdown çıktısında kalın ve eğik (eski PR #49, bulgu 3)', async
     ['hepsi kalın eğik', [['hepsi', ['k', 'e']]], '***hepsi***'],
     ['eğik içinde kalın', [['çok ', ['e']], ['uzun', ['e', 'k']]], '*çok **uzun***'],
     ['kalından hemen sonra eğik', [['a', ['k']], ['b', ['e']]], '**a**_b_'],
-    ['eğikten hemen sonra kalın', [['a', ['e']], ['b', ['k']]], '*a***b**'],
+    ['eğikten hemen sonra kalın', [['a', ['e']], ['b', ['k']]], '*a*__b__'],
+    // Codex incelemesi (PR #65): eğik → kalın eğik → kalın "*a**b*****c**" olarak çıkıyor, geri okununca bozuluyordu.
+    ['eğik, kalın eğik, kalın', [['a', ['e']], ['b', ['e', 'k']], ['c', ['k']]], '*a**b***__c__'],
+    ['kalın, kalın eğik, eğik', [['a', ['k']], ['b', ['k', 'e']], ['c', ['e']]], '**a*b***_c_'],
+    ['eğik, kalın, eğik', [['a', ['e']], ['b', ['k']], ['c', ['e']]], '*a*__b___c_'],
   ])('%s', (_ad, l, beklenen) => {
     const md = markdownYaz(satir(l), () => 'Ela');
     expect(md).toBe(beklenen);

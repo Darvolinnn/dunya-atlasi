@@ -58,7 +58,7 @@ export interface Parca { metin: string; kalin?: boolean; italik?: boolean; hedef
 const BAG = /!?\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]+))?\]\](['’][\p{L}]+|[\p{L}]+)?|!?\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/gu;
 // Kalının kapanışı ardından yıldız gelmeyen "**"tır ("**çok *uzun***", "***hepsi***"); eğiğin içinde kalın olabilir
 // ("*çok **uzun***").
-const VURGU = /(\*\*|__)(?=\S)([\s\S]+?)(?<=\S)\1(?!\*)|(?<![\p{L}\p{N}])_(?=\S)([^_]+?)(?<=\S)_(?![\p{L}\p{N}])|\*(?=\S)((?:[^*]|\*\*[^*]+?\*\*)+?)(?<=\S)\*/gu;
+const VURGU = /(\*\*|__)(?=\S)([\s\S]+?)(?<=\S)\1(?!\*)|(?<![\p{L}\p{N}])_(?=\S)([^_]+?)(?<=\S)_|\*(?=\S)((?:[^*]|\*\*[^*]+?\*\*)+?)(?<=\S)\*(?!\*)/gu;
 
 function vurgular(s: string, k: Kayiplar): Parca[] {
   const sonuc: Parca[] = [];

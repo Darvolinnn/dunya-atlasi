@@ -25,14 +25,13 @@ export const xmlKacis = (s: string) => s.replace(XML_DISI, '').replace(/&/g, '&a
 function satirIciMd(n: PmNode, hedefAdi: (kod: string) => string | null): string {
   let s = '';
   const acik: { tur: 'k' | 'e'; isaret: string }[] = [];
-  let kalinBitti = -1; // boşluksuz kapanan kalının bittiği yer
+  let kapandi = -1; // boşluksuz kapanan işaretlerin bittiği yer
   const kapat = (kalan: number) => {
     if (acik.length <= kalan) return;
     const bosluk = /\s*$/.exec(s)![0];
     s = s.slice(0, s.length - bosluk.length);
-    let son = '';
-    while (acik.length > kalan) s += (son = acik.pop()!.isaret);
-    if (son === '**' && !bosluk) kalinBitti = s.length;
+    while (acik.length > kalan) s += acik.pop()!.isaret;
+    if (!bosluk) kapandi = s.length;
     s += bosluk;
   };
   n.forEach((c) => {
@@ -55,8 +54,10 @@ function satirIciMd(n: PmNode, hedefAdi: (kod: string) => string | null): string
       const bas = /^\s*/.exec(t)![0];
       s += bas;
       for (const x of yeni) {
-        // Kapanan kalının hemen ardından açılan eğik "_" ile yazılır: "**a***b*" iki türlü okunabilir.
-        const isaret = x === 'k' ? '**' : s.length === kalinBitti ? '_' : '*';
+        // Kapanan bir işaretin hemen ardından açılan "_" ya da "__" ile yazılır: "**a***b*" ve "*a**b*****c**"
+        // birden çok türlü okunabilir.
+        const yapisik = s.length === kapandi;
+        const isaret = x === 'k' ? (yapisik ? '__' : '**') : yapisik ? '_' : '*';
         s += isaret;
         acik.push({ tur: x, isaret });
       }
