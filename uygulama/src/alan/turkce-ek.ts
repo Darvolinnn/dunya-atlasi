@@ -65,10 +65,10 @@ export function ekKalibi(onceki: Ses, ek: string): Birim[] {
   } else if (s[0] === 'l' && (s[1] === 'a' || s[1] === 'e') && s[2] !== 'r') {
     b.push({ t: 'K', h: 'y' }); // -(y)lA: Velkar'la / Ela'yla (-lIk ve -lI kaynaştırma almaz: Ela'lık)
   }
-  // -(y)ken ünlü uyumuna girmez.
-  if (s.startsWith('ken', i)) { b.push({ t: 'H', h: 'k' }, { t: 'H', h: 'e' }, { t: 'H', h: 'n' }); i += 3; }
   for (; i < s.length; i++) {
     const c = s[i];
+    // -(y)ken ünlü uyumuna girmez; başka eklerden sonra da: Ela'ymışken → Velkar'mışken, Ela'dayken.
+    if (s.startsWith('ken', i)) { b.push({ t: 'H', h: 'k' }, { t: 'H', h: 'e' }, { t: 'H', h: 'n' }); i += 2; continue; }
     // -ki değişmez: bulunma ekinden (-dAki) ve ilgi ekinden (-(n)Inki) sonra.
     const ilgidenSonra = b.length > 1 && b[b.length - 1].t === 'H' && (b[b.length - 1] as { h: string }).h === 'n' && b[b.length - 2].t === 'I';
     if (c === 'k' && s[i + 1] === 'i' && b.length && (b[b.length - 1].t === 'A' || ilgidenSonra)) { b.push({ t: 'H', h: 'k' }, { t: 'H', h: 'i' }); i++; continue; }

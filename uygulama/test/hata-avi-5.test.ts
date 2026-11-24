@@ -66,6 +66,11 @@ describe('ad düzeltmede ek uyumu (eski PR #49, bulgu 2)', async () => {
     ["Kurt'luk", 'Kurt', 'Ela', "Ela'lık"],
     ["Ela'ysa", 'Ela', 'Velkar', "Velkar'sa"],
     ["Velkar'dır", 'Velkar', 'Ela', "Ela'dır"],
+    // Codex incelemesi (PR #65): -ken başka eklerden sonra da değişmez.
+    ["Ela'ymışken", 'Ela', 'Velkar', "Velkar'mışken"],
+    ["Kurt'tuysa", 'Kurt', 'Ela', "Ela'ydıysa"],
+    ["Ela'dayken", 'Ela', 'Velkar', "Velkar'dayken"],
+    ["Velkar'sızken", 'Velkar', 'Ela', "Ela'sızken"],
     // Önceden doğru olanlar bozulmasın.
     ["Velkar'dan", 'Velkar', 'Elin', "Elin'den"],
     ["Ela'yla", 'Ela', 'Velkar', "Velkar'la"],
@@ -116,6 +121,11 @@ describe('Markdown içe alma', () => {
   it('alt çizgiyle yazılmış eğik içe almayı durdurmaz', async () => {
     const { satirIci } = await import('../src/alan/markdown');
     expect(satirIci('bir _eğik_ söz', {}, [])).toEqual([{ metin: 'bir ' }, { metin: 'eğik', italik: true }, { metin: ' söz' }]);
+  });
+  it('harfe bitişik kapanan alt çizgi eğik sayılmaz; yalnız bitişik işaretten sonra açılan sayılır', async () => {
+    const { satirIci } = await import('../src/alan/markdown');
+    expect(satirIci('_eğik_abc', {}, [])).toEqual([{ metin: '_eğik_abc' }]);
+    expect(satirIci('**a**_b_c', {}, [])).toEqual([{ metin: 'a', kalin: true }, { metin: 'b', italik: true }, { metin: 'c' }]);
   });
 });
 
