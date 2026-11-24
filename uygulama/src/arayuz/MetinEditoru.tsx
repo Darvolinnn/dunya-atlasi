@@ -26,6 +26,7 @@ import { KullanimSeridi, MetinAlFormu } from './MetinKullanim';
 import { BagsizAdlar } from './BagsizAdlar';
 import { sozlukAnahtari, sozlukEklentisi } from './sozluk-eklentisi';
 import { TerimKarti, useSozlukBilgisi } from './TerimKarti';
+import { uzunCizgiEklentisi } from './uzun-cizgi';
 import { daktiloEklentisi } from './daktilo';
 import { okumaSuzgecleri } from './okuma-suzgecleri';
 import { acilistaTaslak, kayittanSonraTemel, kurtarmaAnahtari, taslakAnahtari, taslakSil, taslakYaz, type Taslak, type TaslakDeposu } from './taslak';
@@ -349,6 +350,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           daktiloEklentisi(),
           okumaSuzgecleri(),
           sozlukEklentisi(kartAc),
+          uzunCizgiEklentisi(),
           history(), keymap({ ...KISAYOLLAR, 'Mod-k': () => { if (calismaRef.current) calismaRef.current.paletAc({ bagla }); else bagla(); return true; } }), keymap(baseKeymap),
         ],
       });

@@ -194,6 +194,12 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
           <span class="bosluk" />
           {kelime !== null && <span class="kelime-sayaci" aria-live="off">{sahne ? 'Bu sahne ' : ''}{sayiYaz(kelime)} kelime{bugun ? ` · bugün ${bugun > 0 ? '+' : '−'}${sayiYaz(Math.abs(bugun))}` : ''}</span>}
           <button class={odak ? 'dugme kucuk odak-dugmesi secili' : 'dugme sade kucuk odak-dugmesi'} aria-pressed={odak} title="Odak kipi (Ctrl+Shift+F); çıkmak için Esc" onClick={() => setOdak(!odak)}>{odak ? 'Odaktan çık' : 'Odak'}</button>
+          {sahne && onceki && !odak && (
+            <details class="onceki-son">
+              <summary class="dugme sade kucuk" title="Önceki sahnenin son paragrafı">Önceki sahnenin sonu</summary>
+              <div class="onceki-son-kutu" role="note"><p class="soluk kucuk">Önceki sahne şöyle bitti:</p><p>“{onceki}”</p></div>
+            </details>
+          )}
           {sahne && baglamKapali && !odak && <button class="dugme sade kucuk" onClick={() => baglamAc(true)}>{bos ? 'Bağlam ekle' : 'Bağlamı göster'}</button>}
           {diyalog && <button class="dugme kucuk secili" title="Yalnız diyaloglar süzgecini kapat" onClick={() => setDiyalog(false)}>Yalnız diyaloglar ✕</button>}
           <SayfaYardimi sayfa="yaz" />

@@ -1790,3 +1790,13 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .okur-kayitlar th { text-align: left; font-weight: 500; color: var(--metin-2); font-size: 0.8rem; padding: 4px 8px; border-bottom: 1px solid var(--cizgi); }
 .okur-kayitlar td { padding: 6px 8px; border-bottom: 1px solid var(--cizgi); }
 .okur-kayitlar tr:last-child td { border-bottom: none; }
+
+/* Önceki sahnenin sonu, üst şeritte (K39 #2) */
+.onceki-son { position: relative; }
+.onceki-son > summary { list-style: none; cursor: pointer; white-space: nowrap; }
+.onceki-son > summary::-webkit-details-marker { display: none; }
+.onceki-son[open] > summary { text-decoration: underline; text-underline-offset: 4px; }
+.onceki-son-kutu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 12; width: min(420px, 80vw); background: var(--yuzey); border: 1px solid var(--cizgi);
+  border-radius: var(--yaricap); box-shadow: 0 8px 28px rgb(0 0 0 / 0.16); padding: 10px 14px; font-family: var(--metin-yazi, inherit); }
+.onceki-son-kutu p { margin: 0 0 6px; }
+.onceki-son-kutu p:last-child { margin: 0; font-style: italic; }
