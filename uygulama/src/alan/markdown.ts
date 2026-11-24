@@ -56,7 +56,9 @@ const tirnaksiz = (s: string) => {
 export interface Parca { metin: string; kalin?: boolean; italik?: boolean; hedef?: string }
 
 const BAG = /!?\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]+))?\]\](['’][\p{L}]+|[\p{L}]+)?|!?\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/gu;
-const VURGU = /(\*\*|__)(?=\S)([\s\S]+?)(?<=\S)\1|(?<![\p{L}\p{N}])_(?=\S)([^_]+?)(?<=\S)_(?![\p{L}\p{N}])|\*(?=\S)([^*]+?)(?<=\S)\*/gu;
+// Kalının kapanışı ardından yıldız gelmeyen "**"tır ("**çok *uzun***", "***hepsi***"); eğiğin içinde kalın olabilir
+// ("*çok **uzun***").
+const VURGU = /(\*\*|__)(?=\S)([\s\S]+?)(?<=\S)\1(?!\*)|(?<![\p{L}\p{N}])_(?=\S)([^_]+?)(?<=\S)_(?:(?![\p{L}\p{N}])|(?<=[*_]_[^_]+_))|\*(?=\S)((?:[^*]|\*\*[^*]+?\*\*)+?)(?<=\S)\*(?!\*)/gu;
 
 function vurgular(s: string, k: Kayiplar): Parca[] {
   const sonuc: Parca[] = [];
@@ -64,7 +66,7 @@ function vurgular(s: string, k: Kayiplar): Parca[] {
   for (const m of s.matchAll(VURGU)) {
     if (m.index! > son) sonuc.push({ metin: s.slice(son, m.index) });
     if (m[2] !== undefined) sonuc.push(...vurgular(m[2], k).map((p) => ({ ...p, kalin: true })));
-    else sonuc.push(...vurgular((m[4] ?? m[5])!, k).map((p) => ({ ...p, italik: true })));
+    else sonuc.push(...vurgular((m[3] ?? m[4])!, k).map((p) => ({ ...p, italik: true })));
     son = m.index! + m[0].length;
   }
   if (son < s.length) sonuc.push({ metin: s.slice(son) });

@@ -6,8 +6,33 @@ import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage } from 'pdf
 import fontkit from '@pdf-lib/fontkit';
 import { AYRAC_METNI, VARSAYILAN_GORUNUM, type Blok, type Kitap, type KitapGorseli, type Parca } from './kitap';
 
-/** Gömülecek yazı tiplerinin dosyaları (TrueType). */
-export interface YaziTipleri { duz: Uint8Array; egik: Uint8Array; kalin: Uint8Array; kalinEgik: Uint8Array }
+/** Gömülecek yazı tiplerinin dosyaları (TrueType). `yedek`: ana yazı tipinde olmayan harfler (ses yazısı
+ *  işaretleri, ※ gibi) için ikinci yazı tipi (Noto Serif); yalnız kitapta böyle bir harf varsa yüklenir. */
+export interface YaziTipleri { duz: Uint8Array; egik: Uint8Array; kalin: Uint8Array; kalinEgik: Uint8Array; yedek?: Omit<YaziTipleri, 'yedek'> }
+
+/** Ana yazı tipinin karakterleri ve onda olmayan harfler için yedeği. `yedek` yoksa (ölçüm geçişi) harf ana yazı
+ *  tipiyle yerleştirilir; yalnız bu biçimde yedeğin gerektiği `kullanilan`a yazılır. */
+interface Yedek { kendi: Set<number>; yedekte: Set<number>; yedek: PDFFont | null; bicim: number; kullanilan: Set<number> }
+const YEDEKLER = new WeakMap<PDFFont, Yedek>();
+
+/** Metni, her harfi onu içeren yazı tipiyle yazılacak parçalara böler. */
+function parcala(metin: string, yt: PDFFont): { metin: string; yt: PDFFont }[] {
+  const y = YEDEKLER.get(yt);
+  if (!y) return [{ metin, yt }];
+  const l: { metin: string; yt: PDFFont }[] = [];
+  for (const h of metin) {
+    const c = h.codePointAt(0)!;
+    let t = yt;
+    if (!y.kendi.has(c) && y.yedekte.has(c)) { y.kullanilan.add(y.bicim); t = y.yedek ?? yt; }
+    const son = l[l.length - 1];
+    if (son && son.yt === t) son.metin += h; else l.push({ metin: h, yt: t });
+  }
+  return l;
+}
+const enOlc = (metin: string, yt: PDFFont, boy: number) => parcala(metin, yt).reduce((t, p) => t + p.yt.widthOfTextAtSize(p.metin, boy), 0);
+function yaz(s: PDFPage, metin: string, yt: PDFFont, boy: number, x: number, y: number) {
+  for (const p of parcala(metin, yt)) { s.drawText(p.metin, { x, y, size: boy, font: p.yt, color: RENK }); x += p.yt.widthOfTextAtSize(p.metin, boy); }
+}
 
 const MM = 72 / 25.4;
 // Türkiye'de romanların yaygın kitap ölçüsü 13,5×21 cm; 11 punto, 1,3 satır aralığı.
@@ -20,10 +45,51 @@ const RENK = rgb(0.1, 0.1, 0.1);
 interface Kelime { parcalar: { metin: string; yt: PDFFont }[]; gen: number; bosluk: number; boy: number }
 type Satir = { kelimeler: Kelime[]; son: boolean };
 
+/**
+ * Kitapta geçip PDF'in yazı tiplerinde bulunmayan karakterler (emoji, Çince gibi); PDF'te boş çıkarlar. Yazara
+ * söylenir; Word ve EPUB çıktısında okuyucunun yazı tipleriyle görünürler.
+ */
+export function pdfdeOlmayanlar(k: Kitap, yt: YaziTipleri): string[] {
+  type Tip = { hasGlyphForCodePoint(c: number): boolean };
+  const ac = (d: Uint8Array) => fontkit.create(d as never) as unknown as Tip;
+  const tipler = (['duz', 'egik', 'kalin', 'kalinEgik'] as const).map((a) => [ac(yt[a]), ...(yt.yedek ? [ac(yt.yedek[a])] : [])]);
+  const harfler = new Set<string>();
+  const topla = (x: unknown): void => {
+    if (typeof x === 'string') { for (const h of x) harfler.add(h); return; }
+    if (!x || typeof x !== 'object' || x instanceof Uint8Array) return;
+    for (const v of Object.values(x)) topla(v);
+  };
+  topla(k);
+  return [...harfler].filter((h) => {
+    const c = h.codePointAt(0)!;
+    // Boşluklar, satır sonu ve görünmeyen biçim karakterleri çizilmez.
+    if (/[\s\p{Cc}\p{Cf}]/u.test(h)) return false;
+    return !tipler.every((l) => l.some((t) => t.hasGlyphForCodePoint(c)));
+  });
+}
+
 export async function pdfYaz(k: Kitap, yt: YaziTipleri, zaman = new Date()): Promise<Uint8Array> {
+  if (!yt.yedek) return (await olustur(k, yt, zaman, null))!;
+  // Yedek yazı tipi alt kümelenemiyor (pdf-lib'in alt kümesinde Noto Serif harfleri bozuk, boş çıkıyor); bütünü
+  // gömülür. PDF büyümesin diye önce hangi biçimlerde (düz, eğik…) gerektiği ölçülür, yalnız onlar gömülür.
+  const kullanilan = new Set<number>();
+  await olustur(k, yt, zaman, { kullanilan, gom: false });
+  return (await olustur(k, yt, zaman, { kullanilan, gom: true }))!;
+}
+
+async function olustur(k: Kitap, yt: YaziTipleri, zaman: Date, yedekGecisi: { kullanilan: Set<number>; gom: boolean } | null): Promise<Uint8Array | null> {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
   const [duz, egik, kalin, kalinEgik] = await Promise.all([yt.duz, yt.egik, yt.kalin, yt.kalinEgik].map((d) => pdf.embedFont(d, { subset: true })));
+  if (yt.yedek && yedekGecisi) {
+    const { kullanilan, gom } = yedekGecisi, y = yt.yedek;
+    const kaynak = [y.duz, y.egik, y.kalin, y.kalinEgik];
+    await Promise.all([duz, egik, kalin, kalinEgik].map(async (f, i) => {
+      const yedekte = new Set((fontkit.create(kaynak[i] as never) as unknown as { characterSet: number[] }).characterSet);
+      const yedek = gom && kullanilan.has(i) ? await pdf.embedFont(kaynak[i], { subset: false }) : null;
+      YEDEKLER.set(f, { kendi: new Set(f.getCharacterSet()), yedekte, yedek, bicim: i, kullanilan });
+    }));
+  }
   const yaziTipi = (p: { kalin?: boolean; egik?: boolean }) => p.kalin ? (p.egik ? kalinEgik : kalin) : p.egik ? egik : duz;
   pdf.setTitle(k.ad, { showInWindowTitleBar: true });
   pdf.setLanguage('tr-TR');
@@ -66,14 +132,14 @@ export async function pdfYaz(k: Kitap, yt: YaziTipleri, zaman = new Date()): Pro
     const ilkHarf = o.basHarf ? Array.from(liste[0]?.metin ?? '')[0] : undefined;
     if (ilkHarf && /\p{L}/u.test(ilkHarf)) {
       const boy = (2 * SATIR + 0.7 * BOY) / 0.7, yt = yaziTipi(liste[0]);
-      harf = { metin: ilkHarf, yt, boy, gen: yt.widthOfTextAtSize(ilkHarf, boy) };
+      harf = { metin: ilkHarf, yt, boy, gen: enOlc(ilkHarf, yt, boy) };
       liste = [{ ...liste[0], metin: liste[0].metin.slice(ilkHarf.length) }, ...liste.slice(1)];
     }
     const girinti = (i: number) => (harf ? (i < 3 ? harf.gen + 3 : 0) : i === 0 ? o.girinti : 0);
     const satirlar = satirlaraBol(kelimeler(liste, yaziTipi), genislik, girinti);
     if (harf) {
       yerAc(3 * SATIR);
-      sayfa.drawText(harf.metin, { x: YAN + o.sol, y: y - 3 * SATIR + (SATIR - BOY) / 2, size: harf.boy, font: harf.yt, color: RENK });
+      yaz(sayfa, harf.metin, harf.yt, harf.boy, YAN + o.sol, y - 3 * SATIR + (SATIR - BOY) / 2);
     }
     satirlar.forEach((st, i) => {
       // Paragrafın tek satırı sayfanın dibinde kalmasın (öksüz satır): ilk satırdan sonra en az bir satır daha sığmalı.
@@ -165,14 +231,14 @@ export async function pdfYaz(k: Kitap, yt: YaziTipleri, zaman = new Date()): Pro
       for (const x of icindekiler.slice(p * sigan, (p + 1) * sigan)) {
         yy -= SATIR;
         const no = String(x.sayfa), noGen = duz.widthOfTextAtSize(no, BOY);
-        const gen = GEN - 2 * YAN - x.girinti - noGen - 4 * MM;
-        sf.drawText(kirp(x.metin, duz, BOY, gen), { x: YAN + x.girinti, y: yy, size: BOY, font: x.girinti ? egik : duz, color: RENK });
+        const gen = GEN - 2 * YAN - x.girinti - noGen - 4 * MM, yt = x.girinti ? egik : duz;
+        yaz(sf, kirp(x.metin, yt, BOY, gen), yt, BOY, YAN + x.girinti, yy);
         sf.drawText(no, { x: GEN - YAN - noGen, y: yy, size: BOY, font: duz, color: RENK });
       }
     }
   }
   numarali.forEach((s, i) => ortala(s, String(i + 1), duz, 9, ALT / 2, GEN));
-  return pdf.save();
+  return yedekGecisi && !yedekGecisi.gom ? null : pdf.save();
 }
 
 /** ❦ benzeri süs (Literata'da bu işaret yok; çizilir): 20×18'lik kutuda yaprak ve sapı. */
@@ -180,33 +246,33 @@ const SUS_YOLU = 'M10 18 C 4.5 13.5 0.5 10 2.6 5.6 C 4.4 2 8.4 2.6 10 6 C 11.6 2
 /** Harfler arasına ince boşluk (bölüm numarası). */
 const aralikli = (s: string) => Array.from(s).join('\u2009');
 function kirp(s: string, yt: PDFFont, boy: number, gen: number) {
-  if (yt.widthOfTextAtSize(s, boy) <= gen) return s;
+  if (enOlc(s, yt, boy) <= gen) return s;
   let l = Array.from(s);
-  while (l.length && yt.widthOfTextAtSize(l.join('') + '…', boy) > gen) l = l.slice(0, -1);
+  while (l.length && enOlc(l.join('') + '…', yt, boy) > gen) l = l.slice(0, -1);
   return l.join('').trimEnd() + '…';
 }
 
 function ortala(s: PDFPage, metin: string, yt: PDFFont, boy: number, y: number, gen: number) {
-  const g = yt.widthOfTextAtSize(metin, boy);
-  if (g <= gen) { s.drawText(metin, { x: (GEN - g) / 2, y, size: boy, font: yt, color: RENK }); return; }
+  const g = enOlc(metin, yt, boy);
+  if (g <= gen) { yaz(s, metin, yt, boy, (GEN - g) / 2, y); return; }
   // Uzun ad: satırlara bölünür, ortalanır.
   const satirlar = satirlaraBol(kelimeler([{ metin }], () => yt, boy), gen, 0);
   satirlar.forEach((st, i) => satirCiz(s, st, (GEN - gen) / 2, y - i * boy * 1.3, gen, false, true));
 }
 
-/** Parçaları kelimelere böler; boşluksuz biçim değişimi (ör. yarısı kalın kelime) aynı kelimede kalır. */
-function kelimeler(parcalar: Parca[], yaziTipi: (p: Parca) => PDFFont, boy = BOY): (Kelime | 'satir')[] {
+/** Parçaları kelimelere böler; boşluksuz biçim değişimi (ör. yarısı kalın kelime) aynı kelimede kalır. Bölünmez
+ *  boşluk (U+00A0, U+202F) kelimeyi bölmez: "12 Hasat" aynı satırda kalır. */
+export function kelimeler(parcalar: Parca[], yaziTipi: (p: Parca) => PDFFont, boy = BOY): (Kelime | 'satir')[] {
   const l: (Kelime | 'satir')[] = [];
   let k: Kelime | null = null;
   for (const p of parcalar) {
     const yt = yaziTipi(p);
-    for (const t of p.metin.replace(/\t/g, ' ').split(/(\n|[   -  　]+)/)) {
+    for (const t of p.metin.replace(/\t/g, ' ').split(/(\n|[  - 　]+)/)) {
       if (!t) continue;
       if (t === '\n') { k = null; l.push('satir'); continue; }
       if (/^\s+$/.test(t)) { if (k) { k.bosluk = yt.widthOfTextAtSize(' ', boy); k = null; } continue; }
       if (!k) { k = { parcalar: [], gen: 0, bosluk: 0, boy }; l.push(k); }
-      k.parcalar.push({ metin: t, yt });
-      k.gen += yt.widthOfTextAtSize(t, boy);
+      for (const p of parcala(t, yt)) { k.parcalar.push(p); k.gen += p.yt.widthOfTextAtSize(p.metin, boy); }
     }
   }
   return l;

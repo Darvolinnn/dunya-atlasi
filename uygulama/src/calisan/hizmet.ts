@@ -4201,7 +4201,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     const dalSayilari = new Map<string, number>();
     for (const d of dallar) {
       let n = 0;
-      try { for await (const _ of dalGunlugu(d.kod)) n++; } catch { continue; }
+      // Bu cihazın yalnız deneme kopyasında yazdığı değişiklikler de "kendi" sayılır (eski PR #49, bulgu 1).
+      try { for await (const i of dalGunlugu(d.kod)) { n++; if (i.kurulum === this.kurulum.kod) kendi = true; } } catch { continue; }
       if (n === d.islemSayisi && dalKodlari.includes(d.kod)) dalSayilari.set(d.kod, n);
     }
     // Yedekte bu cihazın kendi değişiklikleri varsa yedek her zaman ayrı bir evren olarak açılır: bu cihaz o evrende

@@ -139,7 +139,7 @@ export const YERINDE_GECISLER: Record<number, (db: Database) => void> = {
   },
   // K39: yeni işlem türleri yalnız evren tablosuna yazar. Eski sürümün anlamadan günlükte bıraktıkları sırayla uygulanır.
   61: (db) => {
-    for (const r of db.selectObjects("SELECT * FROM islemler WHERE tur IN ('gorsel_odak','kesilen_parca','surum_adi') ORDER BY no")) {
+    for (const r of db.selectObjects("SELECT * FROM islemler WHERE tur IN ('gorsel_odak','kesilen_parca','surum_adi') ORDER BY saat, kurulum, sira")) {
       const i = { kod: r.kod, kurulum: r.kurulum, sira: Number(r.sira), zaman: Number(r.zaman), tur: r.tur, veri: JSON.parse(r.veri as string) } as unknown as Islem;
       UYGULAYICILAR[i.tur]?.(db, i);
     }
