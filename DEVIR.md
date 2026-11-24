@@ -389,7 +389,7 @@ Kullanıcı 23 Kasım'da sıradaki işleri sıraladı, 24 Kasım'da "bunları s�
 - `kaldigiYer` iki alan döner: `eksik` (öbür cihazdan gelen yerin dayanağı bu cihazın o cihazdan aldığından büyük) ve `baskaCihazda` (öbür cihazda son 30 dakikada açık kayıt, `ACIK_SAYILMA`).
 - Ekran: `Masa.tsx` `DevirUyarisi` (Genel bakış ve Yaz sayfasındaki "Kaldığınız yer" kartları; bağlıysa "Şimdi eşitle"), `YazEkrani.tsx` `BaskaCihazdaAcik` (yazma ekranının üstünde soluk satır, dakikada bir yenilenir; odak kipinde gizli).
 - Alınmayanlar: seçili varsayımlar, açık karşılaştırma (kayıtlı seçim yok; K11).
-- Taslak resimleri `/mnt/project-files/taslaklar/f47/` (depoda değil). [ ] Kullanıcı onayı bekleniyor (24 Kasım 14:10 UTC).
+- Taslak resimleri `/mnt/project-files/taslaklar/f47/` (depoda değil). [x] Kullanıcı onayladı (24 Kasım 14:47 UTC, "Uygun, böyle yap"); `main`e alındı.
 - Sınama: `test/esitleme.test.ts` "çalışma devri (F47)".
 
 **3. Açık uçlar:** [x] PR #49'un notu §0.22 olarak alındı, PR kapatıldı. [x] §0.19'daki eski dallar silinmiş (işlendi). [ ] İki "Deneme 1" ve kullanıcının bilgisayarındaki `Writing` klonunda kenara alınan (stash) 4 DEVIR satırı: bilgisayar ve kullanıcı gerekir.
