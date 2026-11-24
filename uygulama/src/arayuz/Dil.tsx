@@ -55,7 +55,7 @@ export function DilBolumu({ istemci, evren, kod, ad = 'Bu dil', surum }: { istem
       </form>
 
       <h3>Ses sınıfları</h3>
-      <p class="soluk kucuk">Hazır sınıflar: V ünlüleri, C ünsüzleri gösterir. Kurallarda büyük harf bir sınıfı, [ptk] adsız bir sınıfı, # sözcük sınırını, ∅ boşluğu gösterir.</p>
+      <p class="soluk kucuk">Hazır sınıflar: V ünlüleri, C ünsüzleri gösterir. Kurallarda büyük harf bir sınıfı, [ptk] adsız bir sınıfı, # sözcük sınırını gösterir. ∅, o konumda ses olmadığını gösterir: “k → ∅” k sesini siler, boşluk eklemez.</p>
       {t.siniflar.length > 0 && <ul class="toplanan-listesi">{t.siniflar.map((s, i) => (
         <li key={s.ad}>{s.ad} = {s.harfler} <button class="dugme sade kucuk" onClick={() => void geriAlinabilir('Ses sınıfı kaldırıldı.', () => yaz({ siniflar: t.siniflar.filter((_, j) => j !== i) }), () => yaz({ siniflar: t.siniflar }))}>Kaldır</button></li>
       ))}</ul>}
@@ -336,7 +336,7 @@ export function KisiDilleriBolumu({ istemci, evren, kod, surum }: { istemci: Ist
   return (
     <section class="surecler" aria-label="Bildiği diller">
       <h2>Bildiği diller</h2>
-      <p class="soluk kucuk">Bir dili bilmek tek bir ölçüyle verilmez. Konuşma, anlama, okuma ve yazma ayrı ayrı tutulur. Boş bırakılan beceri bilinmiyor sayılır.</p>
+      <p class="soluk kucuk">Dil yeterliliği tek bir değerle gösterilmez. Konuşma, anlama, okuma ve yazma ayrı ayrı değerlendirilir. Boş bırakılan beceri bilinmiyor sayılır.</p>
       <ul class="toplanan-listesi">{l.map((x) => (
         <li key={x.iliski}>{bag(evren, x.dil)}
           <div class="satir">

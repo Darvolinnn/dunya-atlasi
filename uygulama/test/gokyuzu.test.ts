@@ -76,13 +76,13 @@ describe('gökyüzü takvim döngüsü (§15-7)', () => {
   it('geçersiz tanımları Türkçe açıklamayla reddeder', () => {
     for (const donem of [0, -1, NaN, Infinity]) {
       const t = tanim(); t.aylar[0].donem = donem;
-      expect(() => tanimDogrula(t, z)).toThrow('Ay dönemi 1 günden kısa olamaz.');
+      expect(() => tanimDogrula(t, z)).toThrow('Uydunun evre döngüsü 1 günden kısa olamaz.');
     }
     const t = tanim(); t.aylar[0].baslangic = '0';
     expect(() => tanimDogrula(t, z)).toThrow(/günü bilinen/);
     t.aylar[0].baslangic = 'bilinmiyor';
     expect(() => tanimDogrula(t, z)).toThrow(/iki sınırı/);
-    expect(() => tanimDogrula(null, z)).toThrow(/ay tanımlayın/);
+    expect(() => tanimDogrula(null, z)).toThrow(/uydu tanımlayın/);
     expect(() => tanimDogrula({ ...tanim(), aylar: [null] }, z)).toThrow(/yeniden/);
     const m = tanim(); m.mevsimler[0].baslangicGunu = 121;
     expect(() => tanimDogrula(m, z)).toThrow(/yılın içinde/);
@@ -107,7 +107,7 @@ describe('gökyüzü takvim döngüsü (§15-7)', () => {
   it('tanımı işlemden okur ve başka cihazda günlükten yeniden kurar', () => {
     const { h, evren } = hazirla();
     const gecersiz = tanim(); gecersiz.aylar[0].donem = 0;
-    expect(() => h.gokyuzuYaz({ evren, tanim: gecersiz })).toThrow('Ay dönemi 1 günden kısa olamaz.');
+    expect(() => h.gokyuzuYaz({ evren, tanim: gecersiz })).toThrow('Uydunun evre döngüsü 1 günden kısa olamaz.');
     expect(h.gokyuzuTanimi({ evren })).toBeNull();
     expect(() => h.gokyuzuHesapla({ evren, tarih: '0' })).toThrow(/Önce/);
     h.gokyuzuYaz({ evren, tanim: tanim() });

@@ -67,7 +67,7 @@ function MiktarAlani({ ad, deger, yaz }: { ad: string; deger: KalabalikMiktari; 
   return <fieldset class="kalabalik-miktar"><legend>{ad}</legend>
     <label>En az <input type="number" min="0" step="1" value={deger.enAz} onInput={(e) => yaz({ ...deger, enAz: e.currentTarget.value === '' ? NaN : Number(e.currentTarget.value) })} /></label>
     <label>En çok <input type="number" min="0" step="1" value={deger.enCok} onInput={(e) => yaz({ ...deger, enCok: e.currentTarget.value === '' ? NaN : Number(e.currentTarget.value) })} /></label>
-    <label><input type="checkbox" checked={deger.yaklasik} onChange={(e) => yaz({ ...deger, yaklasik: e.currentTarget.checked })} /> Yaklaşık miktar</label>
+    <label><input type="checkbox" checked={deger.yaklasik} onChange={(e) => yaz({ ...deger, yaklasik: e.currentTarget.checked })} /> Yaklaşık sayı</label>
     <small class="soluk">Tek sayı için iki sınırı aynı yazın.</small>
   </fieldset>;
 }
@@ -125,7 +125,7 @@ function SayimFormu({ istemci, evren, bicim, kod, tanim, kapat }: { istemci: Ist
       {g.ortusmeler.map((o, i) => <div class="kart" key={i}>
         <label>Birinci alt grup <select value={o.a} onChange={(e) => setT({ ...g, ortusmeler: g.ortusmeler.map((s, n) => n === i ? { ...s, a: e.currentTarget.value } : s) })}><option value="">Seçin</option>{g.altGruplar.map((s) => <option value={s.kod} key={s.kod}>{s.ad}</option>)}</select></label>
         <label>İkinci alt grup <select value={o.b} onChange={(e) => setT({ ...g, ortusmeler: g.ortusmeler.map((s, n) => n === i ? { ...s, b: e.currentTarget.value } : s) })}><option value="">Seçin</option>{g.altGruplar.filter((s) => s.kod !== o.a).map((s) => <option value={s.kod} key={s.kod}>{s.ad}</option>)}</select></label>
-        <MiktarAlani ad="Ortak üye miktarı" deger={o.miktar} yaz={(miktar) => setT({ ...g, ortusmeler: g.ortusmeler.map((s, n) => n === i ? { ...s, miktar } : s) })} />
+        <MiktarAlani ad="Ortak üye sayısı" deger={o.miktar} yaz={(miktar) => setT({ ...g, ortusmeler: g.ortusmeler.map((s, n) => n === i ? { ...s, miktar } : s) })} />
         <button type="button" class="dugme sade" onClick={() => setT({ ...g, ortusmeler: g.ortusmeler.filter((_, n) => n !== i) })}>Örtüşmeyi çıkar</button>
       </div>)}
       {g.altGruplar.length > 1 && <button type="button" class="dugme" onClick={() => setT({ ...g, ortusmeler: [...g.ortusmeler, { a: '', b: '', miktar: sifir() }] })}>Örtüşme ekle</button>}

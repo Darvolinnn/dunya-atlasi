@@ -75,20 +75,20 @@ export function GokyuzuSekmesi({ istemci, evren, surum }: { istemci: Istemci; ev
   };
   return <section aria-label="Gökyüzü">
     <h2>Gökyüzü</h2><p class="soluk">{SINIRLAR}</p>
-    <p>Hesap, ana zaman akışında kaydedilmiş tanıma göre yapılır. Tarihleri Takvim bölümündeki adlarla yazın. Ayın başlangıcı için günü belli bir tarih gerekir, örneğin “12 Hasat 412”.</p>
+    <p>Hesap, ana zaman akışında kaydedilmiş tanıma göre yapılır. Tarihleri Takvim bölümündeki adlarla yazın. Uydunun başlangıç evresinin tarihi için günü belli bir tarih gerekir, örneğin “12 Hasat 412”.</p>
     {!yuklendi ? <p>Açılıyor…</p> : <>
       <fieldset disabled={bekliyor}><legend>Gökyüzü tanımı</legend>
         {t.aylar.map((a, i) => {
           const ayDegis = (x: Partial<typeof a>) => degis({ ...t, aylar: t.aylar.map((b, j) => j === i ? { ...b, ...x } : b) });
           return <fieldset key={a.kod}><legend>{i + 1}. uydu</legend><div class="satir">
-            <label>Ayın adı <input class="girdi" value={a.ad} onInput={(e) => ayDegis({ ad: e.currentTarget.value })} /></label>
+            <label>Uydunun adı <input class="girdi" value={a.ad} onInput={(e) => ayDegis({ ad: e.currentTarget.value })} /></label>
             <label>Evre döngüsü (gün) <input class="girdi" type="number" min="1" step="any" value={a.donem} onInput={(e) => ayDegis({ donem: e.currentTarget.valueAsNumber })} /></label>
             <label>Başlangıç evresinin tarihi <input class="girdi" value={a.baslangic} onInput={(e) => ayDegis({ baslangic: e.currentTarget.value })} /></label>
-            <EvreSec etiket={`${i + 1}. ayın başlangıç evresi`} deger={a.evre} sec={(evre) => ayDegis({ evre })} />
-            <button class="dugme" onClick={() => { degis({ ...t, aylar: t.aylar.filter((b) => b.kod !== a.kod) }); setKosullar({}); }}>Ayı kaldır</button>
+            <EvreSec etiket={`${i + 1}. uydunun başlangıç evresi`} deger={a.evre} sec={(evre) => ayDegis({ evre })} />
+            <button class="dugme" onClick={() => { degis({ ...t, aylar: t.aylar.filter((b) => b.kod !== a.kod) }); setKosullar({}); }}>Uyduyu kaldır</button>
           </div></fieldset>;
         })}
-        <button class="dugme" onClick={() => degis({ ...t, aylar: [...t.aylar, { kod: yeniKod(), ad: '', donem: 28, baslangic: '', evre: 'yeni' }] })}>Ay ekle</button>
+        <button class="dugme" onClick={() => degis({ ...t, aylar: [...t.aylar, { kod: yeniKod(), ad: '', donem: 28, baslangic: '', evre: 'yeni' }] })}>Uydu ekle</button>
         <h3>Mevsimler (isteğe bağlı)</h3><p>Başlangıç günü, mevsimin ana takvimde yılın kaçıncı gününde başladığını gösterir; yılın ilk günü 1'dir. Yılın ilk mevsimi başlayana kadar önceki yılın son mevsimi sürer.</p>
         {t.mevsimler.map((m, i) => <div class="satir" key={i}>
           <label>Mevsimin adı <input class="girdi" value={m.ad} onInput={(e) => degis({ ...t, mevsimler: t.mevsimler.map((x, j) => j === i ? { ...x, ad: e.currentTarget.value } : x) })} /></label>

@@ -36,20 +36,20 @@ function gunler(t: EvrenTarihi): [number, number] {
 }
 function baslangic(a: GokyuzuTanimi['aylar'][number], z: ZamanSeti): number {
   const t = tarihOku(a.baslangic, z), [b, s] = gunler(t);
-  if (t.hassasiyet !== 'gun' || b !== s) throw new Error('Ayın başlangıcı için günü bilinen bir tarih yazın.');
+  if (t.hassasiyet !== 'gun' || b !== s) throw new Error('Uydunun başlangıç evresinin tarihi için günü bilinen bir tarih yazın.');
   return b;
 }
 
 /** Hizmet sınırında doğrulanır; yalnızca bilinen alanlar işlem günlüğüne girer. */
 export function tanimDogrula(x: unknown, z: ZamanSeti): GokyuzuTanimi {
   const t = x as GokyuzuTanimi | null;
-  if (!t || !Array.isArray(t.aylar) || t.aylar.length < 1 || t.aylar.length > 32) throw new Error('Bir ile 32 arasında ay tanımlayın.');
+  if (!t || !Array.isArray(t.aylar) || t.aylar.length < 1 || t.aylar.length > 32) throw new Error('Bir ile 32 arasında uydu tanımlayın.');
   if (!Array.isArray(t.mevsimler) || t.mevsimler.length > 100 || !Array.isArray(t.gelgitler) || t.gelgitler.length > 100) throw new Error('En çok 100 mevsim ve 100 gelgit notu eklenebilir.');
   const aylar = t.aylar.map((a) => {
-    if (!a || !kodGecerliMi(a.kod)) throw new Error('Ayı yeniden ekleyin.');
-    if (!Number.isFinite(a.donem) || a.donem < 1) throw new Error('Ay dönemi 1 günden kısa olamaz.');
-    if (!evreMi(a.evre)) throw new Error('Ayın başlangıç evresini seçin.');
-    const ay = { kod: a.kod, ad: metin(a.ad, 'Ayın adını'), donem: a.donem, baslangic: metin(a.baslangic, 'Başlangıç tarihini'), evre: a.evre };
+    if (!a || !kodGecerliMi(a.kod)) throw new Error('Uyduyu yeniden ekleyin.');
+    if (!Number.isFinite(a.donem) || a.donem < 1) throw new Error('Uydunun evre döngüsü 1 günden kısa olamaz.');
+    if (!evreMi(a.evre)) throw new Error('Uydunun başlangıç evresini seçin.');
+    const ay = { kod: a.kod, ad: metin(a.ad, 'Uydunun adını'), donem: a.donem, baslangic: metin(a.baslangic, 'Başlangıç tarihini'), evre: a.evre };
     baslangic(ay, z);
     return ay;
   });

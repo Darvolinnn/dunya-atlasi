@@ -47,7 +47,7 @@ export function YedekSekmesi({ istemci, evren, surum }: { istemci: Istemci; evre
   return (
     <div class="kart" style="margin-top:12px">
       <h3>Dosyaya tam yedek</h3>
-      <p>Bu evrenin bütün kayıtları, metinleri, ilişkileri, sürüm geçmişi ve görselleri tek bir dosyaya yazılır. Dosyayı istediğiniz yerde saklayın (bir bellek ya da başka bir disk).</p>
+      <p>Bu evrenin bütün kayıtları, metinleri, ilişkileri ve sürüm geçmişi tek bir dosyaya yazılır; bu cihazda bulunan görseller de eklenir. Eksik görsel olursa yedek alınırken söylenir. Dosyayı istediğiniz yerde saklayın (bir bellek ya da başka bir disk).</p>
       <p class="soluk kucuk">Yedeği “Evrenler” sayfasındaki “Yedekten geri yükle” ile geri yükleyebilirsiniz; yedeğe giren her şey geri gelir. Evren bu cihazda hâlâ duruyorsa ona dokunulmaz, yedek ayrı bir evren olarak açılır.</p>
       <div class="satir" style="margin-top:8px">
         <button class="dugme ana" onClick={al} disabled={durum === 'aliniyor'}>{durum === 'aliniyor' ? 'Yedek hazırlanıyor…' : 'Yedek al'}</button>
