@@ -1808,3 +1808,11 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .okuma-sahne-basi { font-size: 0.8rem; letter-spacing: 0.04em; margin: 0 0 0.3rem; }
 .okuma-sahne-basi a { color: var(--metin-2); }
 .okuma-sahnesi + .okuma-sahnesi { border-top: 1px solid var(--cizgi); padding-top: 1rem; }
+
+/* Kesilen parçalar ve adlı hâller (K39 #3) */
+.kesilenler-kutu { max-height: 60vh; overflow: auto; }
+.kesilen-parca { padding: 8px 0; border-top: 1px solid var(--cizgi); }
+.onceki-son-kutu .kesilen-metin { font-style: normal; margin: 0 0 4px; white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.surum-adi-formu { margin: 6px 0 10px; }
+.surum-adi-formu .girdi { flex: 1; min-width: 180px; max-width: 360px; }
+.surum-adi { color: var(--vurgu); }

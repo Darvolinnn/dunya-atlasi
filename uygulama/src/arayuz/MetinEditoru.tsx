@@ -10,7 +10,7 @@ import { keymap } from 'prosemirror-keymap';
 import { baseKeymap, toggleMark, setBlockType, wrapIn, lift } from 'prosemirror-commands';
 import { Slice, type Node as PmNode } from 'prosemirror-model';
 import { pmDocFromSpans, pmNodeToSpans } from '@automerge/prosemirror';
-import { metinSemasi, isaretKodlari, isaretKodu } from '../alan/metin-sema';
+import { duzMetindenSpans, metinSemasi, isaretKodlari, isaretKodu } from '../alan/metin-sema';
 import { saatYaz } from '../alan/islem-metni';
 import { kelimeSay } from '../alan/kelime';
 import type { Istemci } from '../veri/istemci';
@@ -27,6 +27,7 @@ import { BagsizAdlar } from './BagsizAdlar';
 import { sozlukAnahtari, sozlukEklentisi } from './sozluk-eklentisi';
 import { TerimKarti, useSozlukBilgisi } from './TerimKarti';
 import { uzunCizgiEklentisi } from './uzun-cizgi';
+import { KESILEN_OLAYI, kesilenEklentisi } from './kesilen-eklentisi';
 import { daktiloEklentisi } from './daktilo';
 import { okumaSuzgecleri } from './okuma-suzgecleri';
 import { acilistaTaslak, kayittanSonraTemel, kurtarmaAnahtari, taslakAnahtari, taslakSil, taslakYaz, type Taslak, type TaslakDeposu } from './taslak';
@@ -72,6 +73,8 @@ export interface EditorDenetimi {
   imlec(): { konum: number; temel: string[] } | null;
   /** Metni kaydedilmiş hâlinden yeniden okur. */
   yenile(): Promise<void>;
+  /** Düz metni imlecin yerine ekler (kesilen parçayı geri koymak için); her satır bir paragraftır. */
+  ekle(metin: string): boolean;
 }
 
 export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, baslangic, saltOkunur = false, baglamParcalari = false, parcaDegisti, kelimeDegisti, bosYardim }: {
@@ -282,6 +285,13 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
       kaydet,
       imlec: () => (gorunum.current && !kirli && !suren ? { konum: gorunum.current.state.selection.head, temel: [...temel] } : null),
       yenile: async () => { await metinIslemi.current?.yeniden(); },
+      ekle: (metin) => {
+        const v = gorunum.current;
+        if (!v || saltRef.current) return false;
+        v.dispatch(v.state.tr.replaceSelection(new Slice(belgeYap(duzMetindenSpans(metin)).content, 1, 1)).scrollIntoView());
+        v.focus();
+        return true;
+      },
     };
     metinIslemi.current = {
       kaydet,
@@ -351,6 +361,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           okumaSuzgecleri(),
           sozlukEklentisi(kartAc),
           uzunCizgiEklentisi(),
+          kesilenEklentisi((metin) => {
+            if (!baglamParcalari || saltRef.current) return;
+            void istemci.iste('kesilenParcaEkle', { evren, sahne: kayit, metin }).then(() => dispatchEvent(new Event(KESILEN_OLAYI)), () => {});
+          }),
           history(), keymap({ ...KISAYOLLAR, 'Mod-k': () => { if (calismaRef.current) calismaRef.current.paletAc({ bagla }); else bagla(); return true; } }), keymap(baseKeymap),
         ],
       });

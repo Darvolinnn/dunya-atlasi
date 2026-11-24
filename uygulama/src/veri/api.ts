@@ -1335,6 +1335,11 @@ export interface Istekler {
   kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;
   kitapSonuDurumu(a: { evren: string; eser: string }): KitapSonuDurumu;
   okumaMetni(a: { evren: string; kapsam: string }): OkumaParcasi[];
+  kesilenParcaEkle(a: { evren: string; sahne: string; metin: string; kod?: string | null }): { kod: string };
+  kesilenParcaSil(a: { evren: string; sahne: string; kod: string }): void;
+  kesilenParcalar(a: { evren: string; sahne: string }): { kod: string; metin: string; zaman: number }[];
+  surumAdiYaz(a: { evren: string; islem: string; ad: string | null }): void;
+  surumAdlari(a: { evren: string; kayit: string }): Record<string, string>;
   etkinCalisma(a: { evren: string }): KisaKayit | null;
   etkinCalismaYaz(a: { evren: string; kod: string | null }): void;
   simdi(a: { evren: string }): SimdiOnerisi[];

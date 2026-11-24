@@ -127,7 +127,7 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 60;
+export const IZDUSUM_SURUMU = 61;
 /**
  * Tabloları silmeden geçilebilen sürümler (K38, D2): anahtar, varılan sürümdür. Yalnız var olan tablolara dokunmadan
  * yeni tablo ekleyen ve yeni tabloyu var olan tablolardan doldurabilen sürüm buraya yazılır; öbür her değişiklikte
@@ -136,6 +136,13 @@ export const IZDUSUM_SURUMU = 60;
 export const YERINDE_GECISLER: Record<number, (db: Database) => void> = {
   60: (db) => {
     for (const r of db.selectObjects("SELECT kayit, duz FROM metinler WHERE alan='govde'")) aramaDizininiYaz(db, r.kayit as string, r.duz as string);
+  },
+  // K39: yeni işlem türleri yalnız evren tablosuna yazar. Eski sürümün anlamadan günlükte bıraktıkları sırayla uygulanır.
+  61: (db) => {
+    for (const r of db.selectObjects("SELECT * FROM islemler WHERE tur IN ('gorsel_odak','kesilen_parca','surum_adi') ORDER BY no")) {
+      const i = { kod: r.kod, kurulum: r.kurulum, sira: Number(r.sira), zaman: Number(r.zaman), tur: r.tur, veri: JSON.parse(r.veri as string) } as unknown as Islem;
+      UYGULAYICILAR[i.tur]?.(db, i);
+    }
   },
 };
 
@@ -1218,6 +1225,24 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     const x = Number(o?.x), y = Number(o?.y);
     if (!(x >= 0 && x <= 100 && y >= 0 && y <= 100)) return;
     evrenAlani(db, `gorsel_odak:${ad}`, JSON.stringify({ x: Math.round(x), y: Math.round(y) }));
+  },
+  // Kesilen parçalar çekmecesi (K39, öneri 3): sahneden kesilen ya da silinen uzun parça; `sil` ile çekmeceden çıkar.
+  kesilen_parca(db, i) {
+    const sahne = String(i.veri.sahne ?? ''), kod = String(i.veri.kod ?? '');
+    if (!/^[0-9a-z]{10,40}$/.test(sahne) || !/^[0-9a-z]{10,40}$/.test(kod)) return;
+    const k = `kesilen:${sahne}:${kod}`;
+    if (i.veri.sil) { db.exec({ sql: 'DELETE FROM evren WHERE k=?', bind: [k] }); return; }
+    const metin = String(i.veri.metin ?? '');
+    if (!metin.trim() || metin.length > 20000) return;
+    evrenAlani(db, k, JSON.stringify({ metin, zaman: i.zaman }));
+  },
+  // Metnin bir hâline verilen ad (K39, öneri 3): günlükteki metin işleminin koduna bağlıdır; boş ad kaldırır.
+  surum_adi(db, i) {
+    const islem = String(i.veri.islem ?? '');
+    if (!/^[0-9a-z]{10,40}$/.test(islem)) return;
+    const ad = String(i.veri.ad ?? '').trim().slice(0, 120);
+    if (!ad) db.exec({ sql: 'DELETE FROM evren WHERE k=?', bind: [`surum_adi:${islem}`] });
+    else evrenAlani(db, `surum_adi:${islem}`, ad);
   },
   // Bağlantı görünümü (K37): metindeki bağlantıların rengi ve biçimi. Günlükte sonra gelen geçerlidir.
   bag_gorunumu(db, i) {

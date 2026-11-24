@@ -427,6 +427,39 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     return Object.fromEntries(l.map((r) => [r.k.slice('gorsel_odak:'.length), JSON.parse(r.v)]));
   }
 
+  // ---------- Kesilen parçalar ve adlı sürümler (K39, öneri 3) ----------
+  kesilenParcaEkle({ evren, sahne, metin, kod = null }: { evren: string; sahne: string; metin: string; kod?: string | null }) {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, sahne);
+    const m = String(metin ?? '').trim();
+    if (!m) throw new Error('Parça boş.');
+    if (m.length > 20000) throw new Error('Parça çok uzun.');
+    const k = kod && kodGecerliMi(kod) ? kod : yeniKod();
+    this.yaz(evren, [{ tur: 'kesilen_parca', veri: { sahne, kod: k, metin: m } }]);
+    return { kod: k };
+  }
+  kesilenParcaSil({ evren, sahne, kod }: { evren: string; sahne: string; kod: string }) {
+    if (!kodGecerliMi(sahne) || !kodGecerliMi(kod)) throw new Error('Parça bulunamadı.');
+    this.yaz(evren, [{ tur: 'kesilen_parca', veri: { sahne, kod, sil: true } }]);
+  }
+  kesilenParcalar({ evren, sahne }: { evren: string; sahne: string }): { kod: string; metin: string; zaman: number }[] {
+    const l = this.evren(evren).db.selectObjects('SELECT k, v FROM evren WHERE k LIKE ?', [`kesilen:${sahne}:%`]) as { k: string; v: string }[];
+    return l.map((r) => ({ kod: r.k.split(':')[2], ...(JSON.parse(r.v) as { metin: string; zaman: number }) })).sort((a, b) => b.zaman - a.zaman);
+  }
+  surumAdiYaz({ evren, islem, ad }: { evren: string; islem: string; ad: string | null }) {
+    const e = this.evren(evren);
+    if (e.db.selectValue("SELECT 1 FROM islemler WHERE kod=? AND tur='metin'", [islem]) === undefined) throw new Error('Bu sürüm bulunamadı.');
+    const a = String(ad ?? '').replace(/\s+/g, ' ').trim();
+    if (a.length > 120) throw new Error('Ad çok uzun.');
+    this.yaz(evren, [{ tur: 'surum_adi', veri: { islem, ad: a || null } }]);
+  }
+  /** Kaydın metin sürümlerine verilmiş adlar: işlem kodu → ad. */
+  surumAdlari({ evren, kayit }: { evren: string; kayit: string }): Record<string, string> {
+    const l = this.evren(evren).db.selectObjects(`SELECT e.k, e.v FROM evren e JOIN islemler i ON i.kod=substr(e.k, 11)
+      WHERE e.k LIKE 'surum_adi:%' AND json_extract(i.veri,'$.kayit')=?`, [kayit]) as { k: string; v: string }[];
+    return Object.fromEntries(l.map((r) => [r.k.slice('surum_adi:'.length), r.v]));
+  }
+
   /** Bağlantı görünümü (K37); null varsayılana döndürür. */
   bagGorunumuYaz({ evren, gorunum }: { evren: string; gorunum: BagGorunumu | null }) {
     if (gorunum !== null && !bagGorunumuGecerli(gorunum)) throw new Error('Geçersiz seçim.');

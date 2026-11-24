@@ -43,7 +43,8 @@ describe('K38: arama dizini ve yerinde geçiş', () => {
     const sahne = h.kayitOlustur({ evren, ad: 'Liman', tur: 'not' }).kod;
     yaz(h, evren, sahne, 'Kılıçtan korkmadı.');
     const db = ac(`/evren-${evren}.db`);
-    db.exec(`UPDATE meta SET v='${IZDUSUM_SURUMU - 1}' WHERE k='izdusum_surumu'`);
+    // 59: arama dizininden önceki sürüm; sonraki yerinde geçişler (K39, 61) de sırayla uygulanır.
+    db.exec("UPDATE meta SET v='59' WHERE k='izdusum_surumu'");
     db.exec('DROP TABLE arama_dizini');
     // Baştan kurma olsaydı bu iz tablolarla birlikte silinirdi.
     db.exec("INSERT INTO meta VALUES('k38_iz', '1') ON CONFLICT(k) DO NOTHING");

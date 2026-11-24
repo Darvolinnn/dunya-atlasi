@@ -28,3 +28,47 @@ describe('kesintisiz okuma (K39)', () => {
     expect(h.okumaMetni({ evren, kapsam: b2 }).map((x) => x.sahne.ad)).toEqual(['Kaçakçılar', 'Mühür']);
   });
 });
+
+describe('kesilen parçalar ve adlı hâller (K39)', () => {
+  it('çekmeceye konur, çıkarılır, geri konur; metnin bir hâline ad verilir ve kaldırılır', () => {
+    const dosyalar = new Map<string, Database>();
+    const h = new Hizmet((d) => { let x = dosyalar.get(d); if (!x) { x = new sqlite3.oo1.DB(':memory:'); dosyalar.set(d, x); } return x; }, 'Deneme', 'x');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Hatıra' });
+    const eser = h.kayitOlustur({ evren, ad: 'Unutulanlar', tur: 'eser' }).kod;
+    const sahne = h.anlatiOlustur({ evren, ust: eser, ad: 'Arşiv', tur: 'sahne' }).kod;
+    const { kod } = h.kesilenParcaEkle({ evren, sahne, metin: '  Lale çekmeceyi açtı.\nSatır boştu.  ' });
+    expect(h.kesilenParcalar({ evren, sahne })).toEqual([expect.objectContaining({ kod, metin: 'Lale çekmeceyi açtı.\nSatır boştu.' })]);
+    h.kesilenParcaSil({ evren, sahne, kod });
+    expect(h.kesilenParcalar({ evren, sahne })).toEqual([]);
+    h.kesilenParcaEkle({ evren, sahne, metin: 'Lale çekmeceyi açtı.', kod });
+    expect(h.kesilenParcalar({ evren, sahne }).map((x) => x.kod)).toEqual([kod]);
+    expect(() => h.kesilenParcaEkle({ evren, sahne, metin: '   ' })).toThrow('boş');
+
+    const m = h.metinAc({ evren, kayit: sahne, alan: 'govde' });
+    h.metinKaydet({ evren, kayit: sahne, alan: 'govde', spans: duzMetindenSpans('İlk taslak.'), temel: m.basliklar });
+    const son = h.kayitGecmisi({ evren, kod: sahne }).find((x) => x.tur === 'metin')!;
+    h.surumAdiYaz({ evren, islem: son.kod, ad: '  Orhun’suz  hâli ' });
+    expect(h.surumAdlari({ evren, kayit: sahne })).toEqual({ [son.kod]: 'Orhun’suz hâli' });
+    h.surumAdiYaz({ evren, islem: son.kod, ad: '' });
+    expect(h.surumAdlari({ evren, kayit: sahne })).toEqual({});
+    expect(() => h.surumAdiYaz({ evren, islem: sahne, ad: 'x' })).toThrow('bulunamadı');
+  });
+});
+
+describe('izdüşüm 61 yerinde geçişi (K39)', () => {
+  it('eski sürümün uygulamadan bıraktığı yeni işlemler açılışta uygulanır', () => {
+    const dosyalar = new Map<string, Database>();
+    const ac = (d: string) => { let x = dosyalar.get(d); if (!x) { x = new sqlite3.oo1.DB(':memory:'); dosyalar.set(d, x); } return x; };
+    const h = new Hizmet(ac, 'Deneme', 'x');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Hatıra' });
+    const eser = h.kayitOlustur({ evren, ad: 'Unutulanlar', tur: 'eser' }).kod;
+    const sahne = h.anlatiOlustur({ evren, ust: eser, ad: 'Arşiv', tur: 'sahne' }).kod;
+    h.kesilenParcaEkle({ evren, sahne, metin: 'Kesilen satır.' });
+    const db = ac(`/evren-${evren}.db`);
+    // Eski sürüm bu işlemi anlamamış olsaydı evren tablosunda karşılığı olmazdı.
+    db.exec("DELETE FROM evren WHERE k LIKE 'kesilen:%'");
+    db.exec("UPDATE meta SET v='60' WHERE k='izdusum_surumu'");
+    const h2 = new Hizmet(ac, 'Deneme', 'x');
+    expect(h2.kesilenParcalar({ evren, sahne }).map((x) => x.metin)).toEqual(['Kesilen satır.']);
+  });
+});

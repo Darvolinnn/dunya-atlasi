@@ -371,6 +371,8 @@ function SurumGecmisi({ istemci, evren, kayit, surum, geriGetir, degisti }: {
   const [satirlar, setSatirlar] = useState<GunlukSatiri[] | null>(null);
   const [secili, setSecili] = useState<{ satir: GunlukSatiri; spans: Spans } | null>(null);
   useEffect(() => { istemci.iste('kayitGecmisi', { evren, kod: kayit.kod }).then(setSatirlar); }, [kayit.kod, surum]);
+  const [adlar, setAdlar] = useState<Record<string, string>>({});
+  useEffect(() => { istemci.iste('surumAdlari', { evren, kayit: kayit.kod }).then(setAdlar, () => setAdlar({})); }, [kayit.kod, surum]);
   if (!satirlar) return null;
   const metinSurumleri = satirlar.filter((s) => s.tur === 'metin' && !gizliAdimMi(s.tur, s.veri));
   const enYeni = metinSurumleri[0]?.kod;
@@ -385,7 +387,7 @@ function SurumGecmisi({ istemci, evren, kayit, surum, geriGetir, degisti }: {
       {secili && (
         <div class="onizleme">
           <div class="satir">
-            <strong style="flex:1">{zamanYaz(secili.satir.zaman)} tarihindeki metin</strong>
+            <strong style="flex:1">{adlar[secili.satir.kod] ? `“${adlar[secili.satir.kod]}”, ` : ''}{zamanYaz(secili.satir.zaman)} tarihindeki metin</strong>
             <button class="dugme" onClick={() => setSecili(null)}>Kapat</button>
           </div>
           {secili.satir.kod === enYeni ? <MetinGorunumu spans={secili.spans} /> : (
@@ -398,7 +400,7 @@ function SurumGecmisi({ istemci, evren, kayit, surum, geriGetir, degisti }: {
       <ul class="gunluk">
         {satirlar.filter((s) => !gizliAdimMi(s.tur, s.veri)).map((s) => (
           <li key={s.kod}>
-            <span>{islemAciklamasi(s.tur, s.veri, () => kayit.ad)}</span>
+            <span>{adlar[s.kod] && <strong class="surum-adi">{adlar[s.kod]} · </strong>}{islemAciklamasi(s.tur, s.veri, () => kayit.ad)}</span>
             <span class="satir">
               <span class="soluk kucuk">{zamanYaz(s.zaman)}</span>
               {s.tur === 'metin' && <button class="dugme sade kucuk" onClick={() => goster(s)}>Metni göster</button>}
