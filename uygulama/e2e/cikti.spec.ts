@@ -33,3 +33,15 @@ test('Literata\'da olmayan ses yazısı işaretleri PDF\'e yedek yazı tipiyle g
   const [pdf] = await Promise.all([p.waitForEvent('download'), kart.getByRole('button', { name: 'PDF indir' }).click()]);
   expect(await yazilar((await pdf.path())!)).toEqual(expect.arrayContaining(['Literata-Regular', 'NotoSerif-Regular']));
 });
+
+test('PDF yazı tipinde olmayan karakterleri söyler', async ({ page: p }) => {
+  const adres = await sahneAc(p);
+  await yaz(p, 'Kalenin kapısında bir işaret vardı: 🗝 ve 漢, okunuşu [ʃa].');
+  await kaydedildi(p);
+  const evren = /#\/e\/([^/]+)/.exec(adres)![1];
+  await p.goto(`/#/e/${evren}/yedek`);
+  const kart = p.locator('.kart').filter({ has: p.getByRole('heading', { name: 'Eseri dışa aktar (PDF, Word, EPUB)' }) });
+  await Promise.all([p.waitForEvent('download'), kart.getByRole('button', { name: 'PDF indir' }).click()]);
+  // Yedek yazı tipindeki ʃ sayılmaz; yalnız iki yazı tipinde de olmayanlar.
+  await expect(kart.getByRole('status')).toHaveText("PDF'in yazı tipinde olmayan karakterler boş çıktı: 🗝 漢. Word ve EPUB çıktısında görünürler.");
+});
