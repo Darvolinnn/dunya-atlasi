@@ -17,8 +17,24 @@ const satirBasiKacis = (s: string) => s
 const XML_DISI = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
 export const xmlKacis = (s: string) => s.replace(XML_DISI, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+/**
+ * Satır içi Markdown. Kalın ve eğik, ardışık parçalar boyunca açık kalır (bağlantı ya da öbür biçim değişince
+ * kapanıp yeniden açılmaz: "**a [[Ela]] b**", "**çok *uzun***"); işaretin içinde kalan baştaki ve sondaki boşluk
+ * dışarı alınır ("**kalın **" Markdown'da kalın değildir).
+ */
 function satirIciMd(n: PmNode, hedefAdi: (kod: string) => string | null): string {
   let s = '';
+  const acik: { tur: 'k' | 'e'; isaret: string }[] = [];
+  let kalinBitti = -1; // boşluksuz kapanan kalının bittiği yer
+  const kapat = (kalan: number) => {
+    if (acik.length <= kalan) return;
+    const bosluk = /\s*$/.exec(s)![0];
+    s = s.slice(0, s.length - bosluk.length);
+    let son = '';
+    while (acik.length > kalan) s += (son = acik.pop()!.isaret);
+    if (son === '**' && !bosluk) kalinBitti = s.length;
+    s += bosluk;
+  };
   n.forEach((c) => {
     if (!c.isText) return;
     let t = mdKacis(c.text ?? '');
@@ -27,10 +43,28 @@ function satirIciMd(n: PmNode, hedefAdi: (kod: string) => string | null): string
       const ad = hedefAdi(String(bag.attrs.hedef));
       if (ad) t = ad === c.text ? `[[${ad}]]` : `[[${ad}|${(c.text ?? '').replace(/[|\]]/g, '')}]]`;
     }
-    if (c.marks.some((m) => m.type.name === 'strong')) t = `**${t}**`;
-    if (c.marks.some((m) => m.type.name === 'em')) t = `*${t}*`;
+    const istenen = new Set<'k' | 'e'>();
+    if (c.marks.some((m) => m.type.name === 'strong')) istenen.add('k');
+    if (c.marks.some((m) => m.type.name === 'em')) istenen.add('e');
+    if (!t.trim()) { s += t; return; } // yalnız boşluk: biçim değiştirmez
+    let k = 0;
+    while (k < acik.length && istenen.has(acik[k].tur)) k++;
+    kapat(k);
+    const yeni = (['k', 'e'] as const).filter((x) => istenen.has(x) && !acik.some((a) => a.tur === x));
+    if (yeni.length) {
+      const bas = /^\s*/.exec(t)![0];
+      s += bas;
+      for (const x of yeni) {
+        // Kapanan kalının hemen ardından açılan eğik "_" ile yazılır: "**a***b*" iki türlü okunabilir.
+        const isaret = x === 'k' ? '**' : s.length === kalinBitti ? '_' : '*';
+        s += isaret;
+        acik.push({ tur: x, isaret });
+      }
+      t = t.slice(bas.length);
+    }
     s += t;
   });
+  kapat(0);
   return s;
 }
 

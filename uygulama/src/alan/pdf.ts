@@ -20,6 +20,27 @@ const RENK = rgb(0.1, 0.1, 0.1);
 interface Kelime { parcalar: { metin: string; yt: PDFFont }[]; gen: number; bosluk: number; boy: number }
 type Satir = { kelimeler: Kelime[]; son: boolean };
 
+/**
+ * Kitapta geçip PDF'in yazı tiplerinde bulunmayan karakterler (emoji, Çince gibi); PDF'te boş çıkarlar. Yazara
+ * söylenir; Word ve EPUB çıktısında okuyucunun yazı tipleriyle görünürler.
+ */
+export function pdfdeOlmayanlar(k: Kitap, yt: YaziTipleri): string[] {
+  const tipler = [yt.duz, yt.egik, yt.kalin, yt.kalinEgik].map((d) => fontkit.create(d as never) as unknown as { hasGlyphForCodePoint(c: number): boolean });
+  const harfler = new Set<string>();
+  const topla = (x: unknown): void => {
+    if (typeof x === 'string') { for (const h of x) harfler.add(h); return; }
+    if (!x || typeof x !== 'object' || x instanceof Uint8Array) return;
+    for (const v of Object.values(x)) topla(v);
+  };
+  topla(k);
+  return [...harfler].filter((h) => {
+    const c = h.codePointAt(0)!;
+    // Boşluklar, satır sonu ve görünmeyen biçim karakterleri çizilmez.
+    if (/[\s\p{Cc}\p{Cf}]/u.test(h)) return false;
+    return !tipler.every((t) => t.hasGlyphForCodePoint(c));
+  });
+}
+
 export async function pdfYaz(k: Kitap, yt: YaziTipleri, zaman = new Date()): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
@@ -194,13 +215,14 @@ function ortala(s: PDFPage, metin: string, yt: PDFFont, boy: number, y: number, 
   satirlar.forEach((st, i) => satirCiz(s, st, (GEN - gen) / 2, y - i * boy * 1.3, gen, false, true));
 }
 
-/** Parçaları kelimelere böler; boşluksuz biçim değişimi (ör. yarısı kalın kelime) aynı kelimede kalır. */
-function kelimeler(parcalar: Parca[], yaziTipi: (p: Parca) => PDFFont, boy = BOY): (Kelime | 'satir')[] {
+/** Parçaları kelimelere böler; boşluksuz biçim değişimi (ör. yarısı kalın kelime) aynı kelimede kalır. Bölünmez
+ *  boşluk (U+00A0, U+202F) kelimeyi bölmez: "12 Hasat" aynı satırda kalır. */
+export function kelimeler(parcalar: Parca[], yaziTipi: (p: Parca) => PDFFont, boy = BOY): (Kelime | 'satir')[] {
   const l: (Kelime | 'satir')[] = [];
   let k: Kelime | null = null;
   for (const p of parcalar) {
     const yt = yaziTipi(p);
-    for (const t of p.metin.replace(/\t/g, ' ').split(/(\n|[   -  　]+)/)) {
+    for (const t of p.metin.replace(/\t/g, ' ').split(/(\n|[  - 　]+)/)) {
       if (!t) continue;
       if (t === '\n') { k = null; l.push('satir'); continue; }
       if (/^\s+$/.test(t)) { if (k) { k.bosluk = yt.widthOfTextAtSize(' ', boy); k = null; } continue; }

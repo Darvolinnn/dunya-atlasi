@@ -11,6 +11,15 @@ import { kodGecerliMi, yeniKod } from '../alan/kod';
 import { UYGULAYICILAR, sonrasi, IZDUSUM_SEMA, IZDUSUM_SURUMU, YERINDE_GECISLER, IZDUSUM_TABLOLARI, metinBelleginiTemizle, topluBaslat, topluBirak, topluBitir } from './izdusum';
 import { goruntuAl, goruntuBul, goruntuleriSil, goruntuSemasi, goruntuYukle, sonGoruntuIslemi, type Goruntu } from './anlik-goruntu';
 
+/**
+ * K37–K39'da eklenen işlemler ve var olan işlemlere eklenen bilgiler. Eski program bunları günlükte bırakır ama
+ * uygulamaz (§10.7); bu sürümlerde izdüşüm sürümü tabloları baştan kurmadan geçtiği için, başka cihazdan gelmiş
+ * olanlar program güncellenince bir kez baştan kurularak uygulanır (DEVIR §0.28).
+ */
+const SONRADAN_ANLASILANLAR = `tur IN ('bag_gorunumu','tuval_oge','tuval_oge_sil','akilli_liste_yaz','akilli_liste_sil','akilli_liste_geri_yukle',
+  'okur_yayini_yaz','kitap_gorunumu_yaz','metin_ogesi_tasi','gorsel_odak','kesilen_parca','surum_adi')
+  OR (tur='derleme_yaz' AND json_extract(veri,'$.derlemeTuru')='tuval') OR (tur='yerlesim_yaz' AND json_extract(veri,'$.ek') IS NOT NULL)`;
+
 const GUNLUK_SEMA = `
 CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
 CREATE TABLE IF NOT EXISTS islemler(
@@ -102,7 +111,7 @@ export class EvrenVt {
         db.exec(IZDUSUM_SEMA);
         goruntuSemasi(db);
         db.exec('CREATE INDEX IF NOT EXISTS islemler_sira ON islemler(saat, kurulum, sira)');
-        db.exec({ sql: "INSERT INTO meta VALUES('veri_bicimi', ?), ('izdusum_surumu', ?)", bind: [String(VERI_BICIMI), String(IZDUSUM_SURUMU)] });
+        db.exec({ sql: "INSERT INTO meta VALUES('veri_bicimi', ?), ('izdusum_surumu', ?), ('tur_denetimi', '1')", bind: [String(VERI_BICIMI), String(IZDUSUM_SURUMU)] });
         db.exec('COMMIT');
       } catch (e) { db.exec('ROLLBACK'); throw e; }
       return;
@@ -139,12 +148,42 @@ export class EvrenVt {
       db.exec({ sql: "INSERT INTO meta VALUES('izdusum_surumu', ?) ON CONFLICT(k) DO UPDATE SET v=excluded.v", bind: [String(IZDUSUM_SURUMU)] });
     } else db.exec(IZDUSUM_SEMA);
     goruntuSemasi(db);
+    this.anlasilmayanlariUygula();
     this.islemAdedi = this.islemSayisi();
     for (const r of db.selectObjects('SELECT kurulum, max(sira) s FROM islemler GROUP BY kurulum')) {
       this.gorulen[r.kurulum as string] = Number(r.s);
     }
     const s = db.selectObject('SELECT saat, kurulum, sira FROM islemler ORDER BY saat DESC, kurulum DESC, sira DESC LIMIT 1');
     if (s) this.son = [Number(s.saat), s.kurulum as string, Number(s.sira)];
+  }
+
+  /**
+   * Eski programın anlamadan günlükte bıraktığı işlemlerden artık anlaşılan varsa tabloları baştan kurar. Anlaşılmayan
+   * türler `uygula` sırasında `meta.anlasilmayan`'a yazılır; K37–K39 işlemleri için bu kayıt yoktur, onlara bir kez
+   * günlükten bakılır (`tur_denetimi`). Eski anlık görüntüler bu işlemleri içermediği için silinir.
+   */
+  private anlasilmayanlariUygula() {
+    const db = this.db;
+    const kayitli = JSON.parse(this.meta('anlasilmayan') ?? '[]') as string[];
+    let gerekli = kayitli.some((t) => UYGULAYICILAR[t]);
+    if (this.meta('tur_denetimi') === undefined) {
+      gerekli ||= db.selectValue(`SELECT 1 FROM islemler WHERE kurulum<>? AND (${SONRADAN_ANLASILANLAR}) LIMIT 1`, [this.kurulum]) !== undefined;
+    }
+    if (gerekli) {
+      goruntuleriSil(db);
+      this.anlasilmayan.clear();
+      this.yenidenKur('guncelleme');
+    }
+    db.exec({ sql: "INSERT INTO meta VALUES('tur_denetimi', '1') ON CONFLICT(k) DO NOTHING" });
+    const kalan = gerekli ? [...this.anlasilmayan] : kayitli.filter((t) => !UYGULAYICILAR[t]);
+    if (kalan.length !== kayitli.length || gerekli) this.anlasilmayaniYaz(kalan);
+  }
+
+  /** Bu cihazda anlaşılmayıp uygulanmayan işlem türleri (program güncellenince uygulanmaları için). */
+  private readonly anlasilmayan = new Set<string>();
+  private anlasilmayaniYaz(l: string[]) {
+    if (l.length) this.db.exec({ sql: "INSERT INTO meta VALUES('anlasilmayan', ?) ON CONFLICT(k) DO UPDATE SET v=excluded.v", bind: [JSON.stringify(l.sort())] });
+    else this.db.exec("DELETE FROM meta WHERE k='anlasilmayan'");
   }
 
   private ilerleme(d: Parameters<Ilerleme>[0]) {
@@ -371,7 +410,12 @@ export class EvrenVt {
   private uygula(i: Islem) {
     const u = UYGULAYICILAR[i.tur];
     // Anlaşılmayan işlem atılmaz: günlükte kalır, yalnızca uygulanmaz (§10.7).
-    if (u) { u(this.db, i); sonrasi(this.db, i); }
+    if (u) { u(this.db, i); sonrasi(this.db, i); return; }
+    if (!this.anlasilmayan.has(i.tur)) {
+      const l = new Set(JSON.parse(this.meta('anlasilmayan') ?? '[]') as string[]);
+      if (!l.has(i.tur)) { l.add(i.tur); this.anlasilmayaniYaz([...l]); }
+      this.anlasilmayan.add(i.tur);
+    }
   }
 
   /**
