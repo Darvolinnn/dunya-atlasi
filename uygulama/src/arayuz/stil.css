@@ -1816,3 +1816,8 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .surum-adi-formu { margin: 6px 0 10px; }
 .surum-adi-formu .girdi { flex: 1; min-width: 180px; max-width: 360px; }
 .surum-adi { color: var(--vurgu); }
+
+/* Çalışma devri (F47, K40) */
+.devir-uyarisi { background: var(--vurgu-zemin); border-radius: var(--yaricap); padding: 8px 12px; margin: 4px 0 8px; }
+.devir-uyarisi .dugme { margin-left: 6px; }
+.baska-cihazda { margin: 0 0 8px; }

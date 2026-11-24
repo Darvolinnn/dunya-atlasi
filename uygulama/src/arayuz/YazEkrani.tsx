@@ -23,6 +23,8 @@ import { IlkAdimlar } from './IlkAdimlar';
 import { gitVeYap, YENI_SAHNE_OLAYI } from './yonlendirme';
 import { soruSetiBul } from '../alan/sablon';
 import { DAKTILO_OLAYI, ODAK_OLAYI } from './kisayollar';
+import { DevirUyarisi } from './Masa';
+import { goreceZaman } from './Esitleme';
 import { DAKTILO_ACILDI, DAKTILO_SINIFI } from './daktilo';
 import { DIYALOG_SINIFI, PARAGRAF_ODAGI_SINIFI } from './okuma-suzgecleri';
 import { DiyalogSeridi } from './DiyalogSeridi';
@@ -243,6 +245,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
           kapat={() => setCerrahi(null)} bitti={() => { setCerrahi(null); void denetim.current?.yenile(); setSurum((x) => x + 1); }} />}
         {kayit.silindi && <p class="uyari">Bu kayıt çöp kutusunda. Geri getirmek için <a href={`#/e/${evren}/k/${kod}`}>kayıt sayfasını</a> açın.</p>}
         <CatismaListesi istemci={istemci} evren={evren} kod={kod} surum={surum} />
+        {!odak && <BaskaCihazdaAcik istemci={istemci} evren={evren} kod={kod} />}
         <article class="yaz-kagidi">
           <div class="yaz-baslik">
             <AlanGirdisi etiket="Başlık" deger={kayit.ad} buyuk zorunlu kaydet={(v) => istemci.iste('kayitDegistir', { evren, kod, alan: 'ad', deger: v })} />
@@ -282,6 +285,22 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
 const TUR_ADI: Record<string, string> = { sahne: 'Sahne', bolum: 'Bölüm', eser: 'Eser', seri: 'Seri' };
 
 /** Yazma ekranındaki seyrek işler (bütün alanlar, çöp kutusu) başlıkta değil bu menüde durur. */
+/**
+ * Çalışma devri (F47, K40): bu kayıt öbür cihazda da açıksa (son 30 dakikada, eşitlemeyle gelen bilgi) bilgi olarak
+ * söylenir. Kilit yoktur; iki yerde yazılanlar eşitlenince birleşir.
+ */
+function BaskaCihazdaAcik({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
+  const [b, setB] = useState<KaldigiYerBilgisi['baskaCihazda']>(null);
+  useEffect(() => {
+    const yukle = () => { istemci.iste('kaldigiYer', { evren }).then((k) => setB(k?.baskaCihazda ?? null), () => setB(null)); };
+    yukle();
+    const z = setInterval(yukle, 60_000);
+    return () => clearInterval(z);
+  }, [evren, kod]);
+  if (!b || b.kayit !== kod) return null;
+  return <p class="soluk kucuk baska-cihazda" role="note">Bu kayıt {b.cihaz} cihazında da açık (son görülme: {goreceZaman(b.zaman)}). Kilit yok; iki yerde yazılanlar eşitlenince birleşir.</p>;
+}
+
 function IslemMenusu({ ad, children }: { ad: string; children: preact.ComponentChildren }) {
   const ref = useRef<HTMLDetailsElement>(null);
   useLayoutEffect(() => {
@@ -392,6 +411,7 @@ function YaziMasasi({ istemci, evren }: { istemci: Istemci; evren: string }) {
             <span class="bosluk" />
             <button class="dugme ana" onClick={() => calisma?.devamEt({ kayit: kaldigi.kayit, konum: kaldigi.konum, yanPanel: kaldigi.yanPanel, tur: kaldigi.kayitTuru })}>Devam et</button>
           </div>
+          <DevirUyarisi kaldigi={kaldigi} />
           {kaldigi.not && <p class="soluk kucuk">{kaldigi.not}</p>}
         </section>
       )}

@@ -150,6 +150,8 @@ const temizle = (deger: unknown, { bos = false, uzunluk = 200 } = {}) => {
 };
 /** Automerge aktör kodu: kurulum kodunun baytları (onaltılık). */
 const aktor = (kurulum: string) => [...new TextEncoder().encode(kurulum)].map((b) => b.toString(16).padStart(2, '0')).join('');
+/** Öbür cihazda son 30 dakikada açılan kayıt "orada da açık" sayılır (F47); eşitleme en çok birkaç dakikada bir geldiği için kısa tutulmaz. */
+const ACIK_SAYILMA = 30 * 60_000;
 const METIN_ALANLARI = new Set(['govde']);
 const BILGI_ALAN_ADLARI: Record<string, string> = {
   secenek: 'İnandığı cevap', inanc: 'İnanç', saklama: 'Kimden saklıyor', kaynak: 'Nereden biliyor', kaynakKayit: 'Kimden ya da hangi belgeden',
@@ -789,13 +791,17 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
   /** En son bırakılan yer: bu cihazda ya da eşitlemeyle gelen başka bir cihazda (hangisi yeniyse). */
   kaldigiYer({ evren }: { evren: string }): KaldigiYerBilgisi | null {
     const e = this.evren(evren);
-    const oku = (k: string): (KaldigiYer & { cihaz?: string }) | null => {
+    const oku = (k: string): (KaldigiYer & { cihaz?: string; dayanak?: number }) | null => {
       try { const x = JSON.parse(this.kurulum.ayar(k) ?? 'null'); return x && typeof x === 'object' ? x : null; } catch { return null; }
     };
     const yerel = oku(`kaldigi:${evren}`);
     const uzak = oku(`kaldigi_uzak:${evren}`);
     const y = uzak && (!yerel || uzak.zaman > yerel.zaman) ? uzak : yerel;
     if (!y) return null;
+    // Çalışma devri (F47): öbür cihaz bu yeri bırakırken kendi değişikliklerinden kaçıncısına kadar yazmıştı.
+    const eksik = !!(y === uzak && uzak.cihaz && Number(uzak.dayanak) > (e.gorulenler()[uzak.cihaz] ?? 0));
+    const baskaCihazda = uzak?.cihaz && uzak.kayit && Date.now() - Number(uzak.zaman) < ACIK_SAYILMA
+      ? { cihaz: this.kurulumAdi(uzak.cihaz), kayit: uzak.kayit, zaman: Number(uzak.zaman) } : null;
     const bilgi = (kod: string | null) => kod ? e.db.selectObject('SELECT kod, ad, tur FROM kayitlar WHERE kod=? AND silindi IS NULL', [kod]) : undefined;
     const k = bilgi(y.kayit);
     return {
@@ -804,6 +810,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       cihaz: y === uzak && y.cihaz ? this.kurulumAdi(y.cihaz) : null,
       kayitAdi: k ? k.ad as string : null, kayitTuru: k ? k.tur as string : null,
       yanPanelKayitlari: (y.yanPanel ?? []).map(bilgi).filter(Boolean).map((r) => ({ kod: r!.kod as string, ad: r!.ad as string, tur: r!.tur as string })),
+      eksik, baskaCihazda,
     };
   }
 
@@ -871,12 +878,14 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
   taslakSil({ anahtar }: { anahtar: string }) { this.kurulum.taslakSil(this.taslakAnahtari(anahtar)); }
 
   kaldigiYerYaz({ evren, yer }: { evren: string; yer: Omit<KaldigiYer, 'zaman'> }) {
-    this.evren(evren);
+    const e = this.evren(evren);
     const kayit = yer?.kayit && kodGecerliMi(yer.kayit) ? yer.kayit : null;
     const konum = Number.isInteger(yer?.konum) && (yer.konum as number) >= 0 ? yer.konum : null;
     const yanPanel = Array.isArray(yer?.yanPanel) ? yer.yanPanel.filter((x) => kodGecerliMi(x)).slice(0, 12) : [];
     const not = typeof yer?.not === 'string' ? yer.not.slice(0, 2000) : '';
-    this.kurulum.ayarYaz(`kaldigi:${evren}`, JSON.stringify({ kayit, konum, yanPanel, not, zaman: Date.now() }));
+    // dayanak: bu cihazın o ana kadarki son değişikliği; öbür cihaz onu almadan "metin henüz gelmedi" der (F47).
+    const dayanak = e.gorulenler()[this.kurulum.kod] ?? 0;
+    this.kurulum.ayarYaz(`kaldigi:${evren}`, JSON.stringify({ kayit, konum, yanPanel, not, zaman: Date.now(), dayanak }));
   }
 
   // ---------- Çatışmalar (§10.3, §10.6) ----------
