@@ -227,7 +227,7 @@ Kullanıcı (7 Kasım 08:02): proje bitti sayılabilir, eskiden kalan gereksiz h
 - [x] **Proje klasörü:** `taslaklar/`, `gece-altini/`, `sol-panel/`, `sayfa-yardimi/`, `gecis-animasyonlari/`, `pdf-docx-cikti/` (koda geçmiş taslak ve ekran resimleri), `paket-promptlari/`, `kaynak/dunya-atlasi-kaynak.zip` (19 Ekim'den eski kod arşivi), `dunya-atlasi/index.html` (ilk prototip; yayımlanmış sayfası duruyor), `analiz/rehberli-arayuz-uyarlama.md` (uygulanmış öneri), `simge/simge-uret.py` ve `simge/google-logo-120.png` silindi. Bu dosyada bu klasörlere verilen eski bağlantılar artık boştur. Kalanlar: `simge/Simge.jpg` (kullanıcının asıl simge resmi), `tasarim/` (girdiler, `video-sesleri.md`, `tasarim.md`), `uploads/` (kullanıcının yükledikleri; kullanıcı ayrıca istemedikçe silinmez), `.notes/`.
 - [x] Proje klasöründeki `tasarim/dunya-atlasi-tasarim.md` ve `tasarim-gecmisi.md` 18 Ekim'den kalmaydı; depodaki güncel hâlleriyle değiştirildi. Güncel kaynak depodur.
 - [x] `.github/workflows/denetim.yml`: artık kullanılmayan `paket/**` tetiği kaldırıldı.
-- [ ] **41 eski dal** (18 `paket/...`, 23 `claude/...`; hepsinin içeriği `main`'de, açık PR yok): bulut oturumunun GitHub erişimi dal silmeye yine izin vermedi (403). Kullanıcı GitHub'daki dallar sayfasından siler (https://github.com/Darvolinnn/dunya-atlasi/branches). `main` ve bu işin dalı dışındakiler silinebilir.
+- [x] **41 eski dal** (kullanıcı 7 Kasım 08:09'da sildi; 24 Kasım'da depoda yalnız `main` ve sonraki işlerin dalları var; eskiden 18 `paket/...`, 23 `claude/...`; hepsinin içeriği `main`'de, açık PR yok): bulut oturumunun GitHub erişimi dal silmeye yine izin vermedi (403). Kullanıcı GitHub'daki dallar sayfasından siler (https://github.com/Darvolinnn/dunya-atlasi/branches). `main` ve bu işin dalı dışındakiler silinebilir.
 - Dokunulmayanlar: uygulama, Windows kurulum yayını ("windows"), GitHub Pages `docs/` (gizlilik sayfası Google OAuth için gerekli), DEVIR.md, depodaki `analiz/` belgeleri (tasarım ve kod atıf yapıyor).
 
 ## 0.20 İki dış hata avı raporu (7 Kasım 2026)
@@ -268,6 +268,17 @@ Adımlar:
 - [ ] 2. aşama: depolama, büyük evrenle ölçüm (4 GB altı), yedek klasörü (Android'de `document_dir` yerine), yedek dosyasıyla taşıma.
 - [ ] 4. aşama: dokunma ve S Pen arayüzü (önce taslaklar).
 - [ ] Tasarım belgesinde tablet satırları (§14.3, §17) "ertelendi"den çıkarılacak.
+
+## 0.22 Dördüncü kapsamlı hata avı (7 Kasım 2026; eski PR #49)
+
+Kullanıcı (7 Kasım 09:36): "Kapsamlı bir bug avı başlat". `main` `60c27e3` üzerinde; dal `claude/project-thread-sekdqy`. §0.9, §0.10 ve §0.20'de bulunanlar tekrarlanmadı. Düzeltmeye geçmeden kullanıcı onayı beklenir (koordinatör notu).
+- [x] Başlangıç: 629 birim sınaması geçti (2'si yalnız `AGIR=1`), `tsc` temiz; tarayıcı akışları 50/52 (kalan ikisi `cokme.spec`, §0.20'deki gibi bu bulut ortamında düzeltmeden önce de kırılıyor).
+- [x] Okunanlar: §0.20'nin (PR #48) yeni kodu (dal yedeği ve geri yüklemesi, `kodlariDegistir`, aktarım birimleri, editörün kapanırken kaydı, kaldığın yer), PDF/Word/EPUB çıktısı (K35, K36), Windows kabuğu (`main.rs`, `google.rs`, `yerel_yedek.rs`), eşitleme, üst şeritler, kısayollar, Türkçe ek modülü, bağsız ad, Markdown dışa/içe aktarma.
+- [x] **Bulgu 1 (veri kaybı, nadir):** yalnız deneme kopyasında yazan cihaz (dalı başka cihaz açmış, ana evrende bu cihazın değişikliği yok), evreni bu cihazdan kaldırıp eski bir dosya yedeğinden geri yüklerse yedek aynı kodla açılır (`yedektenYukle` `kendi` yalnız ana günlüğe bakar). Dalda yazılan yeni değişiklik, yedekten sonra Drive'a gitmiş değişikliklerle aynı sıra numaralarını alır: hata çıkmaz, iki cihaz sessizce ayrılır (sınamada masaüstünde "İki", tablette "Üç" kaldı; ikisi de "eşitlendi" görünüyor). Sınama taslağı bulutta `/tmp/claude-0/probe/dal-geri-yukleme.probe.ts` (depoda değil). Önerilen düzeltme: `kendi` dal günlüklerine de bakar.
+- [x] **Bulgu 2 (yanlış metin):** ad düzeltmede (`turkce-ek.ts` `adDegistir`) bazı ekler yanlış uyduruluyor: "Ela'sız" → "Velkar'ız" (doğrusu Velkar'sız), "Ela'yken" → "Velkar'ykan" (Velkar'ken), "Velkar'ken" → "Ela'kan" (Ela'yken), "Ela'ymış" → "Velkar'ymış", "Ela'ydı" → "Kurt'ydu" (Kurt'tu), "Kurt'tu" → "Ela'dı" (Ela'ydı), "Kurt'luk" → "Ela'ylık" (Ela'lık). Önizlemede gösteriliyor, seçilirse metne yazılır.
+- [x] **Bulgu 3 (dışa aktarma):** Markdown'da kalın/eğik biçim boşlukla bitiyor ya da başlıyorsa ("**kalın **"), ya da kalın içinde eğik/bağlantı varsa ("*çok****uzun***") Obsidian'da ve geri içe almada yıldızlar metinde kalıyor, biçim kayıyor (`cikti.ts` `satirIciMd`).
+- [x] **Küçükler:** PDF'te yazı tipinde olmayan karakterler (emoji, Çince/Japonca) sessizce boş çıkar; bölünmez boşlukta satır kırılır (`pdf.ts` `kelimeler`). Ek tahmininde "Saat, Kemal, Harf, Rol" gibi istisnalar "Saat'tan, Kemal'dan" yazılır (okunuş alanıyla düzeltilebilir). Geri al şeridi, başka bir pencereyi kapatmak için basılan Esc ile de kapanır.
+- [x] Bu bölüm taslak PR #49'da §0.21 numarasıyla bekliyordu (tablet bölümüyle çakışıyordu); 24 Kasım'da §0.22 olarak buraya alındı, PR #49 kapatıldı. Bulgular düzeltilmedi: kullanıcının sıraladığı son iş olan kapsamlı hata avında önce bunlar denetlenir (hâlâ var mı) ve düzeltilir.
 
 ## 0.23 Yazar.io tanıtımlarından dört özellik (K37, 23 Kasım 2026)
 
