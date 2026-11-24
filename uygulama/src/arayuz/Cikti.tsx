@@ -90,7 +90,10 @@ function CiktiDugmeleri({ istemci, evren, eser }: { istemci: Istemci; evren: str
   };
   const pdf = calistir('pdf', async (eser) => {
     const r = await istemci.iste('eserKitabi', { evren, eser, sahneBasliklari: basliklar, sahneler });
-    const [{ pdfYaz }, yt] = await Promise.all([import('../alan/pdf'), import('./yazi-tipleri').then((m) => m.kitapYaziTipleri())]);
+    const [{ pdfYaz, pdfdeOlmayanlar }, m] = await Promise.all([import('../alan/pdf'), import('./yazi-tipleri')]);
+    let yt = await m.kitapYaziTipleri();
+    // Literata'da olmayan harf varsa (ses yazısı işaretleri gibi) yedek yazı tipi de gömülür.
+    if (pdfdeOlmayanlar(r.kitap, yt).length) yt = { ...yt, yedek: await m.yedekYaziTipleri() };
     indir(`${r.dosyaKoku}.pdf`, await pdfYaz(r.kitap, yt), 'application/pdf');
   });
   const docx = calistir('docx', async (eser) => {

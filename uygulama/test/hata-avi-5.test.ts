@@ -158,4 +158,37 @@ describe('PDF (eski PR #49, küçükler)', async () => {
     const k = { ad: 'Kuzey', bolumler: [{ baslik: 'Bir', sahneler: [{ baslik: null, bloklar: [{ tur: 'paragraf' as const, parcalar: [{ metin: 'Çığ düştü 😀 ve 漢字. Son' }] }] }] }] };
     expect(pdfdeOlmayanlar(k, yt)).toEqual(['😀', '漢', '字']);
   });
+  it('ses yazısı işaretleri ve ※ yedek yazı tipiyle yazılır', async () => {
+    const { pdfYaz } = await import('../src/alan/pdf');
+    const { PDFDocument, PDFDict, PDFName, decodePDFRawStream } = await import('pdf-lib');
+    const nk = createRequire(import.meta.url).resolve('@expo-google-fonts/noto-serif/package.json').replace(/package\.json$/, '');
+    const yedek = { duz: readFileSync(nk + '400Regular/NotoSerif_400Regular.ttf'), egik: readFileSync(nk + '400Regular_Italic/NotoSerif_400Regular_Italic.ttf'),
+      kalin: readFileSync(nk + '700Bold/NotoSerif_700Bold.ttf'), kalinEgik: readFileSync(nk + '700Bold_Italic/NotoSerif_700Bold_Italic.ttf') };
+    const metin = 'Adı [ʃaˈʒɛ.ɔʔ] okunur ※ θ ŋ ə.';
+    const k = { ad: 'Kuzey ʃ', bolumler: [{ baslik: 'Bir', sahneler: [{ baslik: null, bloklar: [{ tur: 'paragraf' as const, parcalar: [{ metin }, { metin: ' ɛ', egik: true }] }] }] }] };
+    expect(pdfdeOlmayanlar(k, yt)).toEqual(['ʃ', 'ʒ', 'ɛ', 'ɔ', 'ʔ', '※']);
+    expect(pdfdeOlmayanlar(k, { ...yt, yedek })).toEqual([]);
+    // Her yazı tipinin PDF'e gömülü harfleri (ToUnicode tablosundan), yazı tipinin adıyla.
+    const harfleri = async (veri: Uint8Array) => {
+      const d = await PDFDocument.load(veri), sonuc: Record<string, string> = {};
+      for (const [, o] of d.context.enumerateIndirectObjects()) {
+        if (!(o instanceof PDFDict) || !o.has(PDFName.of('ToUnicode'))) continue;
+        const ad = String(o.get(PDFName.of('BaseFont'))).replace(/^\/(?:[A-Z]{6}\+)?/, '').replace(/-\d+$/, '');
+        const akis = d.context.lookup(o.get(PDFName.of('ToUnicode'))) as import('pdf-lib').PDFRawStream;
+        const cmap = new TextDecoder().decode(decodePDFRawStream(akis).decode());
+        sonuc[ad] = [...cmap.matchAll(/<[0-9A-F]+> <([0-9A-F]{4})>/g)].map((m) => String.fromCodePoint(parseInt(m[1], 16))).join('');
+      }
+      return sonuc;
+    };
+    const yalniz = await harfleri(await pdfYaz(k, yt, new Date(0)));
+    expect(Object.keys(yalniz).some((a) => a.startsWith('NotoSerif'))).toBe(false);
+    const ikisi = await harfleri(await pdfYaz(k, { ...yt, yedek }, new Date(0)));
+    // Yedek yalnız gerektiği biçimlerde (burada düz ve eğik) gömülür; kalın biçimlerde gerekmedi.
+    expect(Object.keys(ikisi).filter((a) => a.startsWith('NotoSerif')).sort()).toEqual(['NotoSerif-Italic', 'NotoSerif-Regular']);
+    for (const h of 'ʃʒɛɔʔ※') expect(ikisi['NotoSerif-Regular']).toContain(h);
+    expect(ikisi['NotoSerif-Italic']).toContain('ɛ');
+    // Literata'da olan harfler (θ ŋ ə, Türkçe) Literata'yla yazılmaya devam eder.
+    expect(ikisi['Literata-Regular']).toContain('θ');
+    expect(ikisi['Literata-Regular']).not.toContain('ʃ');
+  });
 });
