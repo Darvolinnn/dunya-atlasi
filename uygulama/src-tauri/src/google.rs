@@ -101,6 +101,28 @@ impl Kasa for KasaYok {
     fn sil(&self) {}
 }
 
+/// Android'de parola kasası yerine uygulamanın kendi veri klasöründe bir dosya: o klasörü başka uygulama okuyamaz,
+/// uygulama kaldırılınca silinir. Yazma geçici dosya + yerine taşıma ile; dosya bozuksa ya da yoksa anahtar yok sayılır.
+pub struct DosyaKasasi(pub std::path::PathBuf);
+
+impl Kasa for DosyaKasasi {
+    fn oku(&self) -> Option<String> {
+        std::fs::read_to_string(&self.0).ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
+    }
+    fn yaz(&self, anahtar: &str) {
+        if let Some(ust) = self.0.parent() {
+            let _ = std::fs::create_dir_all(ust);
+        }
+        let gecici = self.0.with_extension("yaziliyor");
+        if std::fs::write(&gecici, anahtar).is_ok() {
+            let _ = std::fs::rename(&gecici, &self.0);
+        }
+    }
+    fn sil(&self) {
+        let _ = std::fs::remove_file(&self.0);
+    }
+}
+
 fn sistem_kasasi() -> Box<dyn Kasa> {
     #[cfg(windows)]
     return Box::new(WindowsKasasi("google-yenileme"));
@@ -154,7 +176,12 @@ fn sorgu_degeri(yol: &str, ad: &str) -> Option<String> {
     d
 }
 
+#[cfg(not(target_os = "android"))]
 const SAYFA_TAMAM: &str = "Google izni alındı. Bu sekmeyi kapatıp Dünya Atlası'na dönebilirsiniz.";
+/// Tablette izin tarayıcıda verilir; sayfa kullanıcıyı uygulamaya geri götürür (`AndroidManifest.xml`: `dunyaatlasi://geri`).
+#[cfg(target_os = "android")]
+const SAYFA_TAMAM: &str = "Google izni alındı. <a href=\"dunyaatlasi://geri\" style=\"display:inline-block;margin-top:1.5em;padding:.8em 1.4em;border-radius:10px;background:#c9a45c;color:#1f1d1a;text-decoration:none;font-weight:600\">Dünya Atlası'na dön</a>\
+     <script>setTimeout(function(){location.href='dunyaatlasi://geri'},400)</script>";
 const SAYFA_HATA: &str = "Google izni alınamadı. Dünya Atlası'na dönüp yeniden deneyin.";
 
 async fn yanitla(akis: &mut tokio::net::TcpStream, ileti: &str) {
@@ -459,6 +486,21 @@ mod sinama {
         let uclar = Uclar { yetki: "https://ornek.invalid/auth".into(), jeton: "http://127.0.0.1:9/".into(), geri_al: "http://127.0.0.1:9/".into() };
         durum(&kasa).cikis(&uclar).await;
         assert_eq!(kasa.oku(), None);
+    }
+
+    #[test]
+    fn tablet_kasasi_dosyada_saklar_okur_siler() {
+        let yer = std::env::temp_dir().join(format!("dunya-kasa-{}", rastgele(8)));
+        let k = DosyaKasasi(yer.join("alt").join("google-yenileme"));
+        assert_eq!(k.oku(), None);
+        k.yaz("anahtar-1");
+        assert_eq!(k.oku().as_deref(), Some("anahtar-1"));
+        k.yaz("anahtar-2");
+        assert_eq!(k.oku().as_deref(), Some("anahtar-2"));
+        assert!(!yer.join("alt").join("google-yenileme.yaziliyor").exists());
+        k.sil();
+        assert_eq!(k.oku(), None);
+        let _ = std::fs::remove_dir_all(&yer);
     }
 
     /// Windows'un gerçek parola kasası (yalnız Windows'ta; sınama kendi adıyla yazar, programın kaydına dokunmaz).

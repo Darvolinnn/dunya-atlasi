@@ -201,6 +201,31 @@ describe('kaldığın yer (§5.9)', () => {
     m.h.kayitSil({ evren, kod: b });
     expect(m.h.kaldigiYer({ evren })?.kayit).toBeNull();
   });
+
+  it('çalışma devri (F47): öbür cihazda açık kayıt bilgi olarak gelir; dayandığı değişiklikler gelmediyse söylenir', async () => {
+    const drive = new BellekTasiyici();
+    const m = cihaz('Masaüstü', drive);
+    const t = cihaz('Tablet', drive);
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Kuzey' });
+    const a = m.h.kayitOlustur({ evren, ad: 'Kuşatma', tur: 'sahne' }).kod;
+    await m.h.esitle();
+    await t.h.evreniIndir({ kod: evren });
+    t.h.kayitDegistir({ evren, kod: a, alan: 'ad', deger: 'Kuşatmanın sonu' });
+    t.h.kaldigiYerYaz({ evren, yer: { kayit: a, konum: 3, yanPanel: [], not: '' } });
+    await t.h.esitle();
+    await m.h.esitle();
+    const y = m.h.kaldigiYer({ evren })!;
+    expect(y).toMatchObject({ kayit: a, cihaz: 'Tablet', eksik: false, kayitAdi: 'Kuşatmanın sonu' });
+    expect(y.baskaCihazda).toMatchObject({ cihaz: 'Tablet', kayit: a });
+    // Tablette yazılan yerin kaydı geldi ama dayandığı değişiklik henüz gelmedi (yarım kalan eşitleme gibi).
+    const kurulum = (m.h as unknown as { kurulum: { ayar(k: string): string | null; ayarYaz(k: string, v: string): void } }).kurulum;
+    const uzak = JSON.parse(kurulum.ayar(`kaldigi_uzak:${evren}`)!);
+    kurulum.ayarYaz(`kaldigi_uzak:${evren}`, JSON.stringify({ ...uzak, dayanak: uzak.dayanak + 5 }));
+    expect(m.h.kaldigiYer({ evren })!.eksik).toBe(true);
+    // Yarım saatten eski: artık "orada da açık" sayılmaz.
+    kurulum.ayarYaz(`kaldigi_uzak:${evren}`, JSON.stringify({ ...uzak, zaman: Date.now() - 31 * 60_000 }));
+    expect(m.h.kaldigiYer({ evren })!.baskaCihazda).toBeNull();
+  });
 });
 
 describe('eşitleme işareti', () => {
