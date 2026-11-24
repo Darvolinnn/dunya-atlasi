@@ -21,7 +21,8 @@ type Surukle =
   | { tur: 'tasi'; id: string; bas: Nokta; oge: TuvalOgesi; oynadi: boolean }
   | { tur: 'boyut'; id: string; kose: string; oge: TuvalOgesi }
   | { tur: 'dondur'; id: string; oge: TuvalOgesi }
-  | { tur: 'ciz'; noktalar: Nokta[] };
+  | { tur: 'ciz'; noktalar: Nokta[] }
+  | { tur: 'sil'; idler: Set<string> };
 
 export const TUVAL_RENK_ADLARI: [string, string][] = [['yuzey', 'Sade'], ['sari', 'Sarı'], ['pembe', 'Pembe'], ['yesil', 'Yeşil'], ['mavi', 'Mavi'], ['mor', 'Mor'], ['turuncu', 'Turuncu'], ['krem', 'Krem']];
 const CIKARTMALAR = ['⭐', '❓', '❗', '❤️', '🔥', '⚔️', '👑', '🗝️', '📜', '🕯️', '🌙', '☠️', '🏰', '🗡️', '🌿', '👁️'];
@@ -111,6 +112,7 @@ function TuvalAlani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
   const dosya = useRef<HTMLInputElement>(null);
   const surukle = useRef<Surukle | null>(null);
   const parmaklar = useRef(new Map<number, Nokta>());
+  const kalemGoruldu = useRef(false);
   const sikistir = useRef<{ uzaklik: number; gor: Gorunus; orta: Nokta } | null>(null);
   const geri = useRef<{ yaz: TuvalOgesi[]; sil: string[] }[]>([]);
   const ilkSigdir = useRef(true);
@@ -175,6 +177,13 @@ function TuvalAlani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
   const ekle = (o: TuvalOgesi, duzenle = false) => { void kaydet([o]); setSecim(o.id); if (duzenle) setDuzenlenen(o.id); setArac('sec'); };
 
   // ---------- İşaretçi ----------
+  const kalemSil = (e: PointerEvent, idler: Set<string>) => {
+    for (const el of document.elementsFromPoint(e.clientX, e.clientY)) {
+      const k = (el as HTMLElement).closest?.('[data-oge]') as HTMLElement | null;
+      const id = k?.dataset.oge;
+      if (id && !idler.has(id) && harita.get(id)?.tur === 'kalem') { idler.add(id); k!.style.opacity = '0.25'; }
+    }
+  };
   const asagi = (e: PointerEvent) => {
     if ((e.target as HTMLElement).closest('.tuval-yuzen, textarea, input, button, select')) return;
     // Tuvaldeki dokunuş odağı başka yere taşımasın (yeni notun yazı alanı açık kalsın).
@@ -194,7 +203,13 @@ function TuvalAlani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
     const hedef = (e.target as HTMLElement).closest('[data-oge]') as HTMLElement | null;
     const id = hedef?.dataset.oge ?? null;
     const tutamak = (e.target as HTMLElement).closest('[data-tutamak]') as HTMLElement | null;
-    if (arac === 'kalem') { surukle.current = { tur: 'ciz', noktalar: [p] }; setCizgi([p]); return; }
+    // Kalem ve parmak ayrı (§12.2): bu oturumda kalem kullanıldıysa parmak çizmez, tuvali kaydırır. Kalemi olmayan
+    // dokunmatik ekranda parmak çizmeye devam eder.
+    if (e.pointerType === 'pen') kalemGoruldu.current = true;
+    // Kalemin yan tuşu ya da silgi ucu: kalem aracında sürüklenen yerdeki kalem çizimleri silinir (tek geri alma adımı).
+    if (arac === 'kalem' && e.pointerType === 'pen' && (e.buttons & 2 || e.buttons & 32)) { surukle.current = { tur: 'sil', idler: new Set() }; kalemSil(e, surukle.current.idler); return; }
+    if (arac === 'kalem' && !(e.pointerType === 'touch' && kalemGoruldu.current)) { surukle.current = { tur: 'ciz', noktalar: [p] }; setCizgi([p]); return; }
+    if (arac === 'kalem') { surukle.current = { tur: 'kaydir', bas: { x: e.clientX, y: e.clientY }, gor }; return; }
     if (arac === 'ok') {
       if (!id || harita.get(id)?.tur === 'ok') { setOkBas(null); return; }
       if (!okBas) { setOkBas(id); return; }
@@ -240,6 +255,7 @@ function TuvalAlani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
     if (s.tur === 'kaydir') { setGor({ ...s.gor, px: s.gor.px + e.clientX - s.bas.x, py: s.gor.py + e.clientY - s.bas.y }); return; }
     const p = dunya(e);
     if (s.tur === 'ciz') { s.noktalar.push(p); setCizgi([...s.noktalar]); return; }
+    if (s.tur === 'sil') { kalemSil(e, s.idler); return; }
     let yeni: TuvalOgesi;
     if (s.tur === 'tasi') {
       const dx = p.x - s.bas.x, dy = p.y - s.bas.y;
@@ -273,6 +289,7 @@ function TuvalAlani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
     if (parmaklar.current.size < 2) sikistir.current = null;
     const s = surukle.current; surukle.current = null;
     if (!s) return;
+    if (s.tur === 'sil') { if (s.idler.size) void kaldir([...s.idler]); return; }
     if (s.tur === 'ciz') {
       setCizgi(null); setArac('kalem');
       if (s.noktalar.length < 2) return;
@@ -340,7 +357,7 @@ function TuvalAlani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
   const secili = secim ? harita.get(secim) ?? null : null;
 
   return (
-    <div class={`tuval-alani arac-${arac}`} ref={alan} onPointerDown={asagi} onPointerMove={oynat} onPointerUp={yukari} onPointerCancel={yukari}
+    <div class={`tuval-alani arac-${arac}`} ref={alan} onContextMenu={(e) => { if (arac === 'kalem') e.preventDefault(); }} onPointerDown={asagi} onPointerMove={oynat} onPointerUp={yukari} onPointerCancel={yukari}
       onDblClick={(e) => { const id = ((e.target as HTMLElement).closest('[data-oge]') as HTMLElement | null)?.dataset.oge; const o = id ? harita.get(id) : null; if (o && ['not', 'yazi', 'balon', 'sekil'].includes(o.tur)) setDuzenlenen(o.id); }}
       aria-label="Pano tuvali" role="application">
       <div class="tuval-zemin" style={{ backgroundPosition: `${gor.px}px ${gor.py}px`, backgroundSize: `${22 * gor.o}px ${22 * gor.o}px` }} />

@@ -191,10 +191,12 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
   useEffect(() => {
     let zamanlayici: ReturnType<typeof setTimeout> | null = null;
     const bagBul = (t: EventTarget | null) => (t instanceof Element ? t.closest('a.bag[data-kayit]') as HTMLElement | null : null);
-    const uzerine = (e: MouseEvent) => {
+    // Parmakla dokunuş da "üzerine gelme" olayı üretir; o zaman özet kartı açılmaz (dokunuşta terim kartı ya da
+    // bağlantının kendisi yeter, kart basılı tutunca ya da bilgi düğmesiyle açılır). Kalemle üzerine gelmek kartı açar.
+    const uzerine = (e: PointerEvent) => {
       const a = bagBul(e.target);
       if (zamanlayici) { clearTimeout(zamanlayici); zamanlayici = null; }
-      if (!a || !dRef.current.evren) return;
+      if (!a || !dRef.current.evren || e.pointerType === 'touch') return;
       zamanlayici = setTimeout(() => dRef.current.ozetAc(a.dataset.kayit!, a.getBoundingClientRect()), 450);
     };
     const basiliTut = (e: MouseEvent) => {
@@ -210,10 +212,10 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
       e.preventDefault();
       dRef.current.yanPanelAc(a.dataset.kayit!);
     };
-    document.addEventListener('mouseover', uzerine);
+    document.addEventListener('pointerover', uzerine);
     document.addEventListener('contextmenu', basiliTut);
     document.addEventListener('click', tikla);
-    return () => { document.removeEventListener('mouseover', uzerine); document.removeEventListener('contextmenu', basiliTut); document.removeEventListener('click', tikla); };
+    return () => { document.removeEventListener('pointerover', uzerine); document.removeEventListener('contextmenu', basiliTut); document.removeEventListener('click', tikla); };
   }, []);
 
   return (

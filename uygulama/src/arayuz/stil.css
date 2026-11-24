@@ -892,9 +892,10 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 }
 
 /* ---------- Dar ekran ---------- */
+/* Dar ekranda (dikey tablet) bağlam metnin altına inmez; sağdan çekmece olarak metnin üstüne açılır (K39 #15). */
 @media (max-width: 1100px) {
-  .yaz-duzeni { flex-direction: column; }
-  .yaz-baglami { width: auto; position: static; height: auto; border-left: none; border-top: 1px solid var(--cizgi); }
+  .yaz-baglami { position: fixed; right: 0; top: var(--serit-yuk); z-index: 15; width: min(380px, 90vw); height: var(--ekran-yuk);
+    box-shadow: -10px 0 28px rgb(0 0 0 / 0.18); }
   .yaz-metni { padding: 14px 24px 40px; }
 }
 @media (max-width: 860px) {

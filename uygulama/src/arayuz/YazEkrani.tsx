@@ -169,7 +169,9 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const baglamAc = (acik: boolean) => { setBaglamKaysin(acik); setBaglamTercihi(!acik); yazYerel(baglamAnahtari, acik ? '0' : '1'); };
   const bos = sahneBaglamiBos(sahneBaglami);
   // Seçilmemişken bağlam okunana kadar panel açılmaz; dolu sahnede okununca açılır.
-  const baglamKapali = baglamTercihi ?? (!sahneBaglami || bos);
+  // Dar ekranda panel metnin üstüne çekmece olarak açılır; bu yüzden yazar açmadıkça kendiliğinden açılmaz.
+  const dar = typeof matchMedia === 'function' && matchMedia('(max-width: 1100px)').matches;
+  const baglamKapali = baglamTercihi ?? (dar || !sahneBaglami || bos);
   const baglamGorunur = sahne && !baglamKapali && !odak;
   const bugun = kelime !== null ? bugunEklenen(evren, kod, kelime) : 0;
   const planAc = () => { baglamAc(true); setOdak(false); setSekme('plan'); void gitVeYap(null, [{ odak: '.sahne-plani textarea' }]); };

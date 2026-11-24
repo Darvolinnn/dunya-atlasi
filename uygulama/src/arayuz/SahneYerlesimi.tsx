@@ -232,7 +232,11 @@ export function SahneYerlesimi({ istemci, evren, kod, surum, saltOkunur }: { ist
               ? <line key={`gel${k.kod}`} x1={o.konum.x} y1={o.konum.y * oran} x2={s.konum.x} y2={s.konum.y * oran} stroke="#8a6a50" stroke-width="0.003" stroke-dasharray="0.01 0.008" pointer-events="none" /> : null; })}
             {gorunen.map((o) => <g key={o.kod} onPointerDown={(e) => { if (kip === 'sec') { e.stopPropagation(); setSecili(o.kod); } }}>
               <title>{o.ad}</title>
-              {'a' in o ? <line x1={o.a.x} y1={o.a.y * oran} x2={o.b.x} y2={o.b.y * oran} stroke={renk(o)} stroke-width={o.kod === secili ? 0.012 : 0.007} stroke-dasharray={o.tur === 'kapi' && o.acik ? '0.015 0.01' : undefined} /> : <>
+              {'a' in o ? <>
+                {/* Görünmez geniş çizgi: ince duvar ve kapı parmakla da seçilebilsin (§12.2 dokunma payı). */}
+                <line x1={o.a.x} y1={o.a.y * oran} x2={o.b.x} y2={o.b.y * oran} stroke="transparent" stroke-width="0.04" stroke-linecap="round" pointer-events="stroke" />
+                <line x1={o.a.x} y1={o.a.y * oran} x2={o.b.x} y2={o.b.y * oran} stroke={renk(o)} stroke-width={o.kod === secili ? 0.012 : 0.007} stroke-dasharray={o.tur === 'kapi' && o.acik ? '0.015 0.01' : undefined} />
+              </> : <>
                 {(o.tur === 'isik' || o.tur === 'ses' && o.uzaklik !== null) && <circle cx={o.konum.x} cy={o.konum.y * oran} r={o.tur === 'isik' ? o.yaricap : o.uzaklik!} fill={o.tur === 'isik' ? '#ffdf66' : 'none'} fill-opacity="0.2" stroke={renk(o)} stroke-width="0.002" pointer-events="none" />}
                 {o.tur === 'karakter' && <>
                   <line x1={o.konum.x} y1={o.konum.y * oran} x2={o.konum.x + Math.cos(o.yon * Math.PI / 180) * 0.06} y2={o.konum.y * oran + Math.sin(o.yon * Math.PI / 180) * 0.06} stroke={renk(o)} stroke-width="0.005" />
