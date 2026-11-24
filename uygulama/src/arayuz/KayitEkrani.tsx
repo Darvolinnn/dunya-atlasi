@@ -6,6 +6,7 @@ import type { AdDuzeltmesi, EvrenBilgisi, BaglananKayit, DegisebilirAlan, Gunluk
 import { sesBilgisi } from '../alan/turkce-ek';
 import { KARARLAR, turBul, grupSinifi } from '../alan/turler';
 import { gizliAdimMi, islemAciklamasi, zamanYaz } from '../alan/islem-metni';
+import { SurumFarki } from './SurumFarki';
 import { MetinEditoru, MetinGorunumu, type EditorDenetimi } from './MetinEditoru';
 import { KararSecici, TurSecici } from './ortak';
 import { Gorseller, Iliskiler, KayitDegisimleri, NotDonustur, SahneBolumu, TarihAlani } from './KayitBolumleri';
@@ -261,7 +262,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           {SUREC_SAHIPLERI.includes(kayit.tur) && <SurecKurallariBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           {HUKUK_SAHIPLERI.includes(kayit.tur) && <HukukKurallariBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           {kayit.tur === 'karakter' && <UygulananKurallarAraci istemci={istemci} evren={evren} kod={kod} surum={surum} />}
-          {kayit.tur === 'dil' && <DilBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
+          {kayit.tur === 'dil' && <DilBolumu istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} surum={surum} />}
           {kayit.tur === 'karakter' && <KisiDilleriBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           {kayit.tur === 'teknoloji' && <TeknolojiBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           {kayit.tur === 'motif' && <MotifBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
@@ -295,7 +296,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
               await denetim.current?.kaydet();
               await istemci.iste('metinGeriYukle', { evren, kayit: kod, alan: 'govde', basliklar });
               setEditorAnahtari((n) => n + 1);
-            }} />
+            }} degisti={() => setEditorAnahtari((n) => n + 1)} />
         )}
 
         <div class="kayit-alti">
@@ -364,8 +365,8 @@ function Liste({ ogeler, ekle, cikar, ekleEtiketi }: { ogeler: string[]; ekle: (
   );
 }
 
-function SurumGecmisi({ istemci, evren, kayit, surum, geriGetir }: {
-  istemci: Istemci; evren: string; kayit: Kayit; surum: number; geriGetir: (b: string[]) => Promise<void>;
+function SurumGecmisi({ istemci, evren, kayit, surum, geriGetir, degisti }: {
+  istemci: Istemci; evren: string; kayit: Kayit; surum: number; geriGetir: (b: string[]) => Promise<void>; degisti: () => void;
 }) {
   const [satirlar, setSatirlar] = useState<GunlukSatiri[] | null>(null);
   const [secili, setSecili] = useState<{ satir: GunlukSatiri; spans: Spans } | null>(null);
@@ -385,12 +386,13 @@ function SurumGecmisi({ istemci, evren, kayit, surum, geriGetir }: {
         <div class="onizleme">
           <div class="satir">
             <strong style="flex:1">{zamanYaz(secili.satir.zaman)} tarihindeki metin</strong>
-            {secili.satir.kod !== enYeni && (
-              <button class="dugme ana" onClick={async () => { if (!onayla('Metin bu eski hâline döndürülsün mü?')) return; await geriGetir(secili.satir.veri.basliklar as string[]); setSecili(null); }}>Bu hâli geri getir</button>
-            )}
             <button class="dugme" onClick={() => setSecili(null)}>Kapat</button>
           </div>
-          <MetinGorunumu spans={secili.spans} />
+          {secili.satir.kod === enYeni ? <MetinGorunumu spans={secili.spans} /> : (
+            <SurumFarki istemci={istemci} evren={evren} kayit={kayit.kod} basliklar={secili.satir.veri.basliklar as string[]} baslik={zamanYaz(secili.satir.zaman)}
+              tumunuAdi={kayit.tur === 'sahne' ? 'Bütün sahneyi bu sürüme döndür' : 'Bütün metni bu sürüme döndür'} degisti={degisti}
+              tumunuDondur={async () => { if (!onayla('Metin bu eski hâline döndürülsün mü?')) return; await geriGetir(secili.satir.veri.basliklar as string[]); setSecili(null); }} />
+          )}
         </div>
       )}
       <ul class="gunluk">

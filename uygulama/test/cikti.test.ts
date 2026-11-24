@@ -64,9 +64,9 @@ describe('okunabilir dışa aktarma (§10.11)', () => {
     expect(metin(m, 'OEBPS/icerik.opf')).toContain('<dc:title>Kuzeyin &lt;Kitabı&gt;</dc:title>');
     const b = metin(m, 'OEBPS/bolum-001.xhtml');
     expect(b).toContain('<h2>Birinci bölüm</h2>');
-    expect(b).toContain('<p>Kar yağıyordu &amp; rüzgâr &lt;esiyordu&gt;.</p>\n<hr class="ara"/>\n<p>Sabah oldu.</p>');
+    expect(b).toContain('<p>Kar yağıyordu &amp; rüzgâr &lt;esiyordu&gt;.</p></div>\n<p class="ayrac">* * *</p>\n<div id="s2"><p>Sabah oldu.</p>');
     expect(b).not.toContain('girmemeli');
-    expect(h.eserBaskiSayfasi({ evren, eser, sahneBasliklari: true }).html).toContain('<h3>Sahne bir</h3>');
+    expect((await h.eserBaskiSayfasi({ evren, eser, sahneBasliklari: true })).html).toContain('<h3>Sahne bir</h3>');
   });
 
   it('seçimli çıktı: yalnız seçilen sahneler; seçili sahnesi olmayan bölüm yazılmaz; ağaçta çalışma durumu', async () => {
@@ -86,26 +86,26 @@ describe('okunabilir dışa aktarma (§10.11)', () => {
     expect(agac.bolumler[0].sahneler.map((x) => [x.ad, x.calisma, x.metinli])).toEqual([['Bir', 'gozden_gecirildi', true], ['İki', null, true]]);
     expect(agac.bolumler[1].sahneler.find((x) => x.kod === s4)!.metinli).toBe(false);
 
-    const html = h.eserBaskiSayfasi({ evren, eser, sahneler: [s1, s4] }).html;
+    const html = (await h.eserBaskiSayfasi({ evren, eser, sahneler: [s1, s4] })).html;
     expect(html).toContain('Birinci metin.');
     expect(html).not.toContain('İkinci metin.');
     expect(html).not.toContain('<h2>İkinci</h2>');
     const m = await zipOku((await h.epubYaz({ evren, eser, sahneler: [s3] })).veri);
     expect(metin(m, 'OEBPS/bolum-001.xhtml')).toContain('<h2>İkinci</h2>');
     expect(m.has('OEBPS/bolum-002.xhtml')).toBe(false);
-    expect(() => h.eserBaskiSayfasi({ evren, eser, sahneler: [] })).toThrow('Çıktıya girecek sahne seçilmedi.');
-    expect(() => h.eserBaskiSayfasi({ evren, eser, sahneler: [s4] })).toThrow('Seçtiğiniz sahnelerde metin yok.');
+    await expect(h.eserBaskiSayfasi({ evren, eser, sahneler: [] })).rejects.toThrow('Çıktıya girecek sahne seçilmedi.');
+    await expect(h.eserBaskiSayfasi({ evren, eser, sahneler: [s4] })).rejects.toThrow('Seçtiğiniz sahnelerde metin yok.');
     // PDF ve Word aynı okuma düzenini kullanır: seçim onlara da uygulanır.
-    const k = h.eserKitabi({ evren, eser, sahneler: [s2, s3] }).kitap;
+    const k = (await h.eserKitabi({ evren, eser, sahneler: [s2, s3] })).kitap;
     expect(k.bolumler.map((b) => [b.baslik, b.sahneler.length])).toEqual([['Birinci', 1], ['İkinci', 1]]);
     expect(JSON.stringify(k)).not.toContain('Birinci metin.');
-    expect(h.eserKitabi({ evren, eser, sahneler: [s1] }).kitap.bolumler.map((b) => b.baslik)).toEqual(['Birinci']);
-    expect(() => h.eserKitabi({ evren, eser, sahneler: [s4] })).toThrow('Seçtiğiniz sahnelerde metin yok.');
+    expect((await h.eserKitabi({ evren, eser, sahneler: [s1] })).kitap.bolumler.map((b) => b.baslik)).toEqual(['Birinci']);
+    await expect(h.eserKitabi({ evren, eser, sahneler: [s4] })).rejects.toThrow('Seçtiğiniz sahnelerde metin yok.');
     const w = await zipOku((await h.docxYaz({ evren, eser, sahneler: [s3] })).veri);
     const belge = new TextDecoder().decode(w.get('word/document.xml'));
     expect(belge).toContain('Üçüncü metin.');
     expect(belge).not.toContain('Birinci metin.');
     // Süzgeçsiz çıktı değişmedi: iki bölüm de yazılır.
-    expect(h.eserBaskiSayfasi({ evren, eser }).html).toContain('<h2>İkinci</h2>');
+    expect((await h.eserBaskiSayfasi({ evren, eser })).html).toContain('<h2>İkinci</h2>');
   });
 });

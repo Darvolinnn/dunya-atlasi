@@ -15,7 +15,7 @@ export interface AnlatiBaglami {
 
 type Satir = { kod: string; ad: string; tur: string; karar: string; konum: string; tarih: string | null };
 
-const cocuklar = (e: EvrenVt, ust: string): Satir[] => e.db.selectObjects(
+export const cocuklar = (e: EvrenVt, ust: string): Satir[] => e.db.selectObjects(
   `SELECT k.kod, k.ad, k.tur, k.karar, a.konum, k.tarih FROM anlati a JOIN kayitlar k ON k.kod=a.kod
    WHERE a.ust=? AND k.silindi IS NULL ORDER BY a.konum, a.kod`, [ust]) as Satir[];
 

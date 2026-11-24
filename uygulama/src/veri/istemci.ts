@@ -70,6 +70,9 @@ export class Istemci {
     });
   }
 
+  /** Yanıtı beklenen istek sayısı (kapanışta bekleme, K38). */
+  bekleyenSayisi(): number { return this.bekleyen.size; }
+
   dinle(fn: (b: DegisiklikBildirimi['degisti']) => void): () => void {
     this.dinleyiciler.add(fn);
     return () => this.dinleyiciler.delete(fn);

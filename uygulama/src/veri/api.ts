@@ -7,7 +7,7 @@ import type { Sablon, Soru, SoruDurumu } from '../alan/sablon';
 import type { Formul } from '../alan/formul';
 import type { BilgiEtiketi, BilgiKaynagi, Inanc, SanilanDurum } from '../alan/bilgi';
 import type { Gorunurluk } from '../alan/gorunurluk';
-import type { Kitap } from '../alan/kitap';
+import type { Kitap, KitapGorunumu } from '../alan/kitap';
 import type { YasananSure } from '../alan/yasanan-sure';
 
 export interface KurulumBilgisi { kod: string; ad: string; sqlite: string }
@@ -297,6 +297,15 @@ export interface MetinIsareti {
   durum: 'yerinde' | 'metinde_yok' | 'belirsiz';
 }
 export interface IsaretAlani { kod: string; ad: string; grup: string }
+/** Akıllı liste (K38, §7): kaydedilmiş sorgu ve §18 sorgu sözleşmesine göre grupları. */
+export interface AkilliListeOzeti { kod: string; ad: string }
+export interface AkilliListeSatiri { kayit: KisaKayit; neden: string | null }
+export interface AkilliListe {
+  kod: string; ad: string; tur: string; formulYazisi: string; tarih: EvrenTarihi | null;
+  /** Formül artık hesaplanamıyorsa nedeni (gruplar boş kalır). */
+  hata: string | null;
+  uyuyor: AkilliListeSatiri[]; bilgiYok: AkilliListeSatiri[]; celiskili: AkilliListeSatiri[]; konuDisi: AkilliListeSatiri[]; uymuyor: AkilliListeSatiri[];
+}
 /** İşaretli cümlenin incelenmesi (§9.3, F24): bağlı bilgi değişti ya da kritik cümle değişti. */
 export interface IsaretIncelemesi {
   anahtar: string; tur: 'deger' | 'metin'; isaret: MetinIsareti;
@@ -305,7 +314,32 @@ export interface IsaretIncelemesi {
   karar: (IncelemeKarari & { niyet?: string | null }) | null;
 }
 export interface IsaretIncelemeleri { acik: IsaretIncelemesi[]; ertelenen: IsaretIncelemesi[]; kapanan: IsaretIncelemesi[] }
-export interface BelgeSunumu { bicim: 'mektup' | 'gazete' | 'ilan' | 'izin' | 'gunluk' | 'antlasma' | 'mezar'; yazan: string | null; alici: string | null; yer: string | null; muhur: string | null; muhurYazisi: string; imzalayanlar: string[] }
+export interface BelgeSunumu {
+  bicim: 'mektup' | 'gazete' | 'ilan' | 'izin' | 'gunluk' | 'antlasma' | 'mezar'; yazan: string | null; alici: string | null; yer: string | null; muhur: string | null; muhurYazisi: string; imzalayanlar: string[];
+  /** Belge tasarımcısı (K38): kâğıt, yazı düzeni, eskime, mührün şekli ve rengi; okur yayınına girer mi (§11.5). */
+  kagit: 'parsomen' | 'eski' | 'temiz' | 'tas'; yazi: 'duz' | 'egik' | 'buyuk'; eskime: 'yok' | 'az' | 'cok';
+  muhurSekli: 'daire' | 'kalkan' | 'sekizgen' | 'yok'; muhurRengi: 'kirmizi' | 'siyah' | 'altin' | 'mavi'; okurYayini: boolean;
+}
+/** Okur yayını (§11.2, §11.3). */
+export type OkurYayiniKipi = 'teslim' | 'tercih';
+export interface OkurYayiniAyari { sinir: string | null; kip: OkurYayiniKipi; /** Kayıt → pakete giren bölümler (yoksa varsayılan). */ secimler: Record<string, string[]>; gorseller: string[]; /** Yazarın "eşadlı, sorun değil" dediği eşleşmeler. */ onaylar: string[] }
+export interface OkurYayiniBaskisi { no: number; zaman: number; sinir: string; kip: OkurYayiniKipi; boyut: number }
+/** acik: okura açık · inanc: okurun inandığı hâl · gecmiyor: eserde geçmiyor · sonra: sınırdan sonra açılıyor · gizli: okurdan gizli. */
+export type OkurKayitDurumu = 'acik' | 'inanc' | 'gecmiyor' | 'sonra' | 'gizli';
+export interface OkurYayiniKaydi { kod: string; ad: string; tur: string; durum: OkurKayitDurumu; ilk: number | null; ilkBolum: string | null; bolumler: { anahtar: string; ad: string; secili: boolean; not: string | null }[] }
+export interface OkurKimlikEsi { kisi: KisaKayit; kimlik: KisaKayit; acik: boolean; aciklanma: { sira: number; bolum: string | null } | null }
+export interface OkurYayini {
+  eser: KisaKayit; ayar: OkurYayiniAyari; bolumler: { kod: string; ad: string; sira: number; sonSahne: number }[]; sinirSira: number;
+  kayitlar: OkurYayiniKaydi[]; kimlikler: OkurKimlikEsi[]; gorseller: { ad: string; kayit: KisaKayit; izin: boolean; en: number | null; boy: number | null }[]; baskilar: OkurYayiniBaskisi[];
+}
+export interface SizintiBulgusu {
+  anahtar: string; dizge: string; kaynak: KisaKayit | null; neden: string; /** Doluysa eşleşme bu açık adın içinde (eşadlı). */ esadli: string | null;
+  yerler: { dosya: string; yazi: string; bolum: { kayit: string; anahtar: string; ad: string } | null; once: string; eslesen: string; sonra: string }[];
+}
+export interface OkurYayiniTaramasi {
+  durduran: SizintiBulgusu[]; bekleyen: SizintiBulgusu[]; onaylanan: number;
+  taranan: { sayfa: number; veri: number; gorsel: number; gizliDizge: number }; eksikGorsel: number; sayfalar: { dosya: string; ad: string }[];
+}
 export type AyEvresi = 'yeni' | 'buyuyen_hilal' | 'ilk_dordun' | 'buyuyen_siskin' | 'dolunay' | 'kuculen_siskin' | 'son_dordun' | 'kuculen_hilal';
 export interface GokyuzuTanimi {
   aylar: { kod: string; ad: string; donem: number; baslangic: string; evre: AyEvresi }[];
@@ -344,9 +378,19 @@ export type YerlesimOgesi = { kod: string; ad: string } & (
   | { tur: 'duvar' | 'kapi' | 'pencere' | 'siper'; a: YerlesimNoktasi; b: YerlesimNoktasi; acik: boolean }
   | { tur: 'karakter'; kisi: string; konum: YerlesimNoktasi; yon: number; aci: number; uzaklik: number; adimlar: YerlesimNoktasi[] }
   | { tur: 'isik'; konum: YerlesimNoktasi; yaricap: number }
-  | { tur: 'ses'; konum: YerlesimNoktasi; duzey: string; uzaklik: number | null; azaltma: number; gurultu: string }
+  | { tur: 'ses'; konum: YerlesimNoktasi; duzey: string; uzaklik: number | null; azaltma: number; gurultu: string; /** Her kat değişiminde uzaklıktan düşülen (K38); yoksa engel azaltması. */ katAzaltma?: number }
+  /** Merdiven ya da açıklık (K38): ses buradan `kat` katına geçer; öbür katta aynı oranlı yerde varsayılır. null ilk kattır. */
+  | { tur: 'gecit'; konum: YerlesimNoktasi; kat: string | null }
 );
-export interface SahneYerlesimi { plan: YerlesimPlani; ogeler: YerlesimOgesi[] }
+/** Mekânın ikinci, üçüncü… kat planı (K38). Karakterler katta değil sahnede tutulur; hangi katta oldukları anlara göre değişir. */
+export interface YerlesimKati { kod: string; ad: string; plan: YerlesimPlani; ogeler: YerlesimOgesi[] }
+/** Sahne içi an (K38): karakterlerin o andaki katı, yeri ve bakış yönü. Yazılmayan karakter önceki andaki yerindedir. */
+export interface YerlesimAni { kod: string; ad: string; konumlar: Record<string, { kat: string | null; konum: YerlesimNoktasi; yon: number }> }
+export interface SahneYerlesimi {
+  plan: YerlesimPlani; ogeler: YerlesimOgesi[];
+  /** İlk katın adı ("Zemin kat"); başka kat yoksa gösterilmez. */
+  katAdi?: string; ekKatlar?: YerlesimKati[]; anlar?: YerlesimAni[];
+}
 export interface YerlesimOkumasi { yerlesim: SahneYerlesimi | null; katilimcilar: KisaKayit[]; catismali: boolean }
 export interface YerlesimPlanSecimi extends YerlesimPlani { ad: string }
 
@@ -864,6 +908,11 @@ export interface EsitlemeDurumu {
   evrenler: EvrenEsitlemeDurumu[];
 }
 export interface DriveYedegi { id: string; gun: string; zaman: number; ad: string; kurulum: string; /** Yedekteki değişiklik sayısı (eski yedeklerde yok). */ islemSayisi?: number }
+/** Bütün yedeklerin doğrulaması (K38): her yedek açılıp okunur, klasördeki her görselin içeriği adıyla karşılaştırılır. */
+export interface YedekDogrulamasi {
+  yedekler: { id: string; gun: string; saglam: boolean; ileti: string | null }[];
+  gorseller: { denetlenen: number; bozuk: string[] };
+}
 /** Bu bilgisayardaki günlük yedekler (K31). var: Windows uygulamasında mı (tarayıcıda klasör yok); acik: bu evren için açık mı. */
 export interface YerelYedekDurumu {
   son: { zaman: number; gun: string; dogrulandi: boolean; eksikGorsel?: number } | null; gunSayisi: number; aySayisi: number; hata: string | null;
@@ -1044,7 +1093,20 @@ export interface HaritaKatmani {
   gozdenGecir: { kod: string; ad: string }[];
 }
 export interface HaritaOzeti { kod: string; ad: string; en: number; boy: number; yer: KisaKayit | null; gorsel: string | null; isaretSayisi: number }
-export interface HaritaIsareti { kod: string; kayit: KisaKayit; karar: string; konum: IsaretGirdisi; altHarita: string | null; /** Bakış açısında: yalnızca o bilenin inancında var. */ inanc?: boolean }
+export interface HaritaIsareti { kod: string; kayit: KisaKayit; karar: string; konum: IsaretGirdisi; altHarita: string | null; /** Bakış açısında: yalnızca o bilenin inancında var. */ inanc?: boolean;
+  /** Kaydın kuruluş ve yıkılış tarihi; tarih seçiliyse o tarihteki durumu (K38). */
+  varlik?: { durum: 'var' | 'henuz-yok' | 'yikilmis' | 'belirsiz'; kurulus: string | null; yikilis: string | null };
+}
+/** Seçilen tarihte süren yolculuk aşaması, rotası bu haritada çiziliyse yol üstündeki yaklaşık yeriyle (K38, §8.2). */
+export interface HaritaKafilesi {
+  yolculuk: KisaKayit; yolcular: string[]; nereden: string; nereye: string; rota: string | null; cikis: string; varis: string; planlanan: boolean;
+  /** Yolun alınan kısmı [en az, en çok] (0–1); tarih eksikse null. */
+  oran: [number, number] | null;
+  /** Aralık dar ise tek nokta, genişse yol üstünde bir parça; rota çizilmemişse ikisi de null. */
+  nokta: [number, number] | null; aralik: [number, number][] | null;
+  /** Kaçıncı gün / toplam gün (yaklaşık). */
+  gun: { kacinci: number; toplam: number } | null;
+}
 export interface HaritaAyrintisi {
   kod: string; ad: string; en: number; boy: number; silindi: boolean; yer: { kod: string; ad: string } | null;
   katmanlar: HaritaKatmani[];
@@ -1057,6 +1119,8 @@ export interface HaritaAyrintisi {
   zamanAraligi: { enKucuk: number; enBuyuk: number } | null;
   /** Seçilen tarihte, yeri bu haritada işaretli olay ve sahneler. */
   buTarihte: { kod: string; ad: string; tur: string; tarih: string; yer: string }[];
+  /** Seçilen tarihte süren yolculuklar (K38). */
+  kafileler: HaritaKafilesi[];
 }
 /** Haritada bölge (çokgen) ya da yol çizgisi (§8.2). Bölge fiilî denetim ya da iddiadır; tartışmalı toprakta her taraf ayrı çizilir. */
 export interface HaritaCizimi {
@@ -1349,6 +1413,8 @@ export interface Istekler {
   yerelYedekAyari(a: { evren: string; acik: boolean }): YerelYedekDurumu;
   yerelYedekAl(a: { evren: string }): Promise<YerelYedekDurumu>;
   yerelYedekleri(a: { evren: string }): Promise<DriveYedegi[]>;
+  /** K38: bu evrenin bütün yedeklerini ve yedek klasöründeki görselleri doğrular (yer: bu bilgisayar ya da Drive). */
+  yedekleriDogrula(a: { evren: string; yer: 'yerel' | 'drive' }): Promise<YedekDogrulamasi>;
   yereldenGeriYukle(a: { id: string }): Promise<GeriYuklemeSonucu>;
   gunlukYerelYedekler(): Promise<void>;
   esitle(): Promise<EsitlemeDurumu>;
@@ -1492,7 +1558,7 @@ export interface Istekler {
   sozlesmeHatirlatmalari(a: { evren: string; kayit: string }): SozlesmeHatirlatmasi[];
   yerlesim(a: { evren: string; sahne: string }): YerlesimOkumasi;
   yerlesimPlanlari(a: { evren: string }): YerlesimPlanSecimi[];
-  yerlesimYaz(a: { evren: string; sahne: string; plan: YerlesimPlani; ogeler: YerlesimOgesi[] }): void;
+  yerlesimYaz(a: { evren: string; sahne: string } & SahneYerlesimi): void;
   gundelikYaz(a: { evren: string; yer: string; kartlar: { kod?: string | null; konu: string; donem: string | null; statu: string | null; metin: string }[] }): void;
   siradanGun(a: { evren: string; yer: string; donem?: string | null; statu?: string | null }): SiradanGun;
   karsilastirmaliOkuma(a: { evren: string; sutunlar: { kayit: string; tarih: string | null }[] }): KarsilastirmaliOkuma;
@@ -1515,12 +1581,19 @@ export interface Istekler {
   yayimlar(a: { evren: string; eser?: string | null }): Yayim[];
   markdownDisaAktar(a: { evren: string }): Promise<{ dosyaAdi: string; veri: Uint8Array; kayitSayisi: number; eksikGorsel: number }>;
   epubYaz(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
-  eserBaskiSayfasi(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): { html: string };
-  eserKitabi(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): { dosyaKoku: string; kitap: Kitap };
+  eserBaskiSayfasi(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): Promise<{ html: string }>;
+  eserKitabi(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): Promise<{ dosyaKoku: string; kitap: Kitap }>;
+  kitapGorunumu(a: { evren: string; eser: string; sahneler?: string[] }): { gorunum: KitapGorunumu; gorseller: { kayit: string; ad: string; gorsel: string }[]; haritalar: { kod: string; ad: string }[]; sayilar: { kisiler: number; terimler: number }; takvimVar: boolean };
+  kitapGorunumuYaz(a: { evren: string; eser: string; gorunum: KitapGorunumu }): void;
   docxYaz(a: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
   ciktiAgaci(a: { evren: string; eser: string }): CiktiAgaci;
   belgeSunumu(a: { evren: string; kod: string }): { sunum: BelgeSunumu; adlar: Record<string, string> };
   belgeSunumuYaz(a: { evren: string; kod: string; sunum: BelgeSunumu }): void;
+  okurYayini(a: { evren: string; eser: string }): OkurYayini;
+  okurYayiniYaz(a: { evren: string; eser: string; ayar: OkurYayiniAyari }): void;
+  okurYayiniTara(a: { evren: string; eser: string }): Promise<OkurYayiniTaramasi>;
+  okurYayiniSayfasi(a: { evren: string; eser: string; dosya: string }): Promise<{ html: string }>;
+  okurYayiniIndir(a: { evren: string; eser: string }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
   belgeCiktisi(a: { evren: string; kod: string }): { html: string };
   isaretAlanlari(a: { evren: string; hedef: string }): IsaretAlani[];
   metinIsaretiOlustur(a: { evren: string; kayit: string; alan: string; hedef: string | null; hedefAlan?: string | null; iddia?: string; kritik?: boolean }): { kod: string };
@@ -1529,6 +1602,12 @@ export interface Istekler {
   kayitIsaretleri(a: { evren: string; kod: string }): { metindekiler: MetinIsareti[]; buKayda: MetinIsareti[] };
   isaretIncelemeleri(a: { evren: string; kayit?: string | null }): IsaretIncelemeleri;
   isaretKarari(a: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null; gerekce?: string; niyet?: 'eski_duzelt' | 'bu_tarihten' | 'taslakta' | 'inanc' | null }): void;
+  /** Bu kaydın metnindeki "bilgiye dayanıyor" işaretleri (K38, C3). */
+  bilgiIsaretKodlari(a: { evren: string; kayit: string }): string[];
+  akilliListeler(a: { evren: string }): AkilliListeOzeti[];
+  akilliListe(a: { evren: string; kod: string }): AkilliListe;
+  akilliListeYaz(a: { evren: string; kod?: string | null; ad: string; tur: string; formul: string; tarih: string }): { kod: string };
+  akilliListeSil(a: { evren: string; kod: string; geriYukle?: boolean }): void;
   isaretOzetleri(a: { evren: string; kodlar: string[] }): { kod: string; hedef: KisaKayit | null; hedefAlanAdi: string | null; iddia: string; kritik: boolean }[];
   yayimla(a: { evren: string; eser: string; baski: string }): { kod: string };
   yayimSil(a: { evren: string; kod: string }): void;
@@ -1575,6 +1654,9 @@ export interface Istekler {
   adTuret(a: { evren: string; dil: string; bicim: string; kayit?: string | null }): TuretilenBicim[];
   adUret(a: { evren: string; dil: string; kip: 'hece' | 'bicim'; enAz: number; enCok: number; adet: number }): UretilenAd[];
   adBicimleri(a: { evren: string; kod: string }): AdBicimi[];
+  /** Köken ağacı (K38, C5). */
+  dilAdlari(a: { evren: string; dil: string }): { kayit: KisaKayit; bicim: string }[];
+  kokenAgaci(a: { evren: string; dil: string; bicim?: string | null; kayit?: string | null }): { kok: { dil: KisaKayit; bicim: string; anlam: string }; dallar: TuretilenBicim[] };
   adBicimiYaz(a: { evren: string; kod: string; dil: string; bicim: string | null; kaynakDil?: string | null; kaynakBicim?: string | null }): void;
   kisiDilleri(a: { evren: string; kod: string }): KisiDili[];
   dilYeterliligiYaz(a: { evren: string; iliski: string; deger: DilYeterliligi | null }): void;
@@ -1641,6 +1723,13 @@ export interface Istekler {
   metinKullanimGuncelle(a: { evren: string; kod: string }): void;
   metinKullanimTurev(a: { evren: string; kod: string }): void;
   metinKullanimTasi(a: { evren: string; kod: string; hedef: string }): void;
+  metinParagrafGeriAl(a: { evren: string; kayit: string; alan: string; basliklar: string[]; temel: string[]; eski?: number | null; yeni?: number | null; yer?: number | null }): void;
+  sahneBolOnizle(a: { evren: string; sahne: string; konum: number; temel: string[] }): BolmeOnizlemesi;
+  sahneBol(a: { evren: string; sahne: string; konum: number; temel: string[]; ad?: string; sonGozlemler: 'kalsin' | 'gecsin' }): { yeni: string; bitisik: boolean };
+  sonrakiSahne(a: { evren: string; sahne: string }): { kod: string; ad: string } | null;
+  sahneBirlestirOnizle(a: { evren: string; sahne: string }): SahneBirlesmeOnizlemesi;
+  sahneBirlestir(a: { evren: string; sahne: string; ikinci?: string; bitisik?: boolean }): BirlesmeGeri;
+  sahneBirlesmesiniGeriAl(a: { evren: string; geri: BirlesmeGeri }): void;
   metinKullanimSil(a: { evren: string; kod: string }): void;
   donusumListesi(a: { evren: string; kayit: string }): DonusumOkumasi[];
   donusumSecenekleri(a: { evren: string }): DonusumSecenekleri;
@@ -1690,6 +1779,18 @@ export interface Istekler {
 }
 
 export type IstekAdi = keyof Istekler;
+/** Sahneyi bölmeden önce gösterilen (K38). */
+export interface BolmeOnizlemesi {
+  paragraf: number; kelime: number; ad: string;
+  tarih: string | null; yer: string | null; bakis: string | null; sahnedekiler: number;
+  baglanti: number; isaret: number; parca: number; kullanim: number; sonGozlem: number;
+}
+export interface SahneBirlesmeOnizlemesi { ikinci: { kod: string; ad: string }; paragraf: number; kelime: number; katilimci: number; olay: number; isaret: number; parca: number; kullanim: number }
+/** Birleştirmeyi geri almak için gerekenler (yalnız bu cihazda, kısa süre tutulur). */
+export interface BirlesmeGeri {
+  sahne: string; ikinci: string; konum: number; basliklar: string[];
+  iliskiler: string[]; ogeler: { isaret: string[]; parca: string[]; kullanim: string[] }; gozlemler: { iz: string; deger: string | null }[];
+}
 export type IstekArg<K extends IstekAdi> = Parameters<Istekler[K]>[0];
 export type IstekSonuc<K extends IstekAdi> = Awaited<ReturnType<Istekler[K]>>;
 

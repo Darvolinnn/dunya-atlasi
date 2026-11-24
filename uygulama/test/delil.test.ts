@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import sqlite3InitModule, { type Database } from '@sqlite.org/sqlite-wasm';
 import { Hizmet } from '../src/calisan/hizmet';
 import type { AnlatimTanimi, DelilTanimi } from '../src/veri/api';
+import { BOS_SUNUM } from '../src/calisan/belge';
 
 let sqlite: Awaited<ReturnType<typeof sqlite3InitModule>>;
 beforeAll(async () => { sqlite = await sqlite3InitModule(); });
@@ -24,7 +25,7 @@ describe('delil geçmişi (F08)', () => {
   it('görünen ve gerçek yazarı ayırır; elden ele geçişi tarihe göre sıralar', () => {
     const { h, evren, kayit, delil } = kur();
     const mektup = kayit('Uydurma mektup', 'belge'), lord = kayit('Uydurma lord'), katip = kayit('Uydurma kâtip'), hirsiz = kayit('Uydurma hırsız');
-    h.belgeSunumuYaz({ evren, kod: mektup, sunum: { bicim: 'mektup', yazan: lord, alici: null, yer: null, muhur: null, muhurYazisi: '', imzalayanlar: [] } });
+    h.belgeSunumuYaz({ evren, kod: mektup, sunum: { ...BOS_SUNUM, bicim: 'mektup', yazan: lord, alici: null, yer: null, muhur: null, muhurYazisi: '', imzalayanlar: [] } });
     expect(h.delilGecmisi({ evren, kod: mektup }).yazarDurumu).toBe('gerçek yazılmamış');
     delil(mektup, { gercekYazar: katip, elde: [{ kisi: hirsiz, tarih: '432', nasil: 'çalındı' }, { kisi: lord, tarih: '430', nasil: '' }, { kisi: katip, tarih: '', nasil: 'yazıldı' }] });
     const d = h.delilGecmisi({ evren, kod: mektup });

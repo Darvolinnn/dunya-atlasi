@@ -15,6 +15,8 @@ export const KLASOR_ADI = 'Dünya Atlası yedekleri';
 export interface YedekTasiyici extends Tasiyici {
   klasor(ad: string, ozellikler: Record<string, string>, ust?: string): Promise<string>;
   yukle(ad: string, ozellikler: Record<string, string>, veri: Uint8Array, id?: string, ust?: string): Promise<UzakDosya>;
+  /** Yalnız yedek klasörü: programın yazdığı ama artık açılamayan yedekler. */
+  bozulanYedekler?(evren: string): Promise<{ id: string; gun: string }[]>;
 }
 
 export interface DonemselYedekErisimi {
@@ -31,7 +33,7 @@ export interface DonemselYedekErisimi {
 /** Ayarların öneki: Drive'daki yedekler "donemsel", bu bilgisayardaki yedekler "yerel". */
 export type YedekOneki = 'donemsel' | 'yerel';
 
-import type { DriveYedegi, DonemselYedekDurumu as Durum } from '../veri/api';
+import type { DriveYedegi, DonemselYedekDurumu as Durum, YedekDogrulamasi } from '../veri/api';
 import { kullaniciIletisi } from './ileti';
 export type { DriveYedegi };
 export type DonemselYedekDurumu = Omit<Durum, 'bagli' | 'esitlenir'>;
@@ -166,6 +168,37 @@ export class DonemselYedek {
         ...(Number.isInteger(Number(d.ozellikler.islem)) && d.ozellikler.islem ? { islemSayisi: Number(d.ozellikler.islem) } : {}) }))
       .filter((y) => /^\d{4}-\d{2}-\d{2}$/.test(y.gun))
       .sort((a, b) => b.gun.localeCompare(a.gun));
+  }
+
+  /**
+   * Bütün yedekleri doğrular (K38): her yedek indirilir, açılır ve her değişiklik satırı okunur; listede kayıtlı sayıyla
+   * karşılaştırılır. Klasördeki her görselin içeriği adıyla karşılaştırılır. Hiçbir şey yazılmaz ya da silinmez.
+   */
+  async dogrula(evren: string): Promise<YedekDogrulamasi> {
+    const yedekler: YedekDogrulamasi['yedekler'] = [];
+    for (const y of await this.liste(evren)) {
+      try {
+        const r = await this.x.yedekIncele(await this.t.indir(y.id));
+        const tutmuyor = y.islemSayisi !== undefined && r.islemSayisi !== y.islemSayisi;
+        yedekler.push({ id: y.id, gun: y.gun, saglam: !tutmuyor && r.evrenKod === evren,
+          ileti: tutmuyor ? `Yedekte ${r.islemSayisi.toLocaleString('tr-TR')} değişiklik var, ${y.islemSayisi!.toLocaleString('tr-TR')} olmalıydı.` : r.evrenKod !== evren ? 'Yedek başka bir evrene ait.' : null });
+      } catch (e) {
+        yedekler.push({ id: y.id, gun: y.gun, saglam: false, ileti: kullaniciIletisi(e) });
+      }
+    }
+    for (const y of (await this.t.bozulanYedekler?.(evren)) ?? []) {
+      yedekler.push({ id: y.id, gun: y.gun, saglam: false, ileti: 'Yedek dosyası bozulmuş; açılamıyor.' });
+    }
+    yedekler.sort((a, b) => b.gun.localeCompare(a.gun));
+    const bozuk: string[] = [];
+    let denetlenen = 0;
+    for (const d of await this.t.listele({ uygulama: UYGULAMA, tur: 'yedek-medya' })) {
+      const ad = d.ozellikler.ad;
+      if (!/^[0-9a-f]{64}$/.test(ad ?? '')) continue; // önizlemeler içerikten adlandırılmaz
+      denetlenen++;
+      try { if ((await icerikAdi(await this.t.indir(d.id))) !== ad) bozuk.push(ad); } catch { bozuk.push(ad); }
+    }
+    return { yedekler, gorseller: { denetlenen, bozuk } };
   }
 
   /** Yedek klasörünün "medya" klasöründeki görsellerin adları. */

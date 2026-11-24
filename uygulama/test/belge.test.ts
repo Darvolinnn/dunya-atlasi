@@ -4,6 +4,7 @@ import type { Database } from '@sqlite.org/sqlite-wasm';
 import { pmNodeToSpans } from '@automerge/prosemirror';
 import { Hizmet } from '../src/calisan/hizmet';
 import { metinSemasi } from '../src/alan/metin-sema';
+import { BOS_SUNUM } from '../src/calisan/belge';
 
 let sqlite3: Awaited<ReturnType<typeof sqlite3InitModule>>;
 beforeAll(async () => { sqlite3 = await sqlite3InitModule(); });
@@ -24,7 +25,7 @@ describe('evren içi belge çıktısı (§11.5)', () => {
     const temel = h.metinAc({ evren, kayit: belge, alan: 'govde' }).basliklar;
     h.metinKaydet({ evren, kayit: belge, alan: 'govde', spans: pmNodeToSpans(metinSemasi, sm.node('doc', null, [sm.node('paragraph', null, [sm.text('İki taraf da silahlarını bırakır.')])])) as never, temel });
     expect(h.belgeSunumu({ evren, kod: belge }).sunum.bicim).toBe('mektup');
-    h.belgeSunumuYaz({ evren, kod: belge, sunum: { bicim: 'antlasma', yazan: null, alici: null, yer: sehir, muhur: kral, muhurYazisi: '  ', imzalayanlar: [kral, kralice, kral] } });
+    h.belgeSunumuYaz({ evren, kod: belge, sunum: { ...BOS_SUNUM, bicim: 'antlasma', yazan: null, alici: null, yer: sehir, muhur: kral, muhurYazisi: '  ', imzalayanlar: [kral, kralice, kral] } });
     const s = h.belgeSunumu({ evren, kod: belge });
     expect(s.sunum.imzalayanlar).toEqual([kral, kralice]);
     expect(s.adlar[sehir]).toBe('Ardıç');
@@ -32,7 +33,7 @@ describe('evren içi belge çıktısı (§11.5)', () => {
     expect(html).toContain('<h1>Barış &lt;antlaşması&gt;</h1>');
     expect(html).toContain('Ardıç, 1200');
     expect(html).toContain('<div>Kral Aldren</div><div>Kraliçe Mera</div>');
-    expect(html).toContain('class="muhur" aria-label="Mühür">Kral Aldren');
+    expect(html).toContain('class="muhur daire" aria-label="Mühür">Kral Aldren');
     expect(html).toContain('<p>İki taraf da silahlarını bırakır.</p>');
     expect(() => h.belgeSunumuYaz({ evren, kod: kral, sunum: s.sunum })).toThrow(/belge/);
     expect(() => h.belgeSunumuYaz({ evren, kod: belge, sunum: { ...s.sunum, bicim: 'kitap' as never } })).toThrow(/biçim/);

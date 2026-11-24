@@ -1,7 +1,7 @@
 // Dosyaya yedek, yedekten geri yükleme ve dışarıdan içe aktarma ekranları (§10.11).
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { DonemselYedekDurumu, DriveYedegi, GeriYuklemeSonucu, IceAktarimRaporu, YedekBilgisi, YerelYedekDurumu } from '../veri/api';
+import type { DonemselYedekDurumu, DriveYedegi, GeriYuklemeSonucu, IceAktarimRaporu, YedekBilgisi, YedekDogrulamasi, YerelYedekDurumu } from '../veri/api';
 import { kabuk, yedekKlasorunuAc } from '../veri/kabuk';
 import { useEsitleme } from './Esitleme';
 import { zamanYaz } from '../alan/islem-metni';
@@ -141,6 +141,7 @@ export function DriveYedekleri({ istemci, evren, surum }: { istemci: Istemci; ev
           ))}
         </ul>
       )}
+      {bagli && liste && liste.length > 0 && <YedekleriDogrula istemci={istemci} evren={evren} yer="drive" />}
       <details style="margin-top:8px">
         <summary class="kucuk">Saklama süresi</summary>
         <div class="satir" style="margin-top:8px">
@@ -248,6 +249,36 @@ export function YerelYedekler({ istemci, evren, surum }: { istemci: Istemci; evr
             </li>
           ))}
         </ul>
+      )}
+      {liste && liste.length > 0 && <YedekleriDogrula istemci={istemci} evren={evren} yer="yerel" />}
+      {hata && <p class="hata" role="alert">{hata}</p>}
+    </div>
+  );
+}
+
+/** K38: bütün yedekleri açıp okur, görsellerin içeriğini denetler; hiçbir şeyi değiştirmez. */
+function YedekleriDogrula({ istemci, evren, yer }: { istemci: Istemci; evren: string; yer: 'yerel' | 'drive' }) {
+  const [sonuc, setSonuc] = useState<YedekDogrulamasi | null>(null);
+  const [suruyor, setSuruyor] = useState(false);
+  const [hata, setHata] = useState<string | null>(null);
+  useEffect(() => { setSonuc(null); setHata(null); }, [evren]);
+  const dogrula = async () => {
+    setSuruyor(true); setHata(null); setSonuc(null);
+    try { setSonuc(await istemci.iste('yedekleriDogrula', { evren, yer })); } catch (e) { setHata(hataMetni(e)); }
+    setSuruyor(false);
+  };
+  const bozukYedek = sonuc?.yedekler.filter((y) => !y.saglam) ?? [];
+  return (
+    <div style="margin-top:8px">
+      <button class="dugme sade" onClick={dogrula} disabled={suruyor}
+        title="Her yedek açılıp baştan sona okunur ve görsellerin bozulmadığı denetlenir. Hiçbir şey değişmez.">{suruyor ? 'Doğrulanıyor…' : 'Bütün yedekleri doğrula'}</button>
+      {sonuc && (
+        <div role="status" class="kucuk" style="margin-top:6px">
+          <p>{bozukYedek.length ? `${sonuc.yedekler.length} yedekten ${bozukYedek.length} tanesi okunamadı.` : `${sonuc.yedekler.length} yedeğin hepsi baştan sona okundu, sağlam.`}
+            {' '}{sonuc.gorseller.bozuk.length ? `${sonuc.gorseller.denetlenen} görselden ${sonuc.gorseller.bozuk.length} tanesi bozuk.` : sonuc.gorseller.denetlenen ? `${sonuc.gorseller.denetlenen} görselin hepsi sağlam.` : ''}</p>
+          {bozukYedek.length > 0 && <ul class="uyari">{bozukYedek.map((y) => <li key={y.id}>{gunMetni(y.gun)}: {y.ileti}</li>)}</ul>}
+          {sonuc.gorseller.bozuk.length > 0 && <p class="uyari">Bozuk görseller geri yüklemede kullanılmaz; o görsel geri yüklemede eksik olarak bildirilir.</p>}
+        </div>
       )}
       {hata && <p class="hata" role="alert">{hata}</p>}
     </div>

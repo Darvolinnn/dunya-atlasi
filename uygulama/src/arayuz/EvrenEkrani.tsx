@@ -1,3 +1,4 @@
+import { OkurYayiniSekmesi } from './OkurYayini';
 import { useEffect, useState } from 'preact/hooks';
 import { KurguSecici } from './ortak';
 import { SonYedekSatiri } from './Esitleme';
@@ -88,6 +89,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           : sekme === 'sozlesme' ? <AnlatiSozlesmesiSekmesi key={kod} istemci={istemci} evren={kod} surum={surum} saltOkunur={!!bilgi.bag} />
           : sekme === 'kosullar' ? <KosulMasasiSekmesi istemci={istemci} evren={kod} />
           : sekme === 'kesif' ? <KesifSekmesi istemci={istemci} evren={kod} />
+          : sekme === 'okur-yayini' ? <OkurYayiniSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'gezinti' || sekme === 'pano' ? <DerlemeSekmesi istemci={istemci} evren={kod} tur={sekme} secili={alt} surum={surum} />
           : sekme === 'takvim' ? <TakvimSayfasi istemci={istemci} evren={kod} />
           : sekme === 'terimler' ? <TerimSozlugu istemci={istemci} evren={kod} />

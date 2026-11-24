@@ -5,6 +5,7 @@
   "remote": { "urls": ["http://localhost:41730"] },
   "permissions": [
     "core:default", "allow-google-izin", "allow-google-cikis", "allow-yerel-yedek-yeri", "allow-yerel-yedek-listele",
-    "allow-yerel-yedek-oku", "allow-yerel-yedek-yaz", "allow-yerel-yedek-sil", "allow-yerel-yedek-klasoru-ac"
+    "allow-yerel-yedek-oku", "allow-yerel-yedek-yaz", "allow-yerel-yedek-sil", "allow-yerel-yedek-klasoru-ac",
+    "allow-pencereyi-kapat"
   ]
 }

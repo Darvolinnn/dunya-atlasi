@@ -112,7 +112,7 @@ function HukukKuraliDuzenleyici({ istemci, evren, k, surum }: { istemci: Istemci
 }
 
 /** Formül yazımı (TK8): yazarken denetlenir; okunamıyorsa hatanın yeri işaretlenir, okunuyorsa programın okuyuşu gösterilir. */
-function FormulYazici({ istemci, evren, deger, degistir }: { istemci: Istemci; evren: string; deger: string; degistir: (v: string) => void }) {
+export function FormulYazici({ istemci, evren, deger, degistir, etiket = 'Kimlere uygulanır (formül)', bosYazi = 'Formül boşsa kural herkese uygulanır.' }: { istemci: Istemci; evren: string; deger: string; degistir: (v: string) => void; etiket?: string; bosYazi?: string }) {
   const [d, setD] = useState<{ yazi: string } | { hata: string; konum: number; uzunluk: number } | null>(null);
   const [yardim, setYardim] = useState(false);
   useEffect(() => {
@@ -124,10 +124,10 @@ function FormulYazici({ istemci, evren, deger, degistir }: { istemci: Istemci; e
   const h = d && 'hata' in d ? d : null;
   return (
     <div class="kucuk formul-yazici">
-      <textarea class="girdi" rows={2} lang="tr" spellcheck={false} aria-label="Kimlere uygulanır (formül)" aria-invalid={!!h}
+      <textarea class="girdi" rows={2} lang="tr" spellcheck={false} aria-label={etiket} aria-invalid={!!h}
         placeholder={'Ör. üyesi [Kuzey Loncası] ve ({Rütbe} = "Subay" veya yaş < 16 yıl)'} value={deger}
         onInput={(e) => degistir((e.target as HTMLTextAreaElement).value)} />
-      {!deger.trim() && <p class="soluk">Formül boşsa kural herkese uygulanır.</p>}
+      {!deger.trim() && bosYazi && <p class="soluk">{bosYazi}</p>}
       {h && (
         <p class="hata" role="alert">
           {h.hata}

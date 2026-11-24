@@ -40,6 +40,8 @@ test('daktilo kipi: yazılan satır ekranın ortasında kalır; tıklamak kaydı
   await p.getByRole('button', { name: 'Daktilo kipi' }).click();
   await expect(p.locator('html.daktilo-kipi')).toHaveCount(1);
   await editor(p).focus();
+  // Menü odağı aldığı için imleç metnin sonuna açıkça konur (odak dönüşünde seçim her zaman korunmuyor).
+  await p.keyboard.press('Control+End');
   await p.keyboard.type(' lambayı yaktı.');
   await expect.poll(() => ortadanUzaklik(p), { timeout: 3000 }).toBeLessThan(30);
   await p.keyboard.press('Enter');
@@ -79,6 +81,7 @@ test('daktilo kipi: animasyonları azalt açıkken kayma anlık; komut paletinde
   await p.keyboard.press('Enter');
   await expect(p.locator('html.daktilo-kipi')).toHaveCount(1);
   await editor(p).focus();
+  await p.keyboard.press('Control+End');
   await p.keyboard.type('Son satır.');
   // Kayma beklenmeden ölçülür.
   expect(await ortadanUzaklik(p)).toBeLessThan(30);

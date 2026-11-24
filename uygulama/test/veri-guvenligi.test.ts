@@ -63,7 +63,7 @@ const metni = (h: Hizmet, evren: string, kayit: string) => {
   return d.textBetween(0, d.content.size, '\n');
 };
 const vt = (h: Hizmet, evren: string) => (h as unknown as { evren(k: string): EvrenVt }).evren(evren);
-const SIRASIZ = new Set(['metin_yazanlari', 'metin_catismalari']);
+const SIRASIZ = new Set(['metin_yazanlari', 'metin_catismalari', 'arama_dizini']); // arama dizininin satır sırası geçmişe bağlı, anlamı yok
 /** Bütün sonuç tabloları satır sırasıyla (ikili sütunlar hariç): iki kopya aynı mı? */
 const tablolar = (h: Hizmet, evren: string) => {
   const db = vt(h, evren).db;

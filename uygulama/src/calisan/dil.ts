@@ -171,6 +171,43 @@ export function adBicimiYaz(b: DilBaglami, kayit: string, dil: string, bicim: st
   b.yaz([{ tur: 'ad_bicimi_yaz', veri: { kayit, dil, deger } }], [kayit]);
 }
 
+// ---------- Köken ağacı (K38, C5) ----------
+
+/** Bu dilde biçimi kayıtlı adlar (kaydın dillerdeki biçimleri). */
+export function dilAdlari(e: EvrenVt, dil: string): { kayit: KisaKayit; bicim: string }[] {
+  dilMi(e, dil);
+  return e.db.selectObjects('SELECT a.kod, a.bicimler FROM ad_bicimleri a JOIN kayitlar k ON k.kod=a.kod WHERE k.silindi IS NULL').flatMap((r) => {
+    const v = (JSON.parse(r.bicimler as string) as Record<string, { bicim: string }>)[dil];
+    return v ? [{ kayit: kisa(e, r.kod as string), bicim: v.bicim }] : [];
+  }).sort((a, b) => a.bicim.localeCompare(b.bicim, 'tr'));
+}
+
+/**
+ * Bir sözcüğün ya da adın köken ağacı. Ad seçilirse kayıtlı biçimlerin "şuradan türetildi" bağları yukarı izlenip
+ * en eski biçim bulunur; ağaç oradan bütün türev dillere ses değişim kurallarıyla iner. Program geriye doğru ses
+ * değişimi hesaplamaz: kök, yazarın kaydettiği bağlardan ya da seçilen sözcükten gelir.
+ */
+export function kokenAgaci(e: EvrenVt, dil: string, g: { bicim?: string | null; kayit?: string | null }): { kok: { dil: KisaKayit; bicim: string; anlam: string }; dallar: TuretilenBicim[] } {
+  dilMi(e, dil);
+  let kokDil = dil, kokBicim = temiz(g.bicim, 60);
+  const kayit = g.kayit ? yonlendir(e.db, g.kayit) as string : null;
+  if (kayit) {
+    const r = e.db.selectValue('SELECT bicimler FROM ad_bicimleri WHERE kod=?', [kayit]) as string | undefined;
+    const m = r ? JSON.parse(r) as Record<string, { bicim: string; kaynakDil: string | null; kaynakBicim: string | null }> : {};
+    if (!m[dil]) throw new Error('Bu adın bu dilde kayıtlı biçimi yok.');
+    kokBicim = m[dil].bicim;
+    const gorulen = new Set([dil]);
+    for (let x = m[dil]; x?.kaynakDil && !gorulen.has(x.kaynakDil); x = m[kokDil]) {
+      gorulen.add(x.kaynakDil);
+      kokDil = x.kaynakDil; kokBicim = x.kaynakBicim ?? '';
+      if (!m[kokDil] || m[kokDil].bicim !== kokBicim) break;
+    }
+  }
+  if (!kokBicim) throw new Error('Bir sözcük ya da ad seçin.');
+  const anlam = dilOku(e, kokDil).sozluk.find((s) => s.bicim.replace(/^-|-$/g, '').toLocaleLowerCase('tr-TR') === kokBicim.toLocaleLowerCase('tr-TR'))?.anlam ?? '';
+  return { kok: { dil: kisa(e, kokDil), bicim: kokBicim, anlam }, dallar: adTuret(e, kokDil, kokBicim, kayit) };
+}
+
 // ---------- Dil yeterliliği ----------
 
 function yeterlilikOku(e: EvrenVt, iliski: string): DilYeterliligi | null {

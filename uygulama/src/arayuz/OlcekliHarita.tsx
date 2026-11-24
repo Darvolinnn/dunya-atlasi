@@ -33,84 +33,193 @@ const HEDEF_YAZISI: Record<TiklamaHedefi, string> = {
   araziNokta: 'arazinin yeni köşesi',
 };
 
+/** Ölçekli çizimin haritanın üstünde çizilen katmanı ve ona tıklanarak seçilen noktalar (K38): çekmece kapansa da kalır. */
+export interface OlcekliKatman {
+  acik: boolean;
+  durum: OlcekliHaritaDurumu | null;
+  hedef: TiklamaHedefi;
+  olcumBas: [number, number]; olcumBit: [number, number]; konturBas: [number, number];
+  olcumSonuc: OlcekliOlcumSonucu | null; konturSonuc: OlcekliKonturSonucu | null;
+  olcumDurum: 'bos' | 'hesaplaniyor' | 'guncel' | 'onceki_sonuc'; konturDurum: 'bos' | 'hesaplaniyor' | 'guncel' | 'onceki_sonuc';
+  araziNoktalar: [number, number][];
+  /** Ölçek formunun iki noktası. */
+  p1: [number, number]; p2: [number, number];
+  goster: { olcek: boolean; arazi: boolean; erisim: boolean; yol: boolean };
+  hata: string | null;
+}
+type Guncelle = Partial<OlcekliKatman> | ((o: OlcekliKatman) => Partial<OlcekliKatman>);
+export interface OlcekliKatmanDenetimi { k: OlcekliKatman; set: (g: Guncelle) => void; yukle: () => void }
+
+const BOS_HARITA = { en: 0, boy: 0 };
+const baslangic = (h: { en: number; boy: number }): OlcekliKatman => ({
+  acik: false, durum: null, hedef: 'yok',
+  olcumBas: [0, 0], olcumBit: [Math.round(h.en / 2), Math.round(h.boy / 2)], konturBas: [Math.round(h.en / 2), Math.round(h.boy / 2)],
+  olcumSonuc: null, konturSonuc: null, olcumDurum: 'bos', konturDurum: 'bos', araziNoktalar: [], p1: [0, 0], p2: [Math.min(100, h.en), 0],
+  goster: { olcek: true, arazi: true, erisim: true, yol: true }, hata: null,
+});
+
+/** Haritanın kendisinde tutulur: ölçekli bölüm açıkken veri okunur, değişince yenilenir. */
+export function useOlcekliKatman(istemci: Istemci, evren: string, h: HaritaAyrintisi | null): OlcekliKatmanDenetimi {
+  const [k, setK] = useState<OlcekliKatman>(() => baslangic(h ?? BOS_HARITA));
+  const set = (g: Guncelle) => setK((o) => ({ ...o, ...(typeof g === 'function' ? g(o) : g) }));
+  useEffect(() => setK(baslangic(h ?? BOS_HARITA)), [h?.kod]);
+  const yukle = () => {
+    if (!h) return;
+    istemci.iste('olcekliHaritaDurumu', { evren, harita: h.kod }).then(
+      (d) => set((o) => ({ durum: d, hata: null, olcumDurum: o.olcumDurum === 'guncel' ? 'onceki_sonuc' : o.olcumDurum, konturDurum: o.konturDurum === 'guncel' ? 'onceki_sonuc' : o.konturDurum })),
+      (err) => set({ hata: hataYaz(err) }),
+    );
+  };
+  useEffect(() => {
+    if (!k.acik) return;
+    yukle();
+    return istemci.dinle((d) => { if (d.evren === evren) yukle(); });
+  }, [k.acik, evren, h?.kod]);
+  return { k, set, yukle };
+}
+
+/** Haritanın görseline tıklanan nokta, ölçekli bölüm bir nokta bekliyorsa ona gider. Gittiyse true. */
+export function olcekliTikla(d: OlcekliKatmanDenetimi, nokta: [number, number]): boolean {
+  const hedef = d.k.hedef;
+  if (!d.k.acik || hedef === 'yok') return false;
+  const n: [number, number] = [Math.round(nokta[0] * 10) / 10, Math.round(nokta[1] * 10) / 10];
+  if (hedef === 'olcek1') d.set({ hedef: 'olcek2', p1: n });
+  else if (hedef === 'olcek2') d.set({ hedef: 'yok', p2: n });
+  else if (hedef === 'olcumBas') d.set({ olcumBas: n, hedef: 'olcumBit' });
+  else if (hedef === 'olcumBit') d.set({ olcumBit: n, hedef: 'yok' });
+  else if (hedef === 'konturBas') d.set({ konturBas: n, hedef: 'yok' });
+  else if (hedef === 'araziNokta') d.set((o) => ({ araziNoktalar: [...o.araziNoktalar, n] }));
+  return true;
+}
+
+/** Ölçek çizgisi için yuvarlak bir uzunluk: haritanın genişliğinin yaklaşık altıda biri. */
+function olcekCubugu(h: HaritaAyrintisi, d: OlcekliHaritaDurumu): { piksel: number; deger: number } | null {
+  const o = d.olcek;
+  if (!o) return null;
+  const px = Math.hypot(o.p2[0] - o.p1[0], o.p2[1] - o.p1[1]);
+  if (!(px > 0) || !(o.mesafe > 0)) return null;
+  const birimBasi = o.mesafe / px, hedef = (h.en / 6) * birimBasi;
+  const us = 10 ** Math.floor(Math.log10(hedef));
+  const deger = [1, 2, 5, 10].map((x) => x * us).filter((x) => x <= hedef).pop() ?? us;
+  return { piksel: deger / birimBasi, deger };
+}
+
+/** Haritanın kendi görselinin üstünde yarı saydam ölçekli çizim: araziler, erişim sınırları, en kısa yol, ölçek. */
+export function OlcekliKatmanCizimi({ h, d }: { h: HaritaAyrintisi; d: OlcekliKatmanDenetimi }) {
+  const { k } = d;
+  if (!k.acik || !k.durum) return null;
+  const g = k.goster, r = Math.max(h.en, h.boy) * 0.008;
+  const cubuk = g.olcek ? olcekCubugu(h, k.durum) : null;
+  // Sağ altta, açık çekmecenin altında kalmayacak kadar içeride.
+  const [cx, cy] = [h.en * 0.66, h.boy * 0.93];
+  const yuzde = (v: number, top: number) => `${(v / top) * 100}%`;
+  return (
+    <>
+      <svg class="olcekli-katman" viewBox={`0 0 ${h.en} ${h.boy}`} preserveAspectRatio="none" aria-hidden="true">
+        {g.arazi && k.durum.araziler.map((a) => <polygon key={a.kod} class="olcekli-arazi-cokgen" points={a.noktalar.map((p) => p.join(',')).join(' ')} vector-effect="non-scaling-stroke" />)}
+        {g.arazi && k.araziNoktalar.length > 0 && <polyline class="olcekli-arazi-taslak" points={k.araziNoktalar.map((p) => p.join(',')).join(' ')} vector-effect="non-scaling-stroke" />}
+        {/* Erişim alanı satır satır dikdörtgenlerden oluşur; çizgi yerine dış kenarı bir süzgeçle çizilir. */}
+        <defs>
+          <filter id={`olcekli-kenar-${h.kod}`} x="-2%" y="-2%" width="104%" height="104%" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse">
+            <feMorphology in="SourceGraphic" operator="dilate" radius={Math.max(h.en, h.boy) * 0.0022} />
+            <feComposite in2="SourceGraphic" operator="out" />
+          </filter>
+        </defs>
+        {g.erisim && k.konturSonuc?.durum === 'tamam' && [...k.konturSonuc.konturlar].sort((a, b) => b.gun - a.gun)
+          .map((x) => x.svgYolu ? <g key={x.gun}>
+            <path d={x.svgYolu} class={`olcekli-kontur gun-${x.gun}`} />
+            <path d={x.svgYolu} class={`olcekli-kontur-kenar gun-${x.gun}`} filter={`url(#olcekli-kenar-${h.kod})`} />
+          </g> : null)}
+        {g.yol && k.olcumSonuc?.yolNoktalari && k.olcumSonuc.yolNoktalari.length >= 2 && (
+          <polyline class="olcekli-yol" points={k.olcumSonuc.yolNoktalari.map((p) => p.join(',')).join(' ')} vector-effect="non-scaling-stroke" />
+        )}
+        {g.olcek && k.durum.olcek && <line class="olcekli-olcek-cizgi" x1={k.durum.olcek.p1[0]} y1={k.durum.olcek.p1[1]} x2={k.durum.olcek.p2[0]} y2={k.durum.olcek.p2[1]} vector-effect="non-scaling-stroke" />}
+        {cubuk && <path class="olcek-cubugu" d={`M${cx - cubuk.piksel},${cy - r} V${cy} H${cx} V${cy - r}`} vector-effect="non-scaling-stroke" />}
+        {g.yol && <>
+          <circle class="olcekli-nokta bas" cx={k.olcumBas[0]} cy={k.olcumBas[1]} r={r} />
+          <circle class="olcekli-nokta bit" cx={k.olcumBit[0]} cy={k.olcumBit[1]} r={r} />
+        </>}
+        {g.erisim && <circle class="olcekli-nokta kontur-merkez" cx={k.konturBas[0]} cy={k.konturBas[1]} r={r} />}
+      </svg>
+      {g.erisim && k.konturSonuc?.durum === 'tamam' && k.konturSonuc.konturlar.map((x) => {
+        const m = /M\s*([\d.]+)[ ,]([\d.]+)/.exec(x.svgYolu ?? '');
+        return m ? <span key={x.gun} class="olcekli-etiket gun" style={{ left: yuzde(Number(m[1]), h.en), top: yuzde(Number(m[2]), h.boy) }}>{x.gun}. gün</span> : null;
+      })}
+      {g.yol && k.olcumSonuc?.enKisaGun != null && k.olcumSonuc.yolNoktalari && k.olcumSonuc.yolNoktalari.length >= 2 && (() => {
+        const p = k.olcumSonuc.yolNoktalari[Math.floor(k.olcumSonuc.yolNoktalari.length / 2)];
+        return <span class="olcekli-etiket yol" style={{ left: yuzde(p[0], h.en), top: yuzde(p[1], h.boy) }}>en kısa: {gunYazisi(k.olcumSonuc.enKisaGun)}</span>;
+      })()}
+      {g.arazi && k.durum.araziler.map((a) => {
+        const [x, y] = a.noktalar.reduce((t, p) => [t[0] + p[0] / a.noktalar.length, t[1] + p[1] / a.noktalar.length], [0, 0]);
+        return <span key={a.kod} class="olcekli-etiket arazi" style={{ left: yuzde(x, h.en), top: yuzde(y, h.boy) }}>{a.ad}</span>;
+      })}
+      {cubuk && <span class="olcekli-etiket cubuk" style={{ left: yuzde(cx - cubuk.piksel / 2, h.en), top: yuzde(cy - r * 2.2, h.boy) }}>{sayiGirdisi(cubuk.deger)} {k.durum.olcek!.birim}</span>}
+    </>
+  );
+}
+
+/** 1,3 gün → "1 gün 7 saat". */
+function gunYazisi(g: number): string {
+  const tam = Math.floor(g), saat = Math.round((g - tam) * 24);
+  return saat === 24 ? `${tam + 1} gün` : saat ? `${tam ? `${tam} gün ` : ''}${saat} saat` : `${tam} gün`;
+}
+
 export function OlcekliHaritaBolumu({
   istemci,
   evren,
   h,
+  d,
 }: {
   istemci: Istemci;
   evren: string;
   h: HaritaAyrintisi;
+  d: OlcekliKatmanDenetimi;
 }) {
-  const [acik, setAcik] = useState(false);
-  const [durum, setDurum] = useState<OlcekliHaritaDurumu | null>(null);
-  const [hata, setHata] = useState<string | null>(null);
-  const [hedef, setHedef] = useState<TiklamaHedefi>('yok');
+  const { k, set, yukle: yukleKatman } = d;
+  const { acik, durum, hedef, olcumBas, olcumBit, konturBas, olcumSonuc, konturSonuc, olcumDurum, konturDurum, araziNoktalar } = k;
+  const hata = k.hata;
+  const setHata = (x: string | null) => set({ hata: x });
+  const setAcik = (x: boolean) => set(x ? { acik: true } : { acik: false, hedef: 'yok' });
+  const setHedef = (x: TiklamaHedefi) => set({ hedef: x });
+  const setAraziNoktalar = (x: [number, number][]) => set({ araziNoktalar: x });
+  const setOlcumBas = (x: [number, number]) => set({ olcumBas: x });
+  const setOlcumDurum = (x: OlcekliKatman['olcumDurum']) => set({ olcumDurum: x });
+  const setKonturDurum = (x: OlcekliKatman['konturDurum']) => set({ konturDurum: x });
+  const setOlcumSonuc = (x: OlcekliOlcumSonucu | null) => set({ olcumSonuc: x });
+  const setKonturSonuc = (x: OlcekliKonturSonucu | null) => set({ konturSonuc: x });
 
   // Ölçek formu
   const [olcekAcik, setOlcekAcik] = useState(false);
-  const [p1, setP1] = useState<[number, number]>([0, 0]);
-  const [p2, setP2] = useState<[number, number]>([Math.min(100, h.en), 0]);
+  const { p1, p2 } = k;
+  const setP1 = (x: [number, number]) => set({ p1: x });
+  const setP2 = (x: [number, number]) => set({ p2: x });
   const [mesafe, setMesafe] = useState('10');
   const [birim, setBirim] = useState('fersah');
   const [molaVarsayimi, setMolaVarsayimi] = useState('');
+  useEffect(() => {
+    if (!durum?.olcek) return;
+    setP1(durum.olcek.p1); setP2(durum.olcek.p2); setMesafe(String(durum.olcek.mesafe)); setBirim(durum.olcek.birim); setMolaVarsayimi(durum.olcek.molaVarsayimi ?? '');
+  }, [durum]);
 
   // Varsayılan hız formu
   const [varsayilanAcik, setVarsayilanAcik] = useState(false);
   const [varsayilanKural, setVarsayilanKural] = useState<OlcekliHizKurali[]>([]);
+  useEffect(() => { if (durum) setVarsayilanKural(durum.varsayilanHizlar); }, [durum]);
 
   // Arazi ekleme formu
   const [araziAcik, setAraziAcik] = useState(false);
   const [araziAd, setAraziAd] = useState('');
   const [araziCizim, setAraziCizim] = useState<string>('');
-  const [araziNoktalar, setAraziNoktalar] = useState<[number, number][]>([]);
   const [araziKurallar, setAraziKurallar] = useState<OlcekliHizKurali[]>([
     { ulasim: 'yaya', mevsim: null, gecilmez: false, gunlukHiz: 6 },
   ]);
 
-  // Ölçüm ve kontur durumu
+  // Ölçüm ve kontur
   const [ulasim, setUlasim] = useState('yaya');
   const [mevsim, setMevsim] = useState('');
-  const [olcumBas, setOlcumBas] = useState<[number, number]>([0, 0]);
-  const [olcumBit, setOlcumBit] = useState<[number, number]>([Math.round(h.en / 2), Math.round(h.boy / 2)]);
-  const [olcumSonuc, setOlcumSonuc] = useState<OlcekliOlcumSonucu | null>(null);
-  const [olcumDurum, setOlcumDurum] = useState<'bos' | 'hesaplaniyor' | 'guncel' | 'onceki_sonuc'>('bos');
-
-  const [konturBas, setKonturBas] = useState<[number, number]>([Math.round(h.en / 2), Math.round(h.boy / 2)]);
-  const [konturSonuc, setKonturSonuc] = useState<OlcekliKonturSonucu | null>(null);
-  const [konturDurum, setKonturDurum] = useState<'bos' | 'hesaplaniyor' | 'guncel' | 'onceki_sonuc'>('bos');
-
   const olcumIstekNo = useRef(0);
   const konturIstekNo = useRef(0);
-  const svgRef = useRef<SVGSVGElement>(null);
-
-  const yukle = () => {
-    if (!acik) return;
-    istemci.iste('olcekliHaritaDurumu', { evren, harita: h.kod }).then(
-      (d) => {
-        setDurum(d);
-        if (d.olcek) {
-          setP1(d.olcek.p1);
-          setP2(d.olcek.p2);
-          setMesafe(String(d.olcek.mesafe));
-          setBirim(d.olcek.birim);
-          setMolaVarsayimi(d.olcek.molaVarsayimi ?? '');
-        }
-        setVarsayilanKural(d.varsayilanHizlar);
-        setOlcumDurum((onceki) => (onceki === 'guncel' ? 'onceki_sonuc' : onceki));
-        setKonturDurum((onceki) => (onceki === 'guncel' ? 'onceki_sonuc' : onceki));
-      },
-      (err) => setHata(hataYaz(err)),
-    );
-  };
-
-  useEffect(() => {
-    if (!acik) return;
-    yukle();
-    return istemci.dinle((d) => {
-      if (d.evren === evren) yukle();
-    });
-  }, [acik, evren, h.kod]);
+  const yukle = yukleKatman;
 
   if (!acik) {
     return (
@@ -121,33 +230,6 @@ export function OlcekliHaritaBolumu({
       </div>
     );
   }
-
-  const svgTikla = (e: MouseEvent) => {
-    if (hedef === 'yok' || !svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) return;
-    const x = Math.round(((e.clientX - rect.left) / rect.width) * h.en * 10) / 10;
-    const y = Math.round(((e.clientY - rect.top) / rect.height) * h.boy * 10) / 10;
-    const nokta: [number, number] = [Math.max(0, Math.min(h.en, x)), Math.max(0, Math.min(h.boy, y))];
-    if (hedef === 'olcek1') {
-      setP1(nokta);
-      setHedef('olcek2');
-    } else if (hedef === 'olcek2') {
-      setP2(nokta);
-      setHedef('yok');
-    } else if (hedef === 'olcumBas') {
-      setOlcumBas(nokta);
-      setHedef('olcumBit');
-    } else if (hedef === 'olcumBit') {
-      setOlcumBit(nokta);
-      setHedef('yok');
-    } else if (hedef === 'konturBas') {
-      setKonturBas(nokta);
-      setHedef('yok');
-    } else if (hedef === 'araziNokta') {
-      setAraziNoktalar((liste) => [...liste, nokta]);
-    }
-  };
 
   const olcekKaydet = (e: Event) => {
     e.preventDefault();
@@ -299,64 +381,20 @@ export function OlcekliHaritaBolumu({
         </p>
       )}
 
-      {/* Kendi SVG katmanı: arazi çokgenleri, 3-2-1. gün erişim konturları ve ölçülen yol */}
-      <div class="olcekli-onizleme-kutu">
-        <svg
-          ref={svgRef}
-          class="olcekli-svg"
-          viewBox={`0 0 ${h.en} ${h.boy}`}
-          onClick={svgTikla}
-          role="img"
-          aria-label="Ölçekli harita ve ulaşılabilecek yerler katmanı"
-        >
-          <rect x={0} y={0} width={h.en} height={h.boy} class="olcekli-zemin" />
-          {durum?.araziler.map((a) => (
-            <polygon
-              key={a.kod}
-              class="olcekli-arazi-cokgen"
-              points={a.noktalar.map((p) => p.join(',')).join(' ')}
-            >
-              <title>{a.ad}</title>
-            </polygon>
-          ))}
-          {konturSonuc?.durum === 'tamam' &&
-            [...konturSonuc.konturlar]
-              .sort((a, b) => b.gun - a.gun)
-              .map((k) =>
-                k.svgYolu ? (
-                  <path key={k.gun} d={k.svgYolu} class={`olcekli-kontur gun-${k.gun}`}>
-                    <title>{k.gun}. gün erişim alanı ({sayiGirdisi(k.alanBirimKare)} {durum?.olcek?.birim ?? 'birim'}²)</title>
-                  </path>
-                ) : null,
-              )}
-          {olcumSonuc?.yolNoktalari && olcumSonuc.yolNoktalari.length >= 2 && (
-            <polyline
-              class="olcekli-yol"
-              points={olcumSonuc.yolNoktalari.map((p) => p.join(',')).join(' ')}
-            />
-          )}
-          {durum?.olcek && (
-            <line
-              class="olcekli-olcek-cizgi"
-              x1={durum.olcek.p1[0]}
-              y1={durum.olcek.p1[1]}
-              x2={durum.olcek.p2[0]}
-              y2={durum.olcek.p2[1]}
-            />
-          )}
-          <circle class="olcekli-nokta bas" cx={olcumBas[0]} cy={olcumBas[1]} r={Math.max(4, h.en * 0.012)} />
-          <circle class="olcekli-nokta bit" cx={olcumBit[0]} cy={olcumBit[1]} r={Math.max(4, h.en * 0.012)} />
-          <circle class="olcekli-nokta kontur-merkez" cx={konturBas[0]} cy={konturBas[1]} r={Math.max(4, h.en * 0.012)} />
-        </svg>
-        {hedef !== 'yok' && (
-          <p class="soluk kucuk">
-            Noktayı seçmek için yukarıdaki haritaya tıklayın ({HEDEF_YAZISI[hedef]}).{' '}
-            <button type="button" class="dugme sade kucuk" onClick={() => setHedef('yok')}>
-              Vazgeç
-            </button>
-          </p>
-        )}
-      </div>
+      <fieldset class="olcekli-goster">
+        <legend class="alan-adi">Haritanın üstünde göster</legend>
+        {([['olcek', 'Ölçek çizgisi'], ['arazi', 'Araziler'], ['erisim', 'Erişim sınırları'], ['yol', 'En kısa yol']] as const).map(([x, ad]) => (
+          <label key={x} class="kucuk"><input type="checkbox" checked={k.goster[x]} onChange={(e) => set((o) => ({ goster: { ...o.goster, [x]: (e.target as HTMLInputElement).checked } }))} /> {ad}</label>
+        ))}
+      </fieldset>
+      {hedef !== 'yok' && (
+        <p class="soluk kucuk" role="status">
+          Haritaya tıklayın ({HEDEF_YAZISI[hedef]}).{' '}
+          <button type="button" class="dugme sade kucuk" onClick={() => setHedef('yok')}>
+            {hedef === 'araziNokta' ? 'Bitti' : 'Vazgeç'}
+          </button>
+        </p>
+      )}
 
       {!h.silindi && (
         <div class="satir">
