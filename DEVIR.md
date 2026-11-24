@@ -322,7 +322,7 @@ Sıra ve adımlar:
 - [~] (taslak kodlandı, onay bekliyor: `6-kitap-sonu-durum.png`; istek `kitapSonuDurumu`, eser sayfasında `KitapSonuDurumBolumu`; son sahne okuma sırasındaki son sahnedir, durumlar onun evren tarihine göre; karakterler bakış/odak önce en çok 8, eşyalarda `sahip` bağı, süreklilik defterinde kitapta verisi olan her ayrıntının son hâli; `test/kitap-sonu.test.ts`) #6 kitap sonunda durum özeti.
 - [ ] #3 kalanı: kesilen parçalar çekmecesi ve adlı sürüm. PR #58 birleşince (metin düzenleyicisi ve sürüm farkı o dalda değişiyor).
 - [~] (taslak kodlandı, onay bekliyor: `8-seri-montaji.png`; `montaj.kurguMontaji` seri kodu da alır: kitaplar önerilen okuma sırasıyla art arda, baştan numaralı, okur bilgileri bütün kitaplardan, hedefler kitap başına olduğu için seride gösterilmez; soru satırında `askida`; seri sayfasında "Kurgu montajı" bölümü; `test/kitap-sonu.test.ts`) #8 karakter yokluk haritası ve kurgu montajında seri kapsamı; askıda kalan ipucu satırı.
-- [ ] #12 tasarım §3.1 "birleşik çalışma sayfası": konu dosyasında üyelerin kart olarak birlikte açılması (bugün yalnız bağlantı listesi, `Masalar.tsx`).
+- [~] (taslak kodlandı, onay bekliyor: `12-konu-dosyasi-kartlar.png`; `Masalar.tsx` "Liste / Kartlar" seçimi, seçim cihazda hatırlanır; kartlar yan paneldeki kayıt görünümüdür (`Calisma.tsx` `YanPanelKaydi` dışa açıldı); aynı adlı tarihsiz ilişkiler yan panelde de tek satırda toplanır) #12 tasarım §3.1 "birleşik çalışma sayfası": konu dosyasında üyelerin kart olarak birlikte açılması.
 
 ## 1. Önce oku (sırayla)
 

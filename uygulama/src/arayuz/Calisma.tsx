@@ -368,7 +368,20 @@ function YanPanel({ istemci, evren, kodlar, aktif, sec, kapat, kucuk, kucult }: 
   );
 }
 
-function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
+/** Aynı adlı, tarihsiz ilişkiler tek satırda toplanır ("Yer aldığı sahne: Arşiv, Mühür"); tarihli olan kendi satırındadır. */
+function iliskiGruplari(l: IliskiSatiri[]): IliskiSatiri[][] {
+  const gruplar: IliskiSatiri[][] = [];
+  const yer = new Map<string, IliskiSatiri[]>();
+  for (const i of l) {
+    if (i.baslangic || i.bitis) { gruplar.push([i]); continue; }
+    const g = yer.get(i.etiket);
+    if (g) g.push(i); else { const y = [i]; yer.set(i.etiket, y); gruplar.push(y); }
+  }
+  return gruplar;
+}
+
+/** Yan paneldeki kayıt görünümü; konu dosyasında kart olarak da kullanılır (K39, öneri 12, §3.1 birleşik çalışma sayfası). */
+export function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: string; kod: string }) {
   const d = useCalisma();
   const [k, setK] = useState<Kayit | null>(null);
   const [metin, setMetin] = useState<Spans | null>(null);
@@ -441,11 +454,11 @@ function YanPanelKaydi({ istemci, evren, kod }: { istemci: Istemci; evren: strin
       )}
       {iliskiler.length > 0 && (
         <ul class="yan-iliskiler">
-          {iliskiler.filter((i) => !an?.tarih || gecerlilik('aralik', i.baslangic ?? 'acik', i.bitis ?? 'acik', an.tarih) !== 'hayir').map((i) => (
-            <li key={i.kod}>
-              <span class="soluk">{i.etiket}:</span>{' '}
-              <a href={`#/e/${evren}/k/${i.karsi.kod}`} onClick={(e) => { e.preventDefault(); d?.yanPanelAc(i.karsi.kod); }}>{i.karsi.ad}</a>
-              {(i.baslangic || i.bitis) && <span class="soluk kucuk"> ({i.baslangic?.ifade ?? '…'} – {i.bitis?.ifade ?? '…'})</span>}
+          {iliskiGruplari(iliskiler.filter((i) => !an?.tarih || gecerlilik('aralik', i.baslangic ?? 'acik', i.bitis ?? 'acik', an.tarih) !== 'hayir')).map((g) => (
+            <li key={g[0].kod}>
+              <span class="soluk">{g[0].etiket}:</span>{' '}
+              {g.map((i, j) => <>{j > 0 && ', '}<a href={`#/e/${evren}/k/${i.karsi.kod}`} onClick={(e) => { e.preventDefault(); d?.yanPanelAc(i.karsi.kod); }}>{i.karsi.ad}</a></>)}
+              {(g[0].baslangic || g[0].bitis) && <span class="soluk kucuk"> ({g[0].baslangic?.ifade ?? '…'} – {g[0].bitis?.ifade ?? '…'})</span>}
             </li>
           ))}
         </ul>

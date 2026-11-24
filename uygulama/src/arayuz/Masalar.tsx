@@ -11,6 +11,7 @@ import type { Secim } from './BaglantiSecici';
 import { DenetimBolumu } from './Inceleme';
 import { git } from './Uygulama';
 import { geriAlinabilir, onayla } from './onay';
+import { YanPanelKaydi } from './Calisma';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 
@@ -97,6 +98,9 @@ function MasaEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
   const [paketler, setPaketler] = useState<PaketOzeti[]>([]);
   const [haritalar, setHaritalar] = useState<HaritaOzeti[]>([]);
   const [secim, setSecim] = useState<Secim | null>(null);
+  // Kayıtlar liste ya da yan yana kartlar olarak (§3.1 birleşik çalışma sayfası); seçim yalnız bu cihazda hatırlanır.
+  const [kartlar, setKartlarH] = useState(() => { try { return localStorage.getItem('masa-kartlar') === '1'; } catch { return false; } });
+  const setKartlar = (v: boolean) => { setKartlarH(v); try { localStorage.setItem('masa-kartlar', v ? '1' : '0'); } catch { /* yok */ } };
   useEffect(() => {
     istemci.iste('masa', { evren, kod }).then((x) => { setM(x); setHata(null); }, (e) => setHata(hataYaz(e)));
     istemci.iste('paketler', { evren }).then(setPaketler);
@@ -133,7 +137,14 @@ function MasaEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
       {m.paket && <p class="soluk kucuk">Seçili paket: <a href={`#/e/${evren}/masalar/p:${m.paket.kod}`}>{m.paket.ad}</a> ({m.paket.varsayimSayisi} varsayım). Bu masadaki hesaplar bu paketle yapılır.</p>}
 
       <section aria-label="Dosyadaki kayıtlar">
-        <h2>Dosyadaki kayıtlar</h2>
+        <div class="satir"><h2 style="margin:0">Dosyadaki kayıtlar</h2><span class="bosluk" />
+          {m.uyeler.some((u) => u.tur === 'kayit' && !u.silindi) && (
+            <div class="secim-grubu" role="group" aria-label="Kayıtların görünüşü">
+              <button class="dugme sade kucuk" aria-pressed={!kartlar} onClick={() => setKartlar(false)}>Liste</button>
+              <button class="dugme sade kucuk" aria-pressed={kartlar} onClick={() => setKartlar(true)}>Kartlar</button>
+            </div>
+          )}
+        </div>
         <div class="satir">
           <KayitSec istemci={istemci} evren={evren} secili={secim} sec={(s) => { if (s) ekle({ tur: 'kayit', kod: s.kod }); }} etiket="Kayıt bağla" />
           {haritalar.length > 0 && (
@@ -144,7 +155,14 @@ function MasaEkrani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
           )}
         </div>
         {m.uyeler.length === 0 && <p class="soluk">Henüz bağlı kayıt yok.</p>}
-        {gruplar.map((g) => (
+        {kartlar && (
+          <div class="masa-kartlari">
+            {m.uyeler.filter((u) => u.tur === 'kayit' && !u.silindi).map((u) => (
+              <div class="masa-karti" key={u.kod}><YanPanelKaydi istemci={istemci} evren={evren} kod={u.kod} /></div>
+            ))}
+          </div>
+        )}
+        {!kartlar && gruplar.map((g) => (
           <div key={g} class="masa-grubu">
             <h3>{g}</h3>
             <ul class="masa-uyeleri">
