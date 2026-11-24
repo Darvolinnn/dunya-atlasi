@@ -9,6 +9,7 @@ import type { IncelemeKarari, IsaretAlani, IsaretIncelemeleri, IsaretIncelemesi,
 import type { EvrenVt } from './evren-vt';
 import { yonlendir } from './izdusum';
 import { kayitSablonu } from './sablon';
+import { bilgiAlanlari, bilgiYazisi } from './bilgi-dayanagi';
 
 export interface IsaretBaglami { e: EvrenVt; yaz(girdiler: IslemGirdisi[], kayitlar: string[]): void }
 
@@ -35,6 +36,7 @@ export function isaretAlanlari(e: EvrenVt, hedef: string): IsaretAlani[] {
     const oteki = kisa(e, (r.a === k ? r.b : r.a) as string);
     l.push({ kod: `iliski:${r.kod}`, ad: `${r.a === k ? t.aIcin : t.bIcin}: ${oteki.ad}`, grup: 'İlişkiler' });
   }
+  l.push(...bilgiAlanlari(e, k));
   return l;
 }
 
@@ -54,6 +56,7 @@ export function alanImzasi(e: EvrenVt, hedef: string, hedefAlan: string | null):
     case 'durum': return satir('SELECT ozellik, deger, hedef, kip, baslangic, bitis, karar, silindi FROM durumlar WHERE kod=?');
     case 'iddia': return satir('SELECT soru, secenekler, gercek, karar, silindi FROM iddialar WHERE kod=?');
     case 'iliski': return satir('SELECT tur, a, b, baslangic, bitis, karar, silindi FROM iliskiler WHERE kod=?');
+    case 'bilgi': return satir('SELECT iddia, secenek, inanc, sahne, baslangic, bitis, karar, silindi FROM bilgiler WHERE kod=?');
     default: return 'yok';
   }
 }
@@ -207,6 +210,7 @@ export function alanYazisi(e: EvrenVt, hedef: string, hedefAlan: string | null):
       const t = iliskiTuruBul(r.tur as string);
       return `${kisa(e, r.a as string).ad} – ${kisa(e, r.b as string).ad} (${t.aIcin.toLocaleLowerCase('tr-TR')})`;
     }
+    case 'bilgi': return bilgiYazisi(e, kod) ?? 'Bilgi kaydı kaldırılmış';
     default: return '';
   }
 }

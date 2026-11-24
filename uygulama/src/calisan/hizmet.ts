@@ -15,9 +15,10 @@ import { VERI_BICIMI, type Islem } from '../alan/islem';
 import { b64Coz, islemSatiri } from '../alan/paket';
 import { katla, kelimeler, turkceKarsilastir } from '../alan/turkce';
 import { adDegistir, ayrilmaYazisi, kokAdaylari } from '../alan/turkce-ek';
+import { aramaKokleri, kokluSozcukYeri } from '../alan/arama-dizini';
 import { bagGorunumuGecerli, bagGorunumuOku, bagVarsayilanMi, type BagGorunumu } from '../alan/bag-gorunumu';
 import { kararGecerli, kurguTuruGecerli, turBul, turGecerli } from '../alan/turler';
-import type { BaglamSecimi, BelgeSunumu, SahneYerlesimi, YerlesimOkumasi, YerlesimPlani, YerlesimOgesi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, TuvalOgesi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
+import type { BaglamSecimi, BelgeSunumu, OkurYayiniAyari, OkurYayiniBaskisi, SahneYerlesimi, YerlesimOkumasi, GokyuzuKosulu, GokyuzuTanimi, SozlukTanimi, YogunlukIstegi, AnlatimTanimi, DelilTanimi, KullanimMasasiTanimi, YayimCelismesi, GezintiAdimi, TuvalOgesi, Dayaniklilik, KanalTanimi, SahneNiyeti, MontajHedefi, KalitimDegeri, KalitimOzelligi, VerasetKurali, DilTanimi, DilYeterliligi, HukukTanimGirdisi, KuralOrnegiTanimi, AdimDurumu, SurecAdimi, BoslukTuru, VarsayilanKarari, BilgiAlani, BilgiGirdisi, GorunurlukBilgisi, IsaretGirdisi, SinirGirdisi, RotaGirdisi, YolculukAsamaGirdisi, IzModeli, VarsayimGirdisi, DurumAlani, DurumGirdisi, KisaKayit, SahneAlani, SahneBaglami, SahneKatilimcisi, KaldigiYer, KaldigiYerBilgisi, Catisma, EsitlemeDurumu, IceAktarimRaporu, YedekBilgisi, AdDuzeltmesi, AramaSonucu, Basliklar, BaglananKayit, DegisebilirAlan, DegisimSatiri, DurumSatiri, IliskiSatiri, Istekler, Kayit, KayitOzeti, SahneOlayBilgisi, Spans } from '../veri/api';
 import { EvrenVt } from './evren-vt';
 import { Esitleme, IzinHatasi, type EsitlemeErisimi, type Tasiyici } from './esitleme';
 import type { DriveSecenekleri, YuklemeIlerlemesi } from './drive';
@@ -53,7 +54,7 @@ import * as seriPlan from './seri';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
 import type { AdDizini, AracTanitimDayanaklari, IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi, YerelYedekDurumu } from '../veri/api';
-import type { SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
+import type { BirlesmeGeri, SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
 import * as bakim from './bakim';
 import * as sozluk from './sozluk';
@@ -75,6 +76,9 @@ import * as yayimMod from './yayim';
 import * as cikti from './cikti';
 import * as belgeMod from './belge';
 import * as isaretMod from './metin-isaret';
+import * as bilgiDayanagi from './bilgi-dayanagi';
+import * as akilliListe from './akilli-liste';
+import * as okurYayiniMod from './okur-yayini';
 import * as yogunluk from './yogunluk';
 import * as gokyuzu from './gokyuzu';
 import type { Donusum, KontrolCifti } from '../alan/hizalama';
@@ -94,6 +98,12 @@ import { SANILAN_DURUMLAR } from '../alan/bilgi';
 import * as kimlik from './kimlik';
 import * as parca from './baglam-parcasi';
 import * as metinKul from './metin-kullanim';
+import * as cerrahi from './sahne-cerrahisi';
+import { EditorState } from 'prosemirror-state';
+import type { Node as PmNode } from 'prosemirror-model';
+import { pmDocFromSpans, pmNodeToSpans } from '@automerge/prosemirror';
+import { metinSemasi } from '../alan/metin-sema';
+import { gorunumDuzelt, type Kitap, type KitapEki, type KitapGorseli, type KitapGorunumu } from '../alan/kitap';
 import * as gecis from './gecis';
 import type { BaglamParcasiTanimi, GecisSartiGirdisi, KullanimBicimi } from '../veri/api';
 import type { DairInancTanimi } from '../veri/api';
@@ -217,6 +227,12 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
   private evrenVt(kod: string, db: Database = this.ac(`/evren-${kod}.db`)) {
     const ad = this.kurulum.evrenler().find((x) => x.kod === kod)?.ad ?? '';
     return new EvrenVt(db, this.kurulum.kod, (d) => this.ilerle({ evren: kod, ad, ...d }));
+  }
+
+  /** İkinci hesap çalışanına kopyalanacak veritabanları (K38, D4); listede olmayan (sürüm, deneme kopyası) evrende null. */
+  hesapVeritabanlari(kod: string): { evren: Database; kurulum: Database } | null {
+    if (!kodGecerliMi(kod) || !this.kurulum.evrenler().some((x) => x.kod === kod)) return null;
+    return { evren: this.evren(kod).db, kurulum: this.kurulum.db };
   }
 
   private evren(kod: string): EvrenVt {
@@ -558,6 +574,15 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     const y = this.yerelGerekli();
     if (typeof evren !== 'string' || !evren) throw new Error('Evren bulunamadı.');
     return this.yerelSirayla(() => y.liste(evren));
+  }
+
+  /** K38: bütün yedekleri ve yedek klasöründeki görselleri doğrular; hiçbir şey yazmaz. */
+  async yedekleriDogrula({ evren, yer }: { evren: string; yer: 'yerel' | 'drive' }) {
+    if (typeof evren !== 'string' || !evren) throw new Error('Evren bulunamadı.');
+    if (yer === 'yerel') { const y = this.yerelGerekli(); return this.yerelSirayla(() => y.dogrula(evren)); }
+    if (yer !== 'drive') throw new Error('Geçersiz yedek yeri.');
+    if (!this.donemsel) throw new Error('Önce Google Drive\'a bağlanın.');
+    return this.donemsel.dogrula(evren);
   }
 
   async yereldenGeriYukle({ id }: { id: string }) {
@@ -1473,7 +1498,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     if (!iliski && alan === 'yerlesim') {
       this.kayitVarMi(e, nesne);
       const v = deger as SahneYerlesimi;
-      this.yaz(evren, [{ tur: 'yerlesim_yaz', veri: { sahne: nesne, plan: v.plan, ogeler: v.ogeler, cozum: true } }], [nesne]); return;
+      const ek = yerlesim.ekiAyir(v);
+      this.yaz(evren, [{ tur: 'yerlesim_yaz', veri: { sahne: nesne, plan: v.plan, ogeler: v.ogeler, ...(ek ? { ek } : {}), cozum: true } }], [nesne]); return;
     }
     if (!iliski && alan === 'niyetler') { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'sahne_niyeti_yaz', veri: { sahne: nesne, niyetler: deger ?? [], cozum: true } }], [nesne]); return; }
     if (!iliski && alan.startsWith('hedef:')) { this.kayitVarMi(e, nesne); this.yaz(evren, [{ tur: 'montaj_hedefi_yaz', veri: { eser: nesne, iddia: alan.slice(6), hedef: deger, cozum: true } }], [nesne]); return; }
@@ -1854,6 +1880,31 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     } finally { A.free(yeni); }
   }
 
+  /**
+   * Tek paragrafı eski sürümdeki hâline döndürür (K38): `eski` ve `yeni` ikisi verilirse şimdiki `yeni`. paragraf
+   * eski `eski`. paragrafla değişir; yalnız `yeni` verilirse o paragraf kaldırılır; yalnız `eski` verilirse eski
+   * paragraf şimdiki metnin `yer`. sırasına geri konur. Metnin geri kalanına dokunulmaz.
+   */
+  metinParagrafGeriAl({ evren, kayit, alan, basliklar, temel, eski = null, yeni = null, yer = null }: {
+    evren: string; kayit: string; alan: string; basliklar: Basliklar; temel: Basliklar; eski?: number | null; yeni?: number | null; yer?: number | null;
+  }) {
+    const d = this.belge(this.evren(evren), kayit, alan);
+    if (!Array.isArray(temel) || JSON.stringify([...A.getHeads(d)].sort()) !== JSON.stringify([...temel].sort())) throw new Error('Metin bu arada değişti; karşılaştırmayı yeniden açın.');
+    if (!Array.isArray(basliklar) || !basliklar.every((h) => typeof h === 'string' && A.hasHeads(d, [h]))) throw new Error('Metnin sürümü bulunamadı.');
+    const belgeYap = (x: Spans) => pmDocFromSpans(metinSemasi, x as never);
+    const simdi = belgeYap(A.spans(d, ['t']) as Spans), once = belgeYap(A.spans(A.view(d, basliklar), ['t']) as Spans);
+    const sira = (n: number | null, b: PmNode, ust = 0) => (n !== null && Number.isInteger(n) && n >= 0 && n < b.childCount + ust ? n : null);
+    const e = sira(eski, once), y = sira(yeni, simdi), r = sira(yer, simdi, 1);
+    const konum = (b: PmNode, n: number) => { let k = 0; for (let i = 0; i < n; i++) k += b.child(i).nodeSize; return k; };
+    let tr = EditorState.create({ doc: simdi }).tr;
+    if (e !== null && y !== null) tr = tr.replaceWith(konum(simdi, y), konum(simdi, y + 1), once.child(e));
+    else if (y !== null) tr = simdi.childCount > 1 ? tr.delete(konum(simdi, y), konum(simdi, y + 1)) : tr.replaceWith(0, simdi.content.size, metinSemasi.schema.node('paragraph'));
+    else if (e !== null && r !== null) tr = tr.insert(konum(simdi, r), once.child(e));
+    else throw new Error('Geri alınacak paragraf bulunamadı.');
+    const g = this.kullanimBaglami(evren).metinGirdisi(kayit, alan, pmNodeToSpans(metinSemasi, tr.doc) as Spans);
+    if (g) this.yaz(evren, [g], [kayit]);
+  }
+
   // ---------- Arama (§18 arama ve sıralama) ----------
   /**
    * Türkçe kurallarla arama: adlar, lakaplar, eski adlar ve okunuş; sonra kısa özet ve (istenirse) metin.
@@ -1868,8 +1919,30 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     const kelimeSinirinda = (s: string) => s.startsWith(q) || s.includes(' ' + q) || s.includes('-' + q);
     const sonuc: (AramaSonucu & { puan: number })[] = [];
     const satirlar = e.db.selectObjects(
-      `SELECT k.kod, k.tur, k.ad, k.ozet, k.karar, k.lakaplar, k.onceki_adlar, k.okunus, m.duz, m.katli
-       FROM kayitlar k LEFT JOIN metinler m ON m.kayit=k.kod AND m.alan='govde' WHERE k.silindi IS NULL`);
+      'SELECT k.kod, k.tur, k.ad, k.ozet, k.karar, k.lakaplar, k.onceki_adlar, k.okunus FROM kayitlar k WHERE k.silindi IS NULL');
+    // Metinler belleğe alınmaz: düz eşleşme veritabanında, kökle eşleşme arama dizininde aranır (K38, D1).
+    const metindeGecen = new Set<string>();
+    const kokluGecen = new Set<string>();
+    let aranacakKokler: string[] = [];
+    if (metinde) {
+      for (const k of e.db.selectValues("SELECT kayit FROM metinler WHERE alan='govde' AND instr(katli, ?) > 0", [q])) metindeGecen.add(k as string);
+      if (parcalar.length === 1) {
+        aranacakKokler = aramaKokleri(metin);
+        if (aranacakKokler.length) {
+          for (const k of e.db.selectValues(`SELECT DISTINCT kayit FROM arama_dizini WHERE kok IN (${aranacakKokler.map(() => '?').join(',')})`, aranacakKokler)) kokluGecen.add(k as string);
+        }
+      }
+    }
+    const metinParcasi = (kod: string, koklu: boolean): string | undefined => {
+      const r = e.db.selectObject("SELECT duz, katli FROM metinler WHERE kayit=? AND alan='govde'", [kod]);
+      if (!r) return undefined;
+      const duz = r.duz as string, katli = r.katli as string;
+      const yer = koklu ? kokluSozcukYeri(katli, aranacakKokler) : { i: katli.indexOf(q), uzunluk: q.length };
+      if (!yer || yer.i < 0) return undefined;
+      const i = duzKonumu(duz, yer.i);
+      const bas = Math.max(0, i - 40);
+      return (bas > 0 ? '…' : '') + duz.slice(bas, i + yer.uzunluk + 60).replace(/\s+/g, ' ') + (i + yer.uzunluk + 60 < duz.length ? '…' : '');
+    };
     for (const r of satirlar) {
       const adlar: [AramaSonucu['nereden']['tur'], string][] = [['ad', r.ad as string]];
       for (const l of JSON.parse(r.lakaplar as string) as string[]) adlar.push(['lakap', l]);
@@ -1888,12 +1961,10 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
         else if (k.includes(q)) dene(40 + ek, { tur, metin: ad });
       }
       if (!en && katla(r.ozet as string).includes(q)) dene(30, { tur: 'ozet', metin: r.ozet as string });
-      if (!en && metinde && r.katli && (r.katli as string).includes(q)) {
-        const duz = r.duz as string;
-        const i = duzKonumu(duz, (r.katli as string).indexOf(q));
-        const bas = Math.max(0, i - 40);
-        const parca = (bas > 0 ? '…' : '') + duz.slice(bas, i + q.length + 60).replace(/\s+/g, ' ') + (i + q.length + 60 < duz.length ? '…' : '');
-        dene(20, { tur: 'metin', metin: '' }, false, parca);
+      if (!en && metindeGecen.has(r.kod as string)) dene(20, { tur: 'metin', metin: '' }, false, metinParcasi(r.kod as string, false));
+      else if (!en && kokluGecen.has(r.kod as string)) {
+        const parca = metinParcasi(r.kod as string, true);
+        if (parca) dene(15, { tur: 'metin', metin: '' }, false, parca);
       }
       if (en) {
         const b = en as { puan: number; nereden: AramaSonucu['nereden']; tam: boolean; parca?: string };
@@ -2904,6 +2975,27 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       },
     };
   }
+  // ---------- Sahneyi bölme ve birleştirme (K38) ----------
+  private cerrahiBaglami(evren: string): cerrahi.CerrahiBaglami {
+    const k = this.kullanimBaglami(evren);
+    return {
+      e: k.e, yaz: k.yaz, kayitGirdileri: (kod, v) => this.kayitGirdileri(kod, v),
+      metin: (kayit) => { const d = this.belge(k.e, kayit, 'govde'); return { spans: A.spans(d, ['t']) as Spans, basliklar: A.getHeads(d) }; },
+      metinGirdisi: (kayit, spans) => k.metinGirdisi(kayit, 'govde', spans),
+    };
+  }
+  sahneBolOnizle({ evren, sahne, konum, temel }: { evren: string; sahne: string; konum: number; temel: Basliklar }) { return cerrahi.bolmeOnizle(this.cerrahiBaglami(evren), sahne, konum, temel); }
+  sahneBol({ evren, sahne, konum, temel, ad, sonGozlemler }: { evren: string; sahne: string; konum: number; temel: Basliklar; ad?: string; sonGozlemler: 'kalsin' | 'gecsin' }) {
+    if (sonGozlemler !== 'kalsin' && sonGozlemler !== 'gecsin') throw new Error('Sahne sonu gözlemlerinin nereye gideceğini seçin.');
+    return cerrahi.bol(this.cerrahiBaglami(evren), sahne, konum, temel, { ad, sonGozlemler });
+  }
+  sonrakiSahne({ evren, sahne }: { evren: string; sahne: string }) { return cerrahi.sonrakiSahne(this.evren(evren), sahne); }
+  sahneBirlestirOnizle({ evren, sahne }: { evren: string; sahne: string }) { return cerrahi.birlesmeOnizle(this.cerrahiBaglami(evren), sahne); }
+  sahneBirlestir({ evren, sahne, ikinci, bitisik = false }: { evren: string; sahne: string; ikinci?: string; bitisik?: boolean }) {
+    return cerrahi.birlestir(this.cerrahiBaglami(evren), sahne, { ikinci, bitisik: !!bitisik });
+  }
+  sahneBirlesmesiniGeriAl({ evren, geri }: { evren: string; geri: BirlesmeGeri }) { cerrahi.birlesmeyiGeriAl(this.cerrahiBaglami(evren), geri); }
+
   metinKullanimlari({ evren, hedef }: { evren: string; hedef: string }) { return metinKul.kullanimlar(this.kullanimBaglami(evren), hedef); }
   metinKullanildigiYerler({ evren, kaynak }: { evren: string; kaynak: string }) { return metinKul.kullanildigiYerler(this.kullanimBaglami(evren), kaynak); }
   metinKullanimOlustur({ evren, kaynak, hedef, alan, bicim }: { evren: string; kaynak: string; hedef: string; alan: string; bicim: KullanimBicimi }) {
@@ -2967,6 +3059,8 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     return dilMod.adUret(this.evren(evren), dil, kip, enAz, enCok, adet);
   }
   adBicimleri({ evren, kod }: { evren: string; kod: string }) { return dilMod.adBicimleriOku(this.evren(evren), kod); }
+  dilAdlari({ evren, dil }: { evren: string; dil: string }) { return dilMod.dilAdlari(this.evren(evren), dil); }
+  kokenAgaci({ evren, dil, bicim, kayit }: { evren: string; dil: string; bicim?: string | null; kayit?: string | null }) { return dilMod.kokenAgaci(this.evren(evren), dil, { bicim, kayit }); }
   adBicimiYaz({ evren, kod, dil, bicim, kaynakDil, kaynakBicim }: { evren: string; kod: string; dil: string; bicim: string | null; kaynakDil?: string | null; kaynakBicim?: string | null }) {
     dilMod.adBicimiYaz(this.dilBaglami(evren), kod, dil, bicim, kaynakDil ?? null, kaynakBicim ?? null);
   }
@@ -3133,10 +3227,11 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       catismali: this.catismalar({ evren, kod: s }).some((c) => c.tur === 'alan' && c.alan === 'yerlesim') };
   }
   yerlesimPlanlari({ evren }: { evren: string }) { return yerlesim.planlar(this.evren(evren)); }
-  yerlesimYaz({ evren, sahne, plan, ogeler }: { evren: string; sahne: string; plan: YerlesimPlani; ogeler: YerlesimOgesi[] }) {
+  yerlesimYaz({ evren, sahne, ...y }: { evren: string; sahne: string } & SahneYerlesimi) {
     const e = this.evren(evren), s = yonlendir(e.db, sahne);
-    const v = yerlesim.dogrula(e, s, plan, ogeler, this.sahneBaglami({ evren, sahne: s }).katilimcilar.map((k) => k.kod));
-    this.yaz(evren, [{ tur: 'yerlesim_yaz', veri: { sahne: s, plan: v.plan, ogeler: v.ogeler } }], [s]);
+    const v = yerlesim.dogrula(e, s, y, this.sahneBaglami({ evren, sahne: s }).katilimcilar.map((k) => k.kod));
+    const ek = yerlesim.ekiAyir(v);
+    this.yaz(evren, [{ tur: 'yerlesim_yaz', veri: { sahne: s, plan: v.plan, ogeler: v.ogeler, ...(ek ? { ek } : {}) } }], [s]);
   }
   yogunluk({ evren, ...s }: { evren: string } & YogunlukIstegi) {
     return yogunluk.oku(this.evren(evren), s, () => this.zamanCizelgesi({ evren }), (kod) => this.harita({ evren, kod }));
@@ -3241,29 +3336,80 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     if (!sahneler.length) throw new Error('Çıktıya girecek sahne seçilmedi.');
     return new Set(sahneler);
   }
-  async epubYaz({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
+  /** Kitabın görseli: PNG ve JPEG olduğu gibi, öbürleri JPEG'e çevrilir; bu cihazda yoksa ya da çevrilemezse null. */
+  private async kitapGorseli(e: EvrenVt, ad: string | null): Promise<KitapGorseli | null> {
+    if (!ad || !this.medya) return null;
+    const r = e.db.selectObject('SELECT tur, en, boy FROM medya WHERE ad=?', [ad]);
+    const veri = r ? await this.medya.oku(ad) : null;
+    if (!r || !veri) return null;
+    const en = Number(r.en) || 0, boy = Number(r.boy) || 0;
+    if (r.tur === 'image/png' || r.tur === 'image/jpeg') return { veri, tur: r.tur, en, boy };
+    if (typeof OffscreenCanvas === 'undefined' || typeof createImageBitmap === 'undefined') return null;
+    try {
+      const resim = await createImageBitmap(new Blob([veri as BlobPart], { type: r.tur as string }));
+      const t = new OffscreenCanvas(resim.width, resim.height);
+      const c = t.getContext('2d')!;
+      c.fillStyle = '#fff'; c.fillRect(0, 0, t.width, t.height);
+      c.drawImage(resim, 0, 0);
+      resim.close();
+      return { veri: new Uint8Array(await (await t.convertToBlob({ type: 'image/jpeg', quality: 0.92 })).arrayBuffer()), tur: 'image/jpeg', en: t.width, boy: t.height };
+    } catch { return null; }
+  }
+  /** Kitabın kapağı ve sonundaki ekler (K38). */
+  private async kitapEkleri(e: EvrenVt, g: KitapGorunumu, sahneKodlari: string[]): Promise<cikti.KitapEkVerisi> {
+    const ekler: KitapEki[] = [];
+    if (g.kisiler || g.terimler) {
+      const r = cikti.gecenKayitlar(e, sahneKodlari);
+      if (g.kisiler && r.kisiler.length) ekler.push({ baslik: 'Kişiler', girdiler: r.kisiler });
+      if (g.terimler && r.terimler.length) ekler.push({ baslik: 'Terimler', girdiler: r.terimler });
+    }
+    if (g.takvim) ekler.push(cikti.takvimEki(e));
+    const h = g.harita ? cikti.haritaGorseli(e, g.harita) : null;
+    if (h) { const gorsel = await this.kitapGorseli(e, h.gorsel); if (gorsel) ekler.push({ baslik: h.ad, girdiler: [], gorsel }); }
+    return { kapak: await this.kitapGorseli(e, g.kapak), ekler };
+  }
+  private async kitapHazirla(evren: string, eser: string, sahneBasliklari: boolean, sahneler?: string[]): Promise<Kitap> {
     const e = this.evren(evren);
     this.eserKontrol(e, eser);
-    const r = cikti.epubDosyalari(e, eser, !!sahneBasliklari, new Date(), this.ciktiSecimi(sahneler));
+    const { sahneKodlari, ...kitap } = cikti.eserKitabi(e, eser, sahneBasliklari, this.ciktiSecimi(sahneler));
+    return { ...kitap, ...(await this.kitapEkleri(e, kitap.gorunum!, sahneKodlari)) };
+  }
+  async epubYaz({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
+    const k = await this.kitapHazirla(evren, eser, !!sahneBasliklari, sahneler);
+    const r = cikti.epubDosyalari(this.evren(evren), eser, !!sahneBasliklari, new Date(), this.ciktiSecimi(sahneler), { kapak: k.kapak ?? null, ekler: k.ekler ?? [] });
     return { dosyaAdi: `${this.dosyaKoku(r.ad)}.epub`, veri: await zipYaz(r.dosyalar) };
   }
   /** PDF için okuma düzeni; PDF'i yazı tipleriyle birlikte arayüz yazar (§10.11). */
-  eserKitabi({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
-    const e = this.evren(evren);
-    this.eserKontrol(e, eser);
-    const kitap = cikti.eserKitabi(e, eser, !!sahneBasliklari, this.ciktiSecimi(sahneler));
+  async eserKitabi({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
+    const kitap = await this.kitapHazirla(evren, eser, !!sahneBasliklari, sahneler);
     return { dosyaKoku: this.dosyaKoku(kitap.ad), kitap };
   }
   async docxYaz({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
-    const e = this.evren(evren);
-    this.eserKontrol(e, eser);
-    const kitap = cikti.eserKitabi(e, eser, !!sahneBasliklari, this.ciktiSecimi(sahneler));
+    const kitap = await this.kitapHazirla(evren, eser, !!sahneBasliklari, sahneler);
     return { dosyaAdi: `${this.dosyaKoku(kitap.ad)}.docx`, veri: await zipYaz(docxDosyalari(kitap)) };
   }
-  eserBaskiSayfasi({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
+  async eserBaskiSayfasi({ evren, eser, sahneBasliklari = false, sahneler }: { evren: string; eser: string; sahneBasliklari?: boolean; sahneler?: string[] }) {
+    const k = await this.kitapHazirla(evren, eser, !!sahneBasliklari, sahneler);
+    return { html: cikti.eserBaskiSayfasi(this.evren(evren), eser, !!sahneBasliklari, this.ciktiSecimi(sahneler), { kapak: k.kapak ?? null, ekler: k.ekler ?? [] }) };
+  }
+  /** Kitap görünümü ayarları ve seçenekleri: kapak olabilecek görseller, haritalar, çıktıda geçen kişi ve terim sayısı. */
+  kitapGorunumu({ evren, eser, sahneler }: { evren: string; eser: string; sahneler?: string[] }) {
     const e = this.evren(evren);
     this.eserKontrol(e, eser);
-    return { html: cikti.eserBaskiSayfasi(e, eser, !!sahneBasliklari, this.ciktiSecimi(sahneler)) };
+    let sayilar = { kisiler: 0, terimler: 0 };
+    try { const k = cikti.eserKitabi(e, eser, false, this.ciktiSecimi(sahneler)); const r = cikti.gecenKayitlar(e, k.sahneKodlari); sayilar = { kisiler: r.kisiler.length, terimler: r.terimler.length }; } catch { /* metin yok */ }
+    const gorseller = e.db.selectObjects(`SELECT k.kod, k.ad, j.value gorsel FROM kayitlar k, json_each(k.gorseller) j WHERE k.silindi IS NULL ORDER BY (k.kod=?) DESC, k.ad`, [eser])
+      .map((r) => ({ kayit: r.kod as string, ad: r.ad as string, gorsel: r.gorsel as string }));
+    return {
+      gorunum: cikti.gorunumOku(e, eser), gorseller,
+      haritalar: e.db.selectObjects('SELECT kod, ad FROM haritalar WHERE silindi IS NULL ORDER BY ad').map((r) => ({ kod: r.kod as string, ad: r.ad as string })),
+      sayilar, takvimVar: !!takvimOku(e.db).aylar?.length,
+    };
+  }
+  kitapGorunumuYaz({ evren, eser, gorunum }: { evren: string; eser: string; gorunum: KitapGorunumu }) {
+    const e = this.evren(evren);
+    this.eserKontrol(e, eser);
+    this.yaz(evren, [{ tur: 'kitap_gorunumu_yaz', veri: { kod: eser, gorunum: gorunumDuzelt(gorunum) } }], [eser]);
   }
   ciktiAgaci({ evren, eser }: { evren: string; eser: string }) {
     const e = this.evren(evren);
@@ -3294,6 +3440,49 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
   isaretKarari({ evren, anahtar, durum, gerekce = '', niyet = null }: { evren: string; anahtar: string; durum: 'kabul' | 'ertelendi' | 'duzeltildi' | null; gerekce?: string; niyet?: isaretMod.Niyet | null }) {
     isaretMod.isaretKarari(this.isaretBaglami(evren), String(anahtar), durum, gerekce, niyet);
   }
+  private listeBaglami(evren: string): akilliListe.ListeBaglami { return { e: this.evren(evren), yaz: (g, k) => { this.yaz(evren, g, k); } }; }
+  akilliListeler({ evren }: { evren: string }) { return akilliListe.akilliListeler(this.evren(evren)); }
+  akilliListe({ evren, kod }: { evren: string; kod: string }) { return akilliListe.akilliListe(this.evren(evren), kod); }
+  akilliListeYaz({ evren, ...g }: { evren: string; kod?: string | null; ad: string; tur: string; formul: string; tarih: string }) { return akilliListe.akilliListeYaz(this.listeBaglami(evren), g); }
+  akilliListeSil({ evren, kod, geriYukle }: { evren: string; kod: string; geriYukle?: boolean }) { akilliListe.akilliListeSil(this.listeBaglami(evren), kod, !!geriYukle); }
+  // ---------- Okur yayını (K38, §11.2) ----------
+  private yayinBaglami(evren: string): okurYayiniMod.YayinBaglami {
+    return { b: this.durumBaglami(evren), medyaOku: (g) => (this.medya ? this.medya.oku(g) : Promise.resolve(null)) };
+  }
+  okurYayini({ evren, eser }: { evren: string; eser: string }) { return okurYayiniMod.okurYayini(this.yayinBaglami(evren), String(eser)); }
+  private okurYayiniKaydet(evren: string, eser: string, ayar: OkurYayiniAyari, baski?: Omit<OkurYayiniBaskisi, 'no'>) {
+    const e = this.evren(evren);
+    this.eserKontrol(e, eser);
+    const k = okurYayiniMod.kayitliOku(e, eser);
+    const baskilar = [...(k?.baskilar ?? []), ...(baski ? [{ no: (k?.baskilar.length ?? 0) + 1, ...baski }] : [])].slice(-200);
+    const veri = { ayar: okurYayiniMod.ayarDuzelt(ayar), anahtar: k?.anahtar ?? okurYayiniMod.yeniAnahtar(), baskilar };
+    if (k && !baski && JSON.stringify(k.ayar) === JSON.stringify(veri.ayar)) return;
+    this.yaz(evren, [{ tur: 'okur_yayini_yaz', veri: { eser, veri } }], []);
+  }
+  okurYayiniYaz({ evren, eser, ayar }: { evren: string; eser: string; ayar: OkurYayiniAyari }) { this.okurYayiniKaydet(evren, String(eser), ayar); }
+  async okurYayiniTara({ evren, eser }: { evren: string; eser: string }) {
+    const p = await okurYayiniMod.paketKur(this.yayinBaglami(evren), String(eser));
+    return okurYayiniMod.tara(this.evren(evren), p);
+  }
+  async okurYayiniSayfasi({ evren, eser, dosya }: { evren: string; eser: string; dosya: string }) {
+    return { html: okurYayiniMod.onizlemeSayfasi(await okurYayiniMod.paketKur(this.yayinBaglami(evren), String(eser)), String(dosya)) };
+  }
+  /** Paket yalnız taramada durduran ya da onay bekleyen eşleşme kalmadıysa verilir; her indirme bir baskı olarak yazılır. */
+  async okurYayiniIndir({ evren, eser }: { evren: string; eser: string }) {
+    const e = this.evren(evren);
+    if (!okurYayiniMod.kayitliOku(e, eser)) this.okurYayiniKaydet(evren, eser, okurYayiniMod.BOS_AYAR);
+    const p = await okurYayiniMod.paketKur(this.yayinBaglami(evren), String(eser));
+    const t = okurYayiniMod.tara(e, p);
+    if (t.durduran.length || t.bekleyen.length) throw new Error('Taramada çözülmemiş eşleşme var; paket indirilemez.');
+    const veri = await zipYaz(okurYayiniMod.paketDosyalari(p));
+    const o = p.kapsam.okuma, ayar = p.kapsam.ayar;
+    const sinir = ayar.kip === 'tercih' || !ayar.sinir ? 'eserin sonuna kadar' : `${o.bolumler.find((b) => b.kod === ayar.sinir)?.sira}. bölüme kadar`;
+    this.okurYayiniKaydet(evren, eser, ayar, { zaman: Date.now(), sinir, kip: ayar.kip, boyut: veri.length });
+    const no = okurYayiniMod.kayitliOku(e, eser)?.baskilar.length ?? 1;
+    const kisim = ayar.kip === 'tercih' || !ayar.sinir ? 'tamami' : `${o.bolumler.find((b) => b.kod === ayar.sinir)?.sira}-bolum`;
+    return { dosyaAdi: `${this.dosyaKoku(o.eser.ad)}-rehber-${kisim}-baski-${no}.zip`, veri };
+  }
+  bilgiIsaretKodlari({ evren, kayit }: { evren: string; kayit: string }) { return bilgiDayanagi.bilgiIsaretKodlari(this.evren(evren), kayit); }
   isaretOzetleri({ evren, kodlar }: { evren: string; kodlar: string[] }) { return isaretMod.isaretOzetleri(this.evren(evren), Array.isArray(kodlar) ? kodlar.slice(0, 50) : []); }
 
   // ---------- Yayımlanmış eser kilidi (F18) ----------

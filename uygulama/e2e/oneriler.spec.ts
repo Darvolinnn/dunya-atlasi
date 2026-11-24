@@ -5,7 +5,7 @@ import { sahneAc } from './yardimci';
 test('grafik araçları menüde amaca göre ara başlıklarla gruplanır', async ({ page: p }) => {
   await sahneAc(p);
   await p.getByRole('link', { name: 'Grafikler ve araçlar' }).click();
-  await expect(p.locator('.gezinti-grup')).toHaveText(['Zaman', 'İlişkiler', 'Kurgu', 'Dil ve derleme']);
+  await expect(p.locator('.gezinti-grup')).toHaveText(['Zaman', 'İlişkiler', 'Kurgu', 'Dil ve derleme', 'Yayın']);
   // Başlık bağlantı değildir; araçlar yine birer tıklamayla açılır.
   await p.locator('.gezinti-alt').getByRole('link', { name: 'Ağ', exact: true }).click();
   await expect(p).toHaveURL(/\/ag$/);

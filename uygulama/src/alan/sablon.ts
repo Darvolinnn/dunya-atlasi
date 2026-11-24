@@ -289,6 +289,12 @@ const HUKUK: SablonAlani = { kod: 'hukuk', ad: 'Hukuk', tur: 'metin', varsayilan
 const DIL: SablonAlani = { kod: 'dil', ad: 'Dil', tur: 'metin', varsayilan: 'kultur' };
 const MIMARI: SablonAlani = { kod: 'mimari', ad: 'Mimari', tur: 'metin', varsayilan: 'kultur' };
 const YASAM: SablonAlani = { kod: 'yasam_suresi', ad: 'Yaşam süresi', tur: 'metin', varsayilan: 'tur' };
+// Yerin kuruluş ve yıkılışı (K38): haritada işaret o tarihte henüz yoksa soluk, yıkılmışsa üstü çizili görünür (§8.2).
+const VARLIK: SablonAlani[] = [
+  { kod: 'kurulus', ad: 'Kuruluş tarihi', tur: 'tarih', sabit: true, ipucu: 'Haritada bu tarihten önce “henüz yok” görünür' },
+  { kod: 'yikilis', ad: 'Yıkılış tarihi', tur: 'tarih', sabit: true, ipucu: 'Haritada bu tarihten sonra üstü çizili görünür' },
+];
+for (const t of ['mekan', 'sehir', 'siyasi'] as const) VARSAYILANLAR[t].alanlar.push(...VARLIK);
 VARSAYILANLAR.karakter.alanlar.push(DIL, YASAM);
 VARSAYILANLAR.mekan.alanlar.push(IKLIM, PARA, HUKUK, DIL, MIMARI);
 VARSAYILANLAR.sehir.alanlar.push(IKLIM, PARA, HUKUK, DIL, MIMARI);

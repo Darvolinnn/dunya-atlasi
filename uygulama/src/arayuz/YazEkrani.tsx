@@ -8,6 +8,7 @@ import type { EserYapisi, EvrenBilgisi, Kayit, KaldigiYerBilgisi, KisaKayit, Sah
 import { zamanYaz } from '../alan/islem-metni';
 import { EvrenKabugu } from './Kabuk';
 import { MetinEditoru, type EditorDenetimi } from './MetinEditoru';
+import { SahneBirlestirPenceresi, SahneBolPenceresi } from './SahneBolme';
 import { SahnePlani } from './Sablon';
 import { AnlatiYolu, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, SahneBilgileri, sahneBaglamiBos, useSahneBaglami } from './Anlati';
 import { SureklilikDefteri } from './Sureklilik';
@@ -23,6 +24,8 @@ import { gitVeYap, YENI_SAHNE_OLAYI } from './yonlendirme';
 import { soruSetiBul } from '../alan/sablon';
 import { DAKTILO_OLAYI, ODAK_OLAYI } from './kisayollar';
 import { DAKTILO_ACILDI, DAKTILO_SINIFI } from './daktilo';
+import { DIYALOG_SINIFI, PARAGRAF_ODAGI_SINIFI } from './okuma-suzgecleri';
+import { DiyalogSeridi } from './DiyalogSeridi';
 
 const PLAN_SORULARI = (soruSetiBul('sahne_plani')?.sorular ?? []).slice(0, 3).map((q) => q.metin);
 
@@ -89,6 +92,17 @@ function useDaktiloKipi(): [boolean, (v: boolean) => void] {
   return [acik, ayarla];
 }
 
+/** Cihazda hatırlanan, `html` öğesine sınıf koyan aç/kapa tercihi (paragraf odağı, yalnız diyaloglar; K38). */
+function useSinifTercihi(anahtar: string, sinif: string): [boolean, (v: boolean) => void] {
+  const [acik, setAcik] = useState(() => okuYerel(anahtar) === '1');
+  const ayarla = (v: boolean) => { setAcik(v); yazYerel(anahtar, v ? '1' : '0'); };
+  useEffect(() => {
+    document.documentElement.classList.toggle(sinif, acik);
+    return () => document.documentElement.classList.remove(sinif);
+  }, [acik]);
+  return [acik, ayarla];
+}
+
 /** Sessiz kelime sayacı (K28): "bugün" bu cihazda, gün başındaki sayıya göre; eşitlenmez. */
 function bugunEklenen(evren: string, kod: string, n: number): number {
   const g = new Date(); const gun = `${g.getFullYear()}-${g.getMonth() + 1}-${g.getDate()}`;
@@ -124,9 +138,14 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const [kelime, setKelime] = useState<number | null>(null);
   const [odak, setOdak] = useOdakKipi();
   const [daktilo, setDaktilo] = useDaktiloKipi();
+  const [paragrafOdagi, setParagrafOdagi] = useSinifTercihi('dunya-atlasi:paragraf-odagi', PARAGRAF_ODAGI_SINIFI);
+  const [diyalog, setDiyalog] = useSinifTercihi('dunya-atlasi:yalniz-diyalog', DIYALOG_SINIFI);
   const [onceki, setOnceki] = useState<string>('');
   const [sekme, setSekme] = useBaglamSekmesi();
-  useEffect(() => { setKelime(null); }, [kod]);
+  const [cerrahi, setCerrahi] = useState<{ tur: 'bol'; konum: number; temel: string[] } | { tur: 'birlestir' } | null>(null);
+  const [cerrahiHata, setCerrahiHata] = useState<string | null>(null);
+  const [sonraki, setSonraki] = useState<{ kod: string; ad: string } | null>(null);
+  useEffect(() => { setKelime(null); setCerrahi(null); setCerrahiHata(null); }, [kod]);
 
   useEffect(() => { istemci.iste('kayit', { evren, kod }).then((k) => { setKayit(k); setHata(null); }, (e) => setHata(e.message)); }, [evren, kod, surum]);
   useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then((b) => setBag(b.bag ?? null), () => {}); }, [evren]);
@@ -138,6 +157,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
     if (!sahne) return;
     istemci.iste('anlatiYeri', { evren, kod }).then((y) => y.onceki ? istemci.iste('sonParagraf', { evren, kod: y.onceki.kod }) : '').then(setOnceki, () => {});
   }, [evren, kod, sahne]);
+  useEffect(() => { setSonraki(null); if (sahne) istemci.iste('sonrakiSahne', { evren, sahne: kod }).then(setSonraki, () => {}); }, [evren, kod, sahne, surum]);
   const sahneBaglami = useSahneBaglami(istemci, evren, sahne ? kod : null);
   const parcaBaglami = useSahneBaglami(istemci, evren, sahne && imlecParcasi ? kod : null, imlecParcasi);
 
@@ -173,9 +193,25 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
           {kelime !== null && <span class="kelime-sayaci" aria-live="off">{sahne ? 'Bu sahne ' : ''}{sayiYaz(kelime)} kelime{bugun ? ` · bugün ${bugun > 0 ? '+' : '−'}${sayiYaz(Math.abs(bugun))}` : ''}</span>}
           <button class={odak ? 'dugme kucuk odak-dugmesi secili' : 'dugme sade kucuk odak-dugmesi'} aria-pressed={odak} title="Odak kipi (Ctrl+Shift+F); çıkmak için Esc" onClick={() => setOdak(!odak)}>{odak ? 'Odaktan çık' : 'Odak'}</button>
           {sahne && baglamKapali && !odak && <button class="dugme sade kucuk" onClick={() => baglamAc(true)}>{bos ? 'Bağlam ekle' : 'Bağlamı göster'}</button>}
+          {diyalog && <button class="dugme kucuk secili" title="Yalnız diyaloglar süzgecini kapat" onClick={() => setDiyalog(false)}>Yalnız diyaloglar ✕</button>}
           <SayfaYardimi sayfa="yaz" />
           <IslemMenusu ad={TUR_ADI[kayit.tur] ?? 'Kayıt'}>
             <button class="menu-ogesi" aria-pressed={daktilo} title="Yazdığınız satır ekranın ortasında kalır (Ctrl+Shift+D)" onClick={() => setDaktilo(!daktilo)}>{daktilo ? '✓ ' : ''}Daktilo kipi</button>
+            <button class="menu-ogesi" aria-pressed={paragrafOdagi} title="İmlecin olduğu paragraf parlak kalır, ötekiler soluklaşır" onClick={() => setParagrafOdagi(!paragrafOdagi)}>{paragrafOdagi ? '✓ ' : ''}Paragraf odağı</button>
+            <button class="menu-ogesi" aria-pressed={diyalog} title="Konuşmayla başlayan paragraflar öne çıkar" onClick={() => setDiyalog(!diyalog)}>{diyalog ? '✓ ' : ''}Yalnız diyaloglar</button>
+            {sahne && !kayit.silindi && !saltOkunur && <>
+              <button class="menu-ogesi" title="İmleçten sonraki metin hemen ardından gelen yeni bir sahneye taşınır" onClick={async () => {
+                setCerrahiHata(null);
+                await denetim.current?.kaydet();
+                const i = denetim.current?.imlec();
+                if (i) setCerrahi({ tur: 'bol', ...i }); else setCerrahiHata('Metin kaydedilemedi; biraz sonra yeniden deneyin.');
+              }}>İmleçten sonrasını yeni sahneye böl</button>
+              <button class="menu-ogesi" disabled={!sonraki} title={sonraki ? `“${sonraki.ad}” bu sahnenin sonuna eklenir` : 'Bu bölümde bundan sonra sahne yok'} onClick={async () => {
+                setCerrahiHata(null);
+                await denetim.current?.kaydet();
+                setCerrahi({ tur: 'birlestir' });
+              }}>Sonraki sahneyle birleştir</button>
+            </>}
             <a class="menu-ogesi" href={`#/e/${evren}/k/${kod}`}>Bütün alanlar</a>
             {!kayit.silindi && !saltOkunur && (
               <button class="menu-ogesi tehlikeli" title="Çöp kutusundan geri getirilebilir" onClick={async () => {
@@ -186,12 +222,18 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
             )}
           </IslemMenusu>
         </div>
+        {cerrahiHata && <p class="hata">{cerrahiHata}</p>}
+        {cerrahi?.tur === 'bol' && <SahneBolPenceresi istemci={istemci} evren={evren} sahne={kod} konum={cerrahi.konum} temel={cerrahi.temel}
+          kapat={() => setCerrahi(null)} bitti={() => { setCerrahi(null); void denetim.current?.yenile(); setSurum((x) => x + 1); }} />}
+        {cerrahi?.tur === 'birlestir' && <SahneBirlestirPenceresi istemci={istemci} evren={evren} sahne={kod}
+          kapat={() => setCerrahi(null)} bitti={() => { setCerrahi(null); void denetim.current?.yenile(); setSurum((x) => x + 1); }} />}
         {kayit.silindi && <p class="uyari">Bu kayıt çöp kutusunda. Geri getirmek için <a href={`#/e/${evren}/k/${kod}`}>kayıt sayfasını</a> açın.</p>}
         <CatismaListesi istemci={istemci} evren={evren} kod={kod} surum={surum} />
         <article class="yaz-kagidi">
           <div class="yaz-baslik">
             <AlanGirdisi etiket="Başlık" deger={kayit.ad} buyuk zorunlu kaydet={(v) => istemci.iste('kayitDegistir', { evren, kod, alan: 'ad', deger: v })} />
           </div>
+          {diyalog && sahne && <DiyalogSeridi istemci={istemci} evren={evren} baglam={sahneBaglami} />}
           <MetinEditoru saltOkunur={saltOkunur} key={kod} istemci={istemci} evren={evren} kayit={kod} denetim={denetim} baslangic={baslangic}
             baglamParcalari={sahne} parcaDegisti={setImlecParcasi} kelimeDegisti={setKelime} bosYardim={bosYardim} />
           {(kayit.tur === 'eser' || kayit.tur === 'bolum') && <EserYapisiBolumu istemci={istemci} evren={evren} kayit={kayit} />}

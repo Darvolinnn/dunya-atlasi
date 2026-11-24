@@ -32,7 +32,11 @@ const ANA = 'ana';
 const MEDYA = 'medya';
 
 /** Listede bir dosya: programın günlük yedeğiyse özellikleri, değilse null (dokunulmaz). Boy, dosyanın değişip değişmediğini söyler. */
-interface Kayit { boy: number; ozellikler: Record<string, string> | null }
+interface Kayit {
+  boy: number; ozellikler: Record<string, string> | null;
+  /** Programın yedeğiyken sonradan açılamaz olan dosyanın son bilinen özellikleri (K38 doğrulama bildirsin diye). */
+  bozuk?: Record<string, string>;
+}
 
 const cozumle = (id: string): [AltKlasor, string] => (id.startsWith(`${MEDYA}/`) ? [MEDYA, id.slice(MEDYA.length + 1)] : ['', id]);
 
@@ -81,7 +85,9 @@ export class KlasorTasiyici implements YedekTasiyici {
           const j = JSON.parse(new TextDecoder().decode(await this.k.oku('', LISTE_DOSYASI)));
           if (j?.bicim === LISTE_BICIMI && j.dosyalar && typeof j.dosyalar === 'object') {
             for (const [ad, v] of Object.entries(j.dosyalar as Record<string, Kayit>)) {
-              if (v && Number.isInteger(v.boy) && (v.ozellikler === null || typeof v.ozellikler === 'object')) onceki.set(ad, v);
+              if (v && Number.isInteger(v.boy) && (v.ozellikler === null || typeof v.ozellikler === 'object')) {
+                onceki.set(ad, { boy: v.boy, ozellikler: v.ozellikler, ...(v.bozuk && typeof v.bozuk === 'object' ? { bozuk: v.bozuk } : {}) });
+              }
             }
           }
         } catch { /* bozuk liste: yedekler paketlerinden yeniden okunur */ }
@@ -93,7 +99,9 @@ export class KlasorTasiyici implements YedekTasiyici {
       if (!/\.zip$/i.test(d.ad)) continue;
       const k = onceki.get(d.ad);
       if (k && k.boy === d.boy) { yeni.set(d.ad, k); continue; }
-      yeni.set(d.ad, { boy: d.boy, ozellikler: await this.paketten(d.ad) });
+      const ozellikler = await this.paketten(d.ad);
+      const bozuk = ozellikler ? undefined : (k?.ozellikler ?? k?.bozuk);
+      yeni.set(d.ad, { boy: d.boy, ozellikler, ...(bozuk ? { bozuk } : {}) });
       degisti = true;
     }
     if (yeni.size !== onceki.size) degisti = true;
@@ -131,6 +139,13 @@ export class KlasorTasiyici implements YedekTasiyici {
     return this.sirayla(async () => [...(await this.guncelListe())]
       .filter(([, k]) => k.ozellikler && Object.entries(oz).every(([a, v]) => k.ozellikler![a] === v))
       .map(([ad, k]) => ({ id: ad, ad, ozellikler: { ...k.ozellikler! } })));
+  }
+
+  /** Bu evrenin, programın yazdığı ama artık açılamayan yedekleri (listede yoklar; doğrulama bildirir). */
+  async bozulanYedekler(evren: string): Promise<{ id: string; gun: string }[]> {
+    return this.sirayla(async () => [...(await this.guncelListe())]
+      .filter(([, k]) => !k.ozellikler && k.bozuk?.evren === evren)
+      .map(([ad, k]) => ({ id: ad, gun: k.bozuk!.gun ?? '' })));
   }
 
   async indir(id: string): Promise<Uint8Array> {

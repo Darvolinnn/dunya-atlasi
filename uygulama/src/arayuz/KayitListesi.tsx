@@ -10,6 +10,7 @@ import { siraAnahtari } from '../alan/tarih';
 import { Gorsel } from './gorsel';
 import { zamanYaz } from '../alan/islem-metni';
 import { BosSayfa, KararRozeti, TurSecici, odakla } from './ortak';
+import { AkilliListeGorunumu, AkilliListelerMenusu } from './AkilliListe';
 import { git } from './Uygulama';
 
 export function YeniKayit({ istemci, evren }: { istemci: Istemci; evren: string }) {
@@ -52,6 +53,8 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
   const [siralama, setSiralama] = useState<Siralama>('son');
   const [bulunan, setBulunan] = useState<AramaSonucu[] | null>(null);
   const [vazgecilenGizli, setVazgecilenGizli] = useState(false);
+  /** Seçili akıllı liste (K38); null bütün kayıtlar, 'yeni' yeni liste formu. */
+  const [liste, setListe] = useState<string | null>(null);
   // Geçişli sorgu (§3.7): seçilen yerin, yönetimin ya da kültürün altındakiler.
   const [kok, setKok] = useState<{ kod: string; ad: string } | null>(null);
   const [eksen, setEksen] = useState<GeciselEksen>('kapsama');
@@ -95,7 +98,10 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
           Karakter, yer, olay, not… her şey bir kayıttır. Yukarıya bir ad yazıp türünü seçin; metinde [[ ile ona bağlanırsınız.
         </BosSayfa>
       ) : (
-        <>
+        <div class="kayitlar-duzeni">
+        <AkilliListelerMenusu istemci={istemci} evren={evren} surum={surum} secili={liste} sec={setListe} />
+        <div class="kayitlar-govde">
+        {liste ? <AkilliListeGorunumu istemci={istemci} evren={evren} surum={surum} kod={liste} sec={setListe} /> : <>
           <div class="suzgec satir">
             <input class="girdi" style="flex:2;min-width:180px" type="search" aria-label="Kayıtlarda ara" placeholder="Ara (ad, lakap, eski ad, metin)" value={arama}
               lang="tr" onInput={(e) => setArama((e.target as HTMLInputElement).value)} />
@@ -125,7 +131,9 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
               {gorunen.map(({ k, nereden, parca }) => <KayitSatiri key={k.kod} k={k} evren={evren} nereden={nereden} parca={parca} istemci={istemci} />)}
             </ul>
           )}
-        </>
+        </>}
+        </div>
+        </div>
       )}
     </>
   );

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AdBicimi, DilBilgisi, DilSozcugu, DilTanimi, DilYeterliligi, KisaKayit, KisiDili, SesIzi, TuretilenBicim, UretilenAd, YeterlilikDuzeyi } from '../veri/api';
 import { geriAlinabilir } from './onay';
+import { KayitSec } from './KayitBolumleri';
 
 const hataYaz = (e: unknown) => (e as Error).message;
 const bag = (evren: string, k: KisaKayit) => <a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a>;
@@ -17,7 +18,7 @@ function Iz({ iz }: { iz: SesIzi[] }) {
   return <span class="soluk kucuk">{iz.map((x) => `${x.once} → ${x.sonra} (${x.sira + 1}. kural: ${x.kural})`).join(' · ')}</span>;
 }
 
-export function DilBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; evren: string; kod: string; surum: number }) {
+export function DilBolumu({ istemci, evren, kod, ad = 'Bu dil', surum }: { istemci: Istemci; evren: string; kod: string; ad?: string; surum: number }) {
   const [b, setB] = useState<DilBilgisi | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const [hece, setHece] = useState('');
@@ -112,6 +113,11 @@ export function DilBolumu({ istemci, evren, kod, surum }: { istemci: Istemci; ev
 
       <AdUretici istemci={istemci} evren={evren} dil={kod} />
 
+      <div class="koken-bolumleri">
+        <KokenAgaci istemci={istemci} evren={evren} dil={kod} sozluk={t.sozluk} surum={surum} />
+        <BirlesikAd istemci={istemci} evren={evren} dil={kod} dilAdi={ad} sozluk={t.sozluk} />
+      </div>
+
       {b.bilenler.length > 0 && (
         <>
           <h3>Bu dili bilenler</h3>
@@ -155,6 +161,103 @@ function AdUretici({ istemci, evren, dil }: { istemci: Istemci; evren: string; d
           {x.varOlan && <span class="soluk kucuk"> · bu adla bir kayıt var</span>}</li>
       ))}</ul>}
     </>
+  );
+}
+
+// ---------- Köken ağacı ve birleşik ad (K38, C5) ----------
+
+const kuralYazisi = (iz: SesIzi[]) => iz.length ? iz.map((x) => x.kural).join(' · ') : 'değişmedi';
+const buyut = (s: string) => (s ? s[0].toLocaleUpperCase('tr-TR') + s.slice(1) : s);
+const sade = (s: string) => s.replace(/^-|-$/g, '');
+
+type Agac = { kok: { dil: KisaKayit; bicim: string; anlam: string }; dallar: TuretilenBicim[] };
+function AgacDugumu({ dil, bicim, alt, dallar, kok, secili }: { dil: KisaKayit; bicim: string; alt: string; dallar: TuretilenBicim[]; kok: string; secili: string }) {
+  // Bu düğümden doğrudan türeyenler: yolun sondan bir önceki halkası bu dil.
+  const cocuklar = dallar.filter((d) => d.yol.length >= 2 && d.yol[d.yol.length - 2].kod === dil.kod && (d.yol.length > 2 || dil.kod === kok));
+  return (
+    <div class="koken-dugum">
+      <div class={`koken-kutu${dil.kod === secili ? ' secili' : ''}`}><strong>{bicim}</strong><span class="soluk kucuk">{alt}</span></div>
+      {cocuklar.length > 0 && <div class="koken-cocuklar">{cocuklar.map((c) => (
+        <div class="koken-dal" key={c.dil.kod}>
+          <span class="koken-kural soluk kucuk" title={c.iz.map((x) => `${x.once} → ${x.sonra}`).join(' · ')}>↓ {kuralYazisi(c.iz)}</span>
+          <AgacDugumu dil={c.dil} bicim={c.bicim} alt={`${c.dil.ad}${c.kayitli && c.kayitli !== c.bicim ? ` · kayıtlı: ${c.kayitli}` : ''}`} dallar={dallar} kok={kok} secili={secili} />
+        </div>
+      ))}</div>}
+    </div>
+  );
+}
+
+function KokenAgaci({ istemci, evren, dil, sozluk, surum }: { istemci: Istemci; evren: string; dil: string; sozluk: DilSozcugu[]; surum: number }) {
+  const [adlar, setAdlar] = useState<{ kayit: KisaKayit; bicim: string }[]>([]);
+  const [secim, setSecim] = useState('');
+  const [agac, setAgac] = useState<Agac | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  useEffect(() => { istemci.iste('dilAdlari', { evren, dil }).then(setAdlar, () => setAdlar([])); }, [dil, surum]);
+  useEffect(() => {
+    if (!secim) { setAgac(null); return; }
+    const [tur, deger] = [secim.slice(0, 1), secim.slice(2)];
+    istemci.iste('kokenAgaci', tur === 'k' ? { evren, dil, kayit: deger } : { evren, dil, bicim: sade(deger) }).then((x) => { setAgac(x); setHata(null); }, (x) => { setAgac(null); setHata(hataYaz(x)); });
+  }, [secim, dil, surum]);
+  const baslik = agac ? (secim.startsWith('k:') ? adlar.find((a) => a.kayit.kod === secim.slice(2))?.bicim : sade(secim.slice(2))) : null;
+  return (
+    <section class="koken-agaci" aria-label="Köken ağacı">
+      <h3>Köken ağacı{baslik ? <> · “{baslik}”</> : null}</h3>
+      <select class="girdi kucuk-secim" aria-label="Sözcük ya da ad" value={secim} onChange={(e) => setSecim((e.target as HTMLSelectElement).value)}>
+        <option value="">Bir sözcük ya da ad seçin</option>
+        {sozluk.length > 0 && <optgroup label="Sözlük">{sozluk.map((s, i) => <option key={i} value={`s:${s.bicim}`}>{s.bicim}{s.anlam ? ` · ${s.anlam}` : ''}</option>)}</optgroup>}
+        {adlar.length > 0 && <optgroup label="Bu dilde biçimi olan adlar">{adlar.map((a) => <option key={a.kayit.kod} value={`k:${a.kayit.kod}`}>{a.bicim} · {a.kayit.ad}</option>)}</optgroup>}
+      </select>
+      {hata && <p class="hata kucuk">{hata}</p>}
+      {agac && <div class="koken-ciz">
+        <AgacDugumu dil={agac.kok.dil} bicim={agac.kok.bicim} alt={`${agac.kok.dil.ad}${agac.kok.anlam ? ` · “${agac.kok.anlam}”` : ''}`} dallar={agac.dallar} kok={agac.kok.dil.kod} secili={dil} />
+      </div>}
+      {agac && !agac.dallar.length && <p class="soluk kucuk">{agac.kok.dil.ad} dilinden türeyen bir dil kaydı yok.</p>}
+      <p class="soluk kucuk">Okun yanında o dilde uygulanan ses değişim kuralları yazar. Bir adın daha eski biçimleri, “Adın dillerdeki biçimleri”nde kaydettiğiniz türetme bağlarından izlenir; program geriye doğru ses değişimi hesaplamaz.</p>
+    </section>
+  );
+}
+
+function BirlesikAd({ istemci, evren, dil, dilAdi, sozluk }: { istemci: Istemci; evren: string; dil: string; dilAdi: string; sozluk: DilSozcugu[] }) {
+  const [parcalar, setParcalar] = useState<number[]>([]);
+  const [sec, setSec] = useState('');
+  const [dallar, setDallar] = useState<TuretilenBicim[] | null>(null);
+  const [kayit, setKayit] = useState<{ kod: string; ad: string } | null>(null);
+  const [bilgi, setBilgi] = useState<string | null>(null);
+  const [hata, setHata] = useState<string | null>(null);
+  const bicim = buyut(parcalar.map((i) => sade(sozluk[i]?.bicim ?? '')).join(''));
+  useEffect(() => {
+    if (!bicim) { setDallar(null); return; }
+    istemci.iste('adTuret', { evren, dil, bicim }).then((x) => { setDallar(x); setHata(null); }, (x) => setHata(hataYaz(x)));
+  }, [bicim, dil]);
+  if (!sozluk.length) return <section class="birlesik-ad" aria-label="Birleşik ad"><h3>Birleşik ad</h3><p class="soluk kucuk">Önce sözlüğe kök ya da ek ekleyin.</p></section>;
+  const ekle = (d: string, b: string, kd: string | null, kb: string | null) => {
+    if (!kayit) return;
+    istemci.iste('adBicimiYaz', { evren, kod: kayit.kod, dil: d, bicim: b, kaynakDil: kd, kaynakBicim: kb }).then(() => { setHata(null); setBilgi(`“${b}”, ${kayit.ad} kaydının adlarına eklendi.`); }, (x) => setHata(hataYaz(x)));
+  };
+  const satirlar = bicim ? [{ dil: { kod: dil, ad: dilAdi, tur: 'dil' }, bicim, kd: null as string | null, kb: null as string | null }, ...(dallar ?? []).map((x) => ({ dil: x.dil, bicim: x.bicim, kd: x.yol[x.yol.length - 2].kod, kb: x.kaynakBicim }))] : [];
+  return (
+    <section class="birlesik-ad" aria-label="Birleşik ad">
+      <h3>Birleşik ad</h3>
+      <div class="birlesik-parcalar">
+        {parcalar.map((i, n) => { const s = sozluk[i]; return s ? <>{n > 0 && <span class="soluk" aria-hidden="true">+</span>}
+          <button type="button" class="cip kitap-cipi" title="Parçayı çıkar" onClick={() => setParcalar(parcalar.filter((_, j) => j !== n))}>{sade(s.bicim)} <span class="soluk">{s.tur === 'kok' ? `“${s.anlam}”` : `${s.anlam || ''} ${SOZ_TURLERI.find((x) => x.kod === s.tur)!.ad}`.trim()}</span></button></> : null; })}
+        <select class="girdi kucuk-secim" aria-label="Parça ekle" value={sec} onChange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v !== '') setParcalar([...parcalar, Number(v)].slice(0, 8)); setSec(''); }}>
+          <option value="">Parça ekle</option>
+          {SOZ_TURLERI.map((t) => <optgroup key={t.kod} label={t.ad}>{sozluk.map((s, i) => s.tur === t.kod ? <option key={i} value={i}>{s.bicim}{s.anlam ? ` · ${s.anlam}` : ''}</option> : null)}</optgroup>)}
+        </select>
+      </div>
+      {bicim && <>
+        <div class="satir kucuk"><span class="soluk">Eklenecek kayıt:</span><KayitSec istemci={istemci} evren={evren} secili={kayit} sec={(s) => { setKayit(s); setBilgi(null); }} etiket="Kayıt seç" /></div>
+        <table class="birlesik-tablo">
+          <thead><tr><th>Dil</th><th>Biçim</th><th /></tr></thead>
+          <tbody>{satirlar.map((r) => <tr key={r.dil.kod}><td>{r.dil.ad}</td><td>{r.bicim}</td>
+            <td><button type="button" class="baglanti-dugmesi" disabled={!kayit} title={kayit ? undefined : 'Önce kaydı seçin'} onClick={() => ekle(r.dil.kod, r.bicim, r.kd, r.kb)}>Adlara ekle</button></td></tr>)}</tbody>
+        </table>
+        <p class="soluk kucuk">Anlam: {parcalar.map((i) => sozluk[i]?.anlam || '?').join(' + ')}. Anlam yalnız sözlükteki parçalardan yazılır; program anlam uydurmaz.</p>
+      </>}
+      {bilgi && <p class="kucuk" role="status">{bilgi}</p>}
+      {hata && <p class="hata kucuk">{hata}</p>}
+    </section>
   );
 }
 

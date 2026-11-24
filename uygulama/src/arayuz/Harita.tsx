@@ -5,6 +5,9 @@ import type { Istemci } from '../veri/istemci';
 import type { HaritaAyrintisi, HaritaCizimi, HaritaIsareti, HaritaKatmani, HaritaOzeti, IliskiSatiri, IsaretGirdisi, Kayit, KayitHaritalari } from '../veri/api';
 import { anaTakvim, yilYazisi } from '../alan/tarih';
 import { useTakvim } from './Takvim';
+import { DosemeliGorsel } from './DosemeliGorsel';
+import { doselenir } from './doseme';
+import { EN_AZ_YAKINLIK, EN_COK_YAKINLIK, useHaritaYakinlik } from './harita-yakinlik';
 import { SinirAlani } from './Anlati';
 import { hizala, ters, uygula, type Donusum, type KontrolCifti, type Nokta } from '../alan/hizalama';
 import { turBul } from '../alan/turler';
@@ -16,7 +19,7 @@ import { git } from './Uygulama';
 import { BakisAciklamasi, BakisSecici } from './Bilgiler';
 import type { Secim } from './BaglantiSecici';
 import { HaritaKunyeBolumu } from './HaritaKunye';
-import { OlcekliHaritaBolumu } from './OlcekliHarita';
+import { OlcekliHaritaBolumu, OlcekliKatmanCizimi, olcekliTikla, useOlcekliKatman } from './OlcekliHarita';
 import { geriAlinabilir } from './onay';
 import { SayfaYardimi } from './SayfaYardimi';
 
@@ -164,6 +167,8 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
     const g = new ResizeObserver(olc); g.observe(t);
     return () => g.disconnect();
   }, [!!h]);
+  useHaritaYakinlik(tuval, yakinlik, setYakinlik, kip.tur === 'gez');
+  const olcekli = useOlcekliKatman(istemci, evren, h);
   useEffect(() => { istemci.iste('harita', { evren, kod, bakis: bakis?.kod ?? null, an: an || null }).then((x) => { setH(x); setHata(null); }, (e) => setHata(hataYaz(e))); }, [kod, bakis?.kod, n, an]);
   useEffect(() => {
     const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') { setKip((k) => (k.tur === 'hizala' && k.bekleyen ? { ...k, bekleyen: null } : { tur: 'gez' })); setYeni(null); setCizimKaydi(null); } };
@@ -179,6 +184,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
     return { x: ((e.clientX - r.left) / r.width) * h.en, y: ((e.clientY - r.top) / r.height) * h.boy };
   };
   const tikla = async (e: MouseEvent) => {
+    if (kip.tur === 'gez' && olcekliTikla(olcekli, (({ x, y }) => [x, y] as [number, number])(uzayNoktasi(e)))) return;
     if (kip.tur === 'gez') { setSecili(null); setSeciliCizim(null); return; }
     const p = uzayNoktasi(e);
     if (kip.tur === 'ciz') { setKip({ ...kip, noktalar: [...kip.noktalar, [p.x, p.y]] }); return; }
@@ -257,8 +263,20 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
             <section aria-label="Bu tarihte">
               <h2>{h.an.ifade} itibarıyla</h2>
               {!h.an.gecerli && <p class="hata kucuk">Bu tarih takvime uymuyor.</p>}
-              {h.an.gecerli && !h.buTarihte.length && <p class="soluk kucuk">Bu tarihe denk gelen ve yeri bu haritada işaretli bir olay ya da sahne yok.</p>}
-              <ul class="isaret-listesi">{h.buTarihte.map((o) => <li key={o.kod}><a href={`#/e/${evren}/k/${o.kod}`}>{o.ad}</a> <span class="soluk kucuk">{o.yer} · {o.tarih}</span></li>)}</ul>
+              {h.kafileler.map((k, n) => (
+                <div key={n} class="bu-tarihte-satiri">
+                  <p class="kucuk"><strong>Süren yolculuk:</strong> <a href={`#/e/${evren}/k/${k.yolculuk.kod}`}>{k.yolculuk.ad}</a>{k.yolcular.length ? ` · ${k.yolcular.join(', ')}` : ''} · {k.nereden} → {k.nereye}{k.planlanan ? ' (planlanan)' : ''}</p>
+                  <p class="soluk kucuk">{[k.gun && `${k.gun.kacinci}. gün / ${k.gun.toplam}`, k.rota && `rota “${k.rota}”`,
+                    k.nokta ? 'tahmini yer' : k.aralik ? 'tarih kesin olmadığı için yol üstünde bir aralık' : k.rota ? 'rota bu haritada çizilmemiş' : 'rotası seçilmemiş'].filter(Boolean).join(' · ')}</p>
+                </div>
+              ))}
+              {(['henuz-yok', 'yikilmis'] as const).map((d) => {
+                const l = h.isaretler.filter((i) => i.varlik?.durum === d);
+                return l.length > 0 && <p key={d} class="kucuk bu-tarihte-satiri"><strong>{d === 'henuz-yok' ? 'Henüz yok:' : 'Yıkılmış:'}</strong> {l.map((i, n) => <span key={i.kod}>{n ? ', ' : ''}{i.kayit.ad} <span class="soluk">({d === 'henuz-yok' ? `kuruluşu ${i.varlik!.kurulus}` : `yıkılışı ${i.varlik!.yikilis}`})</span></span>)}</p>;
+              })}
+              {h.an.gecerli && !h.buTarihte.some((o) => o.tur !== 'yolculuk') && <p class="soluk kucuk">Bu tarihe denk gelen ve yeri bu haritada işaretli bir olay ya da sahne yok.</p>}
+              <ul class="isaret-listesi">{h.buTarihte.filter((o) => o.tur !== 'yolculuk' || !h.kafileler.some((k) => k.yolculuk.kod === o.kod)).map((o, n) => <li key={`${o.kod}${n}`}><a href={`#/e/${evren}/k/${o.kod}`}>{o.ad}</a> <span class="soluk kucuk">{o.yer} · {o.tarih}</span></li>)}</ul>
+              <p class="soluk kucuk">Kuruluş ya da yıkılış tarihi girilmemiş yer her tarihte görünür. Rotası haritada çizilmemiş yolculuk yalnız burada yazılır.</p>
             </section>
           )}
           <h2>İşaretler</h2>
@@ -303,7 +321,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
               ))}
             </fieldset>
           )}
-          <OlcekliHaritaBolumu istemci={istemci} evren={evren} h={h} />
+          <OlcekliHaritaBolumu istemci={istemci} evren={evren} h={h} d={olcekli} />
         </>}
         {cekmeceSekmesi === 'kunye' && <>
           <HaritaKunyeBolumu istemci={istemci} evren={evren} harita={h.kod} saltOkunur={h.silindi} />
@@ -324,12 +342,15 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
 
       <div class={`harita-sahne${cekmece ? ' cekmeceli' : ''}`}>
         <div class="harita-tuval" ref={tuval}>
-          <div ref={yuzey} class={`harita-yuzey${kip.tur !== 'gez' ? ' isaretleme' : ''}${kip.tur === 'hizala' ? ' hizalama' : ''}`} style={yuzeyStili}
+          <div ref={yuzey} class={`harita-yuzey${kip.tur !== 'gez' ? ' isaretleme' : ''}${kip.tur === 'hizala' ? ' hizalama' : ''}${olcekli.k.acik && olcekli.k.hedef !== 'yok' && kip.tur === 'gez' ? ' olcekli-secim' : ''}`} style={yuzeyStili}
             onClick={(e) => { if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.harita-katmanlar')) void tikla(e); }}>
             <div class="harita-katmanlar">{h.katmanlar.filter((k) => !k.silindi && !gizli.has(k.kod)).map((k) => (
               <div key={k.kod} class={`harita-katman${kip.tur === 'hizala' && kip.katman === k.kod ? ' hizalanan' : ''}`}
                 style={katmanStili(k, onizleme(k), h, kip.tur === 'hizala' && kip.katman === k.kod ? 0.6 : saydamlik[k.kod] ?? 1)}>
-                <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} onizleme={false} alt={k.ad} />
+                {doselenir(k.en, k.boy)
+                  ? <DosemeliGorsel istemci={istemci} evren={evren} ad={k.gorsel} en={k.en} boy={k.boy} alt={k.ad}
+                    olcek={(sigan * yakinlik / h.en) * Math.sqrt(Math.abs(onizleme(k)[0] * onizleme(k)[3] - onizleme(k)[1] * onizleme(k)[2])) || 1} />
+                  : <Gorsel istemci={istemci} evren={evren} ad={k.gorsel} onizleme={false} alt={k.ad} />}
               </div>
             ))}</div>
             {kip.tur === 'hizala' && (() => {
@@ -354,6 +375,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
                   ? <polygon key={c.kod} class={sinif} points={nk} style={{ stroke: renk, fill: renk }} vector-effect="non-scaling-stroke" onClick={sec}><title>{c.kayit.ad}</title></polygon>
                   : <polyline key={c.kod} class={sinif} points={nk} style={{ stroke: renk }} vector-effect="non-scaling-stroke" onClick={sec}><title>{c.kayit.ad}</title></polyline>;
               })}
+              {h.kafileler.filter((k) => k.aralik).map((k, n) => <polyline key={`kafile${n}`} class="kafile-araligi" points={k.aralik!.map((p) => p.join(',')).join(' ')} vector-effect="non-scaling-stroke" />)}
               {kip.tur === 'ciz' && kip.noktalar.length > 0 && (
                 kip.bicim === 'bolge' && kip.noktalar.length >= 3
                   ? <polygon class="cizim taslak" points={kip.noktalar.map((p) => p.join(',')).join(' ')} vector-effect="non-scaling-stroke" />
@@ -365,9 +387,17 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
               const [x, y] = c.noktalar.reduce((t, p) => [t[0] + p[0] / c.noktalar.length, t[1] + p[1] / c.noktalar.length], [0, 0]);
               return <span key={c.kod} class={`cizim-etiketi${c.kip === 'iddia' ? ' iddia' : ''}`} style={{ left: yuzde(x, h.en), top: yuzde(y, h.boy) }} aria-hidden="true">{c.kayit.ad}{c.kip === 'iddia' ? ' (iddia)' : ''}</span>;
             })}
+            <OlcekliKatmanCizimi h={h} d={olcekli} />
             {yerlesen.map((i) => (
               <IsaretGorseli key={i.kod} i={i} h={h} secili={i.kod === secili} sec={() => { if (kip.tur === 'gez') { setSecili(i.kod); setCekmece(true); } }} />
             ))}
+            {h.kafileler.map((k, n) => {
+              const p = k.nokta ?? (k.aralik ? k.aralik[Math.floor(k.aralik.length / 2)] : null);
+              if (!p) return null;
+              const oran = k.oran ? (k.nokta ? `yolun ~${yuzdeYaz((k.oran[0] + k.oran[1]) / 2)}'ı` : `yolun ${yuzdeYaz(k.oran[0])}–${yuzdeYaz(k.oran[1])} arası`) : '';
+              return <span key={`kafile${n}`} class={`harita-kafile${k.nokta ? '' : ' aralikta'}`} style={{ left: yuzde(p[0], h.en), top: yuzde(p[1], h.boy) }} role="img"
+                aria-label={`${k.yolculuk.ad}: ${oran}`}><span class="harita-etiket">{k.yolculuk.ad}{oran ? ` · ${oran}` : ''}</span></span>;
+            })}
             {yeni && <span class="harita-isaret yeni" style={{ left: yuzde(yeni.x, h.en), top: yuzde(yeni.y, h.boy) }} aria-hidden="true" />}
           </div>
         </div>
@@ -379,9 +409,9 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
         {(durumYazisi || hata) && <div class="harita-durum" role="status">{hata ? <span class="hata">{hata}</span> : durumYazisi}</div>}
         <div class="harita-alt-sol"><ZamanKaydirici h={h} an={an} setAn={setAn} yilYaz={(y) => yilYazisi(y, anaTakvim(z))} /></div>
         <div class="harita-yakinlik" role="group" aria-label="Yakınlık">
-          <button class="dugme kucuk" aria-label="Uzaklaştır" disabled={yakinlik <= 0.25} onClick={() => setYakinlik((x) => Math.max(0.25, x / 1.5))}>−</button>
+          <button class="dugme kucuk" aria-label="Uzaklaştır" disabled={yakinlik <= EN_AZ_YAKINLIK} onClick={() => setYakinlik((x) => Math.max(EN_AZ_YAKINLIK, x / 1.5))}>−</button>
           <span class="kucuk">%{Math.round(yakinlik * 100)}</span>
-          <button class="dugme kucuk" aria-label="Yakınlaştır" disabled={yakinlik >= 12} onClick={() => setYakinlik((x) => Math.min(12, x * 1.5))}>+</button>
+          <button class="dugme kucuk" aria-label="Yakınlaştır" disabled={yakinlik >= EN_COK_YAKINLIK} onClick={() => setYakinlik((x) => Math.min(EN_COK_YAKINLIK, x * 1.5))}>+</button>
           <button class="dugme kucuk" onClick={() => setYakinlik(1)}>Sığdır</button>
         </div>
         {cekmece ? (
@@ -562,7 +592,7 @@ function ZamanKaydirici({ h, an, setAn, yilYaz }: { h: HaritaAyrintisi; an: stri
   const [yil, setYil] = useState<number | null>(null);
   useEffect(() => setGirdi(an), [an]);
   const ar = h.zamanAraligi;
-  if (!ar && !an && !h.cizimler.length) return null;
+  if (!ar && !an && !h.cizimler.length && !h.isaretler.some((i) => i.varlik)) return null;
   return (
     <div class="satir zaman-kaydirici" role="group" aria-label="Zaman kaydırıcısı">
       <label class="satir kucuk">Tarih
@@ -649,6 +679,14 @@ function HaritaBasligi({ istemci, evren, h }: { istemci: Istemci; evren: string;
   );
 }
 
+/** Seçilen tarihte kaydın henüz kurulmamış ya da yıkılmış olduğunu söyleyen ek (K38). */
+function varlikEki(i: HaritaIsareti, h: HaritaAyrintisi): string {
+  if (!h.an || !i.varlik) return '';
+  const v = i.varlik;
+  return v.durum === 'henuz-yok' ? `henüz kurulmadı (${v.kurulus})` : v.durum === 'yikilmis' ? `yıkılmış (${v.yikilis})` : v.durum === 'belirsiz' ? 'bu tarihte var mı belirsiz' : '';
+}
+const yuzdeYaz = (x: number) => `%${Math.round(x * 100)}`;
+
 function IsaretGorseli({ i, h, secili, sec }: { i: HaritaIsareti; h: HaritaAyrintisi; secili: boolean; sec: () => void }) {
   const { x, y, yaricap } = i.konum;
   const sol = `${(x! / h.en) * 100}%`, ust = `${(y! / h.boy) * 100}%`;
@@ -658,10 +696,10 @@ function IsaretGorseli({ i, h, secili, sec }: { i: HaritaIsareti; h: HaritaAyrin
         <span class={`harita-bolge${secili ? ' secili' : ''}`} aria-hidden="true"
           style={{ left: `${((x! - yaricap) / h.en) * 100}%`, top: `${((y! - yaricap) / h.boy) * 100}%`, width: `${((2 * yaricap) / h.en) * 100}%`, height: `${((2 * yaricap) / h.boy) * 100}%` }} />
       )}
-      <button class={`harita-isaret ${i.konum.kesinlik}${secili ? ' secili' : ''}${i.inanc ? ' inanc' : ''} karar-${i.karar}`} style={{ left: sol, top: ust }}
-        aria-label={`${i.kayit.ad} (${kesinlikAdi(i.konum.kesinlik).toLocaleLowerCase('tr-TR')})`} aria-pressed={secili}
+      <button class={`harita-isaret ${i.konum.kesinlik}${secili ? ' secili' : ''}${i.inanc ? ' inanc' : ''} karar-${i.karar}${h.an && i.varlik ? ` varlik-${i.varlik.durum}` : ''}`} style={{ left: sol, top: ust }}
+        aria-label={`${i.kayit.ad} (${kesinlikAdi(i.konum.kesinlik).toLocaleLowerCase('tr-TR')}${varlikEki(i, h) ? `, ${varlikEki(i, h)}` : ''})`} aria-pressed={secili}
         onClick={(e) => { e.stopPropagation(); sec(); }}>
-        <span class="harita-etiket">{i.kayit.ad}</span>
+        <span class="harita-etiket">{i.kayit.ad}{varlikEki(i, h) && <span class="varlik-eki"> · {varlikEki(i, h)}</span>}</span>
       </button>
     </>
   );

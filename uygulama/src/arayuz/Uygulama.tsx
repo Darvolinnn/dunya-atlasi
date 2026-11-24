@@ -11,7 +11,7 @@ import { CalismaSaglayici } from './Calisma';
 import { EsitlemeEkrani, EsitlemeOzeti, EsitlemeSaglayici, EsitlemeSeridi } from './Esitleme';
 import { HazirlanmaSeridi } from './Hazirlanma';
 import { YazarlikRehberiPaneli } from './YazarlikRehberi';
-import { kabuk, yedekKlasoruYeri } from '../veri/kabuk';
+import { kabuk, KAPANIS_OLAYI, pencereyiKapat, yedekKlasoruYeri } from '../veri/kabuk';
 
 export type Yol = { ekran: 'evrenler' } | { ekran: 'esitleme' } | { ekran: 'evren'; kod: string; sekme: string; alt: string | null } | { ekran: 'kayit'; evren: string; kod: string }
   | { ekran: 'yaz'; evren: string; kod: string | null };
@@ -105,6 +105,7 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
         : <EvrenEkrani istemci={istemci} kod={yol.kod} sekme={yol.sekme} alt={yol.alt} />}
       <HizliNot istemci={istemci} evren={evren} />
       <GeriAlSeridi />
+      <KapanisBekcisi istemci={istemci} />
       {!evren && <footer class="alt" aria-label="Durum">
         <span>Bu cihaza kaydediliyor</span>
         {!uygulamada && <span>{kalici === null ? '' : kalici ? 'Tarayıcı verileri kalıcı tutuyor' : 'Tarayıcı kalıcı depolama izni vermedi'}</span>}
@@ -115,6 +116,30 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
       </CalismaSaglayici>
     </EsitlemeSaglayici>
   );
+}
+
+/**
+ * Windows uygulamasında kapat düğmesi (K38): yazılmamış metin hemen kaydedilir, süren kayıt, yedek ya da Drive
+ * yüklemesi bitene dek (en çok birkaç saniye) "Değişiklikler kaydediliyor…" gösterilir, sonra pencere kapanır.
+ * Kabuk sayfa yanıt vermezse pencereyi yine kapatır (`lib.rs` `KAPANIS_SINIRI`).
+ */
+export const KAPANIS_BEKLEME_MS = 4000;
+function KapanisBekcisi({ istemci }: { istemci: Istemci }) {
+  const [kapaniyor, setKapaniyor] = useState(false);
+  useEffect(() => {
+    const kapan = async () => {
+      setKapaniyor(true);
+      // Editörler aynı olayla yazılmamış metni kaydetmeye başlar; o istekler de beklenir.
+      const bas = Date.now();
+      await new Promise((r) => setTimeout(r, 50));
+      while (istemci.bekleyenSayisi() > 0 && Date.now() - bas < KAPANIS_BEKLEME_MS) await new Promise((r) => setTimeout(r, 100));
+      await pencereyiKapat();
+    };
+    addEventListener(KAPANIS_OLAYI, kapan);
+    return () => removeEventListener(KAPANIS_OLAYI, kapan);
+  }, [istemci]);
+  if (!kapaniyor) return null;
+  return <div class="kapanis-perdesi" role="alertdialog" aria-live="assertive"><div class="kart">Değişiklikler kaydediliyor…</div></div>;
 }
 
 export function BaskaSekme() {

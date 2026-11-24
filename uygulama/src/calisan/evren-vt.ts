@@ -8,7 +8,7 @@
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { VERI_BICIMI, type Islem, type IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
-import { UYGULAYICILAR, sonrasi, IZDUSUM_SEMA, IZDUSUM_SURUMU, IZDUSUM_TABLOLARI, metinBelleginiTemizle, topluBaslat, topluBirak, topluBitir } from './izdusum';
+import { UYGULAYICILAR, sonrasi, IZDUSUM_SEMA, IZDUSUM_SURUMU, YERINDE_GECISLER, IZDUSUM_TABLOLARI, metinBelleginiTemizle, topluBaslat, topluBirak, topluBitir } from './izdusum';
 import { goruntuAl, goruntuBul, goruntuleriSil, goruntuSemasi, goruntuYukle, sonGoruntuIslemi, type Goruntu } from './anlik-goruntu';
 
 const GUNLUK_SEMA = `
@@ -116,7 +116,20 @@ export class EvrenVt {
     db.exec(GUNLUK_KORUMASI);
     db.exec('CREATE INDEX IF NOT EXISTS islemler_sira ON islemler(saat, kurulum, sira)');
     const izdusum = Number(this.meta('izdusum_surumu') ?? 0);
-    if (izdusum !== IZDUSUM_SURUMU) {
+    const yerinde = izdusum > 0 && izdusum < IZDUSUM_SURUMU
+      && Array.from({ length: IZDUSUM_SURUMU - izdusum }, (_, i) => izdusum + 1 + i).every((v) => YERINDE_GECISLER[v]);
+    if (yerinde) {
+      // Yalnız yeni tablo eklenmiş: var olan tablolar kalır, yeni tablolar onlardan doldurulur (K38, D2).
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        db.exec(IZDUSUM_SEMA);
+        for (let v = izdusum + 1; v <= IZDUSUM_SURUMU; v++) YERINDE_GECISLER[v](db);
+        goruntuSemasi(db);
+        goruntuleriSil(db);
+        db.exec({ sql: "INSERT INTO meta VALUES('izdusum_surumu', ?) ON CONFLICT(k) DO UPDATE SET v=excluded.v", bind: [String(IZDUSUM_SURUMU)] });
+        db.exec('COMMIT');
+      } catch (e) { db.exec('ROLLBACK'); throw e; }
+    } else if (izdusum !== IZDUSUM_SURUMU) {
       // Tabloların yapısı değişti: tablolar ve eski görüntüleri silinir, günlükten baştan kurulur (veri günlükte durur).
       goruntuSemasi(db);
       goruntuleriSil(db);

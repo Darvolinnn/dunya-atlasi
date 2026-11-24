@@ -6,7 +6,12 @@ import { iliskiTuruBul, rolAdi } from '../alan/iliski-turleri';
 import { KARARLAR, turBul } from '../alan/turler';
 import { A } from '../alan/automerge';
 import type { ZipDosyasi } from '../alan/zip';
-import { bloklaraCevir, type Kitap, type KitapSahnesi } from '../alan/kitap';
+import { AYRAC_METNI, SUS, bloklaraCevir, gorunumDuzelt, siraSayisi, type Kitap, type KitapEki, type KitapGorseli, type KitapGorunumu, type KitapSahnesi } from '../alan/kitap';
+import { bagsizAdlar, type AranacakAd } from '../alan/bagsiz-ad';
+import { turkceKarsilastir } from '../alan/turkce';
+import { sozlukKayitlari } from './terim-sozlugu';
+import { katmanlarOku } from './harita';
+import { takvimOku } from './izdusum';
 import { eserYapisi } from './anlati';
 import type { CiktiAgaci, CiktiSahnesi } from '../veri/api';
 import type { EvrenVt } from './evren-vt';
@@ -128,30 +133,53 @@ export async function markdownDosyalari(e: EvrenVt, evrenAdi: string, medyaOku: 
 }
 
 // ---------- Eser: EPUB ve yazdırılabilir sayfa ----------
-interface Bolum { baslik: string; govde: string }
+interface Bolum { baslik: string; numara: string | null; govde: string; sahneler: { id: string; ad: string }[] }
+
+const ayracHtml = (g: KitapGorunumu) => g.ayrac === 'bos' ? '<p class="ayrac bos">&#160;</p>' : `<p class="ayrac">${xmlKacis(AYRAC_METNI[g.ayrac].replace(/ {3}/g, ' '))}</p>`;
 
 /**
  * Eserin bölümleri; her bölümde sahneler sırayla, aralarında sahne ayracıyla. Vazgeçilmiş sahne girmez.
  * `secili` verilirse yalnız oradaki sahneler girer; seçili sahnesi olmayan bölüm hiç yazılmaz.
  */
-function eserBolumleri(e: EvrenVt, eser: string, sahneBasliklari: boolean, secili?: ReadonlySet<string>): { ad: string; bolumler: Bolum[] } {
+function eserBolumleri(e: EvrenVt, eser: string, sahneBasliklari: boolean, secili?: ReadonlySet<string>): { ad: string; bolumler: Bolum[]; g: KitapGorunumu } {
   const y = eserYapisi(e, eser);
+  const g = gorunumOku(e, eser);
   const girer = (x: { kod: string; karar: string }) => x.karar !== 'vazgecildi' && (!secili || secili.has(x.kod));
-  const sahneHtml = (s: { kod: string; ad: string; karar: string }[]) => s.filter(girer).map((x) => {
-    const b = metinBelgesi(e.db, x.kod, 'govde');
-    const govde = b ? xhtmlYaz(belgeyeCevir(A.spans(b, ['t']) as unknown[])) : '';
-    return `${sahneBasliklari ? `<h3>${xmlKacis(x.ad)}</h3>\n` : ''}${govde}`;
-  }).filter((x) => x.trim()).join('\n<hr class="ara"/>\n');
+  let sayac = 0;
+  const sahneHtml = (s: { kod: string; ad: string; karar: string }[]) => {
+    const liste: { id: string; ad: string }[] = [];
+    const govde = s.filter(girer).map((x) => {
+      const b = metinBelgesi(e.db, x.kod, 'govde');
+      const govde = b ? xhtmlYaz(belgeyeCevir(A.spans(b, ['t']) as unknown[])) : '';
+      if (!govde.trim() && !sahneBasliklari) return '';
+      const id = `s${++sayac}`;
+      liste.push({ id, ad: x.ad });
+      return `<div id="${id}">${sahneBasliklari ? `<h3>${xmlKacis(x.ad)}</h3>\n` : ''}${govde}</div>`;
+    }).filter((x) => x.trim()).join(`\n${ayracHtml(g)}\n`);
+    // Bölümün ilk paragrafı büyük baş harfle başlar.
+    return { govde: g.basHarf ? govde.replace('<p>', '<p class="bas-harf">') : govde, liste };
+  };
   const bolumler: Bolum[] = [];
-  if (y.dogrudan.length) { const g = sahneHtml(y.dogrudan); if (g) bolumler.push({ baslik: y.bolumler.length ? 'Giriş' : y.eser.ad, govde: g }); }
+  if (y.dogrudan.length) { const h = sahneHtml(y.dogrudan); if (h.govde) bolumler.push({ baslik: y.bolumler.length ? 'Giriş' : y.eser.ad, numara: null, govde: h.govde, sahneler: h.liste }); }
+  let n = 0;
   for (const b of y.bolumler) {
     if (b.karar === 'vazgecildi') continue;
-    const g = sahneHtml(b.sahneler);
-    if (secili && !g) continue;
-    bolumler.push({ baslik: b.ad, govde: g });
+    const h = sahneHtml(b.sahneler);
+    if (secili && !h.govde) continue;
+    n++;
+    bolumler.push({ baslik: b.ad, numara: g.bolumYaziyla ? `${siraSayisi(n)} Bölüm` : null, govde: h.govde, sahneler: h.liste });
   }
-  return { ad: y.eser.ad, bolumler };
+  return { ad: y.eser.ad, bolumler, g };
 }
+
+const bolumBasi = (b: Bolum, g: KitapGorunumu) =>
+  `${b.numara ? `<p class="numara">${xmlKacis(b.numara)}</p>\n` : ''}<h2>${xmlKacis(b.baslik)}</h2>\n${g.sus ? `<p class="sus">${SUS}</p>\n` : ''}`;
+
+/** Kitap sonu eki: başlık, satırlar ve (haritada) görsel. */
+const ekHtml = (k: KitapEki, gorsel: string | null) => `<h2>${xmlKacis(k.baslik)}</h2>
+${gorsel ? `<p class="gorsel"><img src="${gorsel}" alt="${xmlKacis(k.baslik)}"/></p>` : ''}
+${k.girdiler.length ? `<dl>${k.girdiler.map((x) => `<dt>${xmlKacis(x.ad)}</dt><dd>${xmlKacis(x.aciklama) || '&#160;'}</dd>`).join('\n')}</dl>` : ''}
+${k.not ? `<p class="not">${xmlKacis(k.not)}</p>` : ''}`;
 
 /** Çıktıda seçilebilecek bölüm ve sahneler (vazgeçilmişler hariç), sahnenin çalışma durumuyla (§10.11). */
 export function ciktiAgaci(e: EvrenVt, eser: string): CiktiAgaci {
@@ -169,33 +197,95 @@ export function ciktiAgaci(e: EvrenVt, eser: string): CiktiAgaci {
   };
 }
 
+/** Eserin kayıtlı kitap görünümü (K38); yoksa varsayılan. */
+export function gorunumOku(e: EvrenVt, eser: string): KitapGorunumu {
+  const v = e.db.selectValue('SELECT gorunum FROM kitap_gorunumleri WHERE kod=?', [eser]);
+  return gorunumDuzelt(typeof v === 'string' ? JSON.parse(v) : null);
+}
+
 /** Eserin PDF ve Word çıktısı için okuma düzeni; bölüm ve sahne sırası, vazgeçilenler ve "Giriş" EPUB'la aynı. */
-export function eserKitabi(e: EvrenVt, eser: string, sahneBasliklari: boolean, secili?: ReadonlySet<string>): Kitap {
+export function eserKitabi(e: EvrenVt, eser: string, sahneBasliklari: boolean, secili?: ReadonlySet<string>): Kitap & { sahneKodlari: string[] } {
   const y = eserYapisi(e, eser);
+  const g = gorunumOku(e, eser);
+  const kodlar: string[] = [];
   const sahneler = (s: { kod: string; ad: string; karar: string }[]): KitapSahnesi[] => s.filter((x) => x.karar !== 'vazgecildi' && (!secili || secili.has(x.kod))).map((x) => {
     const b = metinBelgesi(e.db, x.kod, 'govde');
-    return { baslik: sahneBasliklari ? x.ad : null, bloklar: b ? bloklaraCevir(belgeyeCevir(A.spans(b, ['t']) as unknown[])) : [] };
+    const bloklar = b ? bloklaraCevir(belgeyeCevir(A.spans(b, ['t']) as unknown[])) : [];
+    if (bloklar.length) kodlar.push(x.kod);
+    return { baslik: sahneBasliklari ? x.ad : null, ad: x.ad, bloklar };
   }).filter((x) => x.bloklar.length);
   const bolumler: Kitap['bolumler'] = [];
   if (y.dogrudan.length) { const s = sahneler(y.dogrudan); if (s.length) bolumler.push({ baslik: y.bolumler.length ? 'Giriş' : y.eser.ad, sahneler: s }); }
+  let n = 0;
   for (const b of y.bolumler) {
     if (b.karar === 'vazgecildi') continue;
     const s = sahneler(b.sahneler);
     if (secili && !s.length) continue;
-    bolumler.push({ baslik: b.ad, sahneler: s });
+    n++;
+    bolumler.push({ baslik: b.ad, sahneler: s, ...(g.bolumYaziyla ? { numara: `${siraSayisi(n)} Bölüm` } : {}) });
   }
   if (!bolumler.some((b) => b.sahneler.length)) throw new Error(secili ? 'Seçtiğiniz sahnelerde metin yok.' : 'Eserde metni olan sahne yok.');
-  return { ad: y.eser.ad, bolumler };
+  return { ad: y.eser.ad, bolumler, gorunum: g, sahneKodlari: kodlar };
+}
+
+/** Çıktıya giren sahnelerde geçen karakterler ve sözlük kayıtları: bağlantı, sahnedeki yer ya da adın geçmesi (K1: anlam çıkarılmaz). */
+export function gecenKayitlar(e: EvrenVt, sahneler: readonly string[]) {
+  const kumesi = new Set(sahneler);
+  const metinler = sahneler.map((k) => (e.db.selectValue("SELECT duz FROM metinler WHERE kayit=? AND alan='govde'", [k]) as string | undefined) ?? '');
+  const bloklar = metinler.flatMap((m) => m.split('\n')).map((metin) => ({ metin, bagli: [] as boolean[] }));
+  const anilan = (adlar: AranacakAd[]) => { const l = new Set<string>(); if (adlar.length) for (const x of bagsizAdlar(bloklar, adlar, new Set(), 1_000_000)) for (const k of x.kodlar) l.add(k); return l; };
+  const baglanan = new Set<string>();
+  for (const k of kumesi) for (const r of e.db.selectObjects("SELECT hedef FROM baglantilar WHERE kaynak=? AND alan='govde'", [k])) baglanan.add(r.hedef as string);
+  const karakterler = e.db.selectObjects("SELECT kod, ad, ozet, lakaplar FROM kayitlar WHERE tur='karakter' AND silindi IS NULL") as { kod: string; ad: string; ozet: string; lakaplar: string }[];
+  const katilan = new Set<string>();
+  for (const k of kumesi) for (const r of e.db.selectObjects("SELECT a FROM iliskiler WHERE b=? AND tur IN ('sahnede','bakis','anlatici','odak') AND silindi IS NULL", [k])) katilan.add(r.a as string);
+  const adla = anilan(karakterler.flatMap((r) => [r.ad, ...(JSON.parse(r.lakaplar) as string[])].filter((x) => typeof x === 'string' && x.trim()).map((ifade) => ({ kod: r.kod, ifade }))));
+  const kisiler = karakterler.filter((r) => baglanan.has(r.kod) || katilan.has(r.kod) || adla.has(r.kod))
+    .map((r) => ({ ad: r.ad, aciklama: r.ozet ?? '' })).sort((a, b) => turkceKarsilastir(a.ad, b.ad));
+  const sozluk = sozlukKayitlari(e);
+  const terimAdla = anilan(sozluk.flatMap((t) => t.ifadeler.map((ifade) => ({ kod: t.kod, ifade }))));
+  const terimler = sozluk.filter((t) => baglanan.has(t.kod) || terimAdla.has(t.kod)).map((t) => ({ ad: t.ad, aciklama: t.anlam })).sort((a, b) => turkceKarsilastir(a.ad, b.ad));
+  return { kisiler, terimler };
+}
+
+/** Takvim eki: ay adları ve gün sayıları, mevsimler, günün bölümleri. */
+export function takvimEki(e: EvrenVt): KitapEki {
+  const t = takvimOku(e.db);
+  const aylar = t.aylar ?? [];
+  const girdiler = [
+    ...aylar.map((a) => ({ ad: a.ad, aciklama: `${a.gun} gün` })),
+    ...(t.mevsimler ?? []).map((m) => ({ ad: m.ad, aciklama: aylar[m.ilkAy] && aylar[m.sonAy] ? `${aylar[m.ilkAy].ad} – ${aylar[m.sonAy].ad}` : '' })),
+    ...(t.gunBolumleri?.length ? [{ ad: 'Günün bölümleri', aciklama: t.gunBolumleri.join(', ') }] : []),
+  ];
+  return { baslik: 'Takvim', girdiler, not: `Bir yıl ${t.yilGun} gün${aylar.length ? `, ${aylar.length} ay` : ''}. Yıllar “${t.ad} 412” gibi yazılır.` };
+}
+
+/** Haritanın ilk görünür katmanının görseli. */
+export function haritaGorseli(e: EvrenVt, harita: string): { ad: string; gorsel: string } | null {
+  const r = e.db.selectObject('SELECT ad, katmanlar FROM haritalar WHERE kod=? AND silindi IS NULL', [harita]);
+  const g = r ? katmanlarOku(r.katmanlar as string).find((k) => !k.silindi)?.gorsel : null;
+  return r && g ? { ad: r.ad as string, gorsel: g } : null;
 }
 
 const STIL = `body { font-family: Georgia, "Times New Roman", serif; line-height: 1.55; margin: 0 5%; }
 h1, h2 { text-align: center; font-weight: normal; margin: 2em 0 1em; }
 h3 { font-size: 1em; font-style: italic; font-weight: normal; margin-top: 1.5em; }
 p { margin: 0; text-indent: 1.5em; text-align: justify; }
-h2 + p, h3 + p, hr + p, blockquote + p { text-indent: 0; }
-hr.ara { border: 0; text-align: center; margin: 1.2em 0; }
-hr.ara::after { content: "⁂"; }
-blockquote { margin: 1em 2em; font-style: italic; }`;
+h2 + p, h3 + p, p.ayrac + div > p:first-child, p.sus + div > p:first-child, h2 + div > p:first-child, blockquote + p, div > h3 + p { text-indent: 0; }
+p.ayrac { text-align: center; text-indent: 0; margin: 1.2em 0; }
+p.numara { text-align: center; text-indent: 0; letter-spacing: 0.2em; font-size: 0.8em; margin-top: 3em; text-transform: uppercase; }
+p.numara + h2 { margin-top: 0.3em; }
+p.sus { text-align: center; text-indent: 0; margin: -0.5em 0 1.5em; font-size: 1.3em; }
+p.bas-harf::first-letter { float: left; font-size: 3.3em; line-height: 0.85; padding: 0.06em 0.08em 0 0; }
+blockquote { margin: 1em 2em; font-style: italic; }
+dt { font-weight: bold; margin-top: 0.6em; }
+dd { margin: 0 0 0 1.5em; }
+p.not { text-indent: 0; margin-top: 1em; font-style: italic; }
+p.gorsel { text-align: center; text-indent: 0; }
+p.gorsel img { max-width: 100%; max-height: 90vh; }
+.kapak-gorseli { text-align: center; }
+.kapak-gorseli img { max-width: 100%; max-height: 95vh; }
+nav ol { list-style: none; padding-left: 0; } nav ol ol { padding-left: 1.5em; }`;
 
 const xhtmlSayfa = (baslik: string, govde: string) => `<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
@@ -207,11 +297,17 @@ ${govde}
 </html>
 `;
 
-export function epubDosyalari(e: EvrenVt, eser: string, sahneBasliklari: boolean, zaman = new Date(), secili?: ReadonlySet<string>): { ad: string; dosyalar: ZipDosyasi[] } {
-  const { ad, bolumler } = eserBolumleri(e, eser, sahneBasliklari, secili);
+export interface KitapEkVerisi { kapak: KitapGorseli | null; ekler: KitapEki[] }
+const UZ = (g: KitapGorseli) => (g.tur === 'image/png' ? 'png' : 'jpg');
+
+export function epubDosyalari(e: EvrenVt, eser: string, sahneBasliklari: boolean, zaman = new Date(), secili?: ReadonlySet<string>, ek: KitapEkVerisi = { kapak: null, ekler: [] }): { ad: string; dosyalar: ZipDosyasi[] } {
+  const { ad, bolumler, g } = eserBolumleri(e, eser, sahneBasliklari, secili);
   if (!bolumler.length) throw new Error(secili ? 'Seçtiğiniz sahnelerde metin yok.' : 'Eserde metni olan sahne yok.');
   const sayfalar = bolumler.map((b, i) => ({ dosya: `bolum-${String(i + 1).padStart(3, '0')}.xhtml`, ...b }));
+  const ekSayfalari = ek.ekler.map((k, i) => ({ dosya: `ek-${i + 1}.xhtml`, k, gorsel: k.gorsel ? `ek-${i + 1}.${UZ(k.gorsel)}` : null }));
   const degisti = zaman.toISOString().replace(/\.\d+Z$/, 'Z');
+  const kapakDosyasi = ek.kapak ? `kapak.${UZ(ek.kapak)}` : null;
+  const icindekilerOkunur = g.icindekiler !== 'yok';
   const opf = `<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="kimlik" xml:lang="tr">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -224,17 +320,25 @@ export function epubDosyalari(e: EvrenVt, eser: string, sahneBasliklari: boolean
     <item id="nav" href="icindekiler.xhtml" media-type="application/xhtml+xml" properties="nav"/>
     <item id="stil" href="stil.css" media-type="text/css"/>
     <item id="kapak" href="kapak.xhtml" media-type="application/xhtml+xml"/>
-${sayfalar.map((s, i) => `    <item id="b${i + 1}" href="${s.dosya}" media-type="application/xhtml+xml"/>`).join('\n')}
+${kapakDosyasi ? `    <item id="kapak-gorseli" href="${kapakDosyasi}" media-type="${ek.kapak!.tur}" properties="cover-image"/>\n` : ''}${sayfalar.map((s, i) => `    <item id="b${i + 1}" href="${s.dosya}" media-type="application/xhtml+xml"/>`).join('\n')}
+${ekSayfalari.map((x, i) => `    <item id="e${i + 1}" href="${x.dosya}" media-type="application/xhtml+xml"/>${x.gorsel ? `\n    <item id="eg${i + 1}" href="${x.gorsel}" media-type="${x.k.gorsel!.tur}"/>` : ''}`).join('\n')}
   </manifest>
   <spine>
     <itemref idref="kapak"/>
-${sayfalar.map((_, i) => `    <itemref idref="b${i + 1}"/>`).join('\n')}
+${icindekilerOkunur ? '    <itemref idref="nav"/>\n' : ''}${sayfalar.map((_, i) => `    <itemref idref="b${i + 1}"/>`).join('\n')}
+${ekSayfalari.map((_, i) => `    <itemref idref="e${i + 1}"/>`).join('\n')}
   </spine>
 </package>
 `;
+  const sahneListesi = (s: (typeof sayfalar)[number]) => g.icindekiler === 'sahneler' && s.sahneler.length
+    ? `<ol>${s.sahneler.map((x) => `<li><a href="${s.dosya}#${x.id}">${xmlKacis(x.ad)}</a></li>`).join('')}</ol>` : '';
   const nav = xhtmlSayfa('İçindekiler', `<nav epub:type="toc" id="toc"><h2>İçindekiler</h2><ol>
-${sayfalar.map((s) => `<li><a href="${s.dosya}">${xmlKacis(s.baslik)}</a></li>`).join('\n')}
+${sayfalar.map((s) => `<li><a href="${s.dosya}">${xmlKacis(s.numara ? `${s.numara}: ${s.baslik}` : s.baslik)}</a>${sahneListesi(s)}</li>`).join('\n')}
+${ekSayfalari.map((x) => `<li><a href="${x.dosya}">${xmlKacis(x.k.baslik)}</a></li>`).join('\n')}
 </ol></nav>`);
+  const kapakGovde = kapakDosyasi
+    ? `<section epub:type="cover" class="kapak-gorseli"><img src="${kapakDosyasi}" alt="${xmlKacis(ad)}"/></section>\n<section epub:type="titlepage"><h1>${xmlKacis(ad)}</h1></section>`
+    : `<section epub:type="titlepage"><h1>${xmlKacis(ad)}</h1></section>`;
   const dosyalar: ZipDosyasi[] = [
     { ad: 'mimetype', veri: yazi('application/epub+zip'), sikistirma: false },
     { ad: 'META-INF/container.xml', veri: yazi(`<?xml version="1.0" encoding="utf-8"?>
@@ -245,25 +349,44 @@ ${sayfalar.map((s) => `<li><a href="${s.dosya}">${xmlKacis(s.baslik)}</a></li>`)
     { ad: 'OEBPS/icerik.opf', veri: yazi(opf) },
     { ad: 'OEBPS/icindekiler.xhtml', veri: yazi(nav) },
     { ad: 'OEBPS/stil.css', veri: yazi(STIL) },
-    { ad: 'OEBPS/kapak.xhtml', veri: yazi(xhtmlSayfa(ad, `<section epub:type="titlepage"><h1>${xmlKacis(ad)}</h1></section>`)) },
-    ...sayfalar.map((s) => ({ ad: `OEBPS/${s.dosya}`, veri: yazi(xhtmlSayfa(s.baslik, `<section epub:type="chapter"><h2>${xmlKacis(s.baslik)}</h2>\n${s.govde}</section>`)) })),
+    { ad: 'OEBPS/kapak.xhtml', veri: yazi(xhtmlSayfa(ad, kapakGovde)) },
+    ...(kapakDosyasi ? [{ ad: `OEBPS/${kapakDosyasi}`, veri: ek.kapak!.veri, sikistirma: false }] : []),
+    ...sayfalar.map((s) => ({ ad: `OEBPS/${s.dosya}`, veri: yazi(xhtmlSayfa(s.baslik, `<section epub:type="chapter">${bolumBasi(s, g)}${s.govde}</section>`)) })),
+    ...ekSayfalari.flatMap((x) => [
+      { ad: `OEBPS/${x.dosya}`, veri: yazi(xhtmlSayfa(x.k.baslik, `<section epub:type="backmatter">${ekHtml(x.k, x.gorsel)}</section>`)) },
+      ...(x.gorsel ? [{ ad: `OEBPS/${x.gorsel}`, veri: x.k.gorsel!.veri, sikistirma: false }] : []),
+    ]),
   ];
   return { ad, dosyalar };
 }
 
-/** Yazdırılabilir sayfa (tarayıcının "PDF olarak kaydet"i ile PDF olur). */
-export function eserBaskiSayfasi(e: EvrenVt, eser: string, sahneBasliklari: boolean, secili?: ReadonlySet<string>): string {
-  const { ad, bolumler } = eserBolumleri(e, eser, sahneBasliklari, secili);
+/** Yazdırılabilir sayfa (tarayıcının "PDF olarak kaydet"i ile PDF olur). Görseller sayfaya gömülür. */
+export function eserBaskiSayfasi(e: EvrenVt, eser: string, sahneBasliklari: boolean, secili?: ReadonlySet<string>, ek: KitapEkVerisi = { kapak: null, ekler: [] }): string {
+  const { ad, bolumler, g } = eserBolumleri(e, eser, sahneBasliklari, secili);
   if (!bolumler.length) throw new Error(secili ? 'Seçtiğiniz sahnelerde metin yok.' : 'Eserde metni olan sahne yok.');
+  const veriAdresi = (x: KitapGorseli) => `data:${x.tur};base64,${base64(x.veri)}`;
+  const icindekiler = g.icindekiler === 'yok' ? '' : `<section class="bolum"><h2>İçindekiler</h2><ol class="icindekiler">${bolumler.map((b) =>
+    `<li>${xmlKacis(b.numara ? `${b.numara}: ${b.baslik}` : b.baslik)}${g.icindekiler === 'sahneler' && b.sahneler.length ? `<ol>${b.sahneler.map((x) => `<li>${xmlKacis(x.ad)}</li>`).join('')}</ol>` : ''}</li>`).join('')}</ol></section>`;
   return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><title>${xmlKacis(ad)}</title><style>
 ${STIL}
 @page { size: A5; margin: 18mm 16mm; }
 body { margin: 0; font-size: 11pt; }
 .kapak { height: 90vh; display: flex; align-items: center; justify-content: center; }
 .kapak h1 { font-size: 24pt; }
+.kapak-gorseli { height: 95vh; display: flex; align-items: center; justify-content: center; break-after: page; }
 section.bolum { break-before: page; }
+ol.icindekiler { list-style: none; padding: 0; } ol.icindekiler ol { list-style: none; padding-left: 1.5em; }
 </style></head><body>
+${ek.kapak ? `<div class="kapak-gorseli"><img src="${veriAdresi(ek.kapak)}" alt=""></div>` : ''}
 <div class="kapak"><h1>${xmlKacis(ad)}</h1></div>
-${bolumler.map((b) => `<section class="bolum"><h2>${xmlKacis(b.baslik)}</h2>\n${b.govde}</section>`).join('\n')}
+${icindekiler}
+${bolumler.map((b) => `<section class="bolum">${bolumBasi(b, g)}${b.govde}</section>`).join('\n')}
+${ek.ekler.map((k) => `<section class="bolum">${ekHtml(k, k.gorsel ? veriAdresi(k.gorsel) : null)}</section>`).join('\n')}
 </body></html>`;
+}
+
+function base64(v: Uint8Array): string {
+  let s = '';
+  for (let i = 0; i < v.length; i += 0x8000) s += String.fromCharCode(...v.subarray(i, i + 0x8000));
+  return btoa(s);
 }

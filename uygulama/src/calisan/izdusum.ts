@@ -1,5 +1,6 @@
 // İşlemlerin görünen tablolara uygulanması. Her işlem türünün tek uygulayıcısı buradadır.
 // Uygulayıcılar belirlenimcidir: aynı günlük her cihazda aynı tabloları üretir.
+import { dizinKokleri } from '../alan/arama-dizini';
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { gorduMu, type Islem } from '../alan/islem';
 import { A } from '../alan/automerge';
@@ -126,7 +127,17 @@ function tarihleriYenidenHesapla(db: Database) {
 }
 
 /** Görünen tabloların yapısı değişince artar; açılışta tablolar günlükten yeniden kurulur. */
-export const IZDUSUM_SURUMU = 59;
+export const IZDUSUM_SURUMU = 60;
+/**
+ * Tabloları silmeden geçilebilen sürümler (K38, D2): anahtar, varılan sürümdür. Yalnız var olan tablolara dokunmadan
+ * yeni tablo ekleyen ve yeni tabloyu var olan tablolardan doldurabilen sürüm buraya yazılır; öbür her değişiklikte
+ * tablolar günlükten baştan kurulur. Yeni tablolar şemayla (`CREATE ... IF NOT EXISTS`) önceden kurulmuş olur.
+ */
+export const YERINDE_GECISLER: Record<number, (db: Database) => void> = {
+  60: (db) => {
+    for (const r of db.selectObjects("SELECT kayit, duz FROM metinler WHERE alan='govde'")) aramaDizininiYaz(db, r.kayit as string, r.duz as string);
+  },
+};
 
 export const IZDUSUM_SEMA = `
 CREATE TABLE IF NOT EXISTS evren(k TEXT PRIMARY KEY, v TEXT);
@@ -415,6 +426,26 @@ CREATE TABLE IF NOT EXISTS metin_isaret_yerleri(
   PRIMARY KEY(kayit, alan, sira)
 );
 CREATE INDEX IF NOT EXISTS metin_isaret_yerleri_isaret ON metin_isaret_yerleri(isaret);
+CREATE TABLE IF NOT EXISTS akilli_listeler(
+  kod TEXT PRIMARY KEY,
+  ad TEXT NOT NULL,
+  tur TEXT NOT NULL DEFAULT '',
+  formul TEXT NOT NULL,
+  tarih TEXT,
+  olusturma INTEGER NOT NULL,
+  silindi INTEGER
+);
+-- Okur yayını (K38, §11.2): eser başına ayar, gizli kod anahtarı ve baskılar (JSON).
+CREATE TABLE IF NOT EXISTS okur_yayinlari(
+  eser TEXT PRIMARY KEY,
+  veri TEXT NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
+CREATE TABLE IF NOT EXISTS kitap_gorunumleri(
+  kod TEXT PRIMARY KEY,
+  gorunum TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS belge_sunumlari(
   kod TEXT PRIMARY KEY,
   sunum TEXT NOT NULL
@@ -543,6 +574,13 @@ CREATE TABLE IF NOT EXISTS metinler(
   duzenleme INTEGER NOT NULL,
   PRIMARY KEY(kayit, alan)
 );
+-- Metin arama dizini (K38, D1): sözcüklerin olası kökleri. Yalnız gövde metni; metinler tablosundan türer.
+CREATE TABLE IF NOT EXISTS arama_dizini(
+  kok TEXT NOT NULL,
+  kayit TEXT NOT NULL,
+  PRIMARY KEY(kok, kayit)
+);
+CREATE INDEX IF NOT EXISTS arama_dizini_kayit ON arama_dizini(kayit);
 CREATE TABLE IF NOT EXISTS baglantilar(
   kaynak TEXT NOT NULL,
   alan TEXT NOT NULL,
@@ -818,7 +856,7 @@ CREATE TABLE IF NOT EXISTS olcekli_araziler(
   silindi INTEGER NOT NULL DEFAULT 0
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'kitap_gorunumleri', 'akilli_listeler', 'okur_yayinlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'gokyuzu_tanimi',
   'sozlukler', 'sozluk_isaretleri',
   'sozlesme_maddeleri', 'sozlesme_disarida',
@@ -827,6 +865,7 @@ export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar'
 
 IZDUSUM_TABLOLARI.push('sahne_yerlesimleri', 'anlatimlar', 'delil_gecmisi', 'kullanim_masalari');
 IZDUSUM_TABLOLARI.push('bakim_tanimlari', 'bakim_kayitlari');
+IZDUSUM_TABLOLARI.push('arama_dizini');
 IZDUSUM_TABLOLARI.push('kural_ornekleri');
 IZDUSUM_TABLOLARI.push('uyarlama_eslemeleri');
 IZDUSUM_TABLOLARI.push('dair_inanclar');
@@ -1006,6 +1045,13 @@ function ikiliBirlestir(l: Islem[]): Uint8Array {
   for (const i of l) { v.set(i.ikili!, o); o += i.ikili!.length; }
   return v;
 }
+/** Gövde metninin dizin köklerini günceller: yalnız eklenen ve çıkan kökler yazılır (K38, D1). */
+export function aramaDizininiYaz(db: Database, kayit: string, duz: string) {
+  const yeni = dizinKokleri(duz);
+  const eski = new Set(db.selectValues('SELECT kok FROM arama_dizini WHERE kayit=?', [kayit]) as string[]);
+  for (const k of eski) if (!yeni.has(k)) db.exec({ sql: 'DELETE FROM arama_dizini WHERE kok=? AND kayit=?', bind: [k, kayit] });
+  for (const k of yeni) if (!eski.has(k)) db.exec({ sql: 'INSERT INTO arama_dizini(kok, kayit) VALUES(?,?)', bind: [k, kayit] });
+}
 /** Bir metin alanına bir ya da birden çok işlemin değişikliklerini uygular ve türetilenleri yazar. */
 function metniUygula(db: Database, kayit: string, alan: string, l: Islem[], duzenlemeYaz: boolean) {
   const son = l[l.length - 1];
@@ -1019,6 +1065,7 @@ function metniUygula(db: Database, kayit: string, alan: string, l: Islem[], duze
           ON CONFLICT(kayit, alan) DO UPDATE SET belge=excluded.belge, duz=excluded.duz, katli=excluded.katli, duzenleme=excluded.duzenleme`,
     bind: [kayit, alan, A.save(yeni), duz, katla(duz), son.zaman],
   });
+  if (alan === 'govde') aramaDizininiYaz(db, kayit, duz);
   db.exec({ sql: 'DELETE FROM baglantilar WHERE kaynak=? AND alan=?', bind: [kayit, alan] });
   baglantilar(spans).forEach((b, sira) => db.exec({
     sql: 'INSERT INTO baglantilar(kaynak, alan, sira, hedef, metin) VALUES(?,?,?,?,?)', bind: [kayit, alan, sira, b.hedef, b.metin],
@@ -1439,6 +1486,18 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   baglam_parcasi_sil(db, i) {
     db.exec({ sql: 'UPDATE baglam_parcalari SET silindi=? WHERE kod=? AND silindi IS NULL', bind: [i.zaman, i.veri.kod as string] });
   },
+  /** Sahne bölünüp birleşince metinle giden işaret ve bağlam parçası başka kayda geçer (K38). */
+  metin_ogesi_tasi(db, i) {
+    const { tur, kod, kayit } = i.veri as { tur?: unknown; kod?: unknown; kayit?: unknown };
+    if (typeof kod !== 'string' || typeof kayit !== 'string') return;
+    const hedef = yonlendir(db, kayit);
+    if (tur === 'isaret') {
+      isaretinMetniniUygula(db, kod);
+      const r = db.selectObject('SELECT alan FROM metin_isaretleri WHERE kod=?', [kod]);
+      if (r) bekleyeniUygula(db, hedef + '\u0000' + (r.alan as string));
+      db.exec({ sql: 'UPDATE metin_isaretleri SET kayit=?, duzenleme=? WHERE kod=?', bind: [hedef, i.zaman, kod] });
+    } else if (tur === 'parca') db.exec({ sql: 'UPDATE baglam_parcalari SET kayit=? WHERE kod=?', bind: [hedef, kod] });
+  },
   /** Rotanın geçiş şartları (F09). */
   rota_sart_yaz(db, i) {
     const { rota, sartlar } = i.veri as { rota: string; sartlar: unknown };
@@ -1675,6 +1734,28 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     db.exec({ sql: 'INSERT OR REPLACE INTO belge_sunumlari(kod, sunum) VALUES(?,?)', bind: [kod, JSON.stringify(sunum)] });
     alanYaz(db, i, kod, 'belge_sunumu', sunum);
   },
+  /** Akıllı liste (K38): kaydedilmiş sorgu. */
+  akilli_liste_yaz(db, i) {
+    const { kod, ad, tur, formul, tarih } = i.veri as { kod?: unknown; ad?: unknown; tur?: unknown; formul?: unknown; tarih?: unknown };
+    if (typeof kod !== 'string' || typeof ad !== 'string' || !formul || typeof formul !== 'object') return;
+    db.exec({ sql: `INSERT INTO akilli_listeler(kod, ad, tur, formul, tarih, olusturma, silindi) VALUES(?,?,?,?,?,?,NULL)
+      ON CONFLICT(kod) DO UPDATE SET ad=excluded.ad, tur=excluded.tur, formul=excluded.formul, tarih=excluded.tarih`,
+    bind: [kod, ad, typeof tur === 'string' ? tur : '', JSON.stringify(formul), tarih ? JSON.stringify(tarih) : null, i.zaman] });
+  },
+  akilli_liste_sil(db, i) { db.exec({ sql: 'UPDATE akilli_listeler SET silindi=? WHERE kod=?', bind: [i.zaman, String(i.veri.kod)] }); },
+  akilli_liste_geri_yukle(db, i) { db.exec({ sql: 'UPDATE akilli_listeler SET silindi=NULL WHERE kod=?', bind: [String(i.veri.kod)] }); },
+  /** Okur yayını (K38, §11.2): eserin yayın ayarı, gizli anahtarı ve baskıları. */
+  okur_yayini_yaz(db, i) {
+    const { eser, veri } = i.veri as { eser?: unknown; veri?: unknown };
+    if (typeof eser !== 'string' || !veri || typeof veri !== 'object') return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO okur_yayinlari(eser, veri, duzenleme, silindi) VALUES(?,?,?,NULL)', bind: [eser, JSON.stringify(veri), i.zaman] });
+  },
+  /** Eserin kitap görünümü (K38): çıktı ayarları. */
+  kitap_gorunumu_yaz(db, i) {
+    const { kod, gorunum } = i.veri as { kod?: unknown; gorunum?: unknown };
+    if (typeof kod !== 'string' || !gorunum || typeof gorunum !== 'object') return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO kitap_gorunumleri(kod, gorunum) VALUES(?,?)', bind: [kod, JSON.stringify(gorunum)] });
+  },
   gokyuzu_yaz(db, i) {
     const { tanim } = i.veri;
     db.exec({ sql: 'INSERT OR REPLACE INTO gokyuzu_tanimi(kod, tanim) VALUES(?,?)', bind: ['evren', JSON.stringify(tanim)] });
@@ -1734,13 +1815,15 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
     alanYaz(db, i, kod, 'kullanim_masasi', tanim);
   },
   yerlesim_yaz(db, i) {
-    const v = i.veri as unknown as { sahne: string; plan: import('../veri/api').YerlesimPlani; ogeler: import('../veri/api').YerlesimOgesi[] };
+    // `ek`: katlar ve anlar (K38); yoksa eski biçim. Plan sütununda `ek` altında saklanır (tablo değişmedi).
+    const v = i.veri as unknown as { sahne: string; plan: import('../veri/api').YerlesimPlani; ogeler: import('../veri/api').YerlesimOgesi[]; ek?: Record<string, unknown> };
     if (typeof v.sahne !== 'string' || !v.plan || !Array.isArray(v.ogeler)) return;
     const sahne = yonlendir(db, v.sahne);
     const plan = { ...v.plan, mekan: yonlendir(db, v.plan.mekan) };
     const ogeler = v.ogeler.map((o) => o.tur === 'karakter' ? { ...o, kisi: yonlendir(db, o.kisi) } : o);
-    const deger = { plan, ogeler };
-    db.exec({ sql: 'INSERT OR REPLACE INTO sahne_yerlesimleri(kod, plan, ogeler) VALUES(?,?,?)', bind: [sahne, JSON.stringify(plan), JSON.stringify(ogeler)] });
+    const ek = v.ek && typeof v.ek === 'object' ? v.ek : undefined;
+    const deger = { plan, ogeler, ...(ek ?? {}) };
+    db.exec({ sql: 'INSERT OR REPLACE INTO sahne_yerlesimleri(kod, plan, ogeler) VALUES(?,?,?)', bind: [sahne, JSON.stringify(ek ? { ...plan, ek } : plan), JSON.stringify(ogeler)] });
     alanYaz(db, i, sahne, 'yerlesim', deger);
   },
   sozlesme_madde_yaz(db, i) {

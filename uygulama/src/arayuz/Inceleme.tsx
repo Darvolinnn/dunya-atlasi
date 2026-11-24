@@ -227,7 +227,7 @@ function DenetimSatiri({ evren, b, karar }: { evren: string; b: DenetimBulgusu; 
     <li class={`kart bulgu denetim ${b.hukum}`}>
       <div class="satir"><span class="denetim-hukum">{b.hukum === 'celiski' ? 'Açık çelişki' : 'Olası uyuşmazlık'}</span> <span>{b.baslik}</span></div>
       <p class="soluk kucuk">{b.dayanak}</p>
-      <p class="kucuk">{b.kayitlar.map((k, i) => <span key={k.kod}>{i > 0 && ' · '}<a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a></span>)}</p>
+      <p class="kucuk">{b.kayitlar.map((k, i) => <span key={k.kod}>{i > 0 && ' · '}<a href={`#/e/${evren}/k/${k.kod}`}>{k.ad}</a></span>)}{b.kural === 'bilgi' && b.kayitlar[1] && <> · <a href={`#/e/${evren}/yaz/${b.kayitlar[1].kod}`}>Metindeki yere git</a></>}</p>
       {b.karar?.durum === 'kabul' && <p class="kucuk">{b.karar.istisna === 'kapsam' ? 'Bu kural burada geçerli değil' : 'Bilerek kabul edildi'} ({zamanYaz(b.karar.zaman)}): {b.karar.gerekce}</p>}
       {b.karar?.durum === 'ertelendi' && <p class="soluk kucuk">Ertelendi ({zamanYaz(b.karar.zaman)}).</p>}
       {kabulYaz ? (

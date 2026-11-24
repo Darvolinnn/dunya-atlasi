@@ -43,7 +43,7 @@ describe('tutarlılık denetimleri (§9.1)', () => {
     expect(yasam[0].baslik).toContain('ölümünden sonra');
     expect(yasam[0].dayanak).toContain('“350”');
     expect(d.kurallar.find((k) => k.kural === 'yasam')!.sonuc).toBe('bulgu_var');
-    expect(d.kurallar.find((k) => k.kural === 'bilgi')!.sonuc).toBe('denetlenemiyor');
+    expect(d.kurallar.find((k) => k.kural === 'bilgi')!.sonuc).toBe('konu_degil');
     expect(h.evrenBilgisi({ evren }).sorunSayisi).toBeGreaterThanOrEqual(1);
 
     expect(() => h.incelemeKarari({ evren, anahtar: yasam[0].anahtar, durum: 'kabul', gerekce: '' })).toThrow(/gerekçe/);
