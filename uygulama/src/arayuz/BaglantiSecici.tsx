@@ -1,6 +1,6 @@
 // Bağlantı seçim kutusu (§5.1): mevcut bir kaydı seç ya da türü ve özetiyle yeni kayıt oluştur.
 // Yeni kayıt "fikir" durumunda doğar ve "Bahsedilen ama yazılmamış" listesine düşer.
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AramaSonucu } from '../veri/api';
 import { turBul, grupSinifi } from '../alan/turler';
@@ -85,7 +85,17 @@ export function BaglantiSecici({ istemci, evren, sorgu: disSorgu, konum, sec, ka
 
   // Ekranın dışına taşmasın.
   const sol = Math.max(8, Math.min(konum.left, innerWidth - 360));
-  const ust = Math.min(konum.top, innerHeight - 80);
+  // Alta sığmıyorsa (dokunmatik klavye açıkken de) satırın üstüne açılır.
+  const [ust, setUst] = useState(Math.min(konum.top, innerHeight - 80));
+  useLayoutEffect(() => {
+    const el = kutu.current;
+    if (!el) return;
+    const yukseklik = el.getBoundingClientRect().height;
+    const gorunen = window.visualViewport ? window.visualViewport.height + window.visualViewport.offsetTop : innerHeight;
+    const altaSigar = konum.top + yukseklik <= gorunen - 8;
+    const yukari = konum.top - yukseklik - 46; // satır yüksekliği kadar yukarıda biter
+    setUst(altaSigar || yukari < 8 ? Math.max(8, Math.min(konum.top, gorunen - yukseklik - 8)) : yukari);
+  });
 
   return (
     <div ref={kutu} class="secici" style={{ left: sol + 'px', top: ust + 'px' }} role="dialog" aria-label="Bağlantı">

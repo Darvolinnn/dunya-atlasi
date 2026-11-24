@@ -6,7 +6,7 @@
 import type { IslemGirdisi } from '../alan/islem';
 import { kodGecerliMi } from '../alan/kod';
 import type { KisaKayit, KitapSonuAciklar, KurguMontaji, MontajHedefi, OlayOrgusu, SahneNiyeti } from '../veri/api';
-import { eserYapisi, yerlestir, type AnlatiBaglami } from './anlati';
+import { anlatiYeri, eserYapisi, yerlestir, type AnlatiBaglami } from './anlati';
 import type { EvrenVt } from './evren-vt';
 import { yonlendir } from './izdusum';
 import { rolAdi } from '../alan/iliski-turleri';
@@ -64,17 +64,25 @@ export function montajHedefiYaz(b: MontajBaglami, eser: string, iddia: string, h
 }
 
 /** Eserin okuma sırası: sahne, bulunduğu üst (eser ya da bölüm) ve bölüm adı. */
-function sira(e: EvrenVt, eser: string) {
+export function sira(e: EvrenVt, eser: string) {
   const y = eserYapisi(e, eser);
   return [...y.dogrudan.map((s) => ({ ...s, ust: eser, bolum: null as string | null })), ...y.bolumler.flatMap((b) => b.sahneler.map((s) => ({ ...s, ust: b.kod, bolum: b.ad })))];
 }
 
+/** Kapsam bir eser ya da seridir (K39, öneri 8). Seride sahneler serinin önerilen okuma sırasıyla art arda dizilir
+ *  ve baştan numaralanır; okur bilgileri bütün kitaplardan toplanır. Hedefler kitap başınadır: seride gösterilmez,
+ *  uyarı da verilmez. */
 export function kurguMontaji(e: EvrenVt, eser: string): KurguMontaji {
-  if (kayitTuru(e, eser) !== 'eser') throw new Error('Bu bir eser kaydı değil.');
-  const sahneler = sira(e, eser);
+  const kapsamTuru = kayitTuru(e, eser);
+  if (kapsamTuru !== 'eser' && kapsamTuru !== 'seri') throw new Error('Bu bir eser kaydı değil.');
+  const seride = kapsamTuru === 'seri';
+  const eserler = seride ? seriEserleri(e, eser) : [kisa(e, eser)];
+  const sahneler = seride
+    ? eserler.flatMap((x) => sira(e, x.kod).map((s) => ({ ...s, bolum: s.bolum ? `${x.ad} · ${s.bolum}` : x.ad }))).map((s, i) => ({ ...s, sira: i + 1 }))
+    : sira(e, eser);
   const n = sahneler.length;
   const siraOf = new Map(sahneler.map((s) => [s.kod, s.sira]));
-  const hedefler = hedeflerOku(e, eser);
+  const hedefler = seride ? {} as Record<string, MontajHedefi> : hedeflerOku(e, eser);
 
   // Sorular: bu eserde niyet işareti, okur bilgisi ya da hedefi olanlar.
   type Olay = KurguMontaji['sorular'][number]['olaylar'][number];
@@ -97,7 +105,7 @@ export function kurguMontaji(e: EvrenVt, eser: string): KurguMontaji {
       ekle(ni.iddia, { sira: s.sira, sahne: { kod: s.kod, ad: s.ad, tur: 'sahne' }, tur, secenek: sec?.metin ?? null });
     }
   }
-  for (const r of e.db.selectObjects(`SELECT iddia, secenek, inanc, sahne FROM bilgiler WHERE bilen=? AND silindi IS NULL AND karar<>'vazgecildi' AND sahne IS NOT NULL`, [eser])) {
+  for (const r of e.db.selectObjects(`SELECT iddia, secenek, inanc, sahne FROM bilgiler WHERE bilen IN (${eserler.map(() => '?').join(',')}) AND silindi IS NULL AND karar<>'vazgecildi' AND sahne IS NOT NULL`, eserler.map((x) => x.kod))) {
     const s = siraOf.get(r.sahne as string);
     const i = iddiaOku(r.iddia as string);
     if (s === undefined || !i) continue;
@@ -126,7 +134,9 @@ export function kurguMontaji(e: EvrenVt, eser: string): KurguMontaji {
       if (!ogrenir) uyarilar.push('Hedef gerilim, ama okurun gerçeği hangi sahnede öğrendiği işaretlenmemiş.');
       else if (aciklama && ogrenir.sira >= aciklama.sira) uyarilar.push(`Hedef gerilim, ama okur gerçeği açıklamadan önce öğrenmiyor (${ogrenir.sira}. sahne).`);
     }
-    return { iddia: { kod: k, soru: i.soru, konu: kisa(e, i.konu), gercek: i.secenekler.find((x) => x.kod === i.gercek)?.metin ?? null }, hedef, olaylar: l, okurOgrenir: ogrenir?.sira ?? null, uyarilar };
+    // Askıda: okura işaret verilmiş (ipucu, yanıltmaca, destek) ama bu kapsamda açıklayan sahne işaretlenmemiş.
+    const askida = !aciklama && l.some((x) => x.tur !== 'okur' && x.tur !== 'aciklama');
+    return { iddia: { kod: k, soru: i.soru, konu: kisa(e, i.konu), gercek: i.secenekler.find((x) => x.kod === i.gercek)?.metin ?? null }, hedef, olaylar: l, okurOgrenir: ogrenir?.sira ?? null, uyarilar, askida };
   }).sort((a, b) => (a.olaylar[0]?.sira ?? 1e9) - (b.olaylar[0]?.sira ?? 1e9));
 
   // İşaretli kullanımlar: motifler, kurgu hatları ve sorular; son kullanım sondan kaç sahne önce, en uzun ara.
@@ -163,7 +173,7 @@ export function kurguMontaji(e: EvrenVt, eser: string): KurguMontaji {
   }).sort((a, b) => a.kisi.ad.localeCompare(b.kisi.ad, 'tr'));
 
   return {
-    eser: kisa(e, eser), sahneler: sahneler.map((s) => ({ kod: s.kod, ad: s.ad, sira: s.sira, bolum: s.bolum })), sorular, izler, yokluk,
+    eser: kisa(e, eser), seride, sahneler: sahneler.map((s) => ({ kod: s.kod, ad: s.ad, sira: s.sira, bolum: s.bolum })), sorular, izler, yokluk,
     not: 'Okurun ne öğrendiği okur bilgisi kayıtlarından, niyetler de sahnelere eklenen işaretlerden alınır. Okurun zihni ölçülmez. Uyarılar yalnızca hedefi seçilmiş sorular için verilir.',
   };
 }
@@ -284,9 +294,41 @@ export function olayOrgusu(e: EvrenVt, kapsam: string): OlayOrgusu {
   return {
     kapsam: kisa(e, kapsam),
     sutunlar: sahneler.map((s, i) => ({
-      kod: s.kod, ad: s.ad, sira: i + 1, eser: eserAdi.get(s.eser)!, ust: s.ust, bolum: s.bolum, calisma: calisma.get(s.kod) ?? null, metinVar: metinli.has(s.kod),
+      kod: s.kod, ad: s.ad, sira: i + 1, tarih: s.tarih, eser: eserAdi.get(s.eser)!, ust: s.ust, bolum: s.bolum, calisma: calisma.get(s.kod) ?? null, metinVar: metinli.has(s.kod),
       donum: donumMu(s.kod), olaylar: olaylar.get(s.kod) ?? [],
     })),
     hatlar, sorular, karakterler,
   };
+}
+
+/** Sahnede bulunmayı gösteren ilişkiler (kayıt a, sahne b). */
+const GORUNUS = `'sahnede','bakis','odak','anlatici'`;
+
+/**
+ * Seride bu sahnenin kitabı (K39, öneri 5): sahnedeki kayıtlardan bu kitapta ilk kez bu sahnede görünen ama önceki
+ * bir kitapta görünmüş olanlar (son göründükleri kitap ve sahneyle) ve serinin önceki kitaplarındaki sahneler.
+ * Görünmek: sahnede bulunma, bakış açısı, odak ya da anlatıcı. Seride olmayan eserde boş döner.
+ */
+export function seriGorunusu(e: EvrenVt, sahne: string): { donus: Map<string, { eser: KisaKayit; sahne: KisaKayit }>; oncekiSahneler: Set<string> } {
+  const bos = { donus: new Map(), oncekiSahneler: new Set<string>() };
+  const y = anlatiYeri(e, sahne);
+  if (!y.seri || !y.eser) return bos;
+  const eserler = seriEserleri(e, y.seri.kod);
+  const i = eserler.findIndex((x) => x.kod === y.eser!.kod);
+  if (i <= 0) return bos;
+  const once = eserler.slice(0, i).map((x) => ({ eser: x, sahneler: sira(e, x.kod) }));
+  const bu = sira(e, y.eser.kod);
+  const oncekiSahneler = new Set(once.flatMap((x) => x.sahneler.map((s) => s.kod)));
+  const buraya = bu.slice(0, bu.findIndex((s) => s.kod === sahne));
+  const kayitlar = e.db.selectObjects(`SELECT DISTINCT a FROM iliskiler WHERE tur IN (${GORUNUS}) AND b=? AND silindi IS NULL`, [sahne]).map((r) => r.a as string);
+  const donus = new Map<string, { eser: KisaKayit; sahne: KisaKayit }>();
+  for (const k of kayitlar) {
+    const sahneleri = new Set(e.db.selectObjects(`SELECT b FROM iliskiler WHERE tur IN (${GORUNUS}) AND a=? AND silindi IS NULL`, [k]).map((r) => r.b as string));
+    if (buraya.some((s) => sahneleri.has(s.kod))) continue;
+    for (let j = once.length - 1; j >= 0; j--) {
+      const son = [...once[j].sahneler].reverse().find((s) => sahneleri.has(s.kod));
+      if (son) { donus.set(k, { eser: once[j].eser, sahne: { kod: son.kod, ad: son.ad, tur: 'sahne' } }); break; }
+    }
+  }
+  return { donus, oncekiSahneler };
 }

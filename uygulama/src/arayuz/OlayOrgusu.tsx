@@ -5,7 +5,9 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AnlatiEtkisi, KisaKayit, OlayOrgusu, YapiSahnesi } from '../veri/api';
 import { DONUM_ETIKETI, SAHNE_CALISMA } from '../alan/sablon';
-import { useYukle, type SeriListesi } from './Anlati';
+import { useYukle, ZamanEtiketi, type SeriListesi } from './Anlati';
+import { useTakvim } from './Takvim';
+import { zamanFarki } from '../alan/okuma-zamani';
 import { git } from './Uygulama';
 
 const hataYaz = (e: unknown) => (e as Error).message;
@@ -54,6 +56,7 @@ function etkiOzeti(once: OlayOrgusu, sonra: OlayOrgusu, sahne: string, etki: Anl
 
 export function OlayOrgusuGorunumu({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string | null }) {
   const [eserler] = useYukle<KisaKayit[]>(istemci, evren, () => istemci.iste('eserler', { evren }), []);
+  const takvim = useTakvim(istemci, evren);
   const [seriler] = useYukle<SeriListesi>(istemci, evren, () => istemci.iste('seriler', { evren }), []);
   const secili = eser ?? (eserler?.length === 1 ? eserler[0].kod : null);
   const [o, yenile] = useYukle<OlayOrgusu | null>(istemci, evren, () => (secili ? istemci.iste('olayOrgusu', { evren, kapsam: secili }) : Promise.resolve(null)), [secili]);
@@ -161,6 +164,7 @@ export function OlayOrgusuGorunumu({ istemci, evren, eser }: { istemci: Istemci;
                   onDragStart={(e) => { setSurukle(x.kod); e.dataTransfer?.setData('text/plain', x.kod); }} onDragEnd={() => setSurukle(null)}
                   onDragOver={(e) => { if (surukle) e.preventDefault(); }} onDrop={(e) => { e.preventDefault(); if (surukle) birak(surukle, x.kod); setSurukle(null); }}>
                   <button type="button" class="baglanti-dugme" aria-pressed={x.kod === sahne} onClick={() => { setSahne(x.kod === sahne ? null : x.kod); setOzet(null); }}>{x.ad}</button>
+                  {i > 0 && <ZamanEtiketi f={zamanFarki(sutunlar[i - 1].tarih, x.tarih, takvim)} />}
                 </th>
               ))}</tr>
             </thead>
@@ -229,3 +233,4 @@ export function OlayOrgusuGorunumu({ istemci, evren, eser }: { istemci: Istemci;
     </div>
   );
 }
+

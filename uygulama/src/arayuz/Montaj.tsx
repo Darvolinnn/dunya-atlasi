@@ -30,25 +30,27 @@ export function KurguMontajiBolumu({ istemci, evren, kod, surum }: { istemci: Is
         {etki && <EtkiOzeti evren={evren} etki={etki} kapat={() => setEtki(null)} />}
         {m && (
           <>
-            {!m.sahneler.length ? <p class="soluk kucuk">Bu esere yerleştirilmiş sahne yok.</p> : (
+            {m.seride && <p class="soluk kucuk">Serinin bütün kitapları önerilen okuma sırasıyla, art arda. Sahne taşımak ve soru hedefi seçmek kitabın kendi sayfasındadır.</p>}
+            {!m.sahneler.length ? <p class="soluk kucuk">{m.seride ? 'Bu serinin kitaplarına yerleştirilmiş sahne yok.' : 'Bu esere yerleştirilmiş sahne yok.'}</p> : (
               <>
                 <h3>Okuma sırası</h3>
                 <ol class="montaj-sahneleri">{m.sahneler.map((s, i) => (
-                  <li key={s.kod}><a href={`#/e/${evren}/k/${s.kod}`}>{s.ad}</a>{s.bolum && <span class="soluk kucuk"> · {s.bolum}</span>}{' '}
+                  <li key={s.kod}><a href={`#/e/${evren}/k/${s.kod}`}>{s.ad}</a>{s.bolum && <span class="soluk kucuk"> · {s.bolum}</span>}{!m.seride && <>{' '}
                     <button class="dugme sade kucuk" disabled={i === 0} aria-label={`${s.ad} sahnesini öne al`} onClick={() => tasi(s.kod, -1)}>↑</button>
-                    <button class="dugme sade kucuk" disabled={i === m.sahneler.length - 1} aria-label={`${s.ad} sahnesini sonraya al`} onClick={() => tasi(s.kod, 1)}>↓</button></li>
+                    <button class="dugme sade kucuk" disabled={i === m.sahneler.length - 1} aria-label={`${s.ad} sahnesini sonraya al`} onClick={() => tasi(s.kod, 1)}>↓</button></>}</li>
                 ))}</ol>
               </>
             )}
             <h3>Sırlar ve açıklamalar</h3>
-            {!m.sorular.length ? <p class="soluk kucuk">Bu eserde niyet işareti ya da okur bilgisi olan soru yok. Sahnelerin “Niyet işaretleri” bölümünden ekleyebilirsiniz.</p> : (
+            {!m.sorular.length ? <p class="soluk kucuk">{m.seride ? 'Bu seride' : 'Bu eserde'} niyet işareti ya da okur bilgisi olan soru yok. Sahnelerin “Niyet işaretleri” bölümünden ekleyebilirsiniz.</p> : (
               <ul class="toplanan-listesi">{m.sorular.map((q) => (
                 <li key={q.iddia.kod}><strong>{q.iddia.soru}</strong> <span class="soluk kucuk">· {q.iddia.konu.ad}{q.iddia.gercek ? ` · gerçek: ${q.iddia.gercek}` : ''}</span>{' '}
-                  <select class="girdi kucuk-secim" aria-label={`${q.iddia.soru} hedefi`} value={q.hedef ?? ''} onChange={(e) => hedef(q.iddia.kod, ((e.target as HTMLSelectElement).value || null) as MontajHedefi | null)}>
+                  {!m.seride && <select class="girdi kucuk-secim" aria-label={`${q.iddia.soru} hedefi`} value={q.hedef ?? ''} onChange={(e) => hedef(q.iddia.kod, ((e.target as HTMLSelectElement).value || null) as MontajHedefi | null)}>
                     <option value="">Hedef yok</option><option value="surpriz">Sürpriz</option><option value="gerilim">Gerilim</option>
-                  </select>
+                  </select>}
                   <div class="kucuk">{q.olaylar.map((o, i) => <span key={i} class={`rozet montaj-${o.tur}`}>{o.sira}. {OLAY_ADLARI[o.tur]}{o.secenek ? `: ${o.secenek}` : ''}</span>)}</div>
                   {q.uyarilar.map((u) => <div class="kucuk uyari-yazisi" key={u}>{u}</div>)}
+                  {q.askida && <div class="kucuk soluk">Askıda: okura işaret verildi, {m.seride ? 'serinin hiçbir kitabında' : 'bu kitapta'} açıklayan sahne işaretlenmemiş.</div>}
                 </li>
               ))}</ul>
             )}
