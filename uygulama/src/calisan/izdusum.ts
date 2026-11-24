@@ -435,6 +435,13 @@ CREATE TABLE IF NOT EXISTS akilli_listeler(
   olusturma INTEGER NOT NULL,
   silindi INTEGER
 );
+-- Okur yayını (K38, §11.2): eser başına ayar, gizli kod anahtarı ve baskılar (JSON).
+CREATE TABLE IF NOT EXISTS okur_yayinlari(
+  eser TEXT PRIMARY KEY,
+  veri TEXT NOT NULL,
+  duzenleme INTEGER NOT NULL,
+  silindi INTEGER
+);
 CREATE TABLE IF NOT EXISTS kitap_gorunumleri(
   kod TEXT PRIMARY KEY,
   gorunum TEXT NOT NULL
@@ -849,7 +856,7 @@ CREATE TABLE IF NOT EXISTS olcekli_araziler(
   silindi INTEGER NOT NULL DEFAULT 0
 );
 `;
-export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'kitap_gorunumleri', 'akilli_listeler', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
+export const IZDUSUM_TABLOLARI = ['evren', 'kayitlar', 'metinler', 'baglantilar', 'iliskiler', 'degisimler', 'izler', 'iz_gozlemleri', 'alan_bosluklari', 'varsayilan_kararlari', 'fetih_cevaplari', 'surec_kurallari', 'surec_baglari', 'surec_adimlari', 'hukuk_kurallari', 'dayaniklilik', 'haber_kanallari', 'haber_cikislari', 'dil_tanimlari', 'ad_bicimleri', 'dil_yeterlilikleri', 'teknoloji_tanimlari', 'motif_yorumlari', 'kalitim_ozellikleri', 'kalitim_degerleri', 'veraset_kurallari', 'sahne_niyetleri', 'montaj_hedefleri', 'gundelik_kartlari', 'belge_sunumlari', 'kitap_gorunumleri', 'akilli_listeler', 'okur_yayinlari', 'metin_isaretleri', 'metin_isaret_yerleri', 'derlemeler', 'evren_surumleri', 'dallar', 'yayimlar', 'yayim_kararlari', 'masalar', 'paketler', 'medya',
   'gokyuzu_tanimi',
   'sozlukler', 'sozluk_isaretleri',
   'sozlesme_maddeleri', 'sozlesme_disarida',
@@ -1737,6 +1744,12 @@ export const UYGULAYICILAR: Record<string, Uygulayici> = {
   },
   akilli_liste_sil(db, i) { db.exec({ sql: 'UPDATE akilli_listeler SET silindi=? WHERE kod=?', bind: [i.zaman, String(i.veri.kod)] }); },
   akilli_liste_geri_yukle(db, i) { db.exec({ sql: 'UPDATE akilli_listeler SET silindi=NULL WHERE kod=?', bind: [String(i.veri.kod)] }); },
+  /** Okur yayını (K38, §11.2): eserin yayın ayarı, gizli anahtarı ve baskıları. */
+  okur_yayini_yaz(db, i) {
+    const { eser, veri } = i.veri as { eser?: unknown; veri?: unknown };
+    if (typeof eser !== 'string' || !veri || typeof veri !== 'object') return;
+    db.exec({ sql: 'INSERT OR REPLACE INTO okur_yayinlari(eser, veri, duzenleme, silindi) VALUES(?,?,?,NULL)', bind: [eser, JSON.stringify(veri), i.zaman] });
+  },
   /** Eserin kitap görünümü (K38): çıktı ayarları. */
   kitap_gorunumu_yaz(db, i) {
     const { kod, gorunum } = i.veri as { kod?: unknown; gorunum?: unknown };

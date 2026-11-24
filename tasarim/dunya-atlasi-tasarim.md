@@ -950,7 +950,7 @@ Drive'da eşitlemeden ayrı, kullanıcının görebildiği bir klasöre alınır
 
 ## 11. Paylaşım ve yayın
 
-**Durum:** Wiki şimdilik yok ve hiç yapılmayabilir (K20). Bu bölüm, kullanıcı ileride yayın isterse uygulanacak tasarımdır ve geliştirme sırasında (§14) yer almaz. Yayın kapsamı alanları (§3.6, §5.2) yine de veri modelinde baştan bulunur, çünkü sonradan eklemek pahalıdır.
+**Durum:** K20 kalktı (kullanıcı kararı, 23 Kasım 2026; K38). Okur yayını (§11.2, §11.3) ve evren içi belge tasarımcısı (§11.5) kodlandı: "Grafikler ve araçlar → Yayın → Okur yayını". Barındırılan ayrı bir wiki sitesi yoktur; paket bir zip dosyasıdır ve nereye yükleneceği yazara kalır (TK7).
 
 ### 11.1 Wiki
 
@@ -965,6 +965,7 @@ Wiki, ana veritabanını okura gönderip gizli alanları ekranda saklayarak yap�
 - **Paket kodları türetilir.** İç kodlar oluşturulma zamanını içerebildiği için pakete hiç girmez. Paketteki bütün kodlar (kayıtların, okur kimliklerinin, dosyaların) yayın serisine özel gizli bir anahtarla iç kodlardan türetilir: baskılar arasında sabit kalır, bağlantılar kopmaz, ama iç koda geri götürülemez.
 - **Yayın öncesi sızıntı taraması:** Gizli kapsamdaki bütün dizgeler (adlar, lakaplar, eski adlar, iç kodlar, dosya adları) paketteki her dosyada aranır: sayfalar, veri dosyaları, arama dizini, dosya adları ve görsel meta verisi. Eşleşme yayını durdurur; eşleşme açık bir eşadlı kayıttan geliyorsa yazara gösterilir ve yazar onaylar. Görsellerin içi okunamaz (K1); haritaya yazılmış gizli bir adı program göremez. Bu yüzden her görselin kendi yayın izni vardır ve varsayılanı kapalıdır.
 - **Yayın mekanizması (TK7):** Program paketi bir zip dosyası olarak üretir; yükleme ayrı ve bilinçli bir adımdır. Uygulama yayın için bir GitHub ya da barındırma anahtarı tutmaz.
+- **Uygulama (K38):** Yayın serisi eserdir; eser başına bir ayar, gizli anahtar ve baskı listesi tutulur. Pakete girecek kayıtlar okurun sınırdaki hâline göre ayrılır: *açık*, *okurun inandığı* (katmanı eser olan kayıt), *eserde geçmiyor* (yazar isterse alır), *sınırdan sonra açılıyor* ve *okurdan gizli* (son ikisi pakete hiç girmez). Bir kaydın eserde ilk göründüğü yer; sahnede bulunma, sahne metnindeki bağlantı, sahnenin olayı ya da okurun o kayda dair bir şey öğrenmesidir. Kayıt bölüm bölüm seçilir: özet, şablon alanları (fikir durumundakiler kapalı başlar), gövde metni (yazar notu olabileceği için kapalı başlar), ilişkiler (okura görünenler), okurun bildikleri (okurun inandığı cevap; gerçeğin kendisi değil) ve belgenin görünümü. Kişi ile kimliğin eşitliği, okur kimlik kaydındaki bir sorunun gerçek cevabına inandığı okuma sırasından ya da kimlik bağının görünürlüğünde eser bilenler arasındaysa açıklanmış sayılır; o zamana dek iki ayrı sayfadır ve birinin sayfasında öbürünün adı geçerse yayın durur. Paket kodları rakamdan oluşur (bir adın parçası gibi okunmasın). Sızıntı taraması gizli ve sınır sonrası kayıtların adlarını, lakaplarını ve eski adlarını, bütün iç kodları ve görsellerin iç ve dosya adlarını; sayfalarda, arama dizininde, dosya adlarında ve görsellerin baytlarında arar; PNG'nin metin bölümleri pakete girerken atılır. Eşleşme pakete giren bir kaydın adının içindeyse yazara sorulur, yazarın onayı saklanır. Durduran ya da bekleyen eşleşme kaldıkça paket indirilmez; her indirme bir baskı olarak yazılır.
 - **Gizli verinin pakete kaçması** bir hatadır; **okurun açık ipuçlarından doğru tahmin yapması** çoğu zaman hikâyenin amacıdır. İkisine aynı uyarı verilmez. Okurun aklı ve tahminleri denetlenemez.
 
 ### 11.3 Yayın önizlemesi ve okuma kapsamı
@@ -979,7 +980,7 @@ Wiki yapılırsa yazar uygulamasından ayrı bir kökende yayımlanır (A3). Kö
 
 ### 11.5 Evren içi belge çıktısı
 
-Mektup, gazete sayfası, ilan, seyahat izni, günlük, antlaşma, mezar yazısı. Metni kullanıcı yazar; program düzeni, mührü, tarihi ve bağlantılı kişileri ekleyerek sunar.
+Mektup, gazete sayfası, ilan, seyahat izni, günlük, antlaşma, mezar yazısı. Metni kullanıcı yazar; program düzeni, mührü, tarihi ve bağlantılı kişileri ekleyerek sunar. **Belge tasarımcısı (K38):** belge kaydının "Belgenin sunumu" bölümünde solda ayarlar, sağda canlı görünüm: kâğıt (parşömen, eski kâğıt, temiz kâğıt, taş), yazı (düz, eğik, büyük harf), eskime (yok, az, çok), mühür şekli (daire, kalkan, sekizgen, yok) ve rengi. Doku resim değil, renk geçişidir. "Okur yayınına girsin" açıksa belge okur yayınında bu görünümle yer alır (§11.2).
 
 ---
 

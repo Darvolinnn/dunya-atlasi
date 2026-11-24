@@ -304,7 +304,32 @@ export interface IsaretIncelemesi {
   karar: (IncelemeKarari & { niyet?: string | null }) | null;
 }
 export interface IsaretIncelemeleri { acik: IsaretIncelemesi[]; ertelenen: IsaretIncelemesi[]; kapanan: IsaretIncelemesi[] }
-export interface BelgeSunumu { bicim: 'mektup' | 'gazete' | 'ilan' | 'izin' | 'gunluk' | 'antlasma' | 'mezar'; yazan: string | null; alici: string | null; yer: string | null; muhur: string | null; muhurYazisi: string; imzalayanlar: string[] }
+export interface BelgeSunumu {
+  bicim: 'mektup' | 'gazete' | 'ilan' | 'izin' | 'gunluk' | 'antlasma' | 'mezar'; yazan: string | null; alici: string | null; yer: string | null; muhur: string | null; muhurYazisi: string; imzalayanlar: string[];
+  /** Belge tasarımcısı (K38): kâğıt, yazı düzeni, eskime, mührün şekli ve rengi; okur yayınına girer mi (§11.5). */
+  kagit: 'parsomen' | 'eski' | 'temiz' | 'tas'; yazi: 'duz' | 'egik' | 'buyuk'; eskime: 'yok' | 'az' | 'cok';
+  muhurSekli: 'daire' | 'kalkan' | 'sekizgen' | 'yok'; muhurRengi: 'kirmizi' | 'siyah' | 'altin' | 'mavi'; okurYayini: boolean;
+}
+/** Okur yayını (§11.2, §11.3). */
+export type OkurYayiniKipi = 'teslim' | 'tercih';
+export interface OkurYayiniAyari { sinir: string | null; kip: OkurYayiniKipi; /** Kayıt → pakete giren bölümler (yoksa varsayılan). */ secimler: Record<string, string[]>; gorseller: string[]; /** Yazarın "eşadlı, sorun değil" dediği eşleşmeler. */ onaylar: string[] }
+export interface OkurYayiniBaskisi { no: number; zaman: number; sinir: string; kip: OkurYayiniKipi; boyut: number }
+/** acik: okura açık · inanc: okurun inandığı hâl · gecmiyor: eserde geçmiyor · sonra: sınırdan sonra açılıyor · gizli: okurdan gizli. */
+export type OkurKayitDurumu = 'acik' | 'inanc' | 'gecmiyor' | 'sonra' | 'gizli';
+export interface OkurYayiniKaydi { kod: string; ad: string; tur: string; durum: OkurKayitDurumu; ilk: number | null; ilkBolum: string | null; bolumler: { anahtar: string; ad: string; secili: boolean; not: string | null }[] }
+export interface OkurKimlikEsi { kisi: KisaKayit; kimlik: KisaKayit; acik: boolean; aciklanma: { sira: number; bolum: string | null } | null }
+export interface OkurYayini {
+  eser: KisaKayit; ayar: OkurYayiniAyari; bolumler: { kod: string; ad: string; sira: number; sonSahne: number }[]; sinirSira: number;
+  kayitlar: OkurYayiniKaydi[]; kimlikler: OkurKimlikEsi[]; gorseller: { ad: string; kayit: KisaKayit; izin: boolean; en: number | null; boy: number | null }[]; baskilar: OkurYayiniBaskisi[];
+}
+export interface SizintiBulgusu {
+  anahtar: string; dizge: string; kaynak: KisaKayit | null; neden: string; /** Doluysa eşleşme bu açık adın içinde (eşadlı). */ esadli: string | null;
+  yerler: { dosya: string; yazi: string; bolum: { kayit: string; anahtar: string; ad: string } | null; once: string; eslesen: string; sonra: string }[];
+}
+export interface OkurYayiniTaramasi {
+  durduran: SizintiBulgusu[]; bekleyen: SizintiBulgusu[]; onaylanan: number;
+  taranan: { sayfa: number; veri: number; gorsel: number; gizliDizge: number }; eksikGorsel: number; sayfalar: { dosya: string; ad: string }[];
+}
 export type AyEvresi = 'yeni' | 'buyuyen_hilal' | 'ilk_dordun' | 'buyuyen_siskin' | 'dolunay' | 'kuculen_siskin' | 'son_dordun' | 'kuculen_hilal';
 export interface GokyuzuTanimi {
   aylar: { kod: string; ad: string; donem: number; baslangic: string; evre: AyEvresi }[];
@@ -1542,6 +1567,11 @@ export interface Istekler {
   ciktiAgaci(a: { evren: string; eser: string }): CiktiAgaci;
   belgeSunumu(a: { evren: string; kod: string }): { sunum: BelgeSunumu; adlar: Record<string, string> };
   belgeSunumuYaz(a: { evren: string; kod: string; sunum: BelgeSunumu }): void;
+  okurYayini(a: { evren: string; eser: string }): OkurYayini;
+  okurYayiniYaz(a: { evren: string; eser: string; ayar: OkurYayiniAyari }): void;
+  okurYayiniTara(a: { evren: string; eser: string }): Promise<OkurYayiniTaramasi>;
+  okurYayiniSayfasi(a: { evren: string; eser: string; dosya: string }): Promise<{ html: string }>;
+  okurYayiniIndir(a: { evren: string; eser: string }): Promise<{ dosyaAdi: string; veri: Uint8Array }>;
   belgeCiktisi(a: { evren: string; kod: string }): { html: string };
   isaretAlanlari(a: { evren: string; hedef: string }): IsaretAlani[];
   metinIsaretiOlustur(a: { evren: string; kayit: string; alan: string; hedef: string | null; hedefAlan?: string | null; iddia?: string; kritik?: boolean }): { kod: string };

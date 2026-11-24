@@ -4,6 +4,7 @@ import type { BelgeSunumu } from '../veri/api';
 import type { Istemci } from '../veri/istemci';
 import { KayitSec } from './KayitBolumleri';
 import { yazdir } from './Cikti';
+import { ESKIMELER, KAGITLAR, MUHUR_RENKLERI, MUHUR_SEKILLERI, YAZILAR } from '../alan/belge-tasarimi';
 
 const BICIMLER: { kod: BelgeSunumu['bicim']; ad: string }[] = [
   { kod: 'mektup', ad: 'Mektup' }, { kod: 'gazete', ad: 'Gazete sayfası' }, { kod: 'ilan', ad: 'İlan' },
@@ -34,43 +35,55 @@ export function BelgeSunumBolumu({ istemci, evren, kod, surum, saltOkunur }: { i
     istemci.iste('belgeSunumuYaz', { evren, kod, sunum: s }).then(() => { setHata(null); oku(); }, (e) => { setHata(hataYaz(e)); oku(); });
   };
   const secim = (k: string | null) => (k ? { kod: k, ad: adlar[k] ?? '…' } : null);
+  const secenek = <K extends keyof BelgeSunumu>(alan: K, ad: string, liste: readonly (readonly [BelgeSunumu[K], string, ...string[]])[]) => (
+    <>
+      <span class="alan-adi">{ad}</span>
+      <div class="belge-secenekleri" role="group" aria-label={ad}>
+        {liste.map(([kod, etiket]) => <button key={String(kod)} type="button" aria-pressed={sunum[alan] === kod} disabled={saltOkunur} onClick={() => yaz({ ...sunum, [alan]: kod })}>{etiket}</button>)}
+      </div>
+    </>
+  );
   return (
     <section class="surecler" aria-label="Belgenin sunumu">
       <h2>Belgenin sunumu</h2>
-      <p class="soluk kucuk">Metni siz yazarsınız; program seçtiğiniz biçime göre düzeni, mührü, yeri, tarihi ve imzaları ekler. Tarih kaydın tarihinden alınır.</p>
-      <div class="satir">
-        <label class="kucuk">Biçim{' '}
-          <select class="girdi kucuk-secim" value={sunum.bicim} disabled={saltOkunur} onChange={(e) => yaz({ ...sunum, bicim: (e.target as HTMLSelectElement).value as BelgeSunumu['bicim'] })}>
-            {BICIMLER.map((b) => <option value={b.kod}>{b.ad}</option>)}
-          </select>
-        </label>
+      <p class="soluk kucuk">Metni siz yazarsınız; program seçtiğiniz biçime göre düzeni, mührü, yeri, tarihi ve imzaları ekler. Tarih kaydın tarihinden alınır. Kâğıt dokusu resim değil, renk geçişidir.</p>
+      <div class="belge-tasarimci">
+        <div class="kart belge-ayarlar">
+          {secenek('bicim', 'Biçim', BICIMLER.map((b) => [b.kod, b.ad] as const))}
+          {secenek('kagit', 'Kâğıt', KAGITLAR)}
+          {secenek('yazi', 'Yazı', YAZILAR)}
+          {secenek('eskime', 'Eskime', ESKIMELER)}
+          {secenek('muhurSekli', 'Mühür', MUHUR_SEKILLERI)}
+          {sunum.muhurSekli !== 'yok' && <div class="satir" role="group" aria-label="Mührün rengi">
+            {MUHUR_RENKLERI.map(([kod, ad, renk]) => <button key={kod} type="button" class="belge-renk" style={`background:${renk}`} aria-label={ad} title={ad} aria-pressed={sunum.muhurRengi === kod} disabled={saltOkunur} onClick={() => yaz({ ...sunum, muhurRengi: kod })} />)}
+            <span class="soluk kucuk">{MUHUR_RENKLERI.find((r) => r[0] === sunum.muhurRengi)?.[1]}</span>
+          </div>}
+          <label class="alan-adi">Mühür yazısı
+            <input class="girdi" lang="tr" maxLength={40} value={yazi} disabled={saltOkunur} placeholder="Boşsa mühür sahibinin adı" onInput={(e) => setYazi((e.target as HTMLInputElement).value)}
+              onBlur={() => { if (yazi.trim() !== sunum.muhurYazisi) yaz({ ...sunum, muhurYazisi: yazi.trim() }); }} />
+          </label>
+          {TEKLILER.map((t) => (
+            <div key={t.alan} class="kucuk satir">{t.ad}:{' '}
+              {saltOkunur ? (secim(sunum[t.alan])?.ad ?? '—') : <>
+                <KayitSec istemci={istemci} evren={evren} secili={secim(sunum[t.alan])} etiket="Seç" sec={(s) => yaz({ ...sunum, [t.alan]: s?.kod ?? null }, s ? { [s.kod]: s.ad } : {})} />
+                {sunum[t.alan] && <button class="dugme sade kucuk" aria-label={`${t.ad} seçimini kaldır`} onClick={() => yaz({ ...sunum, [t.alan]: null })}>Kaldır</button>}
+              </>}
+            </div>
+          ))}
+          <div class="satir">
+            <span class="kucuk">İmzalayanlar:</span>
+            {sunum.imzalayanlar.map((k) => (
+              <span key={k} class="kucuk">{adlar[k] ?? '…'}{!saltOkunur && <> <button class="dugme sade kucuk" aria-label={`${adlar[k] ?? ''} imzasını kaldır`} onClick={() => yaz({ ...sunum, imzalayanlar: sunum.imzalayanlar.filter((x) => x !== k) })}>Kaldır</button></>}</span>
+            ))}
+            {!saltOkunur && <KayitSec istemci={istemci} evren={evren} secili={null} etiket="İmzalayan ekle" sec={(s) => { if (s && !sunum.imzalayanlar.includes(s.kod)) yaz({ ...sunum, imzalayanlar: [...sunum.imzalayanlar, s.kod] }, { [s.kod]: s.ad }); }} />}
+          </div>
+          <label class="satir kucuk"><input type="checkbox" checked={sunum.okurYayini} disabled={saltOkunur} onChange={() => yaz({ ...sunum, okurYayini: !sunum.okurYayini })} /> Okur yayınına girsin</label>
+          <p class="soluk kucuk">Açıksa belge, okur yayınında okura açık olduğu sınırdan itibaren bu görünümle yer alır.</p>
+          {hata && <p class="hata kucuk">{hata}</p>}
+          <div class="satir"><button class="dugme kucuk" onClick={() => istemci.iste('belgeCiktisi', { evren, kod }).then((r) => yazdir(r.html), (e) => setHata(hataYaz(e)))}>Yazdır / PDF</button></div>
+        </div>
+        {html && <iframe title="Belgenin görünümü" srcdoc={html} sandbox="allow-same-origin" />}
       </div>
-      <div class="satir">
-        {TEKLILER.map((t) => (
-          <span key={t.alan} class="kucuk">{t.ad}:{' '}
-            {saltOkunur ? (secim(sunum[t.alan])?.ad ?? '—') : <>
-              <KayitSec istemci={istemci} evren={evren} secili={secim(sunum[t.alan])} etiket="Seç" sec={(s) => yaz({ ...sunum, [t.alan]: s?.kod ?? null }, s ? { [s.kod]: s.ad } : {})} />
-              {sunum[t.alan] && <button class="dugme sade kucuk" aria-label={`${t.ad} seçimini kaldır`} onClick={() => yaz({ ...sunum, [t.alan]: null })}>Kaldır</button>}
-            </>}
-          </span>
-        ))}
-      </div>
-      <div class="satir">
-        <label class="kucuk">Mühür yazısı{' '}
-          <input class="girdi" lang="tr" maxLength={40} value={yazi} disabled={saltOkunur} placeholder="Boşsa mühür sahibinin adı" onInput={(e) => setYazi((e.target as HTMLInputElement).value)}
-            onBlur={() => { if (yazi.trim() !== sunum.muhurYazisi) yaz({ ...sunum, muhurYazisi: yazi.trim() }); }} />
-        </label>
-      </div>
-      <div class="satir">
-        <span class="kucuk">İmzalayanlar:</span>
-        {sunum.imzalayanlar.map((k) => (
-          <span key={k} class="kucuk">{adlar[k] ?? '…'}{!saltOkunur && <> <button class="dugme sade kucuk" aria-label={`${adlar[k] ?? ''} imzasını kaldır`} onClick={() => yaz({ ...sunum, imzalayanlar: sunum.imzalayanlar.filter((x) => x !== k) })}>Kaldır</button></>}</span>
-        ))}
-        {!saltOkunur && <KayitSec istemci={istemci} evren={evren} secili={null} etiket="İmzalayan ekle" sec={(s) => { if (s && !sunum.imzalayanlar.includes(s.kod)) yaz({ ...sunum, imzalayanlar: [...sunum.imzalayanlar, s.kod] }, { [s.kod]: s.ad }); }} />}
-      </div>
-      {hata && <p class="hata kucuk">{hata}</p>}
-      {html && <iframe title="Belgenin görünümü" srcdoc={html} sandbox="allow-same-origin" style="width:100%;height:480px;border:1px solid var(--kenar, #ccc);border-radius:6px;background:#fff" />}
-      <div class="satir"><button class="dugme kucuk" onClick={() => istemci.iste('belgeCiktisi', { evren, kod }).then((r) => yazdir(r.html), (e) => setHata(hataYaz(e)))}>Yazdır / PDF</button></div>
     </section>
   );
 }

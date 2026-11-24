@@ -1691,3 +1691,54 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .birlesik-tablo td { padding: 6px 8px; border-bottom: 1px solid var(--cizgi); }
 @media (max-width: 760px) { .koken-bolumleri { grid-template-columns: minmax(0, 1fr); } }
 .baglanti-dugmesi:disabled { opacity: 0.45; cursor: not-allowed; text-decoration: none; }
+
+/* Okur yayını (K38, §11.2) */
+.okur-izgara { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; margin-top: 12px; }
+.okur-izgara .kart h2 { font-size: 1rem; margin: 0 0 8px; }
+.okur-izgara .kart h2 + p { margin-top: 0; }
+.okur-izgara .kart p + h2 { margin-top: 14px; }
+.okur-kip { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--cizgi); border-radius: 10px; margin-top: 8px; cursor: pointer; }
+.okur-kip.secili { border-color: var(--vurgu); background: var(--vurgu-zemin); }
+.okur-kip input { margin-top: 4px; accent-color: var(--vurgu); }
+.okur-gorseller { display: flex; gap: 10px; flex-wrap: wrap; }
+.okur-gorsel { display: flex; flex-direction: column; gap: 2px; width: 150px; border: 1px solid var(--cizgi); border-radius: 10px; overflow: hidden; background: var(--yuzey); padding-bottom: 6px; }
+.okur-gorsel img, .okur-gorsel .gorsel-yer { width: 100%; height: 84px; object-fit: cover; display: block; }
+.okur-gorsel > span { padding: 0 8px; }
+.okur-kayitlar { margin-top: 16px; }
+.okur-kayit-basi { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.okur-kayit-basi h2 { font-size: 1rem; margin: 0; }
+.okur-kayitlar table { width: 100%; margin-top: 6px; }
+.okur-kayitlar td { vertical-align: top; }
+.okur-bolumler { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.okur-bolumler input, .okur-gorsel input { accent-color: var(--vurgu); }
+.okur-girmeyen { margin-top: 8px; }
+.okur-eylemler { justify-content: flex-end; margin-top: 14px; }
+.okur-bulgu { border-left: 3px solid var(--tehlike); background: var(--yuzey); border-radius: 0 10px 10px 0; padding: 10px 12px; margin: 8px 0; }
+.okur-bulgu.bekleyen { border-left-color: var(--vurgu); }
+.okur-bulgu p { margin: 4px 0; }
+.okur-bulgu mark { background: color-mix(in srgb, var(--tehlike) 35%, transparent); color: inherit; border-radius: 3px; padding: 0 2px; }
+.okur-bulgu.bekleyen mark { background: color-mix(in srgb, var(--vurgu) 35%, transparent); }
+.okur-yer { margin: 4px 0; }
+.okur-yer-eylem { display: inline-flex; gap: 8px; margin-left: 6px; flex-wrap: wrap; }
+.okur-durduran { color: var(--tehlike); }
+.okur-bekleyen { color: var(--vurgu); }
+.okur-paket { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; }
+.okur-onizleme { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.okur-onizleme iframe { width: 100%; height: 520px; border: 1px solid var(--cizgi); border-radius: 10px; background: #f7f2e8; }
+@media (max-width: 900px) { .okur-izgara { grid-template-columns: 1fr; } }
+
+/* Belge tasarımcısı (K38, §11.5) */
+.belge-tasarimci { display: grid; grid-template-columns: 330px 1fr; gap: 16px; align-items: start; }
+.belge-ayarlar .alan-adi { display: block; margin: 10px 0 4px; }
+.belge-ayarlar .alan-adi:first-child { margin-top: 0; }
+.belge-secenekleri { display: flex; gap: 6px; flex-wrap: wrap; }
+.belge-secenekleri button { font: inherit; font-size: 0.85rem; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--cizgi); background: var(--yuzey-2); color: var(--metin); cursor: pointer; }
+.belge-secenekleri button[aria-pressed="true"] { border-color: var(--vurgu); background: var(--vurgu-zemin); color: var(--vurgu); }
+.belge-renk { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.belge-renk[aria-pressed="true"] { border-color: var(--vurgu); box-shadow: 0 0 0 2px var(--yuzey) inset; }
+.belge-tasarimci iframe { width: 100%; height: 560px; border: 1px solid var(--cizgi); border-radius: 8px; background: #e9e2d3; }
+@media (max-width: 900px) { .belge-tasarimci { grid-template-columns: 1fr; } }
+.okur-kayitlar table { border-collapse: collapse; font-size: 0.92rem; }
+.okur-kayitlar th { text-align: left; font-weight: 500; color: var(--metin-2); font-size: 0.8rem; padding: 4px 8px; border-bottom: 1px solid var(--cizgi); }
+.okur-kayitlar td { padding: 6px 8px; border-bottom: 1px solid var(--cizgi); }
+.okur-kayitlar tr:last-child td { border-bottom: none; }

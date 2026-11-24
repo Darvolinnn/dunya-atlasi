@@ -236,3 +236,53 @@ test('ölçekli çizim haritanın kendi görselinin üstünde; noktalar büyük 
   await p.getByRole('button', { name: 'Çekmeceyi kapat' }).click();
   await expect(p.locator('.olcekli-katman line.olcekli-olcek-cizgi')).toHaveCount(1);
 });
+
+test('okur yayını: kapsam seçilir, taranır, önizlenir ve paket baskı olarak iner', async ({ page: p }) => {
+  test.setTimeout(150_000);
+  await p.setViewportSize({ width: 1400, height: 900 });
+  const ev = await ornekEvren(p);
+  await p.goto(`/#/e/${ev}/okur-yayini`);
+  await expect(p.getByRole('heading', { name: 'Pakete girecekler' })).toBeVisible({ timeout: 20_000 });
+  await expect(p.getByRole('radio', { name: /Teslim sınırı/ })).toBeChecked();
+  await p.locator('.okur-izgara select').nth(1).selectOption({ index: 0 });
+  await p.getByRole('button', { name: 'Taramayı başlat' }).click();
+  await expect(p.getByRole('heading', { name: 'Okurun göreceği' })).toBeVisible({ timeout: 20_000 });
+  await expect(p.frameLocator('iframe[title="Okurun göreceği sayfa"]').getByText('Evren rehberi').first()).toBeVisible();
+  const indir = p.getByRole('button', { name: 'Paketi indir' });
+  if (await indir.isDisabled()) {
+    // Örnek evrende durduran bir eşleşme varsa bölümü çıkarıp yeniden taranır.
+    for (let i = 0; i < 10 && await indir.isDisabled(); i++) {
+      const cikar = p.getByRole('button', { name: /bölümünü pakete alma/ }).first();
+      const onay = p.getByRole('button', { name: 'Eşadlı, sorun değil' }).first();
+      if (await cikar.count()) await cikar.click(); else if (await onay.count()) await onay.click(); else break;
+      await p.waitForTimeout(800);
+    }
+  }
+  const [dosya] = await Promise.all([p.waitForEvent('download'), indir.click()]);
+  expect(dosya.suggestedFilename()).toMatch(/^unutulanlar-rehber-1-bolum-baski-1\.zip$/);
+  await expect(p.getByText(/Baskı 1 · /)).toBeVisible();
+});
+
+test('belge tasarımcısı: kâğıt ve mühür seçimi görünüme yansır', async ({ page: p }) => {
+  test.setTimeout(120_000);
+  await p.setViewportSize({ width: 1400, height: 900 });
+  // Belgeyi çalışana doğrudan yazdırmak için çalışan yakalanır.
+  await p.addInitScript(() => { const W = window.Worker; (window as unknown as { Worker: unknown }).Worker = class extends W { constructor(...a: ConstructorParameters<typeof Worker>) { super(...a); const w = window as unknown as { __c?: Worker }; if (!w.__c) w.__c = this; } }; });
+  const ev = await ornekEvren(p);
+  const kod = await p.evaluate((evren) => new Promise<string>((ok, no) => {
+    const c = (window as unknown as { __c: Worker }).__c, n = 987654321;
+    const f = (e: MessageEvent) => { if (e.data.no === n) { c.removeEventListener('message', f); 'hata' in e.data ? no(new Error(e.data.hata)) : ok(e.data.sonuc.kod); } };
+    c.addEventListener('message', f); c.postMessage({ no: n, ad: 'kayitOlustur', arg: { evren, ad: 'Uydurma ret mektubu', tur: 'belge' } });
+  }), ev);
+  await p.goto(`/#/e/${ev}/k/${kod}`);
+  const sunum = p.getByRole('heading', { name: 'Belgenin sunumu' });
+  if (!(await sunum.isVisible({ timeout: 5_000 }).catch(() => false))) await p.getByText('Diğer bölümler').click();
+  await expect(sunum).toBeVisible();
+  await p.getByRole('group', { name: 'Kâğıt' }).getByRole('button', { name: 'Taş', exact: true }).click();
+  await p.getByRole('group', { name: 'Mühür' }).getByRole('button', { name: 'Kalkan', exact: true }).click();
+  await p.getByLabel('Mühür yazısı').fill('Uydurma Divan');
+  await p.getByLabel('Mühür yazısı').blur();
+  const g = p.frameLocator('iframe[title="Belgenin görünümü"]');
+  await expect(g.locator('body.k-tas')).toHaveCount(1);
+  await expect(g.locator('.muhur.kalkan')).toHaveText('Uydurma Divan');
+});

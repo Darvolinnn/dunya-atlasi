@@ -6,7 +6,7 @@ import { SAHNE_CALISMA } from '../alan/sablon';
 import { KitapGorunumuAyarlari } from './KitapGorunumu';
 
 const hataYaz = (e: unknown) => (e as Error).message;
-function indir(ad: string, veri: Uint8Array, tur: string) {
+export function indir(ad: string, veri: Uint8Array, tur: string) {
   const url = URL.createObjectURL(new Blob([veri as BlobPart], { type: tur }));
   const a = document.createElement('a');
   a.href = url; a.download = ad;

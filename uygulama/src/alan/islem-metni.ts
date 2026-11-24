@@ -64,6 +64,7 @@ const ACIKLAMALAR: Record<string, Aciklayici> = {
   metin_isareti_geri_yukle: (v, ad) => `${ad(v.kayit)}: cümle işareti geri getirildi`,
   belge_sunumu_yaz: (v, ad) => `${ad(v.kod)}: belgenin sunumu değişti`,
   akilli_liste_yaz: (v) => `“${v.ad}” akıllı listesi kaydedildi`,
+  okur_yayini_yaz: () => 'Okur yayınının ayarı kaydedildi',
   akilli_liste_sil: (v) => `“${v.ad}” akıllı listesi kaldırıldı`,
   akilli_liste_geri_yukle: (v) => `“${v.ad}” akıllı listesi geri getirildi`,
   gokyuzu_yaz: () => 'Gökyüzü tanımı değişti',
