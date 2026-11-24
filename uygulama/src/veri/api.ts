@@ -1485,6 +1485,8 @@ export interface Istekler {
   derlemeler(a: { evren: string; tur: 'gezinti' | 'pano' | 'tuval' }): DerlemeOzeti[];
   tuval(a: { evren: string; kod: string }): Tuval;
   tuvalOgeYaz(a: { evren: string; kod: string; ogeler: Partial<TuvalOgesi>[] }): void;
+  /** Not, yazı, balon ya da şekli kayda dönüştürür; öğe yerinde kayıt kartı olur, okları korunur (K39). */
+  tuvalOgesiniKaydet(a: { evren: string; kod: string; id: string; tur: string }): { kod: string; ad: string };
   tuvalOgeSil(a: { evren: string; kod: string; idler: string[] }): void;
   surumler(a: { evren: string }): EvrenSurumu[];
   surumOlustur(a: { evren: string; ad: string; aciklama?: string }): { kod: string };

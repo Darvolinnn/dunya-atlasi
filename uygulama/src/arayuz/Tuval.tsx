@@ -11,6 +11,7 @@ import { Gorsel } from './gorsel';
 import { BaglantiSecici } from './BaglantiSecici';
 import { geriAlinabilir } from './onay';
 import { SayfaYardimi } from './SayfaYardimi';
+import { TurSecici } from './ortak';
 
 type Arac = 'sec' | 'not' | 'yazi' | 'balon' | 'sekil' | 'ok' | 'kalem';
 type Nokta = { x: number; y: number };
@@ -355,7 +356,7 @@ function TuvalAlani({ istemci, evren, kod, surum }: { istemci: Istemci; evren: s
         </svg>
       </div>
 
-      {secili && <SeciliPaneli o={secili} veri={veri} evren={evren} enUst={enUst} enAlt={enAlt} yaz={(x) => void kaydet([x])} kaldir={() => void kaldir([secili.id])} />}
+      {secili && <SeciliPaneli istemci={istemci} kod={kod} o={secili} veri={veri} evren={evren} enUst={enUst} enAlt={enAlt} yaz={(x) => void kaydet([x])} kaldir={() => void kaldir([secili.id])} />}
 
       <div class="tuval-yuzen tuval-araclar" role="toolbar" aria-label="Pano araçları">
         {ARACLAR.map(([a, ad, k]) => (
@@ -479,8 +480,8 @@ function OkCizgisi({ o, a, b, secili }: { o: TuvalOgesi; a: TuvalOgesi; b: Tuval
   );
 }
 
-function SeciliPaneli({ o, veri, evren, enUst, enAlt, yaz, kaldir }: {
-  o: TuvalOgesi; veri: Tuval; evren: string; enUst: number; enAlt: number; yaz: (o: TuvalOgesi) => void; kaldir: () => void;
+function SeciliPaneli({ istemci, kod, o, veri, evren, enUst, enAlt, yaz, kaldir }: {
+  istemci: Istemci; kod: string; o: TuvalOgesi; veri: Tuval; evren: string; enUst: number; enAlt: number; yaz: (o: TuvalOgesi) => void; kaldir: () => void;
 }) {
   const [okYazi, setOkYazi] = useState(o.metin);
   useEffect(() => setOkYazi(o.metin), [o.id, o.metin]);
@@ -524,6 +525,32 @@ function SeciliPaneli({ o, veri, evren, enUst, enAlt, yaz, kaldir }: {
         {o.tur === 'kart' && <a class="dugme kucuk" href={`#/e/${evren}/k/${veri.kartlar[o.kayit!]?.kod ?? o.kayit}`}>Kaydı aç</a>}
         <button type="button" class="dugme kucuk" onClick={kaldir}>Panodan kaldır</button>
       </div>
+      {(o.tur === 'not' || o.tur === 'yazi' || o.tur === 'balon' || o.tur === 'sekil') && <KaydaDonustur istemci={istemci} evren={evren} kod={kod} o={o} />}
     </div>
+  );
+}
+
+/** K39: seçili not, yazı, balon ya da şekil yerinde kayıt kartına döner; ilk satır kaydın adı, kalanı metnidir. */
+function KaydaDonustur({ istemci, evren, kod, o }: { istemci: Istemci; evren: string; kod: string; o: TuvalOgesi }) {
+  const [ac, setAc] = useState(false);
+  const [tur, setTur] = useState('karakter');
+  const [hata, setHata] = useState('');
+  useEffect(() => { setAc(false); setHata(''); }, [o.id]);
+  const ad = o.metin.trim().split('\n')[0].trim();
+  if (!ac) return <button type="button" class="dugme kucuk tv-kayda-donustur" onClick={() => setAc(true)}>Kayda dönüştür…</button>;
+  return (
+    <form class="tv-donustur" onSubmit={async (e) => {
+      e.preventDefault();
+      try { await istemci.iste('tuvalOgesiniKaydet', { evren, kod, id: o.id, tur }); }
+      catch (x) { setHata((x as Error).message); }
+    }}>
+      <div class="soluk kucuk">{ad ? <>Yeni kaydın adı: <b>{ad}</b>. Kalan satırlar kaydın metni olur. Öğe yerinde kayıt kartına döner; okları kalır.</> : 'Önce öğeye bir ad yazın: ilk satır kaydın adı olur.'}</div>
+      <TurSecici deger={tur} onDegis={setTur} />
+      <div class="satir">
+        <button class="dugme ana kucuk" type="submit" disabled={!ad}>Dönüştür</button>
+        <button class="dugme kucuk" type="button" onClick={() => setAc(false)}>Vazgeç</button>
+      </div>
+      {hata && <p class="hata kucuk">{hata}</p>}
+    </form>
   );
 }

@@ -3437,6 +3437,27 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
   }
   tuval({ evren, kod }: { evren: string; kod: string }) { return tuvalMod.tuval(this.evren(evren), kod); }
   tuvalOgeYaz({ evren, kod, ogeler }: { evren: string; kod: string; ogeler: Partial<TuvalOgesi>[] }) { tuvalMod.tuvalOgeYaz(this.derlemeBaglami(evren), kod, ogeler); }
+  /** K39: ilk satır kaydın adı, kalanı metni olur; öğe aynı kimlikle kart olur (oklar kimliğe bağlı olduğu için kalır). Tek işlem grubu. */
+  tuvalOgesiniKaydet({ evren, kod, id, tur }: { evren: string; kod: string; id: string; tur: string }) {
+    const e = this.evren(evren);
+    const t = tuvalMod.tuval(e, kod);
+    const o = t.ogeler.find((x) => x.id === id);
+    if (!o) throw new Error('Öğe panoda bulunamadı.');
+    if (!['not', 'yazi', 'balon', 'sekil'].includes(o.tur)) throw new Error('Yalnız not, yazı, balon ve şekil kayda dönüştürülebilir.');
+    if (!turGecerli(tur)) throw new Error('Bilinmeyen tür.');
+    const duz = o.metin.replace(/\r\n?/g, '\n').trim();
+    if (!duz) throw new Error('Öğenin yazısı boş. Önce kaydın adını yazın.');
+    const [ilk, ...kalan] = duz.split('\n');
+    const ad = temizle(ilk.length > 80 ? ilk.slice(0, 80).replace(/\s+\S*$/, '') + '…' : ilk);
+    const govde = kalan.join('\n').trim();
+    const yeni = yeniKod();
+    const kart: TuvalOgesi = { ...tuvalMod.ogeTemizle(e, o), tur: 'kart', kayit: yeni, metin: '', sekil: null, kalin: 0 };
+    this.yaz(evren, [
+      ...this.kayitGirdileri(yeni, { ad, tur, karar: 'fikir', ozet: '', spans: govde ? duzMetindenSpans(govde) : undefined }),
+      { tur: 'tuval_oge', veri: { kod, ogeler: [kart], derlemeAd: t.ad } },
+    ], [yeni]);
+    return { kod: yeni, ad };
+  }
   tuvalOgeSil({ evren, kod, idler }: { evren: string; kod: string; idler: string[] }) { tuvalMod.tuvalOgeSil(this.derlemeBaglami(evren), kod, idler); }
   derlemeSil({ evren, kod, geriYukle = false }: { evren: string; kod: string; geriYukle?: boolean }) { derlemeMod.derlemeSil(this.derlemeBaglami(evren), kod, !!geriYukle); }
   kayitDerlemeleri({ evren, kod }: { evren: string; kod: string }) { return derlemeMod.kayitDerlemeleri(this.evren(evren), kod); }

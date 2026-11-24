@@ -1553,3 +1553,5 @@ details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] 
 .rozet.kitapta-ilk { margin-left: 6px; }
 .onceki-kitaplar { margin: 4px 0 0; }
 .onceki-kitaplar > summary { cursor: pointer; }
+.tv-kayda-donustur { margin-top: 8px; width: 100%; }
+.tv-donustur { display: grid; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--cizgi); }
