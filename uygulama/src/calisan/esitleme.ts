@@ -10,6 +10,7 @@
 // Her kurulum yalnızca kendi dosyalarını yazar ve siler; başkasının dosyasına dokunmaz (§10.2).
 import { VERI_BICIMI, type Islem } from '../alan/islem';
 import { kodGecerliMi } from '../alan/kod';
+import { zamanYaz } from '../alan/islem-metni';
 import { islemDosyasiOku, islemDosyasiYaz, jsonAc, jsonPaketle } from '../alan/paket';
 import type { EvrenVt } from './evren-vt';
 import type { KurulumVt } from './kurulum-vt';
@@ -83,6 +84,9 @@ export interface EvrenEsitlemeDurumu {
 
 const ozellikYap = (evren: string, tur: string, ek: Record<string, string> = {}) => ({ uygulama: UYGULAMA, evren, tur, ...ek });
 
+/** Bir cihazda bu süre içinde eşitlenmiş evren Drive'dan silinmez (K42): o cihazda hâlâ olabilir. */
+export const SILME_BEKLEMESI = 14 * 24 * 60 * 60_000;
+
 export class Esitleme {
   constructor(private readonly x: EsitlemeErisimi, private readonly tasiyici: Tasiyici | null) {}
   /** Bu oturumda içeriği doğrulanmış yerel görseller (`evren:ad`); her eşitlemede yeniden okunmasın. */
@@ -111,6 +115,32 @@ export class Esitleme {
       if (!onceki || onceki.sonGorulme < zaman) sonuc.set(evren, { kod: evren, ad: d.ozellikler.evrenAdi || 'Adsız evren', sonGorulme: zaman });
     }
     return [...sonuc.values()];
+  }
+
+  /**
+   * Hiçbir cihazda olmayan bir evrenin Drive'daki bütün dosyalarını (deneme kopyaları dahil) siler (K42). Bu cihazdaki
+   * evren silinmez; son `SILME_BEKLEMESI` içinde bir cihazda eşitlenmiş evren de silinmez (o cihazda hâlâ olabilir).
+   * `once`, eşitleme dosyalarından önce silinecekleri (Drive yedekleri) siler. Kurulum dosyaları en son silinir:
+   * yarıda kalırsa evren listede kalır, silme yeniden denenebilir.
+   */
+  async uzakEvreniSil(evren: string, once: (kodlar: string[]) => Promise<void> = async () => {}) {
+    if (!kodGecerliMi(evren)) throw new Error('Evren bulunamadı.');
+    if (this.x.evrenler().some((e) => e.kod === evren)) throw new Error('Bu evren bu cihazda. Drive\'dan silmek için önce bu cihazdan kaldırın.');
+    const simdi = Date.now();
+    const yakin = (await this.t.listele({ uygulama: UYGULAMA, tur: 'kurulum', evren }))
+      .map((d) => ({ kod: d.ozellikler.kurulum, zaman: Number(d.ozellikler.zaman) || 0 }))
+      .filter((k) => simdi - k.zaman < SILME_BEKLEMESI).sort((a, b) => b.zaman - a.zaman)[0];
+    if (yakin) {
+      const ad = yakin.kod ? this.kurulum.kurulumAdi(yakin.kod) : null;
+      throw new Error(`Bu evren ${zamanYaz(yakin.zaman)} tarihinde ${ad ? `“${ad}” cihazında` : 'başka bir cihazda'} eşitlendi; orada hâlâ duruyor olabilir. Drive'dan yalnız 14 günden uzun süredir hiçbir cihazda eşitlenmemiş evrenler silinir.`);
+    }
+    const dallar = new Set((await this.t.listele({ uygulama: UYGULAMA, ana: evren })).map((d) => d.ozellikler.evren).filter((k) => kodGecerliMi(k) && k !== evren));
+    const kodlar = [...dallar, evren];
+    await once(kodlar);
+    const dosyalar: UzakDosya[] = [];
+    for (const kod of kodlar) dosyalar.push(...await this.t.listele({ uygulama: UYGULAMA, evren: kod }));
+    const kurulumMu = (d: UzakDosya) => d.ozellikler.tur === 'kurulum';
+    for (const d of [...dosyalar.filter((d) => !kurulumMu(d)), ...dosyalar.filter(kurulumMu)]) await this.t.sil(d.id);
   }
 
   /**

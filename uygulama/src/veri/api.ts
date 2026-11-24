@@ -1436,6 +1436,7 @@ export interface Istekler {
   esitlemeDurumu(): EsitlemeDurumu;
   uzakEvrenler(): Promise<{ kod: string; ad: string; sonGorulme: number }[]>;
   evreniIndir(a: { kod: string }): Promise<{ kod: string }>;
+  uzakEvreniSil(a: { kod: string }): Promise<void>;
   evrenEsitlemeAyari(a: { evren: string; esitlenir: boolean }): void;
   kurulumAdiDegistir(a: { ad: string }): void;
   kurulumKullanimDisi(a: { kod: string; disi: boolean }): void;

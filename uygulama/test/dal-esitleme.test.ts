@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { Hizmet } from '../src/calisan/hizmet';
 import { EvrenVt } from '../src/calisan/evren-vt';
 import { BellekTasiyici } from '../src/calisan/bellek-tasiyici';
+import { SILME_BEKLEMESI } from '../src/calisan/esitleme';
 
 let sqlite3: Awaited<ReturnType<typeof sqlite3InitModule>>;
 beforeAll(async () => { sqlite3 = await sqlite3InitModule(); });
@@ -130,5 +131,24 @@ describe('deneme kopyalarının eşitlenmesi (§9.7, §10)', () => {
     await m.h.esitle();
     await t.h.evreniIndir({ kod: evren });
     expect(t.h.kayitlar({ evren: dal }).map((k) => k.ad).sort()).toEqual(['Danışman Orin', 'Kral Aldren', 'Kâhya Nesa', 'Varis Elin']);
+  });
+  it('bu cihazda olmayan evren Drive\'dan deneme kopyalarıyla birlikte silinir; bu cihazdaki silinmez', async () => {
+    const drive = new BellekTasiyici();
+    const m = cihaz('Masaüstü', drive), t = cihaz('Tablet', drive);
+    const { kod: evren } = m.h.evrenOlustur({ ad: 'Fazla' });
+    const { kod: kalan } = m.h.evrenOlustur({ ad: 'Kalan' });
+    m.h.kayitOlustur({ evren, ad: 'Uydurma', tur: 'karakter' });
+    m.h.dalOlustur({ evren, ad: 'Kopya' });
+    await m.h.esitle();
+    await expect(m.h.uzakEvreniSil({ kod: evren })).rejects.toThrow(/bu cihazda/);
+    expect((await t.h.uzakEvrenler()).map((u) => u.ad).sort()).toEqual(['Fazla', 'Kalan']);
+    // Masaüstü az önce eşitledi: evren orada hâlâ olabilir, silinmez.
+    await expect(t.h.uzakEvreniSil({ kod: evren })).rejects.toThrow(/eşitlendi; orada hâlâ/);
+    const gercek = Date.now.bind(Date);
+    const zaman = vi.spyOn(Date, 'now').mockImplementation(() => gercek() + SILME_BEKLEMESI + 1000);
+    try { await t.h.uzakEvreniSil({ kod: evren }); } finally { zaman.mockRestore(); }
+    expect((await t.h.uzakEvrenler()).map((u) => u.ad)).toEqual(['Kalan']);
+    expect((await drive.listele({})).some((d) => d.ozellikler.evren === evren || d.ozellikler.ana === evren)).toBe(false);
+    expect((await drive.listele({ evren: kalan })).length).toBeGreaterThan(0);
   });
 });

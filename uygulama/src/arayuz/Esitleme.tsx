@@ -8,6 +8,7 @@ import type { EsitlemeDurumu } from '../veri/api';
 import { zamanYaz, saatYaz } from '../alan/islem-metni';
 import { epostaKaydet, googleHazirla, izinAl, izniGeriAl, kabuktaMi, kayitliEposta, sessizIzin } from './google';
 import { SayfaYardimi } from './SayfaYardimi';
+import { onayla } from './onay';
 import { TEMALAR, temaOku, temaYaz, type Tema } from './tema';
 import { git } from './Uygulama';
 
@@ -357,6 +358,10 @@ export function EsitlemeEkrani({ istemci }: { istemci: Istemci }) {
                   setIndiriliyor(u.kod);
                   try { await istemci.iste('evreniIndir', { kod: u.kod }); git(`/e/${u.kod}`); } finally { setIndiriliyor(null); }
                 })}>{indiriliyor === u.kod ? 'İndiriliyor…' : 'Bu cihaza indir'}</button>
+                <button class="dugme sade kucuk" disabled={!!indiriliyor} onClick={() => {
+                  if (!onayla(`“${u.ad}” Drive'dan silinsin mi?\n\nDrive'daki kopyası, deneme kopyaları ve Drive yedekleri silinir; geri getirilemez. Uzun süredir açılmayan bir cihazda kopyası kalmışsa o kopya durur.`)) return;
+                  void calistir(async () => { await istemci.iste('uzakEvreniSil', { kod: u.kod }); setUzak((x) => x && x.filter((y) => y.kod !== u.kod)); });
+                }}>Drive'dan sil</button>
               </div>
             ))}
           </>
