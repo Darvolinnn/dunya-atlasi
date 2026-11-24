@@ -319,7 +319,7 @@ Sıra ve adımlar:
 - [ ] #1 bölüm/eser için kesintisiz okuma ("Yapı · Okuma"; paragrafa çift tıklayınca o sahneye gider).
 - [~] (taslak kodlandı, onay bekliyor: `9-portre-odagi.png`; işlem `gorsel_odak` evren tablosunda `gorsel_odak:<ad>`, izdüşüm sürümü değişmedi; `gorsel.tsx` `useGorselOdaklari`) #9 görsel odak noktası (küçük karelerde `object-position`; yeni veri alanı, işlem günlüğünden).
 - [~] (taslak kodlandı, onay bekliyor: `4-agac-noktasi.png`, `4-bul-degistir.png`; `eserYapisi` sahnelere `calisma` ve yaklaşık `kelime` ekler; `Kabuk.tsx` `durumNoktasi`; `BulDegistir.tsx`, istekler `metinBul`/`metinDegistir`/`metinleriGeriYukle`, değiştirme tek işlem grubu ve geri alınabilir; bağlantı yazısındaki eşleşmeler rozetli ve seçilmemiş gelir) #4 eser ya da bölüm içinde düz metin bul ve önizlemeli değiştir; ağaçta sahne durum noktası.
-- [ ] #6 kitap sonunda durum özeti: odak karakterlerin son yeri ve açık durumları, eşyaların son sahibi, süreklilik defterinde kapanmamış izler.
+- [~] (taslak kodlandı, onay bekliyor: `6-kitap-sonu-durum.png`; istek `kitapSonuDurumu`, eser sayfasında `KitapSonuDurumBolumu`; son sahne okuma sırasındaki son sahnedir, durumlar onun evren tarihine göre; karakterler bakış/odak önce en çok 8, eşyalarda `sahip` bağı, süreklilik defterinde kitapta verisi olan her ayrıntının son hâli; `test/kitap-sonu.test.ts`) #6 kitap sonunda durum özeti.
 - [ ] #3 kalanı: kesilen parçalar çekmecesi ve adlı sürüm.
 - [ ] #8 karakter yokluk haritası ve kurgu montajında seri kapsamı; askıda kalan ipucu satırı (kitap sonu kutusu soruları zaten seri boyunca izliyor).
 - [ ] #12 tasarım §3.1 "birleşik çalışma sayfası": konu dosyasında üyelerin kart olarak birlikte açılması (bugün yalnız bağlantı listesi, `Masalar.tsx`).

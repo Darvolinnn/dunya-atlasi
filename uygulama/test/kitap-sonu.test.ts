@@ -38,3 +38,36 @@ describe('kitap sonunda açık olanlar (K27)', () => {
     expect(h.kitapSonuAciklar({ evren, eser: ii }).sorular).toEqual([]);
   });
 });
+
+describe('kitap sonunda durum (K39)', () => {
+  it('son sahnenin tarihindeki durumlar, eşyanın sahibi ve süreklilik defterinin son hâli', () => {
+    const dosyalar = new Map<string, Database>();
+    const h = new Hizmet((d) => { let x = dosyalar.get(d); if (!x) { x = new sqlite3.oo1.DB(':memory:'); dosyalar.set(d, x); } return x; }, 'Deneme', 'x');
+    const { kod: evren } = h.evrenOlustur({ ad: 'Hatıra' });
+    const k = (ad: string, tur: string) => h.kayitOlustur({ evren, ad, tur }).kod;
+    const eser = k('Unutulanlar', 'eser');
+    const s = (ad: string, tarih: string) => { const x = h.anlatiOlustur({ evren, ust: eser, ad, tur: 'sahne' }).kod; h.kayitTarih({ evren, kod: x, ifade: tarih }); return x; };
+    const [a1, a2] = [s('Arşivde', '410'), s('Liman', '412')];
+    const lale = k('Lale', 'karakter'), orhun = k('Orhun', 'karakter'), arsiv = k('Arşiv', 'yer'), sise = k('Kırık şişe', 'esya');
+    h.sahneAlaniAyarla({ evren, sahne: a1, alan: 'sahne_yeri', kayit: arsiv });
+    h.sahneAlaniAyarla({ evren, sahne: a2, alan: 'bakis', kayit: lale });
+    h.iliskiEkle({ evren, tur: 'sahnede', a: orhun, b: a1 });
+    h.iliskiEkle({ evren, tur: 'sahnede', a: sise, b: a1 });
+    h.iliskiEkle({ evren, tur: 'sahip', a: lale, b: sise, bitis: '411' });
+    h.iliskiEkle({ evren, tur: 'sahip', a: orhun, b: sise, baslangic: '411' });
+    h.durumEkle({ evren, kod: lale, durum: { ozellik: 'Unvan', deger: 'Çırak', kip: 'sonraki', baslangic: { ifade: '400' } } });
+    h.durumEkle({ evren, kod: lale, durum: { ozellik: 'Unvan', deger: 'Kâtip', kip: 'sonraki', baslangic: { ifade: '411' } } });
+    const { kod: iz } = h.izOlustur({ evren, konu: lale, ad: 'Mektup', model: 'durum' });
+    h.izGozlem({ evren, iz, sahne: a1, an: 'son', deger: 'cebinde' });
+
+    const d = h.kitapSonuDurumu({ evren, eser });
+    expect(d.sonSahne?.ad).toBe('Liman');
+    expect(d.tarih?.ifade).toBe('412');
+    // Bakış açısı önce; Orhun en son ilk sahnede görüldü, yeri o sahnenin yeri.
+    expect(d.karakterler.map((c) => [c.ad, c.sahne.ad, c.yer?.ad ?? null])).toEqual([['Lale', 'Liman', null], ['Orhun', 'Arşivde', 'Arşiv']]);
+    expect(d.karakterler[0].durumlar.map((x) => x.deger)).toEqual(['Kâtip']);
+    expect(d.esyalar.map((x) => [x.ad, x.sahipler.map((y) => y.ad)])).toEqual([['Kırık şişe', ['Orhun']]]);
+    expect(d.izler).toEqual([expect.objectContaining({ deger: 'cebinde', sira: 1, sondaMi: false })]);
+    expect(h.kitapSonuDurumu({ evren, eser: k('Boş', 'eser') }).sonSahne).toBeNull();
+  });
+});

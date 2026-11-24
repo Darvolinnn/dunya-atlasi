@@ -233,6 +233,13 @@ export interface KitapSonuAciklar {
   sorular: { iddia: { kod: string; soru: string; konu: KisaKayit; gercek: string | null }; ipucu: number; yaniltmaca: number; destekler: number;
     sonra: { eser: KisaKayit; sahne: KisaKayit; sira: number } | null }[];
 }
+/** Kitap sonunda durum (K39): eserin son sahnesinin tarihinde kayıtlı olanlar. */
+export interface KitapSonuDurumu {
+  sonSahne: KisaKayit | null; tarih: EvrenTarihi | null;
+  karakterler: (KisaKayit & { sahne: KisaKayit; sira: number; yer: KisaKayit | null; durumlar: DurumSatiri[] })[];
+  esyalar: (KisaKayit & { sahne: KisaKayit; sira: number; sahipler: KisaKayit[]; durumlar: DurumSatiri[] })[];
+  izler: { iz: IzTanimi; deger: string; sahne: KisaKayit; sira: number; sondaMi: boolean }[];
+}
 /** Serinin okuma yolu (K27): okurun kitapları izleyebileceği adlandırılmış sıra. */
 export interface OkumaYolu { kod: string; ad: string; eserler: KisaKayit[] }
 /** Seri sayfasının planı (K27). `bag` seriye bağlayan ilişkinin kodudur (çıkarmak için). */
@@ -1257,6 +1264,7 @@ export interface Istekler {
   aracTanitimlari(a: { evren: string }): AracTanitimDayanaklari;
   alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
   kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;
+  kitapSonuDurumu(a: { evren: string; eser: string }): KitapSonuDurumu;
   etkinCalisma(a: { evren: string }): KisaKayit | null;
   etkinCalismaYaz(a: { evren: string; kod: string | null }): void;
   simdi(a: { evren: string }): SimdiOnerisi[];

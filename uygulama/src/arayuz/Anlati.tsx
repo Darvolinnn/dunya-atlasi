@@ -2,7 +2,7 @@
 import { KayitDurumSeritleri } from './Gorunumler';
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
-import type { AnlatiEtkisi, AnlatiYeri, KitapSonuAciklar, DurumAlani, DurumSatiri, EserYapisi, Kayit, KisaKayit, SahneAlani, SahneBaglami, SinirBilgisi, SinirGirdisi, YapiSahnesi } from '../veri/api';
+import type { AnlatiEtkisi, AnlatiYeri, KitapSonuAciklar, KitapSonuDurumu, DurumAlani, DurumSatiri, EserYapisi, Kayit, KisaKayit, SahneAlani, SahneBaglami, SinirBilgisi, SinirGirdisi, YapiSahnesi } from '../veri/api';
 import { DURUM_KIPLERI } from '../alan/durum';
 import { farkYazisi, tarihAciklamasi } from '../alan/tarih';
 import { turBul } from '../alan/turler';
@@ -182,6 +182,57 @@ export function KitapSonuBolumu({ istemci, evren, eser }: { istemci: Istemci; ev
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+/** Eser sayfasında "Kitap sonunda durum" (K39): son sahnenin evren tarihinde kayıtlı durumlar, eşyaların sahibi ve
+ *  süreklilik defterindeki son hâller. Yalnız girilmiş veriden; gösterecek bir şey yoksa görünmez. */
+export function KitapSonuDurumBolumu({ istemci, evren, eser }: { istemci: Istemci; evren: string; eser: string }) {
+  const [k] = useYukle<KitapSonuDurumu>(istemci, evren, () => istemci.iste('kitapSonuDurumu', { evren, eser }), [eser]);
+  const z = useTakvim(istemci, evren);
+  if (!k?.sonSahne || (!k.karakterler.length && !k.esyalar.length && !k.izler.length)) return null;
+  const sahne = (s: KisaKayit) => <a href={`#/e/${evren}/yaz/${s.kod}`}>{s.ad}</a>;
+  return (
+    <section class="kitap-sonu kitap-sonu-durum" aria-label="Kitap sonunda durum">
+      <h2>Kitap sonunda durum</h2>
+      <p class="soluk kucuk">Son sahne {sahne(k.sonSahne)}{k.tarih ? <>, {z ? tarihAciklamasi(k.tarih, z) : k.tarih.ifade}</> : ''}. Yalnız girdiğiniz durumlar ve bağlar gösterilir.
+        {!k.tarih && ' Son sahnenin evren tarihi olmadığı için o andaki durumlar hesaplanamadı.'}</p>
+      {k.karakterler.length > 0 && <>
+        <h3>Karakterler</h3>
+        <ul class="kitap-sonu-liste">
+          {k.karakterler.map((c) => (
+            <li key={c.kod}>
+              <strong>{bag(evren, c)}</strong>
+              <span class="soluk kucuk"> · son görüldüğü sahne {sahne(c.sahne)} ({c.sira}.){c.yer && <> · {bag(evren, c.yer)}</>}</span>
+              <DurumOzeti durumlar={c.durumlar} evren={evren} />
+            </li>
+          ))}
+        </ul>
+      </>}
+      {k.esyalar.length > 0 && <>
+        <h3>Eşyalar</h3>
+        <ul class="kitap-sonu-liste">
+          {k.esyalar.map((x) => (
+            <li key={x.kod}>
+              <strong>{bag(evren, x)}</strong>
+              <span class="soluk kucuk"> · {x.sahipler.length ? <>sahibi {x.sahipler.map((s, i) => <>{i > 0 && ', '}{bag(evren, s)}</>)}</> : 'sahibi girilmemiş'} · son geçtiği sahne {sahne(x.sahne)} ({x.sira}.)</span>
+              <DurumOzeti durumlar={x.durumlar} evren={evren} />
+            </li>
+          ))}
+        </ul>
+      </>}
+      {k.izler.length > 0 && <>
+        <h3>Süreklilik defteri</h3>
+        <ul class="kitap-sonu-liste">
+          {k.izler.map((x) => (
+            <li key={x.iz.kod}>
+              <span class="soluk">{x.iz.konu.ad} · {x.iz.ad}:</span> {x.deger}
+              {!x.sondaMi && <span class="soluk kucuk"> · son bilgi {sahne(x.sahne)} ({x.sira}.) sahnesinde</span>}
+            </li>
+          ))}
+        </ul>
+      </>}
     </section>
   );
 }

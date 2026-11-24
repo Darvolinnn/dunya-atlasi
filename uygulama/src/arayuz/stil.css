@@ -1579,3 +1579,10 @@ details[open]:not(.gezinti details) > :not(summary), .gezinti-diger.oynat[open] 
 .bul-eslesme mark { background: var(--vurgu-zemin); color: var(--vurgu-metin); border-radius: 3px; padding: 0 1px; }
 .bul-eslesme del { color: var(--tehlike); }
 .bul-eslesme ins { text-decoration: none; background: var(--vurgu-zemin); color: var(--vurgu-metin); border-radius: 3px; padding: 0 1px; }
+
+/* Kitap sonunda durum (K39 #6) */
+.kitap-sonu-durum h3 { font-size: 0.95rem; margin: 0.9rem 0 0.3rem; }
+.kitap-sonu-liste { list-style: none; padding: 0; margin: 0; }
+.kitap-sonu-liste > li { padding: 0.35rem 0; border-bottom: 1px solid var(--cizgi, rgba(0,0,0,.08)); }
+.kitap-sonu-liste > li:last-child { border-bottom: 0; }
+.kitap-sonu-liste .baglam-listesi { margin: 0.2rem 0 0 0.8rem; }

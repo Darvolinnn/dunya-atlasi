@@ -64,7 +64,7 @@ export function montajHedefiYaz(b: MontajBaglami, eser: string, iddia: string, h
 }
 
 /** Eserin okuma sırası: sahne, bulunduğu üst (eser ya da bölüm) ve bölüm adı. */
-function sira(e: EvrenVt, eser: string) {
+export function sira(e: EvrenVt, eser: string) {
   const y = eserYapisi(e, eser);
   return [...y.dogrudan.map((s) => ({ ...s, ust: eser, bolum: null as string | null })), ...y.bolumler.flatMap((b) => b.sahneler.map((s) => ({ ...s, ust: b.kod, bolum: b.ad })))];
 }
