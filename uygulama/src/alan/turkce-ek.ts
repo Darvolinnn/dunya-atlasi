@@ -41,6 +41,9 @@ export function sesBilgisi(ad: string): Ses {
   return { sonUnlu, unluyleBiter: UNLU.has(son), sertleBiter: SERT.has(son), kesin };
 }
 
+/** Ek-fiil (kaynaştırma "y" alır): -(y)DI, -(y)mIş, -(y)sA, -(y)ken. -DIr almaz (Ela'dır); -sIz ek-fiil değildir. */
+const KOSAC = /^(?:ken|m[ıiuü]ş|[dt][ıiuü](?!r)|s[ae])/;
+
 // Ek kalıbı birimleri: A (a/e), I (ı/i/u/ü), D (d/t), C (c/ç), kaynaştırma (y/n/s yalnızca ünlüden sonra), düz harf.
 type Birim = { t: 'A' } | { t: 'I' } | { t: 'D' } | { t: 'C' } | { t: 'K'; h: 'y' | 'n' | 's' } | { t: 'H'; h: string };
 
@@ -51,16 +54,21 @@ export function ekKalibi(onceki: Ses, ek: string): Birim[] {
   let i = 0;
   const unluMu = (c: string | undefined) => !!c && UNLU.has(c);
   if (onceki.unluyleBiter) {
-    if ((s[0] === 'y' || s[0] === 'n' || s[0] === 's') && unluMu(s[1])) { b.push({ t: 'K', h: s[0] as 'y' | 'n' | 's' }); i = 1; }
+    if (s[0] === 'y' && KOSAC.test(s.slice(1))) { b.push({ t: 'K', h: 'y' }); i = 1; }
+    else if ((s[0] === 'y' || s[0] === 'n' || s[0] === 's') && unluMu(s[1]) && !/^s[ıiuü]z/.test(s)) { b.push({ t: 'K', h: s[0] as 'y' | 'n' | 's' }); i = 1; }
     else if (s[0] === 'y' && s[1] === 'l' && unluMu(s[2])) { b.push({ t: 'K', h: 'y' }); i = 1; }
+  } else if (KOSAC.test(s)) {
+    b.push({ t: 'K', h: 'y' }); // ek-fiil: Velkar'dı / Ela'ydı, Velkar'ken / Ela'yken
   } else if (unluMu(s[0])) {
     // Ünsüzden sonra kaynaştırma görünmez; hangisi olduğu ekin kendisinden anlaşılır: -(n)In ilgi, öbürleri -(y).
     b.push({ t: 'K', h: /^[ıiuü]n(?![aeıioöuü])/.test(s) ? 'n' : 'y' });
-  } else if (s[0] === 'l' && unluMu(s[1]) && s[2] !== 'r') {
-    b.push({ t: 'K', h: 'y' }); // -(y)lA: Velkar'la / Ela'yla
+  } else if (s[0] === 'l' && (s[1] === 'a' || s[1] === 'e') && s[2] !== 'r') {
+    b.push({ t: 'K', h: 'y' }); // -(y)lA: Velkar'la / Ela'yla (-lIk ve -lI kaynaştırma almaz: Ela'lık)
   }
   for (; i < s.length; i++) {
     const c = s[i];
+    // -(y)ken ünlü uyumuna girmez; başka eklerden sonra da: Ela'ymışken → Velkar'mışken, Ela'dayken.
+    if (s.startsWith('ken', i)) { b.push({ t: 'H', h: 'k' }, { t: 'H', h: 'e' }, { t: 'H', h: 'n' }); i += 2; continue; }
     // -ki değişmez: bulunma ekinden (-dAki) ve ilgi ekinden (-(n)Inki) sonra.
     const ilgidenSonra = b.length > 1 && b[b.length - 1].t === 'H' && (b[b.length - 1] as { h: string }).h === 'n' && b[b.length - 2].t === 'I';
     if (c === 'k' && s[i + 1] === 'i' && b.length && (b[b.length - 1].t === 'A' || ilgidenSonra)) { b.push({ t: 'H', h: 'k' }, { t: 'H', h: 'i' }); i++; continue; }

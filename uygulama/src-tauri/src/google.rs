@@ -16,6 +16,8 @@ use tokio::net::TcpListener;
 pub const IZINLER: &str = "https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file";
 /** Tarayıcıda izin verilmesi en çok bu kadar beklenir. */
 const BEKLEME: Duration = Duration::from_secs(300);
+/// İzin verildikten sonra internet yoksa (tablette uygulama arka plandayken) jeton isteğinin yeniden deneneceği süre.
+const BAGLANTI_BEKLEME: Duration = Duration::from_secs(180);
 /** Google'a yapılan her istek en çok bu kadar sürer. */
 const ISTEK_SURESI: Duration = Duration::from_secs(60);
 
@@ -239,24 +241,26 @@ async fn kodu_bekle(dinleyici: TcpListener, durum_kodu: &str) -> Result<String, 
 }
 
 /// Jeton isteğinin hatası: `gecersiz` ise saklı anahtar artık işe yaramaz (geri alınmış ya da süresi dolmuş).
+/// `baglanti` ise istek Google'a hiç ulaşmadı (internet yok ya da Android arka plandaki uygulamanın bağlantısını kesti).
 struct JetonHatasi {
     gecersiz: bool,
+    baglanti: bool,
     mesaj: String,
 }
 
 async fn jeton_iste(uclar: &Uclar, form: &[(&str, &str)]) -> Result<JetonYaniti, JetonHatasi> {
-    let diger = |m: &str| JetonHatasi { gecersiz: false, mesaj: m.to_string() };
+    let diger = |m: &str| JetonHatasi { gecersiz: false, baglanti: false, mesaj: m.to_string() };
     let r = istemci_http()
         .map_err(|m| diger(&m))?
         .post(&uclar.jeton)
         .form(form)
         .send()
         .await
-        .map_err(|_| diger("Google'a ulaşılamadı. İnternet bağlantısını kontrol edin."))?;
+        .map_err(|_| JetonHatasi { gecersiz: false, baglanti: true, mesaj: "Google'a ulaşılamadı. İnternet bağlantısını kontrol edin.".into() })?;
     let y: JetonYaniti = r.json().await.map_err(|_| diger("Google'ın yanıtı okunamadı."))?;
     if y.error.is_some() || y.access_token.is_none() {
         return Err(match y.error.as_deref() {
-            Some("invalid_grant") => JetonHatasi { gecersiz: true, mesaj: "Google izninin süresi dolmuş. Yeniden bağlanın.".into() },
+            Some("invalid_grant") => JetonHatasi { gecersiz: true, baglanti: false, mesaj: "Google izninin süresi dolmuş. Yeniden bağlanın.".into() },
             Some("invalid_client") | Some("unauthorized_client") => diger("Programın Google ayarı geçersiz. Google Cloud'daki masaüstü istemcisini denetleyin."),
             _ => diger("Google izni alınamadı."),
         });
@@ -342,7 +346,16 @@ impl Durum {
             ("client_id", ist.kod.as_str()), ("client_secret", ist.gizli.as_str()), ("code", kod.as_str()),
             ("code_verifier", dogrulayici.as_str()), ("redirect_uri", donus.as_str()), ("grant_type", "authorization_code"),
         ];
-        let mut y = jeton_iste(uclar, &form).await.map_err(|h| h.mesaj)?;
+        // Kod, tarayıcı öndeyken gelir. Android arka plandaki uygulamanın internetini keser; jeton isteği kullanıcı
+        // uygulamaya dönene kadar ("Dünya Atlası'na dön") birkaç saniyede bir yeniden denenir.
+        let bitis = tokio::time::Instant::now() + BAGLANTI_BEKLEME;
+        let mut y = loop {
+            match jeton_iste(uclar, &form).await {
+                Ok(y) => break y,
+                Err(h) if h.baglanti && tokio::time::Instant::now() < bitis => tokio::time::sleep(Duration::from_secs(2)).await,
+                Err(h) => return Err(h.mesaj),
+            }
+        };
         if let Some(rt) = y.refresh_token.take() {
             self.anahtari_sakla(rt);
         }

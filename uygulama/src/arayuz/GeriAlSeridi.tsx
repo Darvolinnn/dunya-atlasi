@@ -15,9 +15,16 @@ export function GeriAlSeridi() {
   useEffect(() => () => durdur(), []);
   useEffect(() => {
     if (!is) return;
-    const tus = (e: KeyboardEvent) => { if (e.key === 'Escape') setIs(null); };
-    addEventListener('keydown', tus);
-    return () => removeEventListener('keydown', tus);
+    // Esc başka bir pencereyi, seçiciyi ya da yazılan bir alanı kapatıyorsa şerit kapanmaz. Yakalama evresinde bakılır:
+    // o pencere kendi tuşuyla kapanmadan önce.
+    const tus = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (document.querySelector('.perde, [role="dialog"], [role="alertdialog"], .secici, [role="listbox"], details[open] > .acilir')) return;
+      if ((document.activeElement as HTMLElement | null)?.matches?.('input, textarea, select')) return;
+      setIs(null);
+    };
+    addEventListener('keydown', tus, true);
+    return () => removeEventListener('keydown', tus, true);
   }, [is]);
   if (!is) return null;
   const geriAl = async () => {
