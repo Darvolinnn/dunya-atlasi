@@ -451,7 +451,8 @@ Kullanıcı (25 Kasım, tablet ekran resmiyle): sayfa rehberi ("?") sağa sürü
 - [x] Kapatma satırı yapışkan: `.rehber-ust`, `.yaz-baglami-basi` (≥2200 px ayrı boşluk), `.harita-cekmece > .cekmece-kapat`, `.takvim-cekmece-kapat`.
 - [x] `arayuz/geri-kapat.ts` `useGeriIleKapat(acik, kapat)` / `<GeriIleKapat>`: açılınca aynı adresle `history.pushState({geriPanel: n})`; `popstate` bu sayfada açılmış, işareti gelinen yerden yeni panelleri kapatır; panel başka yoldan kapanınca işaret `history.back()` ile geri alınır (o olay yutulur); açık paneli olmayan eski işarete gelinirse bir adım daha geri gidilir. Kullanılan yerler: rehber, yan panel, takvim çekmecesi, dar ekranda bağlam paneli. Harita çekmecesi (kendiliğinden açık) ve geniş ekrandaki bağlam paneli kullanmaz. Tablette Tauri'nin geri hareketi web görünümünün geçmişinde geri gider (koddan çıkarım; tablette denenecek).
 - [x] Sınama: `e2e/surukle-kapat.spec.ts` (5). Bulutta 726 birim, 71 tarayıcı sınaması geçti.
-- [ ] main'e birleştirme, Windows ve tablet kurulumu, tablette elle deneme (parmakla sürükleme, geri hareketi).
+- [x] `main`e birleşti (PR #79, `a511d49`). Tablet: APK (sha256 db232871…) 25 Kasım 22:07 TR'de `adb install -r` ile kuruldu, kurulu base.apk özeti aynı; tablet kilitliydi, ekrandan bakılmadı. Windows: kullanıcı programı kapatınca görev elle başlatıldı (22:13 TR), günlükte `kurulum cikis 0`, sürüm dosyası 19:06:46Z; gerçek klasördeki program `index-Ct2H1Tsx.css` sunuyor ve içinde yeni kural (`panel-surukleniyor`) var; ekrandan bakılmadı.
+- [ ] Tablette elle deneme (parmakla sürükleme, geri hareketi): kullanıcıda.
 
 ## 0.32 Dokuz maddelik öneri: metin denetimi, ad benzerliği, sesli okuma (K45, 25 Kasım 2026)
 
