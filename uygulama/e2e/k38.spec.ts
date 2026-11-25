@@ -108,13 +108,13 @@ test('paragraf odağı ve yalnız diyaloglar görünüşü değiştirir, metne d
   await p.keyboard.type('Kimse cevap vermedi.');
   const paragraflar = editor(p).locator('> p');
   const saydamlik = (i: number) => paragraflar.nth(i).evaluate((e) => Number(getComputedStyle(e).opacity));
-  await p.locator('.islem-menusu summary').click();
+  await p.getByLabel('Görünüm', { exact: true }).click();
   await p.getByRole('button', { name: 'Paragraf odağı' }).click();
   await expect.poll(() => saydamlik(0)).toBeLessThan(0.5);
   await expect.poll(() => saydamlik(2)).toBe(1); // imleç son paragrafta
-  await p.locator('.islem-menusu summary').click();
+  await p.getByLabel('Görünüm', { exact: true }).click();
   await p.getByRole('button', { name: /Paragraf odağı/ }).click();
-  await p.locator('.islem-menusu summary').click();
+  await p.getByLabel('Görünüm', { exact: true }).click();
   await p.getByRole('button', { name: 'Yalnız diyaloglar' }).click();
   await expect(p.getByRole('region', { name: 'Sahnedekilerin dilleri ve hitaplar' })).toBeVisible();
   await expect.poll(() => saydamlik(0)).toBeLessThan(0.5);
@@ -135,7 +135,7 @@ test('sahne imleçten bölünür, geri al ile birleşir; sonraki sahneyle birle�
   // İmleç ilk paragrafın sonunda.
   await editor(p).locator('> p').first().click();
   await p.keyboard.press('End');
-  await p.locator('.islem-menusu summary').click();
+  await p.getByLabel('Sahne işlemleri').click();
   await p.getByRole('button', { name: 'İmleçten sonrasını yeni sahneye böl' }).click();
   const pencere = p.getByRole('dialog', { name: 'Sahneyi böl' });
   await expect(pencere).toContainText('2 paragraf');
@@ -150,11 +150,11 @@ test('sahne imleçten bölünür, geri al ile birleşir; sonraki sahneyle birle�
   // Yeniden böl, sonra birleştir.
   await editor(p).locator('> p').first().click();
   await p.keyboard.press('End');
-  await p.locator('.islem-menusu summary').click();
+  await p.getByLabel('Sahne işlemleri').click();
   await p.getByRole('button', { name: 'İmleçten sonrasını yeni sahneye böl' }).click();
   await p.getByRole('dialog', { name: 'Sahneyi böl' }).getByRole('button', { name: 'Böl' }).click();
   await expect(editor(p)).toHaveText('Lale çekmeceyi açtı.');
-  await p.locator('.islem-menusu summary').click();
+  await p.getByLabel('Sahne işlemleri').click();
   await p.getByRole('button', { name: 'Sonraki sahneyle birleştir' }).click();
   const b = p.getByRole('dialog', { name: 'Sonraki sahneyle birleştir' });
   await expect(b).toContainText('“Arşiv (2)” sahnesinin metni');

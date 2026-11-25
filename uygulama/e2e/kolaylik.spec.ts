@@ -1,6 +1,6 @@
 // Kullanım kolaylığı paketi (K28) akışları. Örnek adlar uydurmadır.
 import { test, expect } from '@playwright/test';
-import { editor, kaydedildi, sahneAc, yaz } from './yardimci';
+import { editor, kaydedildi, sahneAc, yaz, bosEvrenTam } from './yardimci';
 
 test('boş sahnede başlama yardımı; yazınca kaybolur, kelime sayacı artar', async ({ page: p }) => {
   await sahneAc(p);
@@ -23,7 +23,8 @@ test('odak kipi Ctrl+Shift+F ile açılır, Esc ile kapanır; gezinti gizlenir',
   await p.keyboard.press('Escape');
   await expect(p.locator('html.odak-kipi')).toHaveCount(0);
   await expect(p.locator('nav.gezinti')).toBeVisible();
-  await p.getByRole('button', { name: 'Odak', exact: true }).click();
+  await p.getByLabel('Görünüm', { exact: true }).click();
+  await p.getByRole('button', { name: 'Odak kipi' }).click();
   await expect(p.locator('html.odak-kipi')).toHaveCount(1);
 });
 
@@ -46,7 +47,7 @@ test('yeni evrende "Ne yazıyorsunuz?" seçilir; uzak türler en sona katlanır'
   await p.getByRole('button', { name: 'Yeni evren', exact: true }).click();
   await p.locator('#yeni-evren-adi').fill('Çağdaş Deneme');
   await p.getByRole('radio', { name: /Gerçekçi/ }).click();
-  await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
+  await bosEvrenTam(p);
   await expect(p).toHaveURL(/#\/e\//);
   await p.locator('nav.gezinti a[href$="/kayitlar"]').click();
   // Boş sayfanın düğmesi sayfanın kendi girdisine götürür.

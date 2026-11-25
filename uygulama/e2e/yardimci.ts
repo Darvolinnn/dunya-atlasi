@@ -5,7 +5,7 @@ export async function sahneAc(p: Page, sahne = 'Kuşatma', kok = '/'): Promise<s
   await p.goto(kok);
   await p.getByRole('button', { name: 'Yeni evren', exact: true }).click();
   await p.locator('#yeni-evren-adi').fill('Deneme Evreni');
-  await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
+  await bosEvrenTam(p);
   await p.getByPlaceholder('Yeni eserin adı').fill('Kuzey Yolu');
   await p.getByRole('button', { name: 'Eser oluştur', exact: true }).click();
   // Eser oluşturulunca eserin sayfası açılır ve ilk sahnenin adı hemen sorulur (K26).
@@ -29,3 +29,9 @@ export async function yaz(p: Page, metin: string) {
 }
 
 export const kaydedildi = (p: Page) => expect(p.getByText(/^Kaydedildi/)).toBeVisible({ timeout: 15_000 });
+
+/** Yeni evren formunu "Boş evren olarak aç" ile bitirir ve Tam kipe geçer (K43): sınamalar bütün araçları görür. */
+export async function bosEvrenTam(p: Page) {
+  await p.getByRole('button', { name: 'Boş evren olarak aç', exact: true }).click();
+  await p.getByRole('radio', { name: 'Tam', exact: true }).click();
+}

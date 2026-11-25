@@ -2,6 +2,7 @@
 // dosyalar sayfanın belleğindeki bir klasörde durur. Veri bölümü kabuğa gerçek programdaki yoldan (istemci üzerinden)
 // ulaşır. Örnek adlar uydurmadır.
 import { test, expect, type Page } from '@playwright/test';
+import { bosEvrenTam } from './yardimci';
 
 async function kabukla(p: Page) {
   await p.addInitScript(() => {
@@ -46,7 +47,7 @@ test('Windows uygulamasında Yedek sekmesinde bu bilgisayardaki yedekler: yedek 
   await p.goto('/');
   await p.getByRole('button', { name: 'Yeni evren', exact: true }).click();
   await p.locator('#yeni-evren-adi').fill('Sisli Kıyı');
-  await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
+  await bosEvrenTam(p);
   await expect(p).toHaveURL(/#\/e\//);
   const evren = /#\/e\/([^/]+)/.exec(p.url())![1];
   await p.goto(`/#/e/${evren}/yedek`);
@@ -85,7 +86,7 @@ test('tarayıcıda bu bilgisayardaki yedekler kartı görünmez', async ({ page:
   await p.goto('/');
   await p.getByRole('button', { name: 'Yeni evren', exact: true }).click();
   await p.locator('#yeni-evren-adi').fill('Sisli Kıyı');
-  await p.getByRole('button', { name: 'Oluştur', exact: true }).click();
+  await bosEvrenTam(p);
   await expect(p).toHaveURL(/#\/e\//);
   const evren = /#\/e\/([^/]+)/.exec(p.url())![1];
   await p.goto(`/#/e/${evren}/yedek`);

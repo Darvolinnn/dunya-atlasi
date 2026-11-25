@@ -14,7 +14,7 @@ test('yazma, ağ, zaman çizelgesi ve harita yeni düzenleriyle açılır', asyn
   // Açık sahnenin eseri ve bölümü açık, öbür eserler katlı.
   await expect(p.getByRole('button', { name: 'Hatırlayanlar: aç' })).toHaveAttribute('aria-expanded', 'false');
   await expect(p.getByRole('button', { name: 'Çöp kutusuna taşı' })).toBeHidden();
-  await p.locator('.islem-menusu summary').click();
+  await p.getByLabel('Sahne işlemleri').click();
   await expect(p.getByRole('link', { name: 'Bütün alanlar', exact: true })).toBeVisible();
   await expect(p.getByRole('button', { name: 'Çöp kutusuna taşı' })).toBeVisible();
   await p.keyboard.press('Escape');
@@ -87,7 +87,6 @@ test('gezinti çubuğu ölçekli 2K ekrana sığar; kendisi kaymaz, uzun ağaç 
   for (const ad of ['Bir daha gösterme', 'Gizle']) { const d = p.getByRole('button', { name: ad }); if (await d.count()) await d.first().click(); }
   await p.locator('nav a', { hasText: /^Arşiv$/ }).first().click();
   await p.getByRole('button', { name: 'Hatırlayanlar: aç' }).click();
-  await p.locator('details.gezinti-diger > summary').click();
   const olc = () => p.evaluate(() => {
     const n = document.querySelector('nav.gezinti')!;
     return { tasma: n.scrollHeight - n.clientHeight, ust: n.getBoundingClientRect().top, alt: document.querySelector('.gezinti-alti')!.getBoundingClientRect().bottom <= innerHeight + 1 };

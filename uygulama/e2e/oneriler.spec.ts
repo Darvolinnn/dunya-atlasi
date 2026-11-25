@@ -2,13 +2,14 @@
 import { test, expect } from '@playwright/test';
 import { sahneAc } from './yardimci';
 
-test('grafik araçları menüde amaca göre ara başlıklarla gruplanır', async ({ page: p }) => {
+test('Araçlar sayfası araçları soruya göre gruplar; kart tek tıklamayla açılır, sabitlenen menüde kalır (K43)', async ({ page: p }) => {
   await sahneAc(p);
-  await p.getByRole('link', { name: 'Grafikler ve araçlar' }).click();
-  await expect(p.locator('.gezinti-grup')).toHaveText(['Zaman', 'İlişkiler', 'Kurgu', 'Dil ve derleme', 'Yayın']);
-  // Başlık bağlantı değildir; araçlar yine birer tıklamayla açılır.
-  await p.locator('.gezinti-alt').getByRole('link', { name: 'Ağ', exact: true }).click();
+  await p.getByRole('link', { name: 'Araçlar', exact: true }).click();
+  await expect(p.locator('.arac-grubu > h2')).toHaveText(['Kurguyu ve bölümleri planlarken', 'Zamanı, yaşları ve takvimi kontrol ederken', 'Karakterleri, aileleri ve ilişkileri incelerken', 'Mekânları ve yolculukları çizerken', 'Çelişkileri ve kelimeleri denetlerken', 'Kitap çıktısı, sürümler ve düzen']);
+  await p.locator('.arac-karti', { has: p.getByRole('link', { name: 'Ağ', exact: true }) }).getByRole('button', { name: 'Sabitle' }).click();
+  await p.locator('.arac-grubu').getByRole('link', { name: 'Ağ', exact: true }).click();
   await expect(p).toHaveURL(/\/ag$/);
+  await expect(p.locator('nav.gezinti').getByRole('link', { name: /Ağ/ })).toBeVisible();
 });
 
 test('yan panel kenarından ve ok tuşlarıyla genişler; genişlik bu cihazda hatırlanır', async ({ page: p }) => {
