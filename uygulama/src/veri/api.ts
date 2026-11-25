@@ -1347,9 +1347,9 @@ export interface Istekler {
   kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;
   kitapSonuDurumu(a: { evren: string; eser: string }): KitapSonuDurumu;
   okumaMetni(a: { evren: string; kapsam: string }): OkumaParcasi[];
-  /** Metin denetimi (K44): eserin ya da bölümün metninde ek uyumu, dizgi ve yakın tekrar; anlam çıkarılmaz (K1). */
+  /** Metin denetimi (K45): eserin ya da bölümün metninde ek uyumu, dizgi ve yakın tekrar; anlam çıkarılmaz (K1). */
   metinDenetimi(a: { evren: string; kapsam: string; pencere?: number }): MetinDenetimiSonucu;
-  /** Ada çok yakın ya da aynı adlı kayıtlar (K44); `haric` adı değişen kaydın kendisi. */
+  /** Ada çok yakın ya da aynı adlı kayıtlar (K45); `haric` adı değişen kaydın kendisi. */
   benzerAdlar(a: { evren: string; ad: string; haric?: string | null }): BenzerAd[];
   kesilenParcaEkle(a: { evren: string; sahne: string; metin: string; kod?: string | null }): { kod: string };
   kesilenParcaSil(a: { evren: string; sahne: string; kod: string }): void;

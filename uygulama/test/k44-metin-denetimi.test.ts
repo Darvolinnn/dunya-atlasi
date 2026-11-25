@@ -1,4 +1,4 @@
-// K44: metin denetimi ve ad benzerliği. Örnek adlar ve metinler uydurmadır.
+// K45: metin denetimi ve ad benzerliği. Örnek adlar ve metinler uydurmadır.
 import { describe, expect, it } from 'vitest';
 import { dizgiDenetimi, ekDenetimi, metniDenetle, tekrarDenetimi, type DenetimSahnesi } from '../src/alan/metin-denetimi';
 import { benzerAdlar, harfFarki } from '../src/alan/ad-benzerligi';

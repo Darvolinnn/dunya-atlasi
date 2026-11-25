@@ -177,7 +177,7 @@ function duzKonumu(duz: string, katliKonum: number): number {
   return j;
 }
 
-/** Adı özel ad olmayan türler (K44): ad benzerliği ve ek denetiminde karşılaştırılmaz. */
+/** Adı özel ad olmayan türler (K45): ad benzerliği ve ek denetiminde karşılaştırılmaz. */
 const ANLATI_DISI_ADLAR = "'sahne','bolum','eser','seri','not','alinti','acik_mesele','gerekce','kaynak'";
 
 export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'yerelKlasorBagla'> {
@@ -2242,7 +2242,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
     ];
     return l.map(({ s, bolum }) => ({ sahne: { kod: s.kod, ad: s.ad, tur: 'sahne' }, bolum, spans: A.spans(this.belge(e, s.kod, 'govde'), ['t']) as Spans }));
   }
-  /** Metin denetimi (K44): sahneler okuma sırasıyla; adlar evrendeki kayıtların adları ve okunuşları. */
+  /** Metin denetimi (K45): sahneler okuma sırasıyla; adlar evrendeki kayıtların adları ve okunuşları. */
   metinDenetimi({ evren, kapsam, pencere = 100 }: { evren: string; kapsam: string; pencere?: number }): MetinDenetimiSonucu {
     const e = this.evren(evren);
     this.kayitVarMi(e, kapsam);
@@ -2255,7 +2255,7 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       .map((r) => ({ kod: r.kod as string, ad: r.ad as string, okunus: (r.okunus as string) ?? '' }));
     return metniDenetle(sahneler, adlar, p);
   }
-  /** Ada çok yakın ya da aynı adlı kayıtlar (K44). Anlatı parçaları ve not gibi açıklayıcı adlı türler karşılaştırılmaz. */
+  /** Ada çok yakın ya da aynı adlı kayıtlar (K45). Anlatı parçaları ve not gibi açıklayıcı adlı türler karşılaştırılmaz. */
   benzerAdlar({ evren, ad, haric = null }: { evren: string; ad: string; haric?: string | null }): BenzerAd[] {
     const e = this.evren(evren);
     const l = e.db.selectObjects(`SELECT kod, ad, tur FROM kayitlar WHERE silindi IS NULL AND tur NOT IN (${ANLATI_DISI_ADLAR}) AND kod IS NOT ?`, [haric])

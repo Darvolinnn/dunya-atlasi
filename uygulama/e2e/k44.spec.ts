@@ -1,4 +1,4 @@
-// K44: metin denetimi, ad benzerliği uyarısı ve sesli okuma. Örnek adlar ve metinler uydurmadır.
+// K45: metin denetimi, ad benzerliği uyarısı ve sesli okuma. Örnek adlar ve metinler uydurmadır.
 // RESIM=<klasör> verilirse ekran resimleri o klasöre yazılır (taslak onayı için; depoya konmaz).
 import { test, expect, type Page } from '@playwright/test';
 import { editor, kaydedildi, sahneAc } from './yardimci';

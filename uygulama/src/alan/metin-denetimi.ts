@@ -1,4 +1,4 @@
-// Metin denetimi (K44): eserin ya da bölümün metninde kurala dayalı üç tarama. Yapay zekâ yoktur, anlam çıkarılmaz
+// Metin denetimi (K45): eserin ya da bölümün metninde kurala dayalı üç tarama. Yapay zekâ yoktur, anlam çıkarılmaz
 // (K1): yalnız harflere, işaretlere ve kayıtlı adlara bakılır. Her bulgu bir öneridir; metne dokunulmaz.
 // 1) Özel adların ekleri: kayıtlı bir ad kesmeyle ek aldıysa ek, adın okunuşuna göre denetlenir (Kael'a → Kael'e).
 //    Okunuş girilmemiş ve yazımdan kestirilemiyorsa yalnız aynı ekin farklı yazılışları gösterilir.

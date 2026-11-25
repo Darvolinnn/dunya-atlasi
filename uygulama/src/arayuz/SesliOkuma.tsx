@@ -1,4 +1,4 @@
-// Sesli okuma (K44): kesintisiz okumada metni bilgisayarın kendi Türkçe sesiyle paragraf paragraf okur; okunan
+// Sesli okuma (K45): kesintisiz okumada metni bilgisayarın kendi Türkçe sesiyle paragraf paragraf okur; okunan
 // paragraf vurgulanır ve görünür tutulur. İnternet ya da yapay zekâ kullanılmaz: yalnız cihazda kurulu (yerel) sesler
 // seçilir. Şimdilik yalnız Windows'ta: tabletin uygulama penceresi konuşma sentezini sunmuyor (DEVIR §0.31).
 import { useEffect, useRef, useState } from 'preact/hooks';

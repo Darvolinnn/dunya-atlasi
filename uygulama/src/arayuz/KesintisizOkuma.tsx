@@ -1,6 +1,6 @@
 // Eserin ya da bölümün kesintisiz okunuşu (K39, öneri 1): sahneler okuma sırasıyla art arda, salt okunur. Bir
 // paragrafa çift tıklamak (ya da sahne başlığına tıklamak) o sahneyi yazma ekranında açar. Windows'ta metin
-// bilgisayarın Türkçe sesiyle dinlenebilir (K44, SesliOkuma).
+// bilgisayarın Türkçe sesiyle dinlenebilir (K45, SesliOkuma).
 import type { Istemci } from '../veri/istemci';
 import type { OkumaParcasi } from '../veri/api';
 import { MetinGorunumu } from './MetinEditoru';

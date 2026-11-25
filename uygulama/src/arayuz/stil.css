@@ -1927,7 +1927,7 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .ust-panel { margin: 0 0 12px; }
 @media (prefers-reduced-motion: reduce) { .yuzen-cubuk { animation: none; } }
 
-/* Metin denetimi ve ad benzerliği (K44) */
+/* Metin denetimi ve ad benzerliği (K45) */
 .benzer-ad { flex-basis: 100%; margin: 4px 0 0; }
 .kayit-basi + .benzer-ad { margin: -6px 0 12px; }
 .denetim-secimi { flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; margin: 8px 0 14px; }

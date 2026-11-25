@@ -1,4 +1,4 @@
-// Metin denetimi (K44, §5.12): eserin ya da bölümün metninde kurala dayalı üç tarama. Program anlam çıkarmaz (K1);
+// Metin denetimi (K45, §5.12): eserin ya da bölümün metninde kurala dayalı üç tarama. Program anlam çıkarmaz (K1);
 // bulgular öneridir, metne dokunulmaz. Gruplar katlı gelir ki uzun liste sayfayı aşağı itmesin.
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';

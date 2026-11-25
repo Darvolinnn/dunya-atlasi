@@ -1,4 +1,4 @@
-// Ad benzerliği uyarısı (K44): yazılan ad evrendeki başka bir kaydın adına çok yakınsa ya da aynıysa ad kutusunun
+// Ad benzerliği uyarısı (K45): yazılan ad evrendeki başka bir kaydın adına çok yakınsa ya da aynıysa ad kutusunun
 // altında tek sessiz satır. Kayıt yine oluşturulur; yalnız harflere bakılır (K1).
 import { useEffect, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';

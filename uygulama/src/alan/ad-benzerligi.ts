@@ -1,4 +1,4 @@
-// Ad benzerliği (K44): yeni ya da değişen bir ad, evrendeki başka bir kaydın adına çok yakınsa (Alder / Alden) yazara
+// Ad benzerliği (K45): yeni ya da değişen bir ad, evrendeki başka bir kaydın adına çok yakınsa (Alder / Alden) yazara
 // tek satırla söylenir; kayıt yine oluşturulur. Anlam çıkarılmaz (K1): yalnız harflere bakılır. Türkçe harfler ve
 // büyük-küçük harf ayırt edilmez; harf farkı sayısı adın uzunluğuna göre sınırlıdır.
 import { katla } from './turkce';
