@@ -1,9 +1,11 @@
 // Sayfa rehberi (§12.4, K25): başlığın yanındaki "?" düğmesi, sayfanın ne işe yaradığını anlatan yan paneli açar.
-// Panel sayfayı örtmez; sağdan gelir, Esc ya da yeniden "?" ile kapanır.
+// Panel sayfayı örtmez; sağdan gelir, Esc, yeniden "?", Kapat ya da dokunmatik ekranda sağa sürükleyerek kapanır.
+// Başlık satırı (Kapat) panel kaydırılınca üstte kalır.
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { REHBERLER } from './rehber-metinleri';
 import { SAYFA_KONULARI, yazarlikRehberiAc } from './YazarlikRehberi';
 import { YAZARLIK_KONULARI } from './yazarlik-rehberi';
+import { useSurukleKapat } from './surukle-kapat';
 
 export function SayfaYardimi({ sayfa }: { sayfa: string }) {
   const rehber = REHBERLER[sayfa];
@@ -11,6 +13,7 @@ export function SayfaYardimi({ sayfa }: { sayfa: string }) {
   const dugme = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLElement>(null);
   useEffect(() => { setAcik(false); }, [sayfa]);
+  useSurukleKapat(panel, () => setAcik(false), acik);
   // Esc dinleyicisi panel çizilir çizilmez bağlanır; useEffect bir sonraki kareyi bekler ve o arada basılan Esc kaçardı.
   useLayoutEffect(() => {
     if (!acik) return;
