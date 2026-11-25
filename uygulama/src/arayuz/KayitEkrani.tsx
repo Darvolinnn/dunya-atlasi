@@ -54,6 +54,9 @@ import { DonusumBolumu } from './Donusum';
 import { KalabalikBolumu } from './Kalabalik';
 import { KaliciIzBolumu } from './KaliciIz';
 import { geriAlinabilir, onayla } from './onay';
+import { kipKapsar, useKip } from './kip';
+import { AcilirMenu } from './AcilirMenu';
+import type { KayitDolulugu } from '../veri/api';
 
 /** Durum geçmişi tutulmayan türler (anlatı parçaları ve notlar). */
 const DURUMSUZ = new Set(['sahne', 'bolum', 'eser', 'not']);
@@ -92,6 +95,12 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   const [iliskiSayisi, setIliskiSayisi] = useState<number | null>(null);
   useEffect(() => { setAcilan(new Set()); setIliskiSayisi(null); }, [kod]);
   const ac = (k: string) => setAcilan((s) => new Set(s).add(k));
+  // Deneyim kipi (§5.11, K43): Sade ve Hikâye bazı bölümleri gizler; dolu olanlar alttaki satırdan "Göster" ile açılır.
+  const kip = useKip(evren);
+  const [dolu, setDolu] = useState<KayitDolulugu | null>(null);
+  const [hepsi, setHepsi] = useState(false);
+  useEffect(() => setHepsi(false), [kod]);
+  useEffect(() => { if (kip === 'tam') return; istemci.iste('kayitDolulugu', { evren, kod }).then(setDolu, () => setDolu(null)); }, [evren, kod, surum, kip]);
 
   if (kayit) turBellegi.set(`${evren}/${kod}`, kayit.tur);
   const bilinenTur = kayit?.tur ?? turBellegi.get(`${evren}/${kod}`);
@@ -118,9 +127,35 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   };
   const tur = turBul(kayit.tur);
   // Zamanı asıl bilgisi olan türlerde evren tarihi her zaman görünür.
-  const tarihGorunur = !!kayit.tarih || ['sahne', 'olay'].includes(kayit.tur) || acilan.has('tarih');
+  // Hikâye kipin gösterdiği bölümler (bölüm → kipte mi); ileri bölümler yalnız Tam kipte.
+  const kipte = (b: string) => kipKapsar(kip, b === 'ileri' ? 'tam' : 'hikaye') || hepsi || acilan.has(b);
+  const tarihGorunur = ['sahne', 'olay'].includes(kayit.tur) || acilan.has('tarih') || (!!kayit.tarih && kipte('tarih'));
   const adlarDolu = !!kayit.okunus || kayit.lakaplar.length > 0 || kayit.etiketler.length > 0 || !!kayit.gorunurluk || kayit.oncekiAdlar.length > 0;
-  const adlarGorunur = adlarDolu || acilan.has('adlar');
+  const adlarGorunur = acilan.has('adlar') || (adlarDolu && kipte('adlar'));
+  const sablonDolu = !!ks && Object.values(ks.degerler).some((d) => d !== undefined && d !== null && d !== '' && d !== false);
+  const ileriGorunur = kipte('ileri');
+  const sorularVar = kayit.tur !== 'seri', durumVar = !DURUMSUZ.has(kayit.tur);
+  // Kipin gizlediği ama bu kayıtta dolu bölümler: sayfanın altında tek satırda sayılır (§5.11).
+  const gizliDolu = kip === 'tam' || hepsi ? [] : [
+    ...(kayit.karar === 'vazgecildi' && !kipte('karar') ? ['karar durumu'] : []),
+    ...(kayit.tarih && !tarihGorunur ? ['evren tarihi'] : []),
+    ...(adlarDolu && !adlarGorunur ? ['başka adlar ve etiketler'] : []),
+    ...(sablonDolu && !kipte('sablon') ? ['şablon alanları'] : []),
+    ...(dolu?.harita && !kipte('harita') ? ['haritadaki yeri'] : []),
+    ...(sorularVar && dolu?.sorular && !kipte('sorular') ? ['sorular'] : []),
+    ...(durumVar && dolu?.durum && !kipte('durum') ? ['durum geçmişi'] : []),
+    ...(!ileriGorunur ? dolu?.ileri ?? [] : []),
+  ];
+  // "+ Bu kayda başka ayrıntı ekle": kipin gizlediği bölümler; seçilen yalnız bu kayıtta açılır.
+  const ekSecenekleri: [string, string][] = kip === 'tam' ? [] : [
+    // Şablon alanları görünürken evren tarihi ve başka adlar onların "Boş alanlar gizli" düğmeleriyle açılır.
+    ...(!tarihGorunur && !kipte('sablon') ? [['tarih', 'Evren tarihi'] as [string, string]] : []),
+    ...(!adlarGorunur && !kipte('sablon') ? [['adlar', 'Okunuş, başka adlar, lakaplar, etiketler'] as [string, string]] : []),
+    ...(!kipte('karar') ? [['karar', 'Karar durumu'] as [string, string]] : []),
+    ...(ks?.sablon.alanlar.length && !kipte('sablon') ? [['sablon', `${tur.ad} alanları`] as [string, string]] : []),
+    ...(sorularVar && !kipte('sorular') ? [['sorular', 'Bu kayda sorular'] as [string, string]] : []),
+    ...(durumVar && !kipte('durum') ? [['durum', 'Durum geçmişi'] as [string, string]] : []),
+  ];
   const gorselGorunur = kayit.gorseller.length > 0 || acilan.has('gorsel');
   const iliskiGorunur = iliskiSayisi !== 0 || acilan.has('iliski');
   const bosCipleri = [
@@ -173,15 +208,15 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
             <span class="alan-adi">Tür</span>
             <TurSecici deger={kayit.tur} onDegis={(v) => degistir('tur', v)} />
           </label>
-          <label class="alan">
+          {kipte('karar') && <label class="alan">
             <span class="alan-adi">Karar durumu</span>
             <select class="girdi" value={kayit.karar} onChange={(e) => kararDegistir((e.target as HTMLSelectElement).value)}>
               {KARARLAR.map((k) => <option value={k.kod}>{k.ad}</option>)}
             </select>
-          </label>
+          </label>}
           {tarihGorunur && <TarihAlani istemci={istemci} evren={evren} kayit={kayit} />}
           {kayit.tur === 'sahne' && <SahneAlanlari istemci={istemci} evren={evren} kayit={kayit} baglam={sahneBaglami} />}
-          <SablonAlanlari istemci={istemci} evren={evren} kayit={kayit} ks={ks} acilan={acilan} ac={ac} ekCipler={bosCipleri} />
+          {kipte('sablon') && <SablonAlanlari istemci={istemci} evren={evren} kayit={kayit} ks={ks} acilan={acilan} ac={ac} ekCipler={bosCipleri} />}
           <div class="alan genis">
             <span class="alan-adi satir">Kısa özet <KararSecici etiket="Kısa özet" karar={kayit.alanKararlari.ozet ?? 'kesin'} onDegis={(k) => istemci.iste('alanKarari', { evren, kod, alan: 'ozet', karar: k })} /></span>
             <AlanGirdisi etiket="Kısa özet" deger={kayit.ozet} kaydet={(v) => degistir('ozet', v)} ipucu="Kim ya da ne olduğu, tek satırda" />
@@ -212,7 +247,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
         </details>}
 
         {gorselGorunur && <Gorseller istemci={istemci} evren={evren} kayit={kayit} />}
-        <KayitHaritaBolumu istemci={istemci} evren={evren} kayit={kayit} />
+        {kipte('harita') && <KayitHaritaBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         {kayit.tur === 'rota' && <RotaBolumu istemci={istemci} evren={evren} kayit={kayit} />}
         {ROTA_ARACI_TURLERI.includes(kayit.tur) && <RotaAraci istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} />}
         {kayit.tur === 'haberlesme' && <KanalBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} />}
@@ -238,7 +273,27 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           </div>
         )}
 
-        <details class="diger-bolumler" open={digerAcik} onToggle={(e) => digerAc((e.target as HTMLDetailsElement).open)}>
+        {!ileriGorunur && kayit.tur === 'eser' && <EserCiktisi istemci={istemci} evren={evren} eser={kod} />}
+        {!ileriGorunur && durumVar && kipte('durum') && <DurumGecmisi istemci={istemci} evren={evren} kayit={kayit} />}
+        {!ileriGorunur && sorularVar && kipte('sorular') && <SoruBolumu istemci={istemci} evren={evren} kayit={kayit} ks={ks} />}
+        {gizliDolu.length > 0 && (
+          <div class="dolu-satiri">
+            <span>Bu kayıtta ileri düzey {gizliDolu.length} bölüm daha dolu: {gizliDolu.join(', ')}</span>
+            <button type="button" class="dugme kucuk" onClick={() => setHepsi(true)}>Göster</button>
+          </div>
+        )}
+        {(ekSecenekleri.length > 0 || !ileriGorunur) && (
+          <div class="ayrinti-ekle">
+            <AcilirMenu dugme="+ Bu kayda başka ayrıntı ekle ▾" sinif="dugme sade kucuk" sola>
+              {ekSecenekleri.length > 0 && <span class="menu-baslik">Sık kullanılan</span>}
+              {ekSecenekleri.map(([k, ad]) => <button key={k} type="button" class="menu-ogesi" onClick={() => ac(k)}>{ad}</button>)}
+              {!ileriGorunur && <><span class="menu-baslik">İleri</span>
+                <button type="button" class="menu-ogesi" onClick={() => { ac('ileri'); digerAc(true); }}>Bütün ileri bölümler (işaretler, bilinenler, haklar, diller…)</button></>}
+            </AcilirMenu>
+          </div>
+        )}
+
+        {ileriGorunur && <details class="diger-bolumler" open={digerAcik} onToggle={(e) => digerAc((e.target as HTMLDetailsElement).open)}>
           <summary>Diğer bölümler</summary>
           <p class="soluk kucuk">İşaretler, haklar, bilinenler, sorular, değişimler ve türe özgü araçlar.</p>
           <IsaretlerBolumu istemci={istemci} evren={evren} kod={kod} surum={surum} saltOkunur={!!bag} />
@@ -288,7 +343,7 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
           <KayitMasalari istemci={istemci} evren={evren} kod={kod} surum={surum} />
           {!['sahne', 'not', 'eser', 'bolum'].includes(kayit.tur) && <KayitIzleri istemci={istemci} evren={evren} kod={kod} surum={surum} />}
           <Baglananlar istemci={istemci} evren={evren} kod={kod} ad={kayit.ad} surum={surum} />
-        </details>
+        </details>}
 
         {gecmisAcik && (
           <SurumGecmisi istemci={istemci} evren={evren} kayit={kayit} surum={surum}

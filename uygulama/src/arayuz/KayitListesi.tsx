@@ -13,6 +13,7 @@ import { BosSayfa, KararRozeti, TurSecici, odakla } from './ortak';
 import { AkilliListeGorunumu, AkilliListelerMenusu } from './AkilliListe';
 import { git } from './Uygulama';
 import { useBasamakli } from './kapanis';
+import { kipKapsar, useKip } from './kip';
 
 export function YeniKayit({ istemci, evren }: { istemci: Istemci; evren: string }) {
   const [ad, setAd] = useState('');
@@ -57,8 +58,13 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
   const [vazgecilenGizli, setVazgecilenGizli] = useState(false);
   /** Seçili akıllı liste (K38); null bütün kayıtlar, 'yeni' yeni liste formu. */
   const [liste, setListe] = useState<string | null>(null);
+  // Deneyim kipi (§5.11): Sade arama, tür süzgeci ve sıralama; Hikâye ayrıca öbür süzgeçler; Tam akıllı listeler dahil.
+  const kip = useKip(evren);
+  const hikaye = kipKapsar(kip, 'hikaye'), tam = kip === 'tam';
   // Geçişli sorgu (§3.7): seçilen yerin, yönetimin ya da kültürün altındakiler.
   const [kok, setKok] = useState<{ kod: string; ad: string } | null>(null);
+  // Kip küçülünce görünmeyen süzgeçler de bırakılır; yoksa liste görünmeyen bir seçimle süzülmüş kalırdı.
+  useEffect(() => { if (!hikaye) { setKok(null); setVazgecilenGizli(false); } if (!tam) setListe(null); }, [hikaye, tam]);
   const [eksen, setEksen] = useState<GeciselEksen>('kapsama');
   const [icindekiler, setIcindekiler] = useState<Map<string, GeciselSonuc> | null>(null);
   useEffect(() => { istemci.iste('kayitlar', { evren }).then(setKayitlar); }, [evren, surum]);
@@ -100,10 +106,10 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
           Karakter, yer, olay, not… her şey bir kayıttır. Yukarıya bir ad yazıp türünü seçin; metinde [[ ile ona bağlanırsınız.
         </BosSayfa>
       ) : (
-        <div class="kayitlar-duzeni">
-        <AkilliListelerMenusu istemci={istemci} evren={evren} surum={surum} secili={liste} sec={setListe} />
+        <div class={tam ? 'kayitlar-duzeni' : 'kayitlar-duzeni tek'}>
+        {tam && <AkilliListelerMenusu istemci={istemci} evren={evren} surum={surum} secili={liste} sec={setListe} />}
         <div class="kayitlar-govde">
-        {liste ? <AkilliListeGorunumu istemci={istemci} evren={evren} surum={surum} kod={liste} sec={setListe} /> : <>
+        {liste && tam ? <AkilliListeGorunumu istemci={istemci} evren={evren} surum={surum} kod={liste} sec={setListe} /> : <>
           <div class="suzgec satir">
             <input class="girdi" style="flex:2;min-width:180px" type="search" aria-label="Kayıtlarda ara" placeholder="Ara (ad, lakap, eski ad, metin)" value={arama}
               lang="tr" onInput={(e) => setArama((e.target as HTMLInputElement).value)} />
@@ -114,9 +120,10 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
               <option value="tur">Türe göre</option>
               <option value="tarih">Evren tarihine göre</option>
             </select>
-            <label class="satir kucuk soluk"><input type="checkbox" checked={vazgecilenGizli} onChange={() => setVazgecilenGizli(!vazgecilenGizli)} /> Vazgeçilenleri gizle</label>
+            {hikaye && <label class="satir kucuk soluk"><input type="checkbox" checked={vazgecilenGizli} onChange={() => setVazgecilenGizli(!vazgecilenGizli)} /> Vazgeçilenleri gizle</label>}
+            {hikaye && <a class="dugme sade kucuk" href={`#/e/${evren}/bahsedilen`}>Henüz yazılmayanlar</a>}
           </div>
-          <div class="suzgec satir kucuk">
+          {hikaye && <div class="suzgec satir kucuk">
             <span class="soluk">İçindekiler:</span>
             <KayitSec istemci={istemci} evren={evren} secili={kok} sec={setKok} etiket="Yer, yönetim ya da kültür seç" />
             <select class="girdi kucuk-secim" aria-label="Hangi ilişki üzerinden" value={eksen} onChange={(e) => setEksen((e.target as HTMLSelectElement).value as GeciselEksen)}>
@@ -126,7 +133,7 @@ export function KayitListesi({ istemci, evren, surum }: { istemci: Istemci; evre
             </select>
             {kok && <button class="dugme sade kucuk" onClick={() => setKok(null)}>Kaldır</button>}
             {kok && <span class="soluk">Alt birimler ve onlara bağlı kayıtlar listelenir; seçilen kaydın kendisi listede yer almaz.</span>}
-          </div>
+          </div>}
           <p class="soluk kucuk">{gorunen.length === kayitlar.length ? `${kayitlar.length} kayıt` : `${kayitlar.length} kayıttan ${gorunen.length} tanesi`}</p>
           {tur === 'not' && !bulunan && !kok ? <NotPanosu istemci={istemci} evren={evren} surum={surum} /> : gorunen.length === 0 ? <div class="bos"><p>Aramaya ya da seçimlere uyan kayıt yok.</p></div> : (
             <ul class={`kayit-listesi${basamak}`}>

@@ -660,16 +660,16 @@ Yazma ekranında bütün evrenin panelleri ve uyarıları bulunmaz.
 | Bağlam paneli | Varsayılan kapalı; açılırsa yalnız "Bu sahne" kartı (ne zaman, nerede, kim var) | Bağlam ve Plan sekmeleri | Dört sekme (§5.10) |
 | Seçimde ileri işler | Yalnız "@ Kayda bağla" | "Derinleştir ▾" | "Derinleştir ▾" |
 | Kayıt sayfası | Ad, tür, kısa özet, görseller, serbest yazı, ilişkiler; eserde kitap çıktısı | Sade + şablon alanları, evren tarihi, başka adlar ve etiketler, sorular, durum geçmişi, harita yeri | Bütün bölümler |
-| Kayıtlar sayfası | Arama ve tür süzgeci | Sade + etiket süzgeci ve "Henüz yazılmayanlar" bağı | Akıllı listeler sütunu dahil hepsi |
+| Kayıtlar sayfası | Arama ve tür süzgeci | Sade + İçindekiler süzgeci, "Vazgeçilenleri gizle" ve "Henüz yazılmayanlar" bağı | Akıllı listeler sütunu dahil hepsi |
 
 - **Dolu veri gizlenmez:** kipin gizlediği bir bölüm o kayıtta doluysa sayfanın altında tek satır durur: "Bu kayıtta ileri düzey 2 bölüm daha dolu · Göster". "Göster" yalnız o kayıtta, kipi değiştirmeden açar.
-- **Tek kayda ayrıntı:** kayıt sayfasının altında "+ Bu kayda başka ayrıntı ekle ▾" menüsü kipin gizlediği bölümleri listeler; seçilen bölüm yalnız o kayıtta açılır ve doldurulunca dolu veri kuralıyla görünür kalır.
+- **Tek kayda ayrıntı:** kayıt sayfasının altında "+ Bu kayda başka ayrıntı ekle ▾" menüsü kipin gizlediği sık bölümleri (karar durumu, şablon alanları, evren tarihi, başka adlar, sorular, durum geçmişi) tek tek, ileri bölümleri (işaretler, bilinenler, haklar, diller…) tek öğe olarak listeler; seçilen bölüm yalnız o kayıtta açılır ve doldurulunca dolu veri kuralıyla görünür kalır.
 - **Yedek ve çöp kutusu her kipte:** gezinti çubuğunun altındaki özette (§10.8) "Yedek al" ve çöp kutusunda kayıt varken "Çöp kutusu (N)" bağlantısı durur; ikisi Araçlar sayfasında da vardır.
 - **Komut paleti:** her kipte bütün sayfaları ve araçları bulur; kipin göstermediği aracın yanında küçük kip etiketi ("Hikâye kipi") durur. Seçilen araç kipi değiştirmeden açılır.
 - **Kip değişince açık sayfa kapanmaz.** Kipin göstermediği bir sayfa açıksa açık kalır; gezintide "Araçlar" seçili görünür.
 
 **Araçlar sayfası.** Grafikler ve az kullanılan sayfalar gezinti çubuğunda alt liste olarak değil, tek Araçlar sayfasında durur. Üstte arama kutusu, altında yazarın sorusuna göre gruplar; her araç adı ve ne işe yaradığını söyleyen tek cümlesiyle bir karttır:
-- *Kurguyu ve bölümleri planlarken:* olay örgüsü, kurgu hatları ve bölüm × kayıt, karşılaştırmalı okuma ve gezintiler, henüz yazılmayanlar ve karar bekleyenler.
+- *Kurguyu ve bölümleri planlarken:* genel bakış ve pano, olay örgüsü, kurgu hatları ve bölüm × kayıt, karşılaştırmalı okuma ve gezintiler, henüz yazılmayanlar ve karar bekleyenler.
 - *Zamanı, yaşları ve takvimi kontrol ederken:* zaman çizelgesi, takvim, durum geçmişi ve sıradan bir gün, gökyüzü.
 - *Karakterleri, aileleri ve ilişkileri incelerken:* ağ, soy ağacı, neden–sonuç.
 - *Mekânları ve yolculukları çizerken:* haritalar, süre ve mesafe hesabı.
@@ -682,12 +682,12 @@ Kurgu türüne uzak araçlar (§4, K28) sayfanın altındaki katlı gruba iner. 
 **Yazma ekranının çubukları.**
 - **Biçim çubuğu yerinden oynamaz:** K · İ │ Başlık · Alt başlık · Alıntı │ @ Bağla │ ayrılmış yer │ kayıt göstergesi. Seçim ya da bağlantı ona düğme eklemez. "Metin al" çubuktan kalkar, "Sahne ⋯" menüsündedir.
 - **Seçimde ileri işler:** fareyle metin seçilince seçimin üstünde küçük yüzen çubuk açılır: Sade kipte "@ Kayda bağla", Hikâye ve Tam kipte ayrıca "Derinleştir ▾". Dokunmatik ekranda ve klavyeyle seçimde yüzen çubuk açılmaz (cihazın kendi seçim menüsüyle çakışmasın); "Derinleştir ▾" biçim çubuğunun ayrılmış yerinde belirir. Yer seçim yokken de ayrılmıştır, çubuk zıplamaz. "Derinleştir ▾" menüsü günlük dille: *Yeni kayda ayır* (seçili parça ayrı kayda taşınır, yerine bağlantı kalır), *Ayrıntıyı işaretle* (cümle bir kaydın özelliğine bağlanır; bilgi değişirse uyarır, §5.7), *Karakterin bilgisine dayandır* (§9.1), *Ayrı zaman ve mekân ver* (F29).
-- **Üst satır:** solda yol satırı; sağda kelime sayacı, **"Görünüm ▾"** (odak kipi, daktilo kipi, paragraf odağı, yalnız diyaloglar), **"Sahne ⋯"** (önceki sahnenin sonu, kesilen parçalar, sahneyi böl ve birleştir, bu hâle ad ver, metin al, bütün alanlar, çöp kutusuna taşı; eser ve bölümde "Kitap çıktısı al…"), **"Bağlam"** (paneli açar ve kapatır) ve sayfa rehberi.
+- **Üst satır:** solda yol satırı; sağda kelime sayacı, **"Görünüm ▾"** (odak kipi, daktilo kipi, paragraf odağı, yalnız diyaloglar), **"Sahne ⋯"** (önceki sahnenin sonu, kesilen parçalar, sahneyi böl ve birleştir, bu hâle ad ver, metin al, bütün alanlar, çöp kutusuna taşı; eser ve bölümde Yedek sayfasındaki çıktıyı açan "Kitap çıktısı al…"), **"Bağlam"** (paneli açar ve kapatır) ve sayfa rehberi.
 
 **İlk Kıvılcım.** Evrenler sayfasındaki yeni evren formu (ad ve isteğe bağlı kurgu türü) "Devam et →" ile biter; yanında "Boş evren olarak aç" vardır. "Devam et" evreni oluşturur ve gezinti çubuğu olmadan ortada tek kartlık karşılamayı açar; sağ üstte her zaman "Atla, boş sayfayı aç →" durur. Üç kart:
 1. *Hikâyenin adı ve ilk kıvılcım:* eserin adı ("Adsız roman" hazır gelir) ve isteğe bağlı "Aklınızdaki ilk fikir, görüntü ya da soru" (yazılırsa eserin kısa özeti olur).
 2. *İlk sahnede kim var, neredeyiz (isteğe bağlı):* ilk karakterin adı ve tek satır notu, ilk mekânın adı ve tek satır notu. Program yazılandan anlam çıkarmaz (K1); doldurulan kutu kendi kaydını oluşturur. Soluk örnekler kurgu türüne göre değişir ve uydurmadır.
-3. *İlk sahnenin kapısı:* sahne adı ("1. Sahne") ve "1. Bölüm'ün içinde" (varsayılan) ya da "bölümsüz". "İlk sahneyi aç ve yazmaya başla" düğmesi.
+3. *İlk sahnenin kapısı:* sahne adı ("1. Sahne") ve "1. bölümün içinde" (varsayılan; bölümün adı "Başlangıç" olur, numarayı ağaç verir) ya da "Bölümsüz". "İlk sahneyi aç ve yazmaya başla" düğmesi.
 
 Düğmeye basınca tek değişiklik grubu olarak eser, gerekiyorsa bölüm ve sahne oluşur; karakter ve mekân yazıldıysa kayıtları oluşur, mekân sahnenin mekânı, karakter sahnedekilere "Bulunuyor" olarak bağlanır. Ekran Sade kipte sahnenin metnine açılır, imleç ilk satırdadır. Boş metinde yazınca kaybolan tek ipucu durur: "Hikâyeyi düz yazar gibi anlatın. Yeni bir kişi ya da yer adının başına @ koyarsanız (ör. @Velkar) kaydı kendiliğinden oluşur." İpucu metne yazılmaz.
 

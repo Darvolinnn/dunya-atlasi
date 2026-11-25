@@ -61,7 +61,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
     neZaman: 'Yazmaya oturduğunuz her an. Evren açılınca bu sayfa gelir.',
     adimlar: [
-      'Yeni bir evrende sayfanın üstündeki “İlk adımlar” listesi sizi dört adımda yazmaya hazırlar; yaptıkça adımlar işaretlenir. İsterseniz “Gizle” ile kapatabilirsiniz.',
+      'Yeni bir evren “Devam et →” ile oluşturulunca üç kısa kartla ilk eseriniz, ilk sahneniz ve isterseniz ilk karakteriniz ile mekânınız hazırlanır; sonra doğrudan sahnenin metni açılır. Kartların hepsi isteğe bağlıdır; “Atla” boş sayfayı açar.',
       'Henüz eseriniz yoksa romanınızın ya da öykünüzün adını yazıp “Eser oluştur”a basın.',
       'Soldaki ağaçta “+ Bölüm” ile bölüm, “+ Sahne” ile sahne ekleyin.',
       'Bir sahneye basıp yazmaya başlayın. Yazdıklarınız kendiliğinden kaydedilir.',
@@ -79,6 +79,25 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       'Soldaki çubuğun altındaki özet, yazınızın nerede güvende olduğunu söyler: bu cihazda kayıt, Drive ile eşitleme ve son yedek ayrı satırlardır. Eşitleme başka cihazlara taşır; yedek, geri dönebileceğiniz ayrı bir kopyadır.',
       'Ctrl+K komut paletini açar: herhangi bir sayfayı ya da kaydı adını yazarak bulabilirsiniz. İki yer arası yolculuk süresini ve takvim günü hesabını da buradan yaparsınız.',
       'Alt+N her ekranda hızlı not açar.',
+    ],
+  },
+  araclar: {
+    baslik: 'Araçlar',
+    ne: [
+      'Grafiklerin ve az kullanılan sayfaların tek yeri. Araçlar, yazarken sorduğunuz sorulara göre gruplanmıştır: kurguyu planlarken, zamanı kontrol ederken, ilişkileri incelerken, mekânları çizerken, çelişkileri denetlerken, çıktı alırken.',
+      'Her kartın altında aracın şu anki verinizle işe yarayıp yaramadığı yazar. “Henüz veri yok” yazıyorsa çalışması için neyin gerektiğini de söyler.',
+    ],
+    neZaman: 'Gezinti çubuğunda göremediğiniz bir sayfayı ya da grafiği ararken.',
+    adimlar: [
+      'Üstteki kutuya aradığınız aracın adını ya da ne yaptığını yazın (ör. “soy”, “harita”, “çıktı”).',
+      'Bir karta basınca araç açılır. Gezinti çubuğundaki kip seçimi değişmez.',
+      'Sık kullandığınız aracı kartın köşesindeki “Sabitle” ile gezinti çubuğuna ekleyin; “Sabit ✓”e yeniden basınca çıkar.',
+    ],
+    ipuclari: [
+      'Gezinti çubuğundaki “Sade · Hikâye · Tam” seçimi yalnız görünüşü değiştirir; hiçbir kayıt silinmez, hiçbir araç kapanmaz.',
+      'Kip ve sabitlenen araçlar bu cihazda, bu evren için hatırlanır; öbür cihazlarınız kendi seçimini korur.',
+      'Kurgu türünüze uzak araçlar sayfanın en altındaki katlı gruptadır. Kurgu türünü Genel bakış sayfasından değiştirebilirsiniz.',
+      'Komut paleti (Ctrl+K) her kipte bütün araçları bulur.',
     ],
   },
   masa: {

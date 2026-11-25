@@ -15,8 +15,8 @@ const YOLLAR: Record<string, preact.ComponentChildren> = {
   takvim: <><rect x="4" y="5.5" width="16" height="14.5" rx="2" /><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" /></>,
   // Pano: iğneli kâğıtlar
   tuval: <><rect x="4" y="4" width="9" height="9" rx="1.5" /><rect x="11" y="11" width="9" height="9" rx="1.5" /><circle cx="8.5" cy="6.5" r="0.6" /></>,
-  // Grafikler ve araçlar: sütunlar
-  gorunumler: <><path d="M4 20h16" /><path d="M7.5 16.5v-4M12 16.5V7M16.5 16.5v-6.5" /></>,
+  // Araçlar: sütunlar
+  araclar: <><path d="M4 20h16" /><path d="M7.5 16.5v-4M12 16.5V7M16.5 16.5v-6.5" /></>,
   // Uyarılar: üçgen
   inceleme: <><path d="M12 4.5l8.5 15h-17z" /><path d="M12 10.5v4M12 17.2v.1" /></>,
   // Konu dosyaları: klasör
@@ -40,6 +40,8 @@ const YOLLAR: Record<string, preact.ComponentChildren> = {
   // Diğer
   diger: <><circle cx="6" cy="12" r="0.9" /><circle cx="12" cy="12" r="0.9" /><circle cx="18" cy="12" r="0.9" /></>,
 };
+
+export const simgesiVar = (kod: string) => kod in YOLLAR;
 
 export function GezintiSimgesi({ kod }: { kod: string }) {
   const yol = YOLLAR[kod];

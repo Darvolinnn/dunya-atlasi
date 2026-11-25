@@ -72,7 +72,8 @@ test('pencereler solarak kapanır; odak kipinde yan alanlar solarak çekilir; a�
   await expect(p.getByRole('dialog', { name: 'Komut paleti' })).toBeHidden();
   expect((await gecisler()).some((g) => g.sinif.includes('perde') && g.sure === 120)).toBe(true);
 
-  await p.getByRole('button', { name: 'Odak', exact: true }).click();
+  await p.getByLabel('Görünüm', { exact: true }).click();
+  await p.getByRole('button', { name: 'Odak kipi' }).click();
   await expect(p.locator('html.odak-kipi')).toHaveCount(1);
   await expect(p.locator('.gezinti')).toBeHidden();
   expect((await gecisler()).some((g) => g.sinif.includes('gezinti') && g.sure === 150)).toBe(true);

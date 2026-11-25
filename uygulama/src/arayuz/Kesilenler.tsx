@@ -9,7 +9,8 @@ import { zamanYaz } from '../alan/islem-metni';
 
 type Parca = { kod: string; metin: string; zaman: number };
 
-export function KesilenParcalar({ istemci, evren, sahne, denetim }: { istemci: Istemci; evren: string; sahne: string; denetim: { current: EditorDenetimi | null } }) {
+/** Sahnenin kesilen parçaları; yazma ekranında "Sahne ⋯ → Kesilen parçalar" ile üst satırın altında açılır (§5.11). */
+export function KesilenParcalar({ istemci, evren, sahne, denetim, kapat }: { istemci: Istemci; evren: string; sahne: string; denetim: { current: EditorDenetimi | null }; kapat: () => void }) {
   const [l, setL] = useState<Parca[]>([]);
   const [yenile, setYenile] = useState(0);
   useEffect(() => { istemci.iste('kesilenParcalar', { evren, sahne }).then(setL, () => setL([])); }, [evren, sahne, yenile]);
@@ -18,15 +19,13 @@ export function KesilenParcalar({ istemci, evren, sahne, denetim }: { istemci: I
     addEventListener(KESILEN_OLAYI, f);
     return () => removeEventListener(KESILEN_OLAYI, f);
   }, []);
-  if (!l.length) return null;
   const cikar = (p: Parca) => geriAlinabilir('Parça çekmeceden çıkarıldı.',
     () => istemci.iste('kesilenParcaSil', { evren, sahne, kod: p.kod }).then(() => setYenile((x) => x + 1)),
     () => istemci.iste('kesilenParcaEkle', { evren, sahne, metin: p.metin, kod: p.kod }).then(() => setYenile((x) => x + 1)));
   return (
-    <details class="onceki-son kesilenler">
-      <summary class="dugme sade kucuk" title="Bu sahneden kesilen ya da silinen uzun parçalar">Kesilenler ({l.length})</summary>
-      <div class="onceki-son-kutu kesilenler-kutu" role="list" aria-label="Kesilen parçalar">
-        <p class="soluk kucuk">Bu sahneden kesilen ya da silinen uzun parçalar. Geri koymak için imleci yerleştirip “İmlece ekle”ye basın.</p>
+      <div class="onceki-son-kutu kesilenler-kutu ust-panel" role="list" aria-label="Kesilen parçalar">
+        <div class="satir"><p class="soluk kucuk" style="flex:1">{l.length ? 'Bu sahneden kesilen ya da silinen uzun parçalar. Geri koymak için imleci yerleştirip “İmlece ekle”ye basın.' : 'Bu sahneden kesilen parça yok. Uzun bir parçayı kestiğinizde ya da sildiğinizde burada saklanır.'}</p>
+          <button class="dugme sade kucuk" onClick={kapat}>Kapat</button></div>
         {l.map((p) => (
           <div key={p.kod} class="kesilen-parca" role="listitem">
             <p class="kesilen-metin">{p.metin}</p>
@@ -37,7 +36,6 @@ export function KesilenParcalar({ istemci, evren, sahne, denetim }: { istemci: I
           </div>
         ))}
       </div>
-    </details>
   );
 }
 

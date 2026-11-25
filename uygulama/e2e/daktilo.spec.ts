@@ -36,7 +36,7 @@ test('daktilo kipi: yazılan satır ekranın ortasında kalır; tıklamak kaydı
   expect(await ortadanUzaklik(p)).toBeGreaterThan(150);
 
   // "Sahne ⋯" menüsünden açılır.
-  await p.locator('.yaz-ust .islem-menusu > summary').click();
+  await p.getByLabel('Görünüm', { exact: true }).click();
   await p.getByRole('button', { name: 'Daktilo kipi' }).click();
   await expect(p.locator('html.daktilo-kipi')).toHaveCount(1);
   await editor(p).focus();

@@ -819,14 +819,9 @@ table.karsilastirma .grup-satiri th { background: var(--yuzey-2); font-size: 0.8
 .gezinti-sayi { font-size: 0.8rem; color: var(--metin-2); }
 .gezinti-ad { display: inline-flex; align-items: center; gap: 9px; min-width: 0; }
 .gezinti-simge { flex: none; opacity: 0.72; }
-.gezinti-ogesi:hover .gezinti-simge, .gezinti-ogesi.secili .gezinti-simge, .gezinti-diger summary:hover .gezinti-simge { opacity: 1; }
+.gezinti-ogesi:hover .gezinti-simge, .gezinti-ogesi.secili .gezinti-simge { opacity: 1; }
 
 .gezinti-ogesi.secili .gezinti-sayi { color: inherit; }
-.gezinti-diger summary { list-style: none; cursor: pointer; min-height: 36px; padding: 6px 10px; border-radius: 8px; color: var(--metin-2); display: flex; align-items: center; gap: 6px; }
-.gezinti-diger summary::-webkit-details-marker { display: none; }
-.gezinti-diger summary::after { content: "▸"; font-size: 0.8rem; }
-.gezinti-diger[open] summary::after { content: "▾"; }
-.gezinti-diger summary:hover { background: var(--yuzey-2); color: var(--metin); }
 .gezinti-alti { margin-top: auto; padding: 14px 8px 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--metin-2); }
 .gezinti-alti a { color: inherit; }
 
@@ -953,11 +948,6 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .evren-karti .kart { padding-right: 76px; height: 100%; }
 .evren-kaldir { position: absolute; top: 8px; right: 8px; }
 
-/* "İlk adımlar" listesi (K26). */
-.ilk-adimlar { margin-bottom: 20px; }
-.ilk-adimlar ol { margin: 10px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
-.ilk-adimlar li.tamam { color: var(--metin-2); text-decoration: line-through; }
-.ilk-adimlar li.sirada { font-weight: 600; }
 
 /* Yazarlık rehberi (K27): sayfa rehberiyle aynı yan panel. */
 .yazarlik-rehberi { z-index: 36; }
@@ -968,10 +958,6 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .sahne-plani { border-bottom: 1px solid var(--cizgi); padding-bottom: 8px; margin-bottom: 8px; }
 .sahne-plani > summary { cursor: pointer; }
 .sahne-plani .soru-listesi { margin-top: 6px; }
-.ilk-adim-yollari { border: 0; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 4px 14px; }
-.ilk-adim-yollari legend { padding: 0; margin-bottom: 4px; width: 100%; }
-.ilk-adim-yollari label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
-.ilk-adimlar li.gecildi { color: var(--metin-2); }
 /* Seriler (K27): yazma ağacında eserlerin üstünde, katlanmayan bir başlık. */
 .agac-seri { display: flex; flex-direction: column; margin-bottom: 4px; }
 .agac-seri-ad { display: block; padding: 3px 8px; border-radius: 6px; color: var(--metin-2); text-decoration: none; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; }
@@ -1001,7 +987,7 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .bos-cipler .cip { border: 1px dashed var(--cizgi); border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 0.85rem; color: var(--vurgu); background: var(--yuzey); cursor: pointer; }
 .bos-cipler .cip:hover { border-color: var(--vurgu); }
 .henuz-eklenmedi { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--cizgi); }
-/* İlk adımlarda sıradaki adım (K26): Yaz sayfası dışında tek satır */
+/* Araç tanıtımı (K28): Yaz sayfası dışında tek satır */
 .siradaki-adim { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 12px; padding: 8px 14px; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey); }
 
 /* ---------- Kullanım kolaylığı (K28) ---------- */
@@ -1316,13 +1302,11 @@ a.defter-karti.belirsiz { border-left-style: dashed; }
   /* Ağaç küçülse de adının altındaki en az 60 piksellik alanı kalır; yoksa alttaki öğelerin üstüne biner. */
   .gezinti > .gezinti-listesi > li:has(> .eser-agaci), .gezinti > .gezinti-listesi > li:has(> .gezinti-alt) { min-height: 108px; }
   .gezinti > .gezinti-listesi > li > .eser-agaci, .gezinti > .gezinti-listesi > li > .gezinti-alt { flex: 0 1 auto; min-height: 60px; max-height: none; overflow-y: auto; overscroll-behavior: contain; }
-  .gezinti > .gezinti-diger { flex: 0 1 auto; min-height: 36px; overflow-y: auto; overscroll-behavior: contain; }
 }
 @media (min-width: 861px) and (max-height: 1000px) {
   .gezinti { padding-top: 12px; padding-bottom: 10px; }
   .gezinti-evren { margin: 4px 8px 8px; }
   .gezinti-ogesi { min-height: 32px; padding: 4px 10px; }
-  .gezinti-diger summary { min-height: 32px; padding: 4px 10px; }
   .gezinti-alti { padding-top: 8px; }
 }
 
@@ -1368,7 +1352,7 @@ details.aninda::details-content { transition: none; }
 .hizli-not { animation: yukari-gir var(--hz-sure) var(--hz-egri); }
 .geri-al-seridi { animation: serit-gir 180ms var(--gecis-egri); }
 /* Üzerine gelince renk değişimleri. */
-.dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .gezinti-diger summary, .kart, .not-karti, .kurgu-karti { transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 180ms ease, filter 150ms ease, transform 180ms var(--gecis-egri); }
+.dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .kart, .not-karti, .kurgu-karti { transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 180ms ease, filter 150ms ease, transform 180ms var(--gecis-egri); }
 /* Kartlarda yükselme: tıklanan kartlar fareyle üzerine gelince 2 piksel kalkar, gölgesi derinleşir, kenarı altına döner.
    Dokunmatik ekranda üzerine gelme olmadığı için yalnız fare varken. */
 @media (hover: hover) {
@@ -1382,7 +1366,7 @@ details.aninda::details-content { transition: none; }
 .basamakli > *, .not-sutunlari.basamakli li { animation: basamak-gir 220ms var(--gecis-egri) both; animation-delay: calc((min(sibling-index(), 15) - 1) * var(--hz-basamak)); }
 /* Kayan seçim vurgusu (gezinti): altın zemin eski satırdan yeni satıra kayar (Kabuk.tsx useGezintiHareketleri). */
 .gezinti-vurgu { position: absolute; z-index: 0; border-radius: 8px; background: var(--vurgu); transform-origin: top; pointer-events: none; }
-.gezinti-listesi > li, .gezinti-diger > summary { position: relative; z-index: 1; }
+.gezinti-listesi > li { position: relative; z-index: 1; }
 .vurgu-kayiyor .gezinti-ogesi.secili:not(.kucuk) { background: transparent; color: var(--metin); }
 /* Sekme çizgisi kayar (kapanis.ts sekmeCizgisiniKur). */
 .sekmeler { position: relative; }
@@ -1407,7 +1391,7 @@ details.aninda::details-content { transition: none; }
   .sayfa, .perde, .perde > .perde-ic, .perde > .palet, .islem-menusu[open] > .menu-icerik, .coklu-secim[open] > .coklu-secim-icerik, details[open] > :not(summary),
   .yan-panel, .yaz-baglami.kayarak, .harita-cekmece, .rehber-paneli, .baglam-sekme-icerik, .hizli-not, .geri-al-seridi, .kayit-durumu-yazi, .gecikmeli,
   .basamakli > *, .not-sutunlari.basamakli li { animation: none; }
-  .dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .gezinti-diger summary, .kart, .not-karti, .kurgu-karti, .agac-ok-isareti,
+  .dugme, .menu-ogesi, .gezinti-ogesi, .sekme, .yan-sekme-ad, .yan-sekme-kapat, .kart, .not-karti, .kurgu-karti, .agac-ok-isareti,
   .arac, .harita-araci, .tuval-araclar button, .tuval-yakinlik button { transition: none; }
   details::details-content { transition: none !important; }
   button.kart:hover, a.kart:hover, a.eser-karti:hover, .harita-karti:hover, .not-karti:hover, .kurgu-karti:hover, a.defter-karti:hover,
@@ -1483,7 +1467,7 @@ details.aninda::details-content { transition: none; }
 @media (max-width: 640px) { .sozluk-girdisi { grid-template-columns: minmax(0, 1fr); } }
 /* Metinde sözlük kelimesi ve bağlantı kartı */
 .metin-editoru .sozluk-terimi { text-decoration: underline dotted; text-decoration-color: color-mix(in srgb, var(--vurgu) 70%, transparent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
-.terim-karti { position: fixed; z-index: 30; width: min(320px, calc(100vw - 16px)); background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--yaricap); box-shadow: 0 8px 28px rgb(0 0 0 / 0.22); padding: 10px 12px; font-family: var(--yazi); font-size: 0.92rem; animation: asagi-gir 150ms var(--gecis-egri); }
+.terim-karti { position: fixed; z-index: 30; width: min(360px, calc(100vw - 16px)); background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--yaricap); box-shadow: 0 8px 28px rgb(0 0 0 / 0.22); padding: 10px 12px; font-family: var(--yazi); font-size: 0.92rem; animation: asagi-gir 150ms var(--gecis-egri); }
 .terim-karti strong { font-family: var(--metin-yazi); font-size: 1.05rem; }
 .terim-karti p { margin: 4px 0 8px; }
 @media (prefers-reduced-motion: reduce) { .terim-karti { animation: none; } }
@@ -1881,3 +1865,64 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .devir-uyarisi { background: var(--vurgu-zemin); border-radius: var(--yaricap); padding: 8px 12px; margin: 4px 0 8px; }
 .devir-uyarisi .dugme { margin-left: 6px; }
 .baska-cihazda { margin: 0 0 8px; }
+
+/* Deneyim kipleri ve Araçlar sayfası (§5.11, K43) */
+.kip-salteri { display: flex; margin: -6px 8px 14px; padding: 3px; border: 1px solid var(--cizgi); border-radius: 10px; background: var(--yuzey); gap: 2px; }
+.kip-salteri button { flex: 1; font: inherit; font-size: 0.8rem; padding: 5px 0; min-height: 30px; border: none; border-radius: 7px; background: none; color: var(--metin-2); cursor: pointer; }
+.kip-salteri button:hover { color: var(--metin); }
+.kip-salteri button.secili { background: var(--yuzey-2); color: var(--metin); font-weight: 600; box-shadow: inset 0 0 0 1px var(--vurgu); }
+.sabit-isaret { font-size: 0.7rem; color: var(--metin-2); margin-left: auto; }
+.cop-bag { color: var(--metin-2); font-size: 0.8rem; text-decoration: underline; padding: 0 2px; }
+.cop-bag:hover { color: var(--metin); }
+.kip-etiketi { font-size: 0.7rem; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--cizgi); color: var(--metin-2); margin-left: 6px; white-space: nowrap; }
+.araclar-giris { margin: -4px 0 12px; }
+.araclar-arama { max-width: 520px; }
+.arac-grubu h2 { font-size: 1rem; margin: 22px 0 2px; }
+.arac-katli { margin-top: 18px; }
+.arac-katli .kartlar { margin-top: 8px; }
+.arac-karti { display: flex; flex-direction: column; gap: 6px; text-align: left; position: relative; }
+.arac-karti:hover { border-color: var(--vurgu); }
+.arac-karti h3 { margin: 0; font-size: 1rem; padding-right: 70px; }
+.arac-bag { color: inherit; text-decoration: none; }
+.arac-bag::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.arac-bag:focus-visible { outline: none; }
+.arac-karti:has(.arac-bag:focus-visible) { outline: 2px solid var(--vurgu); outline-offset: 2px; }
+.arac-karti p { margin: 0; font-size: 0.88rem; color: var(--metin-2); }
+.hazir { font-size: 0.8rem; display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 4px; }
+.hazir::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--basari); }
+.hazir.yok { color: var(--metin-2); }
+.hazir.yok::before { background: none; border: 1px solid var(--metin-2); }
+.sabitle { position: absolute; top: 10px; right: 10px; z-index: 1; font-size: 0.75rem; padding: 2px 8px; min-height: 0; }
+.sabitle.secili { border-color: var(--vurgu); color: var(--vurgu); }
+.islem-menusu.sola .menu-icerik { left: 0; right: auto; transform-origin: top left; }
+.menu-baslik { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--metin-2); padding: 8px 10px 2px; }
+.dolu-satiri { display: flex; align-items: center; gap: 12px; margin: 16px 0 4px; padding: 10px 14px; border: 1px dashed var(--cizgi); border-radius: var(--yaricap); font-size: 0.9rem; color: var(--metin-2); }
+.dolu-satiri > span { flex: 1; }
+.ayrinti-ekle { margin: 8px 0 4px; }
+.ayrinti-ekle .menu-icerik { min-width: 300px; }
+.kayitlar-duzeni.tek { grid-template-columns: minmax(0, 1fr); }
+/* İlk Kıvılcım (§5.11, K43) */
+.kivilcim { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 16px; box-sizing: border-box; position: relative; }
+.kivilcim .atla { position: absolute; top: 22px; right: 28px; font-size: 0.92rem; }
+.kivilcim-karti { width: min(560px, 100%); padding: 30px 34px; }
+.kivilcim h2 { font-family: var(--metin-yazi); font-size: 1.6rem; margin: 6px 0 4px; }
+.kivilcim-adim { font-size: 0.8rem; color: var(--metin-2); letter-spacing: 0.04em; }
+.kivilcim-noktalar { display: flex; gap: 6px; margin-bottom: 10px; }
+.kivilcim-noktalar i { width: 28px; height: 4px; border-radius: 2px; background: var(--cizgi); }
+.kivilcim-noktalar i.dolu { background: var(--vurgu); }
+.kivilcim label { display: block; font-size: 0.88rem; color: var(--metin-2); margin: 16px 0 6px; }
+.kivilcim textarea { min-height: 76px; resize: none; width: 100%; box-sizing: border-box; }
+.kivilcim input.girdi { width: 100%; box-sizing: border-box; }
+.kivilcim-ikili { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+.kivilcim-alt { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--cizgi); }
+.kivilcim-secim label { display: inline-flex; align-items: center; gap: 6px; margin: 8px 18px 0 0; color: var(--metin); }
+@media (max-width: 520px) { .kivilcim-ikili { grid-template-columns: 1fr; } .kivilcim .atla { right: 16px; } }
+/* Yazma ekranının çubukları (§5.11, K43) */
+.ayrilmis-yer { display: inline-flex; min-width: 7.5em; min-height: 32px; align-items: center; }
+.yuzen-cubuk { position: fixed; z-index: 35; display: flex; gap: 2px; padding: 3px; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: 10px; box-shadow: 0 6px 20px rgb(0 0 0 / 0.22); font-family: var(--yazi); animation: asagi-gir 120ms var(--gecis-egri); }
+.yuzen-cubuk .menu-icerik { top: calc(100% + 6px); }
+.menu-ogesi:has(.menu-aciklama) { display: flex; flex-direction: column; gap: 2px; }
+.menu-aciklama { font-size: 0.8rem; color: var(--metin-2); }
+.ayrilmis-yer .menu-icerik, .yuzen-cubuk .menu-icerik { min-width: 320px; }
+.ust-panel { margin: 0 0 12px; }
+@media (prefers-reduced-motion: reduce) { .yuzen-cubuk { animation: none; } }
