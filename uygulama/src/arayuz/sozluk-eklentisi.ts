@@ -18,7 +18,7 @@ function susle(doc: PmNode, adlar: AranacakAd[]): DecorationSet {
 }
 
 /** kartAc: kod ve öğenin ekrandaki yeri; null kartı kapatır (biraz bekleyerek, kartın üstüne geçilebilsin). */
-export function sozlukEklentisi(kartAc: (kod: string | null, yer?: DOMRect) => void) {
+export function sozlukEklentisi(kartAc: (kod: string | null, yer?: DOMRect, el?: HTMLElement) => void) {
   const hedef = (e: Event) => (e.target as HTMLElement | null)?.closest?.('.sozluk-terimi, a.bag') as HTMLElement | null;
   const kod = (el: HTMLElement) => el.getAttribute('data-terim') ?? el.getAttribute('data-kayit');
   return new Plugin<{ adlar: AranacakAd[]; suslemeler: DecorationSet }>({
@@ -34,14 +34,14 @@ export function sozlukEklentisi(kartAc: (kod: string | null, yer?: DOMRect) => v
     props: {
       decorations: (s) => sozlukAnahtari.getState(s)?.suslemeler,
       handleDOMEvents: {
-        mouseover(_v, e) { const el = hedef(e); if (el && kod(el)) kartAc(kod(el), el.getBoundingClientRect()); return false; },
+        mouseover(_v, e) { const el = hedef(e); if (el && kod(el)) kartAc(kod(el), el.getBoundingClientRect(), el); return false; },
         mouseout(_v, e) { if (hedef(e)) kartAc(null); return false; },
         // Dokunmatikte ve kalemde üstüne gelme olmadığı için dokunmak kartı açar; imleç yine oraya gider.
         pointerup(_v, e) {
           const p = e as PointerEvent;
           if (p.pointerType === 'mouse') return false;
           const el = hedef(e);
-          if (el && kod(el)) kartAc(kod(el), el.getBoundingClientRect()); else kartAc(null);
+          if (el && kod(el)) kartAc(kod(el), el.getBoundingClientRect(), el); else kartAc(null);
           return false;
         },
       },

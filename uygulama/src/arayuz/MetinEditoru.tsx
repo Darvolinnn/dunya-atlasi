@@ -29,6 +29,8 @@ import { TerimKarti, useSozlukBilgisi } from './TerimKarti';
 import { uzunCizgiEklentisi } from './uzun-cizgi';
 import { KESILEN_OLAYI, kesilenEklentisi } from './kesilen-eklentisi';
 import { daktiloEklentisi } from './daktilo';
+import { useKip } from './kip';
+import { AcilirMenu } from './AcilirMenu';
 import { okumaSuzgecleri } from './okuma-suzgecleri';
 import { acilistaTaslak, kayittanSonraTemel, kurtarmaAnahtari, taslakAnahtari, taslakSil, taslakYaz, type Taslak, type TaslakDeposu } from './taslak';
 
@@ -75,9 +77,11 @@ export interface EditorDenetimi {
   yenile(): Promise<void>;
   /** Düz metni imlecin yerine ekler (kesilen parçayı geri koymak için); her satır bir paragraftır. */
   ekle(metin: string): boolean;
+  /** "Metin al" penceresini açar (yazma ekranında "Sahne ⋯" menüsünden, §5.11). */
+  metinAl(): void;
 }
 
-export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, baslangic, saltOkunur = false, baglamParcalari = false, parcaDegisti, kelimeDegisti, bosYardim }: {
+export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, baslangic, saltOkunur = false, baglamParcalari = false, parcaDegisti, kelimeDegisti, bosYardim, metinAlMenude = false }: {
   istemci: Istemci; evren: string; kayit: string; alan?: string; denetim?: { current: EditorDenetimi | null };
   /** Sahne metni: seçili parçaya ayrı bağlam verilebilir (F29). */
   baglamParcalari?: boolean;
@@ -91,6 +95,8 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   kelimeDegisti?: (n: number) => void;
   /** Metin boşken metin alanında soluk duran, yazınca kaybolan yardım (K28). */
   bosYardim?: preact.ComponentChildren;
+  /** Yazma ekranında "Metin al" çubukta değil "Sahne ⋯" menüsündedir (§5.11). */
+  metinAlMenude?: boolean;
 }) {
   const calisma = useCalisma();
   const calismaRef = useRef(calisma);
@@ -111,16 +117,25 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   const [kayitliBelge, setKayitliBelge] = useState<PmNode | null>(null);
   useEffect(() => { if (hazir && durum.tur === 'kayitli' && gorunum.current) setKayitliBelge(gorunum.current.state.doc); }, [hazir, durum]);
   const [aracDurumu, setAracDurumu] = useState(0);
+  const yuzenRef = useRef<HTMLDivElement>(null);
   const gorunum = useRef<EditorView | null>(null);
   // Sözlük kelimeleri ve bağlantıların kısa kartı (K37).
   const sozluk = useSozlukBilgisi(istemci, evren, hazir, (adlar) => { const v = gorunum.current; if (v) v.dispatch(v.state.tr.setMeta(sozlukAnahtari, adlar).setMeta('addToHistory', false)); });
-  const [terimKarti, setTerimKarti] = useState<{ kod: string; yer: DOMRect } | null>(null);
+  // Birleşik bağlantı kartı (§5.3, K43): sözlük kelimesinde ve bağlantıda aynı kart; bagPos yalnız gerçek bağlantıda
+  // vardır ve "Bağlantıyı kaldır" yalnız o zaman görünür.
+  const [terimKarti, setTerimKarti] = useState<{ kod: string; yer: DOMRect; bagPos: number | null } | null>(null);
   const kartZamani = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const kartAc = (kod: string | null, yer?: DOMRect) => {
+  const kartAc = (kod: string | null, yer?: DOMRect, el?: HTMLElement) => {
     if (kartZamani.current) clearTimeout(kartZamani.current);
-    if (kod && yer) setTerimKarti({ kod, yer });
-    else kartZamani.current = setTimeout(() => setTerimKarti(null), 250);
+    if (kod && yer) {
+      let bagPos: number | null = null;
+      if (el?.matches('a.bag') && gorunum.current) try { bagPos = gorunum.current.posAtDOM(el, 0); } catch { /* yok */ }
+      setTerimKarti({ kod, yer, bagPos });
+    } else kartZamani.current = setTimeout(() => setTerimKarti(null), 250);
   };
+  /** Seçimin nasıl yapıldığı: yüzen çubuk yalnız fareyle seçimde açılır (§5.11). */
+  const secimKaynagi = useRef<'fare' | 'dokunma' | 'klavye'>('klavye');
+  const kip = useKip(evren);
   type AcikSecici = SeciciIstegi & { konum: { left: number; top: number }; canli?: boolean };
   const [secici, setSeciciDurumu] = useState<AcikSecici | null>(null);
   const seciciRef = useRef<AcikSecici | null>(null);
@@ -292,6 +307,7 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         v.focus();
         return true;
       },
+      metinAl: () => alFormuAc(),
     };
     metinIslemi.current = {
       kaydet,
@@ -372,6 +388,12 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         state,
         editable: () => !saltRef.current,
         attributes: { class: 'metin-editoru', spellcheck: 'true', lang: 'tr', 'aria-label': 'Metin', role: 'textbox', 'aria-multiline': 'true' },
+        handleDOMEvents: {
+          pointerdown(_v, e) { secimKaynagi.current = (e as PointerEvent).pointerType === 'mouse' ? 'fare' : 'dokunma'; return false; },
+          keydown() { secimKaynagi.current = 'klavye'; return false; },
+          focus() { setAracDurumu((n) => n + 1); return false; },
+          blur() { setTimeout(() => setAracDurumu((n) => n + 1), 0); return false; },
+        },
         handleKeyDown(_v, e) {
           // Satır içi bağlantı kutusu açıkken ok tuşları, Enter ve Esc kutuya gider.
           if (seciciRef.current?.satirIci && tutamak.current) return tutamak.current.tus(e);
@@ -595,8 +617,48 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
   useEffect(() => { parcaDegisti?.(imlecParcaKodu); }, [imlecParcaKodu]);
   const imlecKullanimi = [...kullanimlar].reverse().find((k) => imlecIsaretleri.includes(k.kod)) ?? null;
 
+  // Seçimde ileri işler (§5.11): fareyle seçimde yüzen çubuk, öbür seçimlerde biçim çubuğunun ayrılmış yeri.
+  const secili = !!v && !v.state.selection.empty;
+  const derinVar = kip !== 'sade' && !saltOkunur;
+  const odakta = !!v && (v.hasFocus() || !!yuzenRef.current?.contains(document.activeElement));
+  const yuzenGoster = secili && odakta && secimKaynagi.current === 'fare' && !secici && !ayirma && !isaretFormu && !parcaFormu;
+  const derinlestir = (
+    <AcilirMenu dugme="Derinleştir ▾" etiket="Derinleştir" sinif="arac" sola>
+      {alan === 'govde' && <button type="button" class="menu-ogesi" onClick={ayirmaAc}><span>Yeni kayda ayır</span><span class="menu-aciklama">Seçili parça ayrı bir sayfaya taşınır, yerine bağlantı kalır</span></button>}
+      <button type="button" class="menu-ogesi" onClick={() => isaretFormuAc()}><span>Ayrıntıyı işaretle</span><span class="menu-aciklama">Cümle bir kaydın özelliğine bağlanır; bilgi değişirse uyarır</span></button>
+      {alan === 'govde' && <button type="button" class="menu-ogesi" onClick={() => isaretFormuAc(true)}><span>Karakterin bilgisine dayandır</span><span class="menu-aciklama">Karakter bunu daha önce öğrenmiş mi, program denetler</span></button>}
+      {baglamParcalari && <button type="button" class="menu-ogesi" onClick={() => parcaFormuAc(null)}><span>Ayrı zaman ve mekân ver</span><span class="menu-aciklama">Yalnız bu parça geçmişte ya da başka yerde geçiyorsa</span></button>}
+    </AcilirMenu>
+  );
+  let yuzenYer: { left: number; top: number } | null = null;
+  if (yuzenGoster && v) {
+    const a = v.coordsAtPos(v.state.selection.from), b = v.coordsAtPos(v.state.selection.to);
+    yuzenYer = { left: Math.max(8, Math.min((a.left + (a.top === b.top ? b.right : a.left)) / 2 - 90, window.innerWidth - 260)), top: Math.max(8, a.top - 46) };
+  }
+  // Birleşik kart imleç bağlantının içindeyken de açılır (kenarında değil; yazarken araya girmesin).
+  const imlecBag = v && bag && !secili && v.hasFocus() && v.state.selection.from > bag.from && v.state.selection.from < bag.to ? bag : null;
+  const kart = terimKarti ?? (imlecBag && v ? (() => {
+    const r = v.coordsAtPos(imlecBag.from), r2 = v.coordsAtPos(imlecBag.to);
+    return { kod: imlecBag.hedef, yer: new DOMRect(r.left, r.top, Math.max(1, r2.right - r.left), r.bottom - r.top), bagPos: imlecBag.from };
+  })() : null);
+  const bagKaldir = (pos: number) => {
+    const g = gorunum.current;
+    if (!g || saltOkunur) return;
+    const st = g.state.apply(g.state.tr.setSelection(TextSelection.create(g.state.doc, Math.min(pos + 1, g.state.doc.content.size))));
+    const r = bagAraligi(st);
+    if (r) g.dispatch(g.state.tr.removeMark(r.from, r.to, bagTuru));
+    setTerimKarti(null);
+    g.focus();
+  };
+
   return (
     <div class="editor-kabi">
+      {yuzenYer && (
+        <div ref={yuzenRef} class="yuzen-cubuk" role="toolbar" aria-label="Seçim" style={{ left: `${yuzenYer.left}px`, top: `${yuzenYer.top}px` }} onMouseDown={(e) => { if (!(e.target as HTMLElement).closest('.menu-icerik')) e.preventDefault(); }}>
+          <button type="button" class="arac" onClick={bagla}>@ Kayda bağla</button>
+          {derinVar && derinlestir}
+        </div>
+      )}
       <div class="arac-cubugu" role="toolbar" aria-label="Biçim">
         <button type="button" class="arac" aria-pressed={markAcik('strong')} title="Kalın (Ctrl+B)" onMouseDown={(e) => e.preventDefault()} onClick={() => uygula(toggleMark(sema.marks.strong))}><b>K</b></button>
         <button type="button" class="arac" aria-pressed={markAcik('em')} title="İtalik (Ctrl+I)" onMouseDown={(e) => e.preventDefault()} onClick={() => uygula(toggleMark(sema.marks.em))}><i>İ</i></button>
@@ -605,21 +667,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
         <button type="button" class="arac" aria-pressed={baslikMi(3)} onMouseDown={(e) => e.preventDefault()} onClick={() => uygula(baslikMi(3) ? setBlockType(sema.nodes.paragraph) : setBlockType(sema.nodes.heading, { level: 3 }))}>Alt başlık</button>
         <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => uygula((s, d) => wrapIn(sema.nodes.blockquote)(s, d) || lift(s, d))}>Alıntı</button>
         <span class="ayrac" />
-        <button type="button" class="arac bagla" title="Bir kayda bağla (Ctrl+K, [[ ya da @)" onMouseDown={(e) => e.preventDefault()} onClick={bagla}>Bağla</button>
-        {bag && v && <>
-          <a class="arac" href={`#/e/${evren}/k/${bag.hedef}`}>“{v.state.doc.textBetween(bag.from, bag.to)}” kaydını aç</a>
-          {calisma && <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => {
-            const r = v.coordsAtPos(bag.from), r2 = v.coordsAtPos(bag.to);
-            calisma.ozetAc(bag.hedef, new DOMRect(r.left, r.top, Math.max(1, r2.right - r.left), r.bottom - r.top));
-          }}>Özet</button>}
-          {calisma && <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => calisma.yanPanelAc(bag.hedef)}>Yan panelde aç</button>}
-          <button type="button" class="arac" onMouseDown={(e) => e.preventDefault()} onClick={() => uygula((s, d) => { d?.(s.tr.removeMark(bag.from, bag.to, bagTuru)); return true; })}>Bağlantıyı kaldır</button>
-        </>}
-        {v && !v.state.selection.empty && alan === 'govde' && <button type="button" class="arac" title="Seçili parça yeni bir kayda dönüşür; yerinde o kayda bağlantı kalır" onMouseDown={(e) => e.preventDefault()} onClick={ayirmaAc}>Yeni kayda ayır</button>}
-        {v && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili cümle bir kayda, bir değere ya da bir soruya bağlanır" onMouseDown={(e) => e.preventDefault()} onClick={() => isaretFormuAc()}>İşaretle</button>}
-        {v && !v.state.selection.empty && !saltOkunur && alan === 'govde' && <button type="button" class="arac" title="Seçili parçadaki davranış bir karakterin bildiği bir şeye dayanıyor; denetim, karakterin bunu daha önce öğrenip öğrenmediğine bakar" onMouseDown={(e) => e.preventDefault()} onClick={() => isaretFormuAc(true)}>Bilgiye dayanıyor</button>}
-        {v && baglamParcalari && !v.state.selection.empty && !saltOkunur && <button type="button" class="arac" title="Seçili parçaya ayrı bir tarih, yer ve bakış açısı verilir" onMouseDown={(e) => e.preventDefault()} onClick={() => parcaFormuAc(null)}>Bağlam ver</button>}
-        {v && alan === 'govde' && !saltOkunur && <button type="button" class="arac" title="Başka bir kaydın metni (efsane, mektup, şarkı) buraya alınır" onMouseDown={(e) => e.preventDefault()} onClick={alFormuAc}>Metin al</button>}
+        <button type="button" class="arac bagla" title="Bir kayda bağla (Ctrl+K, [[ ya da @)" onMouseDown={(e) => e.preventDefault()} onClick={bagla}>@ Bağla</button>
+        {/* Ayrılmış yer (§5.11): dokunmatik ya da klavyeyle seçimde "Derinleştir ▾" burada belirir; çubuk zıplamaz. */}
+        {derinVar && <><span class="ayrac" /><span class="ayrilmis-yer">{secili && !yuzenGoster && derinlestir}</span></>}
+        {alan === 'govde' && !saltOkunur && !metinAlMenude && <button type="button" class="arac" title="Başka bir kaydın metni (efsane, mektup, şarkı) buraya alınır" onMouseDown={(e) => e.preventDefault()} onClick={alFormuAc}>Metin al</button>}
         <span class="bosluk" />
         <span class="kayit-durumu soluk kucuk" aria-live="polite"><span key={durum.tur} class={`kayit-durumu-yazi ${durum.tur}`}>{durumYazisi(durum)}</span></span>
       </div>
@@ -734,8 +785,10 @@ export function MetinEditoru({ istemci, evren, kayit, alan = 'govde', denetim, b
           return true;
         }} />
       )}
-      {terimKarti && sozluk.bilgi(terimKarti.kod) && <TerimKarti evren={evren} bilgi={sozluk.bilgi(terimKarti.kod)!} yer={terimKarti.yer}
-        ustunde={(b) => { if (kartZamani.current) clearTimeout(kartZamani.current); if (!b) kartAc(null); }} />}
+      {kart && sozluk.bilgi(kart.kod) && <TerimKarti evren={evren} bilgi={sozluk.bilgi(kart.kod)!} yer={kart.yer}
+        ustunde={(b) => { if (kartZamani.current) clearTimeout(kartZamani.current); if (!b && terimKarti) kartAc(null); }}
+        yanPanelde={calisma ? () => { calisma.yanPanelAc(kart.kod); setTerimKarti(null); } : undefined}
+        kaldir={kart.bagPos !== null && !saltOkunur ? () => bagKaldir(kart.bagPos!) : undefined} />}
       {secici && <BaglantiSecici key={`${secici.from}-${secici.canli ? '' : secici.sorgu}`} istemci={istemci} evren={evren} sorgu={secici.sorgu} konum={secici.konum}
         satirIci={secici.satirIci} tutamak={tutamak} kendiligindenTek={secici.kendiligindenBagla}
         sec={(s) => baglantiKur(seciciRef.current ?? secici, s)} kapat={seciciKapat} />}

@@ -191,7 +191,8 @@ export function CalismaSaglayici({ istemci, evren, kayit, children }: {
   // Bağlantının üzerine gelince özet kartı (§5.3); dokunmatikte basılı tutunca.
   useEffect(() => {
     let zamanlayici: ReturnType<typeof setTimeout> | null = null;
-    const bagBul = (t: EventTarget | null) => (t instanceof Element ? t.closest('a.bag[data-kayit]') as HTMLElement | null : null);
+    // Düzenlenen metindeki bağlantıda kendi birleşik kartı açılır (§5.3, K43); bu kart yalnız öbür yerlerdeki bağlantılar için.
+    const bagBul = (t: EventTarget | null) => (t instanceof Element && !t.closest('.ProseMirror[contenteditable="true"]') ? t.closest('a.bag[data-kayit]') as HTMLElement | null : null);
     // Parmakla dokunuş da "üzerine gelme" olayı üretir; o zaman özet kartı açılmaz (dokunuşta terim kartı ya da
     // bağlantının kendisi yeter, kart basılı tutunca ya da bilgi düğmesiyle açılır). Kalemle üzerine gelmek kartı açar.
     const uzerine = (e: PointerEvent) => {

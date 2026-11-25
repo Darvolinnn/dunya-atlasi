@@ -1467,7 +1467,7 @@ details.aninda::details-content { transition: none; }
 @media (max-width: 640px) { .sozluk-girdisi { grid-template-columns: minmax(0, 1fr); } }
 /* Metinde sözlük kelimesi ve bağlantı kartı */
 .metin-editoru .sozluk-terimi { text-decoration: underline dotted; text-decoration-color: color-mix(in srgb, var(--vurgu) 70%, transparent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
-.terim-karti { position: fixed; z-index: 30; width: min(320px, calc(100vw - 16px)); background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--yaricap); box-shadow: 0 8px 28px rgb(0 0 0 / 0.22); padding: 10px 12px; font-family: var(--yazi); font-size: 0.92rem; animation: asagi-gir 150ms var(--gecis-egri); }
+.terim-karti { position: fixed; z-index: 30; width: min(360px, calc(100vw - 16px)); background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--yaricap); box-shadow: 0 8px 28px rgb(0 0 0 / 0.22); padding: 10px 12px; font-family: var(--yazi); font-size: 0.92rem; animation: asagi-gir 150ms var(--gecis-egri); }
 .terim-karti strong { font-family: var(--metin-yazi); font-size: 1.05rem; }
 .terim-karti p { margin: 4px 0 8px; }
 @media (prefers-reduced-motion: reduce) { .terim-karti { animation: none; } }
@@ -1917,3 +1917,12 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .kivilcim-alt { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--cizgi); }
 .kivilcim-secim label { display: inline-flex; align-items: center; gap: 6px; margin: 8px 18px 0 0; color: var(--metin); }
 @media (max-width: 520px) { .kivilcim-ikili { grid-template-columns: 1fr; } .kivilcim .atla { right: 16px; } }
+/* Yazma ekranının çubukları (§5.11, K43) */
+.ayrilmis-yer { display: inline-flex; min-width: 7.5em; min-height: 32px; align-items: center; }
+.yuzen-cubuk { position: fixed; z-index: 35; display: flex; gap: 2px; padding: 3px; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: 10px; box-shadow: 0 6px 20px rgb(0 0 0 / 0.22); font-family: var(--yazi); animation: asagi-gir 120ms var(--gecis-egri); }
+.yuzen-cubuk .menu-icerik { top: calc(100% + 6px); }
+.menu-ogesi:has(.menu-aciklama) { display: flex; flex-direction: column; gap: 2px; }
+.menu-aciklama { font-size: 0.8rem; color: var(--metin-2); }
+.ayrilmis-yer .menu-icerik, .yuzen-cubuk .menu-icerik { min-width: 320px; }
+.ust-panel { margin: 0 0 12px; }
+@media (prefers-reduced-motion: reduce) { .yuzen-cubuk { animation: none; } }

@@ -29,7 +29,10 @@ export function useSozlukBilgisi(istemci: Istemci, evren: string, hazir: boolean
   return { bilgi: (kod: string) => bilgiler.get(kod) ?? null };
 }
 
-export function TerimKarti({ evren, bilgi, yer, ustunde }: { evren: string; bilgi: KartBilgisi; yer: DOMRect; ustunde: (b: boolean) => void }) {
+/** Birleşik bağlantı kartı (§5.3, K43): "Bağlantıyı kaldır" yalnız gerçek bağlantıda (kaldir verilince) çıkar. */
+export function TerimKarti({ evren, bilgi, yer, ustunde, yanPanelde, kaldir }: {
+  evren: string; bilgi: KartBilgisi; yer: DOMRect; ustunde: (b: boolean) => void; yanPanelde?: () => void; kaldir?: () => void;
+}) {
   const sol = Math.max(8, Math.min(yer.left, window.innerWidth - 328));
   const alttaYer = window.innerHeight - yer.bottom > 160;
   const stil = alttaYer ? { left: `${sol}px`, top: `${yer.bottom + 6}px` } : { left: `${sol}px`, bottom: `${window.innerHeight - yer.top + 6}px` };
@@ -37,9 +40,11 @@ export function TerimKarti({ evren, bilgi, yer, ustunde }: { evren: string; bilg
     <div class="terim-karti" role="tooltip" style={stil} onMouseEnter={() => ustunde(true)} onMouseLeave={() => ustunde(false)}>
       <strong>{bilgi.ad}</strong> <span class="soluk kucuk">{bilgi.ek}</span>
       <p>{bilgi.anlam || <span class="soluk">{bilgi.terim ? 'Anlamı yazılmamış.' : 'Özeti yazılmamış.'}</span>}</p>
-      <div class="satir">
-        {bilgi.terim && <a class="dugme kucuk" href={`#/e/${evren}/terimler`}>Sözlükte aç</a>}
+      <div class="satir" onMouseDown={(e) => e.preventDefault()}>
+        {yanPanelde && <button type="button" class="dugme kucuk" onClick={yanPanelde}>Yan panelde aç</button>}
         <a class="dugme kucuk" href={`#/e/${evren}/k/${bilgi.kod}`}>Kaydı aç</a>
+        {bilgi.terim && <a class="dugme sade kucuk" href={`#/e/${evren}/terimler`}>Sözlükte aç</a>}
+        {kaldir && <button type="button" class="dugme sade kucuk" onClick={kaldir}>Bağlantıyı kaldır</button>}
       </div>
     </div>
   );
