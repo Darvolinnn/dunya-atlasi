@@ -6,6 +6,7 @@ import { EvrenlerEkrani } from './EvrenlerEkrani';
 import { EvrenEkrani } from './EvrenEkrani';
 import { KayitEkrani } from './KayitEkrani';
 import { YazEkrani } from './YazEkrani';
+import { IlkKivilcim } from './IlkKivilcim';
 import { HizliNot } from './HizliNot';
 import { CalismaSaglayici } from './Calisma';
 import { EsitlemeEkrani, EsitlemeOzeti, EsitlemeSaglayici, EsitlemeSeridi } from './Esitleme';
@@ -14,12 +15,13 @@ import { YazarlikRehberiPaneli } from './YazarlikRehberi';
 import { kabuk, KAPANIS_OLAYI, pencereyiKapat, yedekKlasoruYeri } from '../veri/kabuk';
 
 export type Yol = { ekran: 'evrenler' } | { ekran: 'esitleme' } | { ekran: 'evren'; kod: string; sekme: string; alt: string | null } | { ekran: 'kayit'; evren: string; kod: string }
-  | { ekran: 'yaz'; evren: string; kod: string | null };
+  | { ekran: 'yaz'; evren: string; kod: string | null } | { ekran: 'kivilcim'; evren: string };
 
 function yolOku(): Yol {
   const p = location.hash.replace(/^#\/?/, '').split('/');
   if (p[0] === 'e' && p[1] && p[2] === 'k' && p[3]) return { ekran: 'kayit', evren: p[1], kod: p[3] };
   if (p[0] === 'esitleme') return { ekran: 'esitleme' };
+  if (p[0] === 'e' && p[1] && p[2] === 'kivilcim') return { ekran: 'kivilcim', evren: p[1] };
   // Evren açılınca yazma düzeni gelir (§5.10, K24).
   if (p[0] === 'e' && p[1] && (!p[2] || p[2] === 'yaz')) return { ekran: 'yaz', evren: p[1], kod: p[3] || null };
   if (p[0] === 'e' && p[1]) return { ekran: 'evren', kod: p[1], sekme: p[2] === 'gorunumler' ? 'araclar' : p[2], alt: p[3] || null };
@@ -85,7 +87,7 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
     })().catch((e) => setHata(e.message));
   }, [istemci]);
 
-  const evren = yol.ekran === 'evren' ? yol.kod : yol.ekran === 'kayit' || yol.ekran === 'yaz' ? yol.evren : null;
+  const evren = yol.ekran === 'evren' ? yol.kod : yol.ekran === 'kayit' || yol.ekran === 'yaz' || yol.ekran === 'kivilcim' ? yol.evren : null;
   const acikKayit = yol.ekran === 'kayit' ? yol.kod : yol.ekran === 'yaz' ? yol.kod : null;
   if (hata) return <main class="sayfa"><h1>Dünya Atlası</h1><p class="hata">Bu cihazdaki veriler açılamadı: {hata}</p><button class="dugme" onClick={() => location.reload()}>Yeniden dene</button></main>;
   if (!kurulum) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
@@ -101,9 +103,10 @@ export function Uygulama({ istemci }: { istemci: Istemci }) {
       {yol.ekran === 'evrenler' ? <EvrenlerEkrani istemci={istemci} />
         : yol.ekran === 'esitleme' ? <EsitlemeEkrani istemci={istemci} />
         : yol.ekran === 'kayit' ? <KayitEkrani key={yol.kod} istemci={istemci} evren={yol.evren} kod={yol.kod} />
+        : yol.ekran === 'kivilcim' ? <IlkKivilcim istemci={istemci} evren={yol.evren} />
         : yol.ekran === 'yaz' ? <YazEkrani key={`${yol.evren}/${yol.kod}`} istemci={istemci} evren={yol.evren} kod={yol.kod} />
         : <EvrenEkrani istemci={istemci} kod={yol.kod} sekme={yol.sekme} alt={yol.alt} />}
-      <HizliNot istemci={istemci} evren={evren} />
+      {yol.ekran !== 'kivilcim' && <HizliNot istemci={istemci} evren={evren} />}
       <GeriAlSeridi />
       <KapanisBekcisi istemci={istemci} />
       {!evren && <footer class="alt" aria-label="Durum">

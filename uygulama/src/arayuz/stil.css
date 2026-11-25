@@ -948,11 +948,6 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .evren-karti .kart { padding-right: 76px; height: 100%; }
 .evren-kaldir { position: absolute; top: 8px; right: 8px; }
 
-/* "İlk adımlar" listesi (K26). */
-.ilk-adimlar { margin-bottom: 20px; }
-.ilk-adimlar ol { margin: 10px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
-.ilk-adimlar li.tamam { color: var(--metin-2); text-decoration: line-through; }
-.ilk-adimlar li.sirada { font-weight: 600; }
 
 /* Yazarlık rehberi (K27): sayfa rehberiyle aynı yan panel. */
 .yazarlik-rehberi { z-index: 36; }
@@ -963,10 +958,6 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .sahne-plani { border-bottom: 1px solid var(--cizgi); padding-bottom: 8px; margin-bottom: 8px; }
 .sahne-plani > summary { cursor: pointer; }
 .sahne-plani .soru-listesi { margin-top: 6px; }
-.ilk-adim-yollari { border: 0; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 4px 14px; }
-.ilk-adim-yollari legend { padding: 0; margin-bottom: 4px; width: 100%; }
-.ilk-adim-yollari label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
-.ilk-adimlar li.gecildi { color: var(--metin-2); }
 /* Seriler (K27): yazma ağacında eserlerin üstünde, katlanmayan bir başlık. */
 .agac-seri { display: flex; flex-direction: column; margin-bottom: 4px; }
 .agac-seri-ad { display: block; padding: 3px 8px; border-radius: 6px; color: var(--metin-2); text-decoration: none; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; }
@@ -996,7 +987,7 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .bos-cipler .cip { border: 1px dashed var(--cizgi); border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 0.85rem; color: var(--vurgu); background: var(--yuzey); cursor: pointer; }
 .bos-cipler .cip:hover { border-color: var(--vurgu); }
 .henuz-eklenmedi { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--cizgi); }
-/* İlk adımlarda sıradaki adım (K26): Yaz sayfası dışında tek satır */
+/* Araç tanıtımı (K28): Yaz sayfası dışında tek satır */
 .siradaki-adim { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 12px; padding: 8px 14px; border: 1px solid var(--cizgi); border-radius: var(--yaricap); background: var(--yuzey); }
 
 /* ---------- Kullanım kolaylığı (K28) ---------- */
@@ -1910,3 +1901,19 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .ayrinti-ekle { margin: 8px 0 4px; }
 .ayrinti-ekle .menu-icerik { min-width: 300px; }
 .kayitlar-duzeni.tek { grid-template-columns: minmax(0, 1fr); }
+/* İlk Kıvılcım (§5.11, K43) */
+.kivilcim { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 16px; box-sizing: border-box; position: relative; }
+.kivilcim .atla { position: absolute; top: 22px; right: 28px; font-size: 0.92rem; }
+.kivilcim-karti { width: min(560px, 100%); padding: 30px 34px; }
+.kivilcim h2 { font-family: var(--metin-yazi); font-size: 1.6rem; margin: 6px 0 4px; }
+.kivilcim-adim { font-size: 0.8rem; color: var(--metin-2); letter-spacing: 0.04em; }
+.kivilcim-noktalar { display: flex; gap: 6px; margin-bottom: 10px; }
+.kivilcim-noktalar i { width: 28px; height: 4px; border-radius: 2px; background: var(--cizgi); }
+.kivilcim-noktalar i.dolu { background: var(--vurgu); }
+.kivilcim label { display: block; font-size: 0.88rem; color: var(--metin-2); margin: 16px 0 6px; }
+.kivilcim textarea { min-height: 76px; resize: none; width: 100%; box-sizing: border-box; }
+.kivilcim input.girdi { width: 100%; box-sizing: border-box; }
+.kivilcim-ikili { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+.kivilcim-alt { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--cizgi); }
+.kivilcim-secim label { display: inline-flex; align-items: center; gap: 6px; margin: 8px 18px 0 0; color: var(--metin); }
+@media (max-width: 520px) { .kivilcim-ikili { grid-template-columns: 1fr; } .kivilcim .atla { right: 16px; } }

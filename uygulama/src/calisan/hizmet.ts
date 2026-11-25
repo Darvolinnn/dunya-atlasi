@@ -2,6 +2,7 @@
 // Automerge WASM'ı bu sınıf kurulmadan önce hazırlanmış olmalıdır.
 import type { Database } from '@sqlite.org/sqlite-wasm';
 import { kodGecerliMi, yeniKod } from '../alan/kod';
+import { araKonum } from '../alan/sira';
 import type { IslemGirdisi } from '../alan/islem';
 import { A } from '../alan/automerge';
 import { baglantilar, duzMetindenSpans, spanAyari } from '../alan/metin-sema';
@@ -53,7 +54,7 @@ import * as montaj from './montaj';
 import * as seriPlan from './seri';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
-import type { AdDizini, AracTanitimDayanaklari, AracHazirligi, KayitDolulugu, IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi, YerelYedekDurumu } from '../veri/api';
+import type { AdDizini, AracTanitimDayanaklari, AracHazirligi, KayitDolulugu, IlerlemeBildirimi, SimdiOnerisi, YerelYedekDurumu } from '../veri/api';
 import type { BirlesmeGeri, SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
 import * as bakim from './bakim';
@@ -305,41 +306,39 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       tarihli: db.selectValue("SELECT 1 FROM kayitlar WHERE tur IN ('sahne','olay') AND tarih IS NOT NULL AND silindi IS NULL LIMIT 1") !== undefined,
     };
   }
-  ilkAdimlar({ evren }: { evren: string }) {
-    const db = this.evren(evren).db;
-    const var_ = (sql: string) => db.selectValue(sql) !== undefined;
-    const sahneler = "SELECT kod, tarih, sahne_olayi FROM kayitlar WHERE tur='sahne' AND silindi IS NULL";
-    const cevapli = (soru: string, kayitlar: string) => var_(`SELECT 1 FROM soru_cevaplari WHERE soru='${soru}' AND durum='cevaplandi' AND kayit IN (${kayitlar}) LIMIT 1`);
-    const YER_TURLERI = "'mekan','sehir','siyasi'";
-    return {
-      eser: var_("SELECT 1 FROM kayitlar WHERE tur='eser' AND silindi IS NULL LIMIT 1"),
-      sahne: var_(`${sahneler} LIMIT 1`),
-      baglanti: var_(`SELECT 1 FROM baglantilar b JOIN kayitlar k ON k.kod=b.kaynak WHERE k.tur='sahne' AND k.silindi IS NULL LIMIT 1`),
-      // Sahnenin kendi tarihi, sahne olayının tarihi ya da bir mekânı.
-      baglam: var_(`SELECT 1 FROM (${sahneler}) s LEFT JOIN kayitlar o ON o.kod=s.sahne_olayi
-        WHERE s.tarih IS NOT NULL OR o.tarih IS NOT NULL
-          OR EXISTS (SELECT 1 FROM iliskiler i WHERE i.tur='sahne_yeri' AND i.silindi IS NULL AND (i.a=s.kod OR i.b=s.kod OR i.a=s.sahne_olayi OR i.b=s.sahne_olayi)) LIMIT 1`),
-      // Başlangıç yollarının dayanakları (K27). Hepsi varlık sorgusudur; evren büyüklüğünden bağımsızdır.
-      not: var_("SELECT 1 FROM kayitlar WHERE tur='not' AND silindi IS NULL LIMIT 1"),
-      nottanEser: var_(`SELECT 1 FROM iliskiler i JOIN kayitlar k ON k.kod=i.b WHERE i.tur='nottan' AND i.silindi IS NULL AND k.tur='eser' AND k.silindi IS NULL LIMIT 1`),
-      cekirdek: cevapli('cekirdek.1', "SELECT kod FROM kayitlar WHERE tur='eser' AND silindi IS NULL"),
-      karakter: var_("SELECT 1 FROM kayitlar WHERE tur='karakter' AND silindi IS NULL LIMIT 1"),
-      istek: cevapli('karakter.1', "SELECT kod FROM kayitlar WHERE tur='karakter' AND silindi IS NULL"),
-      karsit: cevapli('karsit.1', "SELECT kod FROM kayitlar WHERE tur='karakter' AND silindi IS NULL")
-        || var_(`SELECT 1 FROM iliskiler i JOIN kayitlar k ON k.kod IN (i.a, i.b) WHERE i.tur IN ('dusman','rakip','nefret') AND i.silindi IS NULL AND k.tur='karakter' AND k.silindi IS NULL LIMIT 1`),
-      karakterSahnede: var_(`SELECT 1 FROM iliskiler i JOIN kayitlar k ON k.kod=i.a JOIN kayitlar s ON s.kod=i.b
-        WHERE i.tur='sahnede' AND i.rol='bulunuyor' AND i.silindi IS NULL AND k.tur='karakter' AND k.silindi IS NULL AND s.tur='sahne' AND s.silindi IS NULL LIMIT 1`),
-      kural: cevapli('pusula.4', "SELECT 'evren'") || var_("SELECT 1 FROM kayitlar WHERE tur IN ('evren_kurali','buyu_sistemi') AND silindi IS NULL LIMIT 1"),
-      guc: cevapli('pusula.3', "SELECT 'evren'"),
-      yer: var_(`SELECT 1 FROM kayitlar WHERE tur IN (${YER_TURLERI}) AND silindi IS NULL LIMIT 1`),
-      yerdeIs: var_(`SELECT 1 FROM iliskiler i WHERE i.tur='sahne_yeri' AND i.silindi IS NULL LIMIT 1`)
-        || var_(`SELECT 1 FROM baglantilar b JOIN kayitlar n ON n.kod=b.kaynak JOIN kayitlar y ON y.kod=b.hedef
-          WHERE n.tur='not' AND n.silindi IS NULL AND y.tur IN (${YER_TURLERI}) AND y.silindi IS NULL LIMIT 1`),
-      /** Evren sorularının durumu (yalnız başlangıç yollarında geçen sorular). */
-      sorular: Object.fromEntries((db.selectObjects("SELECT soru, durum FROM soru_cevaplari WHERE kayit='evren' AND soru IN ('pusula.3','pusula.4')") as { soru: string; durum: string }[]).map((r) => [r.soru, r.durum])),
-      hedefler: Object.fromEntries((['eser', 'sahne', 'not', 'karakter'] as const).map((t) => [t,
-        (db.selectValue("SELECT kod FROM kayitlar WHERE tur=? AND silindi IS NULL ORDER BY olusturma, rowid LIMIT 1", [t]) as string | undefined) ?? null])) as IlkAdimDayanaklari['hedefler'],
-    };
+  /**
+   * İlk Kıvılcım (§5.11, K43): yeni evrenin ilk eseri, gerekirse bölümü ve sahnesi; yazıldıysa ilk karakter ve
+   * mekân kayıtları. Hepsi tek değişiklik grubudur (tek işlemle geri alınır). Yazılandan anlam çıkarılmaz (K1):
+   * doldurulan kutu yalnız kendi kaydını oluşturur. Dönen kod, açılacak sahnedir.
+   */
+  ilkKivilcim({ evren, eser, fikir = '', karakter = null, mekan = null, sahne, bolumlu }: {
+    evren: string; eser: string; fikir?: string; karakter?: { ad: string; not: string } | null; mekan?: { ad: string; not: string } | null; sahne: string; bolumlu: boolean;
+  }): { sahne: string } {
+    const kisa = (v: unknown) => temizle(String(v ?? ''), { bos: true, uzunluk: 500 });
+    const ad = (v: unknown, yedek: string) => temizle(String(v ?? '').trim() || yedek);
+    const eserKod = yeniKod(), sahneKod = yeniKod(), bolumKod = bolumlu ? yeniKod() : null;
+    const g: IslemGirdisi[] = [
+      ...this.kayitGirdileri(eserKod, { ad: ad(eser, 'Adsız roman'), tur: 'eser', karar: 'kesin', ozet: kisa(fikir) }),
+      ...(bolumKod ? [
+        ...this.kayitGirdileri(bolumKod, { ad: 'Başlangıç', tur: 'bolum', karar: 'kesin', ozet: '' }),
+        { tur: 'anlati_yerlestir', veri: { kod: bolumKod, ust: eserKod, konum: araKonum(null, null), onceki: null } } as IslemGirdisi,
+      ] : []),
+      ...this.kayitGirdileri(sahneKod, { ad: ad(sahne, '1. Sahne'), tur: 'sahne', karar: 'kesin', ozet: '' }),
+      { tur: 'anlati_yerlestir', veri: { kod: sahneKod, ust: bolumKod ?? eserKod, konum: araKonum(null, null), onceki: null } },
+    ];
+    const kayitlar = [eserKod, sahneKod, ...(bolumKod ? [bolumKod] : [])];
+    if (karakter && String(karakter.ad ?? '').trim()) {
+      const k = yeniKod(); kayitlar.push(k);
+      g.push(...this.kayitGirdileri(k, { ad: ad(karakter.ad, ''), tur: 'karakter', karar: 'kesin', ozet: kisa(karakter.not) }),
+        { tur: 'iliski_ekle', veri: { kod: yeniKod(), tur: 'sahnede', a: k, b: sahneKod, rol: 'bulunuyor', karar: 'kesin' } });
+    }
+    if (mekan && String(mekan.ad ?? '').trim()) {
+      const m = yeniKod(); kayitlar.push(m);
+      g.push(...this.kayitGirdileri(m, { ad: ad(mekan.ad, ''), tur: 'mekan', karar: 'kesin', ozet: kisa(mekan.not) }),
+        { tur: 'iliski_ekle', veri: { kod: yeniKod(), tur: 'sahne_yeri', a: sahneKod, b: m, karar: 'kesin' } });
+    }
+    this.yaz(evren, g, kayitlar);
+    return { sahne: sahneKod };
   }
 
   /**

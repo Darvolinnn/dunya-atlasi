@@ -61,7 +61,7 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
     ],
     neZaman: 'Yazmaya oturduğunuz her an. Evren açılınca bu sayfa gelir.',
     adimlar: [
-      'Yeni bir evrende sayfanın üstündeki “İlk adımlar” listesi sizi dört adımda yazmaya hazırlar; yaptıkça adımlar işaretlenir. İsterseniz “Gizle” ile kapatabilirsiniz.',
+      'Yeni bir evren “Devam et →” ile oluşturulunca üç kısa kartla ilk eseriniz, ilk sahneniz ve isterseniz ilk karakteriniz ile mekânınız hazırlanır; sonra doğrudan sahnenin metni açılır. Kartların hepsi isteğe bağlıdır; “Atla” boş sayfayı açar.',
       'Henüz eseriniz yoksa romanınızın ya da öykünüzün adını yazıp “Eser oluştur”a basın.',
       'Soldaki ağaçta “+ Bölüm” ile bölüm, “+ Sahne” ile sahne ekleyin.',
       'Bir sahneye basıp yazmaya başlayın. Yazdıklarınız kendiliğinden kaydedilir.',

@@ -8,6 +8,7 @@ import type { EserYapisi, EvrenBilgisi, Kayit, KaldigiYerBilgisi, KisaKayit, Sah
 import { zamanYaz } from '../alan/islem-metni';
 import { EvrenKabugu } from './Kabuk';
 import { MetinEditoru, type EditorDenetimi } from './MetinEditoru';
+import { useKip } from './kip';
 import { SahneBirlestirPenceresi, SahneBolPenceresi } from './SahneBolme';
 import { SahnePlani } from './Sablon';
 import { AnlatiYolu, EserYapisiBolumu, SahneAlanlari, SahneBaglamPaneli, SahneBilgileri, sahneBaglamiBos, useSahneBaglami } from './Anlati';
@@ -19,7 +20,6 @@ import { YAZMA_TURLERI, useCalisma } from './Calisma';
 import { git } from './Uygulama';
 import { geriAlinabilir } from './onay';
 import { SayfaYardimi } from './SayfaYardimi';
-import { IlkAdimlar } from './IlkAdimlar';
 import { gitVeYap, YENI_SAHNE_OLAYI } from './yonlendirme';
 import { soruSetiBul } from '../alan/sablon';
 import { DAKTILO_OLAYI, ODAK_OLAYI } from './kisayollar';
@@ -140,6 +140,7 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const [imlecParcasi, setImlecParcasi] = useState<string | null>(null);
   const [kelime, setKelime] = useState<number | null>(null);
   const [odak, setOdak] = useOdakKipi();
+  const kip = useKip(evren);
   const [daktilo, setDaktilo] = useDaktiloKipi();
   const [paragrafOdagi, setParagrafOdagi] = useSinifTercihi('dunya-atlasi:paragraf-odagi', PARAGRAF_ODAGI_SINIFI);
   const [diyalog, setDiyalog] = useSinifTercihi('dunya-atlasi:yalniz-diyalog', DIYALOG_SINIFI);
@@ -180,7 +181,13 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
   const baglamGorunur = sahne && !baglamKapali && !odak;
   const bugun = kelime !== null ? bugunEklenen(evren, kod, kelime) : 0;
   const planAc = () => { baglamAc(true); setOdak(false); setSekme('plan'); void gitVeYap(null, [{ odak: '.sahne-plani textarea' }]); };
-  const bosYardim = sahne ? (
+  // Sade kipte boş sahnede tek ipucu (§5.11); plan soruları Hikâye ve Tam kipin Plan sekmesine aittir.
+  const bosYardim = sahne && kip === 'sade' ? (
+    <>
+      {onceki && <p class="bos-yardim-onceki">Önceki sahne şöyle bitti: “{onceki}”</p>}
+      <p>Hikâyeyi düz yazar gibi anlatın. Yeni bir kişi ya da yer adının başına @ koyarsanız (ör. @Velkar) kaydı kendiliğinden oluşur.</p>
+    </>
+  ) : sahne ? (
     <>
       {onceki && <p class="bos-yardim-onceki">Önceki sahne şöyle bitti: “{onceki}”</p>}
       <ul class="bos-yardim-sorular">{PLAN_SORULARI.map((q) => <li key={q}><a href="#" onMouseDown={(e) => e.preventDefault()} onClick={(e) => { e.preventDefault(); planAc(); }}>{q}</a></li>)}</ul>
@@ -402,7 +409,6 @@ function YaziMasasi({ istemci, evren }: { istemci: Istemci; evren: string }) {
   return (
     <main class="sayfa yazi-masasi">
       <div class="baslik-satiri sayfa-basligi"><h1>Yaz</h1><SayfaYardimi sayfa="yaz" /></div>
-      <IlkAdimlar istemci={istemci} evren={evren} />
       {kaldigi?.kayit && kaldigi.kayitAdi && (
         <section class="kart kaldigin-yer">
           <div class="soluk kucuk">Kaldığınız yer · {zamanYaz(kaldigi.zaman)}{kaldigi.cihaz ? ` · ${kaldigi.cihaz} cihazında` : ''}</div>

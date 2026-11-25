@@ -1065,14 +1065,6 @@ export type AracHazirligi = Record<'eser' | 'sahne' | 'karakter' | 'mekan' | 'ku
 /** Kipin gizlediği kayıt bölümlerinin doluluğu (§5.11); ileri: dolu ileri bölümlerin adları. */
 export interface KayitDolulugu { sorular: boolean; durum: boolean; harita: boolean; ileri: string[] }
 
-export interface IlkAdimDayanaklari {
-  eser: boolean; sahne: boolean; baglanti: boolean; baglam: boolean;
-  not: boolean; nottanEser: boolean; cekirdek: boolean; karakter: boolean; istek: boolean; karsit: boolean; karakterSahnede: boolean;
-  kural: boolean; guc: boolean; yer: boolean; yerdeIs: boolean;
-  sorular: Record<string, string>;
-  /** "Yap" düğmelerinin açacağı ilk kayıtlar (ilk oluşturulan); yoksa null. */
-  hedefler: { eser: string | null; sahne: string | null; not: string | null; karakter: string | null };
-}
 export interface KayitSablonu {
   tur: string; sablon: Sablon; degerler: Record<string, unknown>;
   /** Şablonda olmayan (tür değişmiş ya da alan kaldırılmış) değerler; silinmez. */
@@ -1343,9 +1335,9 @@ export interface Istekler {
   bagsizAdAyari(a: { evren: string; anahtar: string; deger: boolean }): void;
   evrenKaldir(a: { evren: string }): void;
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
-  ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
   aracHazirligi(a: { evren: string }): AracHazirligi;
   kayitDolulugu(a: { evren: string; kod: string }): KayitDolulugu;
+  ilkKivilcim(a: { evren: string; eser: string; fikir?: string; karakter?: { ad: string; not: string } | null; mekan?: { ad: string; not: string } | null; sahne: string; bolumlu: boolean }): { sahne: string };
   aracTanitimlari(a: { evren: string }): AracTanitimDayanaklari;
   alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
   kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;

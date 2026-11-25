@@ -3,7 +3,7 @@
 // grafikler ve az kullanılan sayfalar Araçlar sayfasındadır.
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { gitVeYap, YENI_SAHNE_OLAYI } from './yonlendirme';
-import { SiradakiAdim } from './IlkAdimlar';
+import { AracTanitimi } from './AracTanitimi';
 import type { Istemci } from '../veri/istemci';
 import type { EserYapisi, EvrenBilgisi, KisaKayit, YapiSahnesi } from '../veri/api';
 import { git } from './Uygulama';
@@ -203,7 +203,7 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
           <span>Komutlar: Ctrl+K</span>
         </div>
       </nav>
-      <div class="kabuk-ic" ref={icRef}>{!bagli && !(etkin === 'yaz' && !acik) && <SiradakiAdim istemci={istemci} evren={evren} yazda={etkin === 'yaz'} />}<KurguBaglami.Provider value={kurgu}>{children}</KurguBaglami.Provider></div>
+      <div class="kabuk-ic" ref={icRef}>{!bagli && etkin !== 'yaz' && <AracTanitimi istemci={istemci} evren={evren} />}<KurguBaglami.Provider value={kurgu}>{children}</KurguBaglami.Provider></div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-// "İlk adımlar"daki "Yap" düğmeleri (K26): kullanıcıyı işin yapılacağı yere götürür ve oradaki kutuyu açar ya da
+// Bir sayfaya gidip oradaki işi açan düğmeler (araç tanıtımı, eser ağacı): kullanıcıyı işin yapılacağı yere götürür ve oradaki kutuyu açar ya da
 // imleci oraya koyar. Sayfa çizilene kadar kısa bir süre bekler; öğe bulunamazsa sessizce durur (yalnız kolaylıktır).
 import { git } from './Uygulama';
 

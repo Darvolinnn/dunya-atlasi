@@ -56,14 +56,15 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
     catch (x) { setHata((x as Error).message); setOrnekKuruluyor(false); }
   };
 
-  const olustur = async (e: Event) => {
+  // "Devam et →" İlk Kıvılcım'ı açar; "Boş evren olarak aç" doğrudan boş yazma sayfasına gider (§5.11, K43).
+  const olustur = async (e: Event, bos = false) => {
     e.preventDefault();
     setHata(null);
     try {
       const { kod } = await istemci.iste('evrenOlustur', { ad: yeniAd, kurgu });
       kipYaz(kod, 'sade');
       setYeniAd(''); setKurgu(null); setAciliyor(false);
-      git(`/e/${kod}`);
+      git(bos ? `/e/${kod}` : `/e/${kod}/kivilcim`);
     } catch (err) { setHata((err as Error).message); }
   };
 
@@ -93,7 +94,8 @@ export function EvrenlerEkrani({ istemci }: { istemci: Istemci }) {
             <p class="soluk kucuk">Seçtiğiniz kurgu türünde az kullanılan araçlar Araçlar sayfasının altındaki katlı gruba, az kullanılan kayıt türleri tür seçicide “Diğer” altına iner. Hiçbir kayıt silinmez. Seçimi sonra Genel bakış sayfasından değiştirebilirsiniz.</p>
             <KurguSecici deger={kurgu} degis={setKurgu} />
             <div class="satir" style="margin-top:12px">
-              <button class="dugme ana" type="submit" disabled={!yeniAd.trim()}>Oluştur</button>
+              <button class="dugme ana" type="submit" disabled={!yeniAd.trim()}>Devam et →</button>
+              <button class="dugme sade" type="button" disabled={!yeniAd.trim()} onClick={(e) => void olustur(e, true)}>Boş evren olarak aç</button>
               <button class="dugme" type="button" onClick={() => { setAciliyor(false); setYeniAd(''); setKurgu(null); }}>Vazgeç</button>
             </div>
           </form>
