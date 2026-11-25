@@ -1903,3 +1903,10 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .hazir.yok::before { background: none; border: 1px solid var(--metin-2); }
 .sabitle { position: absolute; top: 10px; right: 10px; z-index: 1; font-size: 0.75rem; padding: 2px 8px; min-height: 0; }
 .sabitle.secili { border-color: var(--vurgu); color: var(--vurgu); }
+.islem-menusu.sola .menu-icerik { left: 0; right: auto; transform-origin: top left; }
+.menu-baslik { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--metin-2); padding: 8px 10px 2px; }
+.dolu-satiri { display: flex; align-items: center; gap: 12px; margin: 16px 0 4px; padding: 10px 14px; border: 1px dashed var(--cizgi); border-radius: var(--yaricap); font-size: 0.9rem; color: var(--metin-2); }
+.dolu-satiri > span { flex: 1; }
+.ayrinti-ekle { margin: 8px 0 4px; }
+.ayrinti-ekle .menu-icerik { min-width: 300px; }
+.kayitlar-duzeni.tek { grid-template-columns: minmax(0, 1fr); }

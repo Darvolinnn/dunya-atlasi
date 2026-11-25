@@ -1062,6 +1062,9 @@ export interface AracTanitimDayanaklari { enCokSahne: { eser: string; sayi: numb
 export type AracHazirligi = Record<'eser' | 'sahne' | 'karakter' | 'mekan' | 'kurguHatti' | 'terim' | 'mesele' | 'tarihli' | 'iliski' | 'aile' | 'neden'
   | 'degisim' | 'harita' | 'gezinti' | 'pano' | 'okurYayini' | 'surum' | 'masa' | 'sozluk' | 'gokyuzu' | 'cop', number>;
 
+/** Kipin gizlediği kayıt bölümlerinin doluluğu (§5.11); ileri: dolu ileri bölümlerin adları. */
+export interface KayitDolulugu { sorular: boolean; durum: boolean; harita: boolean; ileri: string[] }
+
 export interface IlkAdimDayanaklari {
   eser: boolean; sahne: boolean; baglanti: boolean; baglam: boolean;
   not: boolean; nottanEser: boolean; cekirdek: boolean; karakter: boolean; istek: boolean; karsit: boolean; karakterSahnede: boolean;
@@ -1342,6 +1345,7 @@ export interface Istekler {
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
   ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
   aracHazirligi(a: { evren: string }): AracHazirligi;
+  kayitDolulugu(a: { evren: string; kod: string }): KayitDolulugu;
   aracTanitimlari(a: { evren: string }): AracTanitimDayanaklari;
   alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
   kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;

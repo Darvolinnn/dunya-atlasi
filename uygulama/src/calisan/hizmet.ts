@@ -53,7 +53,7 @@ import * as montaj from './montaj';
 import * as seriPlan from './seri';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
-import type { AdDizini, AracTanitimDayanaklari, AracHazirligi, IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi, YerelYedekDurumu } from '../veri/api';
+import type { AdDizini, AracTanitimDayanaklari, AracHazirligi, KayitDolulugu, IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi, YerelYedekDurumu } from '../veri/api';
 import type { BirlesmeGeri, SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
 import * as bakim from './bakim';
@@ -368,6 +368,41 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       sozluk: say('SELECT 1 FROM sozlukler WHERE silindi IS NULL'),
       gokyuzu: say('SELECT 1 FROM gokyuzu_tanimi'),
       cop: say('SELECT 1 FROM kayitlar WHERE silindi IS NOT NULL AND kod NOT IN (SELECT kod FROM yonlendirmeler)'),
+    };
+  }
+
+  /**
+   * Kipin gizlediği kayıt bölümlerinden hangilerinin bu kayıtta dolu olduğu (§5.11, K43 "dolu veri gizlenmez").
+   * Hepsi varlık sorgusudur (LIMIT 1); kayıt sayfası açılırken bir kez sorulur.
+   */
+  kayitDolulugu({ evren, kod }: { evren: string; kod: string }): KayitDolulugu {
+    const db = this.evren(evren).db;
+    const var_ = (sql: string, ...b: string[]) => db.selectValue(`SELECT 1 WHERE EXISTS (${sql} LIMIT 1)`, b) !== undefined;
+    const ILERI: [string, string, number][] = [
+      ['metindeki işaretler', 'SELECT 1 FROM metin_isaretleri WHERE kayit=? AND silindi IS NULL', 1],
+      ['bilinenler ve sırlar', 'SELECT 1 FROM iddialar WHERE konu=? AND silindi IS NULL UNION ALL SELECT 1 FROM bilgiler WHERE bilen=? AND silindi IS NULL', 2],
+      ['bakım', 'SELECT 1 FROM bakim_tanimlari WHERE kayit=? AND silindi IS NULL', 1],
+      ['dil', 'SELECT 1 FROM dil_tanimlari WHERE kod=?', 1],
+      ['ad biçimleri', 'SELECT 1 FROM ad_bicimleri WHERE kod=?', 1],
+      ['teknoloji', 'SELECT 1 FROM teknoloji_tanimlari WHERE kod=?', 1],
+      ['motif yorumları', 'SELECT 1 FROM motif_yorumlari WHERE kod=?', 1],
+      ['kalıtım', 'SELECT 1 FROM kalitim_degerleri WHERE kod=? UNION ALL SELECT 1 FROM kalitim_ozellikleri WHERE kod=?', 2],
+      ['veraset', 'SELECT 1 FROM veraset_kurallari WHERE kod=?', 1],
+      ['süreç kuralları', 'SELECT 1 FROM surec_kurallari WHERE sahip=? AND silindi IS NULL', 1],
+      ['hukuk kuralları', 'SELECT 1 FROM hukuk_kurallari WHERE sahip=? AND silindi IS NULL', 1],
+      ['gündelik hayat', 'SELECT 1 FROM gundelik_kartlari WHERE kod=?', 1],
+      ['sahne niyetleri', 'SELECT 1 FROM sahne_niyetleri WHERE kod=?', 1],
+      ['sahne yerleşimi', 'SELECT 1 FROM sahne_yerlesimleri WHERE kod=?', 1],
+      ['belge sunumu', 'SELECT 1 FROM belge_sunumlari WHERE kod=?', 1],
+      ['izler', 'SELECT 1 FROM izler WHERE konu=? AND silindi IS NULL', 1],
+      ['değişimler', 'SELECT 1 FROM degisimler WHERE konu=? AND silindi IS NULL', 1],
+      ['yayımlar', 'SELECT 1 FROM yayimlar WHERE eser=? AND silindi IS NULL', 1],
+    ];
+    return {
+      sorular: var_("SELECT 1 FROM soru_cevaplari WHERE kayit=? AND durum='cevaplandi'", kod),
+      durum: var_('SELECT 1 FROM durumlar WHERE konu=? AND silindi IS NULL', kod),
+      harita: var_('SELECT 1 FROM isaretler WHERE kayit=? AND silindi IS NULL UNION ALL SELECT 1 FROM cizimler WHERE kayit=? AND silindi IS NULL UNION ALL SELECT 1 FROM haritalar WHERE yer=? AND silindi IS NULL', kod, kod, kod),
+      ileri: ILERI.filter(([, sql, n]) => var_(sql, ...Array<string>(n).fill(kod))).map(([ad]) => ad),
     };
   }
 
