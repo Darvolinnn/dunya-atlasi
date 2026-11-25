@@ -77,7 +77,7 @@ export function cikisHayaletleriniKur() {
     for (const k of kayitlar) {
       if (!k.removedNodes.length || !(k.target as Node).isConnected) continue;
       for (const d of k.removedNodes) {
-        if (d instanceof HTMLElement && !d.classList.contains('cikis-hayaleti') && d.matches(HAYALET_SECICI)) hayaletOynat(d, k.target, k.nextSibling);
+        if (d instanceof HTMLElement && !d.classList.contains('cikis-hayaleti') && !d.dataset.suruklendi && d.matches(HAYALET_SECICI)) hayaletOynat(d, k.target, k.nextSibling);
       }
     }
   }).observe(document.body, { childList: true, subtree: true });

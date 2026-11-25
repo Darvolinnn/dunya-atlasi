@@ -4,6 +4,8 @@
 import { createContext } from 'preact';
 import { useYumusakKapanis } from './kapanis';
 import { PALET_OLAYI } from './yonlendirme';
+import { ekranUyar, useSurukleKapat } from './surukle-kapat';
+import { useGeriIleKapat } from './geri-kapat';
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { AramaSonucu, DurumSatiri, IliskiSatiri, Kayit, KayitOzeti, Spans } from '../veri/api';
@@ -347,13 +349,21 @@ function YanPanel({ istemci, evren, kodlar, aktif, sec, kapat, kucuk, kucult }: 
 }) {
   const [adlar, setAdlar] = useState<Record<string, string>>({});
   const [surum, setSurum] = useState(0);
+  // Panel geldiği yöne sürüklenerek kapanır: geniş ekranda sağa (her yerinden), dar ekranda alttan geldiği için aşağı
+  // (yalnız başlığından; içerik aşağı kaydırılırken kapanmasın). Geri hareketi de kapatır.
+  const panelRef = useRef<HTMLElement>(null);
+  useSurukleKapat(panelRef, () => kapat(), {
+    yon: () => (ekranUyar('(max-width: 900px)') ? 'asagi' : 'sag'),
+    bolge: (yon) => (yon === 'asagi' || kucuk ? '.yan-panel-basi' : null),
+  });
+  useGeriIleKapat(true, () => kapat());
   useEffect(() => {
     for (const k of kodlar) if (!adlar[k]) istemci.iste('kayit', { evren, kod: k }).then((x) => setAdlar((a) => ({ ...a, [k]: x.ad })), () => setAdlar((a) => ({ ...a, [k]: 'Bulunamadı' })));
     // Kayıt değişince adlar silinir; yeniden okunmazsa sekme adı "…" kalıyordu.
   }, [kodlar.join(), surum]);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren && (!d.kayitlar.length || d.kayitlar.some((k) => kodlar.includes(k)))) { setSurum((s) => s + 1); setAdlar({}); } }), [evren, kodlar.join()]);
   return (
-    <aside class={kucuk ? 'yan-panel kucuk' : 'yan-panel'} aria-label="Yan panel">
+    <aside ref={panelRef} class={kucuk ? 'yan-panel kucuk' : 'yan-panel'} aria-label="Yan panel">
       {!kucuk && <PanelTutamagi />}
       <div class="yan-panel-basi">
         <div class="yan-sekmeler" role="tablist">

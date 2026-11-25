@@ -21,6 +21,8 @@ import { YAZMA_TURLERI, useCalisma } from './Calisma';
 import { git } from './Uygulama';
 import { geriAlinabilir } from './onay';
 import { SayfaYardimi } from './SayfaYardimi';
+import { useSurukleKapat } from './surukle-kapat';
+import { GeriIleKapat } from './geri-kapat';
 import { gitVeYap, YENI_SAHNE_OLAYI } from './yonlendirme';
 import { soruSetiBul } from '../alan/sablon';
 import { DAKTILO_OLAYI, ODAK_OLAYI } from './kisayollar';
@@ -174,6 +176,9 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
 
   // Panel yalnız yazar açınca kayarak gelir; sahne değişince yerinde durur.
   const [baglamKaysin, setBaglamKaysin] = useState(false);
+  // Panel sağa sürüklenerek de kapanır (parmak, kalem, fare); dar ekranda geri hareketi de kapatır.
+  const baglamRef = useRef<HTMLElement>(null);
+  useSurukleKapat(baglamRef, () => { setBaglamKaysin(false); setBaglamTercihi(true); yazYerel(baglamAnahtari, '1'); });
 
   if (hata) return <main class="sayfa"><p class="hata">{hata}</p></main>;
   if (!kayit) return <main class="sayfa"><p class="soluk">Açılıyor…</p></main>;
@@ -276,7 +281,8 @@ function YazmaAlani({ istemci, evren, kod }: { istemci: Istemci; evren: string; 
         </article>
       </main>
       {baglamGorunur && (
-        <aside class={baglamKaysin ? 'yaz-baglami kayarak' : 'yaz-baglami'} aria-label="Sahnenin bağlamı">
+        <aside ref={baglamRef} class={baglamKaysin ? 'yaz-baglami kayarak' : 'yaz-baglami'} aria-label="Sahnenin bağlamı">
+          {dar && <GeriIleKapat kapat={() => baglamAc(false)} />}
           <div class="yaz-baglami-basi">
             {kip === 'sade' ? <span /> : <div class="sekmeler baglam-sekmeleri" role="tablist" aria-label="Bağlam paneli">
               {kipSekmeleri.map(([k, ad]) => (
