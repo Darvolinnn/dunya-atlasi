@@ -5,6 +5,7 @@ import type { Istemci } from '../veri/istemci';
 import type { AramaSonucu } from '../veri/api';
 import { turBul, grupSinifi } from '../alan/turler';
 import { KararRozeti, TurSecici } from './ortak';
+import { BenzerAdSatiri, useBenzerAdlar } from './BenzerAdSatiri';
 
 export interface Secim { kod: string; ad: string }
 
@@ -30,6 +31,7 @@ export function BaglantiSecici({ istemci, evren, sorgu: disSorgu, konum, sec, ka
   const [etkin, setEtkin] = useState(0);
   const [yeni, setYeni] = useState<{ ad: string; tur: string; ozet: string } | null>(null);
   const [hata, setHata] = useState<string | null>(null);
+  const benzerler = useBenzerAdlar(istemci, evren, yeni?.ad ?? '');
   const girdi = useRef<HTMLInputElement>(null);
   const kutu = useRef<HTMLDivElement>(null);
 
@@ -135,6 +137,7 @@ export function BaglantiSecici({ istemci, evren, sorgu: disSorgu, konum, sec, ka
           <strong>Yeni kayıt</strong>
           <label class="alan"><span class="alan-adi">Ad</span>
             <input class="girdi" value={yeni.ad} autoFocus lang="tr" spellcheck={false} onInput={(e) => setYeni({ ...yeni, ad: (e.target as HTMLInputElement).value })} /></label>
+          <BenzerAdSatiri evren={evren} l={benzerler} />
           <label class="alan"><span class="alan-adi">Tür</span>
             <TurSecici deger={yeni.tur} onDegis={(tur) => setYeni({ ...yeni, tur })} /></label>
           <label class="alan"><span class="alan-adi">Kısa özet (isteğe bağlı)</span>

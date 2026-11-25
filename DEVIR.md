@@ -453,6 +453,15 @@ Kullanıcı (25 Kasım, tablet ekran resmiyle): sayfa rehberi ("?") sağa sürü
 - [x] Sınama: `e2e/surukle-kapat.spec.ts` (5). Bulutta 726 birim, 71 tarayıcı sınaması geçti.
 - [ ] main'e birleştirme, Windows ve tablet kurulumu, tablette elle deneme (parmakla sürükleme, geri hareketi).
 
+## 0.32 Dokuz maddelik öneri: metin denetimi, ad benzerliği, sesli okuma (K45, 25 Kasım 2026)
+
+Kullanıcı (25 Kasım) dokuz maddelik bir öneri listesi gönderdi; her madde `main` 3462056'ya karşı denetlendi. Bulgular: EPUB zaten var (`calisan/cikti.ts` `epubDosyalari`: kapak, içindekiler, terimler sözlüğü eki); yazma hedefi K29'da alınmamıştı; karakterin konuşmalarını süzmek K1'e aykırı (konuşan metinden çıkarılmaz); bölünmüş ekran kısmen var (yan panel her kaydı, sahne dahil, salt okunur metinle açar, 320–640 px); görünmeme takibi kısmen var (Kurgu montajında yokluk haritası, K39 #8).
+**Kullanıcı kararı (25 Kasım 18:45 UTC):** yazma hedefi yok; **yapılacak:** (3) kural tabanlı Türkçe denetim (özel adlarda ek uyumu, dizgi: uzun çizgi/tırnak/çift boşluk, kök tekrarı), (6) yeni kayıtta ad benzerliği uyarısı, (9) sesli dinleme yalnız Windows'ta (tablet beklemede: Android web görünümü konuşma sentezini desteklemiyor, yerel eklenti gerekir). (5) ve (7) için açıklama istendi; (1) ve (8) için söz yok.
+- [x] Yerleşim kararları (18:48 UTC): denetim Araçlar'da ayrı sayfa; kök tekrarı yalnız sayfada (yazarken metinde çizgi yok); ad uyarısı ad kutusunun altında tek satır; (1) bölünmüş ekran ve (8) kalemle üzerine gelme şimdilik yok.
+- [x] Kod (dal `claude/project-thread-a3aox8`, PR #78): kurallar `alan/metin-denetimi.ts` (`metniDenetle`: ek, dizgi, tekrar) ve `alan/ad-benzerligi.ts` (`benzerAdlar`, `harfFarki`); istekler `metinDenetimi`, `benzerAdlar` (`hizmet.ts`, özel ad sayılmayan türler `ANLATI_DISI_ADLAR`); sayfa `arayuz/MetinDenetimi.tsx` (görünüm kodu `metin-denetimi`, `Kabuk.tsx` `GORUNUMLER`, Araçlar kartı, rehber metni); uyarı `arayuz/BenzerAdSatiri.tsx` (`KayitListesi` yeni kayıt, `BaglantiSecici` yeni kayıt, `KayitEkrani` ad değişince); sesli okuma `arayuz/SesliOkuma.tsx` (`KesintisizOkuma` içinde; yalnız yerel Türkçe ses; Android'de gizli). Yeni tablo ya da işlem türü yok, izdüşüm sürümü değişmedi.
+- [x] Sınamalar: `test/k44-metin-denetimi.test.ts` (11; bütün birim sınamaları 737 geçti), `e2e/k44.spec.ts` (2; sesli okumada konuşma sentezi taklit edilir); 68 tarayıcı sınamasının hepsi geçti. Tasarım §5.12 ve K45 yazıldı.
+- [x] Ekran resimleri `/mnt/project-files/taslaklar/k44/` (depoda değil), kullanıcıya gönderildi. [x] Kullanıcı onayı (25 Kasım 19:11 UTC, "Uygun"). [x] Birleştirme (PR #78; K44 ve §0.31 başka işte kullanıldığı için bu iş K45, §0.32). [ ] Windows kurulum doğrulaması ve bilgisayarda Türkçe sesin varlığı. Tablet: sesli okuma beklemede (Android web görünümünde konuşma sentezi yok; yerel eklenti gerekir).
+
 ## 1. Önce oku (sırayla)
 
 1. `AGENTS.md`: bağlayıcı kurallar.

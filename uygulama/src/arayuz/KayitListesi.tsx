@@ -14,11 +14,13 @@ import { AkilliListeGorunumu, AkilliListelerMenusu } from './AkilliListe';
 import { git } from './Uygulama';
 import { useBasamakli } from './kapanis';
 import { kipKapsar, useKip } from './kip';
+import { BenzerAdSatiri, useBenzerAdlar } from './BenzerAdSatiri';
 
 export function YeniKayit({ istemci, evren }: { istemci: Istemci; evren: string }) {
   const [ad, setAd] = useState('');
   const [tur, setTur] = useState('karakter');
   const [hata, setHata] = useState<string | null>(null);
+  const benzerler = useBenzerAdlar(istemci, evren, ad);
   const olustur = async (e: Event) => {
     e.preventDefault();
     if (!ad.trim()) return;
@@ -34,6 +36,7 @@ export function YeniKayit({ istemci, evren }: { istemci: Istemci; evren: string 
       <span style="flex:1;min-width:160px"><TurSecici deger={tur} onDegis={setTur} etiket="Yeni kaydın türü" /></span>
       <button class="dugme ana" type="submit" disabled={!ad.trim()}>Oluştur</button>
       {hata && <span class="hata">{hata}</span>}
+      <BenzerAdSatiri evren={evren} l={benzerler} />
     </form>
   );
 }

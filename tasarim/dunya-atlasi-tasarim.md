@@ -64,6 +64,7 @@ Belgedeki adlar (Velkar, Kaelen, Elin, Kuzey Kalesi…) yalnızca davranışı a
 | Süreklilik defteri, net fark | §5.6 |
 | Metin işaretleme | §5.7 |
 | Deneyim kipleri, Araçlar sayfası, İlk Kıvılcım, yazma ekranının çubukları | §5.11 |
+| Metin denetimi, ad benzerliği uyarısı, sesli okuma | §5.12 |
 | Programın yazara sorduğu sorular | §6.1 |
 | Soru kütüphanesinin başlangıç seti | Ek A |
 | Harita uzayı ve işaretler; harita ekranı | §8.1 |
@@ -155,6 +156,7 @@ Aşağıdaki sözcükler belgede yalnızca bu anlamlarda kullanılır. Kodu yaza
 | K42 | **Drive'dan evren silme.** Drive'da kalan fazla deneme evrenleri (iki "Deneme 1") için kullanıcı silmeyi seçti (24 Kasım, "Sil"); program bunu yapamıyordu. Yalnız hiçbir cihazda olmayan evren, sorulduktan sonra Drive'dan silinir (§10). | 24 Kasım |
 | K43 | **Deneyim kipleri, Araçlar sayfası, İlk Kıvılcım, sade yazma ekranı.** Kullanıcı (24 Kasım) dört fikri ve kendi sekiz maddelik revizyonunu istedi: evren başına üç kip (Sade · Hikâye · Tam; kip yalnız görünüşü değiştirir), sol menüdeki grafik ve "Diğer" listeleri yerine soruya göre gruplanmış Araçlar sayfası (hazırlık satırı, menüye sabitleme), yeni evrende üç kartlık İlk Kıvılcım karşılaması (İlk adımlar listesinin yerine), yazma ekranında yerinden oynamayan kısa biçim çubuğu, fareyle seçimde yüzen çubuk ve tek bağlantı kartı. Kararlar: Sade menüde Yaz · Kayıtlar · Araçlar (Pano sabitlenebilir); Sade kayıt sayfası temel alanlarla; sabitleme var; İlk Kıvılcım evren adından sonra; bugünkü evrenler Tam kipte açılır; İlk adımların dört yolu kalkar. K27'nin başlangıç yolları, K30'un yazma üst satırı ve K36'nın grafik ara başlıkları bununla değişir; bu iş için K11 açıldı. Tanım §5.11. | 24 Kasım |
 | K44 | **Panelleri sürükleyerek kapatma ve geri hareketi.** Kullanıcı (25 Kasım) tablette sayfa rehberinin sağa sürüklenerek kapanmasını, Kapat'ın kaydırınca kaybolmamasını ve benzer yerlerin listesini istedi; listeden 1–5'i seçti, fareyle de çalışmasını ve kayarak kapanmasını istedi. Sağdan gelen paneller (sayfa rehberi, yazma ekranının bağlam paneli, harita ve takvim çekmecesi, yan panel) parmak, kalem ya da fareyle sağa çekilince eli izler ve kayarak kapanır; alttan gelen yan panel başlığından aşağı çekilir. Kapatma düğmesi kaydırınca üstte kalır. Geri hareketi önce açık paneli kapatır. Dokunmatikte küçük düğmelerin büyütülmesi alınmadı. Tanım §12.2. | 25 Kasım |
+| K45 | **Metin denetimi, ad benzerliği uyarısı, sesli okuma.** Kullanıcı (25 Kasım) dokuz maddelik bir öneri listesinden üçünü istedi: kurala dayalı Türkçe metin denetimi (özel adlarda ek uyumu, dizgi, yakın tekrar), yeni ya da değişen adda benzer ad uyarısı ve kesintisiz okumada bilgisayarın Türkçe sesiyle dinleme (yalnız Windows; tablet beklemede). Yazma hedefi yine alınmadı (K29); karakterin konuşmalarını süzmek K1'e aykırı olduğu için alınmadı. Ayrıntı §5.12. | 25 Kasım |
 
 ### 1.2 Açık kararlar
 
@@ -691,6 +693,17 @@ Kurgu türüne uzak araçlar (§4, K28) sayfanın altındaki katlı gruba iner. 
 3. *İlk sahnenin kapısı:* sahne adı ("1. Sahne") ve "1. bölümün içinde" (varsayılan; bölümün adı "Başlangıç" olur, numarayı ağaç verir) ya da "Bölümsüz". "İlk sahneyi aç ve yazmaya başla" düğmesi.
 
 Düğmeye basınca tek değişiklik grubu olarak eser, gerekiyorsa bölüm ve sahne oluşur; karakter ve mekân yazıldıysa kayıtları oluşur, mekân sahnenin mekânı, karakter sahnedekilere "Bulunuyor" olarak bağlanır. Ekran Sade kipte sahnenin metnine açılır, imleç ilk satırdadır. Boş metinde yazınca kaybolan tek ipucu durur: "Hikâyeyi düz yazar gibi anlatın. Yeni bir kişi ya da yer adının başına @ koyarsanız (ör. @Velkar) kaydı kendiliğinden oluşur." İpucu metne yazılmaz.
+
+### 5.12 Metin denetimi, ad benzerliği ve sesli okuma (K45)
+
+Üçü de yalnız harflere, işaretlere ve kayıtlı adlara bakar; cümlenin anlamı çıkarılmaz (K1), metne kendiliğinden dokunulmaz.
+
+- **Metin denetimi:** Araçlar sayfasında "Çelişkileri ve kelimeleri denetlerken" grubundadır (sayfa adı "Metin denetimi"). Yazar bir eser ve isterse bir bölüm seçer, tekrar aralığını (50, 100 ya da 200 kelime) belirler ve "Denetle"ye basar. Bulgular okuma sırasıyla, üç katlı grupta, sahne sahne listelenir; sahnenin adı onu yazma ekranında açar. Çok bulgu varsa ilk 1.500'ü gösterilir. Metin denetimden sonra değişirse yeniden denetlemesi söylenir.
+  - *Özel adların ekleri:* kayıtlı bir adın ardından kesmeyle gelen ek, Türkçe ek modülüyle (§5.1) adın okunuşuna göre denetlenir ("Kael'a" → "Kael'e olmalı"). Okunuş girilmemiş ve yazımdan kestirilemiyorsa yalnız aynı ekin farklı yazılışları gösterilir ("Xhaq'a 2 kez, Xhaq'e 1 kez"); okunuş girilince hangisinin doğru olduğu da söylenir. Çok kelimeli ad bulunduysa içindeki kısa ad ayrıca sayılmaz. Anlatı parçaları, notlar, alıntılar, açık meseleler, gerekçeler ve kaynaklar özel ad sayılmaz.
+  - *Dizgi:* çift boşluk, noktalamadan önce boşluk, paragrafta kapanmamış tırnak, ara sözde kısa çizgi ("yol - uzun yol -"). Metin boyunca karışık kullanılan konuşma başı (uzun çizgi, kısa çizgi, tırnak), tırnak biçimi ve üç nokta biçiminde en çok kullanılan doğru sayılır, ötekiler gösterilir.
+  - *Yakın tekrar:* ilk beş harfi aynı olan sözcükler (ansızın; bakışı, bakışları) bir sahnede seçilen aralıkta üç ya da daha çok kez geçerse bir bulgudur. Dört harften kısa sözcükler, sık sözcükler (ve, gibi, dedi, sonra…) ve kayıt adlarının sözcükleri sayılmaz.
+- **Ad benzerliği uyarısı:** Kayıtlar sayfasında yeni kayıt adı yazılırken, bağlantı seçicide yeni kayıt açılırken ve kaydın adı değiştirilince ad kutusunun altında tek sessiz satır çıkar: "Benzer adlı kayıt var: Alder (karakter). Okurken karışabilir." ya da "Bu adla bir kayıt zaten var: …". Kayıt yine oluşturulur. Türkçe harfler ve büyük-küçük harf ayırt edilmez; 4 harfe kadar adlarda yalnız aynısı, 5–7 harfte bir, daha uzun adlarda iki harf farkı (ekleme, silme, değiştirme, yan yana iki harfin yer değiştirmesi) yakın sayılır. Biri tek, öbürü çok kelimeli adlarda ilk kelimeler de karşılaştırılır ("Alden" ile "Alden Taşçı"). Metin denetimindeki özel ad dışı türler karşılaştırılmaz; en çok üç kayıt gösterilir, aynı adlılar önce.
+- **Sesli okuma:** Eserin ya da bölümün kesintisiz okunuşunda (Okuma görünümü) "▶ Dinle" düğmesi metni bilgisayarın kurulu Türkçe sesiyle paragraf paragraf okur; okunan paragraf vurgulanır ve ekranın ortasında tutulur. Okuma ekranda görünen ilk paragraftan başlar; okurken bir paragrafa tıklamak okumayı oradan sürdürür. Duraklat, Durdur ve hız (0,8×, 1×, 1,2×, 1,5×; cihazda hatırlanır) vardır. Yalnız cihazda kurulu sesler kullanılır, internetten ses alınmaz. Türkçe ses yoksa düğme kapalıdır ve Windows ayarlarında nereden ekleneceği yazılır. Şimdilik yalnız Windows'tadır: tabletin uygulama penceresi konuşma sentezini sunmaz, düğme tablette görünmez.
 
 ---
 

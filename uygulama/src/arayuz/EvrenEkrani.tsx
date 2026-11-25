@@ -20,6 +20,7 @@ import { GokyuzuSekmesi } from './Gokyuzu';
 import { YogunlukSekmesi } from './Yogunluk';
 import { DerlemeSekmesi } from './Derleme';
 import { SozlukSekmesi } from './Sozluk';
+import { MetinDenetimiSekmesi } from './MetinDenetimi';
 import { AnlatiSozlesmesiSekmesi } from './AnlatiSozlesmesi';
 import { KosulMasasiSekmesi } from './KosulMasasi';
 import { KesifSekmesi } from './Kesif';
@@ -87,6 +88,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
           : sekme === 'yogunluk' ? <YogunlukSekmesi key={kod} istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'karsilastir' ? <KarsilastirmaSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'sozluk' ? <SozlukSekmesi istemci={istemci} evren={kod} surum={surum} />
+          : sekme === 'metin-denetimi' ? <MetinDenetimiSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'sozlesme' ? <AnlatiSozlesmesiSekmesi key={kod} istemci={istemci} evren={kod} surum={surum} saltOkunur={!!bilgi.bag} />
           : sekme === 'kosullar' ? <KosulMasasiSekmesi istemci={istemci} evren={kod} />
           : sekme === 'kesif' ? <KesifSekmesi istemci={istemci} evren={kod} />

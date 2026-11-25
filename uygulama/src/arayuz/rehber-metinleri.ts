@@ -461,6 +461,20 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       'Eşleşmeleri inceleyin; “Oraya git” ile metne gidin ya da “Bilerek bırakıldı” ile işaretleyin.',
     ],
   },
+  'metin-denetimi': {
+    baslik: 'Metin denetimi',
+    ne: [
+      'Bir eserin ya da bölümün metnini üç kurala göre tarar: kayıtlı adlarınıza gelen eklerin okunuşa uyması (Kael’e, Kael’a değil), dizgi (çift boşluk, kapanmamış tırnak, karışık konuşma çizgisi ya da üç nokta) ve aynı harflerle başlayan sözcüklerin kısa bir aralıkta üç ya da daha çok kez geçmesi.',
+      'Program cümlenin anlamına bakmaz; her bulgu bakmanız için bir öneridir, metne dokunulmaz.',
+    ],
+    neZaman: 'Bir bölümü ya da kitabı bitirip düzeltiye geçerken.',
+    adimlar: [
+      'Eseri, isterseniz bölümü seçin; tekrar aralığını (50, 100 ya da 200 kelime) belirleyin.',
+      '“Denetle”ye basın; bulgular üç grupta, sahne sahne listelenir.',
+      'Sahnenin adına basarak metne gidin ve düzeltin.',
+    ],
+    ipuclari: ['Bir adın okunuşu yazımından belli değilse (ör. Saoirse) kaydın sayfasında “Okunuş” alanını doldurun; ek denetimi ona göre yapılır.'],
+  },
   sozlesme: {
     baslik: 'Anlatı sözleşmesi',
     ne: [

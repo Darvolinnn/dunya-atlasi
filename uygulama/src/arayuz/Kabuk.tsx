@@ -17,7 +17,7 @@ import { KIPLER, kipKapsar, kipYaz, MENU_KIPI, useKip, useSabitler } from './kip
 
 /** İnceleme görünümleri (§7): aynı verinin farklı çizimleri. */
 export const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy', 'Soy ağacı'], ['neden', 'Neden–sonuç'], ['durumlar', 'Durum geçmişi'],
-  ['yogunluk', 'Yoğunluk ve boşluk'], ['gokyuzu', 'Gökyüzü'], ['sozluk', 'Sözlük denetimi'], ['sozlesme', 'Anlatı sözleşmesi'],
+  ['yogunluk', 'Yoğunluk ve boşluk'], ['gokyuzu', 'Gökyüzü'], ['sozluk', 'Sözlük denetimi'], ['metin-denetimi', 'Metin denetimi'], ['sozlesme', 'Anlatı sözleşmesi'],
   ['kosullar', 'Sonuçtan koşullara'], ['kesif', 'Keşif soruları'], ['hatlar', 'Kurgu hatları'], ['orgu', 'Olay örgüsü'], ['matris', 'Bölüm × kayıt'],
   ['gun', 'Sıradan bir gün'], ['karsilastir', 'Karşılaştırmalı okuma'], ['gezinti', 'Gezintiler'], ['pano', 'Görsel panolar'], ['okur-yayini', 'Okur yayını']] as const;
 /** Grafik araçlarının amaca göre grupları (taslak 2A, 6 Kasım): menüde ara başlık olarak görünür; başlıklar tıklanmaz. */
@@ -25,7 +25,7 @@ export const GORUNUM_GRUPLARI: readonly (readonly [string, readonly string[]])[]
   ['Zaman', ['cizelge', 'durumlar', 'yogunluk', 'gun', 'gokyuzu']],
   ['İlişkiler', ['ag', 'soy', 'neden']],
   ['Kurgu', ['hatlar', 'orgu', 'matris', 'sozlesme', 'karsilastir', 'kosullar', 'kesif']],
-  ['Dil ve derleme', ['sozluk', 'gezinti', 'pano']],
+  ['Dil ve derleme', ['sozluk', 'metin-denetimi', 'gezinti', 'pano']],
   ['Yayın', ['okur-yayini']],
 ];
 export const gorunumMu = (s: string) => GORUNUMLER.some(([g]) => g === s);
