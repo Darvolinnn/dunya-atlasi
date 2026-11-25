@@ -53,7 +53,7 @@ import * as montaj from './montaj';
 import * as seriPlan from './seri';
 import * as gundelik from './gundelik';
 import * as sozlesme from './anlati-sozlesmesi';
-import type { AdDizini, AracTanitimDayanaklari, IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi, YerelYedekDurumu } from '../veri/api';
+import type { AdDizini, AracTanitimDayanaklari, AracHazirligi, IlerlemeBildirimi, IlkAdimDayanaklari, SimdiOnerisi, YerelYedekDurumu } from '../veri/api';
 import type { BirlesmeGeri, SozlesmeTanimi, HakGirdisi, HakTanimaDurumu, KesifSablonu, BakimTanimi, BakimKaydiTanimi } from '../veri/api';
 import * as haklar from './haklar';
 import * as bakim from './bakim';
@@ -339,6 +339,35 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       sorular: Object.fromEntries((db.selectObjects("SELECT soru, durum FROM soru_cevaplari WHERE kayit='evren' AND soru IN ('pusula.3','pusula.4')") as { soru: string; durum: string }[]).map((r) => [r.soru, r.durum])),
       hedefler: Object.fromEntries((['eser', 'sahne', 'not', 'karakter'] as const).map((t) => [t,
         (db.selectValue("SELECT kod FROM kayitlar WHERE tur=? AND silindi IS NULL ORDER BY olusturma, rowid LIMIT 1", [t]) as string | undefined) ?? null])) as IlkAdimDayanaklari['hedefler'],
+    };
+  }
+
+  /**
+   * Araçlar sayfasının hazırlık satırı (§5.11, K43): her ölçü en çok 100'e kadar sayılır (LIMIT), böylece
+   * evren büyüdükçe yavaşlamaz; arayüz 99'u aşanı "99+" yazar. Yalnız Araçlar sayfası açıkken istenir.
+   */
+  aracHazirligi({ evren }: { evren: string }): AracHazirligi {
+    const db = this.evren(evren).db;
+    const say = (sql: string) => Number(db.selectValue(`SELECT count(*) FROM (${sql} LIMIT 100)`));
+    const tur = (t: string) => say(`SELECT 1 FROM kayitlar WHERE tur IN (${t}) AND silindi IS NULL`);
+    const iliski = (t: string) => say(`SELECT 1 FROM iliskiler WHERE tur IN (${t}) AND silindi IS NULL`);
+    const derleme = (t: string) => say(`SELECT 1 FROM derlemeler WHERE tur='${t}' AND silindi IS NULL`);
+    return {
+      eser: tur("'eser'"), sahne: tur("'sahne'"), karakter: tur("'karakter'"), mekan: tur("'mekan','sehir'"),
+      kurguHatti: tur("'kurgu_hatti'"), terim: tur("'terim'"), mesele: tur("'acik_mesele'"),
+      tarihli: say("SELECT 1 FROM kayitlar WHERE tur IN ('sahne','olay') AND tarih IS NOT NULL AND silindi IS NULL"),
+      iliski: say('SELECT 1 FROM iliskiler WHERE silindi IS NULL'),
+      aile: iliski("'ebeveyn','es','kardes','akraba'"),
+      neden: iliski("'neden','kolaylastirdi','engelledi','tepki'"),
+      degisim: say('SELECT 1 FROM degisimler WHERE silindi IS NULL'),
+      harita: say('SELECT 1 FROM haritalar WHERE silindi IS NULL'),
+      gezinti: derleme('gezinti'), pano: derleme('pano'),
+      okurYayini: say('SELECT 1 FROM okur_yayinlari WHERE silindi IS NULL'),
+      surum: say('SELECT 1 FROM evren_surumleri WHERE silindi IS NULL'),
+      masa: say('SELECT 1 FROM masalar WHERE silindi IS NULL'),
+      sozluk: say('SELECT 1 FROM sozlukler WHERE silindi IS NULL'),
+      gokyuzu: say('SELECT 1 FROM gokyuzu_tanimi'),
+      cop: say('SELECT 1 FROM kayitlar WHERE silindi IS NOT NULL AND kod NOT IN (SELECT kod FROM yonlendirmeler)'),
     };
   }
 

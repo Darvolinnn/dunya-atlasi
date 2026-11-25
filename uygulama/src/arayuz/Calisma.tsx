@@ -21,6 +21,7 @@ import { MetinGorunumu } from './MetinEditoru';
 import { duzMetindenSpans } from '../alan/metin-sema';
 import { git } from './Uygulama';
 import { ANA_SAYFALAR, DIGER_SAYFALAR, GORUNUMLER } from './Kabuk';
+import { KIP_ADI, kipKapsar, kipOku, MENU_KIPI, sabitlerOku } from './kip';
 import { yazarlikRehberiAc } from './YazarlikRehberi';
 import { YAZARLIK_KONULARI } from './yazarlik-rehberi';
 import { HesapPenceresi, type HesapTuru } from './Hesaplar';
@@ -526,7 +527,7 @@ function YanPanelEkle({ istemci, evren, kod, ana, eklendi }: { istemci: Istemci;
 }
 
 // ---------- Komut paleti ----------
-interface Oge { anahtar: string; baslik: string; aciklama?: string; yap: (yanPanel: boolean) => void | Promise<void>; kayit?: boolean; tur?: string; alt?: preact.ComponentChildren; kisayol?: string }
+interface Oge { anahtar: string; baslik: string; aciklama?: string; etiket?: string; yap: (yanPanel: boolean) => void | Promise<void>; kayit?: boolean; tur?: string; alt?: preact.ComponentChildren; kisayol?: string }
 
 const NEREDEN_ADI: Record<string, string> = { lakap: 'lakabı', onceki: 'önceki adı', okunus: 'okunuşu', kok: 'çekimli biçiminden', ozet: 'özetinde' };
 /** Palet sonucunun nereden bulunduğu (K28): metindeyse aranan sözcük kalın, çevresiyle. */
@@ -602,13 +603,20 @@ function KomutPaleti({ istemci, evren, baglam, kapat, hataylaAc }: { istemci: Is
     komutlar.push({ anahtar: 'kisayollar', baslik: 'Kısayollar', aciklama: 'Bütün klavye kısayolları', kisayol: kisayolTusu('kisayollar'), yap: () => { window.dispatchEvent(new Event(KISAYOL_OLAYI)); } });
     if (evren) {
       if (sorgu.trim()) komutlar.push({ anahtar: 'yeni', baslik: `Yeni kayıt: “${sorgu.trim()}”`, aciklama: 'Ardından türünü seçersiniz', yap: () => { setTurSec(sorgu.trim().replace(/\s+/g, ' ')); setSorgu(''); } });
-      // Gezinti çubuğundaki bütün sayfalar ve görünümler paletten de açılır.
-      // Arama boşken yalnızca en sık kullanılanlar listelenir.
-      for (const [k, ad] of [...ANA_SAYFALAR.filter(([x]) => x !== 'gorunumler'), ...DIGER_SAYFALAR]) {
-        if (!sorgu.trim() && !['yaz', 'masa', 'kayitlar'].includes(k)) continue;
-        komutlar.push({ anahtar: 's-' + k, baslik: ad, aciklama: k === 'masa' ? 'Kaldığınız yer, son düzenlenenler' : k === 'yaz' ? 'Eserler, bölümler ve sahneler' : 'Sayfa', yap: () => git(`/e/${evren}/${k}`) });
+      // Bütün sayfalar ve araçlar her kipte paletten açılır (§5.11); kipin gezintide göstermediğinin yanında
+      // kip etiketi durur. Seçilen sayfa kipi değiştirmeden açılır. Arama boşken yalnızca en sık kullanılanlar listelenir.
+      const kip = kipOku(evren), sabitler = sabitlerOku(evren);
+      const etiket = (k: string) => {
+        const en = MENU_KIPI[k];
+        if (sabitler.includes(k)) return undefined;
+        if (!en) return 'Araçlar';
+        return kipKapsar(kip, en) ? undefined : `${KIP_ADI[en]} kipi`;
+      };
+      for (const [k, ad] of [...ANA_SAYFALAR, ...DIGER_SAYFALAR]) {
+        if (!sorgu.trim() && !['yaz', 'masa', 'kayitlar', 'araclar'].includes(k)) continue;
+        komutlar.push({ anahtar: 's-' + k, baslik: ad, aciklama: k === 'masa' ? 'Kaldığınız yer, son düzenlenenler' : k === 'yaz' ? 'Eserler, bölümler ve sahneler' : k === 'araclar' ? 'Grafikler ve öbür araçlar' : 'Sayfa', etiket: etiket(k), yap: () => git(`/e/${evren}/${k}`) });
       }
-      if (sorgu.trim()) for (const [k, ad] of GORUNUMLER) komutlar.push({ anahtar: 'g-' + k, baslik: ad, aciklama: 'Grafik', yap: () => git(`/e/${evren}/${k}`) });
+      if (sorgu.trim()) for (const [k, ad] of GORUNUMLER) komutlar.push({ anahtar: 'g-' + k, baslik: ad, aciklama: 'Grafik', etiket: etiket(k), yap: () => git(`/e/${evren}/${k}`) });
       if (baglam.hesap) {
         komutlar.push({ anahtar: 'h-yolculuk', baslik: 'Yolculuk süresi', aciklama: 'İki yer arası, kayıtlı rotalarla', yap: () => baglam.hesap!('yolculuk') });
         komutlar.push({ anahtar: 'h-takvim', baslik: 'Takvim günü hesabı', aciklama: 'Tarihe gün ya da yıl ekleme, iki tarih arası gün sayısı', yap: () => baglam.hesap!('takvim') });
@@ -657,7 +665,7 @@ function KomutPaleti({ istemci, evren, baglam, kapat, hataylaAc }: { istemci: Is
               onMouseMove={() => setSecili(i)} onClick={() => calistir(o, false)}>
               {o.tur && <span class={`tur-rozeti kucuk-rozet ${grupSinifi(o.tur)}`} aria-hidden="true">{turBul(o.tur).kisa}</span>}
               <span class="palet-govde">
-                <span><span class="palet-baslik">{o.baslik}</span>{o.aciklama && <span class="soluk kucuk"> {o.aciklama}</span>}</span>
+                <span><span class="palet-baslik">{o.baslik}</span>{o.aciklama && <span class="soluk kucuk"> {o.aciklama}</span>}{o.etiket && <span class="kip-etiketi">{o.etiket}</span>}</span>
                 {o.alt}
               </span>
               {o.kisayol && <kbd class="tus palet-tus">{o.kisayol}</kbd>}

@@ -22,7 +22,7 @@ function yolOku(): Yol {
   if (p[0] === 'esitleme') return { ekran: 'esitleme' };
   // Evren açılınca yazma düzeni gelir (§5.10, K24).
   if (p[0] === 'e' && p[1] && (!p[2] || p[2] === 'yaz')) return { ekran: 'yaz', evren: p[1], kod: p[3] || null };
-  if (p[0] === 'e' && p[1]) return { ekran: 'evren', kod: p[1], sekme: p[2] === 'gorunumler' ? 'cizelge' : p[2], alt: p[3] || null };
+  if (p[0] === 'e' && p[1]) return { ekran: 'evren', kod: p[1], sekme: p[2] === 'gorunumler' ? 'araclar' : p[2], alt: p[3] || null };
   return { ekran: 'evrenler' };
 }
 /** Üstteki şeritler (eşitleme, hazırlanma) yer kapladığında yan çubuklar ve sayfa bu yükseklik kadar kısalır;

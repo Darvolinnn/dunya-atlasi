@@ -1058,6 +1058,10 @@ export interface SoruSatiri extends Soru {
 /** İlk adımların dayanakları (K26, K27): her adım kayıtlı veriden anlaşılır. */
 /** İleri araçların bir kez tanıtılması (§5.10, K28): kayıtlı veriden sayılar. */
 export interface AracTanitimDayanaklari { enCokSahne: { eser: string; sayi: number } | null; karakter: number; tarihli: boolean; mekan: number; eser: number }
+/** Araçlar sayfasının hazırlık sayıları (§5.11); her biri en çok 100. */
+export type AracHazirligi = Record<'eser' | 'sahne' | 'karakter' | 'mekan' | 'kurguHatti' | 'terim' | 'mesele' | 'tarihli' | 'iliski' | 'aile' | 'neden'
+  | 'degisim' | 'harita' | 'gezinti' | 'pano' | 'okurYayini' | 'surum' | 'masa' | 'sozluk' | 'gokyuzu' | 'cop', number>;
+
 export interface IlkAdimDayanaklari {
   eser: boolean; sahne: boolean; baglanti: boolean; baglam: boolean;
   not: boolean; nottanEser: boolean; cekirdek: boolean; karakter: boolean; istek: boolean; karsit: boolean; karakterSahnede: boolean;
@@ -1337,6 +1341,7 @@ export interface Istekler {
   evrenKaldir(a: { evren: string }): void;
   /** Yaz sayfasındaki "İlk adımlar" listesi (K26): hangi adımlar yapılmış. */
   ilkAdimlar(a: { evren: string }): IlkAdimDayanaklari;
+  aracHazirligi(a: { evren: string }): AracHazirligi;
   aracTanitimlari(a: { evren: string }): AracTanitimDayanaklari;
   alternatifler(a: { evren: string; kod: string }): (KisaKayit & { karar: string })[];
   kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;

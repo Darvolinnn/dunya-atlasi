@@ -1,6 +1,6 @@
 // Evren içindeki her ekranın kabuğu (§5.10, K24): solda sabit gezinti çubuğu. "Yaz" seçiliyken eserlerin ağacı
-// (eser › bölüm › sahne) çubukta görünür; görünümlerden biri açıkken görünümlerin listesi açılır. Az kullanılan
-// sayfalar "Diğer" altında katlanır.
+// (eser › bölüm › sahne) çubukta görünür. Çubukta yalnız seçili kipin sayfaları (§5.11, K43) ve sabitlenenler durur;
+// grafikler ve az kullanılan sayfalar Araçlar sayfasındadır.
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { gitVeYap, YENI_SAHNE_OLAYI } from './yonlendirme';
 import { SiradakiAdim } from './IlkAdimlar';
@@ -8,12 +8,12 @@ import type { Istemci } from '../veri/istemci';
 import type { EserYapisi, EvrenBilgisi, KisaKayit, YapiSahnesi } from '../veri/api';
 import { git } from './Uygulama';
 import { DurumOzeti } from './Esitleme';
-import { uzakGorunumMu } from '../alan/turler';
 import { KurguBaglami } from './kurgu';
 import { useBagGorunumuUygula } from './BagGorunumu';
 import { SAHNE_CALISMA } from '../alan/sablon';
 import { hareketAzMi, hareketDegerleri } from './tema';
-import { GezintiSimgesi } from './simgeler';
+import { GezintiSimgesi, simgesiVar } from './simgeler';
+import { KIPLER, kipKapsar, kipYaz, MENU_KIPI, useKip, useSabitler } from './kip';
 
 /** İnceleme görünümleri (§7): aynı verinin farklı çizimleri. */
 export const GORUNUMLER = [['cizelge', 'Zaman çizelgesi'], ['ag', 'Ağ'], ['soy', 'Soy ağacı'], ['neden', 'Neden–sonuç'], ['durumlar', 'Durum geçmişi'],
@@ -28,18 +28,15 @@ export const GORUNUM_GRUPLARI: readonly (readonly [string, readonly string[]])[]
   ['Dil ve derleme', ['sozluk', 'gezinti', 'pano']],
   ['Yayın', ['okur-yayini']],
 ];
-const GORUNUM_ADI = new Map<string, string>(GORUNUMLER);
 export const gorunumMu = (s: string) => GORUNUMLER.some(([g]) => g === s);
 
-/** Ana sayfalar ve "Diğer" altındakiler; komut paleti de bu listeyi kullanır. */
-export const ANA_SAYFALAR = [['yaz', 'Yaz'], ['masa', 'Genel bakış'], ['kayitlar', 'Kayıtlar'], ['terimler', 'Sözlük'], ['haritalar', 'Haritalar'], ['takvim', 'Takvim'], ['tuval', 'Pano'], ['gorunumler', 'Grafikler ve araçlar'], ['inceleme', 'Uyarılar']] as const;
+/** Gezinti çubuğunun ana sayfaları (kipe göre süzülür) ve yalnız Araçlar sayfasından açılanlar; komut paleti de bu listeleri kullanır. */
+export const ANA_SAYFALAR = [['yaz', 'Yaz'], ['masa', 'Genel bakış'], ['kayitlar', 'Kayıtlar'], ['terimler', 'Sözlük'], ['haritalar', 'Haritalar'], ['takvim', 'Takvim'], ['tuval', 'Pano'], ['inceleme', 'Uyarılar'], ['araclar', 'Araçlar']] as const;
 export const DIGER_SAYFALAR = [['masalar', 'Konu dosyaları'], ['meseleler', 'Karar bekleyenler'], ['sablonlar', 'Şablonlar'], ['gorunum', 'Görünüm'], ['bahsedilen', 'Henüz yazılmayanlar'],
   ['cop', 'Çöp kutusu'], ['gecmis', 'Değişiklik geçmişi'], ['surumler', 'Kayıtlı anlar'], ['yedek', 'Yedek']] as const;
 
-let sonGorunum = 'cizelge';
-const digerAnahtari = 'dunya-atlasi:diger-acik';
-const oku = (a: string) => { try { return localStorage.getItem(a); } catch { return null; } };
-const yaz = (a: string, v: string) => { try { localStorage.setItem(a, v); } catch { /* yok */ } };
+/** Her sayfanın ve aracın adı (sabitlenenler gezintide bu adla görünür). */
+export const SAYFA_ADI = new Map<string, string>([...ANA_SAYFALAR, ...DIGER_SAYFALAR, ...GORUNUMLER]);
 // Her ekran kendi kabuğunu çizer; ekran değişince kabuk yeniden kurulur. Son okunan evren bilgisi ve eser ağacı
 // burada tutulur ki gezinti yeni bilgi gelene dek boş kalmasın, yerinden oynamasın (yeni bilgi gelince yenilenir).
 const bilgiBellegi = new Map<string, EvrenBilgisi>();
@@ -91,7 +88,7 @@ function useGezintiHareketleri(evren: string, etkin: string) {
   useLayoutEffect(() => {
     const nav = navRef.current;
     if (!nav) return;
-    const sec = nav.querySelector<HTMLElement>(':scope > .gezinti-listesi > li > .gezinti-ogesi.secili, :scope > .gezinti-diger > .gezinti-listesi > li > .gezinti-ogesi.secili');
+    const sec = nav.querySelector<HTMLElement>(':scope > .gezinti-listesi > li > .gezinti-ogesi.secili');
     if (!sec) { sonVurgu = null; return; }
     const yeni = gezintideKonum(sec, nav);
     const eski = sonVurgu;
@@ -154,11 +151,11 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
 }) {
   const [bilgi, setBilgi] = useState<EvrenBilgisi | null>(() => bilgiBellegi.get(evren) ?? null);
   const [surum, setSurum] = useState(0);
-  const [digerAcik, setDigerAcik] = useState(() => oku(digerAnahtari) === '1' || DIGER_SAYFALAR.some(([k]) => k === etkin));
+  const kip = useKip(evren);
+  const sabitler = useSabitler(evren);
   useEffect(() => { istemci.iste('evrenBilgisi', { evren }).then((b) => { bilgiBellegi.set(evren, b); setBilgi(b); }, () => {}); }, [evren, surum]);
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren) setSurum((s) => s + 1); }), [evren]);
   useBagGorunumuUygula(istemci, evren, bilgi?.bagGorunumu, surum);
-  if (gorunumMu(etkin)) sonGorunum = etkin;
   const icRef = useSayfaGecisi(`${etkin}/${acik ?? ''}`);
   const { navRef, kabukRef } = useGezintiHareketleri(evren, etkin);
 
@@ -166,36 +163,20 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
     : k === 'inceleme' ? (bilgi.catismaSayisi + bilgi.sorunSayisi || '') : '';
   const bagli = !!bilgi?.bag;
   const kurgu = bilgi?.kurguTuru ?? null;
-  const oge = (k: string, ad: string) => {
-    const secili = k === 'gorunumler' ? gorunumMu(etkin) : etkin === k;
+  // Kipin gösterdiği ana sayfalar; Uyarılar Hikâye kipte yalnız uyarı varken görünür. Sabitlenenler Araçlar'ın önünde durur.
+  const kipte = (k: string) => kipKapsar(kip, MENU_KIPI[k] ?? 'tam') && (k !== 'inceleme' || kip === 'tam' || sayi('inceleme') !== '' || etkin === k);
+  const gorunenler = ANA_SAYFALAR.filter(([k]) => k !== 'araclar' && kipte(k)).map(([k]) => k as string);
+  const sabitGorunen = sabitler.filter((k) => SAYFA_ADI.has(k) && !gorunenler.includes(k) && !(bagli && ['surumler', 'yedek'].includes(k)));
+  const menude = [...gorunenler, ...sabitGorunen];
+  const oge = (k: string, ad: string, sabit = false) => {
+    const secili = k === 'araclar' ? !menude.includes(etkin) : etkin === k;
     const n = sayi(k);
     return (
       <li key={k}>
-        <a class={secili ? 'gezinti-ogesi secili' : 'gezinti-ogesi'} aria-current={secili ? 'page' : undefined}
-          href={`#/e/${evren}/${k === 'gorunumler' ? sonGorunum : k}`}>
-          <span class="gezinti-ad"><GezintiSimgesi kod={k} />{ad}</span>{n !== '' && <span class="gezinti-sayi">{n}</span>}
+        <a class={secili ? 'gezinti-ogesi secili' : 'gezinti-ogesi'} aria-current={secili ? 'page' : undefined} href={`#/e/${evren}/${k}`}>
+          <span class="gezinti-ad"><GezintiSimgesi kod={sabit && !simgesiVar(k) ? 'araclar' : k} />{ad}</span>{n !== '' ? <span class="gezinti-sayi">{n}</span> : sabit && <span class="sabit-isaret">sabit</span>}
         </a>
         {k === 'yaz' && etkin === 'yaz' && <EserAgaci istemci={istemci} evren={evren} acik={acik} surum={surum} saltOkunur={bagli} />}
-        {k === 'gorunumler' && gorunumMu(etkin) && (
-          <ul class="gezinti-alt">
-            {GORUNUM_GRUPLARI.map(([grup, kodlar]) => {
-              const gorunen = kodlar.filter((g) => !uzakGorunumMu(kurgu, g) || etkin === g);
-              if (!gorunen.length) return null;
-              return [
-                <li key={`grup-${grup}`} class="gezinti-grup" aria-hidden="true">{grup}</li>,
-                ...gorunen.map((g) => (
-                  <li key={g}><a class={etkin === g ? 'gezinti-ogesi kucuk secili' : 'gezinti-ogesi kucuk'} aria-current={etkin === g ? 'page' : undefined} href={`#/e/${evren}/${g}`}>{GORUNUM_ADI.get(g)}</a></li>
-                )),
-              ];
-            })}
-            {GORUNUMLER.some(([g]) => uzakGorunumMu(kurgu, g) && etkin !== g) && <li><details class="gezinti-uzak">
-              <summary class="gezinti-ogesi kucuk">Diğer grafikler ve araçlar</summary>
-              <ul class="gezinti-alt">{GORUNUMLER.filter(([g]) => uzakGorunumMu(kurgu, g) && etkin !== g).map(([g, gad]) => (
-                <li key={g}><a class="gezinti-ogesi kucuk" href={`#/e/${evren}/${g}`}>{gad}</a></li>))}</ul>
-              <p class="soluk kucuk">Gizlenen bölümlerin kayıtları silinmez, yalnızca menüden kalkar.</p>
-            </details></li>}
-          </ul>
-        )}
       </li>
     );
   };
@@ -205,13 +186,20 @@ export function EvrenKabugu({ istemci, evren, etkin, acik = null, children }: {
       <nav class="gezinti" aria-label="Evrende gezinti" ref={navRef}>
         <a class="gezinti-geri" href="#/">← Evrenler</a>
         <div class="gezinti-evren" title={bilgi?.ad}>{bilgi?.ad ?? '…'}</div>
-        <ul class="gezinti-listesi">{ANA_SAYFALAR.map(([k, ad]) => oge(k, ad))}</ul>
-        <details class="gezinti-diger" open={digerAcik} onToggle={(e) => { const v = (e.target as HTMLDetailsElement).open; setDigerAcik(v); yaz(digerAnahtari, v ? '1' : '0'); }}>
-          <summary><span class="gezinti-ad"><GezintiSimgesi kod="diger" />Diğer</span></summary>
-          <ul class="gezinti-listesi">{DIGER_SAYFALAR.filter(([k]) => !bagli || !['surumler', 'yedek'].includes(k)).map(([k, ad]) => oge(k, ad))}</ul>
-        </details>
+        <div class="kip-salteri" role="radiogroup" aria-label="Deneyim kipi">
+          {KIPLER.map(([k, ad, aciklama]) => (
+            <button key={k} type="button" role="radio" aria-checked={kip === k} class={kip === k ? 'secili' : undefined} title={aciklama}
+              onClick={() => kipYaz(evren, k)}>{ad}</button>
+          ))}
+        </div>
+        <ul class="gezinti-listesi">
+          {gorunenler.map((k) => oge(k, SAYFA_ADI.get(k)!))}
+          {sabitGorunen.map((k) => oge(k, SAYFA_ADI.get(k)!, true))}
+          {oge('araclar', 'Araçlar')}
+        </ul>
         <div class="gezinti-alti">
           <DurumOzeti istemci={istemci} evren={evren} yedekVar={!bagli} />
+          {!bagli && !!bilgi?.copSayisi && <a class="cop-bag" href={`#/e/${evren}/cop`}>Çöp kutusu ({bilgi.copSayisi})</a>}
           <span>Komutlar: Ctrl+K</span>
         </div>
       </nav>

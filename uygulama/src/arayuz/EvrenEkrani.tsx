@@ -31,9 +31,9 @@ import { SayfaYardimi } from './SayfaYardimi';
 import { OlayOrgusuGorunumu } from './OlayOrgusu';
 import { GorunumSayfasi } from './BagGorunumu';
 import { TuvalSayfasi } from './Tuval';
-import { ANA_SAYFALAR, DIGER_SAYFALAR, EvrenKabugu, GORUNUMLER, gorunumMu } from './Kabuk';
+import { EvrenKabugu, gorunumMu, SAYFA_ADI } from './Kabuk';
+import { AraclarSayfasi } from './Araclar';
 
-const SAYFA_ADLARI = new Map<string, string>([...ANA_SAYFALAR, ...DIGER_SAYFALAR, ...GORUNUMLER]);
 
 export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Istemci; kod: string; sekme: string; alt?: string | null }) {
   const [bilgi, setBilgi] = useState<EvrenBilgisi | null>(null);
@@ -46,7 +46,7 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
   if (hata) return <main class="sayfa"><p class="hata">{hata}</p><a href="#/">Evrenlere dön</a></main>;
   // Bilgi gelene dek gezinti yerinde kalır; yalnız sayfanın içi beklenir.
   if (!bilgi) return <EvrenKabugu istemci={istemci} evren={kod} etkin={sekme}><main class="sayfa" aria-busy="true"><p class="soluk gecikmeli">Açılıyor…</p></main></EvrenKabugu>;
-  const baslik = sekme === 'masa' ? null : SAYFA_ADLARI.get(sekme) ?? null;
+  const baslik = sekme === 'masa' ? null : SAYFA_ADI.get(sekme) ?? null;
   // Açık harita bütün genişliği kullanır; başlığı haritanın kendi satırındadır (taslak 4A).
   const haritaAcik = (sekme === 'haritalar' && !!alt) || sekme === 'tuval';
 
@@ -62,8 +62,9 @@ export function EvrenEkrani({ istemci, kod, sekme, alt = null }: { istemci: Iste
             {!bilgi.bag && <KurguAyari istemci={istemci} bilgi={bilgi} />}
           </>
         )}
-        {baslik && !haritaAcik && <div class="baslik-satiri sayfa-basligi"><h1>{gorunumMu(sekme) ? <><span class="soluk">Grafikler ve araçlar · </span>{baslik}</> : baslik}</h1><SayfaYardimi sayfa={sekme} /></div>}
-        {sekme === 'inceleme' ? <IncelemeKuyrugu istemci={istemci} evren={kod} surum={surum} />
+        {baslik && !haritaAcik && <div class="baslik-satiri sayfa-basligi"><h1>{gorunumMu(sekme) ? <><a class="soluk" href={`#/e/${kod}/araclar`}>Araçlar</a><span class="soluk"> · </span>{baslik}</> : baslik}</h1><SayfaYardimi sayfa={sekme} /></div>}
+        {sekme === 'araclar' ? <AraclarSayfasi istemci={istemci} evren={kod} bagli={!!bilgi.bag} />
+          : sekme === 'inceleme' ? <IncelemeKuyrugu istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'yedek' ? <><YedekSekmesi istemci={istemci} evren={kod} surum={surum} /><YerelYedekler istemci={istemci} evren={kod} surum={surum} /><EserDisaAktarma istemci={istemci} evren={kod} surum={surum} /><MarkdownCiktisi istemci={istemci} evren={kod} /><DriveYedekleri istemci={istemci} evren={kod} surum={surum} /></>
           : sekme === 'surumler' && !bilgi.bag ? <SurumlerSekmesi istemci={istemci} evren={kod} surum={surum} />
           : sekme === 'gecmis' ? <Gecmis istemci={istemci} kod={kod} surum={surum} />
@@ -163,7 +164,7 @@ function KurguAyari({ istemci, bilgi }: { istemci: Istemci; bilgi: EvrenBilgisi 
   return (
     <details class="kurgu-ayari">
       <summary class="kucuk soluk">Ne yazıyorsunuz? {k ? k.ad : 'Seçilmedi'}</summary>
-      <p class="soluk kucuk">Seçtiğiniz kurgu türünde az kullanılan bölümler menüde “Diğer” altına alınır. Gizlenen bölümlerin kayıtları silinmez, yalnızca menüden kalkar.</p>
+      <p class="soluk kucuk">Seçtiğiniz kurgu türünde az kullanılan araçlar Araçlar sayfasının altındaki katlı gruba, az kullanılan kayıt türleri tür seçicide “Diğer” altına iner. Hiçbir kayıt silinmez.</p>
       <KurguSecici deger={bilgi.kurguTuru} degis={(kurgu) => istemci.iste('kurguTuruYaz', { evren: bilgi.kod, kurgu }).then(() => setHata(null), (e) => setHata((e as Error).message))} />
       {hata && <p class="hata kucuk">{hata}</p>}
     </details>

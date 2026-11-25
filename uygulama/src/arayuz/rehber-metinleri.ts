@@ -81,6 +81,25 @@ export const REHBERLER: Record<string, SayfaRehberi> = {
       'Alt+N her ekranda hızlı not açar.',
     ],
   },
+  araclar: {
+    baslik: 'Araçlar',
+    ne: [
+      'Grafiklerin ve az kullanılan sayfaların tek yeri. Araçlar, yazarken sorduğunuz sorulara göre gruplanmıştır: kurguyu planlarken, zamanı kontrol ederken, ilişkileri incelerken, mekânları çizerken, çelişkileri denetlerken, çıktı alırken.',
+      'Her kartın altında aracın şu anki verinizle işe yarayıp yaramadığı yazar. “Henüz veri yok” yazıyorsa çalışması için neyin gerektiğini de söyler.',
+    ],
+    neZaman: 'Gezinti çubuğunda göremediğiniz bir sayfayı ya da grafiği ararken.',
+    adimlar: [
+      'Üstteki kutuya aradığınız aracın adını ya da ne yaptığını yazın (ör. “soy”, “harita”, “çıktı”).',
+      'Bir karta basınca araç açılır. Gezinti çubuğundaki kip seçimi değişmez.',
+      'Sık kullandığınız aracı kartın köşesindeki “Sabitle” ile gezinti çubuğuna ekleyin; “Sabit ✓”e yeniden basınca çıkar.',
+    ],
+    ipuclari: [
+      'Gezinti çubuğundaki “Sade · Hikâye · Tam” seçimi yalnız görünüşü değiştirir; hiçbir kayıt silinmez, hiçbir araç kapanmaz.',
+      'Kip ve sabitlenen araçlar bu cihazda, bu evren için hatırlanır; öbür cihazlarınız kendi seçimini korur.',
+      'Kurgu türünüze uzak araçlar sayfanın en altındaki katlı gruptadır. Kurgu türünü Genel bakış sayfasından değiştirebilirsiniz.',
+      'Komut paleti (Ctrl+K) her kipte bütün araçları bulur.',
+    ],
+  },
   masa: {
     baslik: 'Genel bakış',
     ne: [
