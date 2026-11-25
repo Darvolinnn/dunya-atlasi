@@ -1926,3 +1926,13 @@ html.yalniz-diyalog .yaz-kagidi .ProseMirror > .diyalog-paragrafi { opacity: 1; 
 .ayrilmis-yer .menu-icerik, .yuzen-cubuk .menu-icerik { min-width: 320px; }
 .ust-panel { margin: 0 0 12px; }
 @media (prefers-reduced-motion: reduce) { .yuzen-cubuk { animation: none; } }
+
+/* Metin denetimi ve ad benzerliği (K44) */
+.benzer-ad { flex-basis: 100%; margin: 4px 0 0; }
+.kayit-basi + .benzer-ad { margin: -6px 0 12px; }
+.denetim-secimi { flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; margin: 8px 0 14px; }
+.denetim-grubu > summary { min-height: 36px; }
+.denetim-bulgusu { flex-direction: column; gap: 2px; padding: 6px 0; border-bottom: 1px solid var(--cizgi); }
+.denetim-bulgusu:last-child { border-bottom: 0; }
+.sesli-okuma { position: sticky; top: 0; z-index: 2; background: var(--zemin); padding: 6px 0; margin: 0 0 10px; gap: 8px 12px; }
+.okunan-paragraf { background: var(--vurgu-zemin); border-radius: 4px; box-shadow: 0 0 0 4px var(--vurgu-zemin); transition: background-color var(--hz-sure, 200ms); }

@@ -16,7 +16,7 @@ export const SAYFA_KONULARI: Record<string, number[]> = {
   masalar: [19], meseleler: [24, 10], sablonlar: [5, 19], bahsedilen: [19], surumler: [21, 24], cizelge: [18], neden: [13], hatlar: [15, 17], orgu: [12, 15, 14], matris: [16, 15],
   // Her sayfada en az bir konu (§12.4, K28).
   evrenler: [1, 19], esitleme: [23], kayit: [5, 9, 19], haritalar: [19], takvim: [18, 13], cop: [24], gecmis: [21], yedek: [23],
-  ag: [8], soy: [8], durumlar: [13], yogunluk: [19], gokyuzu: [9], sozluk: [9], sozlesme: [16, 17], kosullar: [13], kesif: [19],
+  ag: [8], soy: [8], durumlar: [13], yogunluk: [19], gokyuzu: [9], sozluk: [9], 'metin-denetimi': [21], sozlesme: [16, 17], kosullar: [13], kesif: [19],
   gun: [19], karsilastir: [21], gezinti: [23], pano: [19], terimler: [9], gorunum: [23], tuval: [19, 13], araclar: [23, 19],
 };
 

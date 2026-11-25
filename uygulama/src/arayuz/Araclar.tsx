@@ -50,6 +50,7 @@ const GRUPLAR: readonly (readonly [string, Arac[]])[] = [
   ['Çelişkileri ve kelimeleri denetlerken', [
     { kod: 'inceleme', ne: 'Tutarsızlıklar, kopuk bağlantılar ve iki cihazda ayrı yapılmış değişiklikler.', hz: () => [true, 'Hazır'] },
     { kod: 'terimler', ne: 'Evrenin kendi sözcükleri; metinde üzerine gelince anlamı görünür.', hz: (h) => hazir([h.terim, 'terim']) },
+    { kod: 'metin-denetimi', ne: 'Özel adların ekleri (Kael’e / Kael’a), dizgi hataları ve yakın sözcük tekrarları.', hz: (h) => h.sahne ? hazir([h.sahne, 'sahne']) : yok('en az bir sahne yazın') },
     { kod: 'sozluk', ne: 'Döneme uymayan ya da yasak sözcüklerin metinde geçtiği yerler.', hz: (h) => h.sozluk ? hazir([h.sozluk, 'sözcük listesi']) : yok('bu sayfada bir sözcük listesi kurun') },
   ]],
   ['Kitap çıktısı, sürümler ve düzen', [

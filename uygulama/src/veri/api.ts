@@ -234,6 +234,10 @@ export interface KitapSonuAciklar {
     sonra: { eser: KisaKayit; sahne: KisaKayit; sira: number } | null }[];
 }
 /** Kesintisiz okumada bir sahne (K39). */
+export type { MetinBulgusu, MetinDenetimiSonucu } from '../alan/metin-denetimi';
+export type { BenzerAd } from '../alan/ad-benzerligi';
+import type { MetinDenetimiSonucu } from '../alan/metin-denetimi';
+import type { BenzerAd } from '../alan/ad-benzerligi';
 export interface OkumaParcasi { sahne: KisaKayit; bolum: { kod: string; ad: string; sira: number } | null; spans: Spans }
 /** Kitap sonunda durum (K39): eserin son sahnesinin tarihinde kayıtlı olanlar. */
 export interface KitapSonuDurumu {
@@ -1343,6 +1347,10 @@ export interface Istekler {
   kitapSonuAciklar(a: { evren: string; eser: string; yol?: string | null }): KitapSonuAciklar;
   kitapSonuDurumu(a: { evren: string; eser: string }): KitapSonuDurumu;
   okumaMetni(a: { evren: string; kapsam: string }): OkumaParcasi[];
+  /** Metin denetimi (K44): eserin ya da bölümün metninde ek uyumu, dizgi ve yakın tekrar; anlam çıkarılmaz (K1). */
+  metinDenetimi(a: { evren: string; kapsam: string; pencere?: number }): MetinDenetimiSonucu;
+  /** Ada çok yakın ya da aynı adlı kayıtlar (K44); `haric` adı değişen kaydın kendisi. */
+  benzerAdlar(a: { evren: string; ad: string; haric?: string | null }): BenzerAd[];
   kesilenParcaEkle(a: { evren: string; sahne: string; metin: string; kod?: string | null }): { kod: string };
   kesilenParcaSil(a: { evren: string; sahne: string; kod: string }): void;
   kesilenParcalar(a: { evren: string; sahne: string }): { kod: string; metin: string; zaman: number }[];

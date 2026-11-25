@@ -5,7 +5,9 @@ import { kodGecerliMi, yeniKod } from '../alan/kod';
 import { araKonum } from '../alan/sira';
 import type { IslemGirdisi } from '../alan/islem';
 import { A } from '../alan/automerge';
-import { baglantilar, duzMetindenSpans, spanAyari } from '../alan/metin-sema';
+import { baglantilar, duzMetin, duzMetindenSpans, spanAyari } from '../alan/metin-sema';
+import { metniDenetle } from '../alan/metin-denetimi';
+import { benzerAdlar } from '../alan/ad-benzerligi';
 import { akisGecerli, eksenAraligi, farkCoz, farkGecerli, farkYazisi, goreliTarih, karsilastir, paralelGecerli, siraAnahtari, tarihAciklamasi, tarihCoz, takvimGecerli, VARSAYILAN_TAKVIM, yilGunu, type Akis, type EvrenTarihi, type Kisit, type ParalelTakvim, type Takvim, type ZamanSeti } from '../alan/tarih';
 import { iliskiTuruBul, iliskiTuruGecerli, rolAdi } from '../alan/iliski-turleri';
 import { icerikAdi, onizlemeAdi, type GorselIsleyici, type MedyaDeposu } from './medya';
@@ -122,7 +124,7 @@ import * as kaliciIz from './kalici-iz';
 import type { KaliciIzTuru } from '../veri/api';
 import * as olcekli from './olcekli';
 import type { OlcekliAraziGirdisi, OlcekliHizKurali, OlcekliOlcekTanimi } from '../veri/api';
-import type { KitapSonuDurumu, MetinEslesmesi, OkumaParcasi, YapiSahnesi } from '../veri/api';
+import type { BenzerAd, MetinDenetimiSonucu, KitapSonuDurumu, MetinEslesmesi, OkumaParcasi, YapiSahnesi } from '../veri/api';
 import { sayiDegeriMi, sayiGirdisi, sayiMetni } from '../alan/nicelik';
 import { kullaniciIletisi } from './ileti';
 
@@ -174,6 +176,9 @@ function duzKonumu(duz: string, katliKonum: number): number {
   }
   return j;
 }
+
+/** Adı özel ad olmayan türler (K44): ad benzerliği ve ek denetiminde karşılaştırılmaz. */
+const ANLATI_DISI_ADLAR = "'sahne','bolum','eser','seri','not','alinti','acik_mesele','gerekce','kaynak'";
 
 export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'yerelKlasorBagla'> {
   private readonly kurulum: KurulumVt;
@@ -2236,6 +2241,26 @@ export class Hizmet implements Omit<Istekler, 'jetonVer' | 'baglantiyiKes' | 'ye
       ...y.bolumler.filter((b) => tur === 'eser' || b.kod === kapsam).flatMap((b) => b.sahneler.map((s) => ({ s, bolum: { kod: b.kod, ad: b.ad, sira: b.sira } }))),
     ];
     return l.map(({ s, bolum }) => ({ sahne: { kod: s.kod, ad: s.ad, tur: 'sahne' }, bolum, spans: A.spans(this.belge(e, s.kod, 'govde'), ['t']) as Spans }));
+  }
+  /** Metin denetimi (K44): sahneler okuma sırasıyla; adlar evrendeki kayıtların adları ve okunuşları. */
+  metinDenetimi({ evren, kapsam, pencere = 100 }: { evren: string; kapsam: string; pencere?: number }): MetinDenetimiSonucu {
+    const e = this.evren(evren);
+    this.kayitVarMi(e, kapsam);
+    const p = Math.max(20, Math.min(500, Math.round(Number(pencere) || 100)));
+    const sahneler = this.kapsamSahneleri(e, kapsam).map((s) => {
+      const d = metinBelgesi(e.db, s.kod, 'govde');
+      return { kod: s.kod, ad: s.ad, paragraflar: d ? duzMetin(A.spans(d, ['t']) as never).split('\n') : [] };
+    });
+    const adlar = e.db.selectObjects(`SELECT kod, ad, okunus FROM kayitlar WHERE silindi IS NULL AND tur NOT IN (${ANLATI_DISI_ADLAR})`)
+      .map((r) => ({ kod: r.kod as string, ad: r.ad as string, okunus: (r.okunus as string) ?? '' }));
+    return metniDenetle(sahneler, adlar, p);
+  }
+  /** Ada çok yakın ya da aynı adlı kayıtlar (K44). Anlatı parçaları ve not gibi açıklayıcı adlı türler karşılaştırılmaz. */
+  benzerAdlar({ evren, ad, haric = null }: { evren: string; ad: string; haric?: string | null }): BenzerAd[] {
+    const e = this.evren(evren);
+    const l = e.db.selectObjects(`SELECT kod, ad, tur FROM kayitlar WHERE silindi IS NULL AND tur NOT IN (${ANLATI_DISI_ADLAR}) AND kod IS NOT ?`, [haric])
+      .map((r) => ({ kod: r.kod as string, ad: r.ad as string, tur: r.tur as string }));
+    return benzerAdlar(String(ad ?? ''), l);
   }
   /** Düz metin eşleşmeleri; anlam çıkarılmaz (K1). Biçim ya da bağlantı sınırını aşan eşleşme alınmaz. */
   private metinEslesmeleri(e: EvrenVt, kapsam: string, aranan: string, harfDuyarli: boolean) {

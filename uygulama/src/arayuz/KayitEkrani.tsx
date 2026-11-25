@@ -56,6 +56,8 @@ import { KaliciIzBolumu } from './KaliciIz';
 import { geriAlinabilir, onayla } from './onay';
 import { kipKapsar, useKip } from './kip';
 import { AcilirMenu } from './AcilirMenu';
+import { BenzerAdSatiri } from './BenzerAdSatiri';
+import type { BenzerAd } from '../veri/api';
 import type { KayitDolulugu } from '../veri/api';
 
 /** Durum geçmişi tutulmayan türler (anlatı parçaları ve notlar). */
@@ -73,6 +75,8 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
   const [editorAnahtari, setEditorAnahtari] = useState(0);
   const [gecmisAcik, setGecmisAcik] = useState(false);
   const denetim = useRef<EditorDenetimi | null>(null);
+  const [benzerler, setBenzerler] = useState<BenzerAd[]>([]);
+  useEffect(() => { setBenzerler([]); }, [evren, kod]);
   const [duzeltme, setDuzeltme] = useState<{ eskiAd: string; yeniAd: string; eskiOkunus: string; liste: AdDuzeltmesi[] } | null>(null);
   const calisma = useCalisma();
   const [baslangic] = useState(() => calisma?.konumAl(kod) ?? null);
@@ -192,8 +196,10 @@ export function KayitEkrani({ istemci, evren, kod }: { istemci: Istemci; evren: 
             const yeniAd = v.trim().replace(/\s+/g, ' ');
             const liste = await istemci.iste('adDuzeltmeOnizle', { evren, kod, eskiAd, yeniAd, eskiOkunus });
             setDuzeltme(liste.length ? { eskiAd, yeniAd, eskiOkunus, liste } : null);
+            if (yeniAd !== eskiAd) istemci.iste('benzerAdlar', { evren, ad: yeniAd, haric: kod }).then(setBenzerler, () => {});
           }} />
         </div>
+        <BenzerAdSatiri evren={evren} l={benzerler} />
         {duzeltme && (
           <AdDuzeltmePaneli duzeltme={duzeltme} okunusVar={!!kayit.okunus} kapat={() => setDuzeltme(null)}
             uygula={async (secilenler) => {
