@@ -925,9 +925,11 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .rehber-paneli ol, .rehber-paneli ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
 .rehber-ust { display: flex; align-items: center; justify-content: space-between; gap: 8px;
   position: sticky; top: -18px; z-index: 1; margin: -18px -22px 0; padding: 14px 22px 8px; background: var(--yuzey); }
-/* Dokunmatik: dikey kaydırma tarayıcıda, yatay sürükleme paneli kapatır (surukle-kapat.ts). */
-.rehber-paneli { touch-action: pan-y; }
-.rehber-paneli.surukleniyor { user-select: none; }
+/* Sürükleyerek kapatma (surukle-kapat.ts): dikey kaydırma tarayıcıda kalır, yatay sürükleme paneli kapatır.
+   Alttan gelen yan panel başlığından aşağı çekilir; başlıktaki sekmeler yine yana kayar. */
+.rehber-paneli, .yaz-baglami, .harita-cekmece, .takvim-cekmece, .yan-panel { touch-action: pan-y; }
+@media (max-width: 900px) { .yan-panel-basi { touch-action: pan-x; } }
+html.panel-surukleniyor, html.panel-surukleniyor * { user-select: none !important; cursor: grabbing !important; }
 .rehber-etiket { font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--metin-2); font-weight: 600; }
 @keyframes rehber-gir { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .rehber-paneli { animation: none; } }
@@ -1116,6 +1118,9 @@ a.eser-karti h3 { font-family: var(--metin-yazi); font-size: 1.15rem; }
 .menu-ogesi.tehlikeli { color: var(--tehlike); }
 .yaz-baglami { gap: 12px; }
 .yaz-baglami-basi { display: flex; align-items: flex-end; gap: 4px; }
+/* Kaydırınca kapatma düğmesi üstte kalır (panelin üst boşluğu kadar yukarı yapışır). */
+.yaz-baglami-basi { position: sticky; top: -16px; z-index: 2; background: var(--yuzey); margin: -16px -18px 0; padding: 16px 18px 6px; }
+@media (min-width: 2200px) { .yaz-baglami-basi { top: -20px; margin: -20px -22px 0; padding: 20px 22px 6px; } }
 .baglam-sekmeleri { flex: 1; margin: 0; flex-wrap: nowrap; overflow-x: auto; }
 .baglam-sekmeleri .sekme { padding: 6px 8px; font-size: 0.9rem; }
 .baglam-sekme-icerik { display: flex; flex-direction: column; gap: 12px; }
@@ -1266,6 +1271,8 @@ a.defter-karti.belirsiz { border-left-style: dashed; }
 .harita-cekmece { position: absolute; top: 12px; right: 12px; bottom: 12px; width: 328px; z-index: 6; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: 12px; box-shadow: 0 6px 22px rgb(0 0 0 / 0.22); padding: 10px 14px 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .harita-cekmece h2 { font-size: 1rem; margin-top: 6px; }
 .cekmece-kapat { position: absolute; top: 8px; right: 8px; z-index: 1; }
+/* Harita çekmecesinde kapatma düğmesi kaydırınca üstte kalır. */
+.harita-cekmece > .cekmece-kapat { position: sticky; top: -2px; align-self: flex-end; flex: none; margin: -2px -6px -38px 0; z-index: 2; background: var(--yuzey); }
 .cekmece-sekmeleri { margin: 0 32px 4px 0; flex-wrap: nowrap; }
 .cekmece-ac { position: absolute; top: 12px; right: 12px; z-index: 6; box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); }
 .yer-karti { display: flex; flex-direction: column; gap: 4px; padding-bottom: 10px; border-bottom: 1px solid var(--cizgi); margin-right: 28px; }
@@ -1436,7 +1443,7 @@ details.aninda::details-content { transition: none; }
 .takvim-olay.uzun.devam { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -6px; width: calc(100% + 6px); }
 .takvim-olay.uzun.devam.surer { margin-left: -6px; margin-right: -6px; width: calc(100% + 12px); }
 .takvim-cekmece { position: sticky; top: 12px; background: var(--yuzey); border: 1px solid var(--cizgi); border-radius: var(--yaricap); box-shadow: var(--golge); padding: 14px 16px; max-height: calc(100vh - 24px); overflow-y: auto; animation: sagdan-gir 180ms var(--gecis-egri); }
-.takvim-cekmece-kapat { float: right; margin: -4px -6px 0 0; }
+.takvim-cekmece-kapat { float: right; margin: -4px -6px 0 0; position: sticky; top: -10px; z-index: 2; background: var(--yuzey); }
 .takvim-cekmece h3 { font-family: var(--metin-yazi); font-size: 1.2rem; margin: 2px 0 2px; }
 .olay-karti-baslik { font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--metin-2); font-weight: 600; margin: 14px 0 6px; }
 .olay-katilanlar { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
