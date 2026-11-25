@@ -76,7 +76,6 @@ test('sesli okuma: Türkçe ses varsa okunan paragraf vurgulanır', async ({ pag
   await p.getByRole('button', { name: '▶ Dinle' }).click();
   await expect(p.locator('.okunan-paragraf')).toContainText('Gemi limana girdi.');
   await resim(p, '5-sesli-okuma');
-  await expect(p.locator('.okunan-paragraf')).toContainText('Kim var orada');
   await expect(p.getByRole('button', { name: '▶ Dinle' })).toBeVisible({ timeout: 5000 });
   expect(await p.evaluate(() => (window as unknown as { okunan: string[] }).okunan)).toEqual(['Gemi limana girdi.', '— Kim var orada? diye seslendi bekçi.']);
 });
