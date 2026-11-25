@@ -443,6 +443,13 @@ Kullanıcı (24 Kasım 20:03 UTC) dört fikrin incelenmesini ve uygulama planın
 - **Sınama:** 726 birim sınaması geçti (2 atlandı), `tsc` temiz; tarayıcıda 66 akış sınamasının hepsi geçti (İlk adımlar sınamaları yerine iki İlk Kıvılcım sınaması; yeni evren sınamaları `bosEvrenTam` ile boş evren + Tam kipte açılır). Tarayıcı sınaması bu kapta `PW_CHROMIUM=/opt/pw-browsers/chromium` ile çalışır.
 - [x] Gerçek ekran resimleri (`/mnt/project-files/taslaklar/k43/gercek/`, depoda değil); kullanıcı 25 Kasım 09:27 UTC "Uygun" dedi. [x] PR #76 birleştirildi (`5c49518`). [x] Windows: otomatik görev 25 Kasım 13:00 TR'de kurdu (sürüm dosyası 09:53:50Z, görev sonucu 0); gerçek klasördeki çalışan program localhost:41730'dan yeni kodu sunuyor (kip şalteri, İlk Kıvılcım); ekrandan bakılmadı. [x] Tablet: `5c49518` APK'sı (sha256 2bf6eb5e…) 25 Kasım 21:38 TR'de `adb install -r` ile kuruldu, kurulu base.apk özeti aynı; ekran görüntüsüyle doğrulandı: "Deneme" evreni yerinde, Tam kipte açılıyor, menüde Sade · Hikâye · Tam şalteri ve Araçlar var.
 
+## 0.31 Dokuz maddelik öneri: Türkçe denetim, ad benzerliği, sesli dinleme (K44 adayı, 25 Kasım 2026)
+
+Kullanıcı (25 Kasım) dokuz maddelik bir öneri listesi gönderdi; her madde `main` 3462056'ya karşı denetlendi. Bulgular: EPUB zaten var (`calisan/cikti.ts` `epubDosyalari`: kapak, içindekiler, terimler sözlüğü eki); yazma hedefi K29'da alınmamıştı; karakterin konuşmalarını süzmek K1'e aykırı (konuşan metinden çıkarılmaz); bölünmüş ekran kısmen var (yan panel her kaydı, sahne dahil, salt okunur metinle açar, 320–640 px); görünmeme takibi kısmen var (Kurgu montajında yokluk haritası, K39 #8).
+**Kullanıcı kararı (25 Kasım 18:45 UTC):** yazma hedefi yok; **yapılacak:** (3) kural tabanlı Türkçe denetim (özel adlarda ek uyumu, dizgi: uzun çizgi/tırnak/çift boşluk, kök tekrarı), (6) yeni kayıtta ad benzerliği uyarısı, (9) sesli dinleme yalnız Windows'ta (tablet beklemede: Android web görünümü konuşma sentezini desteklemiyor, yerel eklenti gerekir). (5) ve (7) için açıklama istendi; (1) ve (8) için söz yok.
+- [ ] Yerleşim soruları (denetim sayfası yeri, yazarken vurgu, ad uyarısının yeri; 1 ve 8) kullanıcıya soruldu, cevap bekleniyor.
+- [ ] Taslak resimleri ve onay. [ ] K44 ve tasarım bölümleri. [ ] Kod ve sınamalar. [ ] Windows kurulum doğrulaması.
+
 ## 1. Önce oku (sırayla)
 
 1. `AGENTS.md`: bağlayıcı kurallar.
