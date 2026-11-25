@@ -80,8 +80,8 @@ export function IlkKivilcim({ istemci, evren }: { istemci: Istemci; evren: strin
         </>}
         {hata && <p class="hata" role="alert">{hata}</p>}
         <div class="kivilcim-alt">
-          {adim > 1 ? <button type="button" class="dugme sade" onClick={() => setAdim(adim - 1)}>← Geri</button> : <span />}
-          <button type="submit" class="dugme ana" disabled={calisiyor}>{adim < 3 ? 'Devam et →' : calisiyor ? 'Hazırlanıyor…' : 'İlk sahneyi aç ve yazmaya başla'}</button>
+          {adim > 1 ? <button key="geri" type="button" class="dugme sade" onClick={() => setAdim(adim - 1)}>← Geri</button> : <span />}
+          <button key="ileri" type="submit" class="dugme ana" disabled={calisiyor}>{adim < 3 ? 'Devam et →' : calisiyor ? 'Hazırlanıyor…' : 'İlk sahneyi aç ve yazmaya başla'}</button>
         </div>
       </form>
     </main>
