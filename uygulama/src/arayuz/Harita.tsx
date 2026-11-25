@@ -2,6 +2,7 @@
 // İşaretler haritanın uzayında durur; görsel bu uzaya oturtulmuş bir katmandır. Kipler görünür biçimde seçilir (§8.7).
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
+import { ekranUyar, useSurukleKapat } from './surukle-kapat';
 import type { HaritaAyrintisi, HaritaCizimi, HaritaIsareti, HaritaKatmani, HaritaOzeti, IliskiSatiri, IsaretGirdisi, Kayit, KayitHaritalari } from '../veri/api';
 import { anaTakvim, yilYazisi } from '../alan/tarih';
 import { useTakvim } from './Takvim';
@@ -153,6 +154,9 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
   const [bolgeKipi, setBolgeKipi] = useState<'denetim' | 'iddia'>('denetim');
   const [an, setAn] = useState('');
   const [cekmece, setCekmece] = useState(true);
+  // Çekmece sağa sürüklenerek de kapanır; dar ekranda haritanın altına indiği için orada sürüklenmez.
+  const cekmeceRef = useRef<HTMLElement>(null);
+  useSurukleKapat(cekmeceRef, () => setCekmece(false), { yon: () => (ekranUyar('(max-width: 900px)') ? null : 'sag') });
   const [cekmeceSekmesi, setCekmeceSekmesi] = useState<'isaretler' | 'katmanlar' | 'kunye'>('isaretler');
   const [arama, setArama] = useState('');
   const z = useTakvim(istemci, evren);
@@ -439,7 +443,7 @@ function HaritaGorunumu({ istemci, evren, kod }: { istemci: Istemci; evren: stri
           <button class="dugme kucuk" onClick={() => setYakinlik(1)}>Sığdır</button>
         </div>
         {cekmece ? (
-          <aside class="harita-cekmece" aria-label="Harita bilgileri">
+          <aside ref={cekmeceRef} class="harita-cekmece" aria-label="Harita bilgileri">
             <button class="dugme sade kucuk cekmece-kapat" aria-label="Çekmeceyi kapat" onClick={() => setCekmece(false)}>✕</button>
             {cekmeceIcerigi}
           </aside>

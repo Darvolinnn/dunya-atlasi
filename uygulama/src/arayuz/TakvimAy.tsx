@@ -1,7 +1,7 @@
 // Takvimin ay görünümü (K37): evrenin kendi takviminde bir ay; tarihi o aya düşen olay ve sahneler günlerinde görünür.
 // Bir olaya dokununca katılanlar o andaki yaşlarıyla gösterilir; bir güne dokununca o tarihe olay eklenir. Hafta
 // tanımı olmadığı için günler yedişer sıralanır; günlere ad verilmez.
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Istemci } from '../veri/istemci';
 import type { CizelgeOgesi, OlayKarti } from '../veri/api';
 import { ayAraligi, eksenYeri, eksenYili, GUN_PARCA, gunIfadesi, tarihAciklamasi, tarihCoz, yilYazisi, type ZamanSeti } from '../alan/tarih';
@@ -9,6 +9,8 @@ import { grupSinifi, turBul } from '../alan/turler';
 import { BaglantiSecici, type Secim } from './BaglantiSecici';
 import { KayitSec } from './KayitBolumleri';
 import { useTakvim, yasKisa } from './Takvim';
+import { ekranUyar, useSurukleKapat } from './surukle-kapat';
+import { useGeriIleKapat } from './geri-kapat';
 
 const yerAnahtari = (evren: string) => `dunya-atlasi:takvim-ayi:${evren}`;
 const okuYerel = (a: string) => { try { return localStorage.getItem(a); } catch { return null; } };
@@ -33,6 +35,10 @@ export function AyGorunumu({ istemci, evren }: { istemci: Istemci; evren: string
   });
   const setYer = (v: { yil: number; ay: number }) => { setYerDurumu(v); yazYerel(yerAnahtari(evren), JSON.stringify(v)); };
   const [secim, setSecim] = useState<{ gun: number } | { olay: string } | null>(null);
+  // Çekmece sağa sürüklenerek ya da geri hareketiyle kapanır; dar ekranda takvimin altına indiği için orada sürüklenmez.
+  const cekmeceRef = useRef<HTMLElement>(null);
+  useSurukleKapat(cekmeceRef, () => setSecim(null), { yon: () => (ekranUyar('(max-width: 900px)') ? null : 'sag') });
+  useGeriIleKapat(!!secim, () => setSecim(null));
   useEffect(() => istemci.dinle((d) => { if (d.evren === evren) setN((x) => x + 1); }), [evren]);
   useEffect(() => { istemci.iste('zamanCizelgesi', { evren }).then(setOgeler, () => setOgeler([])); }, [evren, n]);
 
@@ -99,7 +105,7 @@ export function AyGorunumu({ istemci, evren }: { istemci: Istemci; evren: string
         </div>
       </div>
       {secim && (
-        <aside class="takvim-cekmece" aria-label={'gun' in secim ? 'Gün' : 'Olay'}>
+        <aside ref={cekmeceRef} class="takvim-cekmece" aria-label={'gun' in secim ? 'Gün' : 'Olay'}>
           <button class="dugme sade kucuk takvim-cekmece-kapat" aria-label="Kapat" onClick={() => setSecim(null)}>✕</button>
           {'olay' in secim
             ? <OlayKartiGoster istemci={istemci} evren={evren} z={z} kod={secim.olay} n={n} />
